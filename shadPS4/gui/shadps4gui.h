@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 #include "ui_shadps4gui.h"
+#include "GameListViewer.h"
 
 class shadps4gui : public QMainWindow
 {
@@ -16,4 +17,5 @@ public slots:
 
 private:
 	Ui::shadps4guiClass ui;
+	GameListViewer* game_list;
 };

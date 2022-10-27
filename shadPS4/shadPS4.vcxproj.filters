@@ -32,6 +32,9 @@
     <ClCompile Include="gui\shadps4gui.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\GameListViewer.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
@@ -40,6 +43,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="gui\shadps4gui.h">
+      <Filter>gui</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\GameListViewer.h">
       <Filter>gui</Filter>
     </QtMoc>
   </ItemGroup>
