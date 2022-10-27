@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QDirIterator>
 #include <QLineEdit>
+#include "../emulator/fileFormat/PSF.h"
 
 GameListViewer::GameListViewer(QWidget* parent)
 	: QWidget(parent)
@@ -147,20 +148,20 @@ void GameListWorker::AddEntriesToGameList(const std::string& dir_path) {
 	QFileInfoList fList = parent_folder.entryInfoList(QDir::AllDirs | QDir::NoDotAndDotDot, QDir::DirsFirst);
 	foreach(QFileInfo item, fList)
 	{
-		//TODO PSF psf;
-		//TODO if (!psf.open(item.absoluteFilePath().toStdString() + "/PARAM.SFO"))
-		//TODO	continue;//if we can't open param.sfo go to the next entry
+		PSF psf;
+		if (!psf.open(item.absoluteFilePath().toStdString() + "/PARAM.SFO"))
+			continue;//if we can't open param.sfo go to the next entry
 
 		//TODO std::string test = psf.get_string("TITLE_ID");
 		QString iconpath(item.absoluteFilePath() + "/ICON0.PNG");
 
 		emit EntryReady({
 			new GameIconItem(iconpath),
-			new GameListItem("TODO"/*QString::fromStdString(psf.get_string("TITLE"))*/),
-			new GameListItem("TODO"/*QString::fromStdString(psf.get_string("TITLE_ID"))*/),
-			new GameListItem("TODO"/*QString::fromStdString(psf.get_string("SYSTEM_VER"))*/),
-			new GameListItem("TODO"/*QString::fromStdString(psf.get_string("APP_VER"))*/),
-			new GameListItem("TODO"/*QString::fromStdString(psf.get_string("CATEGORY"))*/),
+			new GameListItem(QString::fromStdString(psf.get_string("TITLE"))),
+			new GameListItem(QString::fromStdString(psf.get_string("TITLE_ID"))),
+			new GameListItem(QString("%1").arg(psf.get_integer("SYSTEM_VER"), 8, 16, QLatin1Char('0'))),
+			new GameListItem(QString::fromStdString(psf.get_string("APP_VER"))),
+			new GameListItem(QString::fromStdString(psf.get_string("CATEGORY"))),
 			new GameListItem(item.fileName())
 			});
 
