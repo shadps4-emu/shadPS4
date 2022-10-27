@@ -24,6 +24,9 @@
     <Filter Include="gui">
       <UniqueIdentifier>{29ee17bd-9ad4-44e8-b1cd-b4be13ec6509}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{73d07238-8864-48b5-9987-e455fa73c82f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -34,6 +37,9 @@
     </ClCompile>
     <ClCompile Include="gui\GameListViewer.cpp">
       <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="core\FsFile.cpp">
+      <Filter>Core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -48,5 +54,13 @@
     <QtMoc Include="gui\GameListViewer.h">
       <Filter>gui</Filter>
     </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="core\FsFile.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
