@@ -21,23 +21,26 @@
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
       <Extensions>ts</Extensions>
     </Filter>
+    <Filter Include="gui">
+      <UniqueIdentifier>{29ee17bd-9ad4-44e8-b1cd-b4be13ec6509}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gui\shadps4gui.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="gui\shadps4gui.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
+    <ClCompile Include="gui\shadps4gui.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
       <Filter>Form Files</Filter>
     </QtUic>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="gui\shadps4gui.h">
+      <Filter>gui</Filter>
+    </QtMoc>
   </ItemGroup>
 </Project>

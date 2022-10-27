@@ -11,6 +11,9 @@ public:
 	shadps4gui(QWidget *parent = nullptr);
 	~shadps4gui();
 
+public slots:
+	void installPKG();
+
 private:
 	Ui::shadps4guiClass ui;
 };
