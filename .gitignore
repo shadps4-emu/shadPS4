@@ -397,3 +397,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /shadPS4/game/*
+/shadPS4/psf.txt

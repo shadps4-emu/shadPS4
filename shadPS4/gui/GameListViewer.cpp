@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QDirIterator>
 #include <QLineEdit>
+#include <QRegularExpression>
 #include "../emulator/fileFormat/PSF.h"
 
 GameListViewer::GameListViewer(QWidget* parent)
@@ -66,8 +67,8 @@ void GameListViewer::searchGame(QString searchText)
 {
 	proxyModel->setFilterKeyColumn(1); //filter Name column only
 	QString strPattern = searchText;
-	//TODO QRegExp regExp(strPattern, Qt::CaseInsensitive);
-	//TODO proxyModel->setFilterRegExp(regExp);
+	QRegularExpression  regExp(strPattern, QRegularExpression::CaseInsensitiveOption);
+	proxyModel->setFilterRegularExpression(regExp);
 }
 void GameListViewer::AddEntry(const QList<QStandardItem*>& entry_items) {
 	item_model->invisibleRootItem()->appendRow(entry_items);
