@@ -53,6 +53,9 @@
     <ClCompile Include="emulator\Loader.cpp">
       <Filter>emulator</Filter>
     </ClCompile>
+    <ClCompile Include="emulator\fileFormat\PKG.cpp">
+      <Filter>emulator\fileFormat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
@@ -79,6 +82,9 @@
     </ClInclude>
     <ClInclude Include="emulator\Loader.h">
       <Filter>emulator</Filter>
+    </ClInclude>
+    <ClInclude Include="emulator\fileFormat\PKG.h">
+      <Filter>emulator\fileFormat</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

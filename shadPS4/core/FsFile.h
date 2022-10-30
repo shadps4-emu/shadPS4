@@ -34,6 +34,14 @@ public:
 	U64 Tell() const;
 	~FsFile();
 
+	template< typename T > bool ReadBE(T& dst)
+	{
+		if (!Read(&dst, sizeof(T))) {
+			return false;
+		}
+		::ReadBE(dst);
+		return true;
+	}
 
 	const char* getOpenMode(fsOpenMode mode)
 	{

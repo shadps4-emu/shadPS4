@@ -1,8 +1,12 @@
 #include "shadps4gui.h"
 #include "../emulator/Loader.h"
+#include "../emulator/fileFormat/PKG.h"
+#include "../core/FsFile.h"
 #include <QFileDialog>
 #include <QDir>
 #include <QMessageBox>
+#include <QProgressDialog>
+
 shadps4gui::shadps4gui(QWidget *parent)
 	: QMainWindow(parent)
 {
@@ -22,7 +26,9 @@ void shadps4gui::installPKG()
 	std::string file(QFileDialog::getOpenFileName(this, tr("Install PKG File"), QDir::currentPath(), tr("PKG File (*.PKG)")).toStdString());
 	if (detectFileType(file) == FILETYPE_PKG)
 	{
-
+		PKG pkg;
+		pkg.open(file);
+		
 	}
 	else
 	{
