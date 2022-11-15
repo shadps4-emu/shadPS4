@@ -29,3 +29,38 @@ bool PKG::open(const std::string& filepath) {
 
 	return true;
 }
+bool PKG::extract(const std::string& filepath, const std::string& extractPath, std::string& failreason)
+{
+		this->extractPath = extractPath;
+		FsFile file;
+		if (!file.Open(filepath, fsRead))
+		{
+			return false;
+		}
+		pkgSize = file.getFileSize();
+		PKGHeader pkgheader;
+		file.ReadBE(pkgheader);
+
+		file.Seek(0, fsSeekSet);
+		pkg = (U08*)mmap(pkgSize, file.fileDescr());
+
+		file.Read(pkg, pkgSize);
+		
+		U32 offset = pkgheader.pkg_table_entry_offset;
+		U32 n_files = pkgheader.pkg_table_entry_count;
+
+
+		for (int i = 0; i < n_files; i++) {
+			PKGEntry entry = (PKGEntry&)pkg[offset + i * 0x20];
+			ReadBE(entry);
+			if (entry.id == 0x1200)//test code for extracting icon0
+			{
+				FsFile out;
+				out.Open(extractPath + "icon0.png", fsWrite);
+				out.Write(pkg + entry.offset, entry.size);
+				out.Close();
+			}
+		}
+		munmap(pkg);
+		return true;
+}

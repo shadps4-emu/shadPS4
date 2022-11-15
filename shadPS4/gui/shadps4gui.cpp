@@ -28,6 +28,23 @@ void shadps4gui::installPKG()
 	{
 		PKG pkg;
 		pkg.open(file);
+		//if pkg is ok we procced with extraction
+		std::string failreason;
+		QString gamedir = QDir::currentPath() + "/game/" + QString::fromStdString(pkg.getTitleID());
+		QDir dir(gamedir);
+		if (!dir.exists()) {
+			dir.mkpath(".");
+		}
+		std::string extractpath = QDir::currentPath().toStdString() + "/game/" + pkg.getTitleID() + "/";
+		if (!pkg.extract(file, extractpath, failreason))
+		{
+			QMessageBox::critical(this, "PKG ERROR", QString::fromStdString(failreason), QMessageBox::Ok, 0);
+		}
+		else
+		{
+			QMessageBox::information(this, "Extraction Finished", "Game successfully installed at " + gamedir, QMessageBox::Ok, 0);
+			game_list->RefreshGameDirectory();//force refreshing since filelistwatcher doesn't work properly
+		}
 		
 	}
 	else
