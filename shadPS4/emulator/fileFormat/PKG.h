@@ -3,6 +3,7 @@
 #include "../../Types.h"
 #include <io.h>
 #include <windows.h>
+#include <stdio.h>
 
 struct PKGHeader {
 	/*BE*/U32 magic;// Magic
@@ -137,5 +138,55 @@ public:
 
 		return TRUE;
 	}
+	typedef struct {
+		U32 type;
+		std::string name;
+	} pkg_entry_value;
+
+	std::string getEntryNameByType(U32 type)
+	{
+		pkg_entry_value entries[] = {
+		{ 0x0001,						   "digests"                   },
+		{ 0x0010,						   "entry_keys"                },
+		{ 0x0020,						   "image_key"                 },
+		{ 0x0080,						   "general_digests"           },
+		{ 0x0100,						   "metas"                     },
+		{ 0x0200,						   "entry_names"               },
+		{ 0x0400,                          "license.dat"               },
+		{ 0x0401,                          "license.info"              },
+		{ 0x0402,                          "nptitle.dat"               },
+		{ 0x0403,                          "npbind.dat"                },
+		{ 0x0409,                          "psreserved.dat"            },
+		{ 0x1000,                          "param.sfo"                 },
+		{ 0x1001,                          "playgo-chunk.dat"          },
+		{ 0x1002,                          "playgo-chunk.sha"          },
+		{ 0x1003,                          "playgo-manifest.xml"       },
+		{ 0x1004,                          "pronunciation.xml"         },
+		{ 0x1005,                          "pronunciation.sig"         },
+		{ 0x1006,                          "pic1.png"                  },
+		{ 0x1007,                          "pubtoolinfo.dat"           },
+		{ 0x100B,                          "shareparam.json"           },
+		{ 0x100C,                          "shareoverlayimage.png"     },
+		{ 0x100E,                          "shareprivacyguardimage.png"},
+		{ 0x1200,                          "icon0.png"                 },
+		{ 0x1220,                          "pic0.png"                  },
+		{ 0x1240,                          "snd0.at9"                  },
+		{ 0x1280,                          "icon0.dds"                 },
+		{ 0x12A0,                          "pic0.dds"                  },
+		{ 0x12C0,                          "pic1.dds"                  },
+		//{ 0x1400,                          "trophy/trophy00.trp"       }
+		};
+		std::string entry_name="";
+
+		for (size_t i = 0; i < sizeof entries / sizeof entries[0]; i++) {
+			if (type == entries[i].type) {
+				entry_name = entries[i].name;
+				break;
+			}
+		}
+
+		return entry_name;
+	}
+
 };
 

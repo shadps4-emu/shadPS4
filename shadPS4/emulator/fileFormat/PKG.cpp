@@ -53,10 +53,21 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 		for (int i = 0; i < n_files; i++) {
 			PKGEntry entry = (PKGEntry&)pkg[offset + i * 0x20];
 			ReadBE(entry);
-			if (entry.id == 0x1200)//test code for extracting icon0
+			//try to figure out the name
+			std::string name = getEntryNameByType(entry.id);
+			if (!name.empty())
 			{
+				//found an name use it
 				FsFile out;
-				out.Open(extractPath + "icon0.png", fsWrite);
+				out.Open(extractPath + name, fsWrite);
+				out.Write(pkg + entry.offset, entry.size);
+				out.Close();
+			}
+			else
+			{
+				//just print with id
+				FsFile out;
+				out.Open(extractPath + std::to_string(entry.id), fsWrite);
 				out.Write(pkg + entry.offset, entry.size);
 				out.Close();
 			}
