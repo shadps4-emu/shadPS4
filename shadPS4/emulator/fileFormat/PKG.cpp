@@ -1,5 +1,6 @@
 #include "PKG.h"
 #include "../../core/FsFile.h"
+#include <direct.h> 
 
 PKG::PKG()
 {
@@ -57,6 +58,20 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 			std::string name = getEntryNameByType(entry.id);
 			if (!name.empty())
 			{
+				std::size_t pos = name.find("/");//check if we have a directory (assuming we only have 1 level of subdirectories)
+				if (pos != std::string::npos)
+				{
+					//directory found
+					std::string dir = name.substr(0, pos+1);//include '/' as well
+					std::string path = extractPath + dir;
+					_mkdir(path.c_str());//make dir
+					std::string file = name.substr(pos + 1);//read filename
+					FsFile out;
+					out.Open(path + file, fsWrite);
+					out.Write(pkg + entry.offset, entry.size);
+					out.Close();
+
+				}
 				//found an name use it
 				FsFile out;
 				out.Open(extractPath + name, fsWrite);

@@ -174,7 +174,7 @@ public:
 		{ 0x1280,                          "icon0.dds"                 },
 		{ 0x12A0,                          "pic0.dds"                  },
 		{ 0x12C0,                          "pic1.dds"                  },
-		//{ 0x1400,                          "trophy/trophy00.trp"       }
+		{ 0x1400,                          "trophy/trophy00.trp"       }
 		};
 		std::string entry_name="";
 
