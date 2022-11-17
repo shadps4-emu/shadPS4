@@ -155,12 +155,13 @@ void GameListWorker::AddEntriesToGameList(const std::string& dir_path) {
 
 		//TODO std::string test = psf.get_string("TITLE_ID");
 		QString iconpath(item.absoluteFilePath() + "/ICON0.PNG");
-
+		QString t;
+		
 		emit EntryReady({
 			new GameIconItem(iconpath),
 			new GameListItem(QString::fromStdString(psf.get_string("TITLE"))),
 			new GameListItem(QString::fromStdString(psf.get_string("TITLE_ID"))),
-			new GameListItem(QString("%1").arg(psf.get_integer("SYSTEM_VER"), 8, 16, QLatin1Char('0'))),
+			new GameListItem((QString("%1").arg(psf.get_integer("SYSTEM_VER"), 8, 16, QLatin1Char('0'))).mid(1,3).insert(1,'.')),
 			new GameListItem(QString::fromStdString(psf.get_string("APP_VER"))),
 			new GameListItem(QString::fromStdString(psf.get_string("CATEGORY"))),
 			new GameListItem(item.fileName())
