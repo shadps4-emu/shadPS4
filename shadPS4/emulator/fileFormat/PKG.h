@@ -71,6 +71,9 @@ inline void ReadBE(PKGHeader& s)
 	ReadBE(s.magic);
 	ReadBE(s.pkg_table_entry_offset);
 	ReadBE(s.pkg_table_entry_count);
+	ReadBE(s.pkg_content_offset);
+	ReadBE(s.pkg_content_size);
+	ReadBE(s.pkg_size);
 }
 
 struct PKGEntry {

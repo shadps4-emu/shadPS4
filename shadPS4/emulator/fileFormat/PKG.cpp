@@ -42,6 +42,16 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 		PKGHeader pkgheader;
 		file.ReadBE(pkgheader);
 
+		if (pkgheader.pkg_size > pkgSize)
+		{
+			failreason = "PKG file size is different";
+			return false;
+		}
+		if ((pkgheader.pkg_content_size + pkgheader.pkg_content_offset) > pkgheader.pkg_size)
+		{
+			failreason = "Content size is bigger than pkg size";
+			return false;
+		}
 		file.Seek(0, fsSeekSet);
 		pkg = (U08*)mmap(pkgSize, file.fileDescr());
 
