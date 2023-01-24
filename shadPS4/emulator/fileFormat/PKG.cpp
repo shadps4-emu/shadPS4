@@ -97,6 +97,11 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 				out.Close();
 			}
 		}
+		//extract pfs_image.dat
+		FsFile out;
+		out.Open(extractPath + "pfs_image.dat", fsWrite);
+		out.Write(pkg + pkgheader.pfs_image_offset, pkgheader.pfs_image_size);
+		out.Close();
 		munmap(pkg);
 		return true;
 }

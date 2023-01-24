@@ -73,6 +73,8 @@ inline void ReadBE(PKGHeader& s)
 	ReadBE(s.pkg_table_entry_count);
 	ReadBE(s.pkg_content_offset);
 	ReadBE(s.pkg_content_size);
+	ReadBE(s.pfs_image_offset);
+	ReadBE(s.pfs_image_size);
 	ReadBE(s.pkg_size);
 }
 
