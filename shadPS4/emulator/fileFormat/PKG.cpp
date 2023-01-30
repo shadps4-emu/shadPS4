@@ -54,6 +54,11 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 		}
 		file.Seek(0, fsSeekSet);
 		pkg = (U08*)mmap(pkgSize, file.fileDescr());
+		if (pkg == nullptr)
+		{
+			failreason = "Can't allocate size for image";
+			return false;
+		}
 
 		file.Read(pkg, pkgSize);
 		

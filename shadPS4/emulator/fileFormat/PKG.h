@@ -135,6 +135,10 @@ public:
 		if (hHandle != NULL) {
 			pStart = MapViewOfFile(hHandle, FILE_MAP_COPY, 0, 0, sLength);
 		}
+		if(pStart == NULL)
+		{
+			return nullptr;
+		}
 		return pStart;
 	}
 	int munmap(void* pStart) {
