@@ -82,10 +82,30 @@ inline void ReadBE(PKGHeader& s)
 	ReadBE(s.pkg_body_size);
 	ReadBE(s.pkg_content_offset);
 	ReadBE(s.pkg_content_size);
-
+	ReadBE(s.pkg_drm_type);
+	ReadBE(s.pkg_content_type);
+	ReadBE(s.pkg_content_flags);
+	ReadBE(s.pkg_promote_size);
+	ReadBE(s.pkg_version_date);
+	ReadBE(s.pkg_version_hash);
+	ReadBE(s.pkg_0x088);
+	ReadBE(s.pkg_0x08C);
+	ReadBE(s.pkg_0x090);
+	ReadBE(s.pkg_0x094);
+	ReadBE(s.pkg_iro_tag);
+	ReadBE(s.pkg_drm_type_version);
+	ReadBE(s.pkg_0x400);
+	ReadBE(s.pfs_image_count);
+	ReadBE(s.pfs_image_flags);
 	ReadBE(s.pfs_image_offset);
 	ReadBE(s.pfs_image_size);
+	ReadBE(s.mount_image_offset);
+	ReadBE(s.mount_image_size);
+	ReadBE(s.pfs_signed_size);
+	ReadBE(s.pfs_cache_size);
 	ReadBE(s.pkg_size);
+	ReadBE(s.pfs_split_size_nth_0);
+	ReadBE(s.pfs_split_size_nth_1);
 }
 
 struct PKGEntry {
@@ -225,52 +245,53 @@ public:
 		printf("- PKG content offset: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
 		printf("- PKG conteít  size: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
 		printf("- PKG pkg_content_id: %s\n", pkgheader.pkg_content_id);
+
+		printf("- PKG drm type: 0x%X\n", pkgheader.pkg_drm_type);
+		printf("- PKG content type: 0x%X\n", pkgheader.pkg_content_type);
+		printf("- PKG content flags: 0x%X\n", pkgheader.pkg_content_flags);
+		printf("- PKG promote size: 0x%X\n", pkgheader.pkg_promote_size);
+		printf("- PKG version date: 0x%X\n", pkgheader.pkg_version_date);
+		printf("- PKG version hash: 0x%X\n", pkgheader.pkg_version_hash);
+		printf("- PKG 0x088: 0x%X\n", pkgheader.pkg_0x088);
+		printf("- PKG 0x08C: 0x%X\n", pkgheader.pkg_0x08C);
+		printf("- PKG 0x090: 0x%X\n", pkgheader.pkg_0x090);
+		printf("- PKG 0x094: 0x%X\n", pkgheader.pkg_0x094);
+		printf("- PKG iro tag: 0x%X\n", pkgheader.pkg_iro_tag);
+		printf("- PKG drm type version: 0x%X\n", pkgheader.pkg_drm_type_version);
+
+		printf("- PKG digest_entries1: ");
+		for (U08 s = 0; s < 0x20; s++) printf("%X", pkgheader.digest_entries1[s]);
+		printf("\n");
+		printf("- PKG digest_entries2: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.digest_entries2[s]);
+		printf("\n");
+		printf("- PKG digest_table_digest: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.digest_table_digest[s]);
+		printf("\n");
+		printf("- PKG digest_body_digest: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.digest_body_digest[s]);
+		printf("\n");
+		printf("- PKG 0x400: 0x%X\n", pkgheader.pkg_0x400);
+		printf("- PKG pfs_image_count: 0x%X\n", pkgheader.pfs_image_count);
+		printf("- PKG pfs_image_flags: 0x%" PRIx64 "\n", pkgheader.pfs_image_flags);
+		printf("- PKG pfs_image_offset: 0x%" PRIx64 "\n", pkgheader.pfs_image_offset);
+		printf("- PKG mount_image_offset: 0x%" PRIx64 "\n", pkgheader.mount_image_offset);
+		printf("- PKG mount_image_size: 0x%" PRIx64 "\n", pkgheader.mount_image_size);
+		printf("- PKG size: 0x%" PRIx64 "\n", pkgheader.pkg_size);
+		printf("- PKG pfs_signed_size: 0x%X\n", pkgheader.pfs_signed_size);
+		printf("- PKG pfs_cache_size: 0x%X\n", pkgheader.pfs_cache_size);
+		printf("- PKG pfs_image_digest: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.pfs_image_digest[s]);
+		printf("\n");
+		printf("- PKG pfs_signed_digest: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.pfs_signed_digest[s]);
+		printf("\n");
+		printf("- PKG pfs_split_size_nth_0: 0x%" PRIx64 "\n", pkgheader.pfs_split_size_nth_0);
+		printf("- PKG pfs_split_size_nth_1: 0x%" PRIx64 "\n", pkgheader.pfs_split_size_nth_1);
+		printf("- PKG pkg_digest: ");
+		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.pkg_digest[s]);
+		printf("\n");
 		printf("\n\n");
-
-//		U08 pkg_content_id[0x24];//packages' content ID as a 36-byte string
-//		U08 pkg_padding[0xC];//padding
-//		/*BE*/U32 pkg_drm_type;//DRM type
-//		/*BE*/U32 pkg_content_type;//Content type
-//		/*BE*/U32 pkg_content_flags;//Content flags
-//		/*BE*/U32 pkg_promote_size;
-//		/*BE*/U32 pkg_version_date;
-//		/*BE*/U32 pkg_version_hash;
-//		/*BE*/U32 pkg_0x088;
-//		/*BE*/U32 pkg_0x08C;
-//		/*BE*/U32 pkg_0x090;
-//		/*BE*/U32 pkg_0x094;
-//		/*BE*/U32 pkg_iro_tag;
-//		/*BE*/U32 pkg_drm_type_version;
-
-//		U08 pkg_zeroes_1[0x60];
-
-		/* Digest table */
-//		U08 digest_entries1[0x20];     // sha256 digest for main entry 1
-//		U08 digest_entries2[0x20];     // sha256 digest for main entry 2
-//		U08 digest_table_digest[0x20]; // sha256 digest for digest table
-//		U08 digest_body_digest[0x20];  // sha256 digest for main table
-
-//		U08 pkg_zeroes_2[0x280];
-
-//		U32 pkg_0x400;
-
-//		U32 pfs_image_count;                // count of PFS images
-//		U64 pfs_image_flags;                // PFS flags
-//		U64 pfs_image_offset;               // offset to start of external PFS image
-//		U64 pfs_image_size;                 // size of external PFS image
-//		U64 mount_image_offset;
-//		U64 mount_image_size;
-//		U64 pkg_size;
-//		U32 pfs_signed_size;
-//		U32 pfs_cache_size;
-//		U08 pfs_image_digest[0x20];
-//		U08 pfs_signed_digest[0x20];
-//		U64 pfs_split_size_nth_0;
-//		U64 pfs_split_size_nth_1;
-
-//		U08 pkg_zeroes_3[0xB50];
-
-//		U08 pkg_digest[0x20]; */
 	}
 };
 
