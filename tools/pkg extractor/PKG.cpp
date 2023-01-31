@@ -18,7 +18,6 @@ bool PKG::open(const std::string& filepath) {
 		return false;
 	}
 	pkgSize = file.getFileSize();
-	PKGHeader pkgheader;
 	file.ReadBE(pkgheader);
 	//we have already checked magic should be ok
 
@@ -39,7 +38,7 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 			return false;
 		}
 		pkgSize = file.getFileSize();
-		PKGHeader pkgheader;
+		
 		file.ReadBE(pkgheader);
 
 		if (pkgheader.pkg_size > pkgSize)

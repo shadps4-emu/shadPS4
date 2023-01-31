@@ -4,6 +4,7 @@
 #include <io.h>
 #include <windows.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 struct PKGHeader {
 	/*BE*/U32 magic;// Magic
@@ -69,10 +70,19 @@ struct PKGHeader {
 inline void ReadBE(PKGHeader& s)
 {
 	ReadBE(s.magic);
-	ReadBE(s.pkg_table_entry_offset);
+	ReadBE(s.pkg_type);
+	ReadBE(s.pkg_0x8);
+	ReadBE(s.pkg_file_count);
 	ReadBE(s.pkg_table_entry_count);
+	ReadBE(s.pkg_sc_entry_count);
+	ReadBE(s.pkg_table_entry_count_2);
+	ReadBE(s.pkg_table_entry_offset);
+	ReadBE(s.pkg_sc_entry_data_size);
+	ReadBE(s.pkg_body_offset);
+	ReadBE(s.pkg_body_size);
 	ReadBE(s.pkg_content_offset);
 	ReadBE(s.pkg_content_size);
+
 	ReadBE(s.pfs_image_offset);
 	ReadBE(s.pfs_image_size);
 	ReadBE(s.pkg_size);
@@ -106,6 +116,7 @@ private:
 	U64 pkgSize = 0;
 	S08 pkgTitleID[9];
 	std::string extractPath;
+	PKGHeader pkgheader;
 
 public:
 	PKG();
@@ -197,5 +208,69 @@ public:
 		return entry_name;
 	}
 
+	void printPkgHeader()
+	{
+		printf("PS4 PKG header:\n");
+		printf("- PKG magic: 0x%X\n", pkgheader.magic);
+		printf("- PKG type: 0x%X\n", pkgheader.pkg_type);
+		printf("- PKG 0x8: 0x%X\n", pkgheader.pkg_0x8);
+		printf("- PKG file count: 0x%X\n", pkgheader.pkg_file_count);
+		printf("- PKG table entries: 0x%X\n", pkgheader.pkg_table_entry_count);
+		printf("- PKG system entries: 0x%X\n", pkgheader.pkg_sc_entry_count);
+		printf("- PKG table entries2: 0x%X\n", pkgheader.pkg_table_entry_count_2);
+		printf("- PKG table offset: 0x%X\n", pkgheader.pkg_table_entry_offset);
+		printf("- PKG table entry data size: 0x%X\n", pkgheader.pkg_sc_entry_data_size);
+		printf("- PKG body offset: 0x%" PRIx64 "\n", pkgheader.pkg_body_offset);
+		printf("- PKG body size: 0x%" PRIx64 "\n", pkgheader.pkg_body_size);
+		printf("- PKG content offset: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
+		printf("- PKG conteít  size: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
+		printf("- PKG pkg_content_id: %s\n", pkgheader.pkg_content_id);
+		printf("\n\n");
+
+//		U08 pkg_content_id[0x24];//packages' content ID as a 36-byte string
+//		U08 pkg_padding[0xC];//padding
+//		/*BE*/U32 pkg_drm_type;//DRM type
+//		/*BE*/U32 pkg_content_type;//Content type
+//		/*BE*/U32 pkg_content_flags;//Content flags
+//		/*BE*/U32 pkg_promote_size;
+//		/*BE*/U32 pkg_version_date;
+//		/*BE*/U32 pkg_version_hash;
+//		/*BE*/U32 pkg_0x088;
+//		/*BE*/U32 pkg_0x08C;
+//		/*BE*/U32 pkg_0x090;
+//		/*BE*/U32 pkg_0x094;
+//		/*BE*/U32 pkg_iro_tag;
+//		/*BE*/U32 pkg_drm_type_version;
+
+//		U08 pkg_zeroes_1[0x60];
+
+		/* Digest table */
+//		U08 digest_entries1[0x20];     // sha256 digest for main entry 1
+//		U08 digest_entries2[0x20];     // sha256 digest for main entry 2
+//		U08 digest_table_digest[0x20]; // sha256 digest for digest table
+//		U08 digest_body_digest[0x20];  // sha256 digest for main table
+
+//		U08 pkg_zeroes_2[0x280];
+
+//		U32 pkg_0x400;
+
+//		U32 pfs_image_count;                // count of PFS images
+//		U64 pfs_image_flags;                // PFS flags
+//		U64 pfs_image_offset;               // offset to start of external PFS image
+//		U64 pfs_image_size;                 // size of external PFS image
+//		U64 mount_image_offset;
+//		U64 mount_image_size;
+//		U64 pkg_size;
+//		U32 pfs_signed_size;
+//		U32 pfs_cache_size;
+//		U08 pfs_image_digest[0x20];
+//		U08 pfs_signed_digest[0x20];
+//		U64 pfs_split_size_nth_0;
+//		U64 pfs_split_size_nth_1;
+
+//		U08 pkg_zeroes_3[0xB50];
+
+//		U08 pkg_digest[0x20]; */
+	}
 };
 

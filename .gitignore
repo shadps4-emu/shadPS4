@@ -398,3 +398,5 @@ FodyWeavers.xsd
 *.sln.iml
 /shadPS4/game/*
 /shadPS4/psf.txt
+/tools/pkg extractor/game/*
+/tools/pkg extractor/*.pkg
