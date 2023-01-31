@@ -18,5 +18,22 @@
     <ClCompile Include="pkgextract.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PKG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FsFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PKG.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FsFile.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
