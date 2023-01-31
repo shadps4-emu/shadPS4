@@ -24,6 +24,9 @@
     <ClCompile Include="FsFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PFS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PKG.h">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Types.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PFS.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,5 +1,6 @@
 #include "PKG.h"
 #include "FsFile.h"
+#include "PFS.h"
 #include <direct.h> 
 
 PKG::PKG()
@@ -101,11 +102,15 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 				out.Close();
 			}
 		}
+		//PFS read
+		PFS pfs;
+		pfs.pfsOuterReadHeader(pkg + pkgheader.pfs_image_offset);
+		pfs.printPsfOuterHeader();
 		//extract pfs_image.dat
-		FsFile out;
+		/*FsFile out;
 		out.Open(extractPath + "pfs_image.dat", fsWrite);
 		out.Write(pkg + pkgheader.pfs_image_offset, pkgheader.pfs_image_size);
-		out.Close();
+		out.Close();*/
 		munmap(pkg);
 		return true;
 }

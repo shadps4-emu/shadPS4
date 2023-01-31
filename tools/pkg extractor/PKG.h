@@ -243,7 +243,7 @@ public:
 		printf("- PKG body offset: 0x%" PRIx64 "\n", pkgheader.pkg_body_offset);
 		printf("- PKG body size: 0x%" PRIx64 "\n", pkgheader.pkg_body_size);
 		printf("- PKG content offset: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
-		printf("- PKG conteít  size: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
+		printf("- PKG content size: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
 		printf("- PKG pkg_content_id: %s\n", pkgheader.pkg_content_id);
 
 		printf("- PKG drm type: 0x%X\n", pkgheader.pkg_drm_type);

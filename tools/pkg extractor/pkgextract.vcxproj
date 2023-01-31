@@ -128,11 +128,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FsFile.cpp" />
+    <ClCompile Include="PFS.cpp" />
     <ClCompile Include="PKG.cpp" />
     <ClCompile Include="pkgextract.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FsFile.h" />
+    <ClInclude Include="PFS.h" />
     <ClInclude Include="PKG.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
