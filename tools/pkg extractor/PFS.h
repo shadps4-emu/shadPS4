@@ -6,6 +6,13 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+enum PFSMode : U08 {
+    PFS_MODE_NONE = 0,
+    PFS_MODE_SIGNED = 0x1,
+    PFS_MODE_64BIT = 0x2,
+    PFS_MODE_ENCRYPTED = 0x4,
+    PFS_MODE_UNKNOWN = 0x8,
+};
 struct PFS_HDR {
     U64 version;
     U64 magic;
@@ -44,7 +51,16 @@ public:
         printf("- clean: 0x%X\n", psfOuterheader.clean);
         printf("- ronly: 0x%X\n", psfOuterheader.ronly);
         printf("- rsv: 0x%X\n", psfOuterheader.rsv);
-        printf("- mode: 0x%X\n", psfOuterheader.mode);
+        printf("- mode: 0x%X", psfOuterheader.mode);
+        if (psfOuterheader.mode & PFS_MODE_SIGNED)
+            printf(" signed");
+        if (psfOuterheader.mode & PFS_MODE_64BIT)
+            printf(" 64-bit");
+        if (psfOuterheader.mode & PFS_MODE_ENCRYPTED)
+            printf(" encrypted");
+        if (psfOuterheader.mode & PFS_MODE_UNKNOWN)
+            printf(" unknown");
+        printf("\n");
         printf("- unk1: 0x%X\n", psfOuterheader.unk1);
         printf("- blocksz: 0x%X\n", psfOuterheader.blocksz);
         printf("- nbackup: 0x%X\n", psfOuterheader.nbackup);

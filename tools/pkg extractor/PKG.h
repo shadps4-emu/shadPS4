@@ -6,9 +6,16 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+enum PKGFlags : U32 {
+	PKG_FLAGS_UNKNOWN = 0x01,
+	PKG_FLAGS_VER_1 = 0x01000000,
+	PKG_FLAGS_VER_2 = 0x02000000,
+	PKG_FLAGS_INTERNAL = 0x40000000,
+	PKG_FLAGS_FINALIZED = 0x80000000,
+};
 struct PKGHeader {
 	/*BE*/U32 magic;// Magic
-	/*BE*/U32 pkg_type;
+	/*BE*/U32 pkg_flags;
 	/*BE*/U32 pkg_0x8; //unknown field
 	/*BE*/U32 pkg_file_count;
 	/*BE*/U32 pkg_table_entry_count;
@@ -70,7 +77,7 @@ struct PKGHeader {
 inline void ReadBE(PKGHeader& s)
 {
 	ReadBE(s.magic);
-	ReadBE(s.pkg_type);
+	ReadBE(s.pkg_flags);
 	ReadBE(s.pkg_0x8);
 	ReadBE(s.pkg_file_count);
 	ReadBE(s.pkg_table_entry_count);
@@ -232,7 +239,18 @@ public:
 	{
 		printf("PS4 PKG header:\n");
 		printf("- PKG magic: 0x%X\n", pkgheader.magic);
-		printf("- PKG type: 0x%X\n", pkgheader.pkg_type);
+		printf("- PKG flags: 0x%X", pkgheader.pkg_flags);
+		if (pkgheader.pkg_flags & PKG_FLAGS_UNKNOWN)
+			printf(" unknown");
+		if (pkgheader.pkg_flags & PKG_FLAGS_VER_1)
+			printf(" ver_1");
+		if (pkgheader.pkg_flags & PKG_FLAGS_VER_2)
+			printf(" ver_2");
+		if (pkgheader.pkg_flags & PKG_FLAGS_INTERNAL)
+			printf(" internal");
+		if(pkgheader.pkg_flags & PKG_FLAGS_FINALIZED)
+			printf(" finalized");
+		printf("\n");
 		printf("- PKG 0x8: 0x%X\n", pkgheader.pkg_0x8);
 		printf("- PKG file count: 0x%X\n", pkgheader.pkg_file_count);
 		printf("- PKG table entries: 0x%X\n", pkgheader.pkg_table_entry_count);
