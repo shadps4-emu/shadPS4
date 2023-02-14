@@ -13,6 +13,48 @@ enum PKGFlags : U32 {
 	PKG_FLAGS_INTERNAL = 0x40000000,
 	PKG_FLAGS_FINALIZED = 0x80000000,
 };
+
+enum PKGDrmType : U32
+{
+	PKG_DRM_TYPE_NONE = 0x0,
+	PKG_DRM_TYPE_PS4 = 0xF,
+};
+
+enum PKGContentType : U32
+{
+	/* pkg_ps4_app, pkg_ps4_patch, pkg_ps4_remaster */
+	PKG_CONTENT_TYPE_GD = 0x1A,
+	/* pkg_ps4_ac_data, pkg_ps4_sf_theme, pkg_ps4_theme */
+	PKG_CONTENT_TYPE_AC = 0x1B,
+	/* pkg_ps4_ac_nodata */
+	PKG_CONTENT_TYPE_AL = 0x1C,
+	/* pkg_ps4_delta_patch */
+	PKG_CONTENT_TYPE_DP = 0x1E,
+};
+
+enum PKGContentFlags : U32
+{
+	PKG_CONTENT_FLAGS_FIRST_PATCH = 0x00100000,
+	PKG_CONTENT_FLAGS_PATCHGO = 0x00200000,
+	PKG_CONTENT_FLAGS_REMASTER = 0x00400000,
+	PKG_CONTENT_FLAGS_PS_CLOUD = 0x00800000,
+	PKG_CONTENT_FLAGS_GD_AC = 0x02000000,
+	PKG_CONTENT_FLAGS_NON_GAME = 0x04000000,
+	PKG_CONTENT_FLAGS_Unk_x8000000 = 0x08000000,
+	PKG_CONTENT_FLAGS_SUBSEQUENT_PATCH = 0x40000000,
+	PKG_CONTENT_FLAGS_DELTA_PATCH = 0x41000000,
+	PKG_CONTENT_FLAGS_CUMULATIVE_PATCH = 0x60000000,
+};
+enum IROTag : U32
+{
+	PKG_IRO_TAG_NONE = 0,
+	/* SHAREfactory theme */
+	PKG_IRO_TAG_SF_THEME = 0x1,
+	/* System Software theme */
+	PKG_IRO_TAG_SS_THEME = 0x2,
+};
+
+
 struct PKGHeader {
 	/*BE*/U32 magic;// Magic
 	/*BE*/U32 pkg_flags;
@@ -264,9 +306,44 @@ public:
 		printf("- PKG content size: 0x%" PRIx64 "\n", pkgheader.pkg_content_offset);
 		printf("- PKG pkg_content_id: %s\n", pkgheader.pkg_content_id);
 
-		printf("- PKG drm type: 0x%X\n", pkgheader.pkg_drm_type);
-		printf("- PKG content type: 0x%X\n", pkgheader.pkg_content_type);
-		printf("- PKG content flags: 0x%X\n", pkgheader.pkg_content_flags);
+		printf("- PKG drm type: 0x%X", pkgheader.pkg_drm_type);
+		if (pkgheader.pkg_drm_type == PKG_DRM_TYPE_NONE)
+			printf(" None");
+		if (pkgheader.pkg_drm_type == PKG_DRM_TYPE_PS4)
+			printf(" PS4");
+		printf("\n");
+		printf("- PKG content type: 0x%X", pkgheader.pkg_content_type);
+		if (pkgheader.pkg_content_type == PKG_CONTENT_TYPE_GD)
+			printf(" GD");
+		if (pkgheader.pkg_content_type == PKG_CONTENT_TYPE_AC)
+			printf(" AC");
+		if (pkgheader.pkg_content_type == PKG_CONTENT_TYPE_AL)
+			printf(" AL");
+		if (pkgheader.pkg_content_type == PKG_CONTENT_TYPE_DP)
+			printf(" DP");
+		printf("\n");
+		printf("- PKG content flags: 0x%X", pkgheader.pkg_content_flags);
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_FIRST_PATCH)
+			printf(" First_patch");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_PATCHGO)
+			printf(" Patch_go");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_REMASTER)
+			printf(" Remastered");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_PS_CLOUD)
+			printf(" Cloud");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_GD_AC)
+			printf(" AC");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_NON_GAME)
+			printf(" Non_game");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_Unk_x8000000)
+			printf(" Unk_x8000000");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_SUBSEQUENT_PATCH)
+			printf(" Subsequent_patch");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_DELTA_PATCH)
+			printf(" Delta_patch");
+		if (pkgheader.pkg_content_flags & PKG_CONTENT_FLAGS_CUMULATIVE_PATCH)
+			printf(" Cumulative_patch");
+		printf("\n");
 		printf("- PKG promote size: 0x%X\n", pkgheader.pkg_promote_size);
 		printf("- PKG version date: 0x%X\n", pkgheader.pkg_version_date);
 		printf("- PKG version hash: 0x%X\n", pkgheader.pkg_version_hash);
@@ -274,7 +351,14 @@ public:
 		printf("- PKG 0x08C: 0x%X\n", pkgheader.pkg_0x08C);
 		printf("- PKG 0x090: 0x%X\n", pkgheader.pkg_0x090);
 		printf("- PKG 0x094: 0x%X\n", pkgheader.pkg_0x094);
-		printf("- PKG iro tag: 0x%X\n", pkgheader.pkg_iro_tag);
+		printf("- PKG iro tag: 0x%X", pkgheader.pkg_iro_tag);
+		if (pkgheader.pkg_iro_tag == PKG_IRO_TAG_NONE)
+			printf(" None");
+		if (pkgheader.pkg_iro_tag == PKG_IRO_TAG_SF_THEME)
+			printf(" SF Theme");
+		if (pkgheader.pkg_iro_tag == PKG_IRO_TAG_SS_THEME)
+			printf(" SS Theme");
+		printf("\n");
 		printf("- PKG drm type version: 0x%X\n", pkgheader.pkg_drm_type_version);
 
 		printf("- PKG digest_entries1: ");
