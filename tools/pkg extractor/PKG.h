@@ -294,10 +294,10 @@ public:
 			printf(" finalized");
 		printf("\n");
 		printf("- PKG 0x8: 0x%X\n", pkgheader.pkg_0x8);
-		printf("- PKG file count: 0x%X\n", pkgheader.pkg_file_count);
-		printf("- PKG table entries: 0x%X\n", pkgheader.pkg_table_entry_count);
-		printf("- PKG system entries: 0x%X\n", pkgheader.pkg_sc_entry_count);
-		printf("- PKG table entries2: 0x%X\n", pkgheader.pkg_table_entry_count_2);
+		printf("- PKG file count: %u\n", pkgheader.pkg_file_count);
+		printf("- PKG table entries count:  %u\n", pkgheader.pkg_table_entry_count);
+		printf("- PKG system entries count:  %u\n", pkgheader.pkg_sc_entry_count);
+		printf("- PKG table entries2 count:  %u\n", pkgheader.pkg_table_entry_count_2);
 		printf("- PKG table offset: 0x%X\n", pkgheader.pkg_table_entry_offset);
 		printf("- PKG table entry data size: 0x%X\n", pkgheader.pkg_sc_entry_data_size);
 		printf("- PKG body offset: 0x%" PRIx64 "\n", pkgheader.pkg_body_offset);
@@ -394,6 +394,19 @@ public:
 		for (U08 s = 0; s < 0x20; s++)printf("%X", pkgheader.pkg_digest[s]);
 		printf("\n");
 		printf("\n\n");
+	}
+
+	void printPkgFileEntry(PKGEntry entry, std::string name)
+	{
+
+		printf("-PS4 File Entry:\n");
+		printf("--found name: %s\n", name.c_str());
+		printf("--id: 0x%X\n", entry.id);		
+		printf("--filename_offset: 0x%X\n", entry.filename_offset);
+		printf("--flags1: 0x%X\n", entry.flags1);
+		printf("--flags2: 0x%X\n", entry.flags2);
+		printf("--offset: 0x%X\n", entry.offset);
+		printf("--size: 0x%X\n", entry.size);
 	}
 };
 
