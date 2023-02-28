@@ -87,11 +87,13 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 					out.Close();
 
 				}
-				//found an name use it
-				FsFile out;
-				out.Open(extractPath + name, fsWrite);
-				out.Write(pkg + entry.offset, entry.size);
-				out.Close();
+				else
+				{
+					FsFile out;
+					out.Open(extractPath + name, fsWrite);
+					out.Write(pkg + entry.offset, entry.size);
+					out.Close();
+				}
 			}
 			else
 			{
