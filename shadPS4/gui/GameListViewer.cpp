@@ -150,11 +150,11 @@ void GameListWorker::AddEntriesToGameList(const std::string& dir_path) {
 	foreach(QFileInfo item, fList)
 	{
 		PSF psf;
-		if (!psf.open(item.absoluteFilePath().toStdString() + "/PARAM.SFO"))
+		if (!psf.open(item.absoluteFilePath().toStdString() + "/sce_sys/PARAM.SFO"))
 			continue;//if we can't open param.sfo go to the next entry
 
 		//TODO std::string test = psf.get_string("TITLE_ID");
-		QString iconpath(item.absoluteFilePath() + "/ICON0.PNG");
+		QString iconpath(item.absoluteFilePath() + "/sce_sys/ICON0.PNG");
 		QString t;
 		
 		emit EntryReady({

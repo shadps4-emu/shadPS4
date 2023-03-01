@@ -75,13 +75,13 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 			std::string name = getEntryNameByType(entry.id);
 			if (!name.empty())
 			{
-				QString filepath= QString::fromStdString(extractPath+name);
+				QString filepath= QString::fromStdString(extractPath+ "/sce_sys/" + name);
 				QDir dir = QFileInfo(filepath).dir();
 				if (!dir.exists()) {
 					dir.mkpath(dir.path());
 				}
 				FsFile out;
-				out.Open(extractPath + name, fsWrite);
+				out.Open(extractPath + "/sce_sys/" + name, fsWrite);
 				out.Write(pkg + entry.offset, entry.size);
 				out.Close();
 			}
@@ -89,7 +89,7 @@ bool PKG::extract(const std::string& filepath, const std::string& extractPath, s
 			{
 				//just print with id
 				FsFile out;
-				out.Open(extractPath + std::to_string(entry.id), fsWrite);
+				out.Open(extractPath + "/sce_sys/" + std::to_string(entry.id), fsWrite);
 				out.Write(pkg + entry.offset, entry.size);
 				out.Close();
 			}
