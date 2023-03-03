@@ -16,6 +16,7 @@
     <ClCompile Include="emulator\fileFormat\PSF.cpp" />
     <ClCompile Include="emulator\Loader.cpp" />
     <ClCompile Include="gui\GameListViewer.cpp" />
+    <ClCompile Include="gui\gui_settings.cpp" />
     <ClCompile Include="gui\shadps4gui.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -33,6 +34,7 @@
     <ClInclude Include="emulator\fileFormat\PKG.h" />
     <ClInclude Include="emulator\fileFormat\PSF.h" />
     <ClInclude Include="emulator\Loader.h" />
+    <ClInclude Include="gui\gui_settings.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

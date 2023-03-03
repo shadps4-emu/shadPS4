@@ -7,8 +7,9 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 
-shadps4gui::shadps4gui(QWidget *parent)
+shadps4gui::shadps4gui(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QMainWindow(parent)
+	, m_gui_settings(std::move(gui_settings))
 {
 	ui.setupUi(this);
 	game_list = new GameListViewer();
