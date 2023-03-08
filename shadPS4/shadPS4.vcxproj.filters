@@ -59,6 +59,18 @@
     <ClCompile Include="gui\gui_settings.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\custom_table_widget_item.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_table.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_grid_delegate.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_grid.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
@@ -70,6 +82,9 @@
       <Filter>gui</Filter>
     </QtMoc>
     <QtMoc Include="gui\GameListViewer.h">
+      <Filter>gui</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\game_list_grid.h">
       <Filter>gui</Filter>
     </QtMoc>
   </ItemGroup>
@@ -90,6 +105,18 @@
       <Filter>emulator\fileFormat</Filter>
     </ClInclude>
     <ClInclude Include="gui\gui_settings.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="emulator\gameInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\custom_table_widget_item.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\game_list_table.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\game_list_grid_delegate.h">
       <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>

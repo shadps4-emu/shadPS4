@@ -17,6 +17,9 @@
     <ClCompile Include="emulator\Loader.cpp" />
     <ClCompile Include="gui\custom_table_widget_item.cpp" />
     <ClCompile Include="gui\GameListViewer.cpp" />
+    <ClCompile Include="gui\game_list_grid.cpp" />
+    <ClCompile Include="gui\game_list_grid_delegate.cpp" />
+    <ClCompile Include="gui\game_list_table.cpp" />
     <ClCompile Include="gui\gui_settings.cpp" />
     <ClCompile Include="gui\shadps4gui.cpp" />
     <ClCompile Include="main.cpp" />
@@ -37,6 +40,9 @@
     <ClInclude Include="emulator\gameInfo.h" />
     <ClInclude Include="emulator\Loader.h" />
     <ClInclude Include="gui\custom_table_widget_item.h" />
+    <QtMoc Include="gui\game_list_grid.h" />
+    <ClInclude Include="gui\game_list_grid_delegate.h" />
+    <ClInclude Include="gui\game_list_table.h" />
     <ClInclude Include="gui\gui_settings.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
