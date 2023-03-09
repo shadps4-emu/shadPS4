@@ -12,11 +12,14 @@ shadps4gui::shadps4gui(std::shared_ptr<gui_settings> gui_settings, QWidget* pare
 	, m_gui_settings(std::move(gui_settings))
 {
 	ui.setupUi(this);
-	game_list = new GameListViewer();
-	game_list->SetGamePath(QDir::currentPath() + "/game/");
-	ui.horizontalLayout->addWidget(game_list);
+	//game_list = new GameListViewer();
+	//game_list->SetGamePath(QDir::currentPath() + "/game/");
+	//ui.horizontalLayout->addWidget(game_list);
+	//show();
+	//game_list->PopulateAsync();
+	game_list_frame* game_list2 = new game_list_frame();
+	ui.horizontalLayout->addWidget(game_list2);
 	show();
-	game_list->PopulateAsync();
 }
 
 shadps4gui::~shadps4gui()

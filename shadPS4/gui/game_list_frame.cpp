@@ -1,7 +1,43 @@
 #include "game_list_frame.h"
 #include "gui_settings.h"
 
+game_list_frame::game_list_frame(QWidget* parent)
+	: QWidget(parent)
+{
+	m_game_list = new game_list_table();
+	m_game_list->setShowGrid(false);
+	m_game_list->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	m_game_list->setSelectionBehavior(QAbstractItemView::SelectRows);
+	m_game_list->setSelectionMode(QAbstractItemView::SingleSelection);
+	m_game_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+	m_game_list->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+	m_game_list->verticalScrollBar()->installEventFilter(this);
+	m_game_list->verticalScrollBar()->setSingleStep(20);
+	m_game_list->horizontalScrollBar()->setSingleStep(20);
+	m_game_list->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+	m_game_list->verticalHeader()->setVisible(false);
+	m_game_list->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+	m_game_list->horizontalHeader()->setHighlightSections(false);
+	m_game_list->horizontalHeader()->setSortIndicatorShown(true);
+	m_game_list->horizontalHeader()->setStretchLastSection(true);
+	m_game_list->horizontalHeader()->setDefaultSectionSize(150);
+	m_game_list->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+	m_game_list->setContextMenuPolicy(Qt::CustomContextMenu);
+	m_game_list->setAlternatingRowColors(true);
+	m_game_list->installEventFilter(this);
+	m_game_list->setColumnCount(gui::column_count);
 
+	//temp code
+	QVBoxLayout* layout = new QVBoxLayout;
+	layout->setContentsMargins(0, 0, 0, 0);
+	QSpacerItem* item = new QSpacerItem(100, 1, QSizePolicy::Expanding, QSizePolicy::Fixed);
+	layout->addWidget(m_game_list);
+	setLayout(layout);
+	//endof temp code
+}
+game_list_frame::~game_list_frame(){
+
+}
 void game_list_frame::FixNarrowColumns() const
 {
 	qApp->processEvents();

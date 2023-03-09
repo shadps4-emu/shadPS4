@@ -4,10 +4,15 @@
 #include "shadps4gui.h"
 
 #include <QHeaderView>
+#include <QScrollbar>
+#include <QWidget>
 
-class game_list_frame
+class game_list_frame : public QWidget
 {
+	Q_OBJECT
 public :
+	explicit game_list_frame(QWidget* parent = nullptr);
+	~game_list_frame();
 	/** Fix columns with width smaller than the minimal section size */
 	void FixNarrowColumns() const;
 

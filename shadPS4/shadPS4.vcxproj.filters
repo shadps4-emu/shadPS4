@@ -90,6 +90,9 @@
     <QtMoc Include="gui\game_list_grid.h">
       <Filter>gui</Filter>
     </QtMoc>
+    <QtMoc Include="gui\game_list_frame.h">
+      <Filter>gui</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -122,8 +125,8 @@
     <ClInclude Include="gui\game_list_grid_delegate.h">
       <Filter>gui</Filter>
     </ClInclude>
-    <ClInclude Include="gui\game_list_frame.h">
-      <Filter>gui</Filter>
-    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

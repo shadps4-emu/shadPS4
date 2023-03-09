@@ -42,11 +42,14 @@
     <ClInclude Include="emulator\Loader.h" />
     <ClInclude Include="gui\custom_table_widget_item.h" />
     <QtMoc Include="gui\game_list_grid.h" />
-    <ClInclude Include="gui\game_list_frame.h" />
+    <QtMoc Include="gui\game_list_frame.h" />
     <ClInclude Include="gui\game_list_grid_delegate.h" />
     <ClInclude Include="gui\game_list_table.h" />
     <ClInclude Include="gui\gui_settings.h" />
     <ClInclude Include="Types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F005E4D9-1FBE-40B3-9FBD-35CEC59081CD}</ProjectGuid>
