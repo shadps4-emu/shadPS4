@@ -71,6 +71,9 @@
     <ClCompile Include="gui\game_list_grid.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\game_list_frame.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
@@ -117,6 +120,9 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="gui\game_list_grid_delegate.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\game_list_frame.h">
       <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>
