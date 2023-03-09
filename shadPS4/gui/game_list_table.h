@@ -7,6 +7,8 @@
 struct gui_game_info
 {
 	GameInfo info{};
+	QPixmap icon;
+	QPixmap pxmap;
 };
 
 typedef std::shared_ptr<gui_game_info> game_info;
