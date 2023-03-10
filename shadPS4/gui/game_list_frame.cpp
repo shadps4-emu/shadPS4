@@ -1,7 +1,7 @@
 #include "game_list_frame.h"
 #include "gui_settings.h"
 
-game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWidget* parent)
+game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QWidget(parent)
 	, m_gui_settings(std::move(gui_settings))
 {
@@ -88,8 +88,9 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWid
 			configure->addActions(m_columnActs);
 			configure->exec(m_game_list->horizontalHeader()->viewport()->mapToGlobal(pos));
 		});
+	connect(m_game_list->horizontalHeader(), &QHeaderView::sectionClicked, this, &game_list_frame::OnHeaderColumnClicked);
 }
-game_list_frame::~game_list_frame(){
+game_list_frame::~game_list_frame() {
 	SaveSettings();
 }
 void game_list_frame::FixNarrowColumns() const
@@ -200,14 +201,46 @@ void game_list_frame::SortGameList() const
 	// Shorten the last section to remove horizontal scrollbar if possible
 	m_game_list->resizeColumnToContents(gui::column_count - 1);
 }
+
+void game_list_frame::OnHeaderColumnClicked(int col)
+{
+	if (col == 0) return; // Don't "sort" icons.
+
+	if (col == m_sort_column)
+	{
+		m_col_sort_order = (m_col_sort_order == Qt::AscendingOrder) ? Qt::DescendingOrder : Qt::AscendingOrder;
+	}
+	else
+	{
+		m_col_sort_order = Qt::AscendingOrder;
+	}
+	m_sort_column = col;
+
+	m_gui_settings->SetValue(gui::game_list_sortAsc, m_col_sort_order == Qt::AscendingOrder);
+	m_gui_settings->SetValue(gui::game_list_sortCol, col);
+
+	SortGameList();
+}
+
 void game_list_frame::LoadSettings()
 {
+	m_col_sort_order = m_gui_settings->GetValue(gui::game_list_sortAsc).toBool() ? Qt::AscendingOrder : Qt::DescendingOrder;
+	m_sort_column = m_gui_settings->GetValue(gui::game_list_sortCol).toInt();
+
+	const QByteArray state = m_gui_settings->GetValue(gui::game_list_state).toByteArray();
+	if (!m_game_list->horizontalHeader()->restoreState(state) && m_game_list->rowCount())
+	{
+		// If no settings exist, resize to contents.
+		ResizeColumnsToContents();
+	}
+
 	for (int col = 0; col < m_columnActs.count(); ++col)
 	{
 		const bool vis = m_gui_settings->GetGamelistColVisibility(col);
 		m_columnActs[col]->setChecked(vis);
 		m_game_list->setColumnHidden(col, !vis);
 	}
+	SortGameList();
 	FixNarrowColumns();
 
 	m_game_list->horizontalHeader()->restoreState(m_game_list->horizontalHeader()->saveState());
@@ -219,4 +252,7 @@ void game_list_frame::SaveSettings()
 	{
 		m_gui_settings->SetGamelistColVisibility(col, m_columnActs[col]->isChecked());
 	}
+	m_gui_settings->SetValue(gui::game_list_sortCol, m_sort_column);
+	m_gui_settings->SetValue(gui::game_list_sortAsc, m_col_sort_order == Qt::AscendingOrder);
+	m_gui_settings->SetValue(gui::game_list_state, m_game_list->horizontalHeader()->saveState());
 }

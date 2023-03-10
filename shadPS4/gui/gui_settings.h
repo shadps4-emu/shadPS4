@@ -44,6 +44,10 @@ namespace gui
 
 	const QString game_list = "GameList";
 
+	const gui_save game_list_sortAsc = gui_save(game_list, "sortAsc", true);
+	const gui_save game_list_sortCol = gui_save(game_list, "sortCol", 1);
+	const gui_save game_list_state = gui_save(game_list, "state", QByteArray());
+
 }
 
 class gui_settings : public settings

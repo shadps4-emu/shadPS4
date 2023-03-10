@@ -25,6 +25,8 @@ public :
 	/** Resizes the columns to their contents and adds a small spacing */
 	void ResizeColumnsToContents(int spacing = 20) const;
 
+private Q_SLOTS:
+	void OnHeaderColumnClicked(int col);
 private:
 	void SortGameList() const;
 
