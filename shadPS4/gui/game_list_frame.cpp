@@ -80,6 +80,14 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWid
 				}
 			});
 	}
+
+	//events
+	connect(m_game_list->horizontalHeader(), &QHeaderView::customContextMenuRequested, this, [this](const QPoint& pos)
+		{
+			QMenu* configure = new QMenu(this);
+			configure->addActions(m_columnActs);
+			configure->exec(m_game_list->horizontalHeader()->viewport()->mapToGlobal(pos));
+		});
 }
 game_list_frame::~game_list_frame(){
 	SaveSettings();
