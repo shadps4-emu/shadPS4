@@ -1,8 +1,9 @@
 #include "game_list_frame.h"
 #include "gui_settings.h"
 
-game_list_frame::game_list_frame(QWidget* parent)
+game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWidget* parent)
 	: QWidget(parent)
+	, m_gui_settings(std::move(gui_settings))
 {
 	m_game_list = new game_list_table();
 	m_game_list->setShowGrid(false);
@@ -34,6 +35,51 @@ game_list_frame::game_list_frame(QWidget* parent)
 	layout->addWidget(m_game_list);
 	setLayout(layout);
 	//endof temp code
+
+	// Actions regarding showing/hiding columns
+	auto add_column = [this](gui::game_list_columns col, const QString& header_text, const QString& action_text)
+	{
+		m_game_list->setHorizontalHeaderItem(col, new QTableWidgetItem(header_text));
+		m_columnActs.append(new QAction(action_text, this));
+	};
+
+	add_column(gui::column_icon, tr("Icon"), tr("Show Icons"));
+	add_column(gui::column_name, tr("Name"), tr("Show Names"));
+	add_column(gui::column_serial, tr("Serial"), tr("Show Serials"));
+	add_column(gui::column_firmware, tr("Firmware"), tr("Show Firmwares"));
+	add_column(gui::column_version, tr("Version"), tr("Show Versions"));
+	add_column(gui::column_category, tr("Category"), tr("Show Categories"));
+	add_column(gui::column_path, tr("Path"), tr("Show Paths"));
+
+	for (int col = 0; col < m_columnActs.count(); ++col)
+	{
+		m_columnActs[col]->setCheckable(true);
+
+		connect(m_columnActs[col], &QAction::triggered, this, [this, col](bool checked)
+			{
+				if (!checked) // be sure to have at least one column left so you can call the context menu at all time
+				{
+					int c = 0;
+					for (int i = 0; i < m_columnActs.count(); ++i)
+					{
+						if (m_gui_settings->GetGamelistColVisibility(i) && ++c > 1)
+							break;
+					}
+					if (c < 2)
+					{
+						m_columnActs[col]->setChecked(true); // re-enable the checkbox if we don't change the actual state
+						return;
+					}
+				}
+				m_game_list->setColumnHidden(col, !checked); // Negate because it's a set col hidden and we have menu say show.
+				m_gui_settings->SetGamelistColVisibility(col, checked);
+
+				if (checked) // handle hidden columns that have zero width after showing them (stuck between others)
+				{
+					FixNarrowColumns();
+				}
+			});
+	}
 }
 game_list_frame::~game_list_frame(){
 
