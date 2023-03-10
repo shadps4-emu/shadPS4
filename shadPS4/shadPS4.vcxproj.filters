@@ -74,9 +74,6 @@
     <ClCompile Include="gui\game_list_frame.cpp">
       <Filter>gui</Filter>
     </ClCompile>
-    <ClCompile Include="gui\settings.cpp">
-      <Filter>gui</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
@@ -96,12 +93,6 @@
     <QtMoc Include="gui\game_list_frame.h">
       <Filter>gui</Filter>
     </QtMoc>
-    <QtMoc Include="gui\settings.h">
-      <Filter>gui</Filter>
-    </QtMoc>
-    <QtMoc Include="gui\gui_settings.h">
-      <Filter>gui</Filter>
-    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -119,6 +110,9 @@
     <ClInclude Include="emulator\fileFormat\PKG.h">
       <Filter>emulator\fileFormat</Filter>
     </ClInclude>
+    <ClInclude Include="gui\gui_settings.h">
+      <Filter>gui</Filter>
+    </ClInclude>
     <ClInclude Include="emulator\gameInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -129,9 +123,6 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="gui\game_list_grid_delegate.h">
-      <Filter>gui</Filter>
-    </ClInclude>
-    <ClInclude Include="gui\gui_save.h">
       <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>

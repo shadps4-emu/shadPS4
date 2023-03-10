@@ -1,6 +1,6 @@
 #pragma once
 
-#include "settings.h"
+#include <QSettings>
 
 namespace gui
 {
@@ -17,47 +17,15 @@ namespace gui
 		column_count
 	};
 
-	inline QString get_game_list_column_name(game_list_columns col)
-	{
-		switch (col)
-		{
-		case column_icon:
-			return "column_icon";
-		case column_name:
-			return "column_name";
-		case column_serial:
-			return "column_serial";
-		case column_firmware:
-			return "column_firmware";
-		case column_version:
-			return "column_version";
-		case column_category:
-			return "column_category";
-		case column_path:
-			return "column_path";
-		case column_count:
-			return "";
-		}
-
-		throw std::exception("get_game_list_column_name: Invalid column");
-	}
-
-	const QString game_list = "GameList";
-
 }
 
-class gui_settings : public settings
+class gui_settings
 {
-	Q_OBJECT
 
 public:
 	explicit gui_settings(QObject* parent = nullptr);
 
-	bool GetGamelistColVisibility(int col) const;
-
-
-public Q_SLOTS:
-	void SetGamelistColVisibility(int col, bool val) const;
-	static gui_save GetGuiSaveForColumn(int col);
+private:
+	std::unique_ptr<QSettings> m_settings;
 };
 

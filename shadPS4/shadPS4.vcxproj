@@ -22,7 +22,6 @@
     <ClCompile Include="gui\game_list_grid_delegate.cpp" />
     <ClCompile Include="gui\game_list_table.cpp" />
     <ClCompile Include="gui\gui_settings.cpp" />
-    <ClCompile Include="gui\settings.cpp" />
     <ClCompile Include="gui\shadps4gui.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -46,9 +45,7 @@
     <QtMoc Include="gui\game_list_frame.h" />
     <ClInclude Include="gui\game_list_grid_delegate.h" />
     <ClInclude Include="gui\game_list_table.h" />
-    <ClInclude Include="gui\gui_save.h" />
-    <QtMoc Include="gui\gui_settings.h" />
-    <QtMoc Include="gui\settings.h" />
+    <ClInclude Include="gui\gui_settings.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <ItemGroup>
