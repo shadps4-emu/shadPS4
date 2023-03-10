@@ -30,9 +30,14 @@ public :
 	/** Refresh the gamelist with/without loading game data from files. Public so that main frame can refresh after vfs or install */
 	void Refresh(const bool from_drive = false, const bool scroll_after = true);
 
+	/** Repaint Gamelist Icons with new background color */
+	void RepaintIcons(const bool& from_settings = false);
+
+
 private Q_SLOTS:
 	void OnHeaderColumnClicked(int col);
 private:
+	QPixmap PaintedPixmap(const QPixmap& icon) const;
 	void SortGameList() const;
 	std::string CurrentSelectionPath();
 	void PopulateGameList();

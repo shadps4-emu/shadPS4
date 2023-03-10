@@ -2,6 +2,7 @@
 #include "gui_settings.h"
 #include "custom_table_widget_item.h"
 #include "../emulator/fileFormat/PSF.h"
+#include <QPainter>
 
 game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QWidget(parent)
@@ -323,7 +324,7 @@ void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 		const int scroll_position = m_game_list->verticalScrollBar()->value();
 		PopulateGameList();
 		SortGameList();
-		//RepaintIcons();
+		RepaintIcons();
 
 		if (scroll_after)
 		{
@@ -336,7 +337,7 @@ void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 	}
 	else
 	{
-		//RepaintIcons();
+		RepaintIcons();
 	}
 
 
@@ -367,6 +368,7 @@ void game_list_frame::PopulateGameList()
 
 	int row = 0;
 	int index = -1;
+	RepaintIcons();//hackish
 	for (const auto& game : m_game_data)
 	{
 		index++;
@@ -374,6 +376,7 @@ void game_list_frame::PopulateGameList()
 
 		// Icon
 		custom_table_widget_item* icon_item = new custom_table_widget_item;
+		icon_item->setData(Qt::DecorationRole, game->pxmap);
 		
 		icon_item->setData(Qt::UserRole, index, true);
 		icon_item->setData(gui::custom_roles::game_role, QVariant::fromValue(game));
@@ -441,4 +444,72 @@ std::string game_list_frame::CurrentSelectionPath()
 	m_old_layout_is_list = m_is_list_layout;
 
 	return selection;
+}
+
+void game_list_frame::RepaintIcons(const bool& from_settings)
+{
+	for (auto& game : m_game_data)
+	{
+		game->icon.load(QString::fromStdString(game->info.icon_path));
+		game->pxmap = PaintedPixmap(game->icon);
+	}
+	
+}
+
+QPixmap game_list_frame::PaintedPixmap(const QPixmap& icon) const
+{
+	const qreal device_pixel_ratio = devicePixelRatioF();
+	QSize canvas_size(320, 176);
+	QSize icon_size(icon.size());
+	QPoint target_pos;
+
+	if (!icon.isNull())
+	{
+		// Let's upscale the original icon to at least fit into the outer rect of the size of PS3's ICON0.PNG
+		if (icon_size.width() < 320 || icon_size.height() < 176)
+		{
+			icon_size.scale(320, 176, Qt::KeepAspectRatio);
+		}
+
+		canvas_size = icon_size;
+
+		// Calculate the centered size and position of the icon on our canvas.
+		if (icon_size.width() != 320 || icon_size.height() != 176)
+		{
+			constexpr double target_ratio = 320.0 / 176.0; // aspect ratio 20:11
+
+			if ((icon_size.width() / static_cast<double>(icon_size.height())) > target_ratio)
+			{
+				canvas_size.setHeight(std::ceil(icon_size.width() / target_ratio));
+			}
+			else
+			{
+				canvas_size.setWidth(std::ceil(icon_size.height() * target_ratio));
+			}
+
+			target_pos.setX(std::max<int>(0, (canvas_size.width() - icon_size.width()) / 2.0));
+			target_pos.setY(std::max<int>(0, (canvas_size.height() - icon_size.height()) / 2.0));
+		}
+	}
+
+	// Create a canvas large enough to fit our entire scaled icon
+	QPixmap canvas(canvas_size * device_pixel_ratio);
+	canvas.setDevicePixelRatio(device_pixel_ratio);
+	canvas.fill(m_icon_color);
+
+	// Create a painter for our canvas
+	QPainter painter(&canvas);
+	painter.setRenderHint(QPainter::SmoothPixmapTransform);
+
+	// Draw the icon onto our canvas
+	if (!icon.isNull())
+	{
+		painter.drawPixmap(target_pos.x(), target_pos.y(), icon_size.width(), icon_size.height(), icon);
+	}
+
+	// Finish the painting
+	painter.end();
+
+	// Scale and return our final image
+	return canvas.scaled(m_icon_size * device_pixel_ratio, Qt::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation);
 }
