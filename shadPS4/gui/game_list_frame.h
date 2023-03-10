@@ -11,7 +11,7 @@ class game_list_frame : public QWidget
 {
 	Q_OBJECT
 public :
-	explicit game_list_frame(QWidget* parent = nullptr);
+	explicit game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWidget* parent = nullptr);
 	~game_list_frame();
 	/** Fix columns with width smaller than the minimal section size */
 	void FixNarrowColumns() const;
@@ -29,6 +29,7 @@ private:
 	int m_sort_column;
 
 	// data
+	std::shared_ptr<gui_settings> m_gui_settings;
 	QList<game_info> m_game_data;
 
 	// Icons
