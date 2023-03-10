@@ -19,6 +19,7 @@ shadps4gui::shadps4gui(std::shared_ptr<gui_settings> gui_settings, QWidget* pare
 	//game_list->PopulateAsync();
 	game_list_frame* game_list2 = new game_list_frame(m_gui_settings);
 	ui.horizontalLayout->addWidget(game_list2);
+	game_list2->LoadSettings();
 	show();
 }
 

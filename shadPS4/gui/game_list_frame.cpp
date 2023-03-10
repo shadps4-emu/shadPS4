@@ -82,7 +82,7 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings,QWid
 	}
 }
 game_list_frame::~game_list_frame(){
-
+	SaveSettings();
 }
 void game_list_frame::FixNarrowColumns() const
 {
@@ -191,4 +191,24 @@ void game_list_frame::SortGameList() const
 
 	// Shorten the last section to remove horizontal scrollbar if possible
 	m_game_list->resizeColumnToContents(gui::column_count - 1);
+}
+void game_list_frame::LoadSettings()
+{
+	for (int col = 0; col < m_columnActs.count(); ++col)
+	{
+		const bool vis = m_gui_settings->GetGamelistColVisibility(col);
+		m_columnActs[col]->setChecked(vis);
+		m_game_list->setColumnHidden(col, !vis);
+	}
+	FixNarrowColumns();
+
+	m_game_list->horizontalHeader()->restoreState(m_game_list->horizontalHeader()->saveState());
+
+}
+void game_list_frame::SaveSettings()
+{
+	for (int col = 0; col < m_columnActs.count(); ++col)
+	{
+		m_gui_settings->SetGamelistColVisibility(col, m_columnActs[col]->isChecked());
+	}
 }

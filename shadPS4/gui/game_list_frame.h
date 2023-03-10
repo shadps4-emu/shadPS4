@@ -16,6 +16,12 @@ public :
 	/** Fix columns with width smaller than the minimal section size */
 	void FixNarrowColumns() const;
 
+	/** Loads from settings. Public so that main frame can easily reset these settings if needed. */
+	void LoadSettings();
+
+	/** Saves settings. Public so that main frame can save this when a caching of column widths is needed for settings backup */
+	void SaveSettings();
+
 	/** Resizes the columns to their contents and adds a small spacing */
 	void ResizeColumnsToContents(int spacing = 20) const;
 
