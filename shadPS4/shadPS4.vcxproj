@@ -51,9 +51,6 @@
     <QtMoc Include="gui\settings.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F005E4D9-1FBE-40B3-9FBD-35CEC59081CD}</ProjectGuid>
     <Keyword>QtVS_v304</Keyword>
