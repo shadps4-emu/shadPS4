@@ -1,8 +1,10 @@
 #include "game_list_frame.h"
 #include "gui_settings.h"
 #include "custom_table_widget_item.h"
+#include "qt_utils.h"
 #include "../emulator/fileFormat/PSF.h"
 #include <QPainter>
+#include <unordered_set>
 
 game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QWidget(parent)
@@ -107,10 +109,19 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWi
 			configure->exec(m_game_list->horizontalHeader()->viewport()->mapToGlobal(pos));
 		});
 	connect(m_game_list->horizontalHeader(), &QHeaderView::sectionClicked, this, &game_list_frame::OnHeaderColumnClicked);
+	connect(&m_repaint_watcher, &QFutureWatcher<game_list_item*>::resultReadyAt, this, [this](int index)
+		{
+			if (!m_is_list_layout) return;
+			if (game_list_item* item = m_repaint_watcher.resultAt(index))
+			{
+				item->call_icon_func();
+			}
+		});
 
 	Refresh();//TODO remove when watchers added
 }
 game_list_frame::~game_list_frame() {
+	gui::utils::stop_future_watcher(m_repaint_watcher, true);
 	SaveSettings();
 }
 void game_list_frame::FixNarrowColumns() const
@@ -368,7 +379,7 @@ void game_list_frame::PopulateGameList()
 
 	int row = 0;
 	int index = -1;
-	RepaintIcons();//hackish
+	//RepaintIcons();//hackish
 	for (const auto& game : m_game_data)
 	{
 		index++;
@@ -376,7 +387,12 @@ void game_list_frame::PopulateGameList()
 
 		// Icon
 		custom_table_widget_item* icon_item = new custom_table_widget_item;
-		icon_item->setData(Qt::DecorationRole, game->pxmap);
+		game->item = icon_item;
+		icon_item->set_icon_func([this, icon_item, game](int)
+		{
+			icon_item->setData(Qt::DecorationRole, game->pxmap);
+			game->pxmap = {};
+		});
 		
 		icon_item->setData(Qt::UserRole, index, true);
 		icon_item->setData(gui::custom_roles::game_role, QVariant::fromValue(game));
@@ -448,12 +464,44 @@ std::string game_list_frame::CurrentSelectionPath()
 
 void game_list_frame::RepaintIcons(const bool& from_settings)
 {
-	for (auto& game : m_game_data)
+	gui::utils::stop_future_watcher(m_repaint_watcher, true);
+
+	if (from_settings)
 	{
-		game->icon.load(QString::fromStdString(game->info.icon_path));
-		game->pxmap = PaintedPixmap(game->icon);
+		//TODO m_icon_color = gui::utils::get_label_color("gamelist_icon_background_color");
 	}
-	
+
+	if (m_is_list_layout)
+	{
+		QPixmap placeholder(m_icon_size);
+		placeholder.fill(Qt::transparent);
+
+		for (auto& game : m_game_data)
+		{
+			game->pxmap = placeholder;
+		}
+
+		// Fixate vertical header and row height
+		m_game_list->verticalHeader()->setMinimumSectionSize(m_icon_size.height());
+		m_game_list->verticalHeader()->setMaximumSectionSize(m_icon_size.height());
+
+		// Resize the icon column
+		m_game_list->resizeColumnToContents(gui::column_icon);
+
+		// Shorten the last section to remove horizontal scrollbar if possible
+		m_game_list->resizeColumnToContents(gui::column_count - 1);
+	}
+
+	const std::function func = [this](const game_info& game) -> game_list_item*
+	{
+		if (game->icon.isNull() && (game->info.icon_path.empty() || !game->icon.load(QString::fromStdString(game->info.icon_path))))
+		{
+			//TODO added warning message if no found
+		}
+		game->pxmap = PaintedPixmap(game->icon);
+		return game->item;
+	};
+	m_repaint_watcher.setFuture(QtConcurrent::mapped(m_game_data, func));
 }
 
 QPixmap game_list_frame::PaintedPixmap(const QPixmap& icon) const

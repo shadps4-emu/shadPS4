@@ -3,11 +3,13 @@
 #include "game_list_table.h"
 #include "shadps4gui.h"
 #include "game_list_grid.h"
-
+#include "game_list_item.h"
 #include <QHeaderView>
 #include <QScrollbar>
 #include <QWidget>
 #include <deque>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 class game_list_frame : public QWidget
 {
@@ -60,6 +62,7 @@ private:
 	QList<game_info> m_game_data;
 	std::vector<std::string> m_path_list;
 	std::deque<game_info> m_games;
+	QFutureWatcher<game_list_item*> m_repaint_watcher;
 
 	// Icons
 	QSize m_icon_size;
