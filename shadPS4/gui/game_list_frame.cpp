@@ -110,13 +110,14 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWi
 		});
 	connect(m_game_list->horizontalHeader(), &QHeaderView::sectionClicked, this, &game_list_frame::OnHeaderColumnClicked);
 	connect(&m_repaint_watcher, &QFutureWatcher<game_list_item*>::resultReadyAt, this, [this](int index)
+	{
+		if (!m_is_list_layout) return;
+		if (game_list_item* item = m_repaint_watcher.resultAt(index))
 		{
-			if (!m_is_list_layout) return;
-			if (game_list_item* item = m_repaint_watcher.resultAt(index))
-			{
 				item->call_icon_func();
-			}
-		});
+		}
+	});
+	connect(&m_repaint_watcher, &QFutureWatcher<game_list_item*>::finished, this, &game_list_frame::OnRepaintFinished);
 
 	Refresh();//TODO remove when watchers added
 }
@@ -279,6 +280,28 @@ void game_list_frame::LoadSettings()
 	m_game_list->horizontalHeader()->restoreState(m_game_list->horizontalHeader()->saveState());
 
 }
+
+void game_list_frame::OnRepaintFinished()
+{
+	if (m_is_list_layout)
+	{
+		// Fixate vertical header and row height
+		m_game_list->verticalHeader()->setMinimumSectionSize(m_icon_size.height());
+		m_game_list->verticalHeader()->setMaximumSectionSize(m_icon_size.height());
+
+		// Resize the icon column
+		m_game_list->resizeColumnToContents(gui::column_icon);
+
+		// Shorten the last section to remove horizontal scrollbar if possible
+		m_game_list->resizeColumnToContents(gui::column_count - 1);
+	}
+	else
+	{
+		// The game grid needs to be recreated from scratch
+		//TODO !!
+	}
+}
+
 void game_list_frame::SaveSettings()
 {
 	for (int col = 0; col < m_columnActs.count(); ++col)

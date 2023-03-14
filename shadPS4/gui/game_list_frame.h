@@ -38,6 +38,7 @@ public :
 
 private Q_SLOTS:
 	void OnHeaderColumnClicked(int col);
+	void OnRepaintFinished();
 private:
 	QPixmap PaintedPixmap(const QPixmap& icon) const;
 	void SortGameList() const;
