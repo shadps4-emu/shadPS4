@@ -39,6 +39,7 @@ public :
 private Q_SLOTS:
 	void OnHeaderColumnClicked(int col);
 	void OnRepaintFinished();
+	void OnRefreshFinished();
 private:
 	QPixmap PaintedPixmap(const QPixmap& icon) const;
 	void SortGameList() const;
@@ -64,6 +65,7 @@ private:
 	std::vector<std::string> m_path_list;
 	std::deque<game_info> m_games;
 	QFutureWatcher<game_list_item*> m_repaint_watcher;
+	QFutureWatcher<void> m_refresh_watcher;
 
 	// Icons
 	QSize m_icon_size;
