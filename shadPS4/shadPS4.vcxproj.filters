@@ -77,9 +77,15 @@
     <ClCompile Include="gui\settings.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\main_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="gui\main_window.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
@@ -101,6 +107,9 @@
     </QtMoc>
     <QtMoc Include="gui\gui_settings.h">
       <Filter>gui</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\main_window.h">
+      <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -134,8 +143,14 @@
     <ClInclude Include="gui\gui_save.h">
       <Filter>gui</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
+    <ClInclude Include="gui\game_list_item.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\qt_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\custom_dock_widget.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

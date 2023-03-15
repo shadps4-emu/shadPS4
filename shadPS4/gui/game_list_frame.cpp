@@ -7,7 +7,7 @@
 #include <unordered_set>
 
 game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
-	: QWidget(parent)
+	: custom_dock_widget(tr("Game List"), parent)
 	, m_gui_settings(std::move(gui_settings))
 {
 	m_icon_size = gui::game_list_icon_size_min; // ensure a valid size
@@ -24,6 +24,12 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWi
 	m_gui_settings->SetValue(gui::game_list_iconColor, m_icon_color);
 	m_gui_settings->SetValue(gui::game_list_marginFactor, m_margin_factor);
 	m_gui_settings->SetValue(gui::game_list_textFactor, m_text_factor);
+
+	m_game_dock = new QMainWindow(this);
+	m_game_dock->setWindowFlags(Qt::Widget);
+	setWidget(m_game_dock);
+
+	m_game_grid = new game_list_grid(QSize(), m_icon_color, m_margin_factor, m_text_factor, false);
 
 	m_game_list = new game_list_table();
 	m_game_list->setShowGrid(false);
@@ -48,13 +54,12 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWi
 	m_game_list->installEventFilter(this);
 	m_game_list->setColumnCount(gui::column_count);
 
-	//temp code
-	QVBoxLayout* layout = new QVBoxLayout;
-	layout->setContentsMargins(0, 0, 0, 0);
-	QSpacerItem* item = new QSpacerItem(100, 1, QSizePolicy::Expanding, QSizePolicy::Fixed);
-	layout->addWidget(m_game_list);
-	setLayout(layout);
-	//endof temp code
+	m_central_widget = new QStackedWidget(this);
+	m_central_widget->addWidget(m_game_list);
+	m_central_widget->addWidget(m_game_grid);
+	m_central_widget->setCurrentWidget(m_is_list_layout ? m_game_list : m_game_grid);
+
+	m_game_dock->setCentralWidget(m_central_widget);
 
 	// Actions regarding showing/hiding columns
 	auto add_column = [this](gui::game_list_columns col, const QString& header_text, const QString& action_text)

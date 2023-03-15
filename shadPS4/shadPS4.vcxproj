@@ -22,6 +22,7 @@
     <ClCompile Include="gui\game_list_grid_delegate.cpp" />
     <ClCompile Include="gui\game_list_table.cpp" />
     <ClCompile Include="gui\gui_settings.cpp" />
+    <ClCompile Include="gui\main_window.cpp" />
     <ClCompile Include="gui\settings.cpp" />
     <ClCompile Include="gui\shadps4gui.cpp" />
     <ClCompile Include="main.cpp" />
@@ -30,6 +31,7 @@
     <QtMoc Include="gui\shadps4gui.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="gui\main_window.ui" />
     <QtUic Include="gui\shadps4gui.ui" />
   </ItemGroup>
   <ItemGroup>
@@ -41,6 +43,7 @@
     <ClInclude Include="emulator\fileFormat\PSF.h" />
     <ClInclude Include="emulator\gameInfo.h" />
     <ClInclude Include="emulator\Loader.h" />
+    <ClInclude Include="gui\custom_dock_widget.h" />
     <ClInclude Include="gui\custom_table_widget_item.h" />
     <QtMoc Include="gui\game_list_grid.h" />
     <QtMoc Include="gui\game_list_frame.h" />
@@ -50,6 +53,7 @@
     <ClInclude Include="gui\gui_save.h" />
     <QtMoc Include="gui\gui_settings.h" />
     <QtMoc Include="gui\settings.h" />
+    <QtMoc Include="gui\main_window.h" />
     <ClInclude Include="gui\qt_utils.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>

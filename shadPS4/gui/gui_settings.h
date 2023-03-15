@@ -53,9 +53,14 @@ namespace gui
 	const QSize game_list_icon_size_medium = QSize(160, 88);
 	const QSize game_list_icon_size_max = QSize(320, 176);
 
+	const int game_list_max_slider_pos = 100;
+
+	const QString main_window = "main_window";
 	const QString game_list = "GameList";
 
 	const QColor game_list_icon_color = QColor(240, 240, 240, 255);
+
+	const gui_save main_window_gamelist_visible = gui_save(main_window, "gamelistVisible", true);
 
 	const gui_save game_list_sortAsc = gui_save(game_list, "sortAsc", true);
 	const gui_save game_list_sortCol = gui_save(game_list, "sortCol", 1);

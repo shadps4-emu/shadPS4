@@ -1,17 +1,19 @@
 #pragma once
 
 #include "game_list_table.h"
+#include "custom_dock_widget.h"
 #include "shadps4gui.h"
 #include "game_list_grid.h"
 #include "game_list_item.h"
 #include <QHeaderView>
 #include <QScrollbar>
+#include <QStackedWidget>
 #include <QWidget>
 #include <deque>
 #include <QFutureWatcher>
 #include <QtConcurrent>
 
-class game_list_frame : public QWidget
+class game_list_frame : public custom_dock_widget
 {
 	Q_OBJECT
 public :
@@ -40,11 +42,17 @@ private Q_SLOTS:
 	void OnHeaderColumnClicked(int col);
 	void OnRepaintFinished();
 	void OnRefreshFinished();
+Q_SIGNALS:
+	void GameListFrameClosed();
 private:
 	QPixmap PaintedPixmap(const QPixmap& icon) const;
 	void SortGameList() const;
 	std::string CurrentSelectionPath();
 	void PopulateGameList();
+
+	// Which widget we are displaying depends on if we are in grid or list mode.
+	QMainWindow* m_game_dock = nullptr;
+	QStackedWidget* m_central_widget = nullptr;
 
 	// Game Grid
 	game_list_grid* m_game_grid = nullptr;
