@@ -68,6 +68,9 @@ namespace gui
 	const QColor game_list_icon_color = QColor(240, 240, 240, 255);
 
 	const gui_save main_window_gamelist_visible = gui_save(main_window, "gamelistVisible", true);
+	const gui_save main_window_geometry = gui_save(main_window, "geometry", QByteArray());
+	const gui_save main_window_windowState = gui_save(main_window, "windowState", QByteArray());
+	const gui_save main_window_mwState = gui_save(main_window, "mwState", QByteArray());
 
 	const gui_save game_list_sortAsc = gui_save(game_list, "sortAsc", true);
 	const gui_save game_list_sortCol = gui_save(game_list, "sortCol", 1);

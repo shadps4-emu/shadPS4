@@ -6,6 +6,7 @@
 main_window::main_window(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QMainWindow(parent)
 	, ui(new Ui::main_window)
+	, m_gui_settings(std::move(gui_settings))
 {
 
 	ui->setupUi(this);
@@ -15,7 +16,7 @@ main_window::main_window(std::shared_ptr<gui_settings> gui_settings, QWidget* pa
 
 main_window::~main_window()
 {
-
+	SaveWindowState();
 }
 
 bool main_window::Init()
@@ -34,6 +35,11 @@ bool main_window::Init()
 	setWindowTitle(QString::fromStdString("ShadPS4 v0.0.2"));
 
 	ConfigureGuiFromSettings();
+
+	show();
+
+	// Fix possible hidden game list columns. The game list has to be visible already. Use this after show()
+	m_game_list_frame->FixNarrowColumns();
 
 	return true;
 }
@@ -185,5 +191,42 @@ void main_window::ResizeIcons(int index)
 }
 void main_window::ConfigureGuiFromSettings()
 {
+	// Restore GUI state if needed. We need to if they exist.
+	if (!restoreGeometry(m_gui_settings->GetValue(gui::main_window_geometry).toByteArray()))
+	{
+		resize(QGuiApplication::primaryScreen()->availableSize() * 0.7);
+	}
 
+	restoreState(m_gui_settings->GetValue(gui::main_window_windowState).toByteArray());
+	m_main_window->restoreState(m_gui_settings->GetValue(gui::main_window_mwState).toByteArray());
+
+	ui->showGameListAct->setChecked(m_gui_settings->GetValue(gui::main_window_gamelist_visible).toBool());
+
+	m_game_list_frame->setVisible(ui->showGameListAct->isChecked());
+
+	// handle icon size options
+	m_is_list_mode = m_gui_settings->GetValue(gui::game_list_listMode).toBool();
+	if (m_is_list_mode)
+		ui->setlistModeListAct->setChecked(true);
+	else
+		ui->setlistModeGridAct->setChecked(true);
+
+	const int icon_size_index = m_gui_settings->GetValue(m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid).toInt();
+	m_other_slider_pos = m_gui_settings->GetValue(!m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid).toInt();
+	ui->sizeSlider->setSliderPosition(icon_size_index);
+	SetIconSizeActions(icon_size_index);
+
+	// Gamelist
+	m_game_list_frame->LoadSettings();
+}
+
+void main_window::SaveWindowState() const
+{
+	// Save gui settings
+	m_gui_settings->SetValue(gui::main_window_geometry, saveGeometry());
+	m_gui_settings->SetValue(gui::main_window_windowState, saveState());
+	m_gui_settings->SetValue(gui::main_window_mwState, m_main_window->saveState());
+
+	// Save column settings
+	m_game_list_frame->SaveSettings();
 }

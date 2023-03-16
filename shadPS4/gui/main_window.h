@@ -30,6 +30,7 @@ private Q_SLOTS:
 	void ConfigureGuiFromSettings();
 	void SetIconSizeActions(int idx) const;
 	void ResizeIcons(int index);
+	void SaveWindowState() const;
 private:
 	void CreateActions();
 	void CreateDockWindows();
