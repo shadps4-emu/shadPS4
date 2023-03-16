@@ -37,13 +37,22 @@ public :
 	/** Repaint Gamelist Icons with new background color */
 	void RepaintIcons(const bool& from_settings = false);
 
+	/** Resize Gamelist Icons to size given by slider position */
+	void ResizeIcons(const int& slider_pos);
 
+public Q_SLOTS:
+	void SetSearchText(const QString& text);
+	void SetListMode(const bool& is_list);
 private Q_SLOTS:
 	void OnHeaderColumnClicked(int col);
 	void OnRepaintFinished();
 	void OnRefreshFinished();
 Q_SIGNALS:
 	void GameListFrameClosed();
+	void RequestIconSizeChange(const int& val);
+protected:
+	void closeEvent(QCloseEvent* event) override;
+	void resizeEvent(QResizeEvent* event) override;
 private:
 	QPixmap PaintedPixmap(const QPixmap& icon) const;
 	void SortGameList() const;
@@ -74,6 +83,12 @@ private:
 	std::deque<game_info> m_games;
 	QFutureWatcher<game_list_item*> m_repaint_watcher;
 	QFutureWatcher<void> m_refresh_watcher;
+
+	// Search
+	QString m_search_text;
+
+	// Icon Size
+	int m_icon_size_index = 0;
 
 	// Icons
 	QSize m_icon_size;

@@ -55,6 +55,13 @@ namespace gui
 
 	const int game_list_max_slider_pos = 100;
 
+	inline int get_Index(const QSize& current)
+	{
+		const int size_delta = game_list_icon_size_max.width() - game_list_icon_size_min.width();
+		const int current_delta = current.width() - game_list_icon_size_min.width();
+		return game_list_max_slider_pos * current_delta / size_delta;
+	}
+
 	const QString main_window = "main_window";
 	const QString game_list = "GameList";
 
@@ -65,6 +72,8 @@ namespace gui
 	const gui_save game_list_sortAsc = gui_save(game_list, "sortAsc", true);
 	const gui_save game_list_sortCol = gui_save(game_list, "sortCol", 1);
 	const gui_save game_list_state = gui_save(game_list, "state", QByteArray());
+	const gui_save game_list_iconSize = gui_save(game_list, "iconSize", get_Index(game_list_icon_size_small));
+	const gui_save game_list_iconSizeGrid = gui_save(game_list, "iconSizeGrid", get_Index(game_list_icon_size_small));
 	const gui_save game_list_iconColor = gui_save(game_list, "iconColor", game_list_icon_color);
 	const gui_save game_list_listMode = gui_save(game_list, "listMode", true);
 	const gui_save game_list_textFactor = gui_save(game_list, "textFactor", qreal{ 2.0 });
@@ -86,5 +95,6 @@ public:
 public Q_SLOTS:
 	void SetGamelistColVisibility(int col, bool val) const;
 	static gui_save GetGuiSaveForColumn(int col);
+	static QSize SizeFromSlider(int pos);
 };
 

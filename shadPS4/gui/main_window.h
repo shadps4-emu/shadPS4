@@ -26,9 +26,14 @@ public:
 	~main_window();
 	bool Init();
 
+private Q_SLOTS:
+	void ConfigureGuiFromSettings();
+	void SetIconSizeActions(int idx) const;
+	void ResizeIcons(int index);
 private:
 	void CreateActions();
 	void CreateDockWindows();
+	void CreateConnects();
 
 	QActionGroup* m_icon_size_act_group = nullptr;
 	QActionGroup* m_list_mode_act_group = nullptr;

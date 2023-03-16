@@ -609,3 +609,40 @@ QPixmap game_list_frame::PaintedPixmap(const QPixmap& icon) const
 	// Scale and return our final image
 	return canvas.scaled(m_icon_size * device_pixel_ratio, Qt::KeepAspectRatio, Qt::TransformationMode::SmoothTransformation);
 }
+void game_list_frame::SetListMode(const bool& is_list)
+{
+	m_old_layout_is_list = m_is_list_layout;
+	m_is_list_layout = is_list;
+
+	m_gui_settings->SetValue(gui::game_list_listMode, is_list);
+
+	Refresh(true);
+
+	m_central_widget->setCurrentWidget(m_is_list_layout ? m_game_list : m_game_grid);
+}
+void game_list_frame::SetSearchText(const QString& text)
+{
+	m_search_text = text;
+	Refresh();
+}
+void game_list_frame::closeEvent(QCloseEvent* event)
+{
+	QDockWidget::closeEvent(event);
+	Q_EMIT GameListFrameClosed();
+}
+
+void game_list_frame::resizeEvent(QResizeEvent* event)
+{
+	if (!m_is_list_layout)
+	{
+		Refresh(false, m_game_grid->selectedItems().count());
+	}
+	QDockWidget::resizeEvent(event);
+}
+void game_list_frame::ResizeIcons(const int& slider_pos)
+{
+	m_icon_size_index = slider_pos;
+	m_icon_size = gui_settings::SizeFromSlider(slider_pos);
+
+	RepaintIcons();
+}

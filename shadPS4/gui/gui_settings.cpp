@@ -20,3 +20,7 @@ gui_save gui_settings::GetGuiSaveForColumn(int col)
 {
 	return gui_save{ gui::game_list, "visibility_" + gui::get_game_list_column_name(static_cast<gui::game_list_columns>(col)), true };
 }
+QSize gui_settings::SizeFromSlider(int pos)
+{
+	return gui::game_list_icon_size_min + (gui::game_list_icon_size_max - gui::game_list_icon_size_min) * (1.f * pos / gui::game_list_max_slider_pos);
+}
