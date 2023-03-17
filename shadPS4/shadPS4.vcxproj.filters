@@ -33,6 +33,12 @@
     <Filter Include="emulator\fileFormat">
       <UniqueIdentifier>{ed31734c-f010-4590-9f01-18e0b2497ffb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gui\game list">
+      <UniqueIdentifier>{b4b58418-b124-41bb-96ef-610faa1c8812}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui\main window">
+      <UniqueIdentifier>{731089fd-7d11-4f10-8f55-4854c2e42e9e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -59,25 +65,34 @@
     <ClCompile Include="gui\gui_settings.cpp">
       <Filter>gui</Filter>
     </ClCompile>
-    <ClCompile Include="gui\custom_table_widget_item.cpp">
-      <Filter>gui</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\game_list_table.cpp">
-      <Filter>gui</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\game_list_grid_delegate.cpp">
-      <Filter>gui</Filter>
-    </ClCompile>
-    <ClCompile Include="gui\game_list_grid.cpp">
+    <ClCompile Include="gui\settings.cpp">
       <Filter>gui</Filter>
     </ClCompile>
     <ClCompile Include="gui\game_list_frame.cpp">
-      <Filter>gui</Filter>
+      <Filter>gui\game list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_grid.cpp">
+      <Filter>gui\game list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_grid_delegate.cpp">
+      <Filter>gui\game list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\game_list_table.cpp">
+      <Filter>gui\game list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\custom_table_widget_item.cpp">
+      <Filter>gui\game list</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\main_window.cpp">
+      <Filter>gui\main window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="gui\shadps4gui.ui">
       <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="gui\main_window.ui">
+      <Filter>gui\main window</Filter>
     </QtUic>
   </ItemGroup>
   <ItemGroup>
@@ -87,8 +102,20 @@
     <QtMoc Include="gui\GameListViewer.h">
       <Filter>gui</Filter>
     </QtMoc>
-    <QtMoc Include="gui\game_list_grid.h">
+    <QtMoc Include="gui\settings.h">
       <Filter>gui</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\gui_settings.h">
+      <Filter>gui</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\game_list_frame.h">
+      <Filter>gui\game list</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\game_list_grid.h">
+      <Filter>gui\game list</Filter>
+    </QtMoc>
+    <QtMoc Include="gui\main_window.h">
+      <Filter>gui\main window</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -107,23 +134,29 @@
     <ClInclude Include="emulator\fileFormat\PKG.h">
       <Filter>emulator\fileFormat</Filter>
     </ClInclude>
-    <ClInclude Include="gui\gui_settings.h">
-      <Filter>gui</Filter>
-    </ClInclude>
     <ClInclude Include="emulator\gameInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\custom_table_widget_item.h">
+    <ClInclude Include="gui\gui_save.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\game_list_item.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\qt_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\custom_dock_widget.h">
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="gui\game_list_table.h">
-      <Filter>gui</Filter>
+      <Filter>gui\game list</Filter>
     </ClInclude>
     <ClInclude Include="gui\game_list_grid_delegate.h">
-      <Filter>gui</Filter>
+      <Filter>gui\game list</Filter>
     </ClInclude>
-    <ClInclude Include="gui\game_list_frame.h">
-      <Filter>gui</Filter>
+    <ClInclude Include="gui\custom_table_widget_item.h">
+      <Filter>gui\game list</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

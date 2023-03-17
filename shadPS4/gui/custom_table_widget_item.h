@@ -1,7 +1,8 @@
 #pragma once
+#include "game_list_item.h"
 #include <QTableWidgetItem>
 
-class custom_table_widget_item : public QTableWidgetItem
+class custom_table_widget_item : public game_list_item
 {
 private:
 	int m_sort_role = Qt::DisplayRole;

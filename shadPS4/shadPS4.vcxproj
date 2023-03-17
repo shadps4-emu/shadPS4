@@ -22,6 +22,8 @@
     <ClCompile Include="gui\game_list_grid_delegate.cpp" />
     <ClCompile Include="gui\game_list_table.cpp" />
     <ClCompile Include="gui\gui_settings.cpp" />
+    <ClCompile Include="gui\main_window.cpp" />
+    <ClCompile Include="gui\settings.cpp" />
     <ClCompile Include="gui\shadps4gui.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -29,6 +31,7 @@
     <QtMoc Include="gui\shadps4gui.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtUic Include="gui\main_window.ui" />
     <QtUic Include="gui\shadps4gui.ui" />
   </ItemGroup>
   <ItemGroup>
@@ -40,12 +43,18 @@
     <ClInclude Include="emulator\fileFormat\PSF.h" />
     <ClInclude Include="emulator\gameInfo.h" />
     <ClInclude Include="emulator\Loader.h" />
+    <ClInclude Include="gui\custom_dock_widget.h" />
     <ClInclude Include="gui\custom_table_widget_item.h" />
     <QtMoc Include="gui\game_list_grid.h" />
-    <ClInclude Include="gui\game_list_frame.h" />
+    <QtMoc Include="gui\game_list_frame.h" />
     <ClInclude Include="gui\game_list_grid_delegate.h" />
+    <ClInclude Include="gui\game_list_item.h" />
     <ClInclude Include="gui\game_list_table.h" />
-    <ClInclude Include="gui\gui_settings.h" />
+    <ClInclude Include="gui\gui_save.h" />
+    <QtMoc Include="gui\gui_settings.h" />
+    <QtMoc Include="gui\settings.h" />
+    <QtMoc Include="gui\main_window.h" />
+    <ClInclude Include="gui\qt_utils.h" />
     <ClInclude Include="Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -70,12 +79,12 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>6.4.2</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core;gui;widgets;concurrent</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>6.4.2</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core;gui;widgets;concurrent</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">

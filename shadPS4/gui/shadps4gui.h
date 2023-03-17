@@ -4,6 +4,7 @@
 #include "ui_shadps4gui.h"
 #include "GameListViewer.h"
 #include "gui_settings.h"
+#include "game_list_frame.h"
 
 class shadps4gui : public QMainWindow
 {

@@ -400,3 +400,4 @@ FodyWeavers.xsd
 /shadPS4/psf.txt
 /tools/pkg extractor/game/*
 /tools/pkg extractor/*.pkg
+/shadPS4/shadps4.ini
