@@ -133,8 +133,6 @@ game_list_frame::game_list_frame(std::shared_ptr<gui_settings> gui_settings, QWi
 		m_game_data.clear();
 		m_games.clear();
 	});
-
-	Refresh();//TODO remove when watchers added
 }
 game_list_frame::~game_list_frame() {
 	gui::utils::stop_future_watcher(m_repaint_watcher, true);
@@ -144,34 +142,23 @@ game_list_frame::~game_list_frame() {
 
 void game_list_frame::OnRefreshFinished()
 {
-
-}
-
-void game_list_frame::LoadSettings()
-{
-	m_col_sort_order = m_gui_settings->GetValue(gui::game_list_sortAsc).toBool() ? Qt::AscendingOrder : Qt::DescendingOrder;
-	m_sort_column = m_gui_settings->GetValue(gui::game_list_sortCol).toInt();
-
-	Refresh(true);
-
-	const QByteArray state = m_gui_settings->GetValue(gui::game_list_state).toByteArray();
-	if (!m_game_list->horizontalHeader()->restoreState(state) && m_game_list->rowCount())
+	gui::utils::stop_future_watcher(m_repaint_watcher, true);
+	for (auto&& g : m_games)
 	{
-		// If no settings exist, resize to contents.
-		ResizeColumnsToContents();
+		m_game_data.push_back(g);
 	}
-
-	for (int col = 0; col < m_columnActs.count(); ++col)
+	m_games.clear();
+	// Sort by name at the very least.
+	std::sort(m_game_data.begin(), m_game_data.end(), [&](const game_info& game1, const game_info& game2)
 	{
-		const bool vis = m_gui_settings->GetGamelistColVisibility(col);
-		m_columnActs[col]->setChecked(vis);
-		m_game_list->setColumnHidden(col, !vis);
-	}
-	SortGameList();
-	FixNarrowColumns();
+		const QString title1 = m_titles.value(QString::fromStdString(game1->info.serial), QString::fromStdString(game1->info.name));
+		const QString title2 = m_titles.value(QString::fromStdString(game2->info.serial), QString::fromStdString(game2->info.name));
+		return title1.toLower() < title2.toLower();
+	});
 
-	m_game_list->horizontalHeader()->restoreState(m_game_list->horizontalHeader()->saveState());
+	m_path_list.clear();
 
+	Refresh();
 }
 
 void game_list_frame::OnRepaintFinished()
@@ -191,19 +178,114 @@ void game_list_frame::OnRepaintFinished()
 	else
 	{
 		// The game grid needs to be recreated from scratch
-		//TODO !!
+		int games_per_row = 0;
+
+		if (m_icon_size.width() > 0 && m_icon_size.height() > 0)
+		{
+			games_per_row = width() / (m_icon_size.width() + m_icon_size.width() * m_game_grid->getMarginFactor() * 2);
+		}
+
+		const int scroll_position = m_game_grid->verticalScrollBar()->value();
+		//TODO add connections
+		PopulateGameGrid(games_per_row, m_icon_size, m_icon_color);
+		m_central_widget->addWidget(m_game_grid);
+		m_central_widget->setCurrentWidget(m_game_grid);
+		m_game_grid->verticalScrollBar()->setValue(scroll_position);
 	}
 }
 
-void game_list_frame::SaveSettings()
+bool game_list_frame::IsEntryVisible(const game_info& game)
 {
-	for (int col = 0; col < m_columnActs.count(); ++col)
+	const QString serial = QString::fromStdString(game->info.serial);
+	return SearchMatchesApp(QString::fromStdString(game->info.name), serial);
+}
+
+void game_list_frame::PopulateGameGrid(int maxCols, const QSize& image_size, const QColor& image_color)
+{
+	int r = 0;
+	int c = 0;
+
+	const std::string selected_item = CurrentSelectionPath();
+
+	// Release old data
+	m_game_list->clear_list();
+	m_game_grid->deleteLater();
+
+	const bool show_text = m_icon_size_index > gui::game_list_max_slider_pos * 2 / 5;
+
+	if (m_icon_size_index < gui::game_list_max_slider_pos * 2 / 3)
 	{
-		m_gui_settings->SetGamelistColVisibility(col, m_columnActs[col]->isChecked());
+		m_game_grid = new game_list_grid(image_size, image_color, m_margin_factor, m_text_factor * 2, show_text);
 	}
-	m_gui_settings->SetValue(gui::game_list_sortCol, m_sort_column);
-	m_gui_settings->SetValue(gui::game_list_sortAsc, m_col_sort_order == Qt::AscendingOrder);
-	m_gui_settings->SetValue(gui::game_list_state, m_game_list->horizontalHeader()->saveState());
+	else
+	{
+		m_game_grid = new game_list_grid(image_size, image_color, m_margin_factor, m_text_factor, show_text);
+	}
+
+	// Get list of matching apps
+	QList<game_info> matching_apps;
+
+	for (const auto& app : m_game_data)
+	{
+		if (IsEntryVisible(app))
+		{
+			matching_apps.push_back(app);
+		}
+	}
+
+	const int entries = matching_apps.count();
+
+	// Edge cases!
+	if (entries == 0)
+	{ // For whatever reason, 0%x is division by zero. Absolute nonsense by definition of modulus. But, I'll acquiesce.
+		return;
+	}
+
+	maxCols = std::clamp(maxCols, 1, entries);
+
+	const int needs_extra_row = (entries % maxCols) != 0;
+	const int max_rows = needs_extra_row + entries / maxCols;
+	m_game_grid->setRowCount(max_rows);
+	m_game_grid->setColumnCount(maxCols);
+
+	for (const auto& app : matching_apps)
+	{
+		const QString serial = QString::fromStdString(app->info.serial);
+		const QString title = m_titles.value(serial, QString::fromStdString(app->info.name));
+
+		game_list_item* item = m_game_grid->addItem(app, title, r, c);
+		app->item = item;
+		item->setData(gui::game_role, QVariant::fromValue(app));
+
+			item->setToolTip(tr("%0 [%1]").arg(title).arg(serial));
+	
+
+		if (selected_item == app->info.path + app->info.icon_path)
+		{
+			m_game_grid->setCurrentItem(item);
+		}
+
+		if (++c >= maxCols)
+		{
+			c = 0;
+			r++;
+		}
+	}
+
+	if (c != 0)
+	{ // if left over games exist -- if empty entries exist
+		for (int col = c; col < maxCols; ++col)
+		{
+			game_list_item* empty_item = new game_list_item();
+			empty_item->setFlags(Qt::NoItemFlags);
+			m_game_grid->setItem(r, col, empty_item);
+		}
+	}
+
+	m_game_grid->resizeColumnsToContents();
+	m_game_grid->resizeRowsToContents();
+	m_game_grid->installEventFilter(this);
+	m_game_grid->verticalScrollBar()->installEventFilter(this);
 }
 void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 {
@@ -214,38 +296,41 @@ void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 	{
 		m_path_list.clear();
 		m_game_data.clear();
+		m_games.clear();
 
 		//TODO better ATM manually add path from 1 dir to m_paths_list
-		m_path_list.emplace_back(QDir::currentPath().toStdString() + "/game/");
-
-		QDir parent_folder(QString::fromStdString(m_path_list.at(0)));
+		QDir parent_folder(QString::fromStdString(QDir::currentPath().toStdString() + "/game/"));
 		QFileInfoList fList = parent_folder.entryInfoList(QDir::AllDirs | QDir::NoDotAndDotDot, QDir::DirsFirst);
 		foreach(QFileInfo item, fList)
 		{
-			PSF psf;
-			if (!psf.open(item.absoluteFilePath().toStdString() + "/sce_sys/PARAM.SFO"))
-				continue;//if we can't open param.sfo go to the next entry
-
-			//TODO std::string test = psf.get_string("TITLE_ID");
-			QString iconpath(item.absoluteFilePath() + "/sce_sys/ICON0.PNG");
-
-			GameInfo game{};
-
-			game.icon_path = iconpath.toStdString();
-			game.name = psf.get_string("TITLE");
-			game.serial = psf.get_string("TITLE_ID");
-			game.fw = (QString("%1").arg(psf.get_integer("SYSTEM_VER"), 8, 16, QLatin1Char('0'))).mid(1, 3).insert(1, '.').toStdString();
-			game.version = psf.get_string("APP_VER");
-			game.category = psf.get_string("CATEGORY");
-			game.path = item.fileName().toStdString();
-
-			gui_game_info info{};
-			info.info = game;
-
-			m_games.push_back(std::make_shared<gui_game_info>(std::move(info)));
-
-		
+			m_path_list.emplace_back(item.absoluteFilePath().toStdString());
 		}
+
+		m_refresh_watcher.setFuture(QtConcurrent::map(m_path_list, [this](const std::string& dir)
+		{
+				GameInfo game{};
+				game.path = dir;
+				PSF psf;
+				if (psf.open(game.path + "/sce_sys/PARAM.SFO"))
+				{
+					QString iconpath(QString::fromStdString(game.path) + "/sce_sys/ICON0.PNG");
+					game.icon_path = iconpath.toStdString();
+					game.name = psf.get_string("TITLE");
+					game.serial = psf.get_string("TITLE_ID");
+					game.fw = (QString("%1").arg(psf.get_integer("SYSTEM_VER"), 8, 16, QLatin1Char('0'))).mid(1, 3).insert(1, '.').toStdString();
+					game.version = psf.get_string("APP_VER");
+					game.category = psf.get_string("CATEGORY");
+
+					m_titles.insert(QString::fromStdString(game.serial), QString::fromStdString(game.name));
+					
+					gui_game_info info{};
+					info.info = game;
+
+					m_games.push_back(std::make_shared<gui_game_info>(std::move(info)));
+				}
+				
+		}));
+		return;
 	}
 	// Fill Game List / Game Grid
 
@@ -279,11 +364,11 @@ void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 void game_list_frame::PopulateGameList()
 {
 
-	//hackinsh
-	for (auto&& g : m_games)
-	{
-		m_game_data.push_back(g);
-	}
+	//hackinsh TODO remove
+	//for (auto&& g : m_games)
+	//{
+	//	m_game_data.push_back(g);
+	//}
 	//end of hackinsh
 
 	int selected_row = -1;
@@ -291,18 +376,25 @@ void game_list_frame::PopulateGameList()
 	const std::string selected_item = CurrentSelectionPath();
 
 	// Release old data
-	//TODO m_game_grid->clear_list();
-	//TODO m_game_list->clear_list();
+	m_game_grid->clear_list();
+	m_game_list->clear_list();
 
 	m_game_list->setRowCount(m_game_data.size());
 
 	int row = 0;
 	int index = -1;
-	//RepaintIcons();//hackish
 	for (const auto& game : m_game_data)
 	{
 		index++;
 
+		if (!IsEntryVisible(game))
+		{
+			game->item = nullptr;
+			continue;
+		}
+
+		const QString serial = QString::fromStdString(game->info.serial);
+		const QString title = m_titles.value(serial, QString::fromStdString(game->info.name));
 
 		// Icon
 		custom_table_widget_item* icon_item = new custom_table_widget_item;
@@ -317,10 +409,10 @@ void game_list_frame::PopulateGameList()
 		icon_item->setData(gui::custom_roles::game_role, QVariant::fromValue(game));
 
 		// Title
-		custom_table_widget_item* title_item = new custom_table_widget_item(game->info.name);
+		custom_table_widget_item* title_item = new custom_table_widget_item(title);
 
 		// Serial
-		custom_table_widget_item* serial_item = new custom_table_widget_item(game->info.serial);
+		custom_table_widget_item* serial_item = new custom_table_widget_item(serial);
 
 		// Version
 		QString app_version = QString::fromStdString(game->info.version);
@@ -645,4 +737,55 @@ void game_list_frame::ResizeIcons(const int& slider_pos)
 	m_icon_size = gui_settings::SizeFromSlider(slider_pos);
 
 	RepaintIcons();
+}
+
+void game_list_frame::LoadSettings()
+{
+	m_col_sort_order = m_gui_settings->GetValue(gui::game_list_sortAsc).toBool() ? Qt::AscendingOrder : Qt::DescendingOrder;
+	m_sort_column = m_gui_settings->GetValue(gui::game_list_sortCol).toInt();
+
+	Refresh(true);
+
+	const QByteArray state = m_gui_settings->GetValue(gui::game_list_state).toByteArray();
+	if (!m_game_list->horizontalHeader()->restoreState(state) && m_game_list->rowCount())
+	{
+		// If no settings exist, resize to contents.
+		ResizeColumnsToContents();
+	}
+
+	for (int col = 0; col < m_columnActs.count(); ++col)
+	{
+		const bool vis = m_gui_settings->GetGamelistColVisibility(col);
+		m_columnActs[col]->setChecked(vis);
+		m_game_list->setColumnHidden(col, !vis);
+	}
+	SortGameList();
+	FixNarrowColumns();
+
+	m_game_list->horizontalHeader()->restoreState(m_game_list->horizontalHeader()->saveState());
+
+}
+
+void game_list_frame::SaveSettings()
+{
+	for (int col = 0; col < m_columnActs.count(); ++col)
+	{
+		m_gui_settings->SetGamelistColVisibility(col, m_columnActs[col]->isChecked());
+	}
+	m_gui_settings->SetValue(gui::game_list_sortCol, m_sort_column);
+	m_gui_settings->SetValue(gui::game_list_sortAsc, m_col_sort_order == Qt::AscendingOrder);
+	m_gui_settings->SetValue(gui::game_list_state, m_game_list->horizontalHeader()->saveState());
+}
+
+/**
+* Returns false if the game should be hidden because it doesn't match search term in toolbar.
+*/
+bool game_list_frame::SearchMatchesApp(const QString& name, const QString& serial) const
+{
+	if (!m_search_text.isEmpty())
+	{
+		const QString search_text = m_search_text.toLower();
+		return m_titles.value(serial, name).toLower().contains(search_text) || serial.toLower().contains(search_text);
+	}
+	return true;
 }

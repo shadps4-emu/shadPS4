@@ -58,6 +58,9 @@ private:
 	void SortGameList() const;
 	std::string CurrentSelectionPath();
 	void PopulateGameList();
+	void PopulateGameGrid(int maxCols, const QSize& image_size, const QColor& image_color);
+	bool SearchMatchesApp(const QString& name, const QString& serial) const;
+	bool IsEntryVisible(const game_info& game);
 
 	// Which widget we are displaying depends on if we are in grid or list mode.
 	QMainWindow* m_game_dock = nullptr;
@@ -71,6 +74,7 @@ private:
 	QList<QAction*> m_columnActs;
 	Qt::SortOrder m_col_sort_order;
 	int m_sort_column;
+	QMap<QString, QString> m_titles;
 
 	// List Mode
 	bool m_is_list_layout = true;

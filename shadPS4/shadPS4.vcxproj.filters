@@ -92,7 +92,7 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="gui\main_window.ui">
-      <Filter>Form Files</Filter>
+      <Filter>gui\main window</Filter>
     </QtUic>
   </ItemGroup>
   <ItemGroup>

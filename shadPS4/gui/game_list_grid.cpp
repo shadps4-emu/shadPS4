@@ -56,7 +56,7 @@ void game_list_grid::setIconSize(const QSize& size) const
 	}
 }
 
-QTableWidgetItem* game_list_grid::addItem(const game_info& app, const QString& name, const QString& movie_path, const int& row, const int& col)
+game_list_item* game_list_grid::addItem(const game_info& app, const QString& name,const int& row, const int& col)
 {
 	game_list_item* item = new game_list_item;
 	item->set_icon_func([this, app, item](int)
