@@ -363,14 +363,6 @@ void game_list_frame::Refresh(const bool from_drive, const bool scroll_after)
 */
 void game_list_frame::PopulateGameList()
 {
-
-	//hackinsh TODO remove
-	//for (auto&& g : m_games)
-	//{
-	//	m_game_data.push_back(g);
-	//}
-	//end of hackinsh
-
 	int selected_row = -1;
 
 	const std::string selected_item = CurrentSelectionPath();
