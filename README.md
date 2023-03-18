@@ -11,5 +11,5 @@ Currently a sfo , pic0 viewer and partialy pkg extractor
 
 Wiki has some documentation for PS4 PKG format
 
-![PKG PS4 File Format](https://github.com/georgemoralis/shadPS4/wiki/PKG-Information "PKG PS4 File Format")
+[PKG PS4 File Format](https://github.com/georgemoralis/shadPS4/wiki/PKG-Information "PKG PS4 File Format")
 
