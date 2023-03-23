@@ -202,14 +202,6 @@
     <string>Install application from a .pkg file</string>
    </property>
   </action>
-  <action name="bootInstallPupAct">
-   <property name="text">
-    <string>Install Firmware</string>
-   </property>
-   <property name="toolTip">
-    <string>Install firmware from PS3UPDAT.PUP</string>
-   </property>
-  </action>
   <action name="exitAct">
    <property name="text">
     <string>Exit</string>

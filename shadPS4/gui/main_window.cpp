@@ -2,6 +2,13 @@
 #include "main_window.h"
 #include "gui_settings.h"
 #include "ui_main_window.h"
+#include <QFileDialog>
+#include <QDir>
+#include <QMessageBox>
+#include "../emulator/Loader.h"
+#include "../emulator/fileFormat/PKG.h"
+#include "../core/FsFile.h"
+
 
 main_window::main_window(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
 	: QMainWindow(parent)
@@ -153,6 +160,7 @@ void main_window::CreateConnects()
 	});
 
 	connect(ui->mw_searchbar, &QLineEdit::textChanged, m_game_list_frame, &game_list_frame::SetSearchText);
+	connect(ui->bootInstallPkgAct, &QAction::triggered, this, [this] {InstallPkg(); });
 }
 
 void main_window::SetIconSizeActions(int idx) const
@@ -229,4 +237,36 @@ void main_window::SaveWindowState() const
 
 	// Save column settings
 	m_game_list_frame->SaveSettings();
+}
+
+void main_window::InstallPkg()
+{
+	std::string file(QFileDialog::getOpenFileName(this, tr("Install PKG File"), QDir::currentPath(), tr("PKG File (*.PKG)")).toStdString());
+	if (detectFileType(file) == FILETYPE_PKG)
+	{
+		PKG pkg;
+		pkg.open(file);
+		//if pkg is ok we procced with extraction
+		std::string failreason;
+		QString gamedir = QDir::currentPath() + "/game/" + QString::fromStdString(pkg.getTitleID());
+		QDir dir(gamedir);
+		if (!dir.exists()) {
+			dir.mkpath(".");
+		}
+		std::string extractpath = QDir::currentPath().toStdString() + "/game/" + pkg.getTitleID() + "/";
+		if (!pkg.extract(file, extractpath, failreason))
+		{
+			QMessageBox::critical(this, "PKG ERROR", QString::fromStdString(failreason), QMessageBox::Ok, 0);
+		}
+		else
+		{
+			QMessageBox::information(this, "Extraction Finished", "Game successfully installed at " + gamedir, QMessageBox::Ok, 0);
+			m_game_list_frame->Refresh(true);
+		}
+
+	}
+	else
+	{
+		QMessageBox::critical(this, "PKG ERROR", "File doesn't appear to be a valid PKG file", QMessageBox::Ok, 0);
+	}
 }

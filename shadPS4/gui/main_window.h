@@ -25,6 +25,7 @@ public:
 	explicit main_window(std::shared_ptr<gui_settings> gui_settings,QWidget* parent = nullptr);
 	~main_window();
 	bool Init();
+	void InstallPkg();
 
 private Q_SLOTS:
 	void ConfigureGuiFromSettings();
