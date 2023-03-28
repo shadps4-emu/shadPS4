@@ -1,5 +1,6 @@
 #include "types.h"
 #include <stdio.h>
+#include <corecrt_malloc.h>
 
 #pragma warning(disable:4996)
 
@@ -22,6 +23,14 @@ struct self_header
     u16 segment_count;
     u16 unknown1A; //always 0x22
     u32 padding3;
+};
+
+struct self_segment_header
+{
+    u64 flags;
+    u64 offset;
+    u64 encrypted_compressed_size;
+    u64 decrypted_decompressed_size;
 };
 
 
@@ -68,4 +77,27 @@ int main(int argc, char* argv[])
     printf("  unknown 1A .........: 0x%04X\n", header.unknown1A);
     printf("  padding3 ...........: 0x%04X\n", header.padding3);
     printf("\n");
+
+    auto segment_headers = (self_segment_header*)malloc(sizeof(self_segment_header) * header.segment_count);
+    if (fread(segment_headers, sizeof(self_segment_header), header.segment_count, handle) != header.segment_count)
+    {
+        printf("Failed to read SELF segment headers.\n");
+        free(segment_headers);
+        fclose(handle);
+        return 5;
+    }
+
+    printf("SELF segments:\n");
+
+    for (int i = 0; i < header.segment_count; i++)
+    {
+        auto segment_header = segment_headers[i];
+        printf(" [%d]\n", i);
+        printf("  flags ............: %llx\n", segment_header.flags);
+        printf("  offset ...........: %llx\n", segment_header.offset);
+        printf("  compressed size ..: %llx\n", segment_header.encrypted_compressed_size);
+        printf("  uncompressed size : %llx\n", segment_header.decrypted_decompressed_size);
+    }
+    printf("\n");
+
 }
