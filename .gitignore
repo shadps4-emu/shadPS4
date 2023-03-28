@@ -401,3 +401,4 @@ FodyWeavers.xsd
 /tools/pkg extractor/game/*
 /tools/pkg extractor/*.pkg
 /shadPS4/shadps4.ini
+/emulator/eboot.bin
