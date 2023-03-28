@@ -36,7 +36,8 @@ class Elf
 {
 public:
     void Open(const std::string & file_name);
-
+    bool isSelfFile() const;
+    void DebugDump();
 private:
     FsFile* m_f = nullptr;
     self_header* m_self = nullptr;
