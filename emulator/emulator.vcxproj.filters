@@ -13,15 +13,33 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="FileFormat">
+      <UniqueIdentifier>{6c59bbae-9b2e-454e-bfcf-44d9344c23cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{9c8991bf-e512-441a-97d7-04da356ec70e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Loader\Elf.cpp">
+      <Filter>FileFormat</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\FsFile.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="types.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Loader\Elf.h">
+      <Filter>FileFormat</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\FsFile.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
