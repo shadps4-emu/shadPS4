@@ -9,6 +9,16 @@ static self_header* load_self(FsFile& f)
 	return self;
 }
 
+
+static self_segment_header* load_self_segments(FsFile& f, u16 num)
+{
+    auto* segs = new self_segment_header[num];
+
+    f.Read(segs, sizeof(self_segment_header) * num);
+
+    return segs;
+}
+
 void Elf::Open(const std::string& file_name)
 {
 	m_f = new FsFile;
@@ -21,7 +31,10 @@ void Elf::Open(const std::string& file_name)
         m_self = nullptr;
         m_f->Seek(0,fsSeekMode::fsSeekSet); //it is not an self file move to the start of file
     }
-
+    else
+    {
+        m_self_segments = load_self_segments(*m_f, m_self->segment_count);
+    }
 
     DebugDump();
 }
@@ -70,11 +83,24 @@ void Elf::DebugDump() {
     printf("  program_type........: 0x%X\n", m_self->program_type);
     printf("  padding1 ...........: 0x%04X\n", m_self->padding1);
     printf("  header size ........: 0x%X\n", m_self->header_size);
-    printf("  meta size      .....: 0x%X\n", m_self->meta_size);
-    printf("  file size ..........: 0x%X\n", m_self->file_size);
+    printf("  meta size      .....: %u\n", m_self->meta_size);
+    printf("  file size ..........: %u\n", m_self->file_size);
     printf("  padding2 ...........: 0x%08X\n", m_self->padding2);
     printf("  segment count ......: %u\n", m_self->segment_count);
     printf("  unknown 1A .........: 0x%04X\n", m_self->unknown1A);
     printf("  padding3 ...........: 0x%04X\n", m_self->padding3);
+    printf("\n");
+
+    printf("SELF segments:\n");
+
+    for (int i = 0; i < m_self->segment_count; i++)
+    {
+        auto segment_header = m_self_segments[i];
+        printf(" [%d]\n", i);
+        printf("  flags ............: 0x%llx\n", segment_header.flags);
+        printf("  file offset ......: 0x%llx\n", segment_header.file_offset);
+        printf("  file size ........: %llu\n", segment_header.file_size);
+        printf("  memory size ......: %llu\n", segment_header.memory_size);
+    }
     printf("\n");
 }

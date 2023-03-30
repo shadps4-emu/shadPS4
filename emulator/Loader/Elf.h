@@ -27,9 +27,9 @@ struct self_header
 struct self_segment_header
 {
     u64 flags;
-    u64 offset;
-    u64 encrypted_compressed_size;
-    u64 decrypted_decompressed_size;
+    u64 file_offset;
+    u64 file_size;
+    u64 memory_size;
 };
 
 class Elf
@@ -41,5 +41,6 @@ public:
 private:
     FsFile* m_f = nullptr;
     self_header* m_self = nullptr;
+    self_segment_header* m_self_segments = nullptr;
 };
 
