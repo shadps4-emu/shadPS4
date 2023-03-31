@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <inttypes.h>
 #include "../types.h"
 #include "../Core/FsFile.h"
 
@@ -31,6 +32,16 @@ struct self_segment_header
     u64 file_size;
     u64 memory_size;
 };
+
+
+constexpr 	int EI_MAG0 = 0;/* e_ident[] indexes */
+constexpr 	int EI_MAG2 = 2;
+constexpr 	int EI_MAG3 = 3;
+constexpr 	int EI_CLASS = 4;
+constexpr 	int EI_DATA = 5;
+constexpr 	int EI_VERSION = 6;
+constexpr 	int EI_OSABI = 7;
+constexpr	int EI_PAD = 8;
 
 struct elf_header
 {
@@ -79,12 +90,19 @@ struct elf_section_header
 class Elf
 {
 public:
+    Elf() = default;
+    virtual ~Elf();
+
     void Open(const std::string & file_name);
     bool isSelfFile() const;
     void DebugDump();
 private:
+
+    void Reset();
+
     FsFile* m_f = nullptr;
     self_header* m_self = nullptr;
     self_segment_header* m_self_segments = nullptr;
+    elf_header* m_elf_header = nullptr;
 };
 

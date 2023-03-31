@@ -1,6 +1,11 @@
 #include "Elf.h"
 
 
+Elf::~Elf()
+{
+    Reset();
+}
+
 static self_header* load_self(FsFile& f)
 {
 	//read self header
@@ -22,11 +27,11 @@ static self_segment_header* load_self_segments(FsFile& f, u16 num)
 
 static elf_header* load_elf_header(FsFile& f)
 {
-    auto* ehdr = new elf_header;
+    auto* m_elf_header = new elf_header;
 
-    f.Read(ehdr, sizeof(elf_header));
+    f.Read(m_elf_header, sizeof(elf_header));
 
-    return ehdr;
+    return m_elf_header;
 }
 
 static elf_program_header* load_program_header(FsFile& f, u64 offset, u16 num)
@@ -54,8 +59,25 @@ static elf_section_header* load_section_header(FsFile& f, u64 offset, u16 num)
     return shdr;
 }
 
+void Elf::Reset()//reset all variables
+{
+    if (m_f != nullptr)
+    {
+        m_f->Close();
+        delete m_f;
+    }
+    delete m_self;
+    delete m_elf_header;
+    delete[] m_self_segments;
+
+    m_self = nullptr;
+    m_self_segments = nullptr;
+    m_elf_header = nullptr;
+}
 void Elf::Open(const std::string& file_name)
 {
+    Reset();//reset all variables
+
 	m_f = new FsFile;
 	m_f->Open(file_name, fsOpenMode::fsRead);
 
@@ -71,6 +93,10 @@ void Elf::Open(const std::string& file_name)
     {
         m_self_segments = load_self_segments(*m_f, m_self->segment_count);
     }
+
+    auto elfheader_pos = m_f->Tell();//get the entry pos for elf file
+
+    m_elf_header = load_elf_header(*m_f);
 
     DebugDump();
 }
@@ -110,21 +136,21 @@ bool Elf::isSelfFile() const
 
 void Elf::DebugDump() {
     printf("SELF header:\n");
-    printf("  magic ..............: 0x%08X\n", m_self->magic);
-    printf("  version    .........: %d\n", m_self->version);
-    printf("  mode       .........: 0x%X\n", m_self->mode);
-    printf("  endian     .........: %d\n", m_self->endian);
-    printf("  attributes .........: 0x%X\n", m_self->attributes);
-    printf("  category   .........: 0x%X\n", m_self->category);
-    printf("  program_type........: 0x%X\n", m_self->program_type);
-    printf("  padding1 ...........: 0x%04X\n", m_self->padding1);
-    printf("  header size ........: 0x%X\n", m_self->header_size);
-    printf("  meta size      .....: %u\n", m_self->meta_size);
-    printf("  file size ..........: %u\n", m_self->file_size);
-    printf("  padding2 ...........: 0x%08X\n", m_self->padding2);
-    printf("  segment count ......: %u\n", m_self->segment_count);
-    printf("  unknown 1A .........: 0x%04X\n", m_self->unknown1A);
-    printf("  padding3 ...........: 0x%04X\n", m_self->padding3);
+    printf("  magic ..............: 0x%08" PRIx32 "\n", m_self->magic);
+    printf("  version    .........: %" PRIu8 "\n", m_self->version);
+    printf("  mode       .........: 0x%02" PRIx8 "\n", m_self->mode);
+    printf("  endian     .........: %" PRIu8 "\n", m_self->endian);
+    printf("  attributes .........: 0x%02" PRIx8 "\n", m_self->attributes);
+    printf("  category   .........: 0x%02" PRIx8 "\n", m_self->category);
+    printf("  program_type........: 0x%02" PRIx8 "\n", m_self->program_type);
+    printf("  padding1 ...........: 0x%04" PRIx16 "\n", m_self->padding1);
+    printf("  header size ........: %" PRIu16 "\n", m_self->header_size);
+    printf("  meta size      .....: %" PRIu16 "\n", m_self->meta_size);
+    printf("  file size ..........: %" PRIu32 "\n", m_self->file_size);
+    printf("  padding2 ...........: 0x%08" PRIx32 "\n", m_self->padding2);
+    printf("  segment count ......: %" PRIu16 "\n", m_self->segment_count);
+    printf("  unknown 1A .........: 0x%04" PRIx16 "\n", m_self->unknown1A);
+    printf("  padding3 ...........: 0x%04" PRIx16 "\n", m_self->padding3);
     printf("\n");
 
     printf("SELF segments:\n");
@@ -133,10 +159,33 @@ void Elf::DebugDump() {
     {
         auto segment_header = m_self_segments[i];
         printf(" [%d]\n", i);
-        printf("  flags ............: 0x%llx\n", segment_header.flags);
-        printf("  file offset ......: 0x%llx\n", segment_header.file_offset);
-        printf("  file size ........: %llu\n", segment_header.file_size);
-        printf("  memory size ......: %llu\n", segment_header.memory_size);
+        printf("  flags ............: 0x%016" PRIx64 "\n", segment_header.flags);
+        printf("  file offset ......: 0x%016" PRIx64 "\n", segment_header.file_offset);
+        printf("  file size ........: %" PRIu64 "\n", segment_header.file_size);
+        printf("  memory size ......: %" PRIu64 "\n", segment_header.memory_size);
     }
     printf("\n");
+
+    printf("Elf header:\n");
+    printf(" ident .........: 0x");
+    for (auto i : m_elf_header->e_ident)
+    {
+        printf("%02x", i);
+    }
+    printf("\n");
+
+    printf(" type  .........: 0x%04" PRIx16 "\n", m_elf_header->e_type);
+    printf(" machine .......: 0x%04" PRIx16 "\n", m_elf_header->e_machine);
+    printf(" version .......: 0x%08" PRIx32 "\n", m_elf_header->e_version);
+
+    printf(" entry .........: 0x%016" PRIx64 "\n", m_elf_header->e_entry);
+    printf(" phoff .........: 0x%016" PRIx64 "\n", m_elf_header->e_phoff);
+    printf(" shoff .........: 0x%016" PRIx64 "\n", m_elf_header->e_shoff);
+    printf(" flags .........: 0x%08" PRIx32 "\n", m_elf_header->e_flags);
+    printf(" ehsize ........: 0x%04" PRIx16 "\n", m_elf_header->e_ehsize);
+    printf(" phentsize .....: 0x%04" PRIx16 "\n", m_elf_header->e_phentsize);
+    printf(" phnum .........: %" PRIu16 "\n", m_elf_header->e_phnum);
+    printf(" shentsize .....: 0x%04" PRIx16 "\n", m_elf_header->e_shentsize);
+    printf(" shnum .........: %" PRIu16 "\n", m_elf_header->e_shnum);
+    printf(" shstrndx ......: %" PRIu16 "\n", m_elf_header->e_shstrndx);
 }
