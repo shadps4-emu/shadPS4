@@ -19,12 +19,48 @@ static self_segment_header* load_self_segments(FsFile& f, u16 num)
     return segs;
 }
 
+
+static elf_header* load_elf_header(FsFile& f)
+{
+    auto* ehdr = new elf_header;
+
+    f.Read(ehdr, sizeof(elf_header));
+
+    return ehdr;
+}
+
+static elf_program_header* load_program_header(FsFile& f, u64 offset, u16 num)
+{
+    auto* phdr = new elf_program_header[num];
+
+    f.Seek(offset,fsSeekMode::fsSeekSet);
+    f.Read(phdr, sizeof(elf_program_header) * num);
+
+    return phdr;
+}
+
+static elf_section_header* load_section_header(FsFile& f, u64 offset, u16 num)
+{
+    if (num == 0)//just in case we don't have section headers
+    {
+        return nullptr;
+    }
+
+    auto* shdr = new elf_section_header[num];
+
+    f.Seek(offset,fsSeekMode::fsSeekSet);
+    f.Read(shdr, sizeof(elf_section_header) * num);
+
+    return shdr;
+}
+
 void Elf::Open(const std::string& file_name)
 {
 	m_f = new FsFile;
 	m_f->Open(file_name, fsOpenMode::fsRead);
 
 	m_self = load_self(*m_f);
+
     if (!isSelfFile())
     {
         delete m_self;
