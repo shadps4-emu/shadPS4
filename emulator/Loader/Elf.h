@@ -95,6 +95,7 @@ public:
 
     void Open(const std::string & file_name);
     bool isSelfFile() const;
+    bool isElfFile() const;
     void DebugDump();
 private:
 

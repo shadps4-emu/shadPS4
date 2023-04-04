@@ -98,6 +98,12 @@ void Elf::Open(const std::string& file_name)
 
     m_elf_header = load_elf_header(*m_f);
 
+    if (!isElfFile())
+    {
+        delete m_elf_header;
+        m_elf_header = nullptr;
+    }
+
     DebugDump();
 }
 
@@ -128,6 +134,27 @@ bool Elf::isSelfFile() const
     if (m_self->category != 0x01 || m_self->program_type != 0x01)
     {
         printf("Unknown SELF file\n");
+        return false;
+    }
+
+    return true;
+}
+
+bool Elf::isElfFile() const
+{
+    if (m_f == nullptr)
+    {
+        return false;
+    }
+
+    if (m_elf_header == nullptr)
+    {
+        return false;
+    }
+    if (m_elf_header->e_ident[0] != '\x7f' || m_elf_header->e_ident[1] != '\x45' || m_elf_header->e_ident[2] != '\x4c' ||
+        m_elf_header->e_ident[3] != '\x46')
+    {
+        printf("Not an ELF file magic is wrong!\n");
         return false;
     }
 
