@@ -34,14 +34,35 @@ struct self_segment_header
 };
 
 
-constexpr 	int EI_MAG0 = 0;/* e_ident[] indexes */
-constexpr 	int EI_MAG2 = 2;
-constexpr 	int EI_MAG3 = 3;
-constexpr 	int EI_CLASS = 4;
-constexpr 	int EI_DATA = 5;
-constexpr 	int EI_VERSION = 6;
-constexpr 	int EI_OSABI = 7;
-constexpr	int EI_PAD = 8;
+constexpr u08 EI_MAG0 = 0;/* e_ident[] indexes */
+constexpr u08 EI_MAG1 = 1;
+constexpr u08 EI_MAG2 = 2;
+constexpr u08 EI_MAG3 = 3;
+constexpr u08 EI_CLASS = 4;
+constexpr u08 EI_DATA = 5;
+constexpr u08 EI_VERSION = 6;
+constexpr u08 EI_OSABI = 7;
+constexpr u08 EI_ABIVERSION = 8;
+
+// Magic number
+constexpr u08 ELFMAG0 = 0x7F;
+constexpr u08 ELFMAG1 = 'E';
+constexpr u08 ELFMAG2 = 'L';
+constexpr u08 ELFMAG3 = 'F';
+
+//other ident fields , only ps4 neccesary ones
+constexpr u08 ELFCLASS64 = 2;
+constexpr u08 ELFDATA2LSB = 1;
+constexpr u08 ELFOSABI_FREEBSD = 9;  // FreeBSD
+constexpr u08 EV_CURRENT = 1;
+constexpr u08 ELFABIVERSION_AMDGPU_HSA_V2 = 0;
+
+//type fields PS4 specific
+constexpr u16 ET_DYNEXEC = 0xFE10; // Executable file
+constexpr u16 ET_DYNAMIC = 0xFE18; // Shared
+
+//machine field
+constexpr u16 EM_X86_64 = 62; // Advanced Micro Devices X86-64 processor
 
 struct elf_header
 {

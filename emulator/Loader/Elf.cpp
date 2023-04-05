@@ -151,10 +151,69 @@ bool Elf::isElfFile() const
     {
         return false;
     }
-    if (m_elf_header->e_ident[0] != '\x7f' || m_elf_header->e_ident[1] != '\x45' || m_elf_header->e_ident[2] != '\x4c' ||
-        m_elf_header->e_ident[3] != '\x46')
+    if (m_elf_header->e_ident[EI_MAG0] != ELFMAG0 || m_elf_header->e_ident[EI_MAG1] != ELFMAG1 || m_elf_header->e_ident[EI_MAG2] != ELFMAG2 ||
+        m_elf_header->e_ident[EI_MAG3] != ELFMAG3)
     {
-        printf("Not an ELF file magic is wrong!\n");
+        printf("ERROR:Not an ELF file magic is wrong!\n");
+        return false;
+    }
+    if (m_elf_header->e_ident[EI_CLASS] != ELFCLASS64)
+    {
+        printf("ERROR:e_ident[EI_CLASS] expected 0x02 is (0x%x)\n", m_elf_header->e_ident[EI_CLASS]);
+        return false;
+    }
+
+    if (m_elf_header->e_ident[EI_DATA] != ELFDATA2LSB)
+    {
+        printf("ERROR:e_ident[EI_DATA] expected 0x01 is (0x%x)\n", m_elf_header->e_ident[EI_DATA]);
+        return false;
+    }
+
+    if (m_elf_header->e_ident[EI_VERSION] != EV_CURRENT)
+    {
+        printf("ERROR:e_ident[EI_VERSION] expected 0x01 is (0x%x)\n", m_elf_header->e_ident[EI_VERSION]);
+        return false;
+    }
+
+    if (m_elf_header->e_ident[EI_OSABI] != ELFOSABI_FREEBSD)
+    {
+        printf("ERROR:e_ident[EI_OSABI] expected 0x09 is (0x%x)\n", m_elf_header->e_ident[EI_OSABI]);
+        return false;
+    }
+
+    if (m_elf_header->e_ident[EI_ABIVERSION] != ELFABIVERSION_AMDGPU_HSA_V2)
+    {
+        printf("ERROR:e_ident[EI_ABIVERSION] expected 0x00 is (0x%x)\n", m_elf_header->e_ident[EI_ABIVERSION]);
+        return false;
+    }
+
+    if (m_elf_header->e_type != ET_DYNEXEC && m_elf_header->e_type != ET_DYNAMIC)
+    {
+        printf("ERROR:e_type expected 0xFE10 OR 0xFE18 is (%04x)\n", m_elf_header->e_type);
+        return false;
+    }
+
+    if (m_elf_header->e_machine != EM_X86_64)
+    {
+        printf("ERROR:e_machine expected 0x3E is (%04x)\n", m_elf_header->e_machine);
+        return false;
+    }
+
+    if (m_elf_header->e_version != EV_CURRENT)
+    {
+        printf("ERROR:m_elf_header->e_version expected 0x01 is (0x%x)\n", m_elf_header->e_version);
+        return false;
+    }
+
+    if (m_elf_header->e_phentsize != sizeof(elf_program_header))
+    {
+        printf("ERROR:e_phentsize (%d) != sizeof(elf_program_header)\n", m_elf_header->e_phentsize);
+        return false;
+    }
+
+    if (m_elf_header->e_shentsize > 0 && m_elf_header->e_shentsize != sizeof(elf_section_header)) //commercial games doesn't appear to have section headers
+    {
+        printf("ERROR:e_shentsize (%d) != sizeof(elf_section_header)\n", m_elf_header->e_shentsize);
         return false;
     }
 
