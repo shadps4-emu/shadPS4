@@ -69,10 +69,14 @@ void Elf::Reset()//reset all variables
     delete m_self;
     delete m_elf_header;
     delete[] m_self_segments;
+    delete[] m_elf_phdr;
+    delete[] m_elf_shdr;
 
     m_self = nullptr;
     m_self_segments = nullptr;
     m_elf_header = nullptr;
+    m_elf_phdr = nullptr;
+    m_elf_shdr = nullptr;
 }
 void Elf::Open(const std::string& file_name)
 {
@@ -104,6 +108,11 @@ void Elf::Open(const std::string& file_name)
         m_elf_header = nullptr;
     }
 
+    if (m_elf_header != nullptr)
+    {
+        m_elf_phdr = load_program_header(*m_f, elfheader_pos + m_elf_header->e_phoff, m_elf_header->e_phnum);
+        m_elf_shdr = load_section_header(*m_f, elfheader_pos + m_elf_header->e_shoff, m_elf_header->e_shnum);
+    }
     DebugDump();
 }
 
@@ -274,4 +283,39 @@ void Elf::DebugDump() {
     printf(" shentsize .....: 0x%04" PRIx16 "\n", m_elf_header->e_shentsize);
     printf(" shnum .........: %" PRIu16 "\n", m_elf_header->e_shnum);
     printf(" shstrndx ......: %" PRIu16 "\n", m_elf_header->e_shstrndx);
+
+    if (m_elf_header->e_phentsize > 0)
+    {
+        printf("Program headers:\n");
+        for (u16 i = 0; i < m_elf_header->e_phnum; i++)
+        {
+            printf("--- phdr [%d] ---\n", i);
+            printf("p_type ....: 0x%08" PRIx32 "\n", (m_elf_phdr+i)->p_type);
+            printf("p_flags ...: 0x%08" PRIx32 "\n", (m_elf_phdr + i)->p_flags);
+            printf("p_offset ..: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_offset);
+            printf("p_vaddr ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_vaddr);
+            printf("p_paddr ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_paddr);
+            printf("p_filesz ..: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_filesz);
+            printf("p_memsz ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_memsz);
+            printf("p_align ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_align);
+        }
+    }
+    if (m_elf_header->e_shentsize > 0)
+    {
+        printf("Section headers:\n");
+        for (uint16_t i = 0; i < m_elf_header->e_shnum; i++)
+        {
+            printf("--- shdr [%d] --\n", i);
+            printf("sh_name ........: %d\n", (m_elf_shdr + i)->sh_name);
+            printf("sh_type ........: 0x%08" PRIx32 "\n", (m_elf_shdr + i)->sh_type);
+            printf("sh_flags .......: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_flags);
+            printf("sh_addr ........: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_addr);
+            printf("sh_offset ......: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_offset);
+            printf("sh_size ........: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_size);
+            printf("sh_link ........: %" PRId32 "\n", (m_elf_shdr + i)->sh_link);
+            printf("sh_info ........: 0x%08" PRIx32 "\n", (m_elf_shdr + i)->sh_info);
+            printf("sh_addralign ...: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_addralign);
+            printf("sh_entsize .....: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_entsize);
+        }
+    }
 }

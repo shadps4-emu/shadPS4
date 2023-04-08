@@ -126,5 +126,7 @@ private:
     self_header* m_self = nullptr;
     self_segment_header* m_self_segments = nullptr;
     elf_header* m_elf_header = nullptr;
+    elf_program_header* m_elf_phdr = nullptr;
+    elf_section_header* m_elf_shdr = nullptr;
 };
 
