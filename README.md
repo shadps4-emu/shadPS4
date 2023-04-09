@@ -1,6 +1,8 @@
 # shadPS4
 ps4 emulator?
 
+[<img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadps4&logo=discord&logoColor=white"/>](https://discord.gg/MyZRaBngxA)
+
 WIP not much to see
 
 
