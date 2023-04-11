@@ -1,5 +1,5 @@
 #include "Elf.h"
-
+#include <fmt/core.h>
 
 Elf::~Elf()
 {
@@ -231,91 +231,91 @@ bool Elf::isElfFile() const
 
 void Elf::DebugDump() {
     printf("SELF header:\n");
-    printf("  magic ..............: 0x%08" PRIx32 "\n", m_self->magic);
-    printf("  version    .........: %" PRIu8 "\n", m_self->version);
-    printf("  mode       .........: 0x%02" PRIx8 "\n", m_self->mode);
-    printf("  endian     .........: %" PRIu8 "\n", m_self->endian);
-    printf("  attributes .........: 0x%02" PRIx8 "\n", m_self->attributes);
-    printf("  category   .........: 0x%02" PRIx8 "\n", m_self->category);
-    printf("  program_type........: 0x%02" PRIx8 "\n", m_self->program_type);
-    printf("  padding1 ...........: 0x%04" PRIx16 "\n", m_self->padding1);
-    printf("  header size ........: %" PRIu16 "\n", m_self->header_size);
-    printf("  meta size      .....: %" PRIu16 "\n", m_self->meta_size);
-    printf("  file size ..........: %" PRIu32 "\n", m_self->file_size);
-    printf("  padding2 ...........: 0x%08" PRIx32 "\n", m_self->padding2);
-    printf("  segment count ......: %" PRIu16 "\n", m_self->segment_count);
-    printf("  unknown 1A .........: 0x%04" PRIx16 "\n", m_self->unknown1A);
-    printf("  padding3 ...........: 0x%04" PRIx16 "\n", m_self->padding3);
-    printf("\n");
+    fmt::print("  magic ..............: 0x{:x}\n", m_self->magic);
+    fmt::print("  version    .........: {}\n", m_self->version);
+    fmt::print("  mode       .........: {:#04x}\n", m_self->mode);
+    fmt::print("  endian     .........: {}\n", m_self->endian);
+    fmt::print("  attributes .........: {:#04x}\n", m_self->attributes);
+    fmt::print("  category   .........: {:#04x}\n", m_self->category);
+    fmt::print("  program_type........: {:#04x}\n", m_self->program_type);
+    fmt::print("  padding1 ...........: {:#06x}\n", m_self->padding1);
+    fmt::print("  header size ........: {}\n", m_self->header_size);
+    fmt::print("  meta size      .....: {}\n", m_self->meta_size);
+    fmt::print("  file size ..........: {}\n", m_self->file_size);
+    fmt::print("  padding2 ...........: {:#010x}\n", m_self->padding2);
+    fmt::print("  segment count ......: {}\n", m_self->segment_count);
+    fmt::print("  unknown 1A .........: {:#06x}\n", m_self->unknown1A);
+    fmt::print("  padding3 ...........: {:#010x}\n", m_self->padding3);
+    fmt::print("\n");
 
-    printf("SELF segments:\n");
+    fmt::print("SELF segments:\n");
 
     for (int i = 0; i < m_self->segment_count; i++)
     {
         auto segment_header = m_self_segments[i];
-        printf(" [%d]\n", i);
-        printf("  flags ............: 0x%016" PRIx64 "\n", segment_header.flags);
-        printf("  file offset ......: 0x%016" PRIx64 "\n", segment_header.file_offset);
-        printf("  file size ........: %" PRIu64 "\n", segment_header.file_size);
-        printf("  memory size ......: %" PRIu64 "\n", segment_header.memory_size);
+        fmt::print(" [{}]\n", i);
+        fmt::print("  flags ............: {:#018x}\n", segment_header.flags);
+        fmt::print("  file offset ......: {:#018x}\n", segment_header.file_offset);
+        fmt::print("  file size ........: {}\n", segment_header.file_size);
+        fmt::print("  memory size ......: {}\n", segment_header.memory_size);
     }
-    printf("\n");
+    fmt::print("\n");
 
-    printf("Elf header:\n");
-    printf(" ident .........: 0x");
+    fmt::print("Elf header:\n");
+    fmt::print(" ident .........: 0x");
     for (auto i : m_elf_header->e_ident)
     {
-        printf("%02x", i);
+        fmt::print("{:02x}", i);
     }
-    printf("\n");
+    fmt::print("\n");
 
-    printf(" type  .........: 0x%04" PRIx16 "\n", m_elf_header->e_type);
-    printf(" machine .......: 0x%04" PRIx16 "\n", m_elf_header->e_machine);
-    printf(" version .......: 0x%08" PRIx32 "\n", m_elf_header->e_version);
+    fmt::print(" type  .........: {:#06x}\n", m_elf_header->e_type);
+    fmt::print(" machine .......: {:#06x}\n", m_elf_header->e_machine);
+    fmt::print(" version .......: {:#010x}\n", m_elf_header->e_version);
 
-    printf(" entry .........: 0x%016" PRIx64 "\n", m_elf_header->e_entry);
-    printf(" phoff .........: 0x%016" PRIx64 "\n", m_elf_header->e_phoff);
-    printf(" shoff .........: 0x%016" PRIx64 "\n", m_elf_header->e_shoff);
-    printf(" flags .........: 0x%08" PRIx32 "\n", m_elf_header->e_flags);
-    printf(" ehsize ........: 0x%04" PRIx16 "\n", m_elf_header->e_ehsize);
-    printf(" phentsize .....: 0x%04" PRIx16 "\n", m_elf_header->e_phentsize);
-    printf(" phnum .........: %" PRIu16 "\n", m_elf_header->e_phnum);
-    printf(" shentsize .....: 0x%04" PRIx16 "\n", m_elf_header->e_shentsize);
-    printf(" shnum .........: %" PRIu16 "\n", m_elf_header->e_shnum);
-    printf(" shstrndx ......: %" PRIu16 "\n", m_elf_header->e_shstrndx);
+    fmt::print(" entry .........: {:#018x}\n", m_elf_header->e_entry);
+    fmt::print(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
+    fmt::print(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
+    fmt::print(" flags .........: {:#010x}\n", m_elf_header->e_flags);
+    fmt::print(" ehsize ........: {:#06x}\n", m_elf_header->e_ehsize);
+    fmt::print(" phentsize .....: {:#06x}\n", m_elf_header->e_phentsize);
+    fmt::print(" phnum .........: {}\n", m_elf_header->e_phnum);
+    fmt::print(" shentsize .....: {:#06x}\n", m_elf_header->e_shentsize);
+    fmt::print(" shnum .........: {}\n", m_elf_header->e_shnum);
+    fmt::print(" shstrndx ......: {}\n", m_elf_header->e_shstrndx);
 
     if (m_elf_header->e_phentsize > 0)
     {
-        printf("Program headers:\n");
+        fmt::print("Program headers:\n");
         for (u16 i = 0; i < m_elf_header->e_phnum; i++)
         {
-            printf("--- phdr [%d] ---\n", i);
-            printf("p_type ....: 0x%08" PRIx32 "\n", (m_elf_phdr+i)->p_type);
-            printf("p_flags ...: 0x%08" PRIx32 "\n", (m_elf_phdr + i)->p_flags);
-            printf("p_offset ..: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_offset);
-            printf("p_vaddr ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_vaddr);
-            printf("p_paddr ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_paddr);
-            printf("p_filesz ..: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_filesz);
-            printf("p_memsz ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_memsz);
-            printf("p_align ...: 0x%016" PRIx64 "\n", (m_elf_phdr + i)->p_align);
+            fmt::print("--- phdr [{}] ---\n", i);
+            fmt::print("p_type ....: {:#010x}\n", (m_elf_phdr+i)->p_type);
+            fmt::print("p_flags ...: {:#010x}\n", (m_elf_phdr + i)->p_flags);
+            fmt::print("p_offset ..: {:#018x}\n", (m_elf_phdr + i)->p_offset);
+            fmt::print("p_vaddr ...: {:#018x}\n", (m_elf_phdr + i)->p_vaddr);
+            fmt::print("p_paddr ...: {:#018x}\n", (m_elf_phdr + i)->p_paddr);
+            fmt::print("p_filesz ..: {:#018x}\n", (m_elf_phdr + i)->p_filesz);
+            fmt::print("p_memsz ...: {:#018x}\n", (m_elf_phdr + i)->p_memsz);
+            fmt::print("p_align ...: {:#018x}\n", (m_elf_phdr + i)->p_align);
         }
     }
     if (m_elf_header->e_shentsize > 0)
     {
-        printf("Section headers:\n");
+        fmt::print("Section headers:\n");
         for (uint16_t i = 0; i < m_elf_header->e_shnum; i++)
         {
-            printf("--- shdr [%d] --\n", i);
-            printf("sh_name ........: %d\n", (m_elf_shdr + i)->sh_name);
-            printf("sh_type ........: 0x%08" PRIx32 "\n", (m_elf_shdr + i)->sh_type);
-            printf("sh_flags .......: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_flags);
-            printf("sh_addr ........: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_addr);
-            printf("sh_offset ......: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_offset);
-            printf("sh_size ........: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_size);
-            printf("sh_link ........: %" PRId32 "\n", (m_elf_shdr + i)->sh_link);
-            printf("sh_info ........: 0x%08" PRIx32 "\n", (m_elf_shdr + i)->sh_info);
-            printf("sh_addralign ...: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_addralign);
-            printf("sh_entsize .....: 0x%016" PRIx64 "\n", (m_elf_shdr + i)->sh_entsize);
+            fmt::print("--- shdr [%d] --\n", i);
+            fmt::print("sh_name ........: {}\n", (m_elf_shdr + i)->sh_name);
+            fmt::print("sh_type ........: {:#010x}\n", (m_elf_shdr + i)->sh_type);
+            fmt::print("sh_flags .......: {:#018x}\n", (m_elf_shdr + i)->sh_flags);
+            fmt::print("sh_addr ........: {:#018x}\n", (m_elf_shdr + i)->sh_addr);
+            fmt::print("sh_offset ......: {:#018x}\n", (m_elf_shdr + i)->sh_offset);
+            fmt::print("sh_size ........: {:#018x}\n", (m_elf_shdr + i)->sh_size);
+            fmt::print("sh_link ........: {:#010x}\n", (m_elf_shdr + i)->sh_link);
+            fmt::print("sh_info ........: {:#010x}\n", (m_elf_shdr + i)->sh_info);
+            fmt::print("sh_addralign ...: {:#018x}\n", (m_elf_shdr + i)->sh_addralign);
+            fmt::print("sh_entsize .....: {:#018x}\n", (m_elf_shdr + i)->sh_entsize);
         }
     }
 }
