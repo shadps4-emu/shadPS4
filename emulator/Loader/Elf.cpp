@@ -277,10 +277,10 @@ void Elf::DebugDump() {
     fmt::print(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
     fmt::print(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
     fmt::print(" flags .........: {:#010x}\n", m_elf_header->e_flags);
-    fmt::print(" ehsize ........: {:#06x}\n", m_elf_header->e_ehsize);
-    fmt::print(" phentsize .....: {:#06x}\n", m_elf_header->e_phentsize);
+    fmt::print(" ehsize ........: {}\n", m_elf_header->e_ehsize);
+    fmt::print(" phentsize .....: {}\n", m_elf_header->e_phentsize);
     fmt::print(" phnum .........: {}\n", m_elf_header->e_phnum);
-    fmt::print(" shentsize .....: {:#06x}\n", m_elf_header->e_shentsize);
+    fmt::print(" shentsize .....: {}\n", m_elf_header->e_shentsize);
     fmt::print(" shnum .........: {}\n", m_elf_header->e_shnum);
     fmt::print(" shstrndx ......: {}\n", m_elf_header->e_shstrndx);
 
@@ -303,9 +303,9 @@ void Elf::DebugDump() {
     if (m_elf_header->e_shentsize > 0)
     {
         fmt::print("Section headers:\n");
-        for (uint16_t i = 0; i < m_elf_header->e_shnum; i++)
+        for (u16 i = 0; i < m_elf_header->e_shnum; i++)
         {
-            fmt::print("--- shdr [%d] --\n", i);
+            fmt::print("--- shdr {} --\n", i);
             fmt::print("sh_name ........: {}\n", (m_elf_shdr + i)->sh_name);
             fmt::print("sh_type ........: {:#010x}\n", (m_elf_shdr + i)->sh_type);
             fmt::print("sh_flags .......: {:#018x}\n", (m_elf_shdr + i)->sh_flags);
