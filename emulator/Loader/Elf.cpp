@@ -1,5 +1,7 @@
 #include "Elf.h"
-#include <fmt/core.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 Elf::~Elf()
 {
@@ -230,92 +232,99 @@ bool Elf::isElfFile() const
 }
 
 void Elf::DebugDump() {
-    printf("SELF header:\n");
-    fmt::print("  magic ..............: 0x{:x}\n", m_self->magic);
-    fmt::print("  version    .........: {}\n", m_self->version);
-    fmt::print("  mode       .........: {:#04x}\n", m_self->mode);
-    fmt::print("  endian     .........: {}\n", m_self->endian);
-    fmt::print("  attributes .........: {:#04x}\n", m_self->attributes);
-    fmt::print("  category   .........: {:#04x}\n", m_self->category);
-    fmt::print("  program_type........: {:#04x}\n", m_self->program_type);
-    fmt::print("  padding1 ...........: {:#06x}\n", m_self->padding1);
-    fmt::print("  header size ........: {}\n", m_self->header_size);
-    fmt::print("  meta size      .....: {}\n", m_self->meta_size);
-    fmt::print("  file size ..........: {}\n", m_self->file_size);
-    fmt::print("  padding2 ...........: {:#010x}\n", m_self->padding2);
-    fmt::print("  segment count ......: {}\n", m_self->segment_count);
-    fmt::print("  unknown 1A .........: {:#06x}\n", m_self->unknown1A);
-    fmt::print("  padding3 ...........: {:#010x}\n", m_self->padding3);
-    fmt::print("\n");
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("output.log", true));
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));   
+    auto f = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, std::string(""));  // disable eol
+    spdlog::set_formatter(std::move(f));
+    spdlog::info("SELF header:\n");
+    
+    spdlog::info("  magic ..............: 0x{:x}\n", m_self->magic);
+    spdlog::info("  version    .........: {}\n", m_self->version);
+    spdlog::info("  mode       .........: {:#04x}\n", m_self->mode);
+    spdlog::info("  endian     .........: {}\n", m_self->endian);
+    spdlog::info("  attributes .........: {:#04x}\n", m_self->attributes);
+    spdlog::info("  category   .........: {:#04x}\n", m_self->category);
+    spdlog::info("  program_type........: {:#04x}\n", m_self->program_type);
+    spdlog::info("  padding1 ...........: {:#06x}\n", m_self->padding1);
+    spdlog::info("  header size ........: {}\n", m_self->header_size);
+    spdlog::info("  meta size      .....: {}\n", m_self->meta_size);
+    spdlog::info("  file size ..........: {}\n", m_self->file_size);
+    spdlog::info("  padding2 ...........: {:#010x}\n", m_self->padding2);
+    spdlog::info("  segment count ......: {}\n", m_self->segment_count);
+    spdlog::info("  unknown 1A .........: {:#06x}\n", m_self->unknown1A);
+    spdlog::info("  padding3 ...........: {:#010x}\n", m_self->padding3);
+    spdlog::info("\n");
 
-    fmt::print("SELF segments:\n");
+    spdlog::info("SELF segments:\n");
 
     for (int i = 0; i < m_self->segment_count; i++)
     {
         auto segment_header = m_self_segments[i];
-        fmt::print(" [{}]\n", i);
-        fmt::print("  flags ............: {:#018x}\n", segment_header.flags);
-        fmt::print("  file offset ......: {:#018x}\n", segment_header.file_offset);
-        fmt::print("  file size ........: {}\n", segment_header.file_size);
-        fmt::print("  memory size ......: {}\n", segment_header.memory_size);
+        spdlog::info(" [{}]\n", i);
+        spdlog::info("  flags ............: {:#018x}\n", segment_header.flags);
+        spdlog::info("  file offset ......: {:#018x}\n", segment_header.file_offset);
+        spdlog::info("  file size ........: {}\n", segment_header.file_size);
+        spdlog::info("  memory size ......: {}\n", segment_header.memory_size);
     }
-    fmt::print("\n");
+    spdlog::info("\n");
 
-    fmt::print("Elf header:\n");
-    fmt::print(" ident .........: 0x");
+    spdlog::info("Elf header:\n");
+    spdlog::info(" ident .........: 0x");
     for (auto i : m_elf_header->e_ident)
     {
-        fmt::print("{:02x}", i);
+        spdlog::info("{:02x}", i);
     }
-    fmt::print("\n");
+    spdlog::info("\n");
 
-    fmt::print(" type  .........: {:#06x}\n", m_elf_header->e_type);
-    fmt::print(" machine .......: {:#06x}\n", m_elf_header->e_machine);
-    fmt::print(" version .......: {:#010x}\n", m_elf_header->e_version);
+    spdlog::info(" type  .........: {:#06x}\n", m_elf_header->e_type);
+    spdlog::info(" machine .......: {:#06x}\n", m_elf_header->e_machine);
+    spdlog::info(" version .......: {:#010x}\n", m_elf_header->e_version);
 
-    fmt::print(" entry .........: {:#018x}\n", m_elf_header->e_entry);
-    fmt::print(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
-    fmt::print(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
-    fmt::print(" flags .........: {:#010x}\n", m_elf_header->e_flags);
-    fmt::print(" ehsize ........: {}\n", m_elf_header->e_ehsize);
-    fmt::print(" phentsize .....: {}\n", m_elf_header->e_phentsize);
-    fmt::print(" phnum .........: {}\n", m_elf_header->e_phnum);
-    fmt::print(" shentsize .....: {}\n", m_elf_header->e_shentsize);
-    fmt::print(" shnum .........: {}\n", m_elf_header->e_shnum);
-    fmt::print(" shstrndx ......: {}\n", m_elf_header->e_shstrndx);
+    spdlog::info(" entry .........: {:#018x}\n", m_elf_header->e_entry);
+    spdlog::info(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
+    spdlog::info(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
+    spdlog::info(" flags .........: {:#010x}\n", m_elf_header->e_flags);
+    spdlog::info(" ehsize ........: {}\n", m_elf_header->e_ehsize);
+    spdlog::info(" phentsize .....: {}\n", m_elf_header->e_phentsize);
+    spdlog::info(" phnum .........: {}\n", m_elf_header->e_phnum);
+    spdlog::info(" shentsize .....: {}\n", m_elf_header->e_shentsize);
+    spdlog::info(" shnum .........: {}\n", m_elf_header->e_shnum);
+    spdlog::info(" shstrndx ......: {}\n", m_elf_header->e_shstrndx);
 
     if (m_elf_header->e_phentsize > 0)
     {
-        fmt::print("Program headers:\n");
+        spdlog::info("Program headers:\n");
         for (u16 i = 0; i < m_elf_header->e_phnum; i++)
         {
-            fmt::print("--- phdr [{}] ---\n", i);
-            fmt::print("p_type ....: {:#010x}\n", (m_elf_phdr+i)->p_type);
-            fmt::print("p_flags ...: {:#010x}\n", (m_elf_phdr + i)->p_flags);
-            fmt::print("p_offset ..: {:#018x}\n", (m_elf_phdr + i)->p_offset);
-            fmt::print("p_vaddr ...: {:#018x}\n", (m_elf_phdr + i)->p_vaddr);
-            fmt::print("p_paddr ...: {:#018x}\n", (m_elf_phdr + i)->p_paddr);
-            fmt::print("p_filesz ..: {:#018x}\n", (m_elf_phdr + i)->p_filesz);
-            fmt::print("p_memsz ...: {:#018x}\n", (m_elf_phdr + i)->p_memsz);
-            fmt::print("p_align ...: {:#018x}\n", (m_elf_phdr + i)->p_align);
+            spdlog::info("--- phdr [{}] ---\n", i);
+            spdlog::info("p_type ....: {:#010x}\n", (m_elf_phdr+i)->p_type);
+            spdlog::info("p_flags ...: {:#010x}\n", (m_elf_phdr + i)->p_flags);
+            spdlog::info("p_offset ..: {:#018x}\n", (m_elf_phdr + i)->p_offset);
+            spdlog::info("p_vaddr ...: {:#018x}\n", (m_elf_phdr + i)->p_vaddr);
+            spdlog::info("p_paddr ...: {:#018x}\n", (m_elf_phdr + i)->p_paddr);
+            spdlog::info("p_filesz ..: {:#018x}\n", (m_elf_phdr + i)->p_filesz);
+            spdlog::info("p_memsz ...: {:#018x}\n", (m_elf_phdr + i)->p_memsz);
+            spdlog::info("p_align ...: {:#018x}\n", (m_elf_phdr + i)->p_align);
         }
     }
     if (m_elf_header->e_shentsize > 0)
     {
-        fmt::print("Section headers:\n");
+        spdlog::info("Section headers:\n");
         for (u16 i = 0; i < m_elf_header->e_shnum; i++)
         {
-            fmt::print("--- shdr {} --\n", i);
-            fmt::print("sh_name ........: {}\n", (m_elf_shdr + i)->sh_name);
-            fmt::print("sh_type ........: {:#010x}\n", (m_elf_shdr + i)->sh_type);
-            fmt::print("sh_flags .......: {:#018x}\n", (m_elf_shdr + i)->sh_flags);
-            fmt::print("sh_addr ........: {:#018x}\n", (m_elf_shdr + i)->sh_addr);
-            fmt::print("sh_offset ......: {:#018x}\n", (m_elf_shdr + i)->sh_offset);
-            fmt::print("sh_size ........: {:#018x}\n", (m_elf_shdr + i)->sh_size);
-            fmt::print("sh_link ........: {:#010x}\n", (m_elf_shdr + i)->sh_link);
-            fmt::print("sh_info ........: {:#010x}\n", (m_elf_shdr + i)->sh_info);
-            fmt::print("sh_addralign ...: {:#018x}\n", (m_elf_shdr + i)->sh_addralign);
-            fmt::print("sh_entsize .....: {:#018x}\n", (m_elf_shdr + i)->sh_entsize);
+            spdlog::info("--- shdr {} --\n", i);
+            spdlog::info("sh_name ........: {}\n", (m_elf_shdr + i)->sh_name);
+            spdlog::info("sh_type ........: {:#010x}\n", (m_elf_shdr + i)->sh_type);
+            spdlog::info("sh_flags .......: {:#018x}\n", (m_elf_shdr + i)->sh_flags);
+            spdlog::info("sh_addr ........: {:#018x}\n", (m_elf_shdr + i)->sh_addr);
+            spdlog::info("sh_offset ......: {:#018x}\n", (m_elf_shdr + i)->sh_offset);
+            spdlog::info("sh_size ........: {:#018x}\n", (m_elf_shdr + i)->sh_size);
+            spdlog::info("sh_link ........: {:#010x}\n", (m_elf_shdr + i)->sh_link);
+            spdlog::info("sh_info ........: {:#010x}\n", (m_elf_shdr + i)->sh_info);
+            spdlog::info("sh_addralign ...: {:#018x}\n", (m_elf_shdr + i)->sh_addralign);
+            spdlog::info("sh_entsize .....: {:#018x}\n", (m_elf_shdr + i)->sh_entsize);
         }
     }
 }
