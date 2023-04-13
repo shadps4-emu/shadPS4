@@ -70,6 +70,7 @@ void Elf::Reset()//reset all variables
     }
     delete m_self;
     delete m_elf_header;
+    delete m_self_id_header;
     delete[] m_self_segments;
     delete[] m_elf_phdr;
     delete[] m_elf_shdr;
@@ -79,6 +80,7 @@ void Elf::Reset()//reset all variables
     m_elf_header = nullptr;
     m_elf_phdr = nullptr;
     m_elf_shdr = nullptr;
+    m_self_id_header = nullptr;
 }
 void Elf::Open(const std::string& file_name)
 {
@@ -89,7 +91,8 @@ void Elf::Open(const std::string& file_name)
 
 	m_self = load_self(*m_f);
 
-    if (!isSelfFile())
+    bool isself = isSelfFile();
+    if (!isself)
     {
         delete m_self;
         m_self = nullptr;
@@ -115,6 +118,27 @@ void Elf::Open(const std::string& file_name)
         m_elf_phdr = load_program_header(*m_f, elfheader_pos + m_elf_header->e_phoff, m_elf_header->e_phnum);
         m_elf_shdr = load_section_header(*m_f, elfheader_pos + m_elf_header->e_shoff, m_elf_header->e_shnum);
     }
+    if (isself && m_elf_header != nullptr)
+    {
+        u64 header_size = 0;
+        header_size += sizeof(self_header);
+        header_size += sizeof(self_segment_header) * m_self->segment_count;
+        header_size += sizeof(elf_header);
+        header_size += m_elf_header->e_phnum * m_elf_header->e_phentsize;
+        header_size += m_elf_header->e_shnum * m_elf_header->e_shentsize;
+        header_size += 15; header_size &= ~15; // align
+
+        if (m_elf_header->e_ehsize - header_size >= sizeof(elf_program_id_header))
+        {
+            m_f->Seek(header_size, fsSeekMode::fsSeekSet);
+
+            m_self_id_header = new elf_program_id_header;
+            m_f->Read(m_self_id_header, sizeof(elf_program_id_header));
+
+        }
+    }
+
+
     DebugDump();
 }
 
@@ -326,5 +350,16 @@ void Elf::DebugDump() {
             spdlog::info("sh_addralign ...: {:#018x}\n", (m_elf_shdr + i)->sh_addralign);
             spdlog::info("sh_entsize .....: {:#018x}\n", (m_elf_shdr + i)->sh_entsize);
         }
+    }
+    if (m_self_id_header != nullptr)
+    {
+        spdlog::info("SELF info:\n");
+        spdlog::info("auth id ............: {:#018x}\n", m_self_id_header->authid);
+        spdlog::info("program type .......: {:#018x}\n", m_self_id_header->program_type);
+        spdlog::info("app version ........: {:#018x}\n", m_self_id_header->appver);
+        spdlog::info("fw version .........: {:#018x}\n", m_self_id_header->firmver);
+        spdlog::info("digest..............: 0x");
+        for (int i = 0; i < 32; i++)  spdlog::info("{:02x}", m_self_id_header->digest[i]);
+        spdlog::info("\n");
     }
 }

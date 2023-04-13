@@ -108,6 +108,14 @@ struct elf_section_header
     u64 sh_entsize;   /* Size of entries, if section has table */
 };
 
+struct elf_program_id_header
+{
+    u64 authid;
+    u64 program_type;
+    u64 appver;
+    u64 firmver;
+    u08 digest[32];
+};
 class Elf
 {
 public:
@@ -128,5 +136,6 @@ private:
     elf_header* m_elf_header = nullptr;
     elf_program_header* m_elf_phdr = nullptr;
     elf_section_header* m_elf_shdr = nullptr;
+    elf_program_id_header* m_self_id_header = nullptr;
 };
 
