@@ -194,39 +194,40 @@ bool Elf::isElfFile() const
     {
         return false;
     }
-    if (m_elf_header->e_ident[EI_MAG0] != ELFMAG0 || m_elf_header->e_ident[EI_MAG1] != ELFMAG1 || m_elf_header->e_ident[EI_MAG2] != ELFMAG2 ||
-        m_elf_header->e_ident[EI_MAG3] != ELFMAG3)
+
+    if (m_elf_header->e_ident.magic[EI_MAG0] != ELFMAG0 || m_elf_header->e_ident.magic[EI_MAG1] != ELFMAG1 || m_elf_header->e_ident.magic[EI_MAG2] != ELFMAG2 ||
+        m_elf_header->e_ident.magic[EI_MAG3] != ELFMAG3)
     {
         printf("ERROR:Not an ELF file magic is wrong!\n");
         return false;
     }
-    if (m_elf_header->e_ident[EI_CLASS] != ELFCLASS64)
+    if (m_elf_header->e_ident.ei_class != ELF_CLASS_64)
     {
-        printf("ERROR:e_ident[EI_CLASS] expected 0x02 is (0x%x)\n", m_elf_header->e_ident[EI_CLASS]);
+        printf("ERROR:e_ident[EI_CLASS] expected 0x02 is (0x%x)\n", m_elf_header->e_ident.ei_class);
         return false;
     }
 
-    if (m_elf_header->e_ident[EI_DATA] != ELFDATA2LSB)
+    if (m_elf_header->e_ident.ei_data != ELF_DATA_2LSB)
     {
-        printf("ERROR:e_ident[EI_DATA] expected 0x01 is (0x%x)\n", m_elf_header->e_ident[EI_DATA]);
+        printf("ERROR:e_ident[EI_DATA] expected 0x01 is (0x%x)\n", m_elf_header->e_ident.ei_data);
         return false;
     }
 
-    if (m_elf_header->e_ident[EI_VERSION] != EV_CURRENT)
+    if (m_elf_header->e_ident.ei_version != ELF_VERSION_CURRENT)
     {
-        printf("ERROR:e_ident[EI_VERSION] expected 0x01 is (0x%x)\n", m_elf_header->e_ident[EI_VERSION]);
+        printf("ERROR:e_ident[EI_VERSION] expected 0x01 is (0x%x)\n", m_elf_header->e_ident.ei_version);
         return false;
     }
 
-    if (m_elf_header->e_ident[EI_OSABI] != ELFOSABI_FREEBSD)
+    if (m_elf_header->e_ident.ei_osabi != ELF_OSABI_FREEBSD)
     {
-        printf("ERROR:e_ident[EI_OSABI] expected 0x09 is (0x%x)\n", m_elf_header->e_ident[EI_OSABI]);
+        printf("ERROR:e_ident[EI_OSABI] expected 0x09 is (0x%x)\n", m_elf_header->e_ident.ei_osabi);
         return false;
     }
 
-    if (m_elf_header->e_ident[EI_ABIVERSION] != ELFABIVERSION_AMDGPU_HSA_V2)
+    if (m_elf_header->e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2)
     {
-        printf("ERROR:e_ident[EI_ABIVERSION] expected 0x00 is (0x%x)\n", m_elf_header->e_ident[EI_ABIVERSION]);
+        printf("ERROR:e_ident[EI_ABIVERSION] expected 0x00 is (0x%x)\n", m_elf_header->e_ident.ei_abiversion);
         return false;
     }
 
@@ -272,7 +273,7 @@ void Elf::DebugDump() {
     spdlog::set_formatter(std::move(f));
     spdlog::info("SELF header:\n");
     
-    spdlog::info("  magic ..............: 0x{:x}\n", m_self->magic);
+    spdlog::info("  magic ..............: 0x{:X}\n", m_self->magic);
     spdlog::info("  version    .........: {}\n", m_self->version);
     spdlog::info("  mode       .........: {:#04x}\n", m_self->mode);
     spdlog::info("  endian     .........: {}\n", m_self->endian);
@@ -303,40 +304,76 @@ void Elf::DebugDump() {
     spdlog::info("\n");
 
     spdlog::info("Elf header:\n");
-    spdlog::info(" ident .........: 0x");
-    for (auto i : m_elf_header->e_ident)
+    spdlog::info(" ident ............: 0x");
+    for (auto i : m_elf_header->e_ident.magic)
     {
-        spdlog::info("{:02x}", i);
+        spdlog::info("{:02X}", i);
     }
     spdlog::info("\n");
+
+    auto ident_class = magic_enum::enum_cast<ident_class_es>(m_elf_header->e_ident.ei_class);
+    if (ident_class.has_value())
+    {
+        spdlog::info(" ident class.......: {}\n", magic_enum::enum_name(ident_class.value()));
+    }
+
+    auto ident_data = magic_enum::enum_cast<ident_endian_es>(m_elf_header->e_ident.ei_data);
+    if (ident_data.has_value())
+    {
+        spdlog::info(" ident data .......: {}\n", magic_enum::enum_name(ident_data.value()));
+    }
+
+    auto ident_version = magic_enum::enum_cast<ident_version_es>(m_elf_header->e_ident.ei_version);
+    if (ident_version.has_value())
+    {
+        spdlog::info(" ident version.....: {}\n", magic_enum::enum_name(ident_version.value()));
+    }
+
+    auto ident_osabi = magic_enum::enum_cast<ident_osabi_es>(m_elf_header->e_ident.ei_osabi);
+    if (ident_osabi.has_value())
+    {
+        spdlog::info(" ident osabi  .....: {}\n", magic_enum::enum_name(ident_osabi.value()));
+    }
+
+    auto ident_abiversion = magic_enum::enum_cast<ident_abiversion_es>(m_elf_header->e_ident.ei_abiversion);
+    if (ident_abiversion.has_value())
+    {
+        spdlog::info(" ident abiversion..: {}\n", magic_enum::enum_name(ident_abiversion.value()));
+    }
+
+    spdlog::info(" ident UNK ........: 0x");
+    for (auto i : m_elf_header->e_ident.pad)
+    {
+        spdlog::info("{:02X}", i);
+    }
+    spdlog::info("\n");
+
     auto type = magic_enum::enum_cast<e_type_s>(m_elf_header->e_type);
     if (type.has_value())
     {
-        spdlog::info(" type  .........: {}\n", magic_enum::enum_name(type.value()));
+        spdlog::info(" type  ............: {}\n", magic_enum::enum_name(type.value()));
     }
     
-   //spdlog::info(" type  .........: {:#06x}\n", (int)m_elf_header->e_type);
-
     auto machine = magic_enum::enum_cast<e_machine_es>(m_elf_header->e_machine);
     if (machine.has_value())
     {
-        spdlog::info(" machine .......: {}\n", magic_enum::enum_name(machine.value()));
+        spdlog::info(" machine ..........: {}\n", magic_enum::enum_name(machine.value()));
     }
     auto version = magic_enum::enum_cast<e_version_es>(m_elf_header->e_version);
     if (version.has_value())
     {
-        spdlog::info(" version .......: {}\n", magic_enum::enum_name(version.value()));
+        spdlog::info(" version ..........: {}\n", magic_enum::enum_name(version.value()));
     }
-    spdlog::info(" entry .........: {:#018x}\n", m_elf_header->e_entry);
-    spdlog::info(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
-    spdlog::info(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
-    spdlog::info(" flags .........: {:#010x}\n", m_elf_header->e_flags);
-    spdlog::info(" ehsize ........: {}\n", m_elf_header->e_ehsize);
-    spdlog::info(" phentsize .....: {}\n", m_elf_header->e_phentsize);
-    spdlog::info(" phnum .........: {}\n", m_elf_header->e_phnum);
-    spdlog::info(" shentsize .....: {}\n", m_elf_header->e_shentsize);
-    spdlog::info(" shnum .........: {}\n", m_elf_header->e_shnum);
-    spdlog::info(" shstrndx ......: {}\n", m_elf_header->e_shstrndx);
+    spdlog::info(" entry ............: {:#018x}\n", m_elf_header->e_entry);
+    spdlog::info(" phoff ............: {:#018x}\n", m_elf_header->e_phoff);
+    spdlog::info(" shoff ............: {:#018x}\n", m_elf_header->e_shoff);
+    spdlog::info(" flags ............: {:#010x}\n", m_elf_header->e_flags);
+    spdlog::info(" ehsize ...........: {}\n", m_elf_header->e_ehsize);
+    spdlog::info(" phentsize ........: {}\n", m_elf_header->e_phentsize);
+    spdlog::info(" phnum ............: {}\n", m_elf_header->e_phnum);
+    spdlog::info(" shentsize ........: {}\n", m_elf_header->e_shentsize);
+    spdlog::info(" shnum ............: {}\n", m_elf_header->e_shnum);
+    spdlog::info(" shstrndx .........: {}\n", m_elf_header->e_shstrndx);
 
     if (m_elf_header->e_phentsize > 0)
     {

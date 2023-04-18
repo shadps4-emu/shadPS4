@@ -50,16 +50,6 @@ constexpr u08 ELFMAG1 = 'E';
 constexpr u08 ELFMAG2 = 'L';
 constexpr u08 ELFMAG3 = 'F';
 
-//other ident fields , only ps4 neccesary ones
-constexpr u08 ELFCLASS64 = 2;
-constexpr u08 ELFDATA2LSB = 1;
-constexpr u08 ELFOSABI_FREEBSD = 9;  // FreeBSD
-constexpr u08 ELFABIVERSION_AMDGPU_HSA_V2 = 0;
-
-//type fields PS4 specific
-constexpr u16 ET_DYNEXEC = 0xFE10; // Executable file
-constexpr u16 ET_DYNAMIC = 0xFE18; // Shared
-
 typedef enum : u16 {
     ET_NONE = 0x0,
     ET_REL = 0x1,
@@ -171,9 +161,68 @@ typedef enum :u32 {
     EV_CURRENT = 0x1
 } e_version_es;
 
+typedef enum : u08 {
+    ELF_CLASS_NONE  =0x0,
+    ELF_CLASS_32	=0x1,
+	ELF_CLASS_64	=0x2,
+    ELF_CLASS_NUM	=0x3
+} ident_class_es;
+
+typedef enum : u08 {
+    ELF_DATA_NONE = 0x0,
+    ELF_DATA_2LSB = 0x1,
+    ELF_DATA_2MSB = 0x2,
+    ELF_DATA_NUM = 0x3
+} ident_endian_es;
+
+typedef enum :u08 {
+    ELF_VERSION_NONE = 0x0,
+    ELF_VERSION_CURRENT = 0x1,
+    ELF_VERSION_NUM = 0x2
+} ident_version_es;
+
+typedef enum :u08 {
+    ELF_OSABI_NONE = 0x0,    /* No extensions or unspecified */
+    ELF_OSABI_HPUX = 0x1,    /* Hewlett-Packard HP-UX */
+    ELF_OSABI_NETBSD = 0x2,    /* NetBSD */
+    ELF_OSABI_LINUX = 0x3,    /* Linux */
+    ELF_OSABI_SOLARIS = 0x6,    /* Sun Solaris */
+    ELF_OSABI_AIX = 0x7,    /* AIX */
+    ELF_OSABI_IRIX = 0x8,    /* IRIX */
+    ELF_OSABI_FREEBSD = 0x9,    /* FreeBSD (PS4) */
+    ELF_OSABI_TRU64 = 0xA,    /* Compaq TRU64 UNIX */
+    ELF_OSABI_MODESTO = 0xB,    /* Novell Modesto */
+    ELF_OSABI_OPENBSD = 0xC,    /* Open BSD */
+    ELF_OSABI_OPENVMS = 0xD,    /* Open VMS */
+    ELF_OSABI_NSK = 0xE,    /* Hewlett-Packard Non-Stop Kernel */
+    ELF_OSABI_AROS = 0xF,    /* Amiga Research OS */
+    ELF_OSABI_ARM_AEABI = 0x40,   /* ARM EABI */
+    ELF_OSABI_ARM = 0x61,   /* ARM */
+    ELF_OSABI_STANDALONE = 0xFF    /* Standalone (embedded applications) */
+} ident_osabi_es;
+
+typedef enum :u08 {
+    ELF_ABI_VERSION_AMDGPU_HSA_V2=0x0,
+    ELF_ABI_VERSION_AMDGPU_HSA_V3=0x1,
+    ELF_ABI_VERSION_AMDGPU_HSA_V4=0x2,
+    ELF_ABI_VERSION_AMDGPU_HSA_V5=0x3
+} ident_abiversion_es;
+
+struct elf_ident {
+    u08 magic[4];
+    ident_class_es ei_class;
+    ident_endian_es ei_data;
+    ident_version_es ei_version;
+    ident_osabi_es ei_osabi;
+    ident_abiversion_es ei_abiversion;
+    u08 pad[6];
+};
+
 struct elf_header
 {
-    u08 e_ident[16];        /* ELF identification */
+    static const u32 signature = 0x7F454C46u;
+
+    elf_ident e_ident;      /* ELF identification */
     e_type_s e_type;        /* Object file type */
     e_machine_es e_machine; /* Machine type */
     e_version_es e_version; /* Object file version */
