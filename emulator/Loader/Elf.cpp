@@ -2,6 +2,14 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <magic_enum.hpp>
+
+template <>
+struct magic_enum::customize::enum_range<e_type_s> {
+    static constexpr int min = 0xfe00;
+    static constexpr int max = 0xfe18;
+    // (max - min) must be less than UINT16_MAX.
+};
 
 Elf::~Elf()
 {
@@ -301,11 +309,24 @@ void Elf::DebugDump() {
         spdlog::info("{:02x}", i);
     }
     spdlog::info("\n");
+    auto type = magic_enum::enum_cast<e_type_s>(m_elf_header->e_type);
+    if (type.has_value())
+    {
+        spdlog::info(" type  .........: {}\n", magic_enum::enum_name(type.value()));
+    }
+    
+   //spdlog::info(" type  .........: {:#06x}\n", (int)m_elf_header->e_type);
 
-    //spdlog::info(" type  .........: {:#06x}\n", m_elf_header->e_type);
-    spdlog::info(" machine .......: {:#06x}\n", m_elf_header->e_machine);
-    spdlog::info(" version .......: {:#010x}\n", m_elf_header->e_version);
-
+    auto machine = magic_enum::enum_cast<e_machine_es>(m_elf_header->e_machine);
+    if (machine.has_value())
+    {
+        spdlog::info(" machine .......: {}\n", magic_enum::enum_name(machine.value()));
+    }
+    auto version = magic_enum::enum_cast<e_version_es>(m_elf_header->e_version);
+    if (version.has_value())
+    {
+        spdlog::info(" version .......: {}\n", magic_enum::enum_name(version.value()));
+    }
     spdlog::info(" entry .........: {:#018x}\n", m_elf_header->e_entry);
     spdlog::info(" phoff .........: {:#018x}\n", m_elf_header->e_phoff);
     spdlog::info(" shoff .........: {:#018x}\n", m_elf_header->e_shoff);
@@ -355,7 +376,15 @@ void Elf::DebugDump() {
     {
         spdlog::info("SELF info:\n");
         spdlog::info("auth id ............: {:#018x}\n", m_self_id_header->authid);
-        spdlog::info("program type .......: {:#018x}\n", m_self_id_header->program_type);
+        auto program_type = magic_enum::enum_cast<program_type_es>(m_self_id_header->program_type);
+        if (program_type.has_value())
+        {
+            spdlog::info("program type .......: {}\n", magic_enum::enum_name(program_type.value()));
+        }
+        else
+        {
+            spdlog::info("program type UNK....: {:#018x}\n", (int)m_self_id_header->program_type);
+        }
         spdlog::info("app version ........: {:#018x}\n", m_self_id_header->appver);
         spdlog::info("fw version .........: {:#018x}\n", m_self_id_header->firmver);
         spdlog::info("digest..............: 0x");
