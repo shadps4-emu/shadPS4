@@ -222,7 +222,7 @@ bool Elf::isElfFile() const
         return false;
     }
 
-    if (m_elf_header->e_type != ET_DYNEXEC && m_elf_header->e_type != ET_DYNAMIC)
+    if (m_elf_header->e_type != ET_SCE_DYNEXEC && m_elf_header->e_type != ET_SCE_DYNAMIC)
     {
         printf("ERROR:e_type expected 0xFE10 OR 0xFE18 is (%04x)\n", m_elf_header->e_type);
         return false;
@@ -302,7 +302,7 @@ void Elf::DebugDump() {
     }
     spdlog::info("\n");
 
-    spdlog::info(" type  .........: {:#06x}\n", m_elf_header->e_type);
+    //spdlog::info(" type  .........: {:#06x}\n", m_elf_header->e_type);
     spdlog::info(" machine .......: {:#06x}\n", m_elf_header->e_machine);
     spdlog::info(" version .......: {:#010x}\n", m_elf_header->e_version);
 

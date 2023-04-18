@@ -61,13 +61,25 @@ constexpr u08 ELFABIVERSION_AMDGPU_HSA_V2 = 0;
 constexpr u16 ET_DYNEXEC = 0xFE10; // Executable file
 constexpr u16 ET_DYNAMIC = 0xFE18; // Shared
 
+typedef enum : u16 {
+    ET_NONE = 0x0,
+    ET_REL = 0x1,
+    ET_EXEC = 0x2,
+    ET_DYN = 0x3,
+    ET_CORE = 0x4,
+    ET_SCE_EXEC = 0xfe00,
+    ET_SCE_STUBLIB = 0xfe0c,
+    ET_SCE_DYNEXEC = 0xfe10,
+    ET_SCE_DYNAMIC = 0xfe18
+} e_type_s;
+
 //machine field
 constexpr u16 EM_X86_64 = 62; // Advanced Micro Devices X86-64 processor
 
 struct elf_header
 {
     u08 e_ident[16];        /* ELF identification */
-    u16 e_type;             /* Object file type */
+    e_type_s e_type;        /* Object file type */
     u16 e_machine;          /* Machine type */
     u32 e_version;          /* Object file version */
     u64 e_entry;            /* Entry point address */
