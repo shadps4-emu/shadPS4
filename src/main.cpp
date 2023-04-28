@@ -14,7 +14,7 @@
 #include <SDL3/SDL_opengl.h>
 #endif
 
-#include <fmt/core.h>
+#include "spdlog/spdlog.h"
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -24,7 +24,7 @@
 // Main code
 int main(int, char**)
 {
-    fmt::print("Hello, world!\n");
+    spdlog::info("Welcome to spdlog!");
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
     {

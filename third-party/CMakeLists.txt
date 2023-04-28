@@ -2,6 +2,14 @@
 set(fmt_DIR ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 add_subdirectory(${fmt_DIR})
 
+#=================== SPD ====================
+set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
+set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
+add_subdirectory(spdlog EXCLUDE_FROM_ALL)
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
+
 #=================== SDL3 ===================
 
 set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
