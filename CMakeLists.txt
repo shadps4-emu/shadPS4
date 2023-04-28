@@ -6,6 +6,7 @@ include_directories(third-party/)
 include_directories(third-party/imgui/)
 include_directories(third-party/imgui/backends)
 include_directories(third-party/sdl/)
+include_directories(third-party/fmt/include)
 
 add_subdirectory("third-party")
 
@@ -17,4 +18,4 @@ add_executable(shadps4
 
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(shadps4 PUBLIC IMGUI SDL3-shared ${OPENGL_LIBRARY})
+target_link_libraries(shadps4 PUBLIC fmt IMGUI SDL3-shared ${OPENGL_LIBRARY})

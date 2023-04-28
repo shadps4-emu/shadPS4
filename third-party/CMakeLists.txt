@@ -1,4 +1,6 @@
-
+#====================FMT ====================
+set(fmt_DIR ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+add_subdirectory(${fmt_DIR})
 
 #=================== SDL3 ===================
 
