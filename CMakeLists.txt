@@ -18,4 +18,4 @@ add_executable(shadps4
 
 find_package(OpenGL REQUIRED)
 
-target_link_libraries(shadps4 PUBLIC fmt IMGUI SDL3-shared ${OPENGL_LIBRARY})
+target_link_libraries(shadps4 PUBLIC fmt spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY})
