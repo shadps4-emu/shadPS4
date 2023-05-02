@@ -15,6 +15,8 @@
 #endif
 
 #include "spdlog/spdlog.h"
+#include "types.h"
+#include "Loader/Elf.h"
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -22,9 +24,12 @@
 #endif
 
 // Main code
-int main(int, char**)
+int main(int argc, char* argv[])
 {
-    spdlog::info("Welcome to spdlog!");
+    const char* const path = argv[1]; //argument 1 is the path of self file to boot
+    Elf* elf = new Elf;
+    elf->Open(path);
+
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
     {

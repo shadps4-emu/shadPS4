@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(shadps4)
 
@@ -7,13 +9,18 @@ include_directories(third-party/imgui/)
 include_directories(third-party/imgui/backends)
 include_directories(third-party/sdl/)
 include_directories(third-party/fmt/include)
-
+include_directories(third-party/magic_enum/include)
 add_subdirectory("third-party")
 
 #=================== EXAMPLE ===================
 
 add_executable(shadps4
     src/main.cpp
+    src/types.h
+    src/Core/FsFile.cpp
+    src/Core/FsFile.h
+    src/Loader/Elf.cpp
+    src/Loader/Elf.h
 )
 
 find_package(OpenGL REQUIRED)
