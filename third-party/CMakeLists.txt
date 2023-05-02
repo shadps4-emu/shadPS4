@@ -1,3 +1,7 @@
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+
 #====================FMT ====================
 set(fmt_DIR ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 add_subdirectory(${fmt_DIR})
