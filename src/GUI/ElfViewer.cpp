@@ -10,6 +10,8 @@ ElfViewer::ElfViewer(Elf* elf)
 void ElfViewer::display(bool enabled)
 {
     ImGui::Begin("Self/Elf Viewer", &enabled);
+    //
+    ImGui::BeginChild("Left Tree pane", ImVec2(150, 0), false);//left tree
     if (elf->isSelfFile())
     {
         if (ImGui::TreeNode("Self"))
@@ -56,6 +58,14 @@ void ElfViewer::display(bool enabled)
         }
         ImGui::TreePop();
     }
+    ImGui::EndChild();//end of left tree
+
+    ImGui::SameLine();
+
+    ImGui::BeginChild("Table View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+
+    ImGui::EndChild();
+
     ImGui::End();
     
 }
