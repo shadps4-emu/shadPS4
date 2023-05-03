@@ -293,6 +293,8 @@ public:
     bool isSelfFile() const;
     bool isElfFile() const;
     void DebugDump();
+    [[nodiscard]] const elf_header* GetElfHeader() const { return m_elf_header; }
+    [[nodiscard]] const elf_program_header* GetProgramHeader() const { return m_elf_phdr; }
 private:
 
     void Reset();

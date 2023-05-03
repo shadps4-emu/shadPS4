@@ -17,6 +17,7 @@
 #include "spdlog/spdlog.h"
 #include "types.h"
 #include "Loader/Elf.h"
+#include "GUI/ElfViewer.h"
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -186,6 +187,8 @@ int main(int argc, char* argv[])
             ImGui::End();
         }
 
+        ElfViewer elfview(elf);
+        elfview.display(show_another_window);
         // Rendering
         ImGui::Render();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

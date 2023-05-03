@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.16.3)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 project(shadps4)
 
 include_directories(third-party/)
@@ -21,7 +25,8 @@ add_executable(shadps4
     src/Core/FsFile.h
     src/Loader/Elf.cpp
     src/Loader/Elf.h
-)
+    src/GUI/ElfViewer.cpp
+    src/GUI/ElfViewer.h)
 
 find_package(OpenGL REQUIRED)
 
