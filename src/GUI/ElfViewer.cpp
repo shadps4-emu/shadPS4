@@ -9,36 +9,35 @@ ElfViewer::ElfViewer(Elf* elf)
 //function to display Self/Elf window
 void ElfViewer::display(bool enabled)
 {
+    enum
+    {
+        ELF_HEADER
+    };
+    static int selected = -1;
     ImGui::Begin("Self/Elf Viewer", &enabled);
-    //
-    ImGui::BeginChild("Left Tree pane", ImVec2(150, 0), false);//left tree
+   
+    ImGui::BeginChild("Left Tree pane", ImVec2(200, 0), false);//left tree
     if (elf->isSelfFile())
     {
         if (ImGui::TreeNode("Self"))
-        {
-            if (ImGui::TreeNode("Self Header"))
-            {
-                ImGui::TreePop();
-            }
-            
+        {            
+            ImGui::TreeNodeEx("Self Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Self Header");
+          
             if (ImGui::TreeNode("Self Segment Header"))
             {
                 ImGui::TreePop();
             }
-            if (ImGui::TreeNode("Self Id Header"))
-            {
-                ImGui::TreePop();
-            }
+            ImGui::TreeNodeEx("Self Id Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Self Id Header");
             ImGui::TreePop();
         }
     }
     if (ImGui::TreeNode("Elf"))
     {
-        if (ImGui::TreeNode("Elf Header"))
+        if (ImGui::TreeNodeEx("Elf Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Elf Header"))
         {
-            ImGui::TreePop();
+            if (ImGui::IsItemClicked())
+                selected = ELF_HEADER;
         }
-
         if (ImGui::TreeNode("Elf Program Headers"))
         {
             const auto* elf_header = elf->GetElfHeader();
@@ -63,9 +62,11 @@ void ElfViewer::display(bool enabled)
     ImGui::SameLine();
 
     ImGui::BeginChild("Table View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-
+    if (selected == ELF_HEADER) {
+        ImGui::Text("hello");
+    }
     ImGui::EndChild();
-
+    selected = -1;
     ImGui::End();
     
 }
