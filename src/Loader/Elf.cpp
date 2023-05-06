@@ -4,6 +4,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/pattern_formatter.h>
 #include <magic_enum.hpp>
+#include <fmt/core.h>
 
 template <>
 struct magic_enum::customize::enum_range<e_type_s> {
@@ -272,23 +273,7 @@ void Elf::DebugDump() {
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));   
     auto f = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, std::string(""));  // disable eol
     spdlog::set_formatter(std::move(f));
-    spdlog::info("SELF header:\n");
-    
-    spdlog::info("  magic ..............: 0x{:X}\n", m_self->magic);
-    spdlog::info("  version    .........: {}\n", m_self->version);
-    spdlog::info("  mode       .........: {:#04x}\n", m_self->mode);
-    spdlog::info("  endian     .........: {}\n", m_self->endian);
-    spdlog::info("  attributes .........: {:#04x}\n", m_self->attributes);
-    spdlog::info("  category   .........: {:#04x}\n", m_self->category);
-    spdlog::info("  program_type........: {:#04x}\n", m_self->program_type);
-    spdlog::info("  padding1 ...........: {:#06x}\n", m_self->padding1);
-    spdlog::info("  header size ........: {}\n", m_self->header_size);
-    spdlog::info("  meta size      .....: {}\n", m_self->meta_size);
-    spdlog::info("  file size ..........: {}\n", m_self->file_size);
-    spdlog::info("  padding2 ...........: {:#010x}\n", m_self->padding2);
-    spdlog::info("  segment count ......: {}\n", m_self->segment_count);
-    spdlog::info("  unknown 1A .........: {:#06x}\n", m_self->unknown1A);
-    spdlog::info("  padding3 ...........: {:#010x}\n", m_self->padding3);
+    spdlog::info(SElfHeaderStr());
     spdlog::info("\n");
 
     spdlog::info("SELF segments:\n");
@@ -429,4 +414,25 @@ void Elf::DebugDump() {
         for (int i = 0; i < 32; i++)  spdlog::info("{:02x}", m_self_id_header->digest[i]);
         spdlog::info("\n");
     }
+
+}
+
+std::string Elf::SElfHeaderStr() {
+     std::string header = fmt::format("======= SELF HEADER =========\n", m_self->magic);
+     header+=             fmt::format("magic ..............: 0x{:X}\n", m_self->magic);
+     header+=             fmt::format("version ............: {}\n", m_self->version);
+     header+=             fmt::format("mode ...............: {:#04x}\n", m_self->mode);
+     header+=             fmt::format("endian .............: {}\n", m_self->endian);
+     header+=             fmt::format("attributes .........: {:#04x}\n", m_self->attributes);
+     header+=             fmt::format("category ...........: {:#04x}\n", m_self->category);
+     header+=             fmt::format("program_type........: {:#04x}\n", m_self->program_type);
+     header+=             fmt::format("padding1 ...........: {:#06x}\n", m_self->padding1);
+     header+=             fmt::format("header size ........: {}\n", m_self->header_size);
+     header+=             fmt::format("meta size ..........: {}\n", m_self->meta_size);
+     header+=             fmt::format("file size ..........: {}\n", m_self->file_size);
+     header+=             fmt::format("padding2 ...........: {:#010x}\n", m_self->padding2);
+     header+=             fmt::format("segment count ......: {}\n", m_self->segment_count);
+     header+=             fmt::format("unknown 1A .........: {:#06x}\n", m_self->unknown1A);
+     header+=             fmt::format("padding3 ...........: {:#010x}\n", m_self->padding3);
+     return header;
 }

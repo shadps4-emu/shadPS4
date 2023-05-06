@@ -11,6 +11,7 @@ void ElfViewer::display(bool enabled)
 {
     enum
     {
+        SELF_HEADER,
         ELF_HEADER
     };
     static int selected = -1;
@@ -21,7 +22,11 @@ void ElfViewer::display(bool enabled)
     {
         if (ImGui::TreeNode("Self"))
         {            
-            ImGui::TreeNodeEx("Self Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Self Header");
+            if (ImGui::TreeNodeEx("Self Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Self Header"))
+            {
+                if (ImGui::IsItemClicked())
+                    selected = SELF_HEADER;
+            }
           
             if (ImGui::TreeNode("Self Segment Header"))
             {
@@ -62,11 +67,10 @@ void ElfViewer::display(bool enabled)
     ImGui::SameLine();
 
     ImGui::BeginChild("Table View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-    if (selected == ELF_HEADER) {
-        ImGui::Text("hello");
+    if (selected == SELF_HEADER) {
+        ImGui::TextWrapped(elf->SElfHeaderStr().c_str());
     }
     ImGui::EndChild();
-    selected = -1;
     ImGui::End();
     
 }

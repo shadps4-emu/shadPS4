@@ -295,6 +295,8 @@ public:
     void DebugDump();
     [[nodiscard]] const elf_header* GetElfHeader() const { return m_elf_header; }
     [[nodiscard]] const elf_program_header* GetProgramHeader() const { return m_elf_phdr; }
+
+    std::string SElfHeaderStr();
 private:
 
     void Reset();
