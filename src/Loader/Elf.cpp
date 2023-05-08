@@ -275,17 +275,9 @@ void Elf::DebugDump() {
     spdlog::set_formatter(std::move(f));
     spdlog::info(SElfHeaderStr());
     spdlog::info("\n");
-
-    spdlog::info("SELF segments:\n");
-
-    for (int i = 0; i < m_self->segment_count; i++)
+    for (u16 i = 0; i < m_self->segment_count; i++)
     {
-        auto segment_header = m_self_segments[i];
-        spdlog::info(" [{}]\n", i);
-        spdlog::info("  flags ............: {:#018x}\n", segment_header.flags);
-        spdlog::info("  file offset ......: {:#018x}\n", segment_header.file_offset);
-        spdlog::info("  file size ........: {}\n", segment_header.file_size);
-        spdlog::info("  memory size ......: {}\n", segment_header.memory_size);
+        spdlog::info(SELFSegHeader(i));
     }
     spdlog::info("\n");
 
@@ -435,4 +427,14 @@ std::string Elf::SElfHeaderStr() {
      header+=             fmt::format("unknown 1A .........: {:#06x}\n", m_self->unknown1A);
      header+=             fmt::format("padding3 ...........: {:#010x}\n", m_self->padding3);
      return header;
+}
+std::string Elf::SELFSegHeader(u16 no)
+{
+    auto segment_header = m_self_segments[no];
+    std::string header = fmt::format("======SEGMENT HEADER {} ========\n", no);
+    header += fmt::format("flags ............: {:#018x}\n", segment_header.flags);
+    header += fmt::format("file offset ......: {:#018x}\n", segment_header.file_offset);
+    header += fmt::format("file size ........: {}\n", segment_header.file_size);
+    header += fmt::format("memory size ......: {}\n", segment_header.memory_size);
+    return header;
 }

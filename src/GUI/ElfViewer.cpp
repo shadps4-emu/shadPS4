@@ -9,11 +9,10 @@ ElfViewer::ElfViewer(Elf* elf)
 //function to display Self/Elf window
 void ElfViewer::display(bool enabled)
 {
-    enum
-    {
-        SELF_HEADER,
-        ELF_HEADER
-    };
+    int SELF_HEADER = 0;
+    int ELF_HEADER = 1;
+    int SEG_HEADER_START = 100;
+
     static int selected = -1;
     ImGui::Begin("Self/Elf Viewer", &enabled);
    
@@ -30,6 +29,15 @@ void ElfViewer::display(bool enabled)
           
             if (ImGui::TreeNode("Self Segment Header"))
             {
+                const auto* self = elf->GetSElfHeader();
+                for (u16 i = 0; i < self->segment_count; i++)
+                {
+                    if (ImGui::TreeNodeEx((void*)(intptr_t)i, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d", i))
+                    {
+                        if (ImGui::IsItemClicked())
+                            selected = SEG_HEADER_START+i;
+                    }
+                }
                 ImGui::TreePop();
             }
             ImGui::TreeNodeEx("Self Id Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Self Id Header");
@@ -46,12 +54,10 @@ void ElfViewer::display(bool enabled)
         if (ImGui::TreeNode("Elf Program Headers"))
         {
             const auto* elf_header = elf->GetElfHeader();
-            const auto* program_header = elf->GetProgramHeader();
             for (u16 i = 0; i < elf_header->e_phnum; i++)
             {
-                if (ImGui::TreeNode((void*)(intptr_t)i, "%d", i))
+                if (ImGui::TreeNodeEx((void*)(intptr_t)i,ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d", i))
                 {
-                    ImGui::TreePop();
                 }
             }
             ImGui::TreePop();
@@ -69,6 +75,10 @@ void ElfViewer::display(bool enabled)
     ImGui::BeginChild("Table View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
     if (selected == SELF_HEADER) {
         ImGui::TextWrapped(elf->SElfHeaderStr().c_str());
+    }
+    if (selected >= 100 && selected < 200)
+    {
+        ImGui::TextWrapped(elf->SELFSegHeader(selected-100).c_str());
     }
     ImGui::EndChild();
     ImGui::End();

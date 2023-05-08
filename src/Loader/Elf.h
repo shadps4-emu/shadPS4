@@ -293,10 +293,12 @@ public:
     bool isSelfFile() const;
     bool isElfFile() const;
     void DebugDump();
+    [[nodiscard]] const self_header* GetSElfHeader() const { return m_self; }
     [[nodiscard]] const elf_header* GetElfHeader() const { return m_elf_header; }
     [[nodiscard]] const elf_program_header* GetProgramHeader() const { return m_elf_phdr; }
-
+    [[nodiscard]] const self_segment_header* GetSegmentHeader() const { return m_self_segments; }
     std::string SElfHeaderStr();
+    std::string SELFSegHeader(u16 no);
 private:
 
     void Reset();
