@@ -281,92 +281,14 @@ void Elf::DebugDump() {
     }
     spdlog::info("\n");
 
-    spdlog::info("Elf header:\n");
-    spdlog::info(" ident ............: 0x");
-    for (auto i : m_elf_header->e_ident.magic)
-    {
-        spdlog::info("{:02X}", i);
-    }
-    spdlog::info("\n");
-
-    auto ident_class = magic_enum::enum_cast<ident_class_es>(m_elf_header->e_ident.ei_class);
-    if (ident_class.has_value())
-    {
-        spdlog::info(" ident class.......: {}\n", magic_enum::enum_name(ident_class.value()));
-    }
-
-    auto ident_data = magic_enum::enum_cast<ident_endian_es>(m_elf_header->e_ident.ei_data);
-    if (ident_data.has_value())
-    {
-        spdlog::info(" ident data .......: {}\n", magic_enum::enum_name(ident_data.value()));
-    }
-
-    auto ident_version = magic_enum::enum_cast<ident_version_es>(m_elf_header->e_ident.ei_version);
-    if (ident_version.has_value())
-    {
-        spdlog::info(" ident version.....: {}\n", magic_enum::enum_name(ident_version.value()));
-    }
-
-    auto ident_osabi = magic_enum::enum_cast<ident_osabi_es>(m_elf_header->e_ident.ei_osabi);
-    if (ident_osabi.has_value())
-    {
-        spdlog::info(" ident osabi  .....: {}\n", magic_enum::enum_name(ident_osabi.value()));
-    }
-
-    auto ident_abiversion = magic_enum::enum_cast<ident_abiversion_es>(m_elf_header->e_ident.ei_abiversion);
-    if (ident_abiversion.has_value())
-    {
-        spdlog::info(" ident abiversion..: {}\n", magic_enum::enum_name(ident_abiversion.value()));
-    }
-
-    spdlog::info(" ident UNK ........: 0x");
-    for (auto i : m_elf_header->e_ident.pad)
-    {
-        spdlog::info("{:02X}", i);
-    }
-    spdlog::info("\n");
-
-    auto type = magic_enum::enum_cast<e_type_s>(m_elf_header->e_type);
-    if (type.has_value())
-    {
-        spdlog::info(" type  ............: {}\n", magic_enum::enum_name(type.value()));
-    }
-    
-    auto machine = magic_enum::enum_cast<e_machine_es>(m_elf_header->e_machine);
-    if (machine.has_value())
-    {
-        spdlog::info(" machine ..........: {}\n", magic_enum::enum_name(machine.value()));
-    }
-    auto version = magic_enum::enum_cast<e_version_es>(m_elf_header->e_version);
-    if (version.has_value())
-    {
-        spdlog::info(" version ..........: {}\n", magic_enum::enum_name(version.value()));
-    }
-    spdlog::info(" entry ............: {:#018x}\n", m_elf_header->e_entry);
-    spdlog::info(" phoff ............: {:#018x}\n", m_elf_header->e_phoff);
-    spdlog::info(" shoff ............: {:#018x}\n", m_elf_header->e_shoff);
-    spdlog::info(" flags ............: {:#010x}\n", m_elf_header->e_flags);
-    spdlog::info(" ehsize ...........: {}\n", m_elf_header->e_ehsize);
-    spdlog::info(" phentsize ........: {}\n", m_elf_header->e_phentsize);
-    spdlog::info(" phnum ............: {}\n", m_elf_header->e_phnum);
-    spdlog::info(" shentsize ........: {}\n", m_elf_header->e_shentsize);
-    spdlog::info(" shnum ............: {}\n", m_elf_header->e_shnum);
-    spdlog::info(" shstrndx .........: {}\n", m_elf_header->e_shstrndx);
+    spdlog::info(ElfHeaderStr());
 
     if (m_elf_header->e_phentsize > 0)
     {
         spdlog::info("Program headers:\n");
         for (u16 i = 0; i < m_elf_header->e_phnum; i++)
         {
-            spdlog::info("--- phdr [{}] ---\n", i);
-            spdlog::info("p_type ....: {:#010x}\n", (m_elf_phdr+i)->p_type);
-            spdlog::info("p_flags ...: {:#010x}\n", (m_elf_phdr + i)->p_flags);
-            spdlog::info("p_offset ..: {:#018x}\n", (m_elf_phdr + i)->p_offset);
-            spdlog::info("p_vaddr ...: {:#018x}\n", (m_elf_phdr + i)->p_vaddr);
-            spdlog::info("p_paddr ...: {:#018x}\n", (m_elf_phdr + i)->p_paddr);
-            spdlog::info("p_filesz ..: {:#018x}\n", (m_elf_phdr + i)->p_filesz);
-            spdlog::info("p_memsz ...: {:#018x}\n", (m_elf_phdr + i)->p_memsz);
-            spdlog::info("p_align ...: {:#018x}\n", (m_elf_phdr + i)->p_align);
+            spdlog::info(ElfPHeaderStr(i));
         }
     }
     if (m_elf_header->e_shentsize > 0)
@@ -431,10 +353,99 @@ std::string Elf::SElfHeaderStr() {
 std::string Elf::SELFSegHeader(u16 no)
 {
     auto segment_header = m_self_segments[no];
-    std::string header = fmt::format("======SEGMENT HEADER {} ========\n", no);
+    std::string header = fmt::format("====== SEGMENT HEADER {} ========\n", no);
     header += fmt::format("flags ............: {:#018x}\n", segment_header.flags);
     header += fmt::format("file offset ......: {:#018x}\n", segment_header.file_offset);
     header += fmt::format("file size ........: {}\n", segment_header.file_size);
     header += fmt::format("memory size ......: {}\n", segment_header.memory_size);
+    return header;
+}
+std::string Elf::ElfHeaderStr()
+{
+    std::string header = fmt::format("======= Elf header ===========\n");
+    header+= fmt::format("ident ............: 0x");
+    for (auto i : m_elf_header->e_ident.magic)
+    {
+        header += fmt::format("{:02X}", i);
+    }
+    header += fmt::format("\n");
+
+    auto ident_class = magic_enum::enum_cast<ident_class_es>(m_elf_header->e_ident.ei_class);
+    if (ident_class.has_value())
+    {
+        header += fmt::format("ident class.......: {}\n", magic_enum::enum_name(ident_class.value()));
+    }
+
+    auto ident_data = magic_enum::enum_cast<ident_endian_es>(m_elf_header->e_ident.ei_data);
+    if (ident_data.has_value())
+    {
+        header += fmt::format("ident data .......: {}\n", magic_enum::enum_name(ident_data.value()));
+    }
+
+    auto ident_version = magic_enum::enum_cast<ident_version_es>(m_elf_header->e_ident.ei_version);
+    if (ident_version.has_value())
+    {
+        header += fmt::format("ident version.....: {}\n", magic_enum::enum_name(ident_version.value()));
+    }
+
+    auto ident_osabi = magic_enum::enum_cast<ident_osabi_es>(m_elf_header->e_ident.ei_osabi);
+    if (ident_osabi.has_value())
+    {
+        header += fmt::format("ident osabi  .....: {}\n", magic_enum::enum_name(ident_osabi.value()));
+    }
+
+    auto ident_abiversion = magic_enum::enum_cast<ident_abiversion_es>(m_elf_header->e_ident.ei_abiversion);
+    if (ident_abiversion.has_value())
+    {
+        header += fmt::format("ident abiversion..: {}\n", magic_enum::enum_name(ident_abiversion.value()));
+    }
+
+    header += fmt::format("ident UNK ........: 0x");
+    for (auto i : m_elf_header->e_ident.pad)
+    {
+        header += fmt::format("{:02X}", i);
+    }
+    header += fmt::format("\n");
+
+    auto type = magic_enum::enum_cast<e_type_s>(m_elf_header->e_type);
+    if (type.has_value())
+    {
+        header += fmt::format("type  ............: {}\n", magic_enum::enum_name(type.value()));
+    }
+
+    auto machine = magic_enum::enum_cast<e_machine_es>(m_elf_header->e_machine);
+    if (machine.has_value())
+    {
+        header += fmt::format("machine ..........: {}\n", magic_enum::enum_name(machine.value()));
+    }
+    auto version = magic_enum::enum_cast<e_version_es>(m_elf_header->e_version);
+    if (version.has_value())
+    {
+        header += fmt::format("version ..........: {}\n", magic_enum::enum_name(version.value()));
+    }
+    header += fmt::format("entry ............: {:#018x}\n", m_elf_header->e_entry);
+    header += fmt::format("phoff ............: {:#018x}\n", m_elf_header->e_phoff);
+    header += fmt::format("shoff ............: {:#018x}\n", m_elf_header->e_shoff);
+    header += fmt::format("flags ............: {:#010x}\n", m_elf_header->e_flags);
+    header += fmt::format("ehsize ...........: {}\n", m_elf_header->e_ehsize);
+    header += fmt::format("phentsize ........: {}\n", m_elf_header->e_phentsize);
+    header += fmt::format("phnum ............: {}\n", m_elf_header->e_phnum);
+    header += fmt::format("shentsize ........: {}\n", m_elf_header->e_shentsize);
+    header += fmt::format("shnum ............: {}\n", m_elf_header->e_shnum);
+    header += fmt::format("shstrndx .........: {}\n", m_elf_header->e_shstrndx);
+    return header;
+}
+
+std::string Elf::ElfPHeaderStr(u16 no)
+{
+    std::string header = fmt::format("====== PROGRAM HEADER {} ========\n", no);
+    header += fmt::format("p_type ....: {:#010x}\n", (m_elf_phdr + no)->p_type);
+    header += fmt::format("p_flags ...: {:#010x}\n", (m_elf_phdr + no)->p_flags);
+    header += fmt::format("p_offset ..: {:#018x}\n", (m_elf_phdr + no)->p_offset);
+    header += fmt::format("p_vaddr ...: {:#018x}\n", (m_elf_phdr + no)->p_vaddr);
+    header += fmt::format("p_paddr ...: {:#018x}\n", (m_elf_phdr + no)->p_paddr);
+    header += fmt::format("p_filesz ..: {:#018x}\n", (m_elf_phdr + no)->p_filesz);
+    header += fmt::format("p_memsz ...: {:#018x}\n", (m_elf_phdr + no)->p_memsz);
+    header += fmt::format("p_align ...: {:#018x}\n", (m_elf_phdr + no)->p_align);
     return header;
 }

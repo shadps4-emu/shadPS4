@@ -299,6 +299,8 @@ public:
     [[nodiscard]] const self_segment_header* GetSegmentHeader() const { return m_self_segments; }
     std::string SElfHeaderStr();
     std::string SELFSegHeader(u16 no);
+    std::string ElfHeaderStr();
+    std::string ElfPHeaderStr(u16 no);
 private:
 
     void Reset();

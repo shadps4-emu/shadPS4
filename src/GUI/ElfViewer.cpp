@@ -12,6 +12,7 @@ void ElfViewer::display(bool enabled)
     int SELF_HEADER = 0;
     int ELF_HEADER = 1;
     int SEG_HEADER_START = 100;
+    int ELF_PROGRAM_HEADER_START = 200;
 
     static int selected = -1;
     ImGui::Begin("Self/Elf Viewer", &enabled);
@@ -58,6 +59,8 @@ void ElfViewer::display(bool enabled)
             {
                 if (ImGui::TreeNodeEx((void*)(intptr_t)i,ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d", i))
                 {
+                    if (ImGui::IsItemClicked())
+                        selected = ELF_PROGRAM_HEADER_START + i;
                 }
             }
             ImGui::TreePop();
@@ -79,6 +82,13 @@ void ElfViewer::display(bool enabled)
     if (selected >= 100 && selected < 200)
     {
         ImGui::TextWrapped(elf->SELFSegHeader(selected-100).c_str());
+    }
+    if (selected == ELF_HEADER) {
+        ImGui::TextWrapped(elf->ElfHeaderStr().c_str());
+    }
+    if (selected >= 200 && selected < 300)
+    {
+        ImGui::TextWrapped(elf->ElfPHeaderStr(selected - 200).c_str());
     }
     ImGui::EndChild();
     ImGui::End();
