@@ -31,3 +31,8 @@ add_executable(shadps4
 find_package(OpenGL REQUIRED)
 
 target_link_libraries(shadps4 PUBLIC fmt spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY})
+
+add_custom_command(TARGET shadps4 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+     $<TARGET_FILE:SDL3-shared>
+     $<TARGET_FILE_DIR:shadps4>)
