@@ -42,5 +42,5 @@ jobs:
         name: shadps4-win64
         # A file, directory or wildcard pattern that describes what to upload
         path: |
-          ${{github.workspace}}/out/build/x64/Release/shadps4.exe
-          ${{github.workspace}}/out/build/x64/Release/SDL3.dll
+          ${{github.workspace}}/out/build/Release/shadps4.exe
+          ${{github.workspace}}/out/build/Release/SDL3.dll
