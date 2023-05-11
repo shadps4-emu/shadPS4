@@ -41,4 +41,6 @@ jobs:
       with:
         name: shadps4-win64
         # A file, directory or wildcard pattern that describes what to upload
-        path: x64/Release
+        path: |
+          out/build/x64/Release/shadps4.exe
+          out/build/x64/Release/SDL3.dll
