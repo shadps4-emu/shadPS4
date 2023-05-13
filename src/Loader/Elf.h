@@ -238,10 +238,50 @@ struct elf_header
     u16 e_shstrndx;         /* Section name string table index */
 };
 
+typedef enum : u32 {
+    PT_NULL = 0x0,
+    PT_LOAD = 0x1,
+    PT_DYNAMIC = 0x2,
+    PT_INERP = 0x3,
+    PT_NOTE = 0x4,
+    PT_SHLIB = 0x5,
+    PT_PHDR = 0x6,
+    PT_TLS = 0x7,
+    PT_NUM = 0x8,
+    PT_SCE_RELA = 0x60000000,
+    PT_SCE_DYNLIBDATA = 0x61000000,
+    PT_SCE_PROCPARAM = 0x61000001,
+    PT_SCE_MODULE_PARAM = 0x61000002,
+    PT_SCE_RELRO = 0x61000010,
+    PT_GNU_EH_FRAME = 0x6474e550,
+    PT_GNU_STACK = 0x6474e551,
+    PT_GNU_RELRO = 0x6474e552,
+    PT_SCE_COMMENT = 0x6fffff00,
+    PT_SCE_LIBVERSION = 0x6fffff01,
+    PT_LOSUNW = 0x6ffffffa,
+    PT_SUNWBSS = 0x6ffffffa,
+    PT_SUNWSTACK = 0x6ffffffb,
+    PT_HISUNW = 0x6fffffff,
+    PT_HIOS = 0x6fffffff,
+    PT_LOPROC = 0x70000000,
+    PT_HIPROC = 0x7fffffff
+} elf_program_type;
+
+typedef enum : u32 {
+    PF_NONE = 0x0,
+    PF_EXEC = 0x1,
+    PF_WRITE = 0x2,
+    PF_WRITE_EXEC = 0x3,
+    PF_READ = 0x4,
+    PF_READ_EXEC = 0x5,
+    PF_READ_WRITE = 0x6,
+    PF_READ_WRITE_EXEC = 0x7
+} elf_program_flags;
+
 struct elf_program_header 
 {
-    u32 p_type;   /* Type of segment */
-    u32 p_flags;  /* Segment attributes */
+    elf_program_type p_type;   /* Type of segment */
+    elf_program_flags p_flags;  /* Segment attributes */
     u64 p_offset; /* Offset in file */
     u64 p_vaddr;  /* Virtual address in memory */
     u64 p_paddr;  /* Reserved */
@@ -301,6 +341,9 @@ public:
     std::string SELFSegHeader(u16 no);
     std::string ElfHeaderStr();
     std::string ElfPHeaderStr(u16 no);
+    std::string ElfPheaderTypeStr(u32 type);
+    std::string ElfPheaderFlagsStr(u32 flags);
+
 private:
 
     void Reset();

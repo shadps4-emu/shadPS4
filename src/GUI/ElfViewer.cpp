@@ -17,7 +17,7 @@ void ElfViewer::display(bool enabled)
     static int selected = -1;
     ImGui::Begin("Self/Elf Viewer", &enabled);
    
-    ImGui::BeginChild("Left Tree pane", ImVec2(200, 0), false);//left tree
+    ImGui::BeginChild("Left Tree pane", ImVec2(300, 0), false);//left tree
     if (elf->isSelfFile())
     {
         if (ImGui::TreeNode("Self"))
@@ -57,7 +57,9 @@ void ElfViewer::display(bool enabled)
             const auto* elf_header = elf->GetElfHeader();
             for (u16 i = 0; i < elf_header->e_phnum; i++)
             {
-                if (ImGui::TreeNodeEx((void*)(intptr_t)i,ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d", i))
+                const auto* pheader = elf->GetProgramHeader();
+                std::string ProgramInfo = elf->ElfPheaderFlagsStr((pheader + i)->p_flags) + " " + elf->ElfPheaderTypeStr((pheader + i)->p_type);
+                if (ImGui::TreeNodeEx((void*)(intptr_t)i,ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d - %s", i,ProgramInfo.c_str()))
                 {
                     if (ImGui::IsItemClicked())
                         selected = ELF_PROGRAM_HEADER_START + i;

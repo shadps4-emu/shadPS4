@@ -436,11 +436,71 @@ std::string Elf::ElfHeaderStr()
     return header;
 }
 
+std::string Elf::ElfPheaderTypeStr(u32 type) {
+    switch (type) {
+    case PT_NULL:
+        return "Null";
+    case PT_LOAD:
+        return "Loadable";
+    case PT_DYNAMIC:
+        return "Dynamic";
+    case PT_INERP:
+        return "Interpreter Path";
+    case PT_NOTE:
+        return "Note";
+    case PT_SHLIB:
+        return "Section Header Library";
+    case PT_PHDR:
+        return "Program Header";
+    case PT_TLS:
+        return "Thread-Local Storage";
+    case PT_NUM:
+        return "Defined Sections Number";
+    case PT_SCE_RELA:
+        return "SCE Relative";
+    case PT_SCE_DYNLIBDATA:
+        return "SCE Dynamic Library Data";
+    case PT_SCE_PROCPARAM:
+        return "SCE Processor Parameters";
+    case PT_SCE_MODULE_PARAM:
+        return "SCE Module Parameters";
+    case PT_SCE_RELRO:
+        return "SCE Read-Only After Relocation";
+    case PT_GNU_EH_FRAME:
+        return "GNU Entry Header Frame";
+    case PT_GNU_STACK:
+        return "GNU Stack (executability)";
+    case PT_GNU_RELRO:
+        return "GNU Read-Only After Relocation";
+    case PT_SCE_COMMENT:
+        return "SCE Comment";
+    case PT_SCE_LIBVERSION:
+        return "SCE Library Version";
+    default:
+        return "Unknown Section";
+    }
+}
+
+std::string Elf::ElfPheaderFlagsStr(u32 flags) {
+    std::string flg = "(";
+    flg += (flags & PF_READ) ? "R" : "_";
+    flg += (flags & PF_WRITE) ? "W" : "_";
+    flg += (flags & PF_EXEC) ? "X" : "_";
+    flg += ")";
+    return flg;
+}
+
 std::string Elf::ElfPHeaderStr(u16 no)
 {
     std::string header = fmt::format("====== PROGRAM HEADER {} ========\n", no);
-    header += fmt::format("p_type ....: {:#010x}\n", (m_elf_phdr + no)->p_type);
-    header += fmt::format("p_flags ...: {:#010x}\n", (m_elf_phdr + no)->p_flags);
+    header += fmt::format("p_type ....: {}\n", ElfPheaderTypeStr((m_elf_phdr + no)->p_type));
+    
+    auto flags = magic_enum::enum_cast<elf_program_flags>((m_elf_phdr + no)->p_flags);
+    if (flags.has_value())
+    {
+        header += fmt::format("p_flags ...: {}\n", magic_enum::enum_name(flags.value()));
+    }
+//    header += fmt::format("p_flags ...: {:#010x}\n", (m_elf_phdr + no)->p_flags);
     header += fmt::format("p_offset ..: {:#018x}\n", (m_elf_phdr + no)->p_offset);
     header += fmt::format("p_vaddr ...: {:#018x}\n", (m_elf_phdr + no)->p_vaddr);
     header += fmt::format("p_paddr ...: {:#018x}\n", (m_elf_phdr + no)->p_paddr);
