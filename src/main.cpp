@@ -18,6 +18,7 @@
 #include "types.h"
 #include "Loader/Elf.h"
 #include "GUI/ElfViewer.h"
+#include "Util/Log.h"
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
@@ -27,7 +28,8 @@
 // Main code
 int main(int argc, char* argv[])
 {
-    const char* const path = argv[1]; //argument 1 is the path of self file to boot
+    logging::init(true);//init logging
+    const char* const path =  argv[1]; //argument 1 is the path of self file to boot
     Elf* elf = new Elf;
     elf->Open(path);
 
