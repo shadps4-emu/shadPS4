@@ -26,7 +26,7 @@ add_executable(shadps4
     src/Loader/Elf.cpp
     src/Loader/Elf.h
     src/GUI/ElfViewer.cpp
-    src/GUI/ElfViewer.h "src/Util/Log.h" "src/Util/Log.cpp")
+    src/GUI/ElfViewer.h "src/Util/Log.h" "src/Util/Log.cpp" "src/Core/Memory.cpp" "src/Core/Memory.h")
 
 find_package(OpenGL REQUIRED)
 
