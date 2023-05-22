@@ -273,13 +273,15 @@ void Elf::DebugDump() {
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));   
     auto f = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, std::string(""));  // disable eol
     spdlog::set_formatter(std::move(f));
-    spdlog::info(SElfHeaderStr());
-    spdlog::info("\n");
-    for (u16 i = 0; i < m_self->segment_count; i++)
-    {
-        spdlog::info(SELFSegHeader(i));
+    if (m_self != nullptr) {//if we load elf instead
+        spdlog::info(SElfHeaderStr());
+        spdlog::info("\n");
+        for (u16 i = 0; i < m_self->segment_count; i++)
+        {
+            spdlog::info(SELFSegHeader(i));
+        }
+        spdlog::info("\n");
     }
-    spdlog::info("\n");
 
     spdlog::info(ElfHeaderStr());
 
