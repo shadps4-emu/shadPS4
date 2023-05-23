@@ -24,14 +24,18 @@
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
+#include "Core/PS4/Linker.h"
+#include "Util/Singleton.h"
+
 
 // Main code
 int main(int argc, char* argv[])
 {
     logging::init(true);//init logging
     const char* const path =  argv[1]; //argument 1 is the path of self file to boot
-    Elf* elf = new Elf;
-    elf->Open(path);
+    auto* linker = Singleton<Linker>::Instance();
+    auto *module =linker->LoadModule(path);//load main executable
+
 
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
@@ -188,8 +192,8 @@ int main(int argc, char* argv[])
                 show_another_window = false;
             ImGui::End();
         }
-
-        ElfViewer elfview(elf);
+        auto* linker = Singleton<Linker>::Instance();
+        ElfViewer elfview(linker->FindModule()->elf);
         elfview.display(show_another_window);
         // Rendering
         ImGui::Render();
