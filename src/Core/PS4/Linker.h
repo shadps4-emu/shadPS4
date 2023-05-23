@@ -6,6 +6,8 @@
 struct Module
 {
 	Elf* elf = nullptr;
+	u64 aligned_base_size = 0;
+	u64 base_virtual_addr = 0; //base virtual address
 };
 
 class Linker
@@ -16,6 +18,7 @@ public:
 
 	Module* LoadModule(const std::string& elf_name);
 	Module* FindModule(/*u32 id*/);
+	void LoadModuleToMemory(Module* m);
 
 private:
 	std::vector<Module*> m_modules;
