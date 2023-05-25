@@ -1,5 +1,10 @@
 #include "Linker.h"
 #include "../Memory.h"
+#include "../../Util/Log.h"
+
+constexpr bool debug_loader = true;
+
+static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
 
 Linker::Linker()
 {
@@ -37,7 +42,7 @@ Module* Linker::LoadModule(const std::string& elf_name)
 	auto* m = new Module;
 	m->elf = new Elf;
 	m->elf->Open(elf_name);//load elf
-	
+
 	if (m->elf->isElfFile())
 	{
 		LoadModuleToMemory(m);
@@ -69,8 +74,41 @@ void Linker::LoadModuleToMemory(Module* m)
 	auto* elf_header = m->elf->GetElfHeader();
 	auto* elf_pheader = m->elf->GetProgramHeader();
 
-	u64 base_size = calculate_base_size(elf_header,elf_pheader);
+	u64 base_size = calculate_base_size(elf_header, elf_pheader);
 	m->aligned_base_size = (base_size & ~(static_cast<u64>(0x1000) - 1)) + 0x1000;//align base size to 0x1000 block size (TODO is that the default block size or it can be changed?
 
+	m->base_virtual_addr = Memory::VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size);
 
+	LOG_INFO_IF(debug_loader, "====Load Module to Memory ========\n");
+	LOG_INFO_IF(debug_loader, "base_virtual_addr ......: {:#018x}\n", m->base_virtual_addr);
+	LOG_INFO_IF(debug_loader, "base_size ..............: {:#018x}\n", base_size);
+	LOG_INFO_IF(debug_loader, "aligned_base_size ......: {:#018x}\n", m->aligned_base_size);
+
+	for (u16 i = 0; i < elf_header->e_phnum; i++)
+	{
+		switch(elf_pheader[i].p_type)
+		{
+			case PT_LOAD:
+			case PT_SCE_RELRO:
+				if (elf_pheader[i].p_memsz != 0)
+				{
+					u64 segment_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
+					u64 segment_file_size = elf_pheader[i].p_filesz;
+					u64 segment_memory_size = get_aligned_size(elf_pheader + i);
+					auto segment_mode = m->elf->ElfPheaderFlagsStr((elf_pheader + i)->p_flags);
+					LOG_INFO_IF(debug_loader, "program header = [{}] type = {}\n",i,m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+					LOG_INFO_IF(debug_loader, "segment_addr ..........: {:#018x}\n", segment_addr);
+					LOG_INFO_IF(debug_loader, "segment_file_size .....: {:#018x}\n", segment_file_size);
+					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {:#018x}\n", segment_memory_size);
+					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
+				}
+				else
+				{
+					LOG_ERROR_IF(debug_loader, "p_memsz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+				}
+				break;
+			default:
+				LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+		}
+	}
 }
