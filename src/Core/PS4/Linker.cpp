@@ -98,8 +98,8 @@ void Linker::LoadModuleToMemory(Module* m)
 					auto segment_mode = m->elf->ElfPheaderFlagsStr((elf_pheader + i)->p_flags);
 					LOG_INFO_IF(debug_loader, "program header = [{}] type = {}\n",i,m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
 					LOG_INFO_IF(debug_loader, "segment_addr ..........: {:#018x}\n", segment_addr);
-					LOG_INFO_IF(debug_loader, "segment_file_size .....: {:#018x}\n", segment_file_size);
-					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {:#018x}\n", segment_memory_size);
+					LOG_INFO_IF(debug_loader, "segment_file_size .....: {}\n", segment_file_size);
+					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {}\n", segment_memory_size);
 					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
 				}
 				else
