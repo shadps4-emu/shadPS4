@@ -101,6 +101,8 @@ void Linker::LoadModuleToMemory(Module* m)
 					LOG_INFO_IF(debug_loader, "segment_file_size .....: {}\n", segment_file_size);
 					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {}\n", segment_memory_size);
 					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
+
+					m->elf->LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
 				}
 				else
 				{
@@ -111,4 +113,5 @@ void Linker::LoadModuleToMemory(Module* m)
 				LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
 		}
 	}
+	LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf->GetElfEntry() + m->base_virtual_addr);
 }

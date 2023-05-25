@@ -511,3 +511,21 @@ std::string Elf::ElfPHeaderStr(u16 no)
     header += fmt::format("p_align ...: {:#018x}\n", (m_elf_phdr + no)->p_align);
     return header;
 }
+void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
+{
+    if (m_self!=nullptr)
+    {
+        //it is self file //TODO
+        __debugbreak();
+    }
+    else
+    {
+        //it's elf file
+        m_f->Seek(file_offset, fsSeekMode::fsSeekSet);
+        m_f->Read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+    }
+}
+u64 Elf::GetElfEntry()
+{
+    return m_elf_header->e_entry;
+}

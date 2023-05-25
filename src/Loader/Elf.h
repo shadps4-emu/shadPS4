@@ -343,6 +343,8 @@ public:
     std::string ElfPHeaderStr(u16 no);
     std::string ElfPheaderTypeStr(u32 type);
     std::string ElfPheaderFlagsStr(u32 flags);
+    void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
+    u64 GetElfEntry();
 
 private:
 
