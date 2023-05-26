@@ -8,6 +8,9 @@ struct Module
 	Elf* elf = nullptr;
 	u64 aligned_base_size = 0;
 	u64 base_virtual_addr = 0; //base virtual address
+
+	void* m_dynamic = nullptr;
+	void* m_dynamic_data = nullptr;
 };
 
 class Linker

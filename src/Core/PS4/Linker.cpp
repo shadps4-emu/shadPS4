@@ -109,6 +109,30 @@ void Linker::LoadModuleToMemory(Module* m)
 					LOG_ERROR_IF(debug_loader, "p_memsz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
+			case PT_DYNAMIC:
+				if (elf_pheader[i].p_filesz != 0)
+				{
+					void* dynamic = new u08[elf_pheader[i].p_filesz];
+					m->elf->LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+					m->m_dynamic = dynamic;
+				}
+				else
+				{
+					LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+				}
+				break;
+			case PT_SCE_DYNLIBDATA:
+				if (elf_pheader[i].p_filesz != 0)
+				{
+					void* dynamic = new u08[elf_pheader[i].p_filesz];
+					m->elf->LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+					m->m_dynamic_data = dynamic;
+				}
+				else
+				{
+					LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+				}
+				break;
 			default:
 				LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
 		}
