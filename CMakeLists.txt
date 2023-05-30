@@ -33,7 +33,7 @@ add_executable(shadps4
     src/Core/Memory.h
     src/Core/PS4/Linker.cpp
     src/Core/PS4/Linker.h
-     "src/Util/Singleton.h")
+     "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h")
 
 find_package(OpenGL REQUIRED)
 

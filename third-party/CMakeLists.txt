@@ -19,10 +19,19 @@ target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
 add_subdirectory(${SDL3_DIR})
 
+#================ Zydis ========================
+# Register Zydis dependency.
+# Disable build of tools and examples.
+option(ZYDIS_BUILD_TOOLS "" OFF)
+option(ZYDIS_BUILD_EXAMPLES "" OFF)
+set(zydis_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zydis)
+add_subdirectory(${zydis_DIR})
+
 #=================== IMGUI ===================
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 add_library(IMGUI STATIC)
+
 
 target_sources( IMGUI
                 PRIVATE
@@ -47,6 +56,6 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(IMGUI PUBLIC ${OPENGL_LIBRARIES})
 
 
-target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS})
+target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis)
 
 
