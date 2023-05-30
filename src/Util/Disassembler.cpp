@@ -20,6 +20,9 @@ void Disassembler::printInstruction(void* code)//print a single instruction
 	if (!ZYAN_SUCCESS(status))
 	{
 		printf("decode instruction failed at %p\n", code);
+	}
+	else
+	{
 		printInst(instruction, operands);
 	}
 }
