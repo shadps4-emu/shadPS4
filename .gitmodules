@@ -13,3 +13,6 @@
 [submodule "third-party/magic_enum"]
 	path = third-party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
+[submodule "third-party/zydis"]
+	path = third-party/zydis
+	url = https://github.com/zyantific/zydis.git
