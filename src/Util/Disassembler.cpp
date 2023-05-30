@@ -12,25 +12,25 @@ Disassembler::~Disassembler()
 {
 }
 
-void Disassembler::printInstruction(void* code)//print a single instruction
+void Disassembler::printInstruction(void* code,u64 address)//print a single instruction
 {
 	ZydisDecodedInstruction instruction;
 	ZydisDecodedOperand     operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
-	ZyanStatus              status = ZydisDecoderDecodeFull(&m_decoder, code, ZYDIS_MAX_INSTRUCTION_LENGTH,&instruction, operands);
+	ZyanStatus              status = ZydisDecoderDecodeFull(&m_decoder, code, sizeof(code), &instruction, operands);
 	if (!ZYAN_SUCCESS(status))
 	{
 		printf("decode instruction failed at %p\n", code);
 	}
 	else
 	{
-		printInst(instruction, operands);
+		printInst(instruction, operands,address);
 	}
 }
 
-void Disassembler::printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands)
+void Disassembler::printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,u64 address)
 {
 	const int bufLen = 256;
 	char      szBuffer[bufLen];
-	ZydisFormatterFormatInstruction(&m_formatter, &inst, operands,inst.operand_count_visible, szBuffer, sizeof(szBuffer), 0,NULL);
+	ZydisFormatterFormatInstruction(&m_formatter, &inst, operands,inst.operand_count_visible, szBuffer, sizeof(szBuffer), address, ZYAN_NULL);
     printf("instruction: %s\n", szBuffer);
 }

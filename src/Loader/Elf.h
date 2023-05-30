@@ -242,7 +242,7 @@ typedef enum : u32 {
     PT_NULL = 0x0,
     PT_LOAD = 0x1,
     PT_DYNAMIC = 0x2,
-    PT_INERP = 0x3,
+    PT_INTERP = 0x3,
     PT_NOTE = 0x4,
     PT_SHLIB = 0x5,
     PT_PHDR = 0x6,

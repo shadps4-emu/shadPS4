@@ -1,14 +1,15 @@
 #pragma once
 
 #include "zydis/Zydis.h"
+#include "../types.h"
 
 class Disassembler
 {
 public:
 	Disassembler();
 	~Disassembler();
-	void printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands);
-	void printInstruction(void* code);
+	void printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,u64 address);
+	void printInstruction(void* code,u64 address);
 
 private:
 	ZydisDecoder   m_decoder;

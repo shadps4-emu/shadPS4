@@ -1,6 +1,7 @@
 #include "Linker.h"
 #include "../Memory.h"
 #include "../../Util/Log.h"
+#include "../../Util/Disassembler.h"
 
 constexpr bool debug_loader = true;
 
@@ -101,7 +102,7 @@ void Linker::LoadModuleToMemory(Module* m)
 					LOG_INFO_IF(debug_loader, "segment_file_size .....: {}\n", segment_file_size);
 					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {}\n", segment_memory_size);
 					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
-
+					
 					m->elf->LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
 				}
 				else
@@ -138,4 +139,22 @@ void Linker::LoadModuleToMemory(Module* m)
 		}
 	}
 	LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf->GetElfEntry() + m->base_virtual_addr);
+
+	auto* rt1 = reinterpret_cast<uint8_t*>(m->elf->GetElfEntry() + m->base_virtual_addr);
+	ZyanU64 runtime_address = m->elf->GetElfEntry() + m->base_virtual_addr;
+
+	// Loop over the instructions in our buffer.
+	ZyanUSize offset = 0;
+	ZydisDisassembledInstruction instruction;
+	while (ZYAN_SUCCESS(ZydisDisassembleIntel(
+		/* machine_mode:    */ ZYDIS_MACHINE_MODE_LONG_64,
+		/* runtime_address: */ runtime_address,
+		/* buffer:          */ rt1 + offset,
+		/* length:          */ sizeof(rt1) - offset,
+		/* instruction:     */ &instruction
+	))) {
+		printf("%016" PRIX64 "  %s\n", runtime_address, instruction.text);
+		offset += instruction.info.length;
+		runtime_address += instruction.info.length;
+	}
 }

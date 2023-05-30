@@ -446,7 +446,7 @@ std::string Elf::ElfPheaderTypeStr(u32 type) {
         return "Loadable";
     case PT_DYNAMIC:
         return "Dynamic";
-    case PT_INERP:
+    case PT_INTERP:
         return "Interpreter Path";
     case PT_NOTE:
         return "Note";
