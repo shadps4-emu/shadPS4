@@ -323,6 +323,19 @@ struct elf_program_id_header
     u64 firmver;
     u08 digest[32];
 };
+
+constexpr s64 DT_NULL = 0;
+constexpr s64 DT_OS_HASH = 0x61000025;
+
+struct elf_dynamic 
+{
+    s64 d_tag;
+    union
+    {
+        u64 d_val;
+        u64 d_ptr;
+    } d_un;
+};
 class Elf
 {
 public:

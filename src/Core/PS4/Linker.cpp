@@ -47,6 +47,7 @@ Module* Linker::LoadModule(const std::string& elf_name)
 	if (m->elf->isElfFile())
 	{
 		LoadModuleToMemory(m);
+		LoadDynamicInfo(m);
 	}
 	else
 	{
@@ -156,5 +157,23 @@ void Linker::LoadModuleToMemory(Module* m)
 		printf("%016" PRIX64 "  %s\n", runtime_address, instruction.text);
 		offset += instruction.info.length;
 		runtime_address += instruction.info.length;
+	}
+}
+
+void Linker::LoadDynamicInfo(Module* m)
+{
+	m->dynamic_info = new DynamicModuleInfo;
+
+	for (const auto* dyn = static_cast<elf_dynamic*>(m->m_dynamic); dyn->d_tag != DT_NULL; dyn++)
+	{
+		switch (dyn->d_tag)
+		{
+		case DT_OS_HASH:
+			m->dynamic_info->hash_table = reinterpret_cast<void*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		default:
+			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
+		}
+		
 	}
 }
