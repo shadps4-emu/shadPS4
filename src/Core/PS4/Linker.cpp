@@ -180,6 +180,21 @@ void Linker::LoadDynamicInfo(Module* m)
 		case DT_OS_STRSZ:
 			m->dynamic_info->str_table_size = dyn->d_un.d_val;
 			break;
+		case DT_OS_SYMTAB:
+			m->dynamic_info->symbol_table = reinterpret_cast<elf_symbol*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_OS_SYMTABSZ:
+			m->dynamic_info->symbol_table_total_size = dyn->d_un.d_val;
+			break;
+		case DT_INIT:
+			m->dynamic_info->init_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_FINI:
+			m->dynamic_info->fini_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_OS_PLTGOT:
+			m->dynamic_info->pltgot_virtual_addr = dyn->d_un.d_ptr;
+			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
 		}

@@ -324,11 +324,17 @@ struct elf_program_id_header
     u08 digest[32];
 };
 
-constexpr s64 DT_NULL = 0;
-constexpr s64 DT_OS_HASH = 0x61000025;
-constexpr s64 DT_OS_HASHSZ = 0x6100003d;
-constexpr s64 DT_OS_STRTAB = 0x61000035;
-constexpr s64 DT_OS_STRSZ = 0x61000037;
+constexpr s64 DT_NULL        = 0;
+constexpr s64 DT_INIT        = 0x0000000c;
+constexpr s64 DT_FINI        = 0x0000000d;
+constexpr s64 DT_OS_HASH     = 0x61000025;
+constexpr s64 DT_OS_PLTGOT   = 0x61000027;
+constexpr s64 DT_OS_HASHSZ   = 0x6100003d;
+constexpr s64 DT_OS_STRTAB   = 0x61000035;
+constexpr s64 DT_OS_STRSZ    = 0x61000037;
+constexpr s64 DT_OS_SYMTAB   = 0x61000039;
+constexpr s64 DT_OS_SYMTABSZ = 0x6100003f;
+
 
 struct elf_dynamic 
 {
@@ -339,6 +345,17 @@ struct elf_dynamic
         u64 d_ptr;
     } d_un;
 };
+
+struct elf_symbol
+{
+    u32 st_name;
+    u08 st_info;
+    u08 st_other;
+    u16 st_shndx;
+    u64 st_value;
+    u64 st_size;
+};
+
 class Elf
 {
 public:

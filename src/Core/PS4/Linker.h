@@ -23,6 +23,14 @@ struct DynamicModuleInfo
 
 	char* str_table = nullptr;
 	u64 str_table_size = 0;
+
+	elf_symbol* symbol_table = nullptr;
+	u64 symbol_table_total_size = 0;
+
+	u64 init_virtual_addr = 0;
+	u64 fini_virtual_addr = 0;
+	u64 pltgot_virtual_addr = 0;
+
 };
 
 class Linker
