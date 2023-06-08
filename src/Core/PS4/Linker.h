@@ -19,6 +19,10 @@ struct Module
 struct DynamicModuleInfo
 {
 	void* hash_table = nullptr;
+	u64 hash_table_size = 0;
+
+	char* str_table = nullptr;
+	u64 str_table_size = 0;
 };
 
 class Linker

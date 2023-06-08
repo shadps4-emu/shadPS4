@@ -326,6 +326,9 @@ struct elf_program_id_header
 
 constexpr s64 DT_NULL = 0;
 constexpr s64 DT_OS_HASH = 0x61000025;
+constexpr s64 DT_OS_HASHSZ = 0x6100003d;
+constexpr s64 DT_OS_STRTAB = 0x61000035;
+constexpr s64 DT_OS_STRSZ = 0x61000037;
 
 struct elf_dynamic 
 {
