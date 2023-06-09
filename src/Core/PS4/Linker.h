@@ -45,6 +45,13 @@ struct DynamicModuleInfo
 	elf_relocation* relocation_table = nullptr;
 	u64 relocation_table_size = 0;
 	u64 relocation_table_entries_size = 0;
+
+	u64 debug = 0;
+	u64 textrel = 0;
+	u64 flags = 0;
+
+	std::vector<const char*> needed;
+
 };
 
 class Linker

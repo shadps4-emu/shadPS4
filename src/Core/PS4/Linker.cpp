@@ -246,6 +246,29 @@ void Linker::LoadDynamicInfo(Module* m)
 				LOG_WARN_IF(debug_loader, "DT_SCE_SYMENT is NOT 0x18 should check!");
 			}
 			break;
+		case DT_DEBUG:
+			m->dynamic_info->debug = dyn->d_un.d_val;
+			break;
+		case DT_TEXTREL:
+			m->dynamic_info->textrel = dyn->d_un.d_val;
+			break;
+		case DT_FLAGS:
+			m->dynamic_info->flags = dyn->d_un.d_val;
+			if (m->dynamic_info->flags != 0x04) //this value should always be DF_TEXTREL (0x04)
+			{
+				LOG_WARN_IF(debug_loader, "DT_FLAGS is NOT 0x04 should check!");
+			}
+			break;
+		case DT_NEEDED://Offset of the library string in the string table to be linked in.
+			if (m->dynamic_info->str_table != nullptr)//in theory this should already be filled from about just make a test case
+			{
+				m->dynamic_info->needed.push_back(m->dynamic_info->str_table + dyn->d_un.d_val);
+			}
+			else
+			{
+				LOG_ERROR_IF(debug_loader, "DT_NEEDED str table is not loaded should check!");
+			}
+			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
 		}

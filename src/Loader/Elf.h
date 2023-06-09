@@ -325,13 +325,17 @@ struct elf_program_id_header
 };
 
 constexpr s64 DT_NULL            = 0;
+constexpr s64 DT_NEEDED          = 0x00000001;
 constexpr s64 DT_RELA            = 0x00000007;
 constexpr s64 DT_INIT            = 0x0000000c;
 constexpr s64 DT_FINI            = 0x0000000d;
+constexpr s64 DT_DEBUG           = 0x00000015;
+constexpr s64 DT_TEXTREL         = 0x00000016;
 constexpr s64 DT_INIT_ARRAY      = 0x00000019;
 constexpr s64 DT_FINI_ARRAY      = 0x0000001a;
 constexpr s64 DT_INIT_ARRAYSZ    = 0x0000001b;
 constexpr s64 DT_FINI_ARRAYSZ    = 0x0000001c;
+constexpr s64 DT_FLAGS           = 0x0000001e;
 constexpr s64 DT_PREINIT_ARRAY   = 0x00000020;
 constexpr s64 DT_PREINIT_ARRAYSZ = 0x00000021;
 constexpr s64 DT_SCE_HASH        = 0x61000025;
