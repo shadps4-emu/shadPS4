@@ -324,23 +324,30 @@ struct elf_program_id_header
     u08 digest[32];
 };
 
-constexpr s64 DT_NULL         = 0;
-constexpr s64 DT_RELA         = 0x00000007;
-constexpr s64 DT_INIT         = 0x0000000c;
-constexpr s64 DT_FINI         = 0x0000000d;
-constexpr s64 DT_SCE_HASH     = 0x61000025;
-constexpr s64 DT_SCE_PLTGOT   = 0x61000027;
-constexpr s64 DT_SCE_JMPREL   = 0x61000029;
-constexpr s64 DT_SCE_PLTREL   = 0x6100002b;
-constexpr s64 DT_SCE_PLTRELSZ = 0x6100002d;
-constexpr s64 DT_SCE_RELA     = 0x6100002f;
-constexpr s64 DT_SCE_RELASZ   = 0x61000031;
-constexpr s64 DT_SCE_RELAENT  = 0x61000033;
-constexpr s64 DT_SCE_HASHSZ   = 0x6100003d;
-constexpr s64 DT_SCE_STRTAB   = 0x61000035;
-constexpr s64 DT_SCE_STRSZ    = 0x61000037;
-constexpr s64 DT_SCE_SYMTAB   = 0x61000039;
-constexpr s64 DT_SCE_SYMTABSZ = 0x6100003f;
+constexpr s64 DT_NULL            = 0;
+constexpr s64 DT_RELA            = 0x00000007;
+constexpr s64 DT_INIT            = 0x0000000c;
+constexpr s64 DT_FINI            = 0x0000000d;
+constexpr s64 DT_INIT_ARRAY      = 0x00000019;
+constexpr s64 DT_FINI_ARRAY      = 0x0000001a;
+constexpr s64 DT_INIT_ARRAYSZ    = 0x0000001b;
+constexpr s64 DT_FINI_ARRAYSZ    = 0x0000001c;
+constexpr s64 DT_PREINIT_ARRAY   = 0x00000020;
+constexpr s64 DT_PREINIT_ARRAYSZ = 0x00000021;
+constexpr s64 DT_SCE_HASH        = 0x61000025;
+constexpr s64 DT_SCE_PLTGOT      = 0x61000027;
+constexpr s64 DT_SCE_JMPREL      = 0x61000029;
+constexpr s64 DT_SCE_PLTREL      = 0x6100002b;
+constexpr s64 DT_SCE_PLTRELSZ    = 0x6100002d;
+constexpr s64 DT_SCE_RELA        = 0x6100002f;
+constexpr s64 DT_SCE_RELASZ      = 0x61000031;
+constexpr s64 DT_SCE_RELAENT     = 0x61000033;
+constexpr s64 DT_SCE_SYMENT      = 0x6100003b;
+constexpr s64 DT_SCE_HASHSZ      = 0x6100003d;
+constexpr s64 DT_SCE_STRTAB      = 0x61000035;
+constexpr s64 DT_SCE_STRSZ       = 0x61000037;
+constexpr s64 DT_SCE_SYMTAB      = 0x61000039;
+constexpr s64 DT_SCE_SYMTABSZ    = 0x6100003f;
 
 
 struct elf_dynamic 

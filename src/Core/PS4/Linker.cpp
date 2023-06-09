@@ -221,6 +221,31 @@ void Linker::LoadDynamicInfo(Module* m)
 				LOG_WARN_IF(debug_loader, "DT_SCE_RELAENT is NOT 0x18 should check!");
 			}
 			break;
+		case DT_INIT_ARRAY:
+			m->dynamic_info->init_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_FINI_ARRAY:
+			m->dynamic_info->fini_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_INIT_ARRAYSZ:
+			m->dynamic_info->init_array_size = dyn->d_un.d_val;
+			break;
+		case DT_FINI_ARRAYSZ:
+			m->dynamic_info->fini_array_size = dyn->d_un.d_val;
+			break;
+		case DT_PREINIT_ARRAY:
+			m->dynamic_info->preinit_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_PREINIT_ARRAYSZ:
+			m->dynamic_info->preinit_array_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_SYMENT: //The size of symbol table entries
+			m->dynamic_info->symbol_table_entries_size = dyn->d_un.d_val;
+			if (m->dynamic_info->symbol_table_entries_size != 0x18) //this value should always be 0x18
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_SYMENT is NOT 0x18 should check!");
+			}
+			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
 		}

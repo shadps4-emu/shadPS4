@@ -26,10 +26,17 @@ struct DynamicModuleInfo
 
 	elf_symbol* symbol_table = nullptr;
 	u64 symbol_table_total_size = 0;
+	u64 symbol_table_entries_size = 0;
 
 	u64 init_virtual_addr = 0;
 	u64 fini_virtual_addr = 0;
 	u64 pltgot_virtual_addr = 0;
+	u64 init_array_virtual_addr = 0;
+	u64 fini_array_virtual_addr = 0;
+	u64 preinit_array_virtual_addr = 0;
+	u64 init_array_size = 0;
+	u64 fini_array_size = 0;
+	u64 preinit_array_size = 0;
 
 	elf_relocation* jmp_relocation_table = nullptr;
 	u64 jmp_relocation_table_size = 0;
