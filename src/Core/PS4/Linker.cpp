@@ -168,22 +168,22 @@ void Linker::LoadDynamicInfo(Module* m)
 	{
 		switch (dyn->d_tag)
 		{
-		case DT_OS_HASH:
+		case DT_SCE_HASH: //Offset of the hash table.
 			m->dynamic_info->hash_table = reinterpret_cast<void*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
 			break;
-		case DT_OS_HASHSZ:
+		case DT_SCE_HASHSZ: //Size of the hash table
 			m->dynamic_info->hash_table_size = dyn->d_un.d_val;
 			break;
-		case DT_OS_STRTAB:
+		case DT_SCE_STRTAB://Offset of the string table. 
 			m->dynamic_info->str_table = reinterpret_cast<char*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
 			break;
-		case DT_OS_STRSZ:
+		case DT_SCE_STRSZ: //Size of the string table.
 			m->dynamic_info->str_table_size = dyn->d_un.d_val;
 			break;
-		case DT_OS_SYMTAB:
+		case DT_SCE_SYMTAB://Offset of the symbol table.
 			m->dynamic_info->symbol_table = reinterpret_cast<elf_symbol*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
 			break;
-		case DT_OS_SYMTABSZ:
+		case DT_SCE_SYMTABSZ://Size of the symbol table.
 			m->dynamic_info->symbol_table_total_size = dyn->d_un.d_val;
 			break;
 		case DT_INIT:
@@ -192,8 +192,34 @@ void Linker::LoadDynamicInfo(Module* m)
 		case DT_FINI:
 			m->dynamic_info->fini_virtual_addr = dyn->d_un.d_ptr;
 			break;
-		case DT_OS_PLTGOT:
+		case DT_SCE_PLTGOT: //Offset of the global offset table.
 			m->dynamic_info->pltgot_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_SCE_JMPREL: //Offset of the table containing jump slots.
+			m->dynamic_info->jmp_relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_PLTRELSZ: //Size of the global offset table.
+			m->dynamic_info->jmp_relocation_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_PLTREL: //The type of relocations in the relocation table. Should be DT_RELA
+			m->dynamic_info->jmp_relocation_type = dyn->d_un.d_val;
+			if (m->dynamic_info->jmp_relocation_type != DT_RELA)
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_PLTREL is NOT DT_RELA should check!");
+			}
+			break;
+		case DT_SCE_RELA: //Offset of the relocation table.
+			m->dynamic_info->relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_RELASZ: //Size of the relocation table.
+			m->dynamic_info->relocation_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_RELAENT : //The size of relocation table entries.
+			m->dynamic_info->relocation_table_entries_size = dyn->d_un.d_val;
+			if (m->dynamic_info->relocation_table_entries_size != 0x18) //this value should always be 0x18
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_RELAENT is NOT 0x18 should check!");
+			}
 			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);

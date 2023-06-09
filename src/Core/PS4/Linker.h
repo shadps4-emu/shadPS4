@@ -31,6 +31,13 @@ struct DynamicModuleInfo
 	u64 fini_virtual_addr = 0;
 	u64 pltgot_virtual_addr = 0;
 
+	elf_relocation* jmp_relocation_table = nullptr;
+	u64 jmp_relocation_table_size = 0;
+	s64 jmp_relocation_type = 0;
+
+	elf_relocation* relocation_table = nullptr;
+	u64 relocation_table_size = 0;
+	u64 relocation_table_entries_size = 0;
 };
 
 class Linker
