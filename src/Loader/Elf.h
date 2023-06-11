@@ -338,6 +338,7 @@ constexpr s64 DT_FINI_ARRAYSZ    = 0x0000001c;
 constexpr s64 DT_FLAGS           = 0x0000001e;
 constexpr s64 DT_PREINIT_ARRAY   = 0x00000020;
 constexpr s64 DT_PREINIT_ARRAYSZ = 0x00000021;
+constexpr s64 DT_OS_NEEDED_MODULE= 0x6100000f;
 constexpr s64 DT_SCE_HASH        = 0x61000025;
 constexpr s64 DT_SCE_PLTGOT      = 0x61000027;
 constexpr s64 DT_SCE_JMPREL      = 0x61000029;

@@ -16,6 +16,22 @@ struct Module
 	DynamicModuleInfo* dynamic_info = nullptr;
 };
 
+struct ModuleInfo
+{
+	std::string name;
+	union
+	{
+		u64 value;
+		struct
+		{
+			u32 name_offset;
+			u08 version_minor;
+			u08 version_major;
+			u16 id;
+		};
+	};
+};
+
 struct DynamicModuleInfo
 {
 	void* hash_table = nullptr;

@@ -163,6 +163,7 @@ void Linker::LoadModuleToMemory(Module* m)
 void Linker::LoadDynamicInfo(Module* m)
 {
 	m->dynamic_info = new DynamicModuleInfo;
+	std::vector<ModuleInfo> needed_modules;
 
 	for (const auto* dyn = static_cast<elf_dynamic*>(m->m_dynamic); dyn->d_tag != DT_NULL; dyn++)
 	{
@@ -221,22 +222,22 @@ void Linker::LoadDynamicInfo(Module* m)
 				LOG_WARN_IF(debug_loader, "DT_SCE_RELAENT is NOT 0x18 should check!");
 			}
 			break;
-		case DT_INIT_ARRAY:
+		case DT_INIT_ARRAY:// Address of the array of pointers to initialization functions 
 			m->dynamic_info->init_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
-		case DT_FINI_ARRAY:
+		case DT_FINI_ARRAY: // Address of the array of pointers to termination functions
 			m->dynamic_info->fini_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
-		case DT_INIT_ARRAYSZ:
+		case DT_INIT_ARRAYSZ://Size in bytes of the array of initialization functions
 			m->dynamic_info->init_array_size = dyn->d_un.d_val;
 			break;
-		case DT_FINI_ARRAYSZ:
+		case DT_FINI_ARRAYSZ://Size in bytes of the array of terminationfunctions
 			m->dynamic_info->fini_array_size = dyn->d_un.d_val;
 			break;
-		case DT_PREINIT_ARRAY:
+		case DT_PREINIT_ARRAY://Address of the array of pointers to pre - initialization functions
 			m->dynamic_info->preinit_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
-		case DT_PREINIT_ARRAYSZ:
+		case DT_PREINIT_ARRAYSZ://Size in bytes of the array of pre - initialization functions
 			m->dynamic_info->preinit_array_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_SYMENT: //The size of symbol table entries
@@ -267,6 +268,14 @@ void Linker::LoadDynamicInfo(Module* m)
 			else
 			{
 				LOG_ERROR_IF(debug_loader, "DT_NEEDED str table is not loaded should check!");
+			}
+			break;
+		case DT_OS_NEEDED_MODULE:
+			{
+				ModuleInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				needed_modules.push_back(info);
 			}
 			break;
 		default:
