@@ -6,6 +6,12 @@ An early progress ps4 emulator for windows
 
 Currently it can only load ps4 elf files . 
 
+![](https://geps.dev/progress/60) Elf Loader
+
+![](https://geps.dev/progress/20) Logging system
+
+![](https://geps.dev/progress/5) Everything else
+
 # Why?
 
 The project started as a fan project. Due to short amount of free time probably it will take a while since it will be able to run something decent but i am trying to do regular small commits.
