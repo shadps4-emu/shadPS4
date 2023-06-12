@@ -1,10 +1,10 @@
 # shadPS4
 
-An early progress ps4 emulator for windows
+An early PS4 emulator for Windows
 
 # Status
 
-Currently it can only load ps4 elf files . 
+Currently it can only load PS4 ELF files . 
 
 ![](https://geps.dev/progress/60) Elf Loader
 
@@ -14,11 +14,11 @@ Currently it can only load ps4 elf files .
 
 # Why?
 
-The project started as a fan project. Due to short amount of free time probably it will take a while since it will be able to run something decent but i am trying to do regular small commits.
+The project started as a fun project. Due to short amount of free time probably it will take a while since it will be able to run something decent but I am trying to do regular small commits.
 
 # Build 
 
-Project is using cmake files. To build .Atm vstudio 2022 is enough 
+Project is using cmake files. To build, Visual Studio 2022 is enough 
 
 |Platform|Build status|
 |--------|------------|
@@ -29,7 +29,7 @@ To discuss this emulator please join our Discord server: [![Discord](https://img
 
 # Who are you?
 
-Old emulator fans and devs can recongnize me as "shadow" . I was founder and coder for a lot of emulation projects 
+Old emulator fans and devs can recongnize me as "shadow" . I was the founder and coder for a lot of emulation projects 
 * PCSX
 * PCSX2
 * PCSP
@@ -38,10 +38,10 @@ Old emulator fans and devs can recongnize me as "shadow" . I was founder and cod
 
 # Contribution
 
-Currently i accept any kind of contribution some hints for what is might be useful.
+Currently I accept any kind of contribution some hints for what is might be useful.
 
-* PKG extractor (there was an initial work on this , just search project history commits)
-* Initial GUI with imgui , SDL3 and Vulkan.
+* PKG extractor (there was an initial work on this, just search project history commits)
+* Initial GUI with imgui, SDL3 and Vulkan.
 * Better logging system with spdlog
 * ..to be filled
 
