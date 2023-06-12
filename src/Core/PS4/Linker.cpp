@@ -163,7 +163,6 @@ void Linker::LoadModuleToMemory(Module* m)
 void Linker::LoadDynamicInfo(Module* m)
 {
 	m->dynamic_info = new DynamicModuleInfo;
-	std::vector<ModuleInfo> needed_modules;
 
 	for (const auto* dyn = static_cast<elf_dynamic*>(m->m_dynamic); dyn->d_tag != DT_NULL; dyn++)
 	{
@@ -270,13 +269,46 @@ void Linker::LoadDynamicInfo(Module* m)
 				LOG_ERROR_IF(debug_loader, "DT_NEEDED str table is not loaded should check!");
 			}
 			break;
-		case DT_OS_NEEDED_MODULE:
+		case DT_SCE_NEEDED_MODULE:
 			{
 				ModuleInfo info{};
 				info.value = dyn->d_un.d_val;
 				info.name = m->dynamic_info->str_table + info.name_offset;
-				needed_modules.push_back(info);
+				m->dynamic_info->import_modules.push_back(info);
 			}
+			break;
+		case DT_SCE_IMPORT_LIB:
+			{
+				LibraryInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->import_libs.push_back(info);
+			}
+			break;
+		case DT_SCE_FINGERPRINT:
+			//The fingerprint is a 24 byte (0x18) size buffer that contains a unique identifier for the given app. 
+			//How exactly this is generated isn't known, however it is not necessary to have a valid fingerprint. 
+			//While an invalid fingerprint will cause a warning to be printed to the kernel log, the ELF will still load and run.
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_FINGERPRINT value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			break;
+		case DT_SCE_IMPORT_LIB_ATTR:
+			//The upper 32-bits should contain the module index multiplied by 0x10000. The lower 32-bits should be a constant 0x9.
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			break;
+		case DT_SCE_ORIGINAL_FILENAME:
+			m->dynamic_info->filename = m->dynamic_info->str_table + dyn->d_un.d_val;
+			break;
+		case DT_SCE_MODULE_INFO://probably only useable in shared modules
+			{
+				ModuleInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->export_modules.push_back(info);
+			}
+			break;
+		case DT_SCE_MODULE_ATTR:
+			//TODO?
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_MODULE_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
 			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);

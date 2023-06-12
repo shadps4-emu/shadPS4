@@ -32,6 +32,21 @@ struct ModuleInfo
 	};
 };
 
+struct LibraryInfo
+{
+	std::string name;
+	union
+	{
+		u64 value;
+		struct
+		{
+			u32 name_offset;
+			u16 version;
+			u16 id;
+		};
+	};
+};
+
 struct DynamicModuleInfo
 {
 	void* hash_table = nullptr;
@@ -67,6 +82,11 @@ struct DynamicModuleInfo
 	u64 flags = 0;
 
 	std::vector<const char*> needed;
+	std::vector<ModuleInfo>    import_modules;
+	std::vector<ModuleInfo>    export_modules;
+	std::vector<LibraryInfo>   import_libs;
+
+	std::string filename;//filename with absolute path
 
 };
 
