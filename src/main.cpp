@@ -26,17 +26,21 @@
 #endif
 #include "Core/PS4/Linker.h"
 #include "Util/Singleton.h"
-
+#include <stdio.h>
+#include <inttypes.h>
+#include <Zydis/Zydis.h>
 
 // Main code
 int main(int argc, char* argv[])
 {
+
+
     logging::init(true);//init logging
-    const char* const path =  argv[1]; //argument 1 is the path of self file to boot
+    const char* const path = "videoout_basic.elf";// argv[1]; //argument 1 is the path of self file to boot
     auto* linker = Singleton<Linker>::Instance();
     auto *module =linker->LoadModule(path);//load main executable
 
-
+#if 0
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
     {
@@ -215,6 +219,7 @@ int main(int argc, char* argv[])
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+#endif
 
     return 0;
 }

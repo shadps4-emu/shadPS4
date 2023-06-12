@@ -47,6 +47,7 @@ Module* Linker::LoadModule(const std::string& elf_name)
 	if (m->elf->isElfFile())
 	{
 		LoadModuleToMemory(m);
+		LoadDynamicInfo(m);
 	}
 	else
 	{
@@ -156,5 +157,162 @@ void Linker::LoadModuleToMemory(Module* m)
 		printf("%016" PRIX64 "  %s\n", runtime_address, instruction.text);
 		offset += instruction.info.length;
 		runtime_address += instruction.info.length;
+	}
+}
+
+void Linker::LoadDynamicInfo(Module* m)
+{
+	m->dynamic_info = new DynamicModuleInfo;
+
+	for (const auto* dyn = static_cast<elf_dynamic*>(m->m_dynamic); dyn->d_tag != DT_NULL; dyn++)
+	{
+		switch (dyn->d_tag)
+		{
+		case DT_SCE_HASH: //Offset of the hash table.
+			m->dynamic_info->hash_table = reinterpret_cast<void*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_HASHSZ: //Size of the hash table
+			m->dynamic_info->hash_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_STRTAB://Offset of the string table. 
+			m->dynamic_info->str_table = reinterpret_cast<char*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_STRSZ: //Size of the string table.
+			m->dynamic_info->str_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_SYMTAB://Offset of the symbol table.
+			m->dynamic_info->symbol_table = reinterpret_cast<elf_symbol*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_SYMTABSZ://Size of the symbol table.
+			m->dynamic_info->symbol_table_total_size = dyn->d_un.d_val;
+			break;
+		case DT_INIT:
+			m->dynamic_info->init_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_FINI:
+			m->dynamic_info->fini_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_SCE_PLTGOT: //Offset of the global offset table.
+			m->dynamic_info->pltgot_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_SCE_JMPREL: //Offset of the table containing jump slots.
+			m->dynamic_info->jmp_relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_PLTRELSZ: //Size of the global offset table.
+			m->dynamic_info->jmp_relocation_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_PLTREL: //The type of relocations in the relocation table. Should be DT_RELA
+			m->dynamic_info->jmp_relocation_type = dyn->d_un.d_val;
+			if (m->dynamic_info->jmp_relocation_type != DT_RELA)
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_PLTREL is NOT DT_RELA should check!");
+			}
+			break;
+		case DT_SCE_RELA: //Offset of the relocation table.
+			m->dynamic_info->relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+			break;
+		case DT_SCE_RELASZ: //Size of the relocation table.
+			m->dynamic_info->relocation_table_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_RELAENT : //The size of relocation table entries.
+			m->dynamic_info->relocation_table_entries_size = dyn->d_un.d_val;
+			if (m->dynamic_info->relocation_table_entries_size != 0x18) //this value should always be 0x18
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_RELAENT is NOT 0x18 should check!");
+			}
+			break;
+		case DT_INIT_ARRAY:// Address of the array of pointers to initialization functions 
+			m->dynamic_info->init_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_FINI_ARRAY: // Address of the array of pointers to termination functions
+			m->dynamic_info->fini_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_INIT_ARRAYSZ://Size in bytes of the array of initialization functions
+			m->dynamic_info->init_array_size = dyn->d_un.d_val;
+			break;
+		case DT_FINI_ARRAYSZ://Size in bytes of the array of terminationfunctions
+			m->dynamic_info->fini_array_size = dyn->d_un.d_val;
+			break;
+		case DT_PREINIT_ARRAY://Address of the array of pointers to pre - initialization functions
+			m->dynamic_info->preinit_array_virtual_addr = dyn->d_un.d_ptr;
+			break;
+		case DT_PREINIT_ARRAYSZ://Size in bytes of the array of pre - initialization functions
+			m->dynamic_info->preinit_array_size = dyn->d_un.d_val;
+			break;
+		case DT_SCE_SYMENT: //The size of symbol table entries
+			m->dynamic_info->symbol_table_entries_size = dyn->d_un.d_val;
+			if (m->dynamic_info->symbol_table_entries_size != 0x18) //this value should always be 0x18
+			{
+				LOG_WARN_IF(debug_loader, "DT_SCE_SYMENT is NOT 0x18 should check!");
+			}
+			break;
+		case DT_DEBUG:
+			m->dynamic_info->debug = dyn->d_un.d_val;
+			break;
+		case DT_TEXTREL:
+			m->dynamic_info->textrel = dyn->d_un.d_val;
+			break;
+		case DT_FLAGS:
+			m->dynamic_info->flags = dyn->d_un.d_val;
+			if (m->dynamic_info->flags != 0x04) //this value should always be DF_TEXTREL (0x04)
+			{
+				LOG_WARN_IF(debug_loader, "DT_FLAGS is NOT 0x04 should check!");
+			}
+			break;
+		case DT_NEEDED://Offset of the library string in the string table to be linked in.
+			if (m->dynamic_info->str_table != nullptr)//in theory this should already be filled from about just make a test case
+			{
+				m->dynamic_info->needed.push_back(m->dynamic_info->str_table + dyn->d_un.d_val);
+			}
+			else
+			{
+				LOG_ERROR_IF(debug_loader, "DT_NEEDED str table is not loaded should check!");
+			}
+			break;
+		case DT_SCE_NEEDED_MODULE:
+			{
+				ModuleInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->import_modules.push_back(info);
+			}
+			break;
+		case DT_SCE_IMPORT_LIB:
+			{
+				LibraryInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->import_libs.push_back(info);
+			}
+			break;
+		case DT_SCE_FINGERPRINT:
+			//The fingerprint is a 24 byte (0x18) size buffer that contains a unique identifier for the given app. 
+			//How exactly this is generated isn't known, however it is not necessary to have a valid fingerprint. 
+			//While an invalid fingerprint will cause a warning to be printed to the kernel log, the ELF will still load and run.
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_FINGERPRINT value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			break;
+		case DT_SCE_IMPORT_LIB_ATTR:
+			//The upper 32-bits should contain the module index multiplied by 0x10000. The lower 32-bits should be a constant 0x9.
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			break;
+		case DT_SCE_ORIGINAL_FILENAME:
+			m->dynamic_info->filename = m->dynamic_info->str_table + dyn->d_un.d_val;
+			break;
+		case DT_SCE_MODULE_INFO://probably only useable in shared modules
+			{
+				ModuleInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->export_modules.push_back(info);
+			}
+			break;
+		case DT_SCE_MODULE_ATTR:
+			//TODO?
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_MODULE_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			break;
+		default:
+			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
+		}
+		
 	}
 }
