@@ -5,6 +5,9 @@
 #include <spdlog/pattern_formatter.h>
 #include <magic_enum.hpp>
 #include <fmt/core.h>
+#include "../Util/Log.h"
+
+constexpr bool debug_elf = true;
 
 template <>
 struct magic_enum::customize::enum_range<e_type_s> {
@@ -515,8 +518,25 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
 {
     if (m_self!=nullptr)
     {
-        //it is self file //TODO
-        __debugbreak();
+        for (uint16_t i = 0; i < m_self->segment_count; i++)
+        {
+            const auto& seg = m_self_segments[i];
+            
+            if (seg.IsBlocked())
+            {
+                auto phdr_id = seg.GetId();
+                const auto& phdr = m_elf_phdr[phdr_id];
+
+                if (file_offset >= phdr.p_offset && file_offset < phdr.p_offset + phdr.p_filesz)
+                {
+                    auto offset = file_offset - phdr.p_offset;
+                    m_f->Seek(offset + seg.file_offset,fsSeekMode::fsSeekSet);
+                    m_f->Read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+                    return;
+                }
+            }
+        }
+        __debugbreak();//hmm we didn't return something...
     }
     else
     {

@@ -27,10 +27,34 @@ struct self_header
 
 struct self_segment_header
 {
+    bool IsBlocked() const {
+        return (flags & 0x800) != 0;//0 or 0x800
+    }
+
+    u32 GetId() const {
+        return (flags >> 20u) & 0xFFFu;
+    }
+
+    bool IsOrdered() const {
+        return (flags & 1) != 0;//0 or 1
+    }
+
+    bool IsEncrypted()  const {
+        return (flags & 2) != 0;//0 or 2
+    }
+
+    bool IsSigned() const  {
+        return (flags & 4) != 0;//0 or 4
+    }
+
+    bool IsCompressed() const  {
+        return (flags & 8) != 0;//0 or 8
+    }
+
     u64 flags;
     u64 file_offset;
     u64 file_size;
-    u64 memory_size;
+    u64 memory_size; 
 };
 
 
