@@ -48,6 +48,7 @@ Module* Linker::LoadModule(const std::string& elf_name)
 	{
 		LoadModuleToMemory(m);
 		LoadDynamicInfo(m);
+		LoadSymbols(m);
 	}
 	else
 	{
@@ -310,9 +311,33 @@ void Linker::LoadDynamicInfo(Module* m)
 			//TODO?
 			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_MODULE_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
 			break;
+		case DT_SCE_EXPORT_LIB:
+			{
+				LibraryInfo info{};
+				info.value = dyn->d_un.d_val;
+				info.name = m->dynamic_info->str_table + info.name_offset;
+				m->dynamic_info->export_libs.push_back(info);
+			}
+			break;
 		default:
 			LOG_INFO_IF(debug_loader, "unsupported dynamic tag ..........: {:#018x}\n", dyn->d_tag);
 		}
 		
+	}
+}
+
+void Linker::LoadSymbols(Module* m)
+{
+	if (m->dynamic_info->symbol_table == nullptr || m->dynamic_info->str_table == nullptr || m->dynamic_info->symbol_table_total_size==0)
+	{
+		LOG_INFO_IF(debug_loader, "Symbol table not found!\n");
+		return;
+	}
+	for (auto* sym = m->dynamic_info->symbol_table;
+		reinterpret_cast<uint8_t*>(sym) < reinterpret_cast<uint8_t*>(m->dynamic_info->symbol_table) + m->dynamic_info->symbol_table_total_size;
+		sym++)
+	{
+		std::string id = std::string(m->dynamic_info->str_table + sym->st_name);
+		LOG_INFO_IF(debug_loader, "symbol {}\n", id.c_str());
 	}
 }

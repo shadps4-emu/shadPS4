@@ -85,6 +85,7 @@ struct DynamicModuleInfo
 	std::vector<ModuleInfo>    import_modules;
 	std::vector<ModuleInfo>    export_modules;
 	std::vector<LibraryInfo>   import_libs;
+	std::vector<LibraryInfo>   export_libs;
 
 	std::string filename;//filename with absolute path
 
@@ -99,7 +100,8 @@ public:
 	Module* LoadModule(const std::string& elf_name);
 	Module* FindModule(/*u32 id*/);
 	void LoadModuleToMemory(Module* m);
-	void LoadDynamicInfo(Module* program);
+	void LoadDynamicInfo(Module* m);
+	void LoadSymbols(Module* m);
 
 private:
 	std::vector<Module*> m_modules;

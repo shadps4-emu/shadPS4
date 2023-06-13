@@ -343,6 +343,7 @@ constexpr s64 DT_SCE_ORIGINAL_FILENAME = 0x61000009;
 constexpr s64 DT_SCE_MODULE_INFO       = 0x6100000d;
 constexpr s64 DT_SCE_NEEDED_MODULE     = 0x6100000f;
 constexpr s64 DT_SCE_MODULE_ATTR       = 0x61000011;
+constexpr s64 DT_SCE_EXPORT_LIB        = 0x61000013;
 constexpr s64 DT_SCE_IMPORT_LIB        = 0x61000015;
 constexpr s64 DT_SCE_IMPORT_LIB_ATTR   = 0x61000019;
 constexpr s64 DT_SCE_HASH              = 0x61000025;
