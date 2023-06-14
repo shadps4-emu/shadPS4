@@ -38,6 +38,30 @@ static u64 calculate_base_size(const elf_header* ehdr, const elf_program_header*
 	return base_size;
 }
 
+static std::string encodeId(u64 nVal)
+{
+	std::string enc;
+	const char pCodes[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+	if (nVal < 0x40u)
+	{
+		enc += pCodes[nVal];
+	}
+	else
+	{
+		if (nVal < 0x1000u)
+		{
+			enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
+			enc += pCodes[nVal & 0x3fu];
+		}
+		else
+		{
+			enc += pCodes[static_cast<u16>(nVal >> 12u) & 0x3fu];
+			enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
+			enc += pCodes[nVal & 0x3fu];
+		}
+	}
+	return enc;
+}
 Module* Linker::LoadModule(const std::string& elf_name)
 {
 	auto* m = new Module;
@@ -275,6 +299,7 @@ void Linker::LoadDynamicInfo(Module* m)
 				ModuleInfo info{};
 				info.value = dyn->d_un.d_val;
 				info.name = m->dynamic_info->str_table + info.name_offset;
+				info.enc_id = encodeId(info.id);
 				m->dynamic_info->import_modules.push_back(info);
 			}
 			break;
@@ -283,6 +308,7 @@ void Linker::LoadDynamicInfo(Module* m)
 				LibraryInfo info{};
 				info.value = dyn->d_un.d_val;
 				info.name = m->dynamic_info->str_table + info.name_offset;
+				info.enc_id = encodeId(info.id);
 				m->dynamic_info->import_libs.push_back(info);
 			}
 			break;
@@ -304,6 +330,7 @@ void Linker::LoadDynamicInfo(Module* m)
 				ModuleInfo info{};
 				info.value = dyn->d_un.d_val;
 				info.name = m->dynamic_info->str_table + info.name_offset;
+				info.enc_id = encodeId(info.id);
 				m->dynamic_info->export_modules.push_back(info);
 			}
 			break;
@@ -316,6 +343,7 @@ void Linker::LoadDynamicInfo(Module* m)
 				LibraryInfo info{};
 				info.value = dyn->d_un.d_val;
 				info.name = m->dynamic_info->str_table + info.name_offset;
+				info.enc_id = encodeId(info.id);
 				m->dynamic_info->export_libs.push_back(info);
 			}
 			break;

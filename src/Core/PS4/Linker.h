@@ -30,6 +30,7 @@ struct ModuleInfo
 			u16 id;
 		};
 	};
+	std::string enc_id;
 };
 
 struct LibraryInfo
@@ -45,6 +46,7 @@ struct LibraryInfo
 			u16 id;
 		};
 	};
+	std::string enc_id;
 };
 
 struct DynamicModuleInfo
