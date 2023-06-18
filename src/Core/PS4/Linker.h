@@ -106,5 +106,7 @@ public:
 	void LoadSymbols(Module* m);
 
 private:
+	const ModuleInfo* FindModule(const Module& m, const std::string& id);
+	const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
 	std::vector<Module*> m_modules;
 };

@@ -2,6 +2,7 @@
 #include "../Memory.h"
 #include "../../Util/Log.h"
 #include "../../Util/Disassembler.h"
+#include "../../Util/StringUtil.h"
 
 constexpr bool debug_loader = true;
 
@@ -354,6 +355,56 @@ void Linker::LoadDynamicInfo(Module* m)
 	}
 }
 
+const ModuleInfo* Linker::FindModule(const Module& m, const std::string& id)
+{
+	const auto& import_modules = m.dynamic_info->import_modules;
+	int index = 0;
+	for (auto mod : import_modules)
+	{
+		if (mod.enc_id.compare(id) == 0)
+		{
+			return &import_modules.at(index);
+		}
+		index++;
+	}
+	const auto& export_modules = m.dynamic_info->export_modules;
+	index = 0;
+	for (auto mod : export_modules)
+	{
+		if (mod.enc_id.compare(id) == 0)
+		{
+			return &export_modules.at(index);
+		}
+		index++;
+	}
+	return nullptr;
+}
+
+const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id)
+{
+	const auto& import_libs = m.dynamic_info->import_libs;
+	int index = 0;
+	for (auto lib : import_libs)
+	{
+		if (lib.enc_id.compare(id) == 0)
+		{
+			return &import_libs.at(index);
+		}
+		index++;
+	}
+	const auto& export_libs = m.dynamic_info->export_libs;
+	index = 0;
+	for (auto lib : export_libs)
+	{
+		if (lib.enc_id.compare(id) == 0)
+		{
+			return &export_libs.at(index);
+		}
+		index++;
+	}
+	return nullptr;
+}
+
 void Linker::LoadSymbols(Module* m)
 {
 	if (m->dynamic_info->symbol_table == nullptr || m->dynamic_info->str_table == nullptr || m->dynamic_info->symbol_table_total_size==0)
@@ -366,6 +417,16 @@ void Linker::LoadSymbols(Module* m)
 		sym++)
 	{
 		std::string id = std::string(m->dynamic_info->str_table + sym->st_name);
-		LOG_INFO_IF(debug_loader, "symbol {}\n", id.c_str());
+		auto ids = StringUtil::split(id, '#');
+		if (ids.size() == 3)//symbols are 3 parts name , library , module 
+		{
+			const auto* library = FindLibrary(*m, ids.at(1));
+			const auto* module = FindModule(*m, ids.at(2));
+
+			if (library != nullptr || module != nullptr)
+			{
+				LOG_INFO_IF(debug_loader, "name {} library {} module {}\n", ids.at(0),library->name,module->name);
+			}
+		}
 	}
 }
