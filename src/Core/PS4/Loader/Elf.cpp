@@ -5,7 +5,7 @@
 #include <spdlog/pattern_formatter.h>
 #include <magic_enum.hpp>
 #include <fmt/core.h>
-#include "../Util/Log.h"
+#include "../../../Util/Log.h"
 
 constexpr bool debug_elf = true;
 

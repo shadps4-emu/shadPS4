@@ -23,8 +23,8 @@ add_executable(shadps4
     src/types.h
     src/Core/FsFile.cpp
     src/Core/FsFile.h
-    src/Loader/Elf.cpp
-    src/Loader/Elf.h
+    src/Core/PS4/Loader/Elf.cpp
+    src/Core/PS4/Loader/Elf.h
     src/GUI/ElfViewer.cpp
     src/GUI/ElfViewer.h 
     src/Util/Log.h

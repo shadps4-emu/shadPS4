@@ -1,6 +1,7 @@
 #pragma once
-#include "../../Loader/Elf.h"
+
 #include <vector>
+#include "Loader/Elf.h"
 
 struct DynamicModuleInfo;
 

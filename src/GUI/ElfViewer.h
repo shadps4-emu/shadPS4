@@ -1,5 +1,5 @@
 #pragma once
-#include "../Loader/Elf.h"
+#include "../Core/PS4/Loader/Elf.h"
 
 class ElfViewer {
 private:

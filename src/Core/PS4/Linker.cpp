@@ -427,6 +427,34 @@ void Linker::LoadSymbols(Module* m)
 			auto visibility = sym->GetVisibility();
 			if (library != nullptr || module != nullptr)
 			{
+				switch (bind)
+				{
+					case STB_GLOBAL:
+					case STB_WEAK:
+						break;
+					default:
+						LOG_INFO_IF(debug_loader, "Unsupported bind {} for name symbol {} \n", bind,ids.at(0));
+						continue;
+				}
+				switch (type)
+				{
+					case STT_OBJECT:
+					case STT_FUN:
+						break;
+					default:
+						LOG_INFO_IF(debug_loader, "Unsupported type {} for name symbol {} \n", type, ids.at(0));
+						continue;
+				}
+				switch (visibility)
+				{
+					case STV_DEFAULT:
+						break;
+					default:
+						LOG_INFO_IF(debug_loader, "Unsupported visibility {} for name symbol {} \n", visibility, ids.at(0));
+						continue;
+				}
+				//if st_value!=0 then it's export symbol
+				bool is_sym_export = sym->st_value != 0;
 				LOG_INFO_IF(debug_loader, "name {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),library->name,module->name,bind,type,visibility);
 			}
 		}

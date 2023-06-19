@@ -16,7 +16,6 @@
 
 #include "spdlog/spdlog.h"
 #include "types.h"
-#include "Loader/Elf.h"
 #include "GUI/ElfViewer.h"
 #include "Util/Log.h"
 
@@ -36,7 +35,7 @@ int main(int argc, char* argv[])
 
 
     logging::init(true);//init logging
-    const char* const path = argv[1]; //argument 1 is the path of self file to boot
+    const char* const path =  argv[1]; //argument 1 is the path of self file to boot
     auto* linker = Singleton<Linker>::Instance();
     auto *module =linker->LoadModule(path);//load main executable
 

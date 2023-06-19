@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <inttypes.h>
-#include "../types.h"
-#include "../Core/FsFile.h"
+#include "../../../types.h"
+#include "../../FsFile.h"
 
 struct self_header
 {
