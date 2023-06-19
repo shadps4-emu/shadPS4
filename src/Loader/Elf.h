@@ -396,8 +396,35 @@ struct elf_dynamic
     } d_un;
 };
 
+constexpr u08 STB_LOCAL  = 0;
+constexpr u08 STB_GLOBAL = 1;
+constexpr u08 STB_WEAK   = 2;
+
+constexpr u08 STT_NOTYPE  = 0;
+constexpr u08 STT_OBJECT  = 1;
+constexpr u08 STT_FUN     = 2;
+constexpr u08 STT_SECTION = 3;
+constexpr u08 STT_FILE    = 4;
+constexpr u08 STT_COMMON  = 5;
+constexpr u08 STT_TLS     = 6;
+constexpr u08 STT_LOOS    = 10;
+constexpr u08 STT_SCE     = 11; //module_start/module_stop
+constexpr u08 STT_HIOS    = 12;
+constexpr u08 STT_LOPRO   = 13;
+constexpr u08 STT_SPARC_REGISTER = 13;
+constexpr u08 STT_HIPROC  = 15;
+
+constexpr u08 STV_DEFAULT = 0;
+constexpr u08 STV_INTERNAL = 1;
+constexpr u08 STV_HIDDEN = 2;
+constexpr u08 STV_PROTECTED = 3;
+
 struct elf_symbol
 {
+    u08 GetBind() const { return st_info >> 4u; }
+    u08 GetType() const { return st_info & 0xfu; }
+    u08 GetVisibility() const { return st_other & 3u; }
+
     u32 st_name;
     u08 st_info;
     u08 st_other;

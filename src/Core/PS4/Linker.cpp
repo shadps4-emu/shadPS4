@@ -422,10 +422,12 @@ void Linker::LoadSymbols(Module* m)
 		{
 			const auto* library = FindLibrary(*m, ids.at(1));
 			const auto* module = FindModule(*m, ids.at(2));
-
+			auto bind = sym->GetBind();
+			auto type = sym->GetType();
+			auto visibility = sym->GetVisibility();
 			if (library != nullptr || module != nullptr)
 			{
-				LOG_INFO_IF(debug_loader, "name {} library {} module {}\n", ids.at(0),library->name,module->name);
+				LOG_INFO_IF(debug_loader, "name {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),library->name,module->name,bind,type,visibility);
 			}
 		}
 	}
