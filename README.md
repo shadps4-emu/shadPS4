@@ -38,6 +38,7 @@ Old emulator fans and devs can recongnize me as "shadow" . I was the founder and
 * PCSP
 * JPCSP
 * arcadeflex
+* rpcs3 contributor
 
 # Contribution
 
