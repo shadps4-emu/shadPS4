@@ -2,6 +2,9 @@
 
 An early PS4 emulator for Windows
 
+
+[Check us on twitter](https://twitter.com/shadps4 "Check us on twitter")
+
 # Status
 
 Currently it can only load PS4 ELF files . 
