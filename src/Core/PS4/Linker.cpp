@@ -3,6 +3,8 @@
 #include "../../Util/Log.h"
 #include "../../Util/Disassembler.h"
 #include "../../Util/StringUtil.h"
+#include "Util/aerolib.h"
+
 
 constexpr bool debug_loader = true;
 
@@ -455,7 +457,17 @@ void Linker::LoadSymbols(Module* m)
 				}
 				//if st_value!=0 then it's export symbol
 				bool is_sym_export = sym->st_value != 0;
-				LOG_INFO_IF(debug_loader, "name {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),library->name,module->name,bind,type,visibility);
+				std::string nidName = "";
+				if (aerolib::symbolsMap.find(ids.at(0)) != aerolib::symbolsMap.end())
+				{
+					nidName = aerolib::symbolsMap.at(ids.at(0));
+				}
+				else
+				{
+					nidName = "UNK";
+				}
+				
+				LOG_INFO_IF(debug_loader, "name {} function {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),nidName,library->name, module->name, bind, type, visibility);
 			}
 		}
 	}
