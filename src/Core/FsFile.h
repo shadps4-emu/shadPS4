@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <string>
-#include "../Types.h"
+#include "../types.h"
 
 enum fsOpenMode
 {
@@ -60,4 +60,3 @@ public:
 		return m_file;
 	}
 };
-

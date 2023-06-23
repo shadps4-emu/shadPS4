@@ -7,6 +7,13 @@
 #include <fmt/core.h>
 #include "../../../Util/Log.h"
 
+#ifdef _WIN64
+    #define DBG_BREAKPOINT __debugbreak();
+#else
+    #include <signal.h>
+    #define DBG_BREAKPOINT raise(SIGTRAP);
+#endif
+
 constexpr bool debug_elf = true;
 
 template <>
@@ -29,7 +36,6 @@ static self_header* load_self(FsFile& f)
 	return self;
 }
 
-
 static self_segment_header* load_self_segments(FsFile& f, u16 num)
 {
     auto* segs = new self_segment_header[num];
@@ -38,7 +44,6 @@ static self_segment_header* load_self_segments(FsFile& f, u16 num)
 
     return segs;
 }
-
 
 static elf_header* load_elf_header(FsFile& f)
 {
@@ -95,6 +100,7 @@ void Elf::Reset()//reset all variables
     m_elf_shdr = nullptr;
     m_self_id_header = nullptr;
 }
+
 void Elf::Open(const std::string& file_name)
 {
     Reset();//reset all variables
@@ -150,7 +156,6 @@ void Elf::Open(const std::string& file_name)
 
         }
     }
-
 
     DebugDump();
 }
@@ -272,7 +277,9 @@ bool Elf::isElfFile() const
 void Elf::DebugDump() {
     std::vector<spdlog::sink_ptr> sinks;
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(L"output.log", true)); //this might work only in windows ;/
+    #ifdef _WIN64
+        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(L"output.log", true)); //this might work only in windows ;/
+    #endif
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));   
     auto f = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, std::string(""));  // disable eol
     spdlog::set_formatter(std::move(f));
@@ -355,6 +362,7 @@ std::string Elf::SElfHeaderStr() {
      header+=             fmt::format("padding3 ...........: {:#010x}\n", m_self->padding3);
      return header;
 }
+
 std::string Elf::SELFSegHeader(u16 no)
 {
     auto segment_header = m_self_segments[no];
@@ -365,6 +373,7 @@ std::string Elf::SELFSegHeader(u16 no)
     header += fmt::format("memory size ......: {}\n", segment_header.memory_size);
     return header;
 }
+
 std::string Elf::ElfHeaderStr()
 {
     std::string header = fmt::format("======= Elf header ===========\n");
@@ -499,7 +508,7 @@ std::string Elf::ElfPHeaderStr(u16 no)
 {
     std::string header = fmt::format("====== PROGRAM HEADER {} ========\n", no);
     header += fmt::format("p_type ....: {}\n", ElfPheaderTypeStr((m_elf_phdr + no)->p_type));
-    
+
     auto flags = magic_enum::enum_cast<elf_program_flags>((m_elf_phdr + no)->p_flags);
     if (flags.has_value())
     {
@@ -514,6 +523,7 @@ std::string Elf::ElfPHeaderStr(u16 no)
     header += fmt::format("p_align ...: {:#018x}\n", (m_elf_phdr + no)->p_align);
     return header;
 }
+
 void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
 {
     if (m_self!=nullptr)
@@ -521,7 +531,7 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
         for (uint16_t i = 0; i < m_self->segment_count; i++)
         {
             const auto& seg = m_self_segments[i];
-            
+
             if (seg.IsBlocked())
             {
                 auto phdr_id = seg.GetId();
@@ -530,13 +540,13 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
                 if (file_offset >= phdr.p_offset && file_offset < phdr.p_offset + phdr.p_filesz)
                 {
                     auto offset = file_offset - phdr.p_offset;
-                    m_f->Seek(offset + seg.file_offset,fsSeekMode::fsSeekSet);
+                    m_f->Seek(offset + seg.file_offset, fsSeekMode::fsSeekSet);
                     m_f->Read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
                     return;
                 }
             }
         }
-        __debugbreak();//hmm we didn't return something...
+        DBG_BREAKPOINT //hmm we didn't return something...
     }
     else
     {
@@ -545,6 +555,7 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
         m_f->Read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
     }
 }
+
 u64 Elf::GetElfEntry()
 {
     return m_elf_header->e_entry;
