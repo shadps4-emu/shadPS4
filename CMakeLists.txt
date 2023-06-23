@@ -14,6 +14,7 @@ include_directories(third-party/imgui/backends)
 include_directories(third-party/sdl/)
 include_directories(third-party/fmt/include)
 include_directories(third-party/magic_enum/include)
+include_directories(third-party/zydis/include/Zydis)
 add_subdirectory("third-party")
 
 #=================== EXAMPLE ===================
