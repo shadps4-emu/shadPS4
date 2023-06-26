@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "Loader/Elf.h"
+#include "Loader/SymbolsResolver.h"
 
 struct DynamicModuleInfo;
 
@@ -15,6 +16,9 @@ struct Module
 	void* m_dynamic = nullptr;
 	void* m_dynamic_data = nullptr;
 	DynamicModuleInfo* dynamic_info = nullptr;
+
+	SymbolsResolver* export_sym = nullptr;
+	SymbolsResolver* import_sym = nullptr;
 };
 
 struct ModuleInfo

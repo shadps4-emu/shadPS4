@@ -34,7 +34,7 @@ add_executable(shadps4
     src/Core/Memory.h
     src/Core/PS4/Linker.cpp
     src/Core/PS4/Linker.h
-     "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Util/StringUtil.h" "src/Core/PS4/Util/aerolib.h")
+     "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Util/StringUtil.h" "src/Core/PS4/Util/aerolib.h" "src/Core/PS4/Loader/SymbolsResolver.h" "src/Core/PS4/Loader/SymbolsResolver.cpp")
 
 find_package(OpenGL REQUIRED)
 

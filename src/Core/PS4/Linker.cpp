@@ -4,6 +4,7 @@
 #include "../../Util/Disassembler.h"
 #include "../../Util/StringUtil.h"
 #include "Util/aerolib.h"
+#include "Loader/SymbolsResolver.h"
 
 
 constexpr bool debug_loader = true;
@@ -414,6 +415,9 @@ void Linker::LoadSymbols(Module* m)
 		LOG_INFO_IF(debug_loader, "Symbol table not found!\n");
 		return;
 	}
+	m->export_sym = new SymbolsResolver;
+	m->import_sym = new SymbolsResolver;
+
 	for (auto* sym = m->dynamic_info->symbol_table;
 		reinterpret_cast<uint8_t*>(sym) < reinterpret_cast<uint8_t*>(m->dynamic_info->symbol_table) + m->dynamic_info->symbol_table_total_size;
 		sym++)
@@ -466,7 +470,26 @@ void Linker::LoadSymbols(Module* m)
 				{
 					nidName = "UNK";
 				}
+				SymbolRes sym_r{};
+				sym_r.name = ids.at(0);
+				sym_r.nidName = nidName;
+				sym_r.library = library->name;
+				sym_r.library_version = library->version;
+				sym_r.module = module->name;
+				sym_r.module_version_major = module->version_major;
+				sym_r.module_version_minor = module->version_minor;
+				sym_r.type = type;
+
+				if (is_sym_export)
+				{
+					m->export_sym->AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
+				}
+				else
+				{
+					m->import_sym->AddSymbol(sym_r,0);
+				}
 				
+
 				LOG_INFO_IF(debug_loader, "name {} function {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),nidName,library->name, module->name, bind, type, visibility);
 			}
 		}
