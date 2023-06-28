@@ -109,9 +109,12 @@ public:
 	void LoadModuleToMemory(Module* m);
 	void LoadDynamicInfo(Module* m);
 	void LoadSymbols(Module* m);
+	SymbolsResolver* getHLESymbols() { return m_HLEsymbols; }
 
 private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);
 	const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
+
 	std::vector<Module*> m_modules;
+	SymbolsResolver* m_HLEsymbols = nullptr;
 };

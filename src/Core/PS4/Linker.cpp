@@ -13,6 +13,7 @@ static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
 
 Linker::Linker()
 {
+	m_HLEsymbols = new SymbolsResolver;
 }
 
 Linker::~Linker()

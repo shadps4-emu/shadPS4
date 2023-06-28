@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <Zydis/Zydis.h>
+#include "Core/PS4/HLE/Libs.h"
 
 // Main code
 int main(int argc, char* argv[])
@@ -35,8 +36,9 @@ int main(int argc, char* argv[])
 
 
     logging::init(true);//init logging
-    const char* const path =  argv[1]; //argument 1 is the path of self file to boot
+    const char* const path = argv[1]; //argument 1 is the path of self file to boot
     auto* linker = Singleton<Linker>::Instance();
+    HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto *module =linker->LoadModule(path);//load main executable
 
 #if 0
