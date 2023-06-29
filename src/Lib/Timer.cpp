@@ -19,8 +19,8 @@ void Lib::Timer::Start()
 	LARGE_INTEGER c;
 	QueryPerformanceCounter(&c);
 	m_StartTime = c.QuadPart;
-	m_is_timer_paused = false;
 #endif
+	m_is_timer_paused = false;
 }
 
 void Lib::Timer::Pause()
