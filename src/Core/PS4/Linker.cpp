@@ -109,7 +109,7 @@ void Linker::LoadModuleToMemory(Module* m)
 	u64 base_size = calculate_base_size(elf_header, elf_pheader);
 	m->aligned_base_size = (base_size & ~(static_cast<u64>(0x1000) - 1)) + 0x1000;//align base size to 0x1000 block size (TODO is that the default block size or it can be changed?
 
-	m->base_virtual_addr = Memory::VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size);
+	m->base_virtual_addr = Memory::VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size, Memory::MemoryMode::ExecuteReadWrite);
 
 	LOG_INFO_IF(debug_loader, "====Load Module to Memory ========\n");
 	LOG_INFO_IF(debug_loader, "base_virtual_addr ......: {:#018x}\n", m->base_virtual_addr);

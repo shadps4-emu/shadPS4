@@ -1,4 +1,5 @@
 #include "../Core/PS4/Loader/Elf.h"
+#include "Memory.h"
 
 #ifdef _WIN64
 	#include <windows.h>
@@ -11,15 +12,33 @@
 namespace Memory
 {
 	namespace VirtualMemory {
+		static DWORD convertMemoryMode(MemoryMode mode)
+		{
+			switch (mode)
+			{
+				case MemoryMode::Read: return PAGE_READONLY;
+				case MemoryMode::Write:
+				case MemoryMode::ReadWrite: return PAGE_READWRITE;
 
-		u64 memory_alloc(u64 address, u64 size)
+				case MemoryMode::Execute: return PAGE_EXECUTE;
+				case MemoryMode::ExecuteRead: return PAGE_EXECUTE_READ;
+				case MemoryMode::ExecuteWrite:
+				case MemoryMode::ExecuteReadWrite: return PAGE_EXECUTE_READWRITE;
+
+				case MemoryMode::NoAccess: return PAGE_NOACCESS;
+				default:
+					return PAGE_NOACCESS;
+			}
+		}
+
+		u64 memory_alloc(u64 address, u64 size, MemoryMode mode)
 		{
 			//TODO it supports only execute_read_write mode
 			#ifdef _WIN64
 				auto ptr = reinterpret_cast<uintptr_t>(VirtualAlloc(reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)), 
 																    size,
 																	static_cast<DWORD>(MEM_COMMIT) | static_cast<DWORD>(MEM_RESERVE),
-																	PAGE_EXECUTE_READWRITE));
+																	convertMemoryMode(mode)));
 
 				if (ptr == 0)
 				{
