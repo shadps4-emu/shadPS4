@@ -78,6 +78,7 @@ Module* Linker::LoadModule(const std::string& elf_name)
 		LoadModuleToMemory(m);
 		LoadDynamicInfo(m);
 		LoadSymbols(m);
+		Relocate(m);
 	}
 	else
 	{
@@ -494,5 +495,26 @@ void Linker::LoadSymbols(Module* m)
 				LOG_INFO_IF(debug_loader, "name {} function {} library {} module {} bind {} type {} visibility {}\n", ids.at(0),nidName,library->name, module->name, bind, type, visibility);
 			}
 		}
+	}
+}
+void Linker::Relocate(Module* m)
+{
+	u32 idx = 0;
+	for (auto* rel = m->dynamic_info->relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->relocation_table) + m->dynamic_info->relocation_table_size; rel++, idx++)
+	{
+		auto type = rel->GetType();
+		auto symbol = rel->GetSymbol();
+		auto addend = rel->rel_addend;
+
+		LOG_INFO_IF(debug_loader, "rel type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+	}
+	idx = 0;
+	for (auto* rel = m->dynamic_info->jmp_relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->jmp_relocation_table) + m->dynamic_info->jmp_relocation_table_size; rel++, idx++)
+	{
+		auto type = rel->GetType();
+		auto symbol = rel->GetSymbol();
+		auto addend = rel->rel_addend;
+
+		LOG_INFO_IF(debug_loader, "jmprel type {:#010x} rel symbol : {:#010x}\n", type, symbol);
 	}
 }

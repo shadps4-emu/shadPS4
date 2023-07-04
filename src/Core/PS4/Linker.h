@@ -110,6 +110,7 @@ public:
 	void LoadDynamicInfo(Module* m);
 	void LoadSymbols(Module* m);
 	SymbolsResolver* getHLESymbols() { return m_HLEsymbols; }
+	void Relocate(Module* m);
 
 private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);

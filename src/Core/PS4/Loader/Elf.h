@@ -435,6 +435,9 @@ struct elf_symbol
 
 struct elf_relocation
 {
+    u32 GetSymbol() const { return static_cast<u32>(rel_info >> 32u); }
+    u32 GetType()   const { return static_cast<u32>(rel_info & 0xffffffff); }
+
     u64 rel_offset;
     u64 rel_info;
     s64 rel_addend;
