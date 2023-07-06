@@ -497,24 +497,80 @@ void Linker::LoadSymbols(Module* m)
 		}
 	}
 }
+static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel)
+{
+	auto type = rel->GetType();
+	auto symbol = rel->GetSymbol();
+	auto addend = rel->rel_addend;
+	auto* symbolsTlb = m->dynamic_info->symbol_table;
+	auto* namesTlb = m->dynamic_info->str_table;
+
+	u64   rel_value = 0;
+	u64   rel_base_virtual_addr = m->base_virtual_addr;
+	u64   rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
+	bool  rel_isResolved = false;
+	u08   rel_sym_type = 0;
+	std::string rel_name;
+
+	switch (type)
+	{
+	case R_X86_64_RELATIVE:
+		if (symbol != 0)//should be always zero
+		{
+			LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);
+		}
+		rel_value = rel_base_virtual_addr + addend;
+		rel_isResolved = true;
+		break;
+	case R_X86_64_64:
+	case R_X86_64_JUMP_SLOT://similar but addend is not take into account
+		{
+			auto    sym = symbolsTlb[symbol];
+			auto    sym_bind = sym.GetBind();
+			auto    sym_type = sym.GetType();
+			auto    sym_visibility = sym.GetVisibility();
+			u64     symbol_vitrual_addr = 0;
+			switch (sym_type)
+			{
+			case STT_FUN: rel_sym_type = 2; break;
+			case STT_OBJECT: rel_sym_type = 1; break;
+			default: 
+				LOG_INFO_IF(debug_loader, "unknown symbol type {}\n",sym_type); 
+			}
+			if (sym_visibility != 0)//should be zero log if else
+			{
+				LOG_INFO_IF(debug_loader, "symbol visilibity !=0");
+			}
+			switch (sym_bind)
+			{
+			case STB_GLOBAL:
+				if (type == R_X86_64_64) {
+					LOG_INFO_IF(debug_loader, "R_X86_64_64 sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
+				}
+				if (type == R_X86_64_JUMP_SLOT) {
+					LOG_INFO_IF(debug_loader, "R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
+				}
+				break;
+			default:
+				LOG_INFO_IF(debug_loader, "UNK bind {}\n", sym_bind);
+			}
+		}
+		break;
+	default:
+		LOG_INFO_IF(debug_loader, "UNK type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+	}
+}
+
 void Linker::Relocate(Module* m)
 {
 	u32 idx = 0;
 	for (auto* rel = m->dynamic_info->relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->relocation_table) + m->dynamic_info->relocation_table_size; rel++, idx++)
 	{
-		auto type = rel->GetType();
-		auto symbol = rel->GetSymbol();
-		auto addend = rel->rel_addend;
-
-		LOG_INFO_IF(debug_loader, "rel type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+		relocate(idx, rel, m, false);
 	}
 	idx = 0;
 	for (auto* rel = m->dynamic_info->jmp_relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->jmp_relocation_table) + m->dynamic_info->jmp_relocation_table_size; rel++, idx++)
 	{
-		auto type = rel->GetType();
-		auto symbol = rel->GetSymbol();
-		auto addend = rel->rel_addend;
-
-		LOG_INFO_IF(debug_loader, "jmprel type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+		relocate(idx, rel, m, true);
 	}
 }

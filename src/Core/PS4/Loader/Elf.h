@@ -442,6 +442,9 @@ struct elf_relocation
     u64 rel_info;
     s64 rel_addend;
 };
+constexpr u32 R_X86_64_64 = 1; // Direct 64 bit
+constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
+constexpr u32 R_X86_64_RELATIVE = 8; // Adjust by program base
 
 class Elf
 {

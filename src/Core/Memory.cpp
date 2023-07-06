@@ -33,7 +33,6 @@ namespace Memory
 
 		u64 memory_alloc(u64 address, u64 size, MemoryMode mode)
 		{
-			//TODO it supports only execute_read_write mode
 			#ifdef _WIN64
 				auto ptr = reinterpret_cast<uintptr_t>(VirtualAlloc(reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)), 
 																    size,
