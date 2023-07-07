@@ -5,7 +5,10 @@ namespace HLE::Libs::LibC {
 
 	static void init_env() //every game/demo should probably 
 	{
-		__debugbreak();//if we reach here it will be a great progress :D
+		for(;;) {
+			printf("__debugbreak\n");
+		}
+		//__debugbreak();//if we reach here it will be a great progress :D
 	}
 
 	void LibC_RegisterFunc(SymbolsResolver* sym)

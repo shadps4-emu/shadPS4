@@ -7,12 +7,24 @@
 	#include <sys/mman.h>
 #endif
 
+#if !defined(_WIN64)
+enum PosixPageProtection
+{
+	PAGE_NOACCESS = 0,
+    PAGE_READONLY          = PROT_READ,
+    PAGE_READWRITE         = PROT_READ | PROT_WRITE,
+    PAGE_EXECUTE           = PROT_EXEC,
+    PAGE_EXECUTE_READ      = PROT_EXEC | PROT_READ,
+    PAGE_EXECUTE_READWRITE = PROT_EXEC | PROT_READ | PROT_WRITE
+};
+#endif
+
 #include "../Util/Log.h"
 
 namespace Memory
 {
 	namespace VirtualMemory {
-		static DWORD convertMemoryMode(MemoryMode mode)
+		static u32 convertMemoryMode(MemoryMode mode)
 		{
 			switch (mode)
 			{
