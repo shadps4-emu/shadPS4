@@ -1,0 +1,7 @@
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 150
+AccessModifierOffset: -2
+TabWidth: 4
+AllowShortEnumsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
