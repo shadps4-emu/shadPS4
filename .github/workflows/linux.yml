@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install dev packages
+      run: |
+        sudo apt install libxext-dev doxygen libgl-dev
+
     - uses: actions/checkout@v3
       with:
           submodules: recursive
