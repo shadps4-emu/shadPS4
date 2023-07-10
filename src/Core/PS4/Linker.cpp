@@ -511,6 +511,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel)
 	bool  rel_isResolved = false;
 	u08   rel_sym_type = 0;
 	std::string rel_name;
+    u08 rel_bind_type = -1;//-1 means it didn't resolve
 
 	switch (type)
 	{
@@ -544,12 +545,12 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel)
 			switch (sym_bind)
 			{
 			case STB_GLOBAL:
-				if (type == R_X86_64_64) {
-					LOG_INFO_IF(debug_loader, "R_X86_64_64 sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
-				}
-				if (type == R_X86_64_JUMP_SLOT) {
-					LOG_INFO_IF(debug_loader, "R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
-				}
+                    rel_bind_type = STB_GLOBAL;
+                    rel_name = namesTlb + sym.st_name;
+                    if (type == R_X86_64_JUMP_SLOT) {
+                      addend = 0;
+                    }
+                    LOG_INFO_IF(debug_loader, "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type, symbol);
 				break;
 			default:
 				LOG_INFO_IF(debug_loader, "UNK bind {}\n", sym_bind);
