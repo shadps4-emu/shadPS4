@@ -11207,7 +11207,20 @@ namespace aerolib {
         {"TLar1HULv1Q","sceZlibInflate"},
         {"m1YErdIXCp4","sceZlibInitialize"},
         {"uB8VlDD4e0s","sceZlibWaitForDone"},
-        {"b-Qiqugeo5U","sce_libc_tls_heap"}
-
+        {"b-Qiqugeo5U","sce_libc_tls_heap"},
+        
+        //libc
+        {"P330P3dFF68", "Need_sceLibc"},
+        {"bzQExy189ZI", "_init_env"},
+        {"8G2LB+A3rzg", "atexit"},
+        {"XKRegsFpEpk", "catchReturnFromMain"},
+        {"uMei1W9uyNo", "exit"},
+        {"3GPpjQdAMTw", "__cxa_guard_acquire"},
+        {"9rAeANT2tyE", "__cxa_guard_release"},
+        {"DfivPArhucg", "memcmp"},
+        {"Q3VBxCXhUHs", "memcpy"},
+        //libkernel
+        {"Ou3iL1abvng", "__stack_chk_fail"},
+        {"f7uOxY9mM1U", "__stack_chk_guard"}
         };
 };
