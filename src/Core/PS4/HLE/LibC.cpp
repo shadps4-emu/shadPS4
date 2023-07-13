@@ -1,4 +1,5 @@
 #include "LibC.h"
+#include "Libs.h"
 #include "../Loader/Elf.h"
 
 namespace HLE::Libs::LibC {
@@ -11,18 +12,8 @@ namespace HLE::Libs::LibC {
 		//__debugbreak();//if we reach here it will be a great progress :D
 	}
 
-	void LibC_RegisterFunc(SymbolsResolver* sym)
+	void LibC_Register(SymbolsResolver* sym)
 	{
-		//TODO this will be convert to macro probably once we decide how will it work and what's the best
-		SymbolRes sr {};
-		sr.name = "bzQExy189ZI";
-		sr.library = "libc";
-		sr.library_version = 1;
-		sr.module = "libc";
-		sr.module_version_major = 1;
-		sr.module_version_minor = 1;
-		sr.type = STT_FUN;
-		auto func = reinterpret_cast<u64>(init_env);
-		sym->AddSymbol(sr, func);
+        LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
 	}
 };

@@ -3,7 +3,7 @@
 
 namespace HLE::Libs::LibC {
 
-	void LibC_RegisterFunc(SymbolsResolver* sym);
+	void LibC_Register(SymbolsResolver* sym);
 	//functions
 	static void init_env();
 

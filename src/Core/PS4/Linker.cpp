@@ -569,7 +569,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
 	}
 	else
 	{
-        LOG_INFO_IF(debug_loader, "function not patched!\n");
+        LOG_INFO_IF(debug_loader, "function not patched! {}\n",rel_name);
 	}
 }
 

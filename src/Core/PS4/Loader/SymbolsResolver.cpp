@@ -1,5 +1,6 @@
 #include "../../../types.h"
 #include "SymbolsResolver.h"
+#include "../../../Util/Log.h"
 
 
 void SymbolsResolver::AddSymbol(const SymbolRes& s, u64 virtual_addr)
@@ -26,5 +27,6 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolRes& s) const {
         }
         index++;
     }
+    LOG_INFO_IF(true, "unresolved! {}\n", name);
 	return nullptr; 
 }
