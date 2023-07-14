@@ -9,5 +9,6 @@ size_t sceKernelGetDirectMemorySize();
 int sceKernelCreateEqueue(/* SceKernelEqueue* eq*/ int eq, const char* name);
 int32_t sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, off_t directMemoryStart, size_t alignment);
 int32_t sceKernelReleaseDirectMemory(off_t start, size_t len);
-
+int sceKernelIsNeoMode();
+int sceKernelWaitEqueue(/*SceKernelEqueue eq, SceKernelEvent* ev,*/ int num, int* out /*, SceKernelUseconds* timo*/);
 };  // namespace HLE::Libs::LibKernel
