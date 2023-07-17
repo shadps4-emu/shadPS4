@@ -15,8 +15,8 @@ include_directories(third-party/sdl/)
 include_directories(third-party/fmt/include)
 include_directories(third-party/magic_enum/include)
 include_directories(third-party/zydis/include/Zydis)
+include_directories(third-party/winpthread/include)
 add_subdirectory("third-party")
-
 #=================== EXAMPLE ===================
 
 add_executable(shadps4
@@ -37,10 +37,12 @@ add_executable(shadps4
      "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Util/StringUtil.h" "src/Core/PS4/Util/aerolib.h" "src/Core/PS4/Loader/SymbolsResolver.h" "src/Core/PS4/Loader/SymbolsResolver.cpp" "src/Core/PS4/HLE/Libs.cpp" "src/Core/PS4/HLE/Libs.h" "src/Core/PS4/HLE/LibC.cpp" "src/Core/PS4/HLE/LibC.h" "src/Lib/Timer.cpp" "src/Lib/Timer.h" "src/Core/PS4/HLE/LibKernel.cpp" "src/Core/PS4/HLE/LibKernel.h" "src/Core/PS4/HLE/LibSceVideoOut.cpp" "src/Core/PS4/HLE/LibSceVideoOut.h" "src/Core/PS4/HLE/LibSceGnmDriver.cpp" "src/Core/PS4/HLE/LibSceGnmDriver.h")
 
 find_package(OpenGL REQUIRED)
-
 target_link_libraries(shadps4 PUBLIC fmt spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY})
 
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:SDL3-shared>
      $<TARGET_FILE_DIR:shadps4>)
+add_custom_command(TARGET shadps4 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+     "${PROJECT_SOURCE_DIR}/third-party/winpthread/bin/libwinpthread-1.dll" $<TARGET_FILE_DIR:shadps4>)
