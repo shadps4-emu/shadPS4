@@ -4,6 +4,8 @@
 
 namespace HLE::Libs::LibC {
 
+	static u32 g_need_sceLibc = 1;
+
 	static void init_env() //every game/demo should probably 
 	{
 		for(;;) {
@@ -50,6 +52,8 @@ namespace HLE::Libs::LibC {
         LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
         LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, exit);
         LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, atexit);
+
+		LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
     }
     
 };

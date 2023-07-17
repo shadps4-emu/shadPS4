@@ -4,6 +4,8 @@
 
 namespace HLE::Libs::LibKernel {
 
+    static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; //dummy return
+
     int sceKernelAllocateDirectMemory(off_t searchStart, off_t searchEnd, size_t len, size_t alignment, int memoryType, off_t* physAddrOut) { return 0;//OK
     }
     size_t sceKernelGetDirectMemorySize() { return 0;
@@ -26,6 +28,8 @@ namespace HLE::Libs::LibKernel {
 
     }
     void LibKernel_Register(SymbolsResolver* sym) { 
+        //obj
+        LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &HLE::Libs::LibKernel::g_stack_chk_guard);
         //memory
         LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory); 
         LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
