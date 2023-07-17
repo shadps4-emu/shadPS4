@@ -50,6 +50,63 @@ namespace HLE::Libs::LibSceGnmDriver {
     {
         return 0;
     }
+    void sceGnmDingDong(u32 ring_id, u32 offset_dw)
+    {
+    
+    }
+    bool sceRazorIsLoaded()
+    { return true;// hmm???
+    }
+    int sceGnmDeleteEqEvent(/* SceKernelEqueue eq, EqEventType id*/)
+    { return 0;
+    }
+    int32_t sceGnmSubmitDone()
+    { return 0;
+    }
+    int /* MipStatsError*/ sceGnmDisableMipStatsReport()
+    { return 0;
+    }
+    int sceGnmSubmitAndFlipCommandBuffersForWorkload()
+    { return 0;
+    }
+    int sceGnmSubmitCommandBuffersForWorkload()
+    { return 0;
+    }
+    int /* WorkloadStatus*/ sceGnmDestroyWorkloadStream(/*WorkloadStream workloadStream*/)
+    { return 0;
+    }
+    void sceGnmDingDongForWorkload()
+    {
+
+    }
+    void sceGnmDriverCaptureInProgress() {}
+    void sceGnmUnmapComputeQueue(){}
+    void sceGnmDriverTraceInProgress(){}
+    void sceGnmDriverTriggerCapture(){}
+    void sceGnmEndWorkload(){}
+    void sceGnmFlushGarlic(){}
+    void sceGnmGetEqEventType(){}
+    void sceGnmGetEqTimeStamp(){}
+    void sceGnmGetGpuBlockStatus(){}
+    void sceGnmGetGpuInfoStatus(){}
+    void sceGnmGetLastWaitedAddress(){}
+    void sceGnmGetNumTcaUnits(){}
+    void sceGnmGetOffChipTessellationBufferSize(){}
+    void sceGnmGetPhysicalCounterFromVirtualized(){}
+    void sceGnmGetProtectionFaultTimeStamp(){}
+    void sceGnmGetShaderProgramBaseAddress(){}
+    void sceGnmGetShaderStatus(){}
+    void sceGnmGetTheTessellationFactorRingBufferBaseAddress(){}
+    void sceGnmIsUserPaEnabled(){}
+    void sceGnmLogicalCuIndexToPhysicalCuIndex(){}
+    void sceGnmLogicalCuMaskToPhysicalCuMask(){}
+    void sceGnmMapComputeQueue(){}
+    void sceGnmMapComputeQueueWithPriority(){}
+    void sceRazorCaptureImmediate(){}
+    void sceGnmRequestFlipAndSubmitDone(){}
+    void sceGnmRequestFlipAndSubmitDoneForWorkload(){}
+    void sceGnmRequestMipStatsReportAndReset(){}
+
 	void LibSceGnmDriver_Register(SymbolsResolver* sym)
 	{ 
 		LIB_FUNCTION("b0xyllnVY-I", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmAddEqEvent);
@@ -62,8 +119,7 @@ namespace HLE::Libs::LibSceGnmDriver {
 		LIB_FUNCTION("+xuDhxlWRPg", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSetupMipStatsReport);
         LIB_FUNCTION("zwY0YV91TTI", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSubmitCommandBuffers);
         LIB_FUNCTION("xbxNatawohc", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSubmitAndFlipCommandBuffers);
-
-        /*LIB_FUNCTION("Ga6r7H6Y0RI", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSubmitAndFlipCommandBuffersForWorkload);
+        LIB_FUNCTION("Ga6r7H6Y0RI", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSubmitAndFlipCommandBuffersForWorkload);
         LIB_FUNCTION("f33OrruQYbM", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceRazorIsLoaded);
         LIB_FUNCTION("jRcI8VcgTz4", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmSubmitCommandBuffersForWorkload);
         LIB_FUNCTION("PVT+fuoS9gU", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmDeleteEqEvent);
@@ -98,7 +154,7 @@ namespace HLE::Libs::LibSceGnmDriver {
         LIB_FUNCTION("u9YKpRRHe-M", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceRazorCaptureImmediate);
         LIB_FUNCTION("gObODli-OH8", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmRequestFlipAndSubmitDone);
         LIB_FUNCTION("6YRHhh5mHCs", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmRequestFlipAndSubmitDoneForWorkload);
-        LIB_FUNCTION("f85orjx7qts", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmRequestMipStatsReportAndReset);*/
+        LIB_FUNCTION("f85orjx7qts", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmRequestMipStatsReportAndReset);
 	}
     
 };
