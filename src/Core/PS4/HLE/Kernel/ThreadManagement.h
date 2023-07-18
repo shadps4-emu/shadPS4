@@ -3,15 +3,11 @@
 #include <sched.h>
 #include "../../../../types.h"
 
-extern "C" {
-struct sched_param;
-}
-
 namespace HLE::Libs::LibKernel::ThreadManagement {
 
 struct PthreadAttrInternal;
 
-using SceKernelSchedParam  = struct sched_param;
+using SceKernelSchedParam  = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
 
 struct PthreadInternal {
