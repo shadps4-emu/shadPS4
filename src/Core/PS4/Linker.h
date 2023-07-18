@@ -5,6 +5,7 @@
 #include "Loader/SymbolsResolver.h"
 
 struct DynamicModuleInfo;
+class Linker;
 
 /*this struct keeps neccesary info about loaded modules.Main executeable is included too as well*/
 struct Module
@@ -12,6 +13,8 @@ struct Module
 	Elf* elf = nullptr;
 	u64 aligned_base_size = 0;
 	u64 base_virtual_addr = 0; //base virtual address
+
+	Linker* linker = nullptr;
 
 	void* m_dynamic = nullptr;
 	void* m_dynamic_data = nullptr;
@@ -111,6 +114,7 @@ public:
 	void LoadSymbols(Module* m);
 	SymbolsResolver* getHLESymbols() { return m_HLEsymbols; }
 	void Relocate(Module* m);
+    void Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info);
 
 private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);

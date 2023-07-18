@@ -31,6 +31,9 @@ public:
 	virtual ~SymbolsResolver() = default;
 
 	void AddSymbol(const SymbolRes& s, u64 virtual_addr);
+    const SymbolRecord* FindSymbol(const SymbolRes& s) const;
+
+    static std::string GenerateName(const SymbolRes& s);
 
 private:
 	std::vector<SymbolRecord>            m_symbols;

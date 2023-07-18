@@ -1,18 +1,28 @@
 [submodule "third-party/imgui"]
 	path = third-party/imgui
 	url = https://github.com/ocornut/imgui
+	shallow = true
 [submodule "third-party/SDL"]
 	path = third-party/SDL
 	url = https://github.com/libsdl-org/SDL
+	shallow = true
 [submodule "third-party/fmt"]
 	path = third-party/fmt
 	url = https://github.com/fmtlib/fmt.git
+	shallow = true
 [submodule "third-party/spdlog"]
 	path = third-party/spdlog
 	url = https://github.com/gabime/spdlog
+	shallow = true
 [submodule "third-party/magic_enum"]
 	path = third-party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
+	shallow = true
 [submodule "third-party/zydis"]
 	path = third-party/zydis
 	url = https://github.com/zyantific/zydis.git
+	shallow = true
+[submodule "third-party/winpthread"]
+	path = third-party/winpthread
+	url = https://github.com/shadps4/winpthread.git
+	branch = main

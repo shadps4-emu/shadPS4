@@ -42,6 +42,17 @@ namespace Memory
 					return PAGE_NOACCESS;
 			}
 		}
+        static MemoryMode convertMemoryMode(u32 mode) {
+            switch (mode) {
+                case PAGE_NOACCESS: return MemoryMode::NoAccess;
+                case PAGE_READONLY: return MemoryMode::Read;
+                case PAGE_READWRITE: return MemoryMode::ReadWrite;
+                case PAGE_EXECUTE: return MemoryMode::Execute;
+                case PAGE_EXECUTE_READ: return MemoryMode::ExecuteRead;
+                case PAGE_EXECUTE_READWRITE: return MemoryMode::ExecuteReadWrite;
+                default: return MemoryMode::NoAccess;
+            }
+        }
 
 		u64 memory_alloc(u64 address, u64 size, MemoryMode mode)
 		{
@@ -71,5 +82,46 @@ namespace Memory
 			#endif
 			return ptr;
 		}
+        bool memory_protect(u64 address, u64 size, MemoryMode mode, MemoryMode* old_mode) {
+            DWORD old_protect = 0;
+            if (VirtualProtect(reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)), size, convertMemoryMode(mode), &old_protect) == 0) {
+                    auto err = static_cast<u32>(GetLastError());
+                    LOG_ERROR_IF(true, "VirtualProtect() failed: 0x{:X}\n", err);
+                    return false;
+            }
+            if (old_mode != nullptr) {
+                    *old_mode = convertMemoryMode(old_protect);
+            }
+            return true;
+        }
+
+		bool memory_flush(u64 address, u64 size) {
+            if (::FlushInstructionCache(GetCurrentProcess(), reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)), size) == 0) {
+                    auto err = static_cast<u32>(GetLastError());
+                    LOG_ERROR_IF(true, "FlushInstructionCache() failed: 0x{:X}\n", err);
+                    return false;
+            }
+            return true;
+        }
+        bool memory_patch(u64 vaddr, u64 value) {
+            MemoryMode old_mode{};
+            memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
+
+            auto* ptr = reinterpret_cast<uint64_t*>(vaddr);
+
+            bool ret = (*ptr != value);
+
+            *ptr = value;
+
+            memory_protect(vaddr, 8, old_mode, nullptr);
+
+			//if mode is executable flush it so insure that cpu finds it
+			if ((old_mode == MemoryMode::Execute || old_mode == MemoryMode::ExecuteRead || old_mode == MemoryMode::ExecuteWrite ||
+                 old_mode == MemoryMode::ExecuteReadWrite)) {
+                    memory_flush(vaddr, 8);
+            }
+
+            return ret;
+        }
 	}
 }

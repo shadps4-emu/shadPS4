@@ -70,6 +70,7 @@ static std::string encodeId(u64 nVal)
 Module* Linker::LoadModule(const std::string& elf_name)
 {
 	auto* m = new Module;
+    m->linker = this;
 	m->elf = new Elf;
 	m->elf->Open(elf_name);//load elf
 
@@ -497,67 +498,78 @@ void Linker::LoadSymbols(Module* m)
 		}
 	}
 }
-static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel)
-{
-	auto type = rel->GetType();
-	auto symbol = rel->GetSymbol();
-	auto addend = rel->rel_addend;
-	auto* symbolsTlb = m->dynamic_info->symbol_table;
-	auto* namesTlb = m->dynamic_info->str_table;
+static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
+    auto type = rel->GetType();
+    auto symbol = rel->GetSymbol();
+    auto addend = rel->rel_addend;
+    auto* symbolsTlb = m->dynamic_info->symbol_table;
+    auto* namesTlb = m->dynamic_info->str_table;
 
-	u64   rel_value = 0;
-	u64   rel_base_virtual_addr = m->base_virtual_addr;
-	u64   rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
-	bool  rel_isResolved = false;
-	u08   rel_sym_type = 0;
-	std::string rel_name;
+    u64 rel_value = 0;
+    u64 rel_base_virtual_addr = m->base_virtual_addr;
+    u64 rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
+    bool rel_isResolved = false;
+    u08 rel_sym_type = 0;
+    std::string rel_name;
+    u08 rel_bind_type = -1;  //-1 means it didn't resolve
 
-	switch (type)
+    switch (type) {
+        case R_X86_64_RELATIVE:
+            if (symbol != 0)  // should be always zero
+            {
+                LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);
+            }
+            rel_value = rel_base_virtual_addr + addend;
+            rel_isResolved = true;
+            break;
+        case R_X86_64_64:
+        case R_X86_64_JUMP_SLOT:  // similar but addend is not take into account
+        {
+            auto sym = symbolsTlb[symbol];
+            auto sym_bind = sym.GetBind();
+            auto sym_type = sym.GetType();
+            auto sym_visibility = sym.GetVisibility();
+            u64 symbol_vitrual_addr = 0;
+            SymbolRecord symrec{};
+            switch (sym_type) {
+                case STT_FUN: rel_sym_type = 2; break;
+                case STT_OBJECT: rel_sym_type = 1; break;
+                default: LOG_INFO_IF(debug_loader, "unknown symbol type {}\n", sym_type);
+            }
+            if (sym_visibility != 0)  // should be zero log if else
+            {
+                LOG_INFO_IF(debug_loader, "symbol visilibity !=0\n");
+            }
+            switch (sym_bind) {
+                case STB_GLOBAL:
+                    rel_bind_type = STB_GLOBAL;
+                    rel_name = namesTlb + sym.st_name;
+                    m->linker->Resolve(rel_name, rel_sym_type, m, &symrec);
+                    symbol_vitrual_addr = symrec.virtual_address;
+                    rel_isResolved = (symbol_vitrual_addr != 0);
+
+                    rel_name = symrec.name;
+                    if (type == R_X86_64_JUMP_SLOT) {
+                        addend = 0;
+                    }
+                    rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
+                    if (!rel_isResolved) {
+                        LOG_INFO_IF(debug_loader, "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type, symbol);
+                    }
+                    break;
+                default: LOG_INFO_IF(debug_loader, "UNK bind {}\n", sym_bind);
+            }
+
+        } break;
+        default: LOG_INFO_IF(debug_loader, "UNK type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+    }
+
+    if (rel_isResolved) {
+        Memory::VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
+	}
+	else
 	{
-	case R_X86_64_RELATIVE:
-		if (symbol != 0)//should be always zero
-		{
-			LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);
-		}
-		rel_value = rel_base_virtual_addr + addend;
-		rel_isResolved = true;
-		break;
-	case R_X86_64_64:
-	case R_X86_64_JUMP_SLOT://similar but addend is not take into account
-		{
-			auto    sym = symbolsTlb[symbol];
-			auto    sym_bind = sym.GetBind();
-			auto    sym_type = sym.GetType();
-			auto    sym_visibility = sym.GetVisibility();
-			u64     symbol_vitrual_addr = 0;
-			switch (sym_type)
-			{
-			case STT_FUN: rel_sym_type = 2; break;
-			case STT_OBJECT: rel_sym_type = 1; break;
-			default: 
-				LOG_INFO_IF(debug_loader, "unknown symbol type {}\n",sym_type); 
-			}
-			if (sym_visibility != 0)//should be zero log if else
-			{
-				LOG_INFO_IF(debug_loader, "symbol visilibity !=0");
-			}
-			switch (sym_bind)
-			{
-			case STB_GLOBAL:
-				if (type == R_X86_64_64) {
-					LOG_INFO_IF(debug_loader, "R_X86_64_64 sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
-				}
-				if (type == R_X86_64_JUMP_SLOT) {
-					LOG_INFO_IF(debug_loader, "R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : {:#010x}\n", sym_type,symbol);
-				}
-				break;
-			default:
-				LOG_INFO_IF(debug_loader, "UNK bind {}\n", sym_bind);
-			}
-		}
-		break;
-	default:
-		LOG_INFO_IF(debug_loader, "UNK type {:#010x} rel symbol : {:#010x}\n", type, symbol);
+        LOG_INFO_IF(debug_loader, "function not patched! {}\n",rel_name);
 	}
 }
 
@@ -573,4 +585,47 @@ void Linker::Relocate(Module* m)
 	{
 		relocate(idx, rel, m, true);
 	}
+}
+
+
+void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
+	auto ids = StringUtil::split(name, '#');
+
+	if (ids.size() == 3)  // symbols are 3 parts name , library , module
+    {
+        const auto* library = FindLibrary(*m, ids.at(1));
+        const auto* module = FindModule(*m, ids.at(2));
+
+		if (library != nullptr && module != nullptr) {
+            SymbolRes sr{};
+            sr.name = ids.at(0);
+            sr.library = library->name;
+            sr.library_version = library->version;
+            sr.module = module->name;
+            sr.module_version_major = module->version_major;
+            sr.module_version_minor = module->version_minor;
+            sr.type = Symtype;
+
+			const SymbolRecord* rec = nullptr;
+
+            if (m_HLEsymbols != nullptr) {
+				rec = m_HLEsymbols->FindSymbol(sr);
+            }
+            if (rec != nullptr) {
+                *return_info = *rec;
+            } else {
+                return_info->virtual_address = 0;
+                return_info->name = "Unresolved!!!";
+            }
+		}
+		else
+		{
+            __debugbreak();//den tha prepei na ftasoume edo
+		}
+	}
+	else
+	{
+        __debugbreak();//oute edo mallon
+	}
+
 }
