@@ -29,7 +29,26 @@ namespace HLE::Libs::LibSceVideoOut {
     int32_t sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/)
 	{ return 0;
 	}
-    int32_t sceVideoOutOpen(/* SceUserServiceUserId userId,*/ int32_t busType, int32_t index, const void* param) { return 0;
+    
+
+    int32_t sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param) 
+	{ 
+		if (busType != 0)
+		{
+            __debugbreak();
+		}
+		if (index != 0)
+		{
+            __debugbreak();
+		}
+		if (param != nullptr)
+		{
+            __debugbreak();
+		}
+		for (;;) {
+            printf("videoopen\n");
+        }
+		return 0;
 	}
 	int32_t sceVideoOutIsFlipPending(int32_t handle) { return 0;
 	}

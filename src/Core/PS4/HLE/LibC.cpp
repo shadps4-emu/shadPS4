@@ -37,10 +37,12 @@ namespace HLE::Libs::LibC {
 	}
 	static int atexit(void (*func)())
 	{ 
-		for (;;) {
-            printf("we reached here too!\n");
-        }
-		return 0;
+		int rt = ::atexit(func);
+		if (rt != 0)
+		{
+            __debugbreak();
+		}
+        return rt;
 	}
 
 	void LibC_Register(SymbolsResolver* sym)
