@@ -8,12 +8,18 @@ thread_local PthreadInternal* g_pthread_self = nullptr;
 PThreadCxt* g_pthread_cxt = nullptr;
 
 
+void Pthread_Init_Self_MainThread() {
+    g_pthread_self = new PthreadInternal{};
+    scePthreadAttrInit(&g_pthread_self->attr);
+    g_pthread_self->pth = pthread_self();
+    g_pthread_self->name = "Main_Thread";
+}
 
 int scePthreadAttrInit(ScePthreadAttr* attr) {
 
     *attr = new PthreadAttrInternal{};
 
-    int result = pthread_attr_init(&(*attr)->p);
+    int result = pthread_attr_init(&(*attr)->pth_attr);
 
     (*attr)->affinity = 0x7f;
     (*attr)->guard_size = 0x1000;
@@ -47,7 +53,7 @@ int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
             __debugbreak(); //unknown state
     }
 
-    int result = pthread_attr_setdetachstate(&(*attr)->p, pstate);
+    int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
 
     (*attr)->detached = (pstate == PTHREAD_CREATE_DETACHED);
 
@@ -70,7 +76,7 @@ int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
         default: __debugbreak();  // unknown inheritSched
     }
 
-    int result = pthread_attr_setinheritsched(&(*attr)->p, pinherit_sched);
+    int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
 
     if (result == 0) {
         return SCE_OK;
@@ -93,7 +99,7 @@ int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam*
         pparam.sched_priority = 0;
     }
 
-    int result = pthread_attr_setschedparam(&(*attr)->p, &pparam);
+    int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
 
     if (result == 0) {
         return SCE_OK;
@@ -114,7 +120,7 @@ int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
 
     (*attr)->policy = policy;
 
-    int result = pthread_attr_setschedpolicy(&(*attr)->p, policy);
+    int result = pthread_attr_setschedpolicy(&(*attr)->pth_attr, policy);
 
     if (result == 0) {
         return SCE_OK;

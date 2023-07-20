@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include "../../../../types.h"
+#include <string>
 
 namespace HLE::Libs::LibKernel::ThreadManagement {
 
@@ -11,14 +12,18 @@ using SceKernelSchedParam  = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
 
 struct PthreadInternal {
-    pthread_t p;
+    u08 reserved[4096];
+    std::string name;
+    pthread_t pth;
+    ScePthreadAttr attr;
 };
 struct PthreadAttrInternal {
+    u08 reserved[64];
     u64 affinity;
     size_t guard_size;
     int policy;
     bool detached;
-    pthread_attr_t p;
+    pthread_attr_t pth_attr;
 };
 
 class PThreadCxt {};
