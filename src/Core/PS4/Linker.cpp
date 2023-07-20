@@ -5,6 +5,7 @@
 #include "../../Util/StringUtil.h"
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
+#include "HLE/Kernel/ThreadManagement.h"
 
 
 constexpr bool debug_loader = true;
@@ -628,4 +629,27 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
         __debugbreak();//oute edo mallon
 	}
 
+}
+
+using exit_func_t          = void (*)();
+using entry_func_t           = void (*)(EntryParams* params, exit_func_t atexit_func);
+
+static void ProgramExitFunc() {
+
+    printf("exit function called\n");
+}
+
+static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
+    reinterpret_cast<entry_func_t>(addr)(params, exit_func);
+}
+
+void Linker::Execute()
+{
+    HLE::Libs::LibKernel::ThreadManagement::Pthread_Init_Self_MainThread();
+    EntryParams p{};
+    p.argc = 1;
+    p.argv[0] = "eboot.bin"; //hmm should be ok?
+
+    run_main_entry(m_modules.at(0)->elf->GetElfEntry()+m_modules.at(0)->base_virtual_addr, &p, ProgramExitFunc);
+    
 }

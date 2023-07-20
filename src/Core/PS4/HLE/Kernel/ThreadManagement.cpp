@@ -27,7 +27,7 @@ int scePthreadAttrInit(ScePthreadAttr* attr) {
     SceKernelSchedParam param{};
     param.sched_priority = 700;
 
-    result = (result == 0 ? scePthreadAttrSetinheritsched(attr, PTHREAD_INHERIT_SCHED) : result);
+    result = (result == 0 ? scePthreadAttrSetinheritsched(attr, 4) : result);
     result = (result == 0 ? scePthreadAttrSetschedparam(attr, &param) : result);
     result = (result == 0 ? scePthreadAttrSetschedpolicy(attr, SCHED_OTHER) : result);
     result = (result == 0 ? scePthreadAttrSetdetachstate(attr, PTHREAD_CREATE_JOINABLE) : result);

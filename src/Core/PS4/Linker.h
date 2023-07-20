@@ -7,6 +7,12 @@
 struct DynamicModuleInfo;
 class Linker;
 
+struct EntryParams {
+    int argc;
+    u32 padding;
+    const char* argv[3];
+};
+
 /*this struct keeps neccesary info about loaded modules.Main executeable is included too as well*/
 struct Module
 {
@@ -115,8 +121,9 @@ public:
 	SymbolsResolver* getHLESymbols() { return m_HLEsymbols; }
 	void Relocate(Module* m);
     void Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info);
+    void Execute();
 
-private:
+  private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);
 	const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
 

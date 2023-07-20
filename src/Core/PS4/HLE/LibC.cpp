@@ -9,7 +9,7 @@ namespace HLE::Libs::LibC {
 	static void init_env() //every game/demo should probably 
 	{
 		for(;;) {
-			printf("__debugbreak\n");
+			printf("life is a bitch but it did reach here\n");
 		}
 		//__debugbreak();//if we reach here it will be a great progress :D
 	}

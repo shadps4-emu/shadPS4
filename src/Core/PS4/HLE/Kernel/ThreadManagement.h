@@ -1,4 +1,6 @@
 #pragma once
+#define _TIMESPEC_DEFINED
+
 #include <pthread.h>
 #include <sched.h>
 #include "../../../../types.h"
@@ -28,7 +30,9 @@ struct PthreadAttrInternal {
 
 class PThreadCxt {};
 
-//HLE FUNCTIONS
+void Pthread_Init_Self_MainThread();
+
+    //HLE FUNCTIONS
 int scePthreadAttrInit(ScePthreadAttr* attr);
 int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate);
 int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
