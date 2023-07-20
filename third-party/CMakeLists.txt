@@ -27,6 +27,8 @@ option(ZYDIS_BUILD_EXAMPLES "" OFF)
 set(zydis_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zydis)
 add_subdirectory(${zydis_DIR})
 
+#========== winpthreads ======================
+add_subdirectory(winpthread)
 #=================== IMGUI ===================
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
@@ -56,6 +58,6 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(IMGUI PUBLIC ${OPENGL_LIBRARIES})
 
 
-target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis)
+target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread)
 
 

@@ -22,3 +22,7 @@
 	path = third-party/zydis
 	url = https://github.com/zyantific/zydis.git
 	shallow = true
+[submodule "third-party/winpthread"]
+	path = third-party/winpthread
+	url = https://github.com/shadps4/winpthread.git
+	branch = main

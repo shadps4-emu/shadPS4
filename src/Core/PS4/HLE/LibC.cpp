@@ -8,10 +8,7 @@ namespace HLE::Libs::LibC {
 
 	static void init_env() //every game/demo should probably 
 	{
-		for(;;) {
-			printf("__debugbreak\n");
-		}
-		//__debugbreak();//if we reach here it will be a great progress :D
+		//dummy no need atm
 	}
 
 	int __cxa_guard_acquire(u64* guard_object)
@@ -39,7 +36,11 @@ namespace HLE::Libs::LibC {
 
 	}
 	static int atexit(void (*func)())
-	{ return 0;
+	{ 
+		for (;;) {
+            printf("we reached here too!\n");
+        }
+		return 0;
 	}
 
 	void LibC_Register(SymbolsResolver* sym)
