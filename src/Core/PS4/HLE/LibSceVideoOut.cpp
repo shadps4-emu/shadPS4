@@ -4,30 +4,37 @@
 
 namespace HLE::Libs::LibSceVideoOut {
 
-	int32_t sceVideoOutGetFlipStatus(int32_t handle /*, SceVideoOutFlipStatus* status*/){ 
-		return 0;
-	}
-
-	int32_t sceVideoOutSubmitFlip(int32_t handle, int32_t bufferIndex, int32_t flipMode,int64_t flipArg){ 
-		return 0;
-	}
-    int32_t sceVideoOutRegisterBuffers(int32_t handle, int32_t startIndex, void* const* addresses, int32_t bufferNum /*,
-                                       const SceVideoOutBufferAttribute* attribute*/) {
+	int32_t PS4_SYSV_ABI sceVideoOutGetFlipStatus(int32_t handle /*, SceVideoOutFlipStatus* status*/) { 
+		__debugbreak();
         return 0;
 	}
-    int32_t sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t handle, void* udata) { 
-		return 0;
+
+	int32_t PS4_SYSV_ABI sceVideoOutSubmitFlip(int32_t handle, int32_t bufferIndex, int32_t flipMode, int64_t flipArg) { 
+		__debugbreak();
+        return 0;
 	}
-	int32_t sceVideoOutSetFlipRate(int32_t handle, int32_t rate) { 
-		return 0;
+    int32_t PS4_SYSV_ABI sceVideoOutRegisterBuffers(int32_t handle, int32_t startIndex, void* const* addresses, int32_t bufferNum /*,
+                                       const SceVideoOutBufferAttribute* attribute*/) {
+        __debugbreak();
+        return 0;
 	}
-    void sceVideoOutSetBufferAttribute(/* SceVideoOutBufferAttribute* attribute,*/ uint32_t pixelFormat, uint32_t tilingMode, uint32_t aspectRatio,
+    int32_t PS4_SYSV_ABI sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t handle, void* udata) { 
+		__debugbreak();
+        return 0;
+	}
+    int32_t PS4_SYSV_ABI sceVideoOutSetFlipRate(int32_t handle, int32_t rate) { 
+		__debugbreak();
+        return 0;
+	}
+    void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(/* SceVideoOutBufferAttribute* attribute,*/ uint32_t pixelFormat, uint32_t tilingMode,
+                                                    uint32_t aspectRatio,
 		uint32_t width, uint32_t height, uint32_t pitchInPixel)
 	{
-
+        __debugbreak();
 	}
-    int32_t sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/)
-	{ return 0;
+    int32_t PS4_SYSV_ABI sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/) {
+        __debugbreak();
+        return 0;
 	}
     
 
@@ -50,7 +57,9 @@ namespace HLE::Libs::LibSceVideoOut {
         }
 		return 0;
 	}
-	int32_t sceVideoOutIsFlipPending(int32_t handle) { return 0;
+    int32_t PS4_SYSV_ABI sceVideoOutIsFlipPending(int32_t handle) {
+        __debugbreak();
+        return 0;
 	}
 	void LibSceVideoOut_Register(SymbolsResolver* sym)
 	{
