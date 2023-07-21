@@ -6,7 +6,7 @@ namespace HLE::Libs::LibC {
 
 	static u32 g_need_sceLibc = 1;
 
-	static void init_env() //every game/demo should probably 
+	static PS4_SYSV_ABI void init_env()  // every game/demo should probably 
 	{
 		//dummy no need atm
 	}
@@ -35,7 +35,7 @@ namespace HLE::Libs::LibC {
 	{
 
 	}
-	static int atexit(void (*func)())
+    static PS4_SYSV_ABI int atexit(void (*func)())
 	{ 
 		int rt = ::atexit(func);
 		if (rt != 0)

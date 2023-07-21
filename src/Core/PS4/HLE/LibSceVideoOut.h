@@ -15,6 +15,6 @@ int32_t sceVideoOutSetFlipRate(int32_t handle, int32_t rate);
 void sceVideoOutSetBufferAttribute(/* SceVideoOutBufferAttribute* attribute,*/ uint32_t pixelFormat, uint32_t tilingMode, uint32_t aspectRatio,
                                    uint32_t width, uint32_t height, uint32_t pitchInPixel);
 int32_t sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/);
-int32_t sceVideoOutOpen(SceUserServiceUserId userId,int32_t busType, int32_t index, const void* param);
+int32_t PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param);
 int32_t sceVideoOutIsFlipPending(int32_t handle);
 };  // namespace HLE::Libs::LibSceVideoOut

@@ -31,7 +31,7 @@ namespace HLE::Libs::LibSceVideoOut {
 	}
     
 
-    int32_t sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param) 
+    int32_t PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param) 
 	{ 
 		if (busType != 0)
 		{
