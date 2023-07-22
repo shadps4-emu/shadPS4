@@ -52,7 +52,7 @@ To discuss this emulator please join our Discord server: [![Discord](https://img
 
 # Who are you?
 
-Old emulator fans and devs can recongnize me as "shadow". I was the founder and coder for a lot of emulation projects:
+Old emulator fans and devs can recognize me as "shadow". I was the founder and coder for a lot of emulation projects:
 * PCSX
 * PCSX2
 * PCSP
