@@ -44,3 +44,4 @@ jobs:
         path: |
           ${{github.workspace}}/build/Release/shadps4.exe
           ${{github.workspace}}/build/Release/SDL3.dll
+          ${{github.workspace}}/build/Release/libwinpthread-1.dll
