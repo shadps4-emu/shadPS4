@@ -631,15 +631,15 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
 
 }
 
-using exit_func_t          = void (*)();
-using entry_func_t           = void (*)(EntryParams* params, exit_func_t atexit_func);
+using exit_func_t          = PS4_SYSV_ABI void (*)();
+using entry_func_t           = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
 
-static void ProgramExitFunc() {
+static PS4_SYSV_ABI void ProgramExitFunc() {
 
     printf("exit function called\n");
 }
 
-static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
+static PS4_SYSV_ABI void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
     reinterpret_cast<entry_func_t>(addr)(params, exit_func);
 }
 
