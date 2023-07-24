@@ -1,39 +1,40 @@
 #include "LibSceVideoOut.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
+#include "../../../Debug.h"
 
 namespace HLE::Libs::LibSceVideoOut {
 
 	int32_t PS4_SYSV_ABI sceVideoOutGetFlipStatus(int32_t handle /*, SceVideoOutFlipStatus* status*/) { 
-		__debugbreak();
+		BREAKPOINT();
         return 0;
 	}
 
 	int32_t PS4_SYSV_ABI sceVideoOutSubmitFlip(int32_t handle, int32_t bufferIndex, int32_t flipMode, int64_t flipArg) { 
-		__debugbreak();
+		BREAKPOINT();
         return 0;
 	}
     int32_t PS4_SYSV_ABI sceVideoOutRegisterBuffers(int32_t handle, int32_t startIndex, void* const* addresses, int32_t bufferNum /*,
                                        const SceVideoOutBufferAttribute* attribute*/) {
-        __debugbreak();
+        BREAKPOINT();
         return 0;
 	}
     int32_t PS4_SYSV_ABI sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t handle, void* udata) { 
-		__debugbreak();
+		BREAKPOINT();
         return 0;
 	}
     int32_t PS4_SYSV_ABI sceVideoOutSetFlipRate(int32_t handle, int32_t rate) { 
-		__debugbreak();
+		BREAKPOINT();
         return 0;
 	}
     void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(/* SceVideoOutBufferAttribute* attribute,*/ uint32_t pixelFormat, uint32_t tilingMode,
                                                     uint32_t aspectRatio,
 		uint32_t width, uint32_t height, uint32_t pitchInPixel)
 	{
-        __debugbreak();
+        BREAKPOINT();
 	}
     int32_t PS4_SYSV_ABI sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/) {
-        __debugbreak();
+        BREAKPOINT();
         return 0;
 	}
     
@@ -42,15 +43,15 @@ namespace HLE::Libs::LibSceVideoOut {
 	{ 
 		if (busType != 0)
 		{
-            __debugbreak();
+            BREAKPOINT();
 		}
 		if (index != 0)
 		{
-            __debugbreak();
+            BREAKPOINT();
 		}
 		if (param != nullptr)
 		{
-            __debugbreak();
+            BREAKPOINT();
 		}
 		for (;;) {
             printf("videoopen\n");
@@ -58,7 +59,7 @@ namespace HLE::Libs::LibSceVideoOut {
 		return 0;
 	}
     int32_t PS4_SYSV_ABI sceVideoOutIsFlipPending(int32_t handle) {
-        __debugbreak();
+        BREAKPOINT();
         return 0;
 	}
 	void LibSceVideoOut_Register(SymbolsResolver* sym)

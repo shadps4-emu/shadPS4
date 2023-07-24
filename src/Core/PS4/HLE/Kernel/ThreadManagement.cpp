@@ -1,5 +1,6 @@
 #include "ThreadManagement.h"
 #include "../ErrorCodes.h"
+#include "../../../../Debug.h"
 
 namespace HLE::Libs::LibKernel::ThreadManagement
 {
@@ -50,7 +51,7 @@ int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
         case 0: pstate = PTHREAD_CREATE_JOINABLE; break;
         case 1: pstate = PTHREAD_CREATE_DETACHED; break;
         default: 
-            __debugbreak(); //unknown state
+            BREAKPOINT();  // unknown state
     }
 
     int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
@@ -73,7 +74,7 @@ int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
     switch (inheritSched) {
         case 0: pinherit_sched = PTHREAD_EXPLICIT_SCHED; break;
         case 4: pinherit_sched = PTHREAD_INHERIT_SCHED; break;
-        default: __debugbreak();  // unknown inheritSched
+        default: BREAKPOINT();  // unknown inheritSched
     }
 
     int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
@@ -115,7 +116,7 @@ int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
 
     if (policy!= SCHED_OTHER)
     {
-        __debugbreak();//invest if policy is other and if winpthreadlibrary support it
+        BREAKPOINT();  // invest if policy is other and if winpthreadlibrary support it
     }
 
     (*attr)->policy = policy;

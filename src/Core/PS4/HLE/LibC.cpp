@@ -1,6 +1,7 @@
 #include "LibC.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
+#include "../../../Debug.h"
 
 namespace HLE::Libs::LibC {
 
@@ -13,13 +14,13 @@ namespace HLE::Libs::LibC {
 
 	int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object)
 	{ 
-		__debugbreak();
+		BREAKPOINT();
 		return 0;
 	}
 
 	int PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) 
 	{ 
-		__debugbreak();
+		BREAKPOINT();
 		return 0;
 	}
 
@@ -31,18 +32,16 @@ namespace HLE::Libs::LibC {
         return ::memcpy(dest, src, n);
     }
 
-	static PS4_SYSV_ABI void catchReturnFromMain(int status)
-	{ __debugbreak();
+	static PS4_SYSV_ABI void catchReturnFromMain(int status) { BREAKPOINT();
 	}
-    static PS4_SYSV_ABI void exit(int code)
-	{ __debugbreak();
+    static PS4_SYSV_ABI void exit(int code) { BREAKPOINT();
 	}
     static PS4_SYSV_ABI int atexit(void (*func)())
 	{ 
 		int rt = ::atexit(func);
 		if (rt != 0)
 		{
-            __debugbreak();
+            BREAKPOINT();
 		}
         return rt;
 	}

@@ -1,6 +1,7 @@
 #include "../Loader/Elf.h"
 #include "LibKernel.h"
 #include "Libs.h"
+#include "../../../Debug.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -8,39 +9,39 @@ namespace HLE::Libs::LibKernel {
 
     int PS4_SYSV_ABI sceKernelAllocateDirectMemory(off_t searchStart, off_t searchEnd, size_t len, size_t alignment, int memoryType,
                                                    off_t* physAddrOut) {
-        __debugbreak();
+        BREAKPOINT();
         return 0;  // OK
     }
     size_t PS4_SYSV_ABI sceKernelGetDirectMemorySize() { 
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
     int32_t PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, off_t directMemoryStart, size_t alignment) {
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
     int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) { 
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
 
     int PS4_SYSV_ABI sceKernelCreateEqueue(/* SceKernelEqueue* eq*/ int eq, const char* name) 
     { 
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
     int PS4_SYSV_ABI sceKernelWaitEqueue(/*SceKernelEqueue eq, SceKernelEvent* ev,*/ int num, int* out /*, SceKernelUseconds* timo*/) 
     { 
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
     int PS4_SYSV_ABI sceKernelIsNeoMode()
     { 
-        __debugbreak();
+        BREAKPOINT();
         return 0;
     }
 
-    static PS4_SYSV_ABI void stack_chk_fail() { __debugbreak();
+    static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT();
     }
     void LibKernel_Register(SymbolsResolver* sym) { 
         //obj
