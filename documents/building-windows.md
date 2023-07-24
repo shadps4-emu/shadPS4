@@ -5,6 +5,8 @@
 Atm it is on preview stage but there seems to be issues using clang + cmake + ninja in the current vstudio (17.6.5 )
 [vstudio 17.6.5 bug](https://developercommunity.visualstudio.com/t/cmake-generates-bad-dependencies-for-rc/10398924?q=cmake%20dependencies)
 
+You can still build with vstudio 17.6 version but it will be issues with running it inside vstudio (useful for debugging) and preview vstudio uses latest clang 16 so it might be better
+
 So here is the link for vstudio 2020 17.7 preview (atm it is in preview 4)
 
 
