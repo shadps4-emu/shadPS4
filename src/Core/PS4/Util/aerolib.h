@@ -11219,6 +11219,7 @@ namespace aerolib {
         {"9rAeANT2tyE", "__cxa_guard_release"},
         {"DfivPArhucg", "memcmp"},
         {"Q3VBxCXhUHs", "memcpy"},
+        {"-QgqOT5u2Vk", "_Assert"},
         //libkernel
         {"Ou3iL1abvng", "__stack_chk_fail"},
         {"f7uOxY9mM1U", "__stack_chk_guard"}
