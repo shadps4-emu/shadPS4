@@ -2,6 +2,7 @@
 #include "LibKernel.h"
 #include "Libs.h"
 #include "../../../Debug.h"
+#include "../../../Util/Log.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -27,7 +28,8 @@ namespace HLE::Libs::LibKernel {
 
     int PS4_SYSV_ABI sceKernelCreateEqueue(/* SceKernelEqueue* eq*/ int eq, const char* name) 
     { 
-        BREAKPOINT();
+        //BREAKPOINT();
+        LOG_INFO_IF(true, "dummy sceKernelCreateEqueue\n");
         return 0;
     }
     int PS4_SYSV_ABI sceKernelWaitEqueue(/*SceKernelEqueue eq, SceKernelEvent* ev,*/ int num, int* out /*, SceKernelUseconds* timo*/) 
@@ -37,8 +39,8 @@ namespace HLE::Libs::LibKernel {
     }
     int PS4_SYSV_ABI sceKernelIsNeoMode()
     { 
-        BREAKPOINT();
-        return 0;
+        //BREAKPOINT();
+        return 0; //it isn't PS4VR TODO
     }
 
     static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT();

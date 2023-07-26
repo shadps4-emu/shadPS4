@@ -17,6 +17,6 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(/* SceVideoOutBufferAttribute* a
                                                 uint32_t aspectRatio,
                                    uint32_t width, uint32_t height, uint32_t pitchInPixel);
 int32_t PS4_SYSV_ABI  sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/);
-int32_t PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param);
+s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param);
 int32_t PS4_SYSV_ABI sceVideoOutIsFlipPending(int32_t handle);
 };  // namespace HLE::Libs::LibSceVideoOut
