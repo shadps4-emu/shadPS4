@@ -2,6 +2,8 @@
 #include "Libs.h"
 #include "../Loader/Elf.h"
 #include "../../../Debug.h"
+#include "VideoOut/VideoOutCodes.h"
+#include "UserManagement/UsrMngCodes.h"
 
 namespace HLE::Libs::LibSceVideoOut {
 
@@ -41,7 +43,11 @@ namespace HLE::Libs::LibSceVideoOut {
 
     int32_t PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, int32_t busType, int32_t index, const void* param) 
 	{ 
-		if (busType != 0)
+        if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM)
+        {
+            BREAKPOINT();
+        }
+		if (busType != SCE_VIDEO_OUT_BUS_TYPE_MAIN)
 		{
             BREAKPOINT();
 		}
