@@ -3,7 +3,7 @@
 
 // constants
 
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = (5637144576);  // ~ 6GB
+constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5376_MB;  // ~ 6GB
 
 //memory types
 constexpr int SCE_KERNEL_WB_ONION  = 0;  // write - back mode (Onion bus)
