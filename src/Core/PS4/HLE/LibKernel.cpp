@@ -3,20 +3,12 @@
 #include "Libs.h"
 #include "../../../Debug.h"
 #include "../../../Util/Log.h"
+#include "Kernel/MemoryManagement.h"
 
 namespace HLE::Libs::LibKernel {
 
     static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; //dummy return
 
-    int PS4_SYSV_ABI sceKernelAllocateDirectMemory(off_t searchStart, off_t searchEnd, size_t len, size_t alignment, int memoryType,
-                                                   off_t* physAddrOut) {
-        BREAKPOINT();
-        return 0;  // OK
-    }
-    size_t PS4_SYSV_ABI sceKernelGetDirectMemorySize() { 
-        BREAKPOINT();
-        return 0;
-    }
     int32_t PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, off_t directMemoryStart, size_t alignment) {
         BREAKPOINT();
         return 0;
@@ -49,8 +41,8 @@ namespace HLE::Libs::LibKernel {
         //obj
         LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &HLE::Libs::LibKernel::g_stack_chk_guard);
         //memory
-        LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory); 
-        LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
+        LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, HLE::Libs::LibKernel::MemoryManagement::sceKernelAllocateDirectMemory); 
+        LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, HLE::Libs::LibKernel::MemoryManagement::sceKernelGetDirectMemorySize);
         LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
         LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
         //equeue
