@@ -24,7 +24,7 @@ namespace HLE::Libs::LibSceVideoOut {
 	}
     int32_t PS4_SYSV_ABI sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t handle, void* udata) { 
 		//BREAKPOINT();
-        LOG_INFO_IF(true, "dummy sceVideoOutAddFlipEvent\n");
+        PRINT_DUMMY_FUNCTION_NAME();
         return 0;
 	}
     int32_t PS4_SYSV_ABI sceVideoOutSetFlipRate(int32_t handle, int32_t rate) { 
@@ -45,6 +45,7 @@ namespace HLE::Libs::LibSceVideoOut {
 
     s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param) 
 	{ 
+        PRINT_DUMMY_FUNCTION_NAME();
         if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM)
         {
             BREAKPOINT();
@@ -61,7 +62,6 @@ namespace HLE::Libs::LibSceVideoOut {
 		{
             BREAKPOINT();
 		}
-        LOG_INFO_IF(true, "dummy sceVideoOutOpen\n");
 		return 1;//dummy return TODO
 	}
     int32_t PS4_SYSV_ABI sceVideoOutIsFlipPending(int32_t handle) {

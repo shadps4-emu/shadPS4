@@ -29,6 +29,15 @@
         auto func = reinterpret_cast<u64>(function);                                              \
         sym->AddSymbol(sr, func);                                                                 \
     }
+
+#define PRINT_FUNCTION_NAME() \
+    { \
+     LOG_INFO_IF(true, "{}()\n", __func__); \
+    }
+
+#define PRINT_DUMMY_FUNCTION_NAME() \
+    { LOG_INFO_IF(true, "dummy {}()\n", __func__); }
+
 namespace HLE::Libs {
 	void Init_HLE_Libs(SymbolsResolver* sym);
 }
