@@ -427,7 +427,7 @@ void Linker::LoadSymbols(Module* m)
 		sym++)
 	{
 		std::string id = std::string(m->dynamic_info->str_table + sym->st_name);
-		auto ids = StringUtil::split(id, '#');
+        auto ids = StringUtil::split_string(id, '#');
 		if (ids.size() == 3)//symbols are 3 parts name , library , module 
 		{
 			const auto* library = FindLibrary(*m, ids.at(1));
@@ -590,7 +590,7 @@ void Linker::Relocate(Module* m)
 
 
 void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
-	auto ids = StringUtil::split(name, '#');
+	auto ids = StringUtil::split_string(name, '#');
 
 	if (ids.size() == 3)  // symbols are 3 parts name , library , module
     {
