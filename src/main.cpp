@@ -30,6 +30,7 @@
 #include <Zydis/Zydis.h>
 #include "Core/PS4/HLE/Libs.h"
 #include "Lib/Threads.h"
+#include "Core/PS4/HLE/Kernel/PhysicalMemory.h"
 
 // Main code
 int main(int argc, char* argv[])
@@ -41,6 +42,7 @@ int main(int argc, char* argv[])
 
     logging::init(true);//init logging
     Lib::InitThreads();
+    HLE::Libs::LibKernel::MemoryManagement::PhysicalMemoryInit(); 
     const char* const path = argv[1]; //argument 1 is the path of self file to boot
 
     auto* linker = Singleton<Linker>::Instance();

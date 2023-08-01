@@ -21,6 +21,6 @@ class PhysicalMemory {
   private:
     std::vector<AllocatedBlock> m_allocatedBlocks;
 };
-static PhysicalMemory* g_physical_memory = nullptr;
+
 
 }  // namespace HLE::Libs::LibKernel::MemoryManagement
