@@ -5,9 +5,10 @@
 #include "../ErrorCodes.h"
 #include "MemMngCodes.h"
 #include <bit>
+#include "PhysicalMemory.h"
 
 namespace HLE::Libs::LibKernel::MemoryManagement {
-
+       
 bool isPowerOfTwo(u64 n) { return std::popcount(n) == 1; }
 
 bool is16KBAligned(u64 n) { return ((n % (16ull * 1024) == 0)); }
@@ -44,8 +45,14 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     LOG_INFO_IF(true, "alignment    = {:#018x}\n", alignment);
     LOG_INFO_IF(true, "memory_type  = {}\n", memoryType);
 
-    BREAKPOINT();
-    return 0;
+    u64 physical_addr = 0;
+    if (!g_physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
+        //TODO debug logging
+        return SCE_KERNEL_ERROR_EAGAIN;
+    }
+    *physAddrOut = static_cast<s64>(physical_addr);
+    LOG_INFO_IF(true, "physAddrOut    = {:#018x}\n", physical_addr);
+    return SCE_OK;
 }
 
 }  // namespace HLE::Libs::LibKernel::MemoryManagement
