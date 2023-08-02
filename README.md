@@ -9,11 +9,13 @@ An early PS4 emulator for Windows and Linux
 
 Currently it can only load PS4 ELF files.
 
+Progress is focus on videoout_basic.elf from sdk demos , currently it can load and run a few HLE calls. Others probably won't run since they might not be able to relocate all neccesary functions
+
 ![](https://geps.dev/progress/60) Elf Loader
 
 ![](https://geps.dev/progress/20) Logging system
 
-![](https://geps.dev/progress/5) Everything else
+![](https://geps.dev/progress/10) Everything else
 
 # Why?
 
