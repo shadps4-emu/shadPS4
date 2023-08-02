@@ -6,13 +6,16 @@
 #include "MemMngCodes.h"
 #include <bit>
 #include "PhysicalMemory.h"
+#include "../../../../Util/Singleton.h"
 
 namespace HLE::Libs::LibKernel::MemoryManagement {
   
-static PhysicalMemory* g_physical_memory = nullptr;
+//static PhysicalMemory* g_physical_memory = nullptr;
 
 
-void PhysicalMemoryInit() { g_physical_memory = new PhysicalMemory; }
+void PhysicalMemoryInit() { /*
+    g_physical_memory = new PhysicalMemory;*/
+}
 
 static  u64 align_pos(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
 
@@ -85,7 +88,8 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     LOG_INFO_IF(true, "memory_type  = {}\n", memoryType);
 
     u64 physical_addr = 0;
-    if (!g_physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
+    auto* physical_memory = Singleton<HLE::Libs::LibKernel::MemoryManagement::PhysicalMemory>::Instance();
+    if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
         //TODO debug logging
         return SCE_KERNEL_ERROR_EAGAIN;
     }
