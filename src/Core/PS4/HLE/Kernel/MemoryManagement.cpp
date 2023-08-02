@@ -1,12 +1,14 @@
 #include "MemoryManagement.h"
+
+#include <bit>
+
 #include "../../../../Debug.h"
 #include "../../../../Util/Log.h"
-#include "../Libs.h"
-#include "../ErrorCodes.h"
-#include "MemMngCodes.h"
-#include <bit>
 #include "../../../../Util/Singleton.h"
-#include "Objects/PhysicalMemory.h"
+#include "../ErrorCodes.h"
+#include "../Libs.h"
+#include "MemMngCodes.h"
+#include "Objects/physical_memory.h"
 
 namespace HLE::Libs::LibKernel::MemoryManagement {
 
@@ -19,20 +21,19 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     return SCE_KERNEL_MAIN_DMEM_SIZE;
 }
 
-int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len, u64 alignment, int memoryType,s64* physAddrOut){
-   
+int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len, u64 alignment, int memoryType, s64* physAddrOut) {
     PRINT_FUNCTION_NAME();
-    
-    if (searchStart < 0 || searchEnd <= searchStart) { 
-        //TODO debug logging
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    bool isInRange = (searchStart < len && searchEnd > len);
-    if (len <= 0 || !is16KBAligned(len) || !isInRange){
+
+    if (searchStart < 0 || searchEnd <= searchStart) {
         // TODO debug logging
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if ((alignment != 0 || is16KBAligned(alignment)) && !isPowerOfTwo(alignment)){
+    bool isInRange = (searchStart < len && searchEnd > len);
+    if (len <= 0 || !is16KBAligned(len) || !isInRange) {
+        // TODO debug logging
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if ((alignment != 0 || is16KBAligned(alignment)) && !isPowerOfTwo(alignment)) {
         // TODO debug logging
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -49,7 +50,7 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     u64 physical_addr = 0;
     auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
     if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
-        //TODO debug logging
+        // TODO debug logging
         return SCE_KERNEL_ERROR_EAGAIN;
     }
     *physAddrOut = static_cast<s64>(physical_addr);

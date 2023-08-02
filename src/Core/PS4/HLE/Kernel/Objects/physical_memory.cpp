@@ -1,4 +1,4 @@
-#include "PhysicalMemory.h"
+#include "physical_memory.h"
 
 namespace HLE::Kernel::Objects {
 
@@ -11,12 +11,12 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
     for (const auto& block : m_allocatedBlocks) {
         u64 n = block.start_addr + block.size;
         if (n > find_free_pos) {
-          find_free_pos = n;
+            find_free_pos = n;
         }
-     }
+    }
 
     // align free position
-     find_free_pos = AlignUp(find_free_pos, alignment);
+    find_free_pos = AlignUp(find_free_pos, alignment);
 
     // if the new position is between searchStart - searchEnd , allocate a new block
     if (find_free_pos >= searchStart && find_free_pos + len <= searchEnd) {
@@ -33,4 +33,4 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
 
     return false;
 }
-}
+}  // namespace HLE::Kernel::Objects

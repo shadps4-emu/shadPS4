@@ -5,7 +5,7 @@
 #include "../../../Util/Log.h"
 #include "Kernel/MemoryManagement.h"
 #include "../../../Util/Singleton.h"
-#include "Kernel/Objects/PhysicalMemory.h"
+#include "Kernel/Objects/physical_memory.h"
 
 namespace HLE::Libs::LibKernel {
 
