@@ -2,7 +2,7 @@
 
 namespace HLE::Kernel::Objects {
 
-static u64 align_up(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
+static u64 AlignUp(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
 
 bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment, u64* physAddrOut, int memoryType) {
     u64 find_free_pos = 0;
@@ -16,7 +16,7 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
      }
 
     // align free position
-    find_free_pos = align_up(find_free_pos, alignment);
+     find_free_pos = AlignUp(find_free_pos, alignment);
 
     // if the new position is between searchStart - searchEnd , allocate a new block
     if (find_free_pos >= searchStart && find_free_pos + len <= searchEnd) {
