@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
+#include <types.h>
 
-#include "../../../../../types.h"
+#include <vector>
 
 namespace HLE::Kernel::Objects {
 

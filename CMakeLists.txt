@@ -18,6 +18,7 @@ include_directories(third-party/zydis/include/Zydis)
 include_directories(third-party/winpthread/include)
 add_subdirectory("third-party")
 #=================== EXAMPLE ===================
+include_directories(src)
 
 add_executable(shadps4
     src/main.cpp
