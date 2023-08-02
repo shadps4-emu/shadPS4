@@ -1,11 +1,8 @@
 #pragma once
 #include <vector>
-#include "../../../../types.h"
+#include "../../../../../types.h"
 
-namespace HLE::Libs::LibKernel::MemoryManagement {
-
-
-void PhysicalMemoryInit();
+namespace HLE::Kernel::Objects {
 
 class PhysicalMemory {
   public:
@@ -23,4 +20,4 @@ class PhysicalMemory {
 };
 
 
-}  // namespace HLE::Libs::LibKernel::MemoryManagement
+}

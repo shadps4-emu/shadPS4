@@ -4,15 +4,15 @@
 #include "../../../Debug.h"
 #include "../../../Util/Log.h"
 #include "Kernel/MemoryManagement.h"
-#include "Kernel/PhysicalMemory.h"
 #include "../../../Util/Singleton.h"
+#include "Kernel/Objects/PhysicalMemory.h"
 
 namespace HLE::Libs::LibKernel {
 
     static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; //dummy return
 
     int32_t PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, off_t directMemoryStart, size_t alignment) {
-        auto* physical_memory = Singleton<HLE::Libs::LibKernel::MemoryManagement::PhysicalMemory>::Instance();
+        auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
         BREAKPOINT();
         return 0;
     }
