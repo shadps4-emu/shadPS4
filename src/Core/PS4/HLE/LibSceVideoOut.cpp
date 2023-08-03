@@ -1,7 +1,7 @@
 #include "LibSceVideoOut.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
-#include "../../../Debug.h"
+#include <debug.h>
 #include "VideoOut/VideoOutCodes.h"
 #include "UserManagement/UsrMngCodes.h"
 #include "../../../Util/Log.h"

@@ -34,14 +34,15 @@
 // Main code
 int main(int argc, char* argv[])
 {
-    if (argc == 1) {
+    /* if (argc == 1) {
         printf("Usage: %s <elf or eboot.bin path>\n", argv[0]);
         return -1;
-    }
+    }*/
 
-    logging::init(true);//init logging
+    logging::init(true);  // init logging
     Lib::InitThreads();
-    const char* const path = argv[1];  // argument 1 is the path of self file to boot
+    const char* const path = "videoout_basic.elf";  // argv[1]; //argument 1 is the path of self file to boot
+    // const char* const path = "F:\\ps4games\\CUSA03840 - Resident Evil 6\\eboot.bin";
 
     auto* linker = Singleton<Linker>::Instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());

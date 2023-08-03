@@ -2,8 +2,9 @@
 
 #include <bit>
 #include <magic_enum.hpp>
+#include <debug.h>
 
-#include "../../../../Debug.h"
+#include <debug.h>
 #include "../../../../Util/Log.h"
 #include "../../../../Util/Singleton.h"
 #include "../ErrorCodes.h"
@@ -42,7 +43,7 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         // TODO debug logging
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    auto memtype = magic_enum::enum_cast<memory_types>(memoryType);
+    auto memtype = magic_enum::enum_cast<MemoryTypes>(memoryType);
 
     LOG_INFO_IF(true, "search_start = {:#018x}\n", searchStart);
     LOG_INFO_IF(true, "search_end   = {:#018x}\n", searchEnd);

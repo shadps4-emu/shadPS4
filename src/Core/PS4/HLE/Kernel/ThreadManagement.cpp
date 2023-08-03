@@ -1,6 +1,6 @@
+#include <debug.h>
 #include "ThreadManagement.h"
 #include "../ErrorCodes.h"
-#include "../../../../Debug.h"
 
 namespace HLE::Libs::LibKernel::ThreadManagement
 {

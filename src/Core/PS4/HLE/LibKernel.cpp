@@ -1,7 +1,7 @@
 #include "../Loader/Elf.h"
 #include "LibKernel.h"
 #include "Libs.h"
-#include "../../../Debug.h"
+#include <debug.h>
 #include "../../../Util/Log.h"
 #include "Kernel/MemoryManagement.h"
 #include "../../../Util/Singleton.h"

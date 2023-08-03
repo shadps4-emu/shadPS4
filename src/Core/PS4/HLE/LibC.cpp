@@ -1,7 +1,7 @@
 #include "LibC.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
-#include "../../../Debug.h"
+#include <debug.h>
 #include <pthread.h>
 
 namespace HLE::Libs::LibC {
