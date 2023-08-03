@@ -64,7 +64,14 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 }
 
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags, s64 directMemoryStart, u64 alignment) {
+    PRINT_FUNCTION_NAME();
     auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    LOG_INFO_IF(log_file_memory, "len               = {}\n", log_hex_full(len));
+    LOG_INFO_IF(log_file_memory, "prot              = {}\n", log_hex_full(prot));
+    LOG_INFO_IF(log_file_memory, "flags             = {}\n", log_hex_full(flags));
+    LOG_INFO_IF(log_file_memory, "directMemoryStart = {}\n", log_hex_full(directMemoryStart));
+    LOG_INFO_IF(log_file_memory, "alignment         = {}\n", log_hex_full(alignment));
+
     BREAKPOINT();
     return SCE_OK;
 }
