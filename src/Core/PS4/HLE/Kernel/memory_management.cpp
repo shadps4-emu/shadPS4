@@ -1,16 +1,13 @@
-#include "MemoryManagement.h"
-
+#include <debug.h>
 #include <bit>
 #include <magic_enum.hpp>
-#include <debug.h>
 
-#include <debug.h>
 #include "../../../../Util/Log.h"
 #include "../../../../Util/Singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
-#include "MemMngCodes.h"
 #include "Objects/physical_memory.h"
+#include "memory_management.h"
 
 namespace HLE::Libs::LibKernel::MemoryManagement {
 

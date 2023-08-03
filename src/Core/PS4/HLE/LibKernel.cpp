@@ -3,7 +3,7 @@
 #include "Libs.h"
 #include <debug.h>
 #include "../../../Util/Log.h"
-#include "Kernel/MemoryManagement.h"
+#include "Kernel/memory_management.h"
 #include "../../../Util/Singleton.h"
 #include "Kernel/Objects/physical_memory.h"
 

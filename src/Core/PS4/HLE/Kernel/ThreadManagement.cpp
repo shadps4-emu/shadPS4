@@ -1,13 +1,13 @@
-#include <debug.h>
 #include "ThreadManagement.h"
+
+#include <debug.h>
+
 #include "../ErrorCodes.h"
 
-namespace HLE::Libs::LibKernel::ThreadManagement
-{
+namespace HLE::Libs::LibKernel::ThreadManagement {
 
 thread_local PthreadInternal* g_pthread_self = nullptr;
 PThreadCxt* g_pthread_cxt = nullptr;
-
 
 void Pthread_Init_Self_MainThread() {
     g_pthread_self = new PthreadInternal{};
@@ -17,7 +17,6 @@ void Pthread_Init_Self_MainThread() {
 }
 
 int scePthreadAttrInit(ScePthreadAttr* attr) {
-
     *attr = new PthreadAttrInternal{};
 
     int result = pthread_attr_init(&(*attr)->pth_attr);
@@ -41,7 +40,6 @@ int scePthreadAttrInit(ScePthreadAttr* attr) {
 }
 
 int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
-
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -50,8 +48,7 @@ int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
     switch (detachstate) {
         case 0: pstate = PTHREAD_CREATE_JOINABLE; break;
         case 1: pstate = PTHREAD_CREATE_DETACHED; break;
-        default: 
-            BREAKPOINT();  // unknown state
+        default: BREAKPOINT();  // unknown state
     }
 
     int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
@@ -65,7 +62,6 @@ int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
 }
 
 int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
-
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -86,7 +82,6 @@ int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
 }
 
 int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param) {
-
     if (param == nullptr || attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -109,13 +104,11 @@ int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam*
 }
 
 int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
-
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    if (policy!= SCHED_OTHER)
-    {
+    if (policy != SCHED_OTHER) {
         BREAKPOINT();  // invest if policy is other and if winpthreadlibrary support it
     }
 
@@ -129,4 +122,4 @@ int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-};
+};  // namespace HLE::Libs::LibKernel::ThreadManagement
