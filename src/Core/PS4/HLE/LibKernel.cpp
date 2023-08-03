@@ -11,11 +11,6 @@ namespace HLE::Libs::LibKernel {
 
     static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; //dummy return
 
-    int32_t PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, size_t len, int prot, int flags, off_t directMemoryStart, size_t alignment) {
-        auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
-        BREAKPOINT();
-        return 0;
-    }
     int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) { 
         BREAKPOINT();
         return 0;
@@ -45,9 +40,9 @@ namespace HLE::Libs::LibKernel {
         //obj
         LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &HLE::Libs::LibKernel::g_stack_chk_guard);
         //memory
-        LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, HLE::Libs::LibKernel::MemoryManagement::sceKernelAllocateDirectMemory); 
-        LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, HLE::Libs::LibKernel::MemoryManagement::sceKernelGetDirectMemorySize);
-        LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
+        LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelAllocateDirectMemory); 
+        LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelGetDirectMemorySize);
+        LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelMapDirectMemory);
         LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
         //equeue
         LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);

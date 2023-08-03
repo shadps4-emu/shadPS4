@@ -42,10 +42,10 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     }
     auto memtype = magic_enum::enum_cast<MemoryTypes>(memoryType);
 
-    LOG_INFO_IF(true, "search_start = {:#018x}\n", searchStart);
-    LOG_INFO_IF(true, "search_end   = {:#018x}\n", searchEnd);
-    LOG_INFO_IF(true, "len          = {:#018x}\n", len);
-    LOG_INFO_IF(true, "alignment    = {:#018x}\n", alignment);
+    LOG_INFO_IF(true, "search_start = {}\n", log_hex_full(searchStart));
+    LOG_INFO_IF(true, "search_end   = {}\n", log_hex_full(searchEnd));
+    LOG_INFO_IF(true, "len          = {}\n", log_hex_full(len));
+    LOG_INFO_IF(true, "alignment    = {}\n", log_hex_full(alignment));
     LOG_INFO_IF(true, "memory_type  = {}\n", magic_enum::enum_name(memtype.value()));
 
     u64 physical_addr = 0;
@@ -55,7 +55,14 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         return SCE_KERNEL_ERROR_EAGAIN;
     }
     *physAddrOut = static_cast<s64>(physical_addr);
-    LOG_INFO_IF(true, "physAddrOut    = {:#018x}\n", physical_addr);
+    LOG_INFO_IF(true, "physAddrOut    = {}\n", log_hex_full(physical_addr));
+    return SCE_OK;
+}
+
+int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags, s64 directMemoryStart, u64 alignment)
+{
+    auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    BREAKPOINT();
     return SCE_OK;
 }
 
