@@ -10,7 +10,7 @@ Lib::Timer::Timer() {
     QueryPerformanceFrequency(&f);
     m_Frequency = f.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer constructor
 #endif
 }
 
@@ -20,7 +20,7 @@ void Lib::Timer::Start() {
     QueryPerformanceCounter(&c);
     m_StartTime = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::Start()
 #endif
     m_is_timer_paused = false;
 }
@@ -31,7 +31,7 @@ void Lib::Timer::Pause() {
     QueryPerformanceCounter(&c);
     m_PauseTime = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::Pause()
 #endif
     m_is_timer_paused = true;
 }
@@ -43,7 +43,7 @@ void Lib::Timer::Resume() {
     QueryPerformanceCounter(&c);
     current_time = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::Resume()
 #endif
     m_StartTime += current_time - m_PauseTime;
     m_is_timer_paused = false;
@@ -62,7 +62,7 @@ double Lib::Timer::GetTimeMsec() const {
     QueryPerformanceCounter(&c);
     current_time = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::GetTimeMsec()
 #endif
     return 1000.0 * (static_cast<double>(current_time - m_StartTime)) / static_cast<double>(m_Frequency);
 }
@@ -78,7 +78,7 @@ double Lib::Timer::GetTimeSec() const {
     QueryPerformanceCounter(&c);
     current_time = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::GetTimeSec()
 #endif
     return (static_cast<double>(current_time - m_StartTime)) / static_cast<double>(m_Frequency);
 }
@@ -94,7 +94,7 @@ u64 Lib::Timer::GetTicks() const {
     QueryPerformanceCounter(&c);
     current_time = c.QuadPart;
 #else
-#error Unimplemented
+#error Unimplemented Timer::GetTicks()
 #endif
     return (current_time - m_StartTime);
 }
