@@ -1,6 +1,7 @@
 #include "MemoryManagement.h"
 
 #include <bit>
+#include <magic_enum.hpp>
 
 #include "../../../../Debug.h"
 #include "../../../../Util/Log.h"
@@ -41,11 +42,13 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         // TODO debug logging
         return SCE_KERNEL_ERROR_EINVAL;
     }
+    auto memtype = magic_enum::enum_cast<memory_types>(memoryType);
+
     LOG_INFO_IF(true, "search_start = {:#018x}\n", searchStart);
     LOG_INFO_IF(true, "search_end   = {:#018x}\n", searchEnd);
     LOG_INFO_IF(true, "len          = {:#018x}\n", len);
     LOG_INFO_IF(true, "alignment    = {:#018x}\n", alignment);
-    LOG_INFO_IF(true, "memory_type  = {}\n", memoryType);
+    LOG_INFO_IF(true, "memory_type  = {}\n", magic_enum::enum_name(memtype.value()));
 
     u64 physical_addr = 0;
     auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
