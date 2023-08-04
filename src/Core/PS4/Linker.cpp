@@ -2,7 +2,7 @@
 #include "../Memory.h"
 #include "../../Util/Log.h"
 #include "../../Util/Disassembler.h"
-#include "../../Util/StringUtil.h"
+#include <Util/string_util.h>
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
 #include "HLE/Kernel/ThreadManagement.h"
