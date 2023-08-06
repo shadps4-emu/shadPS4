@@ -31,8 +31,8 @@ add_executable(shadps4
     src/GUI/ElfViewer.h 
     src/Util/Log.h
     src/Util/Log.cpp
-    src/Core/Memory.cpp
-    src/Core/Memory.h
+    "src/Core/virtual_memory.cpp"
+    "src/Core/virtual_memory.h"
     src/Core/PS4/Linker.cpp
     src/Core/PS4/Linker.h
     src/Lib/Threads.cpp

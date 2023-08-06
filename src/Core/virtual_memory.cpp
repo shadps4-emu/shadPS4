@@ -1,6 +1,6 @@
-#include "Memory.h"
+#include "virtual_memory.h"
 
-#include "../Core/PS4/Loader/Elf.h"
+#include "Core/PS4/Loader/Elf.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -21,7 +21,6 @@ enum PosixPageProtection {
 
 #include "../Util/Log.h"
 
-namespace Memory {
 namespace VirtualMemory {
 static u32 convertMemoryMode(MemoryMode mode) {
     switch (mode) {
@@ -119,4 +118,3 @@ bool memory_patch(u64 vaddr, u64 value) {
     return ret;
 }
 }  // namespace VirtualMemory
-}  // namespace Memory

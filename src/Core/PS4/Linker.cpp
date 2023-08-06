@@ -1,5 +1,5 @@
 #include "Linker.h"
-#include "../Memory.h"
+#include "../virtual_memory.h"
 #include "../../Util/Log.h"
 #include "../../Util/Disassembler.h"
 #include <Util/string_util.h>
@@ -112,7 +112,7 @@ void Linker::LoadModuleToMemory(Module* m)
 	u64 base_size = calculate_base_size(elf_header, elf_pheader);
 	m->aligned_base_size = (base_size & ~(static_cast<u64>(0x1000) - 1)) + 0x1000;//align base size to 0x1000 block size (TODO is that the default block size or it can be changed?
 
-	m->base_virtual_addr = Memory::VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size, Memory::MemoryMode::ExecuteReadWrite);
+	m->base_virtual_addr = VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size, VirtualMemory::MemoryMode::ExecuteReadWrite);
 
 	LOG_INFO_IF(debug_loader, "====Load Module to Memory ========\n");
 	LOG_INFO_IF(debug_loader, "base_virtual_addr ......: {:#018x}\n", m->base_virtual_addr);
@@ -566,7 +566,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
     }
 
     if (rel_isResolved) {
-        Memory::VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
+        VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
 	}
 	else
 	{
