@@ -19,6 +19,8 @@ enum PosixPageProtection {
 };
 #endif
 
+#include <debug.h>
+
 #include "../Util/Log.h"
 
 namespace VirtualMemory {
@@ -116,5 +118,26 @@ bool memory_patch(u64 vaddr, u64 value) {
     }
 
     return ret;
+}
+static u64 AlignUp(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
+
+u64 memory_alloc_aligned(u64 address, u64 size, MemoryMode mode, u64 alignment) {
+    // try allocate aligned address inside user area
+    MEM_ADDRESS_REQUIREMENTS req{};
+    MEM_EXTENDED_PARAMETER param{};
+    req.LowestStartingAddress = (address == 0 ? reinterpret_cast<PVOID>(USER_MIN) : reinterpret_cast<PVOID>(AlignUp(address, alignment)));
+    req.HighestEndingAddress = reinterpret_cast<PVOID>(USER_MAX);
+    req.Alignment = alignment;
+    param.Type = MemExtendedParameterAddressRequirements;
+    param.Pointer = &req;
+
+    auto ptr = reinterpret_cast<uintptr_t>(VirtualAlloc2(
+        GetCurrentProcess(), nullptr, size, static_cast<DWORD>(MEM_COMMIT) | static_cast<DWORD>(MEM_RESERVE), convertMemoryMode(mode), &param, 1));
+
+    if (ptr == 0) {
+        auto err = static_cast<u32>(GetLastError());
+        LOG_ERROR_IF(true, "VirtualAlloc2() failed: 0x{:X}\n", err);
+    }
+    return ptr;
 }
 }  // namespace VirtualMemory
