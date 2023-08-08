@@ -6,6 +6,8 @@
 
 constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5376_MB;  // ~ 6GB
 
+namespace HLE::Libs::LibKernel::MemoryManagement {
+
 // memory types
 
 enum MemoryTypes : u32 {
@@ -15,7 +17,6 @@ enum MemoryTypes : u32 {
 };
 
 enum MemoryFlags : u32 {
-    NOT_SPECIFIED = 0,              // not in SCE but it is a possible value (aligned memory)
     SCE_KERNEL_MAP_FIXED = 0x0010,  // Fixed
     SCE_KERNEL_MAP_NO_OVERWRITE = 0x0080,
     SCE_KERNEL_MAP_NO_COALESCE = 0x400000
@@ -28,7 +29,6 @@ enum MemoryProtection : u32 {
     SCE_KERNEL_PROT_GPU_WRITE = 0x20,  // Permit writes from the GPU
     SCE_KERNEL_PROT_GPU_RW = 0x30      // Permit reads/writes from the GPU
 };
-namespace HLE::Libs::LibKernel::MemoryManagement {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len, u64 alignment, int memoryType, s64* physAddrOut);

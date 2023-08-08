@@ -1,6 +1,7 @@
 #pragma once
 #include <types.h>
-
+#include <Core/virtual_memory.h>
+#include <Core/PS4/GPU/gpu_memory.h>
 #include <vector>
 
 namespace HLE::Kernel::Objects {
@@ -11,12 +12,18 @@ class PhysicalMemory {
         u64 start_addr;
         u64 size;
         int memoryType;
+        u64 map_virtual_addr;
+        u64 map_size;
+        int prot;
+        VirtualMemory::MemoryMode cpu_mode;
+        GPU::GPUMemoryMode gpu_mode;
     };
     PhysicalMemory() {}
     virtual ~PhysicalMemory() {}
 
   public:
     bool Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment, u64* physAddrOut, int memoryType);
+    bool Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot, VirtualMemory::MemoryMode cpu_mode, GPU::GPUMemoryMode gpu_mode);
 
   private:
     std::vector<AllocatedBlock> m_allocatedBlocks;
