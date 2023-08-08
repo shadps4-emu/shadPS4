@@ -91,12 +91,12 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     LOG_INFO_IF(log_file_memory, "alignment         = {}\n", log_hex_full(alignment));
 
     VirtualMemory::MemoryMode cpu_mode = VirtualMemory::MemoryMode::NoAccess;
-    GPU::GPUMemoryMode gpu_mode = GPU::GPUMemoryMode::NoAccess;
+    GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
 
     switch (prot) {
         case 0x33://SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
             cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
-            gpu_mode = GPU::GPUMemoryMode::ReadWrite;
+            gpu_mode = GPU::MemoryMode::ReadWrite;
             break;
         default: BREAKPOINT();
     }
@@ -120,8 +120,8 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         BREAKPOINT();
     }
 
-    if (gpu_mode != GPU::GPUMemoryMode::NoAccess) {
-        GPU::GpuMemorySetAllocArea(out_addr, len);
+    if (gpu_mode != GPU::MemoryMode::NoAccess) {
+        GPU::MemorySetAllocArea(out_addr, len);
     }
 
     return SCE_OK;

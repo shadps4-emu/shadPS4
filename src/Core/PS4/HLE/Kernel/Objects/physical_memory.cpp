@@ -24,7 +24,7 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
         block.size = len;
         block.start_addr = find_free_pos;
         block.memoryType = memoryType;
-        block.gpu_mode = GPU::GPUMemoryMode::NoAccess;
+        block.gpu_mode = GPU::MemoryMode::NoAccess;
         block.map_size = 0;
         block.map_virtual_addr = 0;
         block.prot = 0;
@@ -38,7 +38,7 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
 
     return false;
 }
-bool PhysicalMemory::Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot, VirtualMemory::MemoryMode cpu_mode, GPU::GPUMemoryMode gpu_mode) {
+bool PhysicalMemory::Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot, VirtualMemory::MemoryMode cpu_mode, GPU::MemoryMode gpu_mode) {
     for (auto& b : m_allocatedBlocks) {
         if (phys_addr >= b.start_addr && phys_addr < b.start_addr + b.size) {
             if (b.map_virtual_addr != 0 || b.map_size != 0) {
