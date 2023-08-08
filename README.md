@@ -25,7 +25,7 @@ The project started as a fun project. Due to short amount of free time probably 
 
 ## Windows
 
-Check building instructions in [windows build](https://github.com/georgemoralis/shadPS4/edit/main/documents/building-windows.md)
+Check building instructions in [windows build](https://github.com/georgemoralis/shadPS4/blob/main/documents/building-windows.md)
 
 ## Linux
 
