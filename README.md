@@ -29,20 +29,9 @@ Check building instructions in [windows build](https://github.com/georgemoralis/
 
 ## Linux
 
-Generate the build directory in the shadPS4 directory:
-```
-cmake -S . -B build/
-```
+Check building instructions in [linux build](https://github.com/georgemoralis/shadPS4/blob/main/documents/linux_building.md)
 
-Enter the directory:
-```
-cd build/
-```
-
-Use make to build the project:
-```
-make -j$(nproc)
-```
+## Build status
 
 |Platform|Build status|
 |--------|------------|
