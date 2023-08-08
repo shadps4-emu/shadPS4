@@ -1,3 +1,4 @@
+
 ## Linux
 
 Generate the build directory in the shadPS4 directory:
