@@ -36,8 +36,6 @@ Check building instructions in [linux build](https://github.com/georgemoralis/sh
 |Platform|Build status|
 |--------|------------|
 |Windows build|[![Windows](https://github.com/georgemoralis/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/georgemoralis/shadPS4/actions/workflows/windows.yml)
-|Linux build|[![Linux](https://github.com/georgemoralis/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/georgemoralis/shadPS4/actions/workflows/linux.yml)
-
 
 To discuss this emulator please join our Discord server: [![Discord](https://img.shields.io/discord/1080089157554155590)](https://discord.gg/MyZRaBngxA)
 
