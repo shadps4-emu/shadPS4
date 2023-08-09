@@ -5,6 +5,7 @@ namespace HLE::Kernel::Objects {
 static u64 AlignUp(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
 
 bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment, u64* physAddrOut, int memoryType) {
+    Lib::LockMutexGuard lock(m_mutex);
     u64 find_free_pos = 0;
 
     // iterate through allocated blocked and find the next free position
@@ -39,6 +40,7 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
     return false;
 }
 bool PhysicalMemory::Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot, VirtualMemory::MemoryMode cpu_mode, GPU::MemoryMode gpu_mode) {
+    Lib::LockMutexGuard lock(m_mutex);
     for (auto& b : m_allocatedBlocks) {
         if (phys_addr >= b.start_addr && phys_addr < b.start_addr + b.size) {
             if (b.map_virtual_addr != 0 || b.map_size != 0) {

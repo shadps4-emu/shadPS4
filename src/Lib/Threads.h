@@ -121,5 +121,11 @@ class LockMutexGuard {
 
   private:
     Mutex& m_mutex;
+
+  public:
+    LockMutexGuard(const LockMutexGuard&) = delete;
+    LockMutexGuard& operator=(const LockMutexGuard&) = delete;
+    LockMutexGuard(LockMutexGuard&&) noexcept = delete;
+    LockMutexGuard& operator=(LockMutexGuard&&) noexcept = delete;
 };
 }  // namespace Lib

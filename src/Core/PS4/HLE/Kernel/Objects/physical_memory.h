@@ -3,6 +3,7 @@
 #include <Core/virtual_memory.h>
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <vector>
+#include "Lib/Threads.h"
 
 namespace HLE::Kernel::Objects {
 
@@ -27,6 +28,7 @@ class PhysicalMemory {
 
   private:
     std::vector<AllocatedBlock> m_allocatedBlocks;
+    Lib::Mutex m_mutex;
 };
 
 }  // namespace HLE::Kernel::Objects
