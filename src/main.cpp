@@ -30,6 +30,7 @@
 #include <Zydis/Zydis.h>
 #include "Core/PS4/HLE/Libs.h"
 #include "Lib/Threads.h"
+#include <emulator.h>
 
 // Main code
 int main(int argc, char* argv[])
@@ -40,15 +41,24 @@ int main(int argc, char* argv[])
     }
 
     logging::init(true);  // init logging
+    Emulator::emuInit();
     Lib::InitThreads();
-    const char* const path = argv[1]; //argument 1 is the path of self file to boot
-    // const char* const path = "F:\\ps4games\\CUSA03840 - Resident Evil 6\\eboot.bin";
-
+    const char* const path = argv[1];  // argument 1 is the path of self file to boot
+    
     auto* linker = Singleton<Linker>::Instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto *module =linker->LoadModule(path);//load main executable
     
-    linker->Execute();
+    Lib::Thread mainthread(
+        [](void*) {
+            auto* linker = Singleton<Linker>::Instance();
+            linker->Execute();
+        },
+        nullptr);
+    mainthread.DetachThread();
+    Emulator::emuRun();
+    mainthread.JoinThread();
+
 #if 0
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
