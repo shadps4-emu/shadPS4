@@ -13,13 +13,13 @@ constexpr bool log_file_videoout = true;  // disable it to disable logging
 
 std::string getPixelFormatString(s32 format) {
     switch (format) {
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A8R8G8B8_SRGB: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A8R8G8B8_SRGB";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A8B8G8R8_SRGB: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A8B8G8R8_SRGB";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10_SRGB: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10_SRGB";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10_BT2020_PQ: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A2R10G10B10_BT2020_PQ";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_A16R16G16B16_FLOAT: return "SCE_VIDEO_OUT_PIXEL_FORMAT_A16R16G16B16_FLOAT";
-        case SCE_VIDEO_OUT_PIXEL_FORMAT_YCBCR420_BT709: return "SCE_VIDEO_OUT_PIXEL_FORMAT_YCBCR420_BT709";
+        case PIXEL_FORMAT_A8R8G8B8_SRGB: return "PIXEL_FORMAT_A8R8G8B8_SRGB";
+        case PIXEL_FORMAT_A8B8G8R8_SRGB: return "PIXEL_FORMAT_A8B8G8R8_SRGB";
+        case PIXEL_FORMAT_A2R10G10B10: return "PIXEL_FORMAT_A2R10G10B10";
+        case PIXEL_FORMAT_A2R10G10B10_SRGB: return "PIXEL_FORMAT_A2R10G10B10_SRGB";
+        case PIXEL_FORMAT_A2R10G10B10_BT2020_PQ: return "PIXEL_FORMAT_A2R10G10B10_BT2020_PQ";
+        case PIXEL_FORMAT_A16R16G16B16_FLOAT: return "PIXEL_FORMAT_A16R16G16B16_FLOAT";
+        case PIXEL_FORMAT_YCBCR420_BT709: return "PIXEL_FORMAT_YCBCR420_BT709";
         default: return "Unknown pixel format";
     }
 }
@@ -46,6 +46,6 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attr
     attribute->width = width;
     attribute->height = height;
     attribute->pitchInPixel = pitchInPixel;
-    attribute->option = SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE;
+    attribute->option = BUFFER_ATTRIBUTE_OPTION_NONE;
 }
 }  // namespace HLE::Libs::Graphics::VideoOut
