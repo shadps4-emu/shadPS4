@@ -46,5 +46,6 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attr
     attribute->width = width;
     attribute->height = height;
     attribute->pitchInPixel = pitchInPixel;
+    attribute->option = SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE;
 }
 }  // namespace HLE::Libs::Graphics::VideoOut
