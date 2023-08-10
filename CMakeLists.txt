@@ -41,6 +41,8 @@ add_executable(shadps4
     src/Core/PS4/HLE/Kernel/Objects/physical_memory.cpp
     src/Util/string_util.cpp
     src/Util/string_util.cpp
+    src/Core/PS4/HLE/Graphics/video_out.cpp
+    src/Core/PS4/HLE/Graphics/video_out.h
      "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Core/PS4/Util/aerolib.h" "src/Core/PS4/Loader/SymbolsResolver.h" "src/Core/PS4/Loader/SymbolsResolver.cpp" "src/Core/PS4/HLE/Libs.cpp" "src/Core/PS4/HLE/Libs.h" "src/Core/PS4/HLE/LibC.cpp" "src/Core/PS4/HLE/LibC.h" "src/Lib/Timer.cpp" "src/Lib/Timer.h" "src/Core/PS4/HLE/LibKernel.cpp" "src/Core/PS4/HLE/LibKernel.h" "src/Core/PS4/HLE/LibSceVideoOut.cpp" "src/Core/PS4/HLE/LibSceVideoOut.h" "src/Core/PS4/HLE/LibSceGnmDriver.cpp" "src/Core/PS4/HLE/LibSceGnmDriver.h" "src/Core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/Core/PS4/HLE/Kernel/ThreadManagement.h" "src/Core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/Core/PS4/HLE/Kernel/memory_management.cpp" "src/Core/PS4/HLE/Kernel/memory_management.h" "src/Core/PS4/GPU/gpu_memory.cpp" "src/Core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h")
 
 find_package(OpenGL REQUIRED)
