@@ -57,13 +57,15 @@ int main(int argc, char* argv[])
         },
         nullptr);
     mainthread.DetachThread();
-    Emulator::emuRun();
-    mainthread.JoinThread();
-
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");
+    Emulator::emuRun();
+    mainthread.JoinThread();
 
+   
+
+ 
 #if 0
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)
