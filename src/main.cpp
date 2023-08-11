@@ -31,6 +31,7 @@
 #include "Core/PS4/HLE/Libs.h"
 #include "Lib/Threads.h"
 #include <emulator.h>
+#include "discord.h"
 
 // Main code
 int main(int argc, char* argv[])
@@ -58,6 +59,10 @@ int main(int argc, char* argv[])
     mainthread.DetachThread();
     Emulator::emuRun();
     mainthread.JoinThread();
+
+    Discord::RPC discordRPC;
+    discordRPC.init();
+    discordRPC.update(Discord::RPCStatus::Idling, "");
 
 #if 0
     // Setup SDL
@@ -240,5 +245,6 @@ int main(int argc, char* argv[])
     SDL_Quit();
 #endif
 
+    discordRPC.stop();
     return 0;
 }

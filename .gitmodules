@@ -26,3 +26,6 @@
 	path = third-party/winpthread
 	url = https://github.com/shadps4/winpthread.git
 	branch = main
+[submodule "third-party/discord-rpc"]
+	path = third-party/discord-rpc
+	url = https://github.com/discord/discord-rpc
