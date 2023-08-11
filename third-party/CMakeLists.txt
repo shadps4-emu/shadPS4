@@ -29,6 +29,8 @@ add_subdirectory(${zydis_DIR})
 
 #========== winpthreads ======================
 add_subdirectory(winpthread)
+#=================== discord-rpc ===================
+add_subdirectory(discord-rpc)
 #=================== IMGUI ===================
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
@@ -58,6 +60,6 @@ find_package(OpenGL REQUIRED)
 target_link_libraries(IMGUI PUBLIC ${OPENGL_LIBRARIES})
 
 
-target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread)
+target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread discord-rpc)
 
 
