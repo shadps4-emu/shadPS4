@@ -5,7 +5,7 @@
 
 void Discord::RPC::init() {
 	DiscordEventHandlers handlers{};
-	Discord_Initialize("1138176975865909360", &handlers, 1, nullptr);
+	Discord_Initialize("1139939140494971051", &handlers, 1, nullptr);
 
 	startTimestamp = time(nullptr);
 	enabled = true;
@@ -21,7 +21,7 @@ void Discord::RPC::update(Discord::RPCStatus status, const std::string& game) {
 		rpc.details = "Idle";
 	}
 
-	rpc.largeImageKey = "pand";
+	rpc.largeImageKey = "shadps4";
 	rpc.largeImageText = "ShadPS4 is a PS4 emulator";
 	rpc.startTimestamp = startTimestamp;
 
