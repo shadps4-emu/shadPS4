@@ -7,7 +7,7 @@
 #include <bit>
 #include <magic_enum.hpp>
 
-#include "../../../../Util/Log.h"
+#include <Util/log.h>
 #include "../../../../Util/Singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"

@@ -1,6 +1,6 @@
 #include "../../../types.h"
 #include "SymbolsResolver.h"
-#include "../../../Util/Log.h"
+#include <Util/log.h>
 
 
 void SymbolsResolver::AddSymbol(const SymbolRes& s, u64 virtual_addr)

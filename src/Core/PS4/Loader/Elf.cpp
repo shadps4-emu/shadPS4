@@ -5,7 +5,7 @@
 #include <spdlog/pattern_formatter.h>
 #include <magic_enum.hpp>
 #include <fmt/core.h>
-#include "../../../Util/Log.h"
+#include <Util/log.h>
 
 #ifdef _WIN64
     #define DBG_BREAKPOINT __debugbreak();

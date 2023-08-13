@@ -1,7 +1,7 @@
 #include "video_out.h"
 
 #include <Core/PS4/HLE/Libs.h>
-#include <Util/Log.h>
+#include <Util/log.h>
 #include <stdio.h>
 
 #include <magic_enum.hpp>

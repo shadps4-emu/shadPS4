@@ -1,6 +1,6 @@
 #include "Linker.h"
 #include "../virtual_memory.h"
-#include "../../Util/Log.h"
+#include <Util/log.h>
 #include "../../Util/Disassembler.h"
 #include <Util/string_util.h>
 #include "Util/aerolib.h"

@@ -2,7 +2,7 @@
 #include "LibKernel.h"
 #include "Libs.h"
 #include <debug.h>
-#include "../../../Util/Log.h"
+#include <Util/log.h>
 #include "Kernel/memory_management.h"
 #include "../../../Util/Singleton.h"
 #include "Kernel/Objects/physical_memory.h"

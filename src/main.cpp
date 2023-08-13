@@ -17,7 +17,7 @@
 #include "spdlog/spdlog.h"
 #include "types.h"
 #include "GUI/ElfViewer.h"
-#include "Util/Log.h"
+#include <Util/log.h>
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
