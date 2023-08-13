@@ -157,7 +157,7 @@ void Elf::Open(const std::string& file_name)
         }
     }
 
-    DebugDump();
+    //DebugDump();
 }
 
 bool Elf::isSelfFile() const
