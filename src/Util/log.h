@@ -1,5 +1,7 @@
 #pragma once
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include <spdlog/spdlog.h>
 
 namespace logging {
@@ -25,6 +27,7 @@ namespace logging {
     if (flag) LOG_CRITICAL(__VA_ARGS__)
 
 int init(bool use_stdout);
+void set_level(spdlog::level::level_enum log_level);
 }  // namespace logging
 
 // copyright vita3k emu https://github.com/Vita3K/Vita3K/blob/master/vita3k/util/include/util/log.h

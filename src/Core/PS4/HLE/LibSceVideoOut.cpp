@@ -12,17 +12,20 @@
 namespace HLE::Libs::LibSceVideoOut {
 
 int32_t PS4_SYSV_ABI sceVideoOutGetFlipStatus(int32_t handle /*, SceVideoOutFlipStatus* status*/) {
-    BREAKPOINT();
+    //BREAKPOINT();
+    PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
 
 int32_t PS4_SYSV_ABI sceVideoOutSubmitFlip(int32_t handle, int32_t bufferIndex, int32_t flipMode, int64_t flipArg) {
-    BREAKPOINT();
+    //BREAKPOINT();
+    PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
 int32_t PS4_SYSV_ABI sceVideoOutRegisterBuffers(int32_t handle, int32_t startIndex, void* const* addresses, int32_t bufferNum /*,
                                        const SceVideoOutBufferAttribute* attribute*/) {
-    BREAKPOINT();
+    //BREAKPOINT();
+    PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
 int32_t PS4_SYSV_ABI sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t handle, void* udata) {
@@ -31,7 +34,8 @@ int32_t PS4_SYSV_ABI sceVideoOutAddFlipEvent(/*SceKernelEqueue eq,*/ int32_t han
     return 0;
 }
 int32_t PS4_SYSV_ABI sceVideoOutSetFlipRate(int32_t handle, int32_t rate) {
-    BREAKPOINT();
+    //BREAKPOINT();
+    PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
 int32_t PS4_SYSV_ABI sceVideoOutGetResolutionStatus(int32_t handle /*, SceVideoOutResolutionStatus* status*/) {
