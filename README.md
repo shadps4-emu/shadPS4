@@ -66,5 +66,3 @@ Wiki has some documentation for PS4 PKG format
 
 # Sister Projects
 - [panda3ds](https://github.com/wheremyfoodat/Panda3DS): An multiplatform 3DS emulator from our co-author wheremyfoodat
-- 
-
