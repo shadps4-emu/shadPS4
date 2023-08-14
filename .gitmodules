@@ -29,3 +29,7 @@
 [submodule "third-party/discord-rpc"]
 	path = third-party/discord-rpc
 	url = https://github.com/discord/discord-rpc
+[submodule "third-party/toml11"]
+	path = third-party/toml11
+	url = https://github.com/ToruNiina/toml11
+	branch = master

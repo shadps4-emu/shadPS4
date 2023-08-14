@@ -6,6 +6,7 @@
 #include "Kernel/memory_management.h"
 #include "../../../Util/Singleton.h"
 #include "Kernel/Objects/physical_memory.h"
+#include "Util/config.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -29,9 +30,9 @@ namespace HLE::Libs::LibKernel {
     }
     int PS4_SYSV_ABI sceKernelIsNeoMode()
     { 
-        //BREAKPOINT();
-        PRINT_DUMMY_FUNCTION_NAME();
-        return 0; //it isn't PS4VR TODO
+        PRINT_FUNCTION_NAME();
+        bool isNeo = Config::isNeoMode();
+        return isNeo ? 1 : 0;
     }
 
     static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT();

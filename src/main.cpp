@@ -32,7 +32,7 @@
 #include "Lib/Threads.h"
 #include <emulator.h>
 #include "discord.h"
-
+#include <Util/config.h>
 // Main code
 int main(int argc, char* argv[])
 {
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
         printf("Usage: %s <elf or eboot.bin path>\n", argv[0]);
         return -1;
     }
-
+    Config::load("config.toml");
     logging::init(true);  // init logging
     Emulator::emuInit();
     Lib::InitThreads();
@@ -49,7 +49,6 @@ int main(int argc, char* argv[])
     auto* linker = Singleton<Linker>::Instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto *module =linker->LoadModule(path);//load main executable
-    
     Lib::Thread mainthread(
         [](void*) {
             auto* linker = Singleton<Linker>::Instance();

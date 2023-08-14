@@ -31,6 +31,8 @@ add_subdirectory(${zydis_DIR})
 add_subdirectory(winpthread)
 #=================== discord-rpc ===================
 add_subdirectory(discord-rpc)
+#=================== toml11 ===================
+add_subdirectory(toml11)
 #=================== IMGUI ===================
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
