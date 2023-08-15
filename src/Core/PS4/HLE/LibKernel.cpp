@@ -6,7 +6,7 @@
 #include "Kernel/memory_management.h"
 #include "../../../Util/Singleton.h"
 #include "Kernel/Objects/physical_memory.h"
-#include "Util/config.h"
+#include "Kernel/cpu_management.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -28,12 +28,6 @@ namespace HLE::Libs::LibKernel {
         BREAKPOINT();
         return 0;
     }
-    int PS4_SYSV_ABI sceKernelIsNeoMode()
-    { 
-        PRINT_FUNCTION_NAME();
-        bool isNeo = Config::isNeoMode();
-        return isNeo ? 1 : 0;
-    }
 
     static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT();
     }
@@ -49,7 +43,7 @@ namespace HLE::Libs::LibKernel {
         LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
         LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEqueue);
         //misc
-        LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, sceKernelIsNeoMode);
+        LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, CPUManagement::sceKernelIsNeoMode);
         LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     }
 
