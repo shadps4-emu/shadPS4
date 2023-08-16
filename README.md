@@ -13,7 +13,7 @@ Progress is focus on videoout_basic.elf from sdk demos , currently it can load a
 
 ![](https://geps.dev/progress/60) Elf Loader
 
-![](https://geps.dev/progress/20) Logging system
+![](https://geps.dev/progress/80) Logging system
 
 ![](https://geps.dev/progress/10) Everything else
 
@@ -55,7 +55,6 @@ I currently accept any kind of contribution, here is a list of some items that m
 
 * PKG extractor (there was an initial work on this, just search project history commits).
 * Initial GUI with imgui, SDL3 and Vulkan.
-* Better logging system with spdlog.
 * to be filled...
 
 # Documentation
