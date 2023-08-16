@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include <vector>
+#include <Util/config.h>
 
 namespace logging {
 std::vector<spdlog::sink_ptr> sinks;
@@ -17,6 +18,8 @@ int init(bool use_stdout) {
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));
     auto f = std::make_unique<spdlog::pattern_formatter>("%^|%L|: %v%$", spdlog::pattern_time_type::local, std::string(""));  // disable eol
     spdlog::set_formatter(std::move(f));
+    spdlog::set_level(static_cast<spdlog::level::level_enum>(Config::getLogLevel()));
+    spdlog::level::level_enum t = spdlog::get_level();
     return 0;  // all ok
 }
 
