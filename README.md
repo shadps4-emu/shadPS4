@@ -65,3 +65,4 @@ Wiki has some documentation for PS4 PKG format
 
 # Sister Projects
 - [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): An multiplatform 3DS emulator from our co-author wheremyfoodat
+- [hydra](https://github.com/hydra-emu/hydra): An multisystem , multiplatfrom emulator (chip-8,GB,NES,N64) from paris
