@@ -7,6 +7,7 @@
 #include "../../../Util/Singleton.h"
 #include "Kernel/Objects/physical_memory.h"
 #include "Kernel/cpu_management.h"
+#include "Kernel/event_queues.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -17,12 +18,6 @@ namespace HLE::Libs::LibKernel {
         return 0;
     }
 
-    int PS4_SYSV_ABI sceKernelCreateEqueue(/* SceKernelEqueue* eq*/ int eq, const char* name) 
-    { 
-        //BREAKPOINT();
-        PRINT_DUMMY_FUNCTION_NAME();
-        return 0;
-    }
     int PS4_SYSV_ABI sceKernelWaitEqueue(/*SceKernelEqueue eq, SceKernelEvent* ev,*/ int num, int* out /*, SceKernelUseconds* timo*/) 
     { 
         BREAKPOINT();
@@ -40,7 +35,7 @@ namespace HLE::Libs::LibKernel {
         LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelMapDirectMemory);
         LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
         //equeue
-        LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
+        LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, EventQueues::sceKernelCreateEqueue);
         LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEqueue);
         //misc
         LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, CPUManagement::sceKernelIsNeoMode);

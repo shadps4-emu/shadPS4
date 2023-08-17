@@ -5,7 +5,7 @@ namespace HLE::Libs::LibKernel {
 void LibKernel_Register(SymbolsResolver* sym);
 
 // functions
-int PS4_SYSV_ABI sceKernelCreateEqueue(/* SceKernelEqueue* eq*/ int eq, const char* name);
+
 
 int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len);
 

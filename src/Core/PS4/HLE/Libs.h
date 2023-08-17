@@ -36,7 +36,7 @@
     }
 
 #define PRINT_DUMMY_FUNCTION_NAME() \
-    { LOG_INFO_IF(true, "dummy {}()\n", __func__); }
+    { LOG_WARN_IF(true, "dummy {}()\n", __func__); }
 
 namespace HLE::Libs {
 	void Init_HLE_Libs(SymbolsResolver* sym);
