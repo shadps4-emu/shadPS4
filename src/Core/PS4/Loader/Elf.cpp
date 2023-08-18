@@ -6,13 +6,7 @@
 #include <magic_enum.hpp>
 #include <fmt/core.h>
 #include <Util/log.h>
-
-#ifdef _WIN64
-    #define DBG_BREAKPOINT __debugbreak();
-#else
-    #include <signal.h>
-    #define DBG_BREAKPOINT raise(SIGTRAP);
-#endif
+#include <debug.h>
 
 constexpr bool debug_elf = true;
 
@@ -157,7 +151,7 @@ void Elf::Open(const std::string& file_name)
         }
     }
 
-    //DebugDump();
+    DebugDump();
 }
 
 bool Elf::isSelfFile() const
@@ -275,14 +269,6 @@ bool Elf::isElfFile() const
 }
 
 void Elf::DebugDump() {
-    std::vector<spdlog::sink_ptr> sinks;
-    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    #ifdef _WIN64
-        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(L"output.log", true)); //this might work only in windows ;/
-    #endif
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));   
-    auto f = std::make_unique<spdlog::pattern_formatter>("%v", spdlog::pattern_time_type::local, std::string(""));  // disable eol
-    spdlog::set_formatter(std::move(f));
     if (m_self != nullptr) {//if we load elf instead
         spdlog::info(SElfHeaderStr());
         spdlog::info("\n");
@@ -546,7 +532,7 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size)
                 }
             }
         }
-        DBG_BREAKPOINT //hmm we didn't return something...
+        BREAKPOINT();  // hmm we didn't return something...
     }
     else
     {
