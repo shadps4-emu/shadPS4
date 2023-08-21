@@ -68,6 +68,15 @@ struct SceVideoOutResolutionStatus {
     u32 reserved1[3] = {0};
 };
 
+struct SceVideoOutVblankStatus {
+    u64 count = 0;
+    u64 processTime = 0;
+    u64 tsc = 0;
+    u64 reserved[1] = {0};
+    u08 flags = 0;
+    u08 pad1[7] = {};
+};
+
 std::string getPixelFormatString(s32 format);
 
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute, u32 pixelFormat, u32 tilingMode, u32 aspectRatio, u32 width,
