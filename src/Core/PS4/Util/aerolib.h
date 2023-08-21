@@ -11222,6 +11222,8 @@ namespace aerolib {
         {"-QgqOT5u2Vk", "_Assert"},
         //libkernel
         {"Ou3iL1abvng", "__stack_chk_fail"},
-        {"f7uOxY9mM1U", "__stack_chk_guard"}
+        {"f7uOxY9mM1U", "__stack_chk_guard"},
+        {"6XG4B33N09g", "sched_yield"},
+        {"mkawd0NA9ts", "sysconf"}
         };
 };
