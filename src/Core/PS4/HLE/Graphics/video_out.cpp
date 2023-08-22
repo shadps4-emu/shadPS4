@@ -7,10 +7,21 @@
 #include <magic_enum.hpp>
 #include <string>
 
+#include "Objects/video_out_ctx.h"
+#include "Util/Singleton.h"
+#include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
+#include <debug.h>
+#include <Core/PS4/HLE/VideoOut/VideoOutCodes.h>
+#include <Core/PS4/HLE/ErrorCodes.h>
+
 namespace HLE::Libs::Graphics::VideoOut {
 
 constexpr bool log_file_videoout = true;  // disable it to disable logging
 
+void videoOutInit(u32 width, u32 height) {
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    videoOut->Init(width, height);
+}
 std::string getPixelFormatString(s32 format) {
     switch (format) {
         case SCE_VIDEO_OUT_PIXEL_FORMAT_A8R8G8B8_SRGB: return "PIXEL_FORMAT_A8R8G8B8_SRGB";
@@ -56,7 +67,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
 }
 
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,
-    const SceVideoOutBufferAttribute* attribute) {
+                                            const SceVideoOutBufferAttribute* attribute) {
     // BREAKPOINT();
     PRINT_DUMMY_FUNCTION_NAME();
     return 0;
@@ -71,8 +82,7 @@ s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
-s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg)
-{
+s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
     // BREAKPOINT();
     PRINT_DUMMY_FUNCTION_NAME();
     return 0;
@@ -86,5 +96,30 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
     // BREAKPOINT();
     PRINT_DUMMY_FUNCTION_NAME();
     return 0;
+}
+s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param) {
+    PRINT_DUMMY_FUNCTION_NAME();
+    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM) {
+        BREAKPOINT();
+    }
+    if (busType != SCE_VIDEO_OUT_BUS_TYPE_MAIN) {
+        BREAKPOINT();
+    }
+    if (index != 0) {
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutOpen index!=0\n");
+        return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    if (param != nullptr) {
+        BREAKPOINT();
+    }
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    int handle = videoOut->Open();
+
+    if (handle < 0) {
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutOpen all available handles are open\n");
+        return SCE_VIDEO_OUT_ERROR_RESOURCE_BUSY; //it is alreadyOpened
+    }
+
+    return handle;
 }
 }  // namespace HLE::Libs::Graphics::VideoOut

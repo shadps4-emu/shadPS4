@@ -33,6 +33,8 @@
 #include <emulator.h>
 #include "discord.h"
 #include <Util/config.h>
+#include <Core/PS4/HLE/Graphics/video_out.h>
+
 // Main code
 int main(int argc, char* argv[])
 {
@@ -42,10 +44,13 @@ int main(int argc, char* argv[])
     }
     Config::load("config.toml");
     logging::init(true);  // init logging
+    auto width = Config::getScreenWidth();
+    auto height = Config::getScreenHeight();
+    HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
     Emulator::emuInit();
     Lib::InitThreads();
+
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
-    
     auto* linker = Singleton<Linker>::Instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto *module =linker->LoadModule(path);//load main executable
