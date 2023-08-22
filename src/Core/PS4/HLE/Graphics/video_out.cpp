@@ -1,7 +1,11 @@
 #include "video_out.h"
 
+#include <Core/PS4/HLE/ErrorCodes.h>
 #include <Core/PS4/HLE/Libs.h>
+#include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
+#include <Core/PS4/HLE/VideoOut/VideoOutCodes.h>
 #include <Util/log.h>
+#include <debug.h>
 #include <stdio.h>
 
 #include <magic_enum.hpp>
@@ -9,10 +13,6 @@
 
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
-#include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
-#include <debug.h>
-#include <Core/PS4/HLE/VideoOut/VideoOutCodes.h>
-#include <Core/PS4/HLE/ErrorCodes.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -98,7 +98,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
     return 0;
 }
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param) {
-    PRINT_DUMMY_FUNCTION_NAME();
+    PRINT_FUNCTION_NAME();
     if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM) {
         BREAKPOINT();
     }
@@ -117,7 +117,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
 
     if (handle < 0) {
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutOpen all available handles are open\n");
-        return SCE_VIDEO_OUT_ERROR_RESOURCE_BUSY; //it is alreadyOpened
+        return SCE_VIDEO_OUT_ERROR_RESOURCE_BUSY;  // it is alreadyOpened
     }
 
     return handle;
