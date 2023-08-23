@@ -1,6 +1,6 @@
 #pragma once
 #include "../Loader/SymbolsResolver.h"
-
+#include <Core/PS4/Loader/Elf.h>
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function) \
     {\

@@ -1,12 +1,18 @@
 #pragma once
 #include <Core/PS4/HLE/Kernel/event_queues.h>
+#include <Core/PS4/Loader/SymbolsResolver.h>
 #include <types.h>
 
 #include <string>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
-using SceUserServiceUserId = s32; //TODO move it to proper place
+using SceUserServiceUserId = s32;  // TODO move it to proper place
+
+// SceVideoOutBusType
+constexpr int SCE_VIDEO_OUT_BUS_TYPE_MAIN = 0;                     // Main output
+constexpr int SCE_VIDEO_OUT_BUS_TYPE_AUX_SOCIAL_SCREEN = 5;        // Aux output for social
+constexpr int SCE_VIDEO_OUT_BUS_TYPE_AUX_GAME_LIVE_STREAMING = 6;  // Aux output for screaming
 
 // SceVideoOutRefreshRate
 constexpr int SCE_VIDEO_OUT_REFRESH_RATE_UNKNOWN = 0;
@@ -81,6 +87,7 @@ struct SceVideoOutVblankStatus {
 
 void videoOutInit(u32 width, u32 height);
 std::string getPixelFormatString(s32 format);
+void videoOutRegisterLib(SymbolsResolver* sym);
 
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute, u32 pixelFormat, u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);
