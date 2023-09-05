@@ -1,7 +1,64 @@
 #pragma once
+#include <types.h>
+
 #include <string>
 
 namespace HLE::Kernel::Objects {
+
+constexpr s16 EVFILT_READ = -1;
+constexpr s16 EVFILT_WRITE = -2;
+constexpr s16 EVFILT_AIO = -3;     // attached to aio requests
+constexpr s16 EVFILT_VNODE = -4;   // attached to vnodes
+constexpr s16 EVFILT_PROC = -5;    // attached to struct proc
+constexpr s16 EVFILT_SIGNAL = -6;  // attached to struct proc
+constexpr s16 EVFILT_TIMER = -7;   // timers
+constexpr s16 EVFILT_FS = -9;      // filesystem events
+constexpr s16 EVFILT_LIO = -10;    // attached to lio requests
+constexpr s16 EVFILT_USER = -11;   // User events
+constexpr s16 EVFILT_POLLING = -12;
+constexpr s16 EVFILT_VIDEO_OUT = -13;
+constexpr s16 EVFILT_GRAPHICS_CORE = -14;
+constexpr s16 EVFILT_HRTIMER = -15;
+constexpr s16 EVFILT_UVD_TRAP = -16;
+constexpr s16 EVFILT_VCE_TRAP = -17;
+constexpr s16 EVFILT_SDMA_TRAP = -18;
+constexpr s16 EVFILT_REG_EV = -19;
+constexpr s16 EVFILT_GPU_EXCEPTION = -20;
+constexpr s16 EVFILT_GPU_SYSTEM_EXCEPTION = -21;
+constexpr s16 EVFILT_GPU_DBGGC_EV = -22;
+constexpr s16 EVFILT_SYSCOUNT = 22;
+
+class EqueueInternal;
+struct EqueueEvent;
+
+using SceKernelEqueue = Kernel::Objects::EqueueInternal*;
+
+using trigger_func_ptr = void (*)(EqueueEvent* event, void* trigger_data);
+using reset_func_ptr = void (*)(EqueueEvent* event);
+using delete_func_ptr = void (*)(SceKernelEqueue eq, EqueueEvent* event);
+
+struct Event {
+    u64 ident = 0;  /* identifier for this event */
+    s16 filter = 0; /* filter for event */
+    u16 flags = 0;
+    u32 fflags = 0;
+    s64 data = 0;
+    void* udata = nullptr; /* opaque user data identifier */
+};
+
+struct Filter {
+    void* data = nullptr;
+    trigger_func_ptr trigger_event_func = nullptr;
+    reset_func_ptr reset__event_func = nullptr;
+    delete_func_ptr delete_event_func = nullptr;
+};
+
+struct EqueueEvent {
+    bool isTriggered = false;
+    Event event;
+    Filter filter;
+};
+
 class EqueueInternal {
   public:
     EqueueInternal() = default;

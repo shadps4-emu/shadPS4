@@ -12,6 +12,7 @@ struct VideoConfigInternal {
     bool isOpened = false;
     SceVideoOutFlipStatus m_flip_status;
     SceVideoOutVblankStatus m_vblank_status;
+    std::vector<HLE::Libs::LibKernel::EventQueues::SceKernelEqueue> flip_evtEq;
 };
 
 class VideoOutCtx {
@@ -21,6 +22,7 @@ class VideoOutCtx {
     virtual ~VideoOutCtx() {}
     void Init(u32 width, u32 height);
     int Open();
+    VideoConfigInternal* getCtx(int handle);
   private:
     Lib::Mutex m_mutex;
     VideoConfigInternal m_video_out_ctx;

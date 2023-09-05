@@ -60,9 +60,40 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attr
 }
 
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue eq, s32 handle, void* udata) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
-    return 0;
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+
+    auto* ctx = videoOut->getCtx(handle);
+
+    if (ctx == nullptr)
+    {
+        return SCE_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+    ctx->m_mutex.LockMutex();
+
+    if (eq == nullptr) {
+        return SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+    }
+
+    HLE::Kernel::Objects::EqueueEvent event;
+    event.isTriggered = false;
+    event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
+    event.event.filter = HLE::Kernel::Objects::EVFILT_VIDEO_OUT;
+    event.event.udata = udata;
+    event.event.fflags = 0;
+    event.event.data = 0;
+    // event.filter.delete_event_func = flip_event_delete_func;//called in sceKernelDeleteEvent
+    // event.filter.reset_event_func = flip_event_reset_func;//called in sceKernelWaitEqueue
+    // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent
+    event.filter.data = ctx;
+    
+    int result = 0;  // sceKernelAddEvent(eq, event);
+
+    ctx->flip_evtEq.push_back(eq);
+
+    ctx->m_mutex.UnlockMutex();
+
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,

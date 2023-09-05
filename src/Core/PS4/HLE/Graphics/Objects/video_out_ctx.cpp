@@ -14,7 +14,7 @@ int VideoOutCtx::Open() {
     int handle = -1;
 
     if (!m_video_out_ctx.isOpened) {
-        handle = 1;//positive return , should be more than 1 ?
+        handle = 1;  // positive return , should be more than 1 ?
     }
 
     m_video_out_ctx.isOpened = true;
@@ -25,5 +25,10 @@ int VideoOutCtx::Open() {
     m_video_out_ctx.m_vblank_status = SceVideoOutVblankStatus();
 
     return handle;
+}
+
+VideoConfigInternal* VideoOutCtx::getCtx(int handle) {
+    if (handle != 1) return nullptr;
+    return &m_video_out_ctx; // assuming that it's the only ctx TODO check if we need more
 }
 };  // namespace HLE::Graphics::Objects
