@@ -1,7 +1,8 @@
 #pragma once
 #include <types.h>
-
+#include <Lib/Threads.h>
 #include <string>
+#include <vector>
 
 namespace HLE::Kernel::Objects {
 
@@ -60,12 +61,14 @@ struct EqueueEvent {
 };
 
 class EqueueInternal {
-  public:
+  public:  
     EqueueInternal() = default;
     virtual ~EqueueInternal();
     void setName(const std::string& m_name) { this->m_name = m_name; }
-
+    int addEvent(const EqueueEvent& event);
   private:
     std::string m_name;
+    Lib::Mutex m_mutex; 
+    std::vector<EqueueEvent> m_events;
 };
 };  // namespace HLE::Kernel::Objects

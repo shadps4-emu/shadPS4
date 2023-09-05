@@ -81,12 +81,12 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
     event.event.udata = udata;
     event.event.fflags = 0;
     event.event.data = 0;
-    // event.filter.delete_event_func = flip_event_delete_func;//called in sceKernelDeleteEvent
-    // event.filter.reset_event_func = flip_event_reset_func;//called in sceKernelWaitEqueue
-    // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent
+    // event.filter.delete_event_func = flip_event_delete_func;//called in sceKernelDeleteEvent //TODO
+    // event.filter.reset_event_func = flip_event_reset_func;//called in sceKernelWaitEqueue //TODO
+    // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent //TODO
     event.filter.data = ctx;
 
-    int result = 0;  // sceKernelAddEvent(eq, event);
+    int result = eq->addEvent(event);
 
     ctx->m_flip_evtEq.push_back(eq);
 
