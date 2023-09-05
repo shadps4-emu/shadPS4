@@ -33,9 +33,9 @@ struct EqueueEvent;
 
 using SceKernelEqueue = Kernel::Objects::EqueueInternal*;
 
-using trigger_func_ptr = void (*)(EqueueEvent* event, void* trigger_data);
-using reset_func_ptr = void (*)(EqueueEvent* event);
-using delete_func_ptr = void (*)(SceKernelEqueue eq, EqueueEvent* event);
+using TriggerFunc = void (*)(EqueueEvent* event, void* trigger_data);
+using ResetFunc = void (*)(EqueueEvent* event);
+using DeleteFunc = void (*)(SceKernelEqueue eq, EqueueEvent* event);
 
 struct Event {
     u64 ident = 0;  /* identifier for this event */
@@ -48,9 +48,9 @@ struct Event {
 
 struct Filter {
     void* data = nullptr;
-    trigger_func_ptr trigger_event_func = nullptr;
-    reset_func_ptr reset__event_func = nullptr;
-    delete_func_ptr delete_event_func = nullptr;
+    TriggerFunc trigger_event_func = nullptr;
+    ResetFunc reset__event_func = nullptr;
+    DeleteFunc delete_event_func = nullptr;
 };
 
 struct EqueueEvent {

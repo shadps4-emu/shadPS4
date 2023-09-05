@@ -65,11 +65,10 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
 
     auto* ctx = videoOut->getCtx(handle);
 
-    if (ctx == nullptr)
-    {
+    if (ctx == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
-    ctx->m_mutex.LockMutex();
+    Lib::LockMutexGuard lock(ctx->m_mutex);
 
     if (eq == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -86,12 +85,10 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
     // event.filter.reset_event_func = flip_event_reset_func;//called in sceKernelWaitEqueue
     // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent
     event.filter.data = ctx;
-    
+
     int result = 0;  // sceKernelAddEvent(eq, event);
 
-    ctx->flip_evtEq.push_back(eq);
-
-    ctx->m_mutex.UnlockMutex();
+    ctx->m_flip_evtEq.push_back(eq);
 
     return result;
 }
