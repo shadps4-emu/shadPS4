@@ -14,7 +14,6 @@ struct VideoConfigInternal {
     SceVideoOutVblankStatus m_vblank_status;
     std::vector<HLE::Libs::LibKernel::EventQueues::SceKernelEqueue> m_flip_evtEq;
     int m_flip_rate = 0;
-    SceVideoOutResolutionStatus m_resolution;
 };
 
 class VideoOutCtx {
