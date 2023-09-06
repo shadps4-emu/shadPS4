@@ -1,6 +1,8 @@
 #include "LibSceGnmDriver.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
+#include <Util/log.h>
+#include <debug.h>
 
 namespace HLE::Libs::LibSceGnmDriver {
 
@@ -61,7 +63,9 @@ namespace HLE::Libs::LibSceGnmDriver {
     { return 0;
     }
     int32_t sceGnmSubmitDone()
-    { return 0;
+    { 
+        PRINT_DUMMY_FUNCTION_NAME();
+        return 0;
     }
     int /* MipStatsError*/ sceGnmDisableMipStatsReport()
     { return 0;
@@ -84,7 +88,8 @@ namespace HLE::Libs::LibSceGnmDriver {
     void sceGnmDriverTraceInProgress(){}
     void sceGnmDriverTriggerCapture(){}
     void sceGnmEndWorkload(){}
-    void sceGnmFlushGarlic(){}
+    void sceGnmFlushGarlic() { PRINT_DUMMY_FUNCTION_NAME();
+    }
     void sceGnmGetEqEventType(){}
     void sceGnmGetEqTimeStamp(){}
     void sceGnmGetGpuBlockStatus(){}

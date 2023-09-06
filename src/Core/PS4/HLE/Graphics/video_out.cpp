@@ -9,8 +9,8 @@
 
 #include <magic_enum.hpp>
 #include <string>
-
 #include "Objects/video_out_ctx.h"
+
 #include "Util/Singleton.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
@@ -116,8 +116,19 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     return 0;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* ctx = videoOut->getCtx(handle);
+    videoOut->getFlipQueue().getFlipStatus(ctx, status);
+
+    LOG_INFO_IF(log_file_videoout, "count = {}\n", status->count);
+    LOG_INFO_IF(log_file_videoout, "processTime = {}\n", status->processTime);
+    LOG_INFO_IF(log_file_videoout, "tsc = {}\n", status->tsc);
+    LOG_INFO_IF(log_file_videoout, "submitTsc = {}\n", status->submitTsc);
+    LOG_INFO_IF(log_file_videoout, "flipArg = {}\n", status->flipArg);
+    LOG_INFO_IF(log_file_videoout, "gcQueueNum = {}\n", status->gcQueueNum);
+    LOG_INFO_IF(log_file_videoout, "flipPendingNum = {}\n", status->flipPendingNum);
+    LOG_INFO_IF(log_file_videoout, "currentBuffer = {}\n", status->currentBuffer);
     return 0;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status) {

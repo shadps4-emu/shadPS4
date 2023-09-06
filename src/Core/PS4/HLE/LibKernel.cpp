@@ -20,7 +20,7 @@ namespace HLE::Libs::LibKernel {
 
     int PS4_SYSV_ABI sceKernelWaitEqueue(/*SceKernelEqueue eq, SceKernelEvent* ev,*/ int num, int* out /*, SceKernelUseconds* timo*/) 
     { 
-        BREAKPOINT();
+        PRINT_DUMMY_FUNCTION_NAME();
         return 0;
     }
 

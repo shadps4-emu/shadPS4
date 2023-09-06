@@ -31,4 +31,12 @@ VideoConfigInternal* VideoOutCtx::getCtx(int handle) {
     if (handle != 1) return nullptr;
     return &m_video_out_ctx; // assuming that it's the only ctx TODO check if we need more
 }
+
+void FlipQueue::getFlipStatus(VideoConfigInternal* cfg, SceVideoOutFlipStatus* out) {
+    Lib::LockMutexGuard lock(m_mutex);
+
+    *out = cfg->m_flip_status;
+}
+
 };  // namespace HLE::Graphics::Objects
+
