@@ -38,7 +38,7 @@ using TriggerFunc = void (*)(EqueueEvent* event, void* trigger_data);
 using ResetFunc = void (*)(EqueueEvent* event);
 using DeleteFunc = void (*)(SceKernelEqueue eq, EqueueEvent* event);
 
-struct Event {
+struct SceKernelEvent {
     u64 ident = 0;  /* identifier for this event */
     s16 filter = 0; /* filter for event */
     u16 flags = 0;
@@ -56,7 +56,7 @@ struct Filter {
 
 struct EqueueEvent {
     bool isTriggered = false;
-    Event event;
+    SceKernelEvent event;
     Filter filter;
 };
 
