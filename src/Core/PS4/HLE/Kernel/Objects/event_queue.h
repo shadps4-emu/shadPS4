@@ -50,7 +50,7 @@ struct SceKernelEvent {
 struct Filter {
     void* data = nullptr;
     TriggerFunc trigger_event_func = nullptr;
-    ResetFunc reset__event_func = nullptr;
+    ResetFunc reset_event_func = nullptr;
     DeleteFunc delete_event_func = nullptr;
 };
 
@@ -66,9 +66,12 @@ class EqueueInternal {
     virtual ~EqueueInternal();
     void setName(const std::string& m_name) { this->m_name = m_name; }
     int addEvent(const EqueueEvent& event);
+    int waitForEvents(SceKernelEvent* ev, int num, u32 micros);
+    int getTriggeredEvents(SceKernelEvent* ev, int num);
   private:
     std::string m_name;
     Lib::Mutex m_mutex; 
     std::vector<EqueueEvent> m_events;
+    Lib::ConditionVariable m_cond;
 };
 };  // namespace HLE::Kernel::Objects

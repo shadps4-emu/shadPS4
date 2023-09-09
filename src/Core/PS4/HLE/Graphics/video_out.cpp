@@ -9,8 +9,8 @@
 
 #include <magic_enum.hpp>
 #include <string>
-#include "Objects/video_out_ctx.h"
 
+#include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
@@ -59,6 +59,11 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attr
     attribute->option = SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE;
 }
 
+static void flip_reset_event_func(HLE::Kernel::Objects::EqueueEvent* event) {
+    event->isTriggered = false;
+    event->event.fflags = 0;
+    event->event.data = 0;
+}
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue eq, s32 handle, void* udata) {
     PRINT_FUNCTION_NAME();
     auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
@@ -82,7 +87,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
     event.event.fflags = 0;
     event.event.data = 0;
     // event.filter.delete_event_func = flip_event_delete_func;//called in sceKernelDeleteEvent //TODO
-    // event.filter.reset_event_func = flip_event_reset_func;//called in sceKernelWaitEqueue //TODO
+    event.filter.reset_event_func = flip_reset_event_func;
     // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent //TODO
     event.filter.data = ctx;
 
