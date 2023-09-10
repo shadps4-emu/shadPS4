@@ -21,6 +21,11 @@ namespace HLE::Libs::LibKernel {
 
     static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT();
     }
+    u64 PS4_SYSV_ABI sceKernelReadTsc() {
+        LARGE_INTEGER c;
+        QueryPerformanceCounter(&c);
+        return c.QuadPart;
+    }
     void LibKernel_Register(SymbolsResolver* sym) { 
         //obj
         LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &HLE::Libs::LibKernel::g_stack_chk_guard);
@@ -35,6 +40,8 @@ namespace HLE::Libs::LibKernel {
         //misc
         LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, CPUManagement::sceKernelIsNeoMode);
         LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
+        //time
+        LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
     }
 
 }; 
