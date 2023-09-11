@@ -51,7 +51,7 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, HLE::Kernel::Objects::S
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (timo == nullptr) {  // wait until an event arrives without timing out
-        // BREAKPOINT();//NOT supported yet TODO
+        *out = eq->waitForEvents(ev, num, 0);
     }
     if (timo != nullptr) {
         if (*timo == 0) {//only events that have already arrived at the time of this function call can be received

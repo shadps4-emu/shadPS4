@@ -24,9 +24,20 @@ class FlipQueue {
     virtual ~FlipQueue() {}
 
     void getFlipStatus(VideoConfigInternal* cfg, SceVideoOutFlipStatus* out);
-
+    bool submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg);
+    bool flip(u32 micros);
   private:
+    struct Request {
+        VideoConfigInternal* cfg;
+        int index;
+        int64_t flip_arg;
+        uint64_t submit_tsc;
+    };
+
     Lib::Mutex m_mutex;
+    Lib::ConditionVariable m_submit_cond;
+    Lib::ConditionVariable m_done_cond;
+    std::vector<Request> m_requests;
 };
 
 class VideoOutCtx {

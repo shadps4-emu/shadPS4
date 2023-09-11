@@ -90,6 +90,7 @@ struct SceVideoOutVblankStatus {
 void videoOutInit(u32 width, u32 height);
 std::string getPixelFormatString(s32 format);
 void videoOutRegisterLib(SymbolsResolver* sym);
+bool videoOutFlip(u32 micros);
 
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute, u32 pixelFormat, u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);
