@@ -67,6 +67,7 @@ class EqueueInternal {
     void setName(const std::string& m_name) { this->m_name = m_name; }
     int addEvent(const EqueueEvent& event);
     int waitForEvents(SceKernelEvent* ev, int num, u32 micros);
+    bool triggerEvent(u64 ident, s16 filter, void* trigger_data);
     int getTriggeredEvents(SceKernelEvent* ev, int num);
   private:
     std::string m_name;

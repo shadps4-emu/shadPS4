@@ -21,6 +21,12 @@ void videoOutInit(u32 width, u32 height) {
     auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     videoOut->Init(width, height);
 }
+
+bool videoOutFlip(u32 micros) {
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    return videoOut->getFlipQueue().flip(micros);
+}
+
 std::string getPixelFormatString(s32 format) {
     switch (format) {
         case SCE_VIDEO_OUT_PIXEL_FORMAT_A8R8G8B8_SRGB: return "PIXEL_FORMAT_A8R8G8B8_SRGB";
@@ -64,6 +70,15 @@ static void flip_reset_event_func(HLE::Kernel::Objects::EqueueEvent* event) {
     event->event.fflags = 0;
     event->event.data = 0;
 }
+static void flip_trigger_event_func(HLE::Kernel::Objects::EqueueEvent* event, void* trigger_data) {
+    event->isTriggered = true;
+    event->event.fflags++;
+    event->event.data = reinterpret_cast<intptr_t>(trigger_data);
+}
+static void flip_delete_event_func(LibKernel::EventQueues::SceKernelEqueue eq, HLE::Kernel::Objects::EqueueEvent* event) {
+    BREAKPOINT();  // TODO
+}
+
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue eq, s32 handle, void* udata) {
     PRINT_FUNCTION_NAME();
     auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
@@ -86,9 +101,9 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
     event.event.udata = udata;
     event.event.fflags = 0;
     event.event.data = 0;
-    // event.filter.delete_event_func = flip_event_delete_func;//called in sceKernelDeleteEvent //TODO
+    event.filter.delete_event_func = flip_delete_event_func;
     event.filter.reset_event_func = flip_reset_event_func;
-    // event.filter.trigger_event_func = flip_event_trigger_func;//called in sceKernelTriggerEvent //TODO
+    event.filter.trigger_event_func = flip_trigger_event_func;
     event.filter.data = ctx;
 
     int result = eq->addEvent(event);
@@ -127,7 +142,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         BREAKPOINT();  // blank output not supported
     }
     if (bufferIndex < -1 || bufferIndex > 15) {
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip invalid bufferIndex {}\n",bufferIndex);
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip invalid bufferIndex {}\n", bufferIndex);
         return SCE_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
     LOG_INFO_IF(log_file_videoout, "bufferIndex = {}\n", bufferIndex);

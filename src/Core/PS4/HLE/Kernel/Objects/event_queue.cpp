@@ -49,6 +49,25 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     return 0;
 }
 
+bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
+    Lib::LockMutexGuard lock(m_mutex);
+
+    if (m_events.size() > 1) {
+        BREAKPOINT();  // we currently support one event
+    }
+    auto& event = m_events[0];
+
+    if (event.filter.trigger_event_func != nullptr) {
+        event.filter.trigger_event_func(&event, trigger_data);
+    } else {
+        event.isTriggered = true;
+    }
+
+    m_cond.SignalCondVar();
+
+    return true;
+}
+
 int EqueueInternal::getTriggeredEvents(SceKernelEvent* ev, int num) {
     Lib::LockMutexGuard lock(m_mutex);
 

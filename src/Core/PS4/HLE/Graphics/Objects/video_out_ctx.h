@@ -25,6 +25,7 @@ class FlipQueue {
 
     void getFlipStatus(VideoConfigInternal* cfg, SceVideoOutFlipStatus* out);
     bool submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg);
+    bool flip(u32 micros);
   private:
     struct Request {
         VideoConfigInternal* cfg;
