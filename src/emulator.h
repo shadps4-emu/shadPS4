@@ -12,6 +12,16 @@ struct WindowCtx {
     SDL_Window* m_window = nullptr;
     bool is_window_hidden = true;
 };
+
+struct EmuPrivate {
+    EmuPrivate() = default;
+    Lib::Mutex m_mutex;
+    HLE::Libs::Graphics::GraphicCtx* m_graphic_ctx = nullptr;
+    void* data1 = nullptr;
+    void* data2 = nullptr;
+    u32 m_screen_width = {0};
+    u32 m_screen_height = {0};
+};
 void emuInit(u32 width, u32 height);
 void emuRun();
 }  // namespace Emulator

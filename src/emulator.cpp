@@ -44,8 +44,24 @@ void emuRun() {
         g_window_ctx->m_graphic_initialized_cond.SignalCondVar();
     }
     g_window_ctx->m_mutex.UnlockMutex();
+    
+
+    auto* pdata = new EmuPrivate;
+    pdata->m_graphic_ctx = static_cast<HLE::Libs::Graphics::GraphicCtx*>(&g_window_ctx->m_graphic_ctx);
+
+    pdata->data1 = pdata;
+    pdata->data2 = new SDL_Event;
+
+    pdata->m_screen_width = pdata->m_graphic_ctx->screen_width;
+    pdata->m_screen_height = pdata->m_graphic_ctx->screen_height;
 
     for (;;) {
+        SDL_Event* ev = static_cast<SDL_Event*>(pdata->data2);
+        if (SDL_PollEvent(ev)!= 0)
+        {
+            printf("Event: 0x%04\n", ev->type);
+            printf("]");
+        }
         HLE::Libs::Graphics::VideoOut::videoOutFlip(100000);  // flip every 0.1 sec
     }
     std::_Exit(0);
