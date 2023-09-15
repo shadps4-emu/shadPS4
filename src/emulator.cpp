@@ -20,7 +20,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("%s\n", SDL_GetError());
-        std::_Exit(0);
+        std::exit(0);
     }
 
     ctx->m_window = SDL_CreateWindowWithPosition("shadps4", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -30,7 +30,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
 
     if (ctx->m_window == nullptr) {
         printf("%s\n", SDL_GetError());
-        std::_Exit(0);
+        std::exit(0);
     }
 
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
@@ -55,7 +55,6 @@ void emuRun() {
 
         SDL_Event event;
         if (SDL_PollEvent(&event) != 0) {
-            printf("Event: 0x%04\n", event.type);
             switch (event.type) {
                 case SDL_EVENT_QUIT: m_emu_needs_exit = true; break;
 
@@ -80,6 +79,6 @@ void emuRun() {
             HLE::Libs::Graphics::VideoOut::videoOutFlip(100000);  // flip every 0.1 sec
         }
     }
-    std::_Exit(0);
+    std::exit(0);
 }
 }  // namespace Emulator
