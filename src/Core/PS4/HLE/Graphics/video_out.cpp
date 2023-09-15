@@ -115,8 +115,46 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
 
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,
                                             const SceVideoOutBufferAttribute* attribute) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* ctx = videoOut->getCtx(handle);
+
+    if (handle == 1) {  // main port
+        if (startIndex < 0 || startIndex > 15) {
+            LOG_TRACE_IF(log_file_videoout, "invalid startIndex = {}\n", startIndex);
+            return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
+        }
+        if (bufferNum < 1 || bufferNum > 16) {
+            LOG_TRACE_IF(log_file_videoout, "invalid bufferNum = {}\n", bufferNum);
+            return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
+        }
+    }
+    if (addresses == nullptr) {
+        LOG_TRACE_IF(log_file_videoout, "addresses are null\n");
+        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+
+    if (attribute == nullptr) {
+        LOG_TRACE_IF(log_file_videoout, "attribute is null\n");
+        return SCE_VIDEO_OUT_ERROR_INVALID_OPTION;
+    }
+    if (attribute->aspectRatio != 0) {
+        LOG_TRACE_IF(log_file_videoout, "invalid aspect ratio = {}\n", attribute->aspectRatio);
+        return SCE_VIDEO_OUT_ERROR_INVALID_ASPECT_RATIO;
+    }
+    if (attribute->tilingMode != 0 || attribute->tilingMode != 1) {
+        LOG_TRACE_IF(log_file_videoout, "invalid tilingMode = {}\n", attribute->tilingMode);
+        return SCE_VIDEO_OUT_ERROR_INVALID_TILING_MODE;
+    }
+    LOG_INFO_IF(log_file_videoout, "startIndex    = {}\n", startIndex);
+    LOG_INFO_IF(log_file_videoout, "bufferNum     = {}\n", bufferNum);
+    LOG_INFO_IF(log_file_videoout, "pixelFormat   = {}\n", log_hex_full(attribute->pixelFormat));
+    LOG_INFO_IF(log_file_videoout, "tilingMode    = {}\n", attribute->tilingMode);
+    LOG_INFO_IF(log_file_videoout, "aspectRatio   = {}\n", attribute->aspectRatio);
+    LOG_INFO_IF(log_file_videoout, "width         = {}\n", attribute->width);
+    LOG_INFO_IF(log_file_videoout, "height        = {}\n", attribute->height);
+    LOG_INFO_IF(log_file_videoout, "pitchInPixel  = {}\n", attribute->pitchInPixel);
+    LOG_INFO_IF(log_file_videoout, "option        = {}\n", attribute->option);
     return 0;
 }
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
