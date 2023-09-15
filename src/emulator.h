@@ -24,4 +24,5 @@ struct EmuPrivate {
 };
 void emuInit(u32 width, u32 height);
 void emuRun();
+void checkAndWaitForGraphicsInit();
 }  // namespace Emulator

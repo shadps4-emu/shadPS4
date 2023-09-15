@@ -16,6 +16,8 @@ struct VideoConfigInternal {
     SceVideoOutVblankStatus m_vblank_status;
     std::vector<HLE::Libs::LibKernel::EventQueues::SceKernelEqueue> m_flip_evtEq;
     int m_flip_rate = 0;
+
+    int buffers_registration_index = 0;
 };
 
 class FlipQueue {

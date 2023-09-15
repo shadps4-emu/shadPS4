@@ -14,6 +14,13 @@ void emuInit(u32 width, u32 height) {
     g_window_ctx->m_graphic_ctx.screen_height = height;
 }
 
+void checkAndWaitForGraphicsInit() {
+    Lib::LockMutexGuard lock(g_window_ctx->m_mutex);
+
+    while (!g_window_ctx->m_is_graphic_initialized) {
+        g_window_ctx->m_graphic_initialized_cond.WaitCondVar(&g_window_ctx->m_mutex);
+    }
+}
 static void CreateSdlWindow(WindowCtx* ctx) {
     int width = static_cast<int>(ctx->m_graphic_ctx.screen_width);
     int height = static_cast<int>(ctx->m_graphic_ctx.screen_height);
@@ -34,7 +41,6 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     }
 
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
-    SDL_ShowWindow(g_window_ctx->m_window);            // TODO should be removed just left it over to make it fancy :D
 }
 void emuRun() {
     g_window_ctx->m_mutex.LockMutex();

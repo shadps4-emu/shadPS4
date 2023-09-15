@@ -12,6 +12,7 @@
 
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
+#include <emulator.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -155,7 +156,16 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     LOG_INFO_IF(log_file_videoout, "height        = {}\n", attribute->height);
     LOG_INFO_IF(log_file_videoout, "pitchInPixel  = {}\n", attribute->pitchInPixel);
     LOG_INFO_IF(log_file_videoout, "option        = {}\n", attribute->option);
-    return 0;
+
+    int registration_index = ctx->buffers_registration_index++;
+
+    Emulator::checkAndWaitForGraphicsInit();
+
+    //try to calculate buffer size
+    u64 buffer_size = 1280 * 720 * 4; //TODO hardcore value should be redone
+    u64 buffer_pitch = attribute->pitchInPixel;
+
+    return registration_index;
 }
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     PRINT_FUNCTION_NAME();
