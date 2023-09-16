@@ -17,6 +17,7 @@ include_directories(third-party/fmt/include)
 include_directories(third-party/magic_enum/include)
 include_directories(third-party/zydis/include/Zydis)
 include_directories(third-party/winpthread/include)
+include_directories(third-party/vulkan/include)
 add_subdirectory("third-party")
 #=================== EXAMPLE ===================
 include_directories(src)
@@ -55,7 +56,7 @@ add_executable(shadps4
      "src/Util/Singleton.h" "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Core/PS4/Util/aerolib.h" "src/Core/PS4/Loader/SymbolsResolver.h" "src/Core/PS4/Loader/SymbolsResolver.cpp" "src/Core/PS4/HLE/Libs.cpp" "src/Core/PS4/HLE/Libs.h" "src/Core/PS4/HLE/LibC.cpp" "src/Core/PS4/HLE/LibC.h" "src/Lib/Timer.cpp" "src/Lib/Timer.h" "src/Core/PS4/HLE/LibKernel.cpp" "src/Core/PS4/HLE/LibKernel.h"   "src/Core/PS4/HLE/LibSceGnmDriver.cpp" "src/Core/PS4/HLE/LibSceGnmDriver.h" "src/Core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/Core/PS4/HLE/Kernel/ThreadManagement.h" "src/Core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/Core/PS4/HLE/Kernel/memory_management.cpp" "src/Core/PS4/HLE/Kernel/memory_management.h" "src/Core/PS4/GPU/gpu_memory.cpp" "src/Core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/Core/PS4/HLE/Kernel/Objects/event_queue.h" "src/Core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/Core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/Core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/Core/PS4/HLE/Graphics/graphics_ctx.h")
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(shadps4 PUBLIC fmt mincore spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY})
+target_link_libraries(shadps4 PUBLIC fmt mincore spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY} vulkan-1 spirv-tools-opt spirv-tools)
 
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different

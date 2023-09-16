@@ -162,7 +162,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     Emulator::checkAndWaitForGraphicsInit();
 
     //try to calculate buffer size
-    u64 buffer_size = 1280 * 720 * 4; //TODO hardcore value should be redone
+    u64 buffer_size = 1280 * 720 * 4; //TODO hardcoded value should be redone
     u64 buffer_pitch = attribute->pitchInPixel;
 
     return registration_index;
