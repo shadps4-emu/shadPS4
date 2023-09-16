@@ -143,7 +143,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         LOG_TRACE_IF(log_file_videoout, "invalid aspect ratio = {}\n", attribute->aspectRatio);
         return SCE_VIDEO_OUT_ERROR_INVALID_ASPECT_RATIO;
     }
-    if (attribute->tilingMode != 0 || attribute->tilingMode != 1) {
+    if (attribute->tilingMode < 0 || attribute->tilingMode > 1) {
         LOG_TRACE_IF(log_file_videoout, "invalid tilingMode = {}\n", attribute->tilingMode);
         return SCE_VIDEO_OUT_ERROR_INVALID_TILING_MODE;
     }
