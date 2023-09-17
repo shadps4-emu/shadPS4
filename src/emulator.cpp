@@ -1,6 +1,7 @@
 #include "emulator.h"
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
+#include <vulkan_util.h>
 
 namespace Emulator {
 
@@ -47,6 +48,7 @@ void emuRun() {
     {
         // init window and wait until init finishes
         CreateSdlWindow(g_window_ctx);
+        Graphics::Vulkan::vulkanCreate(g_window_ctx);
         g_window_ctx->m_is_graphic_initialized = true;
         g_window_ctx->m_graphic_initialized_cond.SignalCondVar();
     }
