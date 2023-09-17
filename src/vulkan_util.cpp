@@ -18,6 +18,30 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     app_info.pEngineName = "shadps4";
     app_info.engineVersion = 1;
     app_info.apiVersion = VK_API_VERSION_1_2;
+
+    VkInstanceCreateInfo inst_info{};
+    inst_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    inst_info.pNext = nullptr;
+    inst_info.flags = 0;
+    inst_info.pApplicationInfo = &app_info;
+    inst_info.enabledExtensionCount = ext.required_extensions.size();
+    inst_info.ppEnabledExtensionNames = ext.required_extensions.data();
+    inst_info.enabledLayerCount = 0;
+    inst_info.ppEnabledLayerNames = nullptr;
+
+    VkResult result = vkCreateInstance(&inst_info, nullptr, &ctx->m_graphic_ctx.m_instance);
+    if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't find an compatiblie vulkan driver\n");
+        std::exit(0);
+    } else if (result != VK_SUCCESS) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan instance\n");
+        std::exit(0);
+    }
+
+    if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, &ctx->m_surface) == SDL_FALSE) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan surface\n");
+        std::exit(0);
+    }
 }
 
 void Graphics::Vulkan::vulkanGetExtensions(VulkanExt* ext) {

@@ -11,6 +11,7 @@ struct WindowCtx {
     Lib::ConditionVariable m_graphic_initialized_cond;
     SDL_Window* m_window = nullptr;
     bool is_window_hidden = true;
+    VkSurfaceKHR m_surface = nullptr;
 };
 
 struct EmuPrivate {
