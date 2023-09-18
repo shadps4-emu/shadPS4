@@ -1,21 +1,15 @@
 #pragma once
-#include "emulator.h"
 #include <SDL.h>
-#include <vector>
 #include <src/video/khronos/vulkan/vulkan_core.h>
+
+#include <vector>
+
+#include "emulator.h"
 
 namespace Graphics::Vulkan {
 
-struct VulkanExt {
-    bool enable_validation_layers = false;
-
-    std::vector<const char*> required_extensions;
-    std::vector<VkExtensionProperties> available_extensions;
-    std::vector<const char*> required_layers;
-    std::vector<VkLayerProperties> available_layers;
-};
-
-void vulkanCreate(Emulator::WindowCtx *ctx);
-void vulkanGetExtensions(VulkanExt* ext);
-
-};
+void vulkanCreate(Emulator::WindowCtx* ctx);
+void vulkanGetInstanceExtensions(Emulator::VulkanExt* ext);
+void vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, const std::vector<const char*>& device_extensions,
+                                       Emulator::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device, Emulator::VulkanQueues* out_queues);
+};  // namespace Graphics::Vulkan

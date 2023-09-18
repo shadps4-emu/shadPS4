@@ -1,14 +1,15 @@
 #include "vulkan_util.h"
+
+#include <SDL_vulkan.h>
 #include <Util/log.h>
 #include <debug.h>
-#include <SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
 void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
-    VulkanExt ext;
-    vulkanGetExtensions(&ext);
+    Emulator::VulkanExt ext;
+    vulkanGetInstanceExtensions(&ext);
 
     VkApplicationInfo app_info{};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -42,9 +43,19 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan surface\n");
         std::exit(0);
     }
+
+    // TODO i am not sure if it's that it is neccesary or if it needs more
+    std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
+                                                  VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME, "VK_KHR_maintenance1"};
+
+    ctx->m_surface_capabilities = new Emulator::VulkanSurfaceCapabilities{};
+    Emulator::VulkanQueues queues;
+
+    vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, ctx->m_surface_capabilities,
+                                       &ctx->m_graphic_ctx.physical_device, &queues);
 }
 
-void Graphics::Vulkan::vulkanGetExtensions(VulkanExt* ext) {
+void Graphics::Vulkan::vulkanGetInstanceExtensions(Emulator::VulkanExt* ext) {
     u32 required_extensions_count = 0;
     u32 available_extensions_count = 0;
     u32 available_layers_count = 0;
@@ -73,6 +84,24 @@ void Graphics::Vulkan::vulkanGetExtensions(VulkanExt* ext) {
     }
 
     for (const auto& l : ext->available_layers) {
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}\n", l.layerName, l.specVersion,l.implementationVersion,l.description);
+        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}\n", l.layerName, l.specVersion,
+                    l.implementationVersion, l.description);
+    }
+}
+
+void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
+                                                          const std::vector<const char*>& device_extensions,
+                                                          Emulator::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
+                                                          Emulator::VulkanQueues* out_queues) {
+    u32 count_devices = 0;
+    vkEnumeratePhysicalDevices(instance, &count_devices, nullptr);
+
+    std::vector<VkPhysicalDevice> devices(count_devices);
+    vkEnumeratePhysicalDevices(instance, &count_devices, devices.data());
+
+    VkPhysicalDevice found_best_device = nullptr;
+    Emulator::VulkanQueues found_best_queues;
+
+    for (const auto& device : devices) {
     }
 }
