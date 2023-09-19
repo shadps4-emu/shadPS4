@@ -118,7 +118,12 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
         auto qs = vulkanFindQueues(device, surface);
 
         vulkanGetSurfaceCapabilities(device, surface, out_capabilities);
+
+        found_best_device = device;
+        found_best_queues = qs;
     }
+    *out_device = found_best_device;
+    *out_queues = found_best_queues;
 }
 
 Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) { 
