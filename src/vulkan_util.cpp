@@ -4,6 +4,7 @@
 #include <Util/log.h>
 #include <debug.h>
 #include <vulkan/vulkan_core.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
@@ -103,5 +104,41 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     Emulator::VulkanQueues found_best_queues;
 
     for (const auto& device : devices) {
+
+        VkPhysicalDeviceProperties device_properties{};
+        VkPhysicalDeviceFeatures2 device_features2{};
+
+        vkGetPhysicalDeviceProperties(device, &device_properties);
+        vkGetPhysicalDeviceFeatures2(device, &device_features2);
+        if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+            continue;  // we don't want integrated gpu for now .Later we will check the requirements and see what we can support (TODO fix me)
+        }
+        LOG_INFO_IF(log_file_vulkanutil,"Vulkan device: {}\n", device_properties.deviceName);
+
+        auto qs = vulkanFindQueues(device, surface);
     }
+}
+
+Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) { 
+   	Emulator::VulkanQueues qs;
+
+    u32 queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+    qs.family_count = queue_family_count;
+
+    u32 family = 0;
+    for (auto& f : queue_families) {
+        VkBool32 presentation_supported = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, family, surface, &presentation_supported);
+
+        LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n", string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
+               (presentation_supported == VK_TRUE ? "true" : "false"));
+
+        family++;
+    }
+
+    return qs;
 }

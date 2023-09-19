@@ -2,8 +2,8 @@
 #include <Core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <Lib/Threads.h>
 #include <SDL.h>
-#include <vector>
 
+#include <vector>
 
 namespace Emulator {
 
@@ -18,7 +18,9 @@ struct VulkanExt {
 
 struct VulkanSurfaceCapabilities {};
 
-struct VulkanQueues {};
+struct VulkanQueues {
+    u32 family_count = 0;
+};
 
 struct WindowCtx {
     HLE::Libs::Graphics::GraphicCtx m_graphic_ctx;
