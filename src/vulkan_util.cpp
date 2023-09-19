@@ -116,6 +116,8 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
         LOG_INFO_IF(log_file_vulkanutil,"Vulkan device: {}\n", device_properties.deviceName);
 
         auto qs = vulkanFindQueues(device, surface);
+
+        vulkanGetSurfaceCapabilities(device, surface, out_capabilities);
     }
 }
 
@@ -141,4 +143,32 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
     }
 
     return qs;
+}
+
+void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emulator::VulkanSurfaceCapabilities* surfaceCap) {
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surfaceCap->capabilities);
+
+    uint32_t formats_count = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &formats_count, nullptr);
+
+    surfaceCap->formats = std::vector<VkSurfaceFormatKHR>(formats_count);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &formats_count, surfaceCap->formats.data());
+
+    uint32_t present_modes_count = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, nullptr);
+
+
+    surfaceCap->present_modes = std::vector<VkPresentModeKHR>(present_modes_count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, surfaceCap->present_modes.data());
+
+    for (const auto& f : surfaceCap->formats) {
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            surfaceCap->is_format_srgb_bgra32 = true;
+            break;
+        }
+        if (f.format == VK_FORMAT_B8G8R8A8_UNORM && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            surfaceCap->is_format_unorm_bgra32 = true;
+            break;
+        }
+    }
 }

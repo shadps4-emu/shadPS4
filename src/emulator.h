@@ -16,7 +16,13 @@ struct VulkanExt {
     std::vector<VkLayerProperties> available_layers;
 };
 
-struct VulkanSurfaceCapabilities {};
+struct VulkanSurfaceCapabilities {
+    VkSurfaceCapabilitiesKHR capabilities{};
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> present_modes;
+    bool is_format_srgb_bgra32 = false;
+    bool is_format_unorm_bgra32 = false;
+};
 
 struct VulkanQueues {
     u32 family_count = 0;
