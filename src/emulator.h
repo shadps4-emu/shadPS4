@@ -24,9 +24,22 @@ struct VulkanSurfaceCapabilities {
     bool is_format_unorm_bgra32 = false;
 };
 
+struct VulkanQueueInfo {
+    u32 family = 0;
+    u32 index = 0;
+    bool is_graphics = false;
+    bool is_compute = false;
+    bool is_transfer = false;
+    bool is_present = false;
+};
+
 struct VulkanQueues {
     u32 family_count = 0;
+    std::vector<VulkanQueueInfo> available;
+    std::vector<VulkanQueueInfo> graphics;
+    std::vector<u32> family_used;
 };
+
 
 struct WindowCtx {
     HLE::Libs::Graphics::GraphicCtx m_graphic_ctx;

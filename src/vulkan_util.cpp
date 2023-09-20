@@ -3,8 +3,8 @@
 #include <SDL_vulkan.h>
 #include <Util/log.h>
 #include <debug.h>
-#include <vulkan/vulkan_core.h>
 #include <vulkan/vk_enum_string_helper.h>
+#include <vulkan/vulkan_core.h>
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
@@ -104,7 +104,6 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     Emulator::VulkanQueues found_best_queues;
 
     for (const auto& device : devices) {
-
         VkPhysicalDeviceProperties device_properties{};
         VkPhysicalDeviceFeatures2 device_features2{};
 
@@ -113,7 +112,7 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
         if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
             continue;  // we don't want integrated gpu for now .Later we will check the requirements and see what we can support (TODO fix me)
         }
-        LOG_INFO_IF(log_file_vulkanutil,"Vulkan device: {}\n", device_properties.deviceName);
+        LOG_INFO_IF(log_file_vulkanutil, "Vulkan device: {}\n", device_properties.deviceName);
 
         auto qs = vulkanFindQueues(device, surface);
 
@@ -126,8 +125,8 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     *out_queues = found_best_queues;
 }
 
-Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) { 
-   	Emulator::VulkanQueues qs;
+Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    Emulator::VulkanQueues qs;
 
     u32 queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
@@ -142,15 +141,29 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
         vkGetPhysicalDeviceSurfaceSupportKHR(device, family, surface, &presentation_supported);
 
         LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n", string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
-               (presentation_supported == VK_TRUE ? "true" : "false"));
+                    (presentation_supported == VK_TRUE ? "true" : "false"));
+        for (uint32_t i = 0; i < f.queueCount; i++) {
+            Emulator::VulkanQueueInfo info;
+            info.family = family;
+            info.index = i;
+            info.is_graphics = (f.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
+            info.is_compute = (f.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0;
+            info.is_transfer = (f.queueFlags & VK_QUEUE_TRANSFER_BIT) != 0;
+            info.is_present = (presentation_supported == VK_TRUE);
+
+            qs.available.push_back(info);
+        }
+
+        qs.family_used.push_back(0);
 
         family++;
     }
-
+    // TODO finish it
     return qs;
 }
 
-void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emulator::VulkanSurfaceCapabilities* surfaceCap) {
+void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface,
+                                                    Emulator::VulkanSurfaceCapabilities* surfaceCap) {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surfaceCap->capabilities);
 
     uint32_t formats_count = 0;
@@ -161,7 +174,6 @@ void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_de
 
     uint32_t present_modes_count = 0;
     vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, nullptr);
-
 
     surfaceCap->present_modes = std::vector<VkPresentModeKHR>(present_modes_count);
     vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, surfaceCap->present_modes.data());
