@@ -7,6 +7,7 @@ struct GraphicCtx {
     u32 screen_width = 0;
     u32 screen_height = 0;
     VkInstance m_instance = nullptr;
-    VkPhysicalDevice physical_device = nullptr;
+    VkPhysicalDevice m_physical_device = nullptr;
+    VkDevice m_device = nullptr;
 };
 }  // namespace HLE::Libs::Graphics

@@ -53,9 +53,70 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     Emulator::VulkanQueues queues;
 
     vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, ctx->m_surface_capabilities,
-                                       &ctx->m_graphic_ctx.physical_device, &queues);
+                                       &ctx->m_graphic_ctx.m_physical_device, &queues);
+
+    if (ctx->m_graphic_ctx.m_physical_device == nullptr) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't find compatible vulkan device\n");
+        std::exit(0);
+    }
+
+    VkPhysicalDeviceProperties device_properties{};
+    vkGetPhysicalDeviceProperties(ctx->m_graphic_ctx.m_physical_device, &device_properties);
+
+   LOG_INFO_IF(log_file_vulkanutil, "GFX device to be used : {}\n", device_properties.deviceName);
+
+   ctx->m_graphic_ctx.m_device = vulkanCreateDevice(ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
+   if (ctx->m_graphic_ctx.m_device == nullptr) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan device\n");
+        std::exit(0);
+   }
 }
 
+VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emulator::VulkanExt* r,
+                                              const Emulator::VulkanQueues& queues, const std::vector<const char*>& device_extensions) {
+
+   std::vector<VkDeviceQueueCreateInfo> queue_create_info(queues.family_count);
+   std::vector<std::vector<float>> queue_priority(queues.family_count);
+   uint32_t queue_create_info_num = 0;
+
+   for (uint32_t i = 0; i < queues.family_count; i++) {
+        if (queues.family_used[i] != 0) {
+            for (uint32_t pi = 0; pi < queues.family_used[i]; pi++) {
+                queue_priority[queue_create_info_num].push_back(1.0f);
+            }
+
+            queue_create_info[queue_create_info_num].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queue_create_info[queue_create_info_num].pNext = nullptr;
+            queue_create_info[queue_create_info_num].flags = 0;
+            queue_create_info[queue_create_info_num].queueFamilyIndex = i;
+            queue_create_info[queue_create_info_num].queueCount = queues.family_used[i];
+            queue_create_info[queue_create_info_num].pQueuePriorities = queue_priority[queue_create_info_num].data();
+
+            queue_create_info_num++;
+        }
+   }
+
+   VkPhysicalDeviceFeatures device_features{};
+   //TODO add neccesary device features
+
+   VkDeviceCreateInfo create_info{};
+   create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+   create_info.pNext = nullptr;
+   create_info.flags = 0;
+   create_info.pQueueCreateInfos = queue_create_info.data();
+   create_info.queueCreateInfoCount = queue_create_info_num;
+   create_info.enabledLayerCount = 0;
+   create_info.ppEnabledLayerNames = nullptr;
+   create_info.enabledExtensionCount = device_extensions.size();
+   create_info.ppEnabledExtensionNames = device_extensions.data();
+   create_info.pEnabledFeatures = &device_features;
+
+   VkDevice device = nullptr;
+
+   vkCreateDevice(physical_device, &create_info, nullptr, &device);
+
+   return device;
+}
 void Graphics::Vulkan::vulkanGetInstanceExtensions(Emulator::VulkanExt* ext) {
     u32 required_extensions_count = 0;
     u32 available_extensions_count = 0;
@@ -160,13 +221,11 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
     }
     u32 index = 0;
     for (u32 i = 0; i < VULKAN_QUEUE_GRAPHICS_NUM; i++) {
-        
         for (const auto& idx : qs.available) {
-            if (idx.is_graphics)
-            {
+            if (idx.is_graphics) {
                 qs.family_used[qs.available.at(index).family]++;
                 qs.graphics.push_back(qs.available.at(index));
-                qs.available.erase(qs.available.begin()+index);
+                qs.available.erase(qs.available.begin() + index);
                 break;
             }
             index++;
