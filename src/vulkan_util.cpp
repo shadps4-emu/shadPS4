@@ -1,11 +1,13 @@
 #include "vulkan_util.h"
-#include <algorithm>
+
 #include <SDL_vulkan.h>
+#include <Util/Singleton.h>
 #include <Util/log.h>
 #include <debug.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
-#include <Util/Singleton.h>
+
+#include <algorithm>
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
@@ -76,20 +78,20 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
 }
 
-Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
+Emulator::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
     auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     auto* s = new Emulator::VulkanSwapchain;
 
     VkExtent2D extent{};
-    extent.width = std::clamp(ctx->screen_width, window_ctx->m_surface_capabilities->capabilities.minImageExtent.width,
-                              window_ctx->m_surface_capabilities->capabilities.maxImageExtent.width);
-    extent.height = std::clamp(ctx->screen_height, window_ctx->m_surface_capabilities->capabilities.minImageExtent.height,
-                               window_ctx->m_surface_capabilities->capabilities.maxImageExtent.height);
+    extent.width = clamp(ctx->screen_width, window_ctx->m_surface_capabilities->capabilities.minImageExtent.width,
+                         window_ctx->m_surface_capabilities->capabilities.maxImageExtent.width);
+    extent.height = clamp(ctx->screen_height, window_ctx->m_surface_capabilities->capabilities.minImageExtent.height,
+                          window_ctx->m_surface_capabilities->capabilities.maxImageExtent.height);
 
-    image_count = std::clamp(image_count, window_ctx->m_surface_capabilities->capabilities.minImageCount,
-                             window_ctx->m_surface_capabilities->capabilities.maxImageCount);
+    image_count = clamp(image_count, window_ctx->m_surface_capabilities->capabilities.minImageCount,
+                        window_ctx->m_surface_capabilities->capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -124,14 +126,12 @@ Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx
     s->swapchain_format = create_info.imageFormat;
     s->swapchain_extent = extent;
 
-    VkSwapchainKHR swapchain = nullptr;
+    vkCreateSwapchainKHR(ctx->m_device, &create_info, nullptr, &s->swapchain);
 
-    vkCreateSwapchainKHR(ctx->m_device, &create_info, nullptr, &swapchain);
-
-    vkGetSwapchainImagesKHR(ctx->m_device, swapchain, &s->swapchain_images_count, nullptr);
+    vkGetSwapchainImagesKHR(ctx->m_device, s->swapchain, &s->swapchain_images_count, nullptr);
 
     s->swapchain_images = new VkImage[s->swapchain_images_count];
-    vkGetSwapchainImagesKHR(ctx->m_device, swapchain, &s->swapchain_images_count, s->swapchain_images);
+    vkGetSwapchainImagesKHR(ctx->m_device, s->swapchain, &s->swapchain_images_count, s->swapchain_images);
 
     s->swapchain_image_views = new VkImageView[s->swapchain_images_count];
     for (uint32_t i = 0; i < s->swapchain_images_count; i++) {
@@ -180,7 +180,6 @@ Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx
     }
 
     return s;
-
 }
 void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues) {
     auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {

@@ -18,6 +18,12 @@ constexpr int VULKAN_QUEUE_GFX = 8;
 constexpr int VULKAN_QUEUE_UTIL = 9;
 constexpr int VULKAN_QUEUE_PRESENT = 10;
 
+template <typename T>
+const T& clamp(const T& x, const T& min, const T& max) {
+    if (x < min) return min;
+    if (x > max) return max;
+    return x;
+}
 
 void vulkanCreate(Emulator::WindowCtx* ctx);
 void vulkanGetInstanceExtensions(Emulator::VulkanExt* ext);
