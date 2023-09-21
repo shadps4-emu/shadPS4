@@ -29,5 +29,5 @@ VkDevice vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surfa
 Emulator::VulkanQueues vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface);
 void vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emulator::VulkanSurfaceCapabilities* surfaceCap);
 void vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues);
-
+Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count);
 };  // namespace Graphics::Vulkan

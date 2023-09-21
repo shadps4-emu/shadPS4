@@ -1,10 +1,11 @@
 #include "vulkan_util.h"
-
+#include <algorithm>
 #include <SDL_vulkan.h>
 #include <Util/log.h>
 #include <debug.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
+#include <Util/Singleton.h>
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
@@ -63,47 +64,151 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     VkPhysicalDeviceProperties device_properties{};
     vkGetPhysicalDeviceProperties(ctx->m_graphic_ctx.m_physical_device, &device_properties);
 
-   LOG_INFO_IF(log_file_vulkanutil, "GFX device to be used : {}\n", device_properties.deviceName);
+    LOG_INFO_IF(log_file_vulkanutil, "GFX device to be used : {}\n", device_properties.deviceName);
 
-   ctx->m_graphic_ctx.m_device = vulkanCreateDevice(ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
-   if (ctx->m_graphic_ctx.m_device == nullptr) {
+    ctx->m_graphic_ctx.m_device = vulkanCreateDevice(ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
+    if (ctx->m_graphic_ctx.m_device == nullptr) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan device\n");
         std::exit(0);
-   }
+    }
 
-   vulkanCreateQueues(&ctx->m_graphic_ctx, queues);
-
+    vulkanCreateQueues(&ctx->m_graphic_ctx, queues);
+    ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
 }
 
+Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
+    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    Lib::LockMutexGuard lock(window_ctx->m_mutex);
+
+    auto* s = new Emulator::VulkanSwapchain;
+
+    VkExtent2D extent{};
+    extent.width = std::clamp(ctx->screen_width, window_ctx->m_surface_capabilities->capabilities.minImageExtent.width,
+                              window_ctx->m_surface_capabilities->capabilities.maxImageExtent.width);
+    extent.height = std::clamp(ctx->screen_height, window_ctx->m_surface_capabilities->capabilities.minImageExtent.height,
+                               window_ctx->m_surface_capabilities->capabilities.maxImageExtent.height);
+
+    image_count = std::clamp(image_count, window_ctx->m_surface_capabilities->capabilities.minImageCount,
+                             window_ctx->m_surface_capabilities->capabilities.maxImageCount);
+
+    VkSwapchainCreateInfoKHR create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.surface = window_ctx->m_surface;
+    create_info.minImageCount = image_count;
+
+    if (window_ctx->m_surface_capabilities->is_format_unorm_bgra32) {
+        create_info.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    } else if (window_ctx->m_surface_capabilities->is_format_srgb_bgra32) {
+        create_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
+        create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    } else {
+        create_info.imageFormat = window_ctx->m_surface_capabilities->formats.at(0).format;
+        create_info.imageColorSpace = window_ctx->m_surface_capabilities->formats.at(0).colorSpace;
+    }
+
+    create_info.imageExtent = extent;
+    create_info.imageArrayLayers = 1;
+    create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    create_info.queueFamilyIndexCount = 0;
+    create_info.pQueueFamilyIndices = nullptr;
+    create_info.preTransform = window_ctx->m_surface_capabilities->capabilities.currentTransform;
+    create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    create_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    create_info.clipped = VK_TRUE;
+    create_info.oldSwapchain = nullptr;
+
+    s->swapchain_format = create_info.imageFormat;
+    s->swapchain_extent = extent;
+
+    VkSwapchainKHR swapchain = nullptr;
+
+    vkCreateSwapchainKHR(ctx->m_device, &create_info, nullptr, &swapchain);
+
+    vkGetSwapchainImagesKHR(ctx->m_device, swapchain, &s->swapchain_images_count, nullptr);
+
+    s->swapchain_images = new VkImage[s->swapchain_images_count];
+    vkGetSwapchainImagesKHR(ctx->m_device, swapchain, &s->swapchain_images_count, s->swapchain_images);
+
+    s->swapchain_image_views = new VkImageView[s->swapchain_images_count];
+    for (uint32_t i = 0; i < s->swapchain_images_count; i++) {
+        VkImageViewCreateInfo create_info{};
+        create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        create_info.pNext = nullptr;
+        create_info.flags = 0;
+        create_info.image = (s->swapchain_images)[i];
+        create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.format = s->swapchain_format;
+        create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        create_info.subresourceRange.baseArrayLayer = 0;
+        create_info.subresourceRange.baseMipLevel = 0;
+        create_info.subresourceRange.layerCount = 1;
+        create_info.subresourceRange.levelCount = 1;
+
+        vkCreateImageView(ctx->m_device, &create_info, nullptr, &((s->swapchain_image_views)[i]));
+    }
+    if (s->swapchain == nullptr) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Could not create swapchain\n");
+        std::exit(0);
+    }
+
+    s->current_index = static_cast<uint32_t>(-1);
+
+    VkSemaphoreCreateInfo present_complete_info{};
+    present_complete_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    present_complete_info.pNext = nullptr;
+    present_complete_info.flags = 0;
+
+    auto result = vkCreateSemaphore(ctx->m_device, &present_complete_info, nullptr, &s->present_complete_semaphore);
+
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_info.pNext = nullptr;
+    fence_info.flags = 0;
+
+    result = vkCreateFence(ctx->m_device, &fence_info, nullptr, &s->present_complete_fence);
+    if (result != VK_SUCCESS) {
+        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan fence\n");
+        std::exit(0);
+    }
+
+    return s;
+
+}
 void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues) {
+    auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {
+        ctx->queues[id].family = info.family;
+        ctx->queues[id].index = info.index;
+        vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
+        if (with_mutex) {
+            ctx->queues[id].mutex = new Lib::Mutex;
+        }
+    };
 
-   auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {
-       ctx->queues[id].family = info.family;
-       ctx->queues[id].index = info.index;
-       vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
-       if (with_mutex) {
-           ctx->queues[id].mutex = new Lib::Mutex;
-       }
-   };
+    get_queue(VULKAN_QUEUE_GFX, queues.graphics.at(0));
+    get_queue(VULKAN_QUEUE_UTIL, queues.transfer.at(0));
+    get_queue(VULKAN_QUEUE_PRESENT, queues.present.at(0));
 
-   get_queue(VULKAN_QUEUE_GFX, queues.graphics.at(0));
-   get_queue(VULKAN_QUEUE_UTIL, queues.transfer.at(0));
-   get_queue(VULKAN_QUEUE_PRESENT, queues.present.at(0));
-
-   for (int id = 0; id < VULKAN_QUEUE_COMPUTE_NUM; id++) {
+    for (int id = 0; id < VULKAN_QUEUE_COMPUTE_NUM; id++) {
         bool with_mutex = (VULKAN_QUEUE_COMPUTE_NUM == queues.compute.size());
         get_queue(id, queues.compute.at(id % queues.compute.size()), with_mutex);
-   }
+    }
 }
 
 VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emulator::VulkanExt* r,
                                               const Emulator::VulkanQueues& queues, const std::vector<const char*>& device_extensions) {
+    std::vector<VkDeviceQueueCreateInfo> queue_create_info(queues.family_count);
+    std::vector<std::vector<float>> queue_priority(queues.family_count);
+    uint32_t queue_create_info_num = 0;
 
-   std::vector<VkDeviceQueueCreateInfo> queue_create_info(queues.family_count);
-   std::vector<std::vector<float>> queue_priority(queues.family_count);
-   uint32_t queue_create_info_num = 0;
-
-   for (uint32_t i = 0; i < queues.family_count; i++) {
+    for (uint32_t i = 0; i < queues.family_count; i++) {
         if (queues.family_used[i] != 0) {
             for (uint32_t pi = 0; pi < queues.family_used[i]; pi++) {
                 queue_priority[queue_create_info_num].push_back(1.0f);
@@ -118,28 +223,28 @@ VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, 
 
             queue_create_info_num++;
         }
-   }
+    }
 
-   VkPhysicalDeviceFeatures device_features{};
-   //TODO add neccesary device features
+    VkPhysicalDeviceFeatures device_features{};
+    // TODO add neccesary device features
 
-   VkDeviceCreateInfo create_info{};
-   create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-   create_info.pNext = nullptr;
-   create_info.flags = 0;
-   create_info.pQueueCreateInfos = queue_create_info.data();
-   create_info.queueCreateInfoCount = queue_create_info_num;
-   create_info.enabledLayerCount = 0;
-   create_info.ppEnabledLayerNames = nullptr;
-   create_info.enabledExtensionCount = device_extensions.size();
-   create_info.ppEnabledExtensionNames = device_extensions.data();
-   create_info.pEnabledFeatures = &device_features;
+    VkDeviceCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.pQueueCreateInfos = queue_create_info.data();
+    create_info.queueCreateInfoCount = queue_create_info_num;
+    create_info.enabledLayerCount = 0;
+    create_info.ppEnabledLayerNames = nullptr;
+    create_info.enabledExtensionCount = device_extensions.size();
+    create_info.ppEnabledExtensionNames = device_extensions.data();
+    create_info.pEnabledFeatures = &device_features;
 
-   VkDevice device = nullptr;
+    VkDevice device = nullptr;
 
-   vkCreateDevice(physical_device, &create_info, nullptr, &device);
+    vkCreateDevice(physical_device, &create_info, nullptr, &device);
 
-   return device;
+    return device;
 }
 void Graphics::Vulkan::vulkanGetInstanceExtensions(Emulator::VulkanExt* ext) {
     u32 required_extensions_count = 0;

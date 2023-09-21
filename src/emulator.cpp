@@ -2,24 +2,25 @@
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
 #include <vulkan_util.h>
+#include <Util/Singleton.h>
 
 namespace Emulator {
 
-static WindowCtx* g_window_ctx = nullptr;
 bool m_emu_needs_exit = false;
 
 void emuInit(u32 width, u32 height) {
-    g_window_ctx = new WindowCtx;
+    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
 
-    g_window_ctx->m_graphic_ctx.screen_width = width;
-    g_window_ctx->m_graphic_ctx.screen_height = height;
+    window_ctx->m_graphic_ctx.screen_width = width;
+    window_ctx->m_graphic_ctx.screen_height = height;
 }
 
 void checkAndWaitForGraphicsInit() {
-    Lib::LockMutexGuard lock(g_window_ctx->m_mutex);
+    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
-    while (!g_window_ctx->m_is_graphic_initialized) {
-        g_window_ctx->m_graphic_initialized_cond.WaitCondVar(&g_window_ctx->m_mutex);
+    while (!window_ctx->m_is_graphic_initialized) {
+        window_ctx->m_graphic_initialized_cond.WaitCondVar(&window_ctx->m_mutex);
     }
 }
 static void CreateSdlWindow(WindowCtx* ctx) {
@@ -44,15 +45,16 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
 }
 void emuRun() {
-    g_window_ctx->m_mutex.LockMutex();
+    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    window_ctx->m_mutex.LockMutex();
     {
         // init window and wait until init finishes
-        CreateSdlWindow(g_window_ctx);
-        Graphics::Vulkan::vulkanCreate(g_window_ctx);
-        g_window_ctx->m_is_graphic_initialized = true;
-        g_window_ctx->m_graphic_initialized_cond.SignalCondVar();
+        CreateSdlWindow(window_ctx);
+        Graphics::Vulkan::vulkanCreate(window_ctx);
+        window_ctx->m_is_graphic_initialized = true;
+        window_ctx->m_graphic_initialized_cond.SignalCondVar();
     }
-    g_window_ctx->m_mutex.UnlockMutex();
+    window_ctx->m_mutex.UnlockMutex();
 
     bool exit_loop = false;
 

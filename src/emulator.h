@@ -43,6 +43,17 @@ struct VulkanQueues {
     std::vector<u32> family_used;
 };
 
+struct VulkanSwapchain {
+    VkSwapchainKHR swapchain = nullptr;
+    VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
+    VkExtent2D swapchain_extent = {};
+    VkImage* swapchain_images = nullptr;
+    VkImageView* swapchain_image_views = nullptr;
+    u32 swapchain_images_count = 0;
+    VkSemaphore present_complete_semaphore = nullptr;
+    VkFence present_complete_fence = nullptr;
+    u32 current_index = 0;
+};
 
 struct WindowCtx {
     HLE::Libs::Graphics::GraphicCtx m_graphic_ctx;
@@ -53,6 +64,7 @@ struct WindowCtx {
     bool is_window_hidden = true;
     VkSurfaceKHR m_surface = nullptr;
     VulkanSurfaceCapabilities* m_surface_capabilities = nullptr;
+    VulkanSwapchain* swapchain = nullptr;
 };
 
 struct EmuPrivate {
