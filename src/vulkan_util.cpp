@@ -70,6 +70,30 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan device\n");
         std::exit(0);
    }
+
+   vulkanCreateQueues(&ctx->m_graphic_ctx, queues);
+
+}
+
+void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues) {
+
+   auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {
+       ctx->queues[id].family = info.family;
+       ctx->queues[id].index = info.index;
+       vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
+       if (with_mutex) {
+           ctx->queues[id].mutex = new Lib::Mutex;
+       }
+   };
+
+   get_queue(VULKAN_QUEUE_GFX, queues.graphics.at(0));
+   get_queue(VULKAN_QUEUE_UTIL, queues.transfer.at(0));
+   get_queue(VULKAN_QUEUE_PRESENT, queues.present.at(0));
+
+   for (int id = 0; id < VULKAN_QUEUE_COMPUTE_NUM; id++) {
+        bool with_mutex = (VULKAN_QUEUE_COMPUTE_NUM == queues.compute.size());
+        get_queue(id, queues.compute.at(id % queues.compute.size()), with_mutex);
+   }
 }
 
 VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emulator::VulkanExt* r,

@@ -14,6 +14,11 @@ constexpr int VULKAN_QUEUE_TRANSFER_NUM = 1;
 constexpr int VULKAN_QUEUE_PRESENT_NUM = 1;
 constexpr int VULKAN_QUEUE_COMPUTE_NUM = 8;
 
+constexpr int VULKAN_QUEUE_GFX = 8;
+constexpr int VULKAN_QUEUE_UTIL = 9;
+constexpr int VULKAN_QUEUE_PRESENT = 10;
+
+
 void vulkanCreate(Emulator::WindowCtx* ctx);
 void vulkanGetInstanceExtensions(Emulator::VulkanExt* ext);
 void vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, const std::vector<const char*>& device_extensions,
@@ -23,4 +28,6 @@ VkDevice vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surfa
                             const Emulator::VulkanQueues& queues, const std::vector<const char*>& device_extensions);
 Emulator::VulkanQueues vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface);
 void vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emulator::VulkanSurfaceCapabilities* surfaceCap);
+void vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues);
+
 };  // namespace Graphics::Vulkan
