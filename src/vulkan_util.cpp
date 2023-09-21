@@ -158,7 +158,56 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
 
         family++;
     }
-    // TODO finish it
+    u32 index = 0;
+    for (u32 i = 0; i < VULKAN_QUEUE_GRAPHICS_NUM; i++) {
+        
+        for (const auto& idx : qs.available) {
+            if (idx.is_graphics)
+            {
+                qs.family_used[qs.available.at(index).family]++;
+                qs.graphics.push_back(qs.available.at(index));
+                qs.available.erase(qs.available.begin()+index);
+                break;
+            }
+            index++;
+        }
+    }
+    index = 0;
+    for (u32 i = 0; i < VULKAN_QUEUE_COMPUTE_NUM; i++) {
+        for (const auto& idx : qs.available) {
+            if (idx.is_graphics) {
+                qs.family_used[qs.available.at(index).family]++;
+                qs.compute.push_back(qs.available.at(index));
+                qs.available.erase(qs.available.begin() + index);
+                break;
+            }
+            index++;
+        }
+    }
+    index = 0;
+    for (uint32_t i = 0; i < VULKAN_QUEUE_TRANSFER_NUM; i++) {
+        for (const auto& idx : qs.available) {
+            if (idx.is_graphics) {
+                qs.family_used[qs.available.at(index).family]++;
+                qs.transfer.push_back(qs.available.at(index));
+                qs.available.erase(qs.available.begin() + index);
+                break;
+            }
+            index++;
+        }
+    }
+    index = 0;
+    for (uint32_t i = 0; i < VULKAN_QUEUE_PRESENT_NUM; i++) {
+        for (const auto& idx : qs.available) {
+            if (idx.is_graphics) {
+                qs.family_used[qs.available.at(index).family]++;
+                qs.present.push_back(qs.available.at(index));
+                qs.available.erase(qs.available.begin() + index);
+                break;
+            }
+            index++;
+        }
+    }
     return qs;
 }
 

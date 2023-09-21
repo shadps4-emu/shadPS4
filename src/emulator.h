@@ -37,6 +37,9 @@ struct VulkanQueues {
     u32 family_count = 0;
     std::vector<VulkanQueueInfo> available;
     std::vector<VulkanQueueInfo> graphics;
+    std::vector<VulkanQueueInfo> compute;
+    std::vector<VulkanQueueInfo> transfer;
+    std::vector<VulkanQueueInfo> present;
     std::vector<u32> family_used;
 };
 
