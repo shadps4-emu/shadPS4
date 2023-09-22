@@ -165,6 +165,17 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     u64 buffer_size = 1280 * 720 * 4; //TODO hardcoded value should be redone
     u64 buffer_pitch = attribute->pitchInPixel;
 
+    VideoOutBufferSetInternal buf{};
+
+    buf.start_index = startIndex;
+    buf.num = bufferNum;
+    buf.set_id = registration_index;
+    buf.attr = *attribute;
+
+    ctx->buffers_sets.push_back(buf);
+
+
+
     return registration_index;
 }
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {

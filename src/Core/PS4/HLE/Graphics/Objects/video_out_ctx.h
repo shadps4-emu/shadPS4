@@ -17,6 +17,7 @@ struct VideoConfigInternal {
     std::vector<HLE::Libs::LibKernel::EventQueues::SceKernelEqueue> m_flip_evtEq;
     int m_flip_rate = 0;
 
+    std::vector<VideoOutBufferSetInternal> buffers_sets;
     int buffers_registration_index = 0;
 };
 
