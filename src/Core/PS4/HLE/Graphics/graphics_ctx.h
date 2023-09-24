@@ -1,7 +1,7 @@
 #pragma once
+
 #include <types.h>
-#include <vulkan/vulkan_core.h> 
-#include <emulator.h>
+#include <vulkan/vulkan_core.h>
 #include "Lib/Threads.h"
 
 namespace HLE::Libs::Graphics {
@@ -19,6 +19,39 @@ struct GraphicCtx {
     VkInstance m_instance = nullptr;
     VkPhysicalDevice m_physical_device = nullptr;
     VkDevice m_device = nullptr;
-    VulkanQueueInfo queues[11]; //VULKAN_QUEUES_NUM
+    VulkanQueueInfo queues[11];  // VULKAN_QUEUES_NUM
 };
+
+enum class VulkanImageType { Unknown, VideoOut};
+
+struct VulkanMemory {
+    VkMemoryRequirements requirements = {};
+    VkMemoryPropertyFlags property = 0;
+    VkDeviceMemory memory = nullptr;
+    VkDeviceSize offset = 0;
+    u32 type = 0;
+    u64 unique_id = 0;
+};
+
+struct VulkanImage {
+    static constexpr int VIEW_MAX = 4;
+    static constexpr int VIEW_DEFAULT = 0;
+    static constexpr int VIEW_BGRA = 1;
+    static constexpr int VIEW_DEPTH_TEXTURE = 2;
+
+    explicit VulkanImage(VulkanImageType type) : type(type) {}
+
+    VulkanImageType type = VulkanImageType::Unknown;
+    VkFormat format = VK_FORMAT_UNDEFINED;
+    VkExtent2D extent = {};
+    VkImage image = nullptr;
+    VkImageView image_view[VIEW_MAX] = {};
+    VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VulkanMemory memory;
+};
+
+struct VideoOutVulkanImage : public VulkanImage {
+    VideoOutVulkanImage() : VulkanImage(VulkanImageType::VideoOut) {}
+};
+
 }  // namespace HLE::Libs::Graphics

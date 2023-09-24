@@ -1,8 +1,10 @@
 #include "video_out.h"
 
+#include <Core/PS4/GPU/video_out_buffer.h>
 #include <Core/PS4/HLE/ErrorCodes.h>
 #include <Core/PS4/HLE/Libs.h>
 #include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
+#include <Util/config.h>
 #include <Util/log.h>
 #include <debug.h>
 #include <stdio.h>
@@ -12,7 +14,7 @@
 
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
-#include <emulator.h>
+#include "emulator.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -160,9 +162,10 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     int registration_index = ctx->buffers_registration_index++;
 
     Emulator::checkAndWaitForGraphicsInit();
+    // TODO   Graphics::RenderCreateCxt();
 
-    //try to calculate buffer size
-    u64 buffer_size = 1280 * 720 * 4; //TODO hardcoded value should be redone
+    // try to calculate buffer size
+    u64 buffer_size = 1280 * 720 * 4;  // TODO hardcoded value should be redone
     u64 buffer_pitch = attribute->pitchInPixel;
 
     VideoOutBufferSetInternal buf{};
@@ -174,7 +177,29 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 
     ctx->buffers_sets.push_back(buf);
 
+    GPU::VideoOutBufferFormat format = GPU::VideoOutBufferFormat::Unknown;
 
+    if (attribute->pixelFormat == 0x80000000) {
+        format = GPU::VideoOutBufferFormat::B8G8R8A8Srgb;
+    } else if (attribute->pixelFormat == 0x80002200) {
+        format = GPU::VideoOutBufferFormat::R8G8B8A8Srgb;
+    }
+
+    GPU::VideoOutBufferObj buffer_info(format, attribute->width, attribute->height, attribute->tilingMode == 0, Config::isNeoMode(), buffer_pitch);
+
+    for (int i = 0; i < bufferNum; i++) {
+        if (ctx->buffers[i + startIndex].buffer != nullptr) {
+            LOG_TRACE_IF(log_file_videoout, "buffer slot {} is occupied!\n", i + startIndex);
+            return SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED;
+        }
+
+        ctx->buffers[i + startIndex].set_id = registration_index;
+        ctx->buffers[i + startIndex].buffer = addresses[i];
+        ctx->buffers[i + startIndex].buffer_size = buffer_size;
+        ctx->buffers[i + startIndex].buffer_pitch = buffer_pitch;
+        //    ctx->buffers[i + startIndex].buffer_vulkan =  TODO!!!
+        LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, reinterpret_cast<uint64_t>(addresses[i]));
+    }
 
     return registration_index;
 }

@@ -17,5 +17,6 @@ constexpr int SCE_VIDEO_OUT_ERROR_RESOURCE_BUSY = 0x80290009;         // already
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_INDEX = 0x8029000A;         // invalid buffer index
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_HANDLE = 0x8029000B;        // invalid handle
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE = 0x8029000C;   // Invalid event queue
+constexpr int SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED = 0x80290010;         // slot already used
 constexpr int SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL = 0x80290012;       // flip queue is full
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_OPTION = 0x8029001A;        // Invalid buffer attribute option
