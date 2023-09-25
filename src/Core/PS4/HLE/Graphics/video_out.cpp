@@ -16,6 +16,7 @@
 #include "Util/Singleton.h"
 #include "emulator.h"
 #include <Core/PS4/GPU/gpu_memory.h>
+#include "graphics_render.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -163,7 +164,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     int registration_index = ctx->buffers_registration_index++;
 
     Emulator::checkAndWaitForGraphicsInit();
-    // TODO   Graphics::RenderCreateCtx();
+    GPU::renderCreateCtx();
 
     // try to calculate buffer size
     u64 buffer_size = 1280 * 720 * 4;  // TODO hardcoded value should be redone

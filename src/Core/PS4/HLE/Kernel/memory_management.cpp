@@ -120,7 +120,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     }
 
     if (gpu_mode != GPU::MemoryMode::NoAccess) {
-        GPU::MemorySetAllocArea(out_addr, len);
+        GPU::memorySetAllocArea(out_addr, len);
     }
     return SCE_OK;
 }
