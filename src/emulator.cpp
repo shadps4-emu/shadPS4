@@ -1,8 +1,9 @@
 #include "emulator.h"
 
-#include "Core/PS4/HLE/Graphics/video_out.h"
-#include <vulkan_util.h>
 #include <Util/Singleton.h>
+#include <vulkan_util.h>
+
+#include "Core/PS4/HLE/Graphics/video_out.h"
 
 namespace Emulator {
 
@@ -91,4 +92,12 @@ void emuRun() {
     }
     std::exit(0);
 }
+
+HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
+    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    Lib::LockMutexGuard lock(window_ctx->m_mutex);
+
+    return &window_ctx->m_graphic_ctx;
+}
+
 }  // namespace Emulator

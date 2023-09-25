@@ -79,4 +79,5 @@ struct EmuPrivate {
 void emuInit(u32 width, u32 height);
 void emuRun();
 void checkAndWaitForGraphicsInit();
+HLE::Libs::Graphics::GraphicCtx* getGraphicCtx();
 }  // namespace Emulator

@@ -15,6 +15,7 @@
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
 #include "emulator.h"
+#include <Core/PS4/GPU/gpu_memory.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -162,7 +163,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     int registration_index = ctx->buffers_registration_index++;
 
     Emulator::checkAndWaitForGraphicsInit();
-    // TODO   Graphics::RenderCreateCxt();
+    // TODO   Graphics::RenderCreateCtx();
 
     // try to calculate buffer size
     u64 buffer_size = 1280 * 720 * 4;  // TODO hardcoded value should be redone
@@ -197,7 +198,10 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         ctx->buffers[i + startIndex].buffer = addresses[i];
         ctx->buffers[i + startIndex].buffer_size = buffer_size;
         ctx->buffers[i + startIndex].buffer_pitch = buffer_pitch;
-        //    ctx->buffers[i + startIndex].buffer_vulkan =  TODO!!!
+        ctx->buffers[i + startIndex].buffer_render = static_cast<Graphics::VideoOutVulkanImage*>(
+            GPU::memoryCreateObj(
+            0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
+
         LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, reinterpret_cast<uint64_t>(addresses[i]));
     }
 

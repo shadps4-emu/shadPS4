@@ -2,6 +2,7 @@
 #include <Core/PS4/HLE/Graphics/video_out.h>
 #include <Lib/Threads.h>
 #include <Core/PS4/HLE/Graphics/graphics_ctx.h>
+#include <emulator.h>
 
 using namespace HLE::Libs::Graphics::VideoOut;
 
@@ -59,9 +60,19 @@ class VideoOutCtx {
     int Open();
     VideoConfigInternal* getCtx(int handle);
     FlipQueue& getFlipQueue() { return m_flip_queue; }
+    HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
+        Lib::LockMutexGuard lock(m_mutex);
+
+        if (m_graphic_ctx == nullptr) {
+            m_graphic_ctx = Emulator::getGraphicCtx();
+        }
+
+        return m_graphic_ctx;
+    }
   private:
     Lib::Mutex m_mutex;
     VideoConfigInternal m_video_out_ctx;
     FlipQueue m_flip_queue;
+    HLE::Libs::Graphics::GraphicCtx* m_graphic_ctx = nullptr;
 };
 };  // namespace HLE::Graphics::Objects
