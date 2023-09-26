@@ -167,7 +167,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
-    u64 buffer_size = 1280 * 720 * 4;  // TODO hardcoded value should be redone
+    u64 buffer_size = 1280 * 768 * 4;  // TODO hardcoded value should be redone
     u64 buffer_pitch = attribute->pitchInPixel;
 
     VideoOutBufferSetInternal buf{};
@@ -203,7 +203,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
             GPU::memoryCreateObj(
             0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
 
-        LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, reinterpret_cast<uint64_t>(addresses[i]));
+        LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, log_hex_full(reinterpret_cast<uint64_t>(addresses[i])));
     }
 
     return registration_index;
