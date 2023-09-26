@@ -50,20 +50,28 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
         return nullptr;
     }
 
-    ObjInfo obj = {};
+    ObjInfo objInfo = {};
 
     // copy parameters from info to obj
     for (int i = 0; i < 8; i++) {
-        obj.obj_params[i] = info.obj_params[i];
+        objInfo.obj_params[i] = info.obj_params[i];
     }
-    u64 hash[3] = {};  // assuming virtual_addr_num shouldn't be more that 3
+
+    objInfo.gpu_object.objectType = info.objectType;
+    objInfo.gpu_object.obj = nullptr;
 
     for (int h = 0; h < virtual_addr_num; h++) {
-        if (info.hasHash) {
-            hash[h] = GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
+        if (info.check_hash) {
+            objInfo.hash[h] = GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
         } else {
-            hash[h] = 0;
+            objInfo.hash[h] = 0;
         }
     }
+    objInfo.submit_id = submit_id;
+    objInfo.check_hash = info.check_hash;
+
+    objInfo.gpu_object.obj = info.getCreateFunc()(ctx, objInfo.obj_params, virtual_addr, size, virtual_addr_num, &objInfo.mem);
+
+    // TODO we need more ...
     return nullptr;
 }

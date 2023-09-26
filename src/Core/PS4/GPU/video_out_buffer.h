@@ -28,8 +28,10 @@ class VideoOutBufferObj : public GPUObject {
         obj_params[IS_TILE_PARAM] = is_tiled ? 1 : 0;
         obj_params[IS_NEO_PARAM] = is_neo ? 1 : 0;
         obj_params[PITCH_PARAM] = pitch;
-        hasHash = true;
+        check_hash = true;
         objectType = GPU::MemoryObjectType::VideoOutBufferObj;
     }
+
+    create_func_t getCreateFunc() const override;
 };
 }  // namespace GPU

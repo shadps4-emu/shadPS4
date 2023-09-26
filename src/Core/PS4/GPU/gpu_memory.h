@@ -16,9 +16,21 @@ struct MemoryHeap {
     u64 allocated_size = 0;
 };
 
+struct GpuMemoryObject {
+    MemoryObjectType objectType = MemoryObjectType::InvalidObj;
+    void* obj = nullptr;
+};
+
 struct ObjInfo {
     u64 obj_params[8] = {};
+    GpuMemoryObject gpu_object;
+    u64 hash[3] = {};
+    u64 submit_id = 0;
+    bool check_hash = false;
+    HLE::Libs::Graphics::VulkanMemory mem;
 };
+
+
 class GPUMemory {
   public:
     GPUMemory() {}
@@ -34,10 +46,14 @@ class GPUObject {
     GPUObject() = default;
     virtual ~GPUObject() = default;
     u64 obj_params[8] = {};
-    bool hasHash = false;
+    bool check_hash = false;
     bool isReadOnly = false;
     MemoryObjectType objectType = MemoryObjectType::InvalidObj;
 
+    using create_func_t = void* (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* vaddr, const u64* size, int vaddr_num,
+                                    HLE::Libs::Graphics::VulkanMemory* mem);
+
+    virtual create_func_t getCreateFunc() const = 0;
 };
 
 void memorySetAllocArea(u64 virtual_addr, u64 size);
