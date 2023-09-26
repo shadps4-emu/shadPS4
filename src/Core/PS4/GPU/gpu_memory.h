@@ -50,14 +50,18 @@ class GPUObject {
     bool isReadOnly = false;
     MemoryObjectType objectType = MemoryObjectType::InvalidObj;
 
-    using create_func_t = void* (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* vaddr, const u64* size, int vaddr_num,
+    using create_func_t = void* (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* virtual_addr, const u64* size, int virtual_addr_num,
                                     HLE::Libs::Graphics::VulkanMemory* mem);
+    using update_func_t = void (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj, const u64* virtual_addr, const u64* size,
+                                   int virtual_addr_num);
 
     virtual create_func_t getCreateFunc() const = 0;
+    virtual update_func_t getUpdateFunc() const = 0;
 };
 
 void memorySetAllocArea(u64 virtual_addr, u64 size);
 void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
                       const GPUObject& info);
 u64 calculate_hash(const u08* buf, u64 size);
+bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanMemory* mem);
 }  // namespace GPU

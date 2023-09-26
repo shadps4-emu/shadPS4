@@ -33,5 +33,6 @@ class VideoOutBufferObj : public GPUObject {
     }
 
     create_func_t getCreateFunc() const override;
+    update_func_t getUpdateFunc() const override;
 };
 }  // namespace GPU
