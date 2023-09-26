@@ -1,8 +1,11 @@
 #include "gpu_memory.h"
 
+#include <xxhash/xxh3.h>
+
 #include "Util/Singleton.h"
 
-void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size, const GPUObject& info) {
+void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
+                           const GPUObject& info) {
     auto* gpumemory = Singleton<GPUMemory>::Instance();
 
     return gpumemory->memoryCreateObj(submit_id, ctx, nullptr, &virtual_addr, &size, 1, info);
@@ -19,6 +22,8 @@ void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
 
     gpumemory->m_heaps.push_back(h);
 }
+
+u64 GPU::calculate_hash(const u08* buf, u64 size) { return (size > 0 && buf != nullptr ? XXH3_64bits(buf, size) : 0); }
 
 int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
     int index = 0;
@@ -44,6 +49,21 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
     if (heap_id < 0) {
         return nullptr;
     }
-    // TODO not finished!
+
+    ObjInfo obj = {};
+
+    // copy parameters from info to obj
+    for (int i = 0; i < 8; i++) {
+        obj.obj_params[i] = info.obj_params[i];
+    }
+    u64 hash[3] = {};  // assuming virtual_addr_num shouldn't be more that 3
+
+    for (int h = 0; h < virtual_addr_num; h++) {
+        if (info.hasHash) {
+            hash[h] = GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
+        } else {
+            hash[h] = 0;
+        }
+    }
     return nullptr;
 }

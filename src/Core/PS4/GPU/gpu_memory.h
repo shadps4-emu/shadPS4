@@ -16,6 +16,9 @@ struct MemoryHeap {
     u64 allocated_size = 0;
 };
 
+struct ObjInfo {
+    u64 obj_params[8] = {};
+};
 class GPUMemory {
   public:
     GPUMemory() {}
@@ -30,10 +33,15 @@ class GPUObject {
   public:
     GPUObject() = default;
     virtual ~GPUObject() = default;
+    u64 obj_params[8] = {};
+    bool hasHash = false;
+    bool isReadOnly = false;
+    MemoryObjectType objectType = MemoryObjectType::InvalidObj;
+
 };
 
 void memorySetAllocArea(u64 virtual_addr, u64 size);
 void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
                       const GPUObject& info);
-
+u64 calculate_hash(const u08* buf, u64 size);
 }  // namespace GPU
