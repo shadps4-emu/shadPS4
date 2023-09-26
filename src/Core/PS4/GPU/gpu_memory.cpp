@@ -2,6 +2,12 @@
 
 #include "Util/Singleton.h"
 
+void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size, const GPUObject& info) {
+    auto* gpumemory = Singleton<GPUMemory>::Instance();
+
+    return gpumemory->memoryCreateObj(submit_id, ctx, nullptr, &virtual_addr, &size, 1, info);
+}
+
 void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
     auto* gpumemory = Singleton<GPUMemory>::Instance();
 
@@ -13,20 +19,6 @@ void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
 
     gpumemory->m_heaps.push_back(h);
 }
-void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo, u64 virtual_addr, u64 size, const GPUObject& info) {
-    auto* gpumemory = Singleton<GPUMemory>::Instance();
-
-    Lib::LockMutexGuard lock(gpumemory->m_mutex);
-
-    int heap_id = gpumemory->getHeapId(virtual_addr, size);
-    
-    if (heap_id < 0)
-    {
-        return nullptr;
-    }
-    return nullptr;
-}
-
 
 int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
     int index = 0;
@@ -39,4 +31,19 @@ int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
         index++;
     }
     return -1;
+}
+
+void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo, const u64* virtual_addr, const u64* size,
+                                      int virtual_addr_num, const GPUObject& info) {
+    auto* gpumemory = Singleton<GPUMemory>::Instance();
+
+    Lib::LockMutexGuard lock(gpumemory->m_mutex);
+
+    int heap_id = gpumemory->getHeapId(virtual_addr[0], size[0]);
+
+    if (heap_id < 0) {
+        return nullptr;
+    }
+    // TODO not finished!
+    return nullptr;
 }
