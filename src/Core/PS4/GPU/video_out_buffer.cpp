@@ -3,11 +3,22 @@
 #include <Util/log.h>
 
 #include "debug.h"
+#include <vulkan_util.h>
 
 constexpr bool log_file_videoOutBuffer = true;  // disable it to disable logging
 
 static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj, const u64* virtual_addr, const u64* size,
-                        int virtual_addr_num) {}
+                        int virtual_addr_num) {
+
+    auto pitch = params[GPU::VideoOutBufferObj::PITCH_PARAM];
+
+    auto* vk_obj = static_cast<HLE::Libs::Graphics::VideoOutVulkanImage*>(obj);
+
+    vk_obj->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
+                                    static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+}
 
 static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* virtual_addr, const u64* size, int virtual_addr_num,
                          HLE::Libs::Graphics::VulkanMemory* mem) {

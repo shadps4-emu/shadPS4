@@ -1,5 +1,6 @@
 #include "vulkan_util.h"
 
+#include <Core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
 #include <Util/Singleton.h>
 #include <Util/log.h>
@@ -181,6 +182,7 @@ Emulator::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Gr
 
     return s;
 }
+
 void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues) {
     auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {
         ctx->queues[id].family = info.family;
@@ -424,4 +426,179 @@ void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_de
             break;
         }
     }
+}
+
+static void set_image_layout(VkCommandBuffer buffer, HLE::Libs::Graphics::VulkanImage* dst_image, uint32_t base_level, uint32_t levels,
+                             VkImageAspectFlags aspect_mask, VkImageLayout old_image_layout, VkImageLayout new_image_layout) {
+    VkImageMemoryBarrier imageMemoryBarrier{};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.pNext = nullptr;
+    imageMemoryBarrier.srcAccessMask = 0;
+    imageMemoryBarrier.dstAccessMask = 0;
+    imageMemoryBarrier.oldLayout = old_image_layout;
+    imageMemoryBarrier.newLayout = new_image_layout;
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.image = dst_image->image;
+    imageMemoryBarrier.subresourceRange.aspectMask = aspect_mask;
+    imageMemoryBarrier.subresourceRange.baseMipLevel = base_level;
+    imageMemoryBarrier.subresourceRange.levelCount = levels;
+    imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+    imageMemoryBarrier.subresourceRange.layerCount = 1;
+
+    if (old_image_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+        imageMemoryBarrier.srcAccessMask = 0;
+    }
+
+    if (new_image_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        imageMemoryBarrier.dstAccessMask = 0;
+    }
+
+    if (new_image_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        imageMemoryBarrier.dstAccessMask = 0;
+    }
+
+    if (old_image_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        imageMemoryBarrier.srcAccessMask = 0;
+    }
+
+    if (old_image_layout == VK_IMAGE_LAYOUT_PREINITIALIZED) {
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+    }
+
+    if (new_image_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = 0;
+    }
+
+    if (new_image_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+        imageMemoryBarrier.dstAccessMask = 0;
+    }
+
+    if (new_image_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        imageMemoryBarrier.dstAccessMask = 0;
+    }
+
+    VkPipelineStageFlags src_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+    vkCmdPipelineBarrier(buffer, src_stages, dest_stages, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+    dst_image->layout = new_image_layout;
+}
+
+void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanImage* src_image,
+                                       Emulator::VulkanSwapchain* dst_swapchain) {
+    auto* vk_buffer = buffer->getPool()->buffers[buffer->getIndex()];
+
+    HLE::Libs::Graphics::VulkanImage swapchain_image(HLE::Libs::Graphics::VulkanImageType::Unknown);
+
+    swapchain_image.image = dst_swapchain->swapchain_images[dst_swapchain->current_index];
+    swapchain_image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    set_image_layout(vk_buffer, &swapchain_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkImageBlit region{};
+    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.srcSubresource.mipLevel = 0;
+    region.srcSubresource.baseArrayLayer = 0;
+    region.srcSubresource.layerCount = 1;
+    region.srcOffsets[0].x = 0;
+    region.srcOffsets[0].y = 0;
+    region.srcOffsets[0].z = 0;
+    region.srcOffsets[1].x = static_cast<int>(src_image->extent.width);
+    region.srcOffsets[1].y = static_cast<int>(src_image->extent.height);
+    region.srcOffsets[1].z = 1;
+    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.dstSubresource.mipLevel = 0;
+    region.dstSubresource.baseArrayLayer = 0;
+    region.dstSubresource.layerCount = 1;
+    region.dstOffsets[0].x = 0;
+    region.dstOffsets[0].y = 0;
+    region.dstOffsets[0].z = 0;
+    region.dstOffsets[1].x = static_cast<int>(dst_swapchain->swapchain_extent.width);
+    region.dstOffsets[1].y = static_cast<int>(dst_swapchain->swapchain_extent.height);
+    region.dstOffsets[1].z = 1;
+
+    vkCmdBlitImage(vk_buffer, src_image->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                   &region, VK_FILTER_LINEAR);
+
+    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+}
+
+void Graphics::Vulkan::vulkanFillImage(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanImage* dst_image, const void* src_data,
+                                       u64 size, u32 src_pitch, u64 dst_layout) {
+    HLE::Libs::Graphics::VulkanBuffer staging_buffer{};
+    staging_buffer.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    staging_buffer.memory.property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    vulkanCreateBuffer(ctx, size, &staging_buffer);
+
+    void* data = nullptr;
+    vkMapMemory(ctx->m_device, staging_buffer.memory.memory, staging_buffer.memory.offset, staging_buffer.memory.requirements.size, 0, &data);
+    std::memcpy(data, src_data, size);
+    vkUnmapMemory(ctx->m_device, staging_buffer.memory.memory);
+
+    GPU::CommandBuffer buffer(9);
+
+    buffer.begin();
+    vulkanBufferToImage(&buffer, &staging_buffer, src_pitch, dst_image, dst_layout);
+    buffer.end();
+    buffer.execute();
+    buffer.waitForFence();
+
+    vulkanDeleteBuffer(ctx, &staging_buffer);
+}
+
+void Graphics::Vulkan::vulkanBufferToImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanBuffer* src_buffer, u32 src_pitch,
+                                           HLE::Libs::Graphics::VulkanImage* dst_image, u64 dst_layout) {
+    auto* vk_buffer = buffer->getPool()->buffers[buffer->getIndex()];
+
+    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = (src_pitch != dst_image->extent.width ? src_pitch : 0);
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {dst_image->extent.width, dst_image->extent.height, 1};
+
+    vkCmdCopyBufferToImage(vk_buffer, src_buffer->buffer, dst_image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     static_cast<VkImageLayout>(dst_layout));
+}
+
+void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, u64 size, HLE::Libs::Graphics::VulkanBuffer* buffer) {
+    VkBufferCreateInfo buffer_info{};
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size = size;
+    buffer_info.usage = buffer->usage;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    vkCreateBuffer(ctx->m_device, &buffer_info, nullptr, &buffer->buffer);
+
+    vkGetBufferMemoryRequirements(ctx->m_device, buffer->buffer, &buffer->memory.requirements);
+
+    bool allocated = GPU::vulkanAllocateMemory(ctx, &buffer->memory);
+    if (!allocated) {
+        printf("Can't allocate vulkan\n");
+        std::exit(0);
+    }
+    vkBindBufferMemory(ctx->m_device, buffer->buffer, buffer->memory.memory, buffer->memory.offset);
+}
+
+void Graphics::Vulkan::vulkanDeleteBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanBuffer* buffer) {
+    vkDestroyBuffer(ctx->m_device, buffer->buffer, nullptr);
+    vkFreeMemory(ctx->m_device, buffer->memory.memory, nullptr);
+    buffer->memory.memory = nullptr;
+    buffer->buffer = nullptr;
 }

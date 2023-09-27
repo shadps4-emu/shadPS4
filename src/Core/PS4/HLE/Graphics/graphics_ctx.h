@@ -2,6 +2,7 @@
 
 #include <types.h>
 #include <vulkan/vulkan_core.h>
+
 #include "Lib/Threads.h"
 
 namespace HLE::Libs::Graphics {
@@ -32,7 +33,7 @@ struct GraphicCtx {
     VulkanQueueInfo queues[11];  // VULKAN_QUEUES_NUM
 };
 
-enum class VulkanImageType { Unknown, VideoOut};
+enum class VulkanImageType { Unknown, VideoOut };
 
 struct VulkanMemory {
     VkMemoryRequirements requirements = {};
@@ -43,6 +44,11 @@ struct VulkanMemory {
     u64 unique_id = 0;
 };
 
+struct VulkanBuffer {
+    VkBuffer buffer = nullptr;
+    VulkanMemory memory;
+    VkBufferUsageFlags usage = 0;
+};
 struct VulkanImage {
     static constexpr int VIEW_MAX = 4;
     static constexpr int VIEW_DEFAULT = 0;

@@ -31,6 +31,7 @@ class CommandBuffer {
     void begin() const;
     void end() const;
     void executeWithSemaphore();
+    void execute();
     u32 getIndex() const { return m_index; }
     HLE::Libs::Graphics::VulkanCommandPool* getPool() { return m_pool; }
   private:

@@ -150,7 +150,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 
     buffer.begin();
 
-    //UtilBlitImage(&buffer, blt_src_image, blt_dst_image);
+    Graphics::Vulkan::vulkanBlitImage(&buffer, blt_src_image, blt_dst_image);
 
     VkImageMemoryBarrier pre_present_barrier{};
     pre_present_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;

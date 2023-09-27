@@ -109,6 +109,41 @@ void GPU::CommandBuffer::executeWithSemaphore() {
         std::exit(0);
     }
 }
+void GPU::CommandBuffer::execute() {
+    auto* buffer = m_pool->buffers[m_index];
+    auto* fence = m_pool->fences[m_index];
+
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.pNext = nullptr;
+    submit_info.waitSemaphoreCount = 0;
+    submit_info.pWaitSemaphores = nullptr;
+    submit_info.pWaitDstStageMask = nullptr;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &buffer;
+    submit_info.signalSemaphoreCount = 0;
+    submit_info.pSignalSemaphores = nullptr;
+
+    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    const auto& queue = render_ctx->getGraphicCtx()->queues[m_queue];
+
+    if (queue.mutex != nullptr) {
+        queue.mutex->LockMutex();
+    }
+
+    auto result = vkQueueSubmit(queue.vk_queue, 1, &submit_info, fence);
+
+    if (queue.mutex != nullptr) {
+        queue.mutex->UnlockMutex();
+    }
+
+    m_execute = true;
+
+    if (result != VK_SUCCESS) {
+        printf("vkQueueSubmit failed\n");
+        std::exit(0);
+    }
+}
 void GPU::CommandPool::createPool(int id) {
     auto* render_ctx = Singleton<RenderCtx>::Instance();
     auto* ctx = render_ctx->getGraphicCtx();
@@ -195,4 +230,3 @@ void GPU::CommandPool::deleteAllPool() {
         }
     }
 }
-
