@@ -100,4 +100,6 @@ HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
     return &window_ctx->m_graphic_ctx;
 }
 
+void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {}
+
 }  // namespace Emulator

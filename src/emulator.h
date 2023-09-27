@@ -80,4 +80,5 @@ void emuInit(u32 width, u32 height);
 void emuRun();
 void checkAndWaitForGraphicsInit();
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx();
+void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image);
 }  // namespace Emulator

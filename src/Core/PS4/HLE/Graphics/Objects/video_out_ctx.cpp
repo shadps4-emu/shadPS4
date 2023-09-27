@@ -76,6 +76,12 @@ bool FlipQueue::flip(u32 micros) {
     auto request = m_requests.at(0);  // proceed first request
     m_mutex.UnlockMutex();
 
+   auto* buffer = request.cfg->buffers[request.index].buffer_render;
+
+    Emulator::DrawBuffer(buffer);
+
+    m_mutex.LockMutex();
+
     request.cfg->m_mutex.LockMutex();
     for (auto& flip_eq : request.cfg->m_flip_evtEq) {
         if (flip_eq != nullptr) {
