@@ -82,6 +82,7 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
     if (heap_id < 0) {
         return nullptr;
     }
+    auto& heap = m_heaps[heap_id];
 
     ObjInfo objInfo = {};
 
@@ -105,6 +106,25 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
 
     objInfo.gpu_object.obj = info.getCreateFunc()(ctx, objInfo.obj_params, virtual_addr, size, virtual_addr_num, &objInfo.mem);
 
-    // TODO we need more ...
-    return nullptr;
+    int index = static_cast<int>(heap.objects.size());
+
+    HeapObject hobj{};
+    hobj.block = createHeapBlock(virtual_addr, size, virtual_addr_num, heap_id, index);
+    hobj.info = objInfo;
+    hobj.free = false;
+    heap.objects.push_back(hobj);
+
+    return objInfo.gpu_object.obj;
+}
+
+GPU::HeapBlock GPU::GPUMemory::createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num, int heap_id, int obj_id) {
+    auto& heap = m_heaps[heap_id];
+
+    GPU::HeapBlock heapBlock{};
+    heapBlock.virtual_addr_num = virtual_addr_num;
+    for (int vi = 0; vi < virtual_addr_num; vi++) {
+        heapBlock.virtual_addr[vi] = virtual_addr[vi];
+        heapBlock.size[vi] = size[vi];
+    }
+    return heapBlock;
 }
