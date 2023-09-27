@@ -8,6 +8,7 @@
 #include "Kernel/Objects/physical_memory.h"
 #include "Kernel/cpu_management.h"
 #include "Kernel/event_queues.h"
+#include <windows.h>
 
 namespace HLE::Libs::LibKernel {
 

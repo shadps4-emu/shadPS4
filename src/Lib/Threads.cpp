@@ -1,6 +1,7 @@
 #include "Threads.h"
 
 #include <sstream>
+#include <chrono>
 
 static std::thread::id g_main_thread;
 static int g_main_thread_int;
@@ -55,25 +56,28 @@ Lib::Mutex::Mutex() { m_mutex = new MutexStructInternal(); }
 
 Lib::Mutex::~Mutex() { delete m_mutex; }
 
-void Lib::Mutex::LockMutex() { EnterCriticalSection(&m_mutex->m_cs); }
+void Lib::Mutex::LockMutex() { m_mutex->m_cs.lock(); }
 
-void Lib::Mutex::UnlockMutex() { LeaveCriticalSection(&m_mutex->m_cs); }
+void Lib::Mutex::UnlockMutex() { m_mutex->m_cs.unlock(); }
 
-bool Lib::Mutex::TryLockMutex() { return (TryEnterCriticalSection(&m_mutex->m_cs) != 0); }
+bool Lib::Mutex::TryLockMutex() { return m_mutex->m_cs.try_lock(); }
 
 Lib::ConditionVariable::ConditionVariable() { m_cond_var = new ConditionVariableStructInternal(); }
 
 Lib::ConditionVariable::~ConditionVariable() { delete m_cond_var; }
 
-void Lib::ConditionVariable::WaitCondVar(Mutex* mutex) { SleepConditionVariableCS(&m_cond_var->m_cv, &mutex->m_mutex->m_cs, INFINITE); }
+void Lib::ConditionVariable::WaitCondVar(Mutex* mutex) {
+    std::unique_lock<std::mutex> lock(mutex->m_mutex->m_cs);
+    m_cond_var->m_cv.wait(lock);
+}
 
 bool Lib::ConditionVariable::WaitCondVarFor(Mutex* mutex, u32 micros) {
     bool ok = false;
-    ok = !(SleepConditionVariableCS(&m_cond_var->m_cv, &mutex->m_mutex->m_cs, (micros < 1000 ? 1 : micros / 1000)) == 0 &&
-           GetLastError() == ERROR_TIMEOUT);
+    std::unique_lock<std::mutex> lock(mutex->m_mutex->m_cs);
+    ok = m_cond_var->m_cv.wait_for(lock, std::chrono::microseconds(micros)) == std::cv_status::no_timeout;
     return ok;
 }
 
-void Lib::ConditionVariable::SignalCondVar() { WakeConditionVariable(&m_cond_var->m_cv); }
+void Lib::ConditionVariable::SignalCondVar() { m_cond_var->m_cv.notify_one(); }
 
-void Lib::ConditionVariable::SignalCondVarAll() { WakeAllConditionVariable(&m_cond_var->m_cv); }
+void Lib::ConditionVariable::SignalCondVarAll() { m_cond_var->m_cv.notify_all(); }

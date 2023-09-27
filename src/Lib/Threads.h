@@ -1,11 +1,10 @@
 #pragma once
 
-#include "windows.h"
-#include <synchapi.h>
 #include <atomic>
 #include <condition_variable>
 #include <string>
 #include <thread>
+#include <functional>
 
 #include "../types.h"
 
@@ -52,7 +51,7 @@ class Thread {
 };
 
 struct ThreadStructInternal {
-    ThreadStructInternal(thread_func_t f, void* a) : func(f), arg(a), m_thread(&Run, this) {}
+    ThreadStructInternal(thread_func_t f, void* a) : func(f), arg(a), m_thread(&ThreadStructInternal::Run, this) {}
 
     static void Run(ThreadStructInternal* t) {
         t->unique_id = Lib::Thread::GetThreadIdUnique();
@@ -89,9 +88,9 @@ class Mutex {
 };
 
 struct MutexStructInternal {
-    MutexStructInternal() { InitializeCriticalSectionAndSpinCount(&m_cs, 4000); }
-    ~MutexStructInternal() { DeleteCriticalSection(&m_cs); }
-    CRITICAL_SECTION m_cs{};
+    MutexStructInternal() = default;
+    ~MutexStructInternal() = default;
+    std::mutex m_cs{};
 };
 class ConditionVariable {
   public:
@@ -108,9 +107,9 @@ class ConditionVariable {
 };
 
 struct ConditionVariableStructInternal {
-    ConditionVariableStructInternal() { InitializeConditionVariable(&m_cv); }
+    ConditionVariableStructInternal() = default;
     ~ConditionVariableStructInternal() = default;
-    CONDITION_VARIABLE m_cv{};
+    std::condition_variable m_cv{};
 };
 
 class LockMutexGuard {
