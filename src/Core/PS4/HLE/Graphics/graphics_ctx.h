@@ -6,6 +6,16 @@
 
 namespace HLE::Libs::Graphics {
 
+struct VulkanCommandPool {
+    Lib::Mutex mutex;
+    VkCommandPool pool = nullptr;
+    VkCommandBuffer* buffers = nullptr;
+    VkFence* fences = nullptr;
+    VkSemaphore* semaphores = nullptr;
+    bool* busy = nullptr;
+    u32 buffers_count = 0;
+};
+
 struct VulkanQueueInfo {
     Lib::Mutex* mutex = nullptr;
     u32 family = static_cast<u32>(-1);
