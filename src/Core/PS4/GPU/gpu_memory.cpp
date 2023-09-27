@@ -58,6 +58,11 @@ bool GPU::vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::
     return false;
 }
 
+void GPU::flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx) {
+    auto* gpumemory = Singleton<GPUMemory>::Instance();
+    gpumemory->flushAllHeaps(ctx);
+}
+
 int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
     int index = 0;
     for (const auto& heap : m_heaps) {
@@ -106,6 +111,7 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
 
     objInfo.gpu_object.obj = info.getCreateFunc()(ctx, objInfo.obj_params, virtual_addr, size, virtual_addr_num, &objInfo.mem);
 
+    objInfo.update_func = info.getUpdateFunc();
     int index = static_cast<int>(heap.objects.size());
 
     HeapObject hobj{};
@@ -127,4 +133,56 @@ GPU::HeapBlock GPU::GPUMemory::createHeapBlock(const u64* virtual_addr, const u6
         heapBlock.size[vi] = size[vi];
     }
     return heapBlock;
+}
+
+void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, int heap_id, int obj_id) {
+    auto& heap = m_heaps[heap_id];
+
+    auto& heapObj = heap.objects[obj_id];
+    auto& objInfo = heapObj.info;
+    bool need_update = false;
+
+    if (submit_id > objInfo.submit_id) {
+        uint64_t hash[3] = {};
+
+        for (int i = 0; i < heapObj.block.virtual_addr_num; i++) {
+            if (objInfo.check_hash) {
+                hash[i] = GPU::calculate_hash(reinterpret_cast<const uint8_t*>(heapObj.block.virtual_addr[i]), heapObj.block.size[i]);
+            } else {
+                hash[i] = 0;
+            }
+        }
+
+        for (int i = 0; i < heapObj.block.virtual_addr_num; i++) {
+            if (objInfo.hash[i] != hash[i]) {
+                need_update = true;
+                objInfo.hash[i] = hash[i];
+            }
+        }
+
+        if (submit_id != UINT64_MAX) {
+            objInfo.submit_id = submit_id;
+        }
+    }
+
+    if (need_update) {
+        objInfo.update_func(ctx, objInfo.obj_params, objInfo.gpu_object.obj, heapObj.block.virtual_addr, heapObj.block.size,
+                            heapObj.block.virtual_addr_num);
+    }
+}
+
+void GPU::GPUMemory::flushAllHeaps(HLE::Libs::Graphics::GraphicCtx* ctx) {
+    Lib::LockMutexGuard lock(m_mutex);
+
+    int heap_id = 0;
+    for (auto& heap : m_heaps) {
+        int index = 0;
+        for (auto& heapObj : heap.objects) {
+            if (!heapObj.free) {
+                update(UINT64_MAX, ctx, heap_id, index);
+            }
+            index++;
+        }
+        heap_id++;
+    }
 }
