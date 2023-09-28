@@ -4,6 +4,7 @@
 
 #include "debug.h"
 #include <vulkan_util.h>
+#include "tile_manager.h"
 
 constexpr bool log_file_videoOutBuffer = true;  // disable it to disable logging
 
@@ -11,13 +12,26 @@ static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
                         int virtual_addr_num) {
 
     auto pitch = params[GPU::VideoOutBufferObj::PITCH_PARAM];
+    bool tiled = (params[GPU::VideoOutBufferObj::IS_TILE_PARAM] != 0);
+    bool neo = (params[GPU::VideoOutBufferObj::IS_NEO_PARAM] != 0);
+    auto width = params[GPU::VideoOutBufferObj::WIDTH_PARAM];
+    auto height = params[GPU::VideoOutBufferObj::HEIGHT_PARAM];
 
     auto* vk_obj = static_cast<HLE::Libs::Graphics::VideoOutVulkanImage*>(obj);
 
     vk_obj->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
-                                    static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    if (tiled)
+    {
+        auto* tempbuff = new u08[*size];
+        GPU::convertTileToLinear(tempbuff, reinterpret_cast<void*>(*virtual_addr), width, height, neo);
+        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, tempbuff, *size, pitch, static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        delete[] tempbuff;
+    } else {
+        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
+                                          static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    }
+    
 }
 
 static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* virtual_addr, const u64* size, int virtual_addr_num,
