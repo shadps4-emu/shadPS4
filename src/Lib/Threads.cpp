@@ -72,10 +72,8 @@ void Lib::ConditionVariable::WaitCondVar(Mutex* mutex) {
 }
 
 bool Lib::ConditionVariable::WaitCondVarFor(Mutex* mutex, u32 micros) {
-    bool ok = false;
     std::unique_lock<std::mutex> lock(mutex->m_mutex->m_cs);
-    ok = m_cond_var->m_cv.wait_for(lock, std::chrono::microseconds(micros)) == std::cv_status::no_timeout;
-    return ok;
+    return m_cond_var->m_cv.wait_for(lock, std::chrono::microseconds(micros)) == std::cv_status::no_timeout;
 }
 
 void Lib::ConditionVariable::SignalCondVar() { m_cond_var->m_cv.notify_one(); }
