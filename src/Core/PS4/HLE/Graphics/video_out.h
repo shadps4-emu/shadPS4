@@ -87,6 +87,13 @@ struct SceVideoOutVblankStatus {
     u08 pad1[7] = {};
 };
 
+struct VideoOutBufferSetInternal {
+    SceVideoOutBufferAttribute attr;
+    int start_index = 0;
+    int num = 0;
+    int set_id = 0;
+};
+
 void videoOutInit(u32 width, u32 height);
 std::string getPixelFormatString(s32 format);
 void videoOutRegisterLib(SymbolsResolver* sym);

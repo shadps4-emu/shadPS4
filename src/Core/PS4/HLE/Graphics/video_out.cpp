@@ -1,8 +1,10 @@
 #include "video_out.h"
 
+#include <Core/PS4/GPU/video_out_buffer.h>
 #include <Core/PS4/HLE/ErrorCodes.h>
 #include <Core/PS4/HLE/Libs.h>
 #include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
+#include <Util/config.h>
 #include <Util/log.h>
 #include <debug.h>
 #include <stdio.h>
@@ -12,6 +14,9 @@
 
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
+#include "emulator.h"
+#include <Core/PS4/GPU/gpu_memory.h>
+#include "graphics_render.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -115,9 +120,93 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
 
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,
                                             const SceVideoOutBufferAttribute* attribute) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
-    return 0;
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* ctx = videoOut->getCtx(handle);
+
+    if (handle == 1) {  // main port
+        if (startIndex < 0 || startIndex > 15) {
+            LOG_TRACE_IF(log_file_videoout, "invalid startIndex = {}\n", startIndex);
+            return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
+        }
+        if (bufferNum < 1 || bufferNum > 16) {
+            LOG_TRACE_IF(log_file_videoout, "invalid bufferNum = {}\n", bufferNum);
+            return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
+        }
+    }
+    if (addresses == nullptr) {
+        LOG_TRACE_IF(log_file_videoout, "addresses are null\n");
+        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+
+    if (attribute == nullptr) {
+        LOG_TRACE_IF(log_file_videoout, "attribute is null\n");
+        return SCE_VIDEO_OUT_ERROR_INVALID_OPTION;
+    }
+    if (attribute->aspectRatio != 0) {
+        LOG_TRACE_IF(log_file_videoout, "invalid aspect ratio = {}\n", attribute->aspectRatio);
+        return SCE_VIDEO_OUT_ERROR_INVALID_ASPECT_RATIO;
+    }
+    if (attribute->tilingMode < 0 || attribute->tilingMode > 1) {
+        LOG_TRACE_IF(log_file_videoout, "invalid tilingMode = {}\n", attribute->tilingMode);
+        return SCE_VIDEO_OUT_ERROR_INVALID_TILING_MODE;
+    }
+    LOG_INFO_IF(log_file_videoout, "startIndex    = {}\n", startIndex);
+    LOG_INFO_IF(log_file_videoout, "bufferNum     = {}\n", bufferNum);
+    LOG_INFO_IF(log_file_videoout, "pixelFormat   = {}\n", log_hex_full(attribute->pixelFormat));
+    LOG_INFO_IF(log_file_videoout, "tilingMode    = {}\n", attribute->tilingMode);
+    LOG_INFO_IF(log_file_videoout, "aspectRatio   = {}\n", attribute->aspectRatio);
+    LOG_INFO_IF(log_file_videoout, "width         = {}\n", attribute->width);
+    LOG_INFO_IF(log_file_videoout, "height        = {}\n", attribute->height);
+    LOG_INFO_IF(log_file_videoout, "pitchInPixel  = {}\n", attribute->pitchInPixel);
+    LOG_INFO_IF(log_file_videoout, "option        = {}\n", attribute->option);
+
+    int registration_index = ctx->buffers_registration_index++;
+
+    Emulator::checkAndWaitForGraphicsInit();
+    GPU::renderCreateCtx();
+
+    // try to calculate buffer size
+    u64 buffer_size = 1280 * 768 * 4;  // TODO hardcoded value should be redone
+    u64 buffer_pitch = attribute->pitchInPixel;
+
+    VideoOutBufferSetInternal buf{};
+
+    buf.start_index = startIndex;
+    buf.num = bufferNum;
+    buf.set_id = registration_index;
+    buf.attr = *attribute;
+
+    ctx->buffers_sets.push_back(buf);
+
+    GPU::VideoOutBufferFormat format = GPU::VideoOutBufferFormat::Unknown;
+
+    if (attribute->pixelFormat == 0x80000000) {
+        format = GPU::VideoOutBufferFormat::B8G8R8A8Srgb;
+    } else if (attribute->pixelFormat == 0x80002200) {
+        format = GPU::VideoOutBufferFormat::R8G8B8A8Srgb;
+    }
+
+    GPU::VideoOutBufferObj buffer_info(format, attribute->width, attribute->height, attribute->tilingMode == 0, Config::isNeoMode(), buffer_pitch);
+
+    for (int i = 0; i < bufferNum; i++) {
+        if (ctx->buffers[i + startIndex].buffer != nullptr) {
+            LOG_TRACE_IF(log_file_videoout, "buffer slot {} is occupied!\n", i + startIndex);
+            return SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED;
+        }
+
+        ctx->buffers[i + startIndex].set_id = registration_index;
+        ctx->buffers[i + startIndex].buffer = addresses[i];
+        ctx->buffers[i + startIndex].buffer_size = buffer_size;
+        ctx->buffers[i + startIndex].buffer_pitch = buffer_pitch;
+        ctx->buffers[i + startIndex].buffer_render = static_cast<Graphics::VideoOutVulkanImage*>(
+            GPU::memoryCreateObj(
+            0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
+
+        LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, log_hex_full(reinterpret_cast<uint64_t>(addresses[i])));
+    }
+
+    return registration_index;
 }
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     PRINT_FUNCTION_NAME();

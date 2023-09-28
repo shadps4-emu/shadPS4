@@ -3,6 +3,8 @@
 #include "../Loader/Elf.h"
 #include <Util/log.h>
 #include <debug.h>
+#include <Core/PS4/GPU/gpu_memory.h>
+#include <emulator.h>
 
 namespace HLE::Libs::LibSceGnmDriver {
 
@@ -88,7 +90,8 @@ namespace HLE::Libs::LibSceGnmDriver {
     void sceGnmDriverTraceInProgress(){}
     void sceGnmDriverTriggerCapture(){}
     void sceGnmEndWorkload(){}
-    void sceGnmFlushGarlic() { PRINT_DUMMY_FUNCTION_NAME();
+    void sceGnmFlushGarlic() { PRINT_FUNCTION_NAME();
+        GPU::flushGarlic(Emulator::getGraphicCtx());
     }
     void sceGnmGetEqEventType(){}
     void sceGnmGetEqTimeStamp(){}

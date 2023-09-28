@@ -33,6 +33,8 @@ add_subdirectory(winpthread)
 add_subdirectory(discord-rpc)
 #=================== toml11 ===================
 add_subdirectory(toml11)
+#=================== vulkan ==================
+add_subdirectory(vulkan)
 #=================== IMGUI ===================
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
