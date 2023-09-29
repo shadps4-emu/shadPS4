@@ -21,7 +21,7 @@ Although atm project is mostly 1 man's work there are several commits from other
 
 - wheremyfoodat - (pcsx-redux dev and Panda3DS founder and dev)
 - skmp - (nulldc , reincast and some many others emus founder and dev)
-- OFFTKP - (paris... what to tell about paris , ok hydra is one of his best effords :) )
+- OFFTKP - (paris... what to tell about paris , ok hydra is one of his best efforts :) )
 
 4.Greetings
 ===========
