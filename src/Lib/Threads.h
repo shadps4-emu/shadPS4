@@ -91,6 +91,7 @@ struct MutexStructInternal {
     MutexStructInternal() = default;
     ~MutexStructInternal() = default;
     std::mutex m_cs{};
+    std::atomic<std::thread::id> m_owner{};
 };
 class ConditionVariable {
   public:

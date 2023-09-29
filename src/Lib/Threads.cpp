@@ -56,11 +56,31 @@ Lib::Mutex::Mutex() { m_mutex = new MutexStructInternal(); }
 
 Lib::Mutex::~Mutex() { delete m_mutex; }
 
-void Lib::Mutex::LockMutex() { m_mutex->m_cs.lock(); }
+void Lib::Mutex::LockMutex() {
+    if (m_mutex->m_owner == std::this_thread::get_id()) {
+        return;
+    }
 
-void Lib::Mutex::UnlockMutex() { m_mutex->m_cs.unlock(); }
+    m_mutex->m_cs.lock();
+    m_mutex->m_owner = std::this_thread::get_id();
+}
 
-bool Lib::Mutex::TryLockMutex() { return m_mutex->m_cs.try_lock(); }
+void Lib::Mutex::UnlockMutex() {
+    m_mutex->m_owner = std::thread::id();
+    m_mutex->m_cs.unlock();
+}
+
+bool Lib::Mutex::TryLockMutex() {
+    if (m_mutex->m_owner == std::this_thread::get_id()) {
+        return false;
+    }
+
+    if (m_mutex->m_cs.try_lock()) {
+        m_mutex->m_owner = std::this_thread::get_id();
+        return true;
+    }
+    return false;
+}
 
 Lib::ConditionVariable::ConditionVariable() { m_cond_var = new ConditionVariableStructInternal(); }
 
