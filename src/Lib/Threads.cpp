@@ -52,10 +52,7 @@ int Lib::Thread::GetThreadIdUnique() {
     return tid;
 }
 
-Lib::Mutex::Mutex() {
-    m_mutex = new MutexStructInternal();
-    UnlockMutex();
-}
+Lib::Mutex::Mutex() { m_mutex = new MutexStructInternal(); }
 
 Lib::Mutex::~Mutex() { delete m_mutex; }
 
