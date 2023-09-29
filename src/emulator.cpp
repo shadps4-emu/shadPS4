@@ -5,6 +5,7 @@
 #include <vulkan_util.h>
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
+#include "version.h"
 
 namespace Emulator {
 
@@ -33,8 +34,8 @@ static void CreateSdlWindow(WindowCtx* ctx) {
         printf("%s\n", SDL_GetError());
         std::exit(0);
     }
-
-    ctx->m_window = SDL_CreateWindowWithPosition("shadps4", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+    std::string title = "shadps4 v" + std::string(Emulator::VERSION);
+    ctx->m_window = SDL_CreateWindowWithPosition(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
                                                  (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN)));
 
     ctx->is_window_hidden = true;  // hide window until we need to show something (should draw something in buffers)
