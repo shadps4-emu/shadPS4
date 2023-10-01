@@ -92,6 +92,12 @@ namespace HLE::Libs::LibC {
 	}
     static PS4_SYSV_ABI void _Assert() { BREAKPOINT(); }
 
+    static PS4_SYSV_ABI int printf() { /*
+        BREAKPOINT();*/
+        //PRINT_DUMMY_FUNCTION_NAME();
+        return 0;//not correct
+    }
+
 	void LibC_Register(SymbolsResolver* sym)
 	{
         LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
@@ -103,6 +109,7 @@ namespace HLE::Libs::LibC {
         LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, exit);
         LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, atexit);
         LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
+        LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, printf);
 
 		LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
     }
