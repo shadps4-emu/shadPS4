@@ -640,8 +640,28 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     printf("exit function called\n");
 }
 
-static PS4_SYSV_ABI void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
-    reinterpret_cast<entry_func_t>(addr)(params, exit_func);
+static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
+    //reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have a specific layout
+
+	asm volatile (
+        "andq $-16, %%rsp\n"// Align to 16 bytes
+        "subq $8, %%rsp\n"	// videoout_basic expects the stack to be misaligned
+
+							// Kernel also pushes some more things here during process init
+							// at least: environment, auxv, possibly other things
+
+        "pushq 8(%1)\n"		// copy EntryParams to top of stack like the kernel does
+        "pushq 0(%1)\n"		// OpenOrbis expects to find it there
+
+		"movq %1, %%rdi\n"	// also pass params and exit func
+        "movq %2, %%rsi\n"	// as before
+
+        "jmp *%0\n"			// can't use call here, as that would mangle the prepared stack.
+							// there's no coming back
+        :
+        : "r"(addr), "r"(params), "r"(exit_func)
+        : "rax", "rsi", "rdi", "rsp", "rbp"
+		);
 }
 
 void Linker::Execute()
