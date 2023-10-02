@@ -590,6 +590,25 @@ void Linker::Relocate(Module* m)
 }
 
 
+std::vector<std::string> unresolved_ids;
+
+template<int idx>
+static u64 unresolved_i() {
+    LOG_CRITICAL_IF(true, "{} unresolved STUB called!!!\n", unresolved_ids[idx]);
+
+    return 0;
+}
+
+u64 unresolved_handlers[] = {(u64)&unresolved_i<0>, (u64)&unresolved_i<1>, (u64)&unresolved_i<2>,
+                                          (u64)&unresolved_i<3>, (u64)&unresolved_i<4>, (u64)&unresolved_i<5>,
+                                          (u64)&unresolved_i<6>, (u64)&unresolved_i<7>, 0};
+
+static u64 unresolved() { 
+	LOG_CRITICAL_IF(true, "unknown unresolved STUB called!!!\n");
+
+	return 0;
+}
+
 void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
 	auto ids = StringUtil::split_string(name, '#');
 
@@ -616,8 +635,20 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
             if (rec != nullptr) {
                 *return_info = *rec;
             } else {
-                return_info->virtual_address = 0;
-                return_info->name = "Unresolved!!!";
+                auto it = aerolib::symbolsStubsMap.find(sr.name);
+
+                if (it != aerolib::symbolsStubsMap.end()) {
+                    return_info->virtual_address = it->second;
+                    return_info->name = aerolib::symbolsMap[sr.name];
+                } else {
+                    if (unresolved_handlers[unresolved_ids.size()] == 0) {
+						return_info->virtual_address = (u64)&unresolved;
+                    } else {
+                        return_info->virtual_address = unresolved_handlers[unresolved_ids.size()];
+                        unresolved_ids.push_back(sr.name);
+                    }
+                    return_info->name = "Unresolved!!!";
+				}
             }
 		}
 		else

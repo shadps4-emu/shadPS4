@@ -2,6 +2,8 @@
 #include "SymbolsResolver.h"
 #include <Util/log.h>
 
+#include "../Util/aerolib.h"
+
 
 void SymbolsResolver::AddSymbol(const SymbolRes& s, u64 virtual_addr)
 {
@@ -27,6 +29,16 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolRes& s) const {
         }
         index++;
     }
-    LOG_INFO_IF(true, "unresolved! {}\n", name);
+
+    std::string UnhashedName = "Unknown Unhashed Name";
+
+    auto guess = aerolib::symbolsMap.find(s.name);
+    if (guess != aerolib::symbolsMap.end()) {
+        UnhashedName = guess->second;
+        LOG_INFO_IF(true, "unresolved! {} {}\n", name, UnhashedName);
+    } else {
+        LOG_ERROR_IF(true, "unresolved! {} {}\n", name, UnhashedName);
+    }
+
 	return nullptr; 
 }

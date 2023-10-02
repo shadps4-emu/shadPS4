@@ -26,6 +26,9 @@ namespace HLE::Libs::LibKernel {
         QueryPerformanceCounter(&c);
         return c.QuadPart;
     }
+
+    static PS4_SYSV_ABI int* _Error() { return _errno(); }
+
     void LibKernel_Register(SymbolsResolver* sym) { 
         //obj
         LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &HLE::Libs::LibKernel::g_stack_chk_guard);
@@ -42,6 +45,8 @@ namespace HLE::Libs::LibKernel {
         LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
         //time
         LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
+
+        LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, _Error);
     }
 
 }; 
