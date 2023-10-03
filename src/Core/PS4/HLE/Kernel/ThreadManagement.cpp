@@ -180,7 +180,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     int result = pthread_mutex_init(&(*mutex)->mutex, &(*attr)->mutex_attr);
 
     if (name != nullptr) {
-        printf("\tmutex init: %s, %d\n", (*mutex)->name.c_str(), result);
+        printf("mutex init: %s, %d\n", (*mutex)->name.c_str(), result);
     }
 
     switch (result) {
@@ -193,12 +193,15 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 }
 
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
-    std::string name = "dummy";
+    static int count = 0;
+    std::string name = "internal mutex ";
+    name += std::to_string(count);
+    count++;
     // we assume we need one mutex so init one (we don't even check if it exists TODO)
     scePthreadMutexInit(mutex, nullptr, name.c_str());
 
     int result = pthread_mutex_lock(&(*mutex)->mutex);
-
+    printf("mutex lock: %s, %d\n", (*mutex)->name.c_str(), result);
     switch (result) {
         case 0: return SCE_OK;
         case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
@@ -213,7 +216,7 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_unlock(&(*mutex)->mutex);
-
+    printf("mutex unlock: %s, %d\n", (*mutex)->name.c_str(), result);
     switch (result) {
         case 0: return SCE_OK;
 
