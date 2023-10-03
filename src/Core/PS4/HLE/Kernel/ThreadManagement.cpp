@@ -162,8 +162,64 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
     (*attr)->attr_protocol = pprotocol;
     return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
 }
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name) {
+    if (mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    if (attr == nullptr) {
+        ScePthreadMutexattr mutexattr = nullptr;
+        scePthreadMutexattrInit(&mutexattr);
+        attr = &mutexattr;
+    }
+
+    *mutex = new PthreadMutexInternal{};
+
+    (*mutex)->name = name;
+
+    int result = pthread_mutex_init(&(*mutex)->mutex, &(*attr)->mutex_attr);
+
+    if (name != nullptr) {
+        printf("\tmutex init: %s, %d\n", (*mutex)->name.c_str(), result);
+    }
+
+    switch (result) {
+        case 0: return SCE_OK;
+        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
 
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
+    std::string name = "dummy";
+    // we assume we need one mutex so init one (we don't even check if it exists TODO)
+    scePthreadMutexInit(mutex, nullptr, name.c_str());
 
+    int result = pthread_mutex_lock(&(*mutex)->mutex);
+
+    switch (result) {
+        case 0: return SCE_OK;
+        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case EDEADLK: return SCE_KERNEL_ERROR_EDEADLK;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
+    if (mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_mutex_unlock(&(*mutex)->mutex);
+
+    switch (result) {
+        case 0: return SCE_OK;
+
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case EPERM: return SCE_KERNEL_ERROR_EPERM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
 }
 };  // namespace HLE::Libs::LibKernel::ThreadManagement

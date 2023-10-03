@@ -59,5 +59,6 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type);
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol);
-
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name);
+int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 }  // namespace HLE::Libs::LibKernel::ThreadManagement
