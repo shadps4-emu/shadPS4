@@ -1,8 +1,7 @@
 #include "ThreadManagement.h"
 
+#include <Core/PS4/HLE/ErrorCodes.h>
 #include <debug.h>
-
-#include "../ErrorCodes.h"
 
 namespace HLE::Libs::LibKernel::ThreadManagement {
 
@@ -16,7 +15,7 @@ void Pthread_Init_Self_MainThread() {
     g_pthread_self->name = "Main_Thread";
 }
 
-int scePthreadAttrInit(ScePthreadAttr* attr) {
+int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
     *attr = new PthreadAttrInternal{};
 
     int result = pthread_attr_init(&(*attr)->pth_attr);
@@ -39,7 +38,7 @@ int scePthreadAttrInit(ScePthreadAttr* attr) {
     }
 }
 
-int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
+int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -61,7 +60,7 @@ int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
+int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -81,7 +80,7 @@ int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param) {
+int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param) {
     if (param == nullptr || attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -103,7 +102,7 @@ int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam*
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
+int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -122,4 +121,49 @@ int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
+    *attr = new PthreadMutexAttrInternal{};
+
+    int result = pthread_mutexattr_init(&(*attr)->mutex_attr);
+
+    result = (result == 0 ? scePthreadMutexattrSettype(attr, 1) : result);
+    result = (result == 0 ? scePthreadMutexattrSetprotocol(attr, 0) : result);
+
+    switch (result) {
+        case 0: return SCE_OK;
+        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type) {
+    int ptype = PTHREAD_MUTEX_DEFAULT;
+    switch (type) {
+        case 1: ptype = PTHREAD_MUTEX_ERRORCHECK; break;
+        case 2: ptype = PTHREAD_MUTEX_RECURSIVE; break;
+        case 3:
+        case 4: ptype = PTHREAD_MUTEX_NORMAL; break;
+        default: BREAKPOINT();  // invalid
+    }
+
+    int result = pthread_mutexattr_settype(&(*attr)->mutex_attr, ptype);
+    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+}
+int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol) {
+    int pprotocol = PTHREAD_PRIO_NONE;
+    switch (protocol) {
+        case 0: pprotocol = PTHREAD_PRIO_NONE; break;
+        case 1: pprotocol = PTHREAD_PRIO_INHERIT; break;
+        case 2: pprotocol = PTHREAD_PRIO_PROTECT; break;
+        default: BREAKPOINT();  // invalid
+    }
+
+    int result = 0;  // pthread_mutexattr_setprotocol(&(*attr)->p, pprotocol); //TODO setprotocol seems to have issue with winpthreads (to check it)
+    (*attr)->attr_protocol = pprotocol;
+    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+}
+
+int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
+
+}
 };  // namespace HLE::Libs::LibKernel::ThreadManagement

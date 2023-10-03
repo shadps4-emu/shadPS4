@@ -8,6 +8,7 @@
 #include "Kernel/Objects/physical_memory.h"
 #include "Kernel/cpu_management.h"
 #include "Kernel/event_queues.h"
+#include "Kernel/ThreadManagement.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -52,7 +53,10 @@ namespace HLE::Libs::LibKernel {
     PS4_SYSV_ABI void pthread_rwlock_unlock() { BREAKPOINT(); }
     PS4_SYSV_ABI void pthread_detach() { BREAKPOINT(); }
     PS4_SYSV_ABI void pthread_mutexattr_init() { BREAKPOINT(); }
-    PS4_SYSV_ABI void pthread_mutex_lock() { BREAKPOINT(); }
+    PS4_SYSV_ABI void pthread_mutex_lock() { 
+        //posix call
+
+    }
     PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
     PS4_SYSV_ABI void pthread_mutex_destroy() { BREAKPOINT(); }
     PS4_SYSV_ABI void sceKernelUsleep() { BREAKPOINT(); }
@@ -91,7 +95,12 @@ namespace HLE::Libs::LibKernel {
         LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
         //time
         LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
+        //Pthreads
+        LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrInit);
+        LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrSettype);
+        LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrSetprotocol);
 
+        //TODO
          LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
         LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", 1, 1, sysconf);
 
