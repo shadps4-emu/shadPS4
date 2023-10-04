@@ -38,7 +38,14 @@ PS4_SYSV_ABI void _write() { BREAKPOINT(); }
 PS4_SYSV_ABI void sigaction() { BREAKPOINT(); }
 
 PS4_SYSV_ABI void _exit() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_cond_broadcast() { BREAKPOINT(); }
+PS4_SYSV_ABI int pthread_cond_broadcast(ThreadManagement::ScePthreadCond* cond) { 
+       // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    int result = ThreadManagement::scePthreadCondBroadcast(cond);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+}
 PS4_SYSV_ABI void pthread_rwlock_wrlock() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_cond_destroy() { BREAKPOINT(); }
 
@@ -111,6 +118,9 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexUnlock);
+    LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadCondattrInit);
+    LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadCondInit);
+    LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadCondBroadcast);
 
     // TODO
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
