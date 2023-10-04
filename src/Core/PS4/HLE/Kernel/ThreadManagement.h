@@ -1,8 +1,8 @@
 #pragma once
 #define _TIMESPEC_DEFINED
-#include <types.h>
 #include <pthread.h>
 #include <sched.h>
+#include <types.h>
 
 #include <string>
 
@@ -11,11 +11,15 @@ namespace HLE::Libs::LibKernel::ThreadManagement {
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;
 struct PthreadMutexAttrInternal;
+struct PthreadCondAttrInternal;
+struct PthreadCondInternal;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
 using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexAttrInternal*;
+using ScePthreadCondattr = PthreadCondAttrInternal*;
+using ScePthreadCond = PthreadCondInternal*;
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -32,7 +36,6 @@ struct PthreadAttrInternal {
     pthread_attr_t pth_attr;
 };
 
-
 struct PthreadMutexAttrInternal {
     u08 reserved[64];
     pthread_mutexattr_t mutex_attr;
@@ -43,6 +46,17 @@ struct PthreadMutexInternal {
     u08 reserved[256];
     std::string name;
     pthread_mutex_t mutex;
+};
+
+struct PthreadCondAttrInternal {
+    u08 reserved[64];
+    pthread_condattr_t cond_attr;
+};
+
+struct PthreadCondInternal {
+    u08 reserved[256];
+    std::string name;
+    pthread_cond_t cond;
 };
 
 class PThreadCxt {};
@@ -61,4 +75,7 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol);
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name);
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
+int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
+int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
+int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name);
 }  // namespace HLE::Libs::LibKernel::ThreadManagement

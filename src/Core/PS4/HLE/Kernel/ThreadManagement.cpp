@@ -225,4 +225,65 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
         default: return SCE_KERNEL_ERROR_EINVAL;
     }
 }
+
+int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
+
+    *attr = new PthreadCondAttrInternal{};
+
+    int result = pthread_condattr_init(&(*attr)->cond_attr);
+
+    switch (result) {
+        case 0: return SCE_OK;
+        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name) {
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    if (attr == nullptr) {
+        ScePthreadCondattr condattr = nullptr;
+        scePthreadCondattrInit(&condattr);
+        attr = &condattr;
+    }
+
+    *cond = new PthreadCondInternal{};
+
+    (*cond)->name = name;
+
+    int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
+
+    printf("cond init: %s, %d\n", (*cond)->name.c_str(), result);
+
+    switch (result) {
+        case 0: return SCE_OK;
+        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
+
+    static int count = 0;
+    std::string name = "internal cond ";
+    name += std::to_string(count);
+    count++;
+    // we assume we need one cond so init one (we don't even check if it exists TODO)
+    scePthreadCondInit(cond, nullptr, name.c_str());
+
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_cond_broadcast(&(*cond)->cond);
+
+    printf("cond broadcast: %s, %d\n", (*cond)->name.c_str(), result);
+
+    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+}
+
 };  // namespace HLE::Libs::LibKernel::ThreadManagement
