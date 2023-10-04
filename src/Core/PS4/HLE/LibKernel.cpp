@@ -134,9 +134,17 @@ PS4_SYSV_ABI void madvise() { BREAKPOINT(); }
 PS4_SYSV_ABI void _writev() { BREAKPOINT(); }
 PS4_SYSV_ABI void lseek() { BREAKPOINT(); }
 PS4_SYSV_ABI int* __error() { return _errno(); }
-PS4_SYSV_ABI void pthread_once() { 
-    BREAKPOINT(); 
-}
+PS4_SYSV_ABI int _pthread_once(ThreadManagement::ScePthreadOnce* once_control, void (*init_routine)(void)) { 
+    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    HLE::Libs::LibKernel::ThreadManagement::ScePthreadOnce o1nce_control = 0;
+    *once_control = new HLE::Libs::LibKernel::ThreadManagement::PtheadOnceInternal{};
+    (*once_control)->pthreadOnce = 0;
+    int result = pthread_once(&(*once_control)->pthreadOnce, init_routine);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+} 
 PS4_SYSV_ABI void pthread_cond_wait() { BREAKPOINT(); }
 PS4_SYSV_ABI void raise() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_cond_signal() { BREAKPOINT(); }
@@ -213,7 +221,7 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __error);
-    LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, pthread_once);
+    LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, _pthread_once);
     LIB_FUNCTION("Op8TBGY5KHg", "libkernel", 1, "libkernel", 1, 1, pthread_cond_wait);
     LIB_FUNCTION("0t0-MxQNwK4", "libkernel", 1, "libkernel", 1, 1, raise);
     LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", 1, 1, pthread_cond_signal);

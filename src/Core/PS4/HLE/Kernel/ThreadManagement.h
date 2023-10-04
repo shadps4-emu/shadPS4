@@ -13,6 +13,7 @@ struct PthreadMutexInternal;
 struct PthreadMutexAttrInternal;
 struct PthreadCondAttrInternal;
 struct PthreadCondInternal;
+struct PtheadOnceInternal;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
@@ -20,6 +21,7 @@ using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexAttrInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
+using ScePthreadOnce = PtheadOnceInternal*;
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -59,6 +61,11 @@ struct PthreadCondInternal {
     pthread_cond_t cond;
 };
 
+struct PtheadOnceInternal {
+    u08 dummy[256];
+    pthread_once_t pthreadOnce;
+};
+
 class PThreadCxt {};
 
 void Pthread_Init_Self_MainThread();
@@ -78,4 +85,5 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
 int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name);
+int PS4_SYSV_ABI scePthreadOnce(ScePthreadOnce* once_control, void (*init_routine)(void));
 }  // namespace HLE::Libs::LibKernel::ThreadManagement
