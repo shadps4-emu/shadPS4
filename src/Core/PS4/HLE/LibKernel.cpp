@@ -11,6 +11,9 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
+#include <io.h>
+#include <windows.h>
+#include <sys/types.h>
 
 namespace HLE::Libs::LibKernel {
 
@@ -77,7 +80,48 @@ PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutex_destroy() { BREAKPOINT(); }
 PS4_SYSV_ABI void sceKernelUsleep() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutex_trylock() { BREAKPOINT(); }
-PS4_SYSV_ABI void mmap() { BREAKPOINT(); }
+
+#define PROT_READ 0x1
+#define PROT_WRITE 0x2
+
+int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, off_t offset, void** res) { 
+    DWORD flProtect;
+    if (prot & PROT_WRITE) {
+            flProtect = PAGE_READWRITE;
+    } 
+
+    off_t end = len + offset;
+    HANDLE mmap_fd, h;
+    if (fd == -1)
+        mmap_fd = INVALID_HANDLE_VALUE;
+    else
+        mmap_fd = (HANDLE)_get_osfhandle(fd);
+    h = CreateFileMapping(mmap_fd, NULL, flProtect, 0, end, NULL);
+    int k = GetLastError();
+    if (NULL == h) return -1;
+
+    DWORD dwDesiredAccess;
+    if (prot & PROT_WRITE)
+        dwDesiredAccess = FILE_MAP_WRITE;
+    else
+        dwDesiredAccess = FILE_MAP_READ;
+    void* ret = MapViewOfFile(h, dwDesiredAccess, 0, offset, len);
+    if (ret == NULL) {
+        CloseHandle(h);
+        ret = nullptr;
+    }
+    res = &ret;
+    return 0;
+}
+
+PS4_SYSV_ABI int mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset, void** res) { 
+        // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    int result = sceKernelMmap(addr, len, prot, flags, fd, offset,res);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+}
 PS4_SYSV_ABI void pthread_join() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_getspecific() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutexattr_destroy() { BREAKPOINT(); }
@@ -90,11 +134,16 @@ PS4_SYSV_ABI void madvise() { BREAKPOINT(); }
 PS4_SYSV_ABI void _writev() { BREAKPOINT(); }
 PS4_SYSV_ABI void lseek() { BREAKPOINT(); }
 PS4_SYSV_ABI int* __error() { return _errno(); }
-PS4_SYSV_ABI void pthread_once() { BREAKPOINT(); }
+PS4_SYSV_ABI void pthread_once() { 
+    BREAKPOINT(); 
+}
 PS4_SYSV_ABI void pthread_cond_wait() { BREAKPOINT(); }
 PS4_SYSV_ABI void raise() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_cond_signal() { BREAKPOINT(); }
 PS4_SYSV_ABI void _ioctl() { BREAKPOINT(); }
+PS4_SYSV_ABI void fstat() { BREAKPOINT(); }
+
+
 
 void LibKernel_Register(SymbolsResolver* sym) {
     // obj
