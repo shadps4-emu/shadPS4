@@ -155,17 +155,18 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
         CloseHandle(h);
         ret = nullptr;
     }
-    res = &ret;
+    *res = ret;
     return 0;
 }
 
-PS4_SYSV_ABI int mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset, void** res) {
+PS4_SYSV_ABI void* mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
+    void* ptr;
     // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
-    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, res);
+    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
     if (result != 0) {
         BREAKPOINT();
     }
-    return result;
+    return ptr;
 }
 
 PS4_SYSV_ABI void close() { BREAKPOINT(); }
