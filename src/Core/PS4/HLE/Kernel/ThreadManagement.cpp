@@ -3,16 +3,22 @@
 #include <Core/PS4/HLE/ErrorCodes.h>
 #include <debug.h>
 
+#include "Util/Singleton.h"
+#include <inttypes.h>
+
 namespace HLE::Libs::LibKernel::ThreadManagement {
 
 thread_local PthreadInternal* g_pthread_self = nullptr;
-PThreadCxt* g_pthread_cxt = nullptr;
 
 void Pthread_Init_Self_MainThread() {
     g_pthread_self = new PthreadInternal{};
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
     g_pthread_self->name = "Main_Thread";
+
+    // temp!
+    auto* threadCtx = Singleton<PThreadCxt>::Instance();
+    threadCtx->setPthreadKeys(new PthreadKeys);
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
@@ -193,6 +199,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 }
 
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
+    printf("scePthreadMutexLock\n");
     static int count = 0;
     std::string name = "internal mutex ";
     name += std::to_string(count);
@@ -211,6 +218,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     }
 }
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
+    printf("scePthreadMutexUnlock\n");
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -227,7 +235,6 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
-
     *attr = new PthreadCondAttrInternal{};
 
     int result = pthread_condattr_init(&(*attr)->cond_attr);
@@ -267,7 +274,6 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     }
 }
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
-
     static int count = 0;
     std::string name = "internal cond ";
     name += std::to_string(count);
@@ -284,6 +290,111 @@ int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
     printf("cond broadcast: %s, %d\n", (*cond)->name.c_str(), result);
 
     return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+}
+
+
+bool PthreadKeys::createKey(int* key, PthreadKeyDestructor destructor) {
+    Lib::LockMutexGuard lock(m_mutex);
+
+    for (int index = 0; index < 256; index++) {
+        if (!m_keys[index].used) {
+            *key = index;
+            m_keys[index].used = true;
+            m_keys[index].destructor = destructor;
+            m_keys[index].specific_values.clear();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool PthreadKeys::getKey(int key, int thread_id, void** data) {
+    Lib::LockMutexGuard lock(m_mutex);
+
+    if (key < 0 || key >= 256 || !m_keys[key].used) {
+        return false;
+    }
+
+    for (auto& v : m_keys[key].specific_values) {
+        if (v.thread_id == thread_id) {
+            *data = v.data;
+            return true;
+        }
+    }
+
+    *data = nullptr;
+
+    return true;
+}
+
+bool PthreadKeys::setKey(int key, int thread_id, void* data) { 
+    Lib::LockMutexGuard lock(m_mutex);
+
+    if (key < 0 || key >= 256 || !m_keys[key].used) {
+        return false;
+    }
+
+    for (auto& v : m_keys[key].specific_values) {
+        if (v.thread_id == thread_id) {
+            v.data = data;
+            return true;
+        }
+    }
+
+    m_keys[key].specific_values.push_back(Map({thread_id, data}));
+
+    return true;
+}
+
+int PS4_SYSV_ABI scePthreadKeyCreate(ScePthreadKey* key, PthreadKeyDestructor destructor) {
+    if (key == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* threadCtx = Singleton<PThreadCxt>::Instance();
+
+    if (!threadCtx->getPthreadKeys()->createKey(key, destructor)) {
+        return SCE_KERNEL_ERROR_EAGAIN;
+    }
+    printf("scePthreadKeyCreate\n");
+    printf("destructor = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(destructor));
+    printf("key        = %d\n", *key);
+
+    return SCE_OK;
+}
+
+void* PS4_SYSV_ABI scePthreadGetspecific(ScePthreadKey key) {
+    int thread_id = Lib::Thread::GetThreadIdUnique();
+    printf("scePthreadGetspecific\n");
+    printf("key       = %d\n", key);
+    printf("thread_id = %d\n", thread_id);
+
+    void* value = nullptr;
+    auto* threadCtx = Singleton<PThreadCxt>::Instance();
+    if (!threadCtx->getPthreadKeys()->getKey(key, thread_id, &value)) {
+        return nullptr;
+    }
+
+     printf("value     = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(value));
+
+    return value;
+}
+
+int PS4_SYSV_ABI scePthreadSetspecific(ScePthreadKey key, /* const*/ void* value) {
+
+    int thread_id = Lib::Thread::GetThreadIdUnique();
+    printf("scePthreadSetspecific\n");
+    printf("key       = %d\n", key);
+    printf("thread_id = %d\n", thread_id);
+    printf("value     = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(value));
+
+    auto* threadCtx = Singleton<PThreadCxt>::Instance();
+    if (!threadCtx->getPthreadKeys()->setKey(key, thread_id, value)) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    return SCE_OK;
 }
 
 };  // namespace HLE::Libs::LibKernel::ThreadManagement

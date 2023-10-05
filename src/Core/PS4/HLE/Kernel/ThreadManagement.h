@@ -3,8 +3,9 @@
 #include <pthread.h>
 #include <sched.h>
 #include <types.h>
-
+#include <vector>
 #include <string>
+#include "Lib/Threads.h"
 
 namespace HLE::Libs::LibKernel::ThreadManagement {
 
@@ -14,6 +15,7 @@ struct PthreadMutexAttrInternal;
 struct PthreadCondAttrInternal;
 struct PthreadCondInternal;
 struct PtheadOnceInternal;
+class PthreadKeys;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
@@ -22,6 +24,9 @@ using ScePthreadMutexattr = PthreadMutexAttrInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadOnce = PtheadOnceInternal*;
+using ScePthreadKey = int;
+
+using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -66,7 +71,38 @@ struct PtheadOnceInternal {
     pthread_once_t pthreadOnce;
 };
 
-class PThreadCxt {};
+class PThreadCxt {
+  public:
+    PthreadKeys* getPthreadKeys() { return m_pthread_keys; }
+    void setPthreadKeys(PthreadKeys* keys) { m_pthread_keys = keys; }
+
+  private:
+    PthreadKeys* m_pthread_keys = nullptr;
+};
+
+class PthreadKeys {
+  public:
+    PthreadKeys() {  }
+    virtual ~PthreadKeys() {  }
+
+    bool createKey(int* key, PthreadKeyDestructor destructor);
+    bool getKey(int key, int thread_id, void** data);
+    bool setKey(int key, int thread_id, void* data);
+  private:
+    struct Map {
+        int thread_id = -1;
+        void* data = nullptr;
+    };
+
+    struct Key {
+        bool used = false;
+        PthreadKeyDestructor destructor = nullptr;
+        std::vector<Map> specific_values;
+    };
+
+    Lib::Mutex m_mutex;
+    Key m_keys[256];
+};
 
 void Pthread_Init_Self_MainThread();
 
@@ -86,4 +122,8 @@ int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
 int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name);
 int PS4_SYSV_ABI scePthreadOnce(ScePthreadOnce* once_control, void (*init_routine)(void));
+
+int PS4_SYSV_ABI scePthreadKeyCreate(ScePthreadKey* key, PthreadKeyDestructor destructor);
+void* PS4_SYSV_ABI scePthreadGetspecific(ScePthreadKey key);
+int PS4_SYSV_ABI scePthreadSetspecific(ScePthreadKey key, /* const*/ void* value);
 }  // namespace HLE::Libs::LibKernel::ThreadManagement

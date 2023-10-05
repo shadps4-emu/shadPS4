@@ -2,6 +2,9 @@
 
 #include <Util/log.h>
 #include <debug.h>
+#include <io.h>
+#include <sys/types.h>
+#include <windows.h>
 
 #include "../../../Util/Singleton.h"
 #include "../Loader/Elf.h"
@@ -11,9 +14,6 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
-#include <io.h>
-#include <windows.h>
-#include <sys/types.h>
 
 namespace HLE::Libs::LibKernel {
 
@@ -41,8 +41,10 @@ PS4_SYSV_ABI void _write() { BREAKPOINT(); }
 PS4_SYSV_ABI void sigaction() { BREAKPOINT(); }
 
 PS4_SYSV_ABI void _exit() { BREAKPOINT(); }
-PS4_SYSV_ABI int pthread_cond_broadcast(ThreadManagement::ScePthreadCond* cond) { 
-       // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+
+namespace POSIX {
+PS4_SYSV_ABI int pthread_cond_broadcast(ThreadManagement::ScePthreadCond* cond) {
+    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
     int result = ThreadManagement::scePthreadCondBroadcast(cond);
     if (result != 0) {
         BREAKPOINT();
@@ -53,7 +55,15 @@ PS4_SYSV_ABI void pthread_rwlock_wrlock() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_cond_destroy() { BREAKPOINT(); }
 
 PS4_SYSV_ABI void pthread_rwlock_rdlock() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_setspecific() { BREAKPOINT(); }
+
+PS4_SYSV_ABI int pthread_setspecific(ThreadManagement::ScePthreadKey key, /* const*/ void* value) {
+    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    int result = ThreadManagement::scePthreadSetspecific(key, value);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+}
 PS4_SYSV_ABI void pthread_equal() { BREAKPOINT(); }
 PS4_SYSV_ABI int pthread_mutex_unlock(ThreadManagement::ScePthreadMutex* mutex) {
     // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
@@ -63,8 +73,8 @@ PS4_SYSV_ABI int pthread_mutex_unlock(ThreadManagement::ScePthreadMutex* mutex) 
     }
     return result;
 }
+
 PS4_SYSV_ABI void pthread_cond_timedwait() { BREAKPOINT(); }
-PS4_SYSV_ABI void poll() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_rwlock_unlock() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_detach() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutexattr_init() { BREAKPOINT(); }
@@ -76,19 +86,54 @@ int PS4_SYSV_ABI pthread_mutex_lock(ThreadManagement::ScePthreadMutex* mutex) {
     }
     return result;
 }
-PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutex_destroy() { BREAKPOINT(); }
-PS4_SYSV_ABI void sceKernelUsleep() { BREAKPOINT(); }
 PS4_SYSV_ABI void pthread_mutex_trylock() { BREAKPOINT(); }
+PS4_SYSV_ABI void pthread_join() { BREAKPOINT(); }
+PS4_SYSV_ABI void* pthread_getspecific(ThreadManagement::ScePthreadKey key) {
+    return HLE::Libs::LibKernel::ThreadManagement::scePthreadGetspecific(key);
+}
+PS4_SYSV_ABI void pthread_mutexattr_destroy() { BREAKPOINT(); }
+PS4_SYSV_ABI void pthread_self() { BREAKPOINT(); }
+PS4_SYSV_ABI void pthread_mutex_init() { BREAKPOINT(); }
+PS4_SYSV_ABI int _pthread_once(ThreadManagement::ScePthreadOnce* once_control, void (*init_routine)(void)) {
+    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    HLE::Libs::LibKernel::ThreadManagement::ScePthreadOnce o1nce_control = 0;
+    *once_control = new HLE::Libs::LibKernel::ThreadManagement::PtheadOnceInternal{};
+    (*once_control)->pthreadOnce = 0;
+    int result = pthread_once(&(*once_control)->pthreadOnce, init_routine);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+}
+PS4_SYSV_ABI void pthread_cond_wait() { BREAKPOINT(); }
+PS4_SYSV_ABI void pthread_mutexattr_settype() { BREAKPOINT(); }
+int PS4_SYSV_ABI pthread_key_create(ThreadManagement::ScePthreadKey* key, ThreadManagement::PthreadKeyDestructor destructor) {
+    int result = HLE::Libs::LibKernel::ThreadManagement::scePthreadKeyCreate(key, destructor);
+    if (result != 0) {
+        BREAKPOINT();
+    }
+    return result;
+}
+PS4_SYSV_ABI void pthread_cond_signal() { BREAKPOINT(); }
+
+};  // namespace POSIX
+
+PS4_SYSV_ABI void poll() { BREAKPOINT(); }
+
+PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
+
+PS4_SYSV_ABI void sceKernelUsleep() { BREAKPOINT(); }
+
 
 #define PROT_READ 0x1
 #define PROT_WRITE 0x2
 
-int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, off_t offset, void** res) { 
+int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, off_t offset, void** res) {
     DWORD flProtect;
     if (prot & PROT_WRITE) {
-            flProtect = PAGE_READWRITE;
-    } 
+        flProtect = PAGE_READWRITE;
+    }
 
     off_t end = len + offset;
     HANDLE mmap_fd, h;
@@ -114,44 +159,28 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
     return 0;
 }
 
-PS4_SYSV_ABI int mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset, void** res) { 
-        // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
-    int result = sceKernelMmap(addr, len, prot, flags, fd, offset,res);
+PS4_SYSV_ABI int mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset, void** res) {
+    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
+    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, res);
     if (result != 0) {
         BREAKPOINT();
     }
     return result;
 }
-PS4_SYSV_ABI void pthread_join() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_getspecific() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_mutexattr_destroy() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_self() { BREAKPOINT(); }
+
 PS4_SYSV_ABI void close() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_mutexattr_settype() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_key_create() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_mutex_init() { BREAKPOINT(); }
+
+
+
 PS4_SYSV_ABI void madvise() { BREAKPOINT(); }
 PS4_SYSV_ABI void _writev() { BREAKPOINT(); }
 PS4_SYSV_ABI void lseek() { BREAKPOINT(); }
 PS4_SYSV_ABI int* __error() { return _errno(); }
-PS4_SYSV_ABI int _pthread_once(ThreadManagement::ScePthreadOnce* once_control, void (*init_routine)(void)) { 
-    // posix call the difference is that there is a different behaviour when it doesn't return 0 or SCE_OK
-    HLE::Libs::LibKernel::ThreadManagement::ScePthreadOnce o1nce_control = 0;
-    *once_control = new HLE::Libs::LibKernel::ThreadManagement::PtheadOnceInternal{};
-    (*once_control)->pthreadOnce = 0;
-    int result = pthread_once(&(*once_control)->pthreadOnce, init_routine);
-    if (result != 0) {
-        BREAKPOINT();
-    }
-    return result;
-} 
-PS4_SYSV_ABI void pthread_cond_wait() { BREAKPOINT(); }
+
 PS4_SYSV_ABI void raise() { BREAKPOINT(); }
-PS4_SYSV_ABI void pthread_cond_signal() { BREAKPOINT(); }
+
 PS4_SYSV_ABI void _ioctl() { BREAKPOINT(); }
 PS4_SYSV_ABI void fstat() { BREAKPOINT(); }
-
-
 
 void LibKernel_Register(SymbolsResolver* sym) {
     // obj
@@ -191,40 +220,40 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, _write);
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", 1, 1, sigaction);
     LIB_FUNCTION("6Z83sYWFlA8", "libkernel", 1, "libkernel", 1, 1, _exit);
-    LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, pthread_cond_broadcast);
-    LIB_FUNCTION("sIlRvQqsN2Y", "libkernel", 1, "libkernel", 1, 1, pthread_rwlock_wrlock);
-    LIB_FUNCTION("RXXqi4CtF8w", "libkernel", 1, "libkernel", 1, 1, pthread_cond_destroy);
-    LIB_FUNCTION("iGjsr1WAtI0", "libkernel", 1, "libkernel", 1, 1, pthread_rwlock_rdlock);
-    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, pthread_setspecific);
-    LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", 1, 1, pthread_equal);
-    LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, pthread_mutex_unlock);
-    LIB_FUNCTION("27bAgiJmOh0", "libkernel", 1, "libkernel", 1, 1, pthread_cond_timedwait);
+    LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_broadcast);
+    LIB_FUNCTION("sIlRvQqsN2Y", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_rwlock_wrlock);
+    LIB_FUNCTION("RXXqi4CtF8w", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_destroy);
+    LIB_FUNCTION("iGjsr1WAtI0", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_rwlock_rdlock);
+    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_setspecific);
+    LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_equal);
+    LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutex_unlock);
+    LIB_FUNCTION("27bAgiJmOh0", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_timedwait);
     LIB_FUNCTION("ku7D4q1Y9PI", "libkernel", 1, "libkernel", 1, 1, poll);
-    LIB_FUNCTION("EgmLo6EWgso", "libkernel", 1, "libkernel", 1, 1, pthread_rwlock_unlock);
-    LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", 1, 1, pthread_detach);
-    LIB_FUNCTION("dQHWEsJtoE4", "libkernel", 1, "libkernel", 1, 1, pthread_mutexattr_init);
-    LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, pthread_mutex_lock);
+    LIB_FUNCTION("EgmLo6EWgso", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_rwlock_unlock);
+    LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_detach);
+    LIB_FUNCTION("dQHWEsJtoE4", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutexattr_init);
+    LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutex_lock);
     LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", 1, 1, munmap);
-    LIB_FUNCTION("ltCfaGr2JGE", "libkernel", 1, "libkernel", 1, 1, pthread_mutex_destroy);
+    LIB_FUNCTION("ltCfaGr2JGE", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutex_destroy);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
-    LIB_FUNCTION("K-jXhbt2gn4", "libkernel", 1, "libkernel", 1, 1, pthread_mutex_trylock);
+    LIB_FUNCTION("K-jXhbt2gn4", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutex_trylock);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, mmap);
-    LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", 1, 1, pthread_join);
-    LIB_FUNCTION("0-KXaS70xy4", "libkernel", 1, "libkernel", 1, 1, pthread_getspecific);
-    LIB_FUNCTION("HF7lK46xzjY", "libkernel", 1, "libkernel", 1, 1, pthread_mutexattr_destroy);
-    LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, pthread_self);
+    LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_join);
+    LIB_FUNCTION("0-KXaS70xy4", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_getspecific);
+    LIB_FUNCTION("HF7lK46xzjY", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutexattr_destroy);
+    LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_self);
     LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, close);
-    LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", 1, 1, pthread_mutexattr_settype);
-    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, pthread_key_create);
-    LIB_FUNCTION("ttHNfU+qDBU", "libkernel", 1, "libkernel", 1, 1, pthread_mutex_init);
+    LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutexattr_settype);
+    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_key_create);
+    LIB_FUNCTION("ttHNfU+qDBU", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_mutex_init);
     LIB_FUNCTION("Jahsnh4KKkg", "libkernel", 1, "libkernel", 1, 1, madvise);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __error);
-    LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, _pthread_once);
-    LIB_FUNCTION("Op8TBGY5KHg", "libkernel", 1, "libkernel", 1, 1, pthread_cond_wait);
+    LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, POSIX::_pthread_once);
+    LIB_FUNCTION("Op8TBGY5KHg", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_wait);
     LIB_FUNCTION("0t0-MxQNwK4", "libkernel", 1, "libkernel", 1, 1, raise);
-    LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", 1, 1, pthread_cond_signal);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_signal);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", 1, 1, _ioctl);
 }
 
