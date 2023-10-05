@@ -341,8 +341,8 @@ bool PthreadKeys::setKey(int key, int thread_id, void* data) {
             return true;
         }
     }
-
-    m_keys[key].specific_values.push_back(Map({thread_id, data}));
+    Map keymap = {thread_id, data};
+    m_keys[key].specific_values.push_back(keymap);
 
     return true;
 }
