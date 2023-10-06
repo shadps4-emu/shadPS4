@@ -123,7 +123,10 @@ PS4_SYSV_ABI void poll() { BREAKPOINT(); }
 
 PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
 
-PS4_SYSV_ABI void sceKernelUsleep() { BREAKPOINT(); }
+PS4_SYSV_ABI void sceKernelUsleep(unsigned int microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    //BREAKPOINT(); 
+}
 
 
 #define PROT_READ 0x1
@@ -174,7 +177,18 @@ PS4_SYSV_ABI void close() { BREAKPOINT(); }
 
 
 PS4_SYSV_ABI void madvise() { BREAKPOINT(); }
-PS4_SYSV_ABI void _writev() { BREAKPOINT(); }
+struct iovec {
+    void* iov_base; /* Base	address. */
+    size_t iov_len; /* Length. */
+};
+
+PS4_SYSV_ABI size_t _writev(int fd, const struct iovec* iov, int iovcn) {
+    size_t total_written = 0;
+    for (int i = 0; i < iovcn; i++) {
+        total_written += ::fwrite(iov[i].iov_base, 1, iov[i].iov_len, stdout);
+    }
+    return total_written;
+}
 PS4_SYSV_ABI void lseek() { BREAKPOINT(); }
 PS4_SYSV_ABI int* __error() { return _errno(); }
 
