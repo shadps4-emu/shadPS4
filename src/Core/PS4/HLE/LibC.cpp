@@ -6,6 +6,7 @@
 #include "../Loader/Elf.h"
 #include "Libs.h"
 #include "Emulator/HLE/Libraries/LibC/libc.h"
+#include "ErrorCodes.h"
 
 
 namespace HLE::Libs::LibC {
@@ -79,18 +80,24 @@ static PS4_SYSV_ABI void catchReturnFromMain(int status) {
 
 static PS4_SYSV_ABI void _Assert() { BREAKPOINT(); }
 
+PS4_SYSV_ABI int puts(const char* s) {
+    std::puts(s);
+    return SCE_OK;
+}
+
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
     LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, __cxa_guard_release);
     LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcmp);
     LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcpy);
+    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memset);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
     LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::exit);
     LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
-
+    LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 }
 
