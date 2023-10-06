@@ -71,32 +71,23 @@ void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
     }
 }
 
-int PS4_SYSV_ABI memcmp(const void* s1, const void* s2, size_t n) { return ::memcmp(s1, s2, n); }
 
-void* PS4_SYSV_ABI memcpy(void* dest, const void* src, size_t n) { return ::memcpy(dest, src, n); }
 
 static PS4_SYSV_ABI void catchReturnFromMain(int status) {
     // dummy
 }
-static PS4_SYSV_ABI void exit(int code) { ::exit(code); }
-static PS4_SYSV_ABI int atexit(void (*func)()) {
-    int rt = ::atexit(func);
-    if (rt != 0) {
-        BREAKPOINT();
-    }
-    return rt;
-}
+
 static PS4_SYSV_ABI void _Assert() { BREAKPOINT(); }
 
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
     LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, __cxa_guard_release);
-    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, memcmp);
-    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, memcpy);
+    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcmp);
+    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcpy);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
-    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, exit);
-    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, atexit);
+    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::exit);
+    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
 
