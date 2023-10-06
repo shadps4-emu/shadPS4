@@ -56,6 +56,7 @@
 #include <cstdint>
 
 #include "va_ctx.h"
+#include <stdio.h>
 
 namespace Emulator::HLE::Libraries::LibC {
 // ntoa conversion buffer size, this must be big enough to hold
@@ -669,6 +670,14 @@ static inline int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen
 
   // return written chars without terminating \0
   return (int)idx;
+}
+
+static int printf_ctx(VaCtx* ctx) {
+  const char* format = vaArgPtr<const char>(&ctx->va_list);
+  char buffer[256];
+  int result= _vsnprintf(_out_buffer, buffer, (size_t)-1, format, &ctx->va_list);
+  puts(buffer);
+  return result;
 }
 
 #if 0
