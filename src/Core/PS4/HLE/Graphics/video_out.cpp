@@ -167,7 +167,13 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
-    u64 buffer_size = 1280 * 768 * 4;  // TODO hardcoded value should be redone
+    u64 buffer_size = 0;//still calculation is probably partial or wrong :D
+    if (attribute->tilingMode == 0)
+    {
+        buffer_size = 1920 * 1088 * 4;
+    } else {
+        buffer_size = 1920 * 1080 * 4;
+    }
     u64 buffer_pitch = attribute->pitchInPixel;
 
     VideoOutBufferSetInternal buf{};
