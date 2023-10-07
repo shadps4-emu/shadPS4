@@ -221,9 +221,10 @@ s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
-    return 0;
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    s32 pending = videoOut->getCtx(handle)->m_flip_status.flipPendingNum;
+    return pending;
 }
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
     PRINT_FUNCTION_NAME();
