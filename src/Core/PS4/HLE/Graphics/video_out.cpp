@@ -17,6 +17,7 @@
 #include "emulator.h"
 #include <Core/PS4/GPU/gpu_memory.h>
 #include "graphics_render.h"
+#include <Core/PS4/HLE/LibSceGnmDriver.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -249,7 +250,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-
+    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();//hackish should be done that neccesary for niko's homebrew 
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
