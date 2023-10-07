@@ -85,6 +85,8 @@ PS4_SYSV_ABI int puts(const char* s) {
     return SCE_OK;
 }
 
+PS4_SYSV_ABI int rand() { return std::rand(); }
+
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
@@ -98,6 +100,7 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
+    LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 }
 
