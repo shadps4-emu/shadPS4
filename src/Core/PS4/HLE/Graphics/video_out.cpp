@@ -17,6 +17,7 @@
 #include "emulator.h"
 #include <Core/PS4/GPU/gpu_memory.h>
 #include "graphics_render.h"
+#include <Core/PS4/HLE/LibSceGnmDriver.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -167,7 +168,13 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
-    u64 buffer_size = 1280 * 768 * 4;  // TODO hardcoded value should be redone
+    u64 buffer_size = 0;//still calculation is probably partial or wrong :D
+    if (attribute->tilingMode == 0)
+    {
+        buffer_size = 1920 * 1088 * 4;
+    } else {
+        buffer_size = 1920 * 1080 * 4;
+    }
     u64 buffer_pitch = attribute->pitchInPixel;
 
     VideoOutBufferSetInternal buf{};
@@ -215,9 +222,10 @@ s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
-    return 0;
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    s32 pending = videoOut->getCtx(handle)->m_flip_status.flipPendingNum;
+    return pending;
 }
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
     PRINT_FUNCTION_NAME();
@@ -242,7 +250,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-
+    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();//hackish should be done that neccesary for niko's homebrew 
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
@@ -292,6 +300,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
 
     return handle;
 }
+s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) { BREAKPOINT(); }
 
 void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetFlipStatus);
@@ -303,5 +312,6 @@ void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("6kPnj51T62Y", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetResolutionStatus);
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutOpen);
     LIB_FUNCTION("zgXifHT9ErY", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutIsFlipPending);
+    LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutUnregisterBuffers);
 }
 }  // namespace HLE::Libs::Graphics::VideoOut

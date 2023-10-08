@@ -2,12 +2,12 @@
 
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <Core/virtual_memory.h>
+#include <Util/log.h>
 #include <debug.h>
 
 #include <bit>
 #include <magic_enum.hpp>
 
-#include <Util/log.h>
 #include "../../../../Util/Singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
@@ -76,10 +76,10 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
-        if ((!isPowerOfTwo(alignment) && !is16KBAligned(alignment))){
+        if ((!isPowerOfTwo(alignment) && !is16KBAligned(alignment))) {
             LOG_TRACE_IF(log_file_memory, "sceKernelMapDirectMemory returned SCE_KERNEL_ERROR_EINVAL alignment invalid\n");
             return SCE_KERNEL_ERROR_EINVAL;
-            }
+        }
     }
 
     LOG_INFO_IF(log_file_memory, "len               = {}\n", log_hex_full(len));
@@ -92,6 +92,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
 
     switch (prot) {
+        case 0x32:
         case 0x33:  // SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
             cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
             gpu_mode = GPU::MemoryMode::ReadWrite;
