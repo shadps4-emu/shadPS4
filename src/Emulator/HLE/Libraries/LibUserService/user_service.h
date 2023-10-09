@@ -3,6 +3,8 @@
 
 namespace Emulator::HLE::Libraries::LibUserService {
 
+using SceUserServiceUserId = s32;
+
 struct SceUserServiceInitializeParams {
     s32 priority;
 };

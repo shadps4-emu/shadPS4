@@ -1,51 +1,76 @@
 #pragma once
 #include "Core/PS4/Loader/SymbolsResolver.h"
+#include <Emulator/HLE/Libraries/LibUserService/user_service.h>
 
 namespace Emulator::HLE::Libraries::LibPad {
 
+struct ScePadOpenParam {
+    u08 reserve[8];
+};
+
+struct ScePadAnalogStick {
+    u08 x;
+    u08 y;
+};
+struct ScePadAnalogButtons {
+    u08 l2;
+    u08 r2;
+    u08 padding[2];
+};
+
+struct SceFQuaternion {
+    float x, y, z, w;
+};
+
+struct SceFVector3 {
+    float x, y, z;
+};
+
+struct ScePadTouch {
+    u16 x;
+    u16 y;
+    u08 id;
+    u08 reserve[3];
+};
+
+constexpr int SCE_PAD_MAX_TOUCH_NUM = 2;
+
+typedef struct ScePadTouchData {
+    u08 touchNum;
+    u08 reserve[3];
+    u32 reserve1;
+    ScePadTouch touch[SCE_PAD_MAX_TOUCH_NUM];
+} ScePadTouchData;
+
+struct ScePadExtensionUnitData {
+    u32 extensionUnitId;
+    u08 reserve[1];
+    u08 dataLength;
+    u08 data[10];
+};
+
 struct ScePadData {
     u32 buttons;
-    u08 left_stick_x;
-    u08 left_stick_y;
-    u08 right_stick_x;
-    u08 right_stick_y;
-    u08 analog_buttons_l2;
-    u08 analog_buttons_r2;
-    u08 padding[2];
-    float orientation_x;
-    float orientation_y;
-    float orientation_z;
-    float orientation_w;
-    float acceleration_x;
-    float acceleration_y;
-    float acceleration_z;
-    float angular_velocity_x;
-    float angular_velocity_y;
-    float angular_velocity_z;
-    u08 touch_data_touch_num;
-    u08 touch_data_reserve[3];
-    u32 touch_data_reserve1;
-    u16 touch_data_touch0_x;
-    u16 touch_data_touch0_y;
-    u08 touch_data_touch0_id;
-    u08 touch_data_touch0_reserve[3];
-    u16 touch_data_touch1_x;
-    u16 touch_data_touch1_y;
-    u08 touch_data_touch1_id;
-    u08 touch_data_touch1_reserve[3];
+    ScePadAnalogStick leftStick;
+    ScePadAnalogStick rightStick;
+    ScePadAnalogButtons analogButtons;
+    SceFQuaternion orientation;
+    SceFVector3 acceleration;
+    SceFVector3 angularVelocity;
+    ScePadTouchData touchData;
     bool connected;
     u64 timestamp;
-    u32 extension_unit_data_extension_unit_id;
-    u08 extension_unit_data_reserve[1];
-    u08 extension_unit_data_data_length;
-    u08 extension_unit_data_data[10];
-    u08 connected_count;
-    u08 reserve[2];
-    u08 device_unique_data_len;
-    u08 device_unique_data[12];
+    ScePadExtensionUnitData extensionUnitData;
+    uint8_t connectedCount;
+    uint8_t reserve[2];
+    uint8_t deviceUniqueDataLen;
+    uint8_t deviceUniqueData[12];
 };
 // hle functions
 int PS4_SYSV_ABI scePadInit();
+int PS4_SYSV_ABI scePadOpen(Emulator::HLE::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
+                            const ScePadOpenParam* pParam);
+int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
 void libPad_Register(SymbolsResolver* sym);
 };  // namespace Emulator::HLE::Libraries::LibPad

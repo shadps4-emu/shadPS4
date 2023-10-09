@@ -6,7 +6,8 @@
 namespace Emulator::HLE::Libraries::LibPad {
 int PS4_SYSV_ABI scePadInit() { return SCE_OK; }
 
-int PS4_SYSV_ABI scePadOpen(/* SceUserServiceUserId userId, int32_t type, int32_t index, const ScePadOpenParam* pParam*/) {
+int PS4_SYSV_ABI scePadOpen(Emulator::HLE::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
+                            const ScePadOpenParam* pParam) {
     return 1;  // dummy
 }
 
