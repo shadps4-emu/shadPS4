@@ -4,10 +4,9 @@
 #include <pthread.h>
 
 #include "../Loader/Elf.h"
-#include "Libs.h"
 #include "Emulator/HLE/Libraries/LibC/libc.h"
 #include "ErrorCodes.h"
-
+#include "Libs.h"
 
 namespace HLE::Libs::LibC {
 
@@ -72,8 +71,6 @@ void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
     }
 }
 
-
-
 static PS4_SYSV_ABI void catchReturnFromMain(int status) {
     // dummy
 }
@@ -86,6 +83,17 @@ PS4_SYSV_ABI int puts(const char* s) {
 }
 
 PS4_SYSV_ABI int rand() { return std::rand(); }
+
+PS4_SYSV_ABI void _ZdlPv(void* ptr) { std::free(ptr); }
+PS4_SYSV_ABI void _ZSt11_Xbad_allocv() { BREAKPOINT(); }
+PS4_SYSV_ABI void _ZSt14_Xlength_errorPKc() { BREAKPOINT(); }
+PS4_SYSV_ABI void* _Znwm(u64 count) {
+    if (count == 0) {
+        BREAKPOINT();
+    }
+    void* ptr = std::malloc(count);
+    return ptr;
+}
 
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
@@ -102,6 +110,11 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
+
+    LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, _ZdlPv);
+    LIB_FUNCTION("eT2UsmTewbU", "libc", 1, "libc", 1, 1, _ZSt11_Xbad_allocv);
+    LIB_FUNCTION("tQIo+GIPklo", "libc", 1, "libc", 1, 1, _ZSt14_Xlength_errorPKc);
+    LIB_FUNCTION("fJnpuVVBbKk", "libc", 1, "libc", 1, 1, _Znwm);
 }
 
 };  // namespace HLE::Libs::LibC
