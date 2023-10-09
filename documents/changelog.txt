@@ -1,3 +1,9 @@
+v0.0.2 not yet released WIP
+===========================
+-using cstdint header in variable types
+-run_main_entry: Rewrite in asm for stack setup
+-printf libc implementation for work with sysv_abi
+
 v0.0.1 29/09/2023
 =================
 First public release . Everything is new
