@@ -17,6 +17,7 @@
 #include "emulator.h"
 #include <Core/PS4/GPU/gpu_memory.h>
 #include "graphics_render.h"
+#include <Core/PS4/HLE/LibSceGnmDriver.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -167,7 +168,12 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
-    u64 buffer_size = 1280 * 768 * 4;  // TODO hardcoded value should be redone
+    u64 buffer_size = 0;  // still calculation is probably partial or wrong :D
+    if (attribute->tilingMode == 0) {
+        buffer_size = 1920 * 1088 * 4;
+    } else {
+        buffer_size = 1920 * 1080 * 4;
+    }
     u64 buffer_pitch = attribute->pitchInPixel;
 
     VideoOutBufferSetInternal buf{};
@@ -242,7 +248,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-
+    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
