@@ -117,6 +117,11 @@ int PS4_SYSV_ABI pthread_key_create(ThreadManagement::ScePthreadKey* key, Thread
 }
 PS4_SYSV_ABI void pthread_cond_signal() { BREAKPOINT(); }
 
+PS4_SYSV_ABI void _open() { BREAKPOINT(); }
+PS4_SYSV_ABI void _fcntl() { BREAKPOINT(); }
+PS4_SYSV_ABI void _readv() { BREAKPOINT(); }
+PS4_SYSV_ABI void _read() { BREAKPOINT(); }
+
 };  // namespace POSIX
 
 PS4_SYSV_ABI void poll() { BREAKPOINT(); }
@@ -125,9 +130,8 @@ PS4_SYSV_ABI void munmap() { BREAKPOINT(); }
 
 PS4_SYSV_ABI void sceKernelUsleep(unsigned int microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    //BREAKPOINT(); 
+    // BREAKPOINT();
 }
-
 
 #define PROT_READ 0x1
 #define PROT_WRITE 0x2
@@ -173,8 +177,6 @@ PS4_SYSV_ABI void* mmap(void* addr, u64 len, int prot, int flags, int fd, u64 of
 }
 
 PS4_SYSV_ABI void close() { BREAKPOINT(); }
-
-
 
 PS4_SYSV_ABI void madvise() { BREAKPOINT(); }
 struct iovec {
@@ -270,6 +272,10 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("0t0-MxQNwK4", "libkernel", 1, "libkernel", 1, 1, raise);
     LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", 1, 1, POSIX::pthread_cond_signal);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", 1, 1, _ioctl);
+    LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, POSIX::_open);
+    LIB_FUNCTION("t0fXUzq61Z4", "libkernel", 1, "libkernel", 1, 1, POSIX::_fcntl);
+    LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, POSIX::_readv);
+    LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, POSIX::_read);
 }
 
 };  // namespace HLE::Libs::LibKernel
