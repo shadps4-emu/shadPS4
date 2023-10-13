@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace Emulator {
+namespace Emu {
 
 struct VulkanExt {
     bool enable_validation_layers = false;
@@ -81,4 +81,5 @@ void emuRun();
 void checkAndWaitForGraphicsInit();
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx();
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image);
+void keyboardEvent(SDL_Event* event);
 }  // namespace Emulator

@@ -64,7 +64,7 @@ class VideoOutCtx {
         Lib::LockMutexGuard lock(m_mutex);
 
         if (m_graphic_ctx == nullptr) {
-            m_graphic_ctx = Emulator::getGraphicCtx();
+            m_graphic_ctx = Emu::getGraphicCtx();
         }
 
         return m_graphic_ctx;

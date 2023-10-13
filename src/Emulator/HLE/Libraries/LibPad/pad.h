@@ -1,8 +1,30 @@
 #pragma once
-#include "Core/PS4/Loader/SymbolsResolver.h"
 #include <Emulator/HLE/Libraries/LibUserService/user_service.h>
+#include <types.h>
+
+#include "Core/PS4/Loader/SymbolsResolver.h"
 
 namespace Emulator::HLE::Libraries::LibPad {
+
+typedef enum : u32 {
+    SCE_PAD_BUTTON_L3 = 0x00000002,
+    SCE_PAD_BUTTON_R3 = 0x00000004,
+    SCE_PAD_BUTTON_OPTIONS = 0x00000008,
+    SCE_PAD_BUTTON_UP = 0x00000010,
+    SCE_PAD_BUTTON_RIGHT = 0x00000020,
+    SCE_PAD_BUTTON_DOWN = 0x00000040,
+    SCE_PAD_BUTTON_LEFT = 0x00000080,
+    SCE_PAD_BUTTON_L2 = 0x00000100,
+    SCE_PAD_BUTTON_R2 = 0x00000200,
+    SCE_PAD_BUTTON_L1 = 0x00000400,
+    SCE_PAD_BUTTON_R1 = 0x00000800,
+    SCE_PAD_BUTTON_TRIANGLE = 0x00001000,
+    SCE_PAD_BUTTON_CIRCLE = 0x00002000,
+    SCE_PAD_BUTTON_CROSS = 0x00004000,
+    SCE_PAD_BUTTON_SQUARE = 0x00008000,
+    SCE_PAD_BUTTON_TOUCH_PAD = 0x00100000,
+    SCE_PAD_BUTTON_INTERCEPTED = 0x80000000,
+} ScePadButton;
 
 struct ScePadOpenParam {
     u08 reserve[8];

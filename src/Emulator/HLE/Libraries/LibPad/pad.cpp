@@ -3,6 +3,9 @@
 #include <Core/PS4/HLE/ErrorCodes.h>
 #include <Core/PS4/HLE/Libs.h>
 
+#include "Emulator/Util/singleton.h"
+#include "controller.h"
+
 namespace Emulator::HLE::Libraries::LibPad {
 int PS4_SYSV_ABI scePadInit() { return SCE_OK; }
 
@@ -12,7 +15,30 @@ int PS4_SYSV_ABI scePadOpen(Emulator::HLE::Libraries::LibUserService::SceUserSer
 }
 
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
-    pData->connected = true;  // make it think it is connected
+    auto* controller = singleton<Emulator::Host::Controller::GameController>::instance();
+
+    int connectedCount = 0;
+    bool isConnected = false;
+    Emulator::Host::Controller::State state;
+
+    controller->readState(&state, &isConnected, &connectedCount);
+
+    pData->buttons = state.buttonsState;
+    pData->leftStick.x = 0;   // dummy
+    pData->leftStick.y = 0;   // dummy
+    pData->rightStick.x = 0;  // dummy
+    pData->rightStick.y = 0;  // dummy
+    pData->analogButtons.r2 = 0;//dummy
+    pData->analogButtons.l2 = 0;//dummy
+    pData->orientation.x = 0;
+    pData->orientation.y = 0;
+    pData->orientation.z = 0;
+    pData->orientation.w = 0;
+
+    pData->connected = true;  // isConnected; //TODO fix me proper
+    pData->connectedCount = 1;//connectedCount;
+    pData->deviceUniqueDataLen = 0;
+
     return SCE_OK;
 }
 
