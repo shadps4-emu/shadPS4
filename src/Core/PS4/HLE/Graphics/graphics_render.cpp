@@ -8,7 +8,7 @@ static thread_local GPU::CommandPool g_command_pool;
 void GPU::renderCreateCtx() {
     auto* render_ctx = Singleton<RenderCtx>::Instance();
 
-    render_ctx->setGraphicCtx(Emulator::getGraphicCtx());
+    render_ctx->setGraphicCtx(Emu::getGraphicCtx());
 }
 
 void GPU::CommandBuffer::allocateBuffer() {

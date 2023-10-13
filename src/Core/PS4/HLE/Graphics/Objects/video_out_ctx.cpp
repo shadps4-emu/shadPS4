@@ -78,7 +78,7 @@ bool FlipQueue::flip(u32 micros) {
 
    auto* buffer = request.cfg->buffers[request.index].buffer_render;
 
-    Emulator::DrawBuffer(buffer);
+    Emu::DrawBuffer(buffer);
 
     m_mutex.LockMutex();
 

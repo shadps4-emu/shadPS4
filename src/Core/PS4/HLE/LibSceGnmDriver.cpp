@@ -91,7 +91,7 @@ namespace HLE::Libs::LibSceGnmDriver {
     void sceGnmDriverTriggerCapture(){}
     void sceGnmEndWorkload(){}
     void sceGnmFlushGarlic() { PRINT_FUNCTION_NAME();
-        GPU::flushGarlic(Emulator::getGraphicCtx());
+        GPU::flushGarlic(Emu::getGraphicCtx());
     }
     void sceGnmGetEqEventType(){}
     void sceGnmGetEqTimeStamp(){}

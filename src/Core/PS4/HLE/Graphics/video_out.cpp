@@ -164,7 +164,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 
     int registration_index = ctx->buffers_registration_index++;
 
-    Emulator::checkAndWaitForGraphicsInit();
+    Emu::checkAndWaitForGraphicsInit();
     GPU::renderCreateCtx();
 
     // try to calculate buffer size

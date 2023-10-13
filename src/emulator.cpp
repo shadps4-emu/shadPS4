@@ -1,25 +1,27 @@
 #include "emulator.h"
 
 #include <Core/PS4/HLE/Graphics/graphics_render.h>
+#include <Emulator/HLE/Libraries/LibPad/controller.h>
 #include <Util/Singleton.h>
 #include <vulkan_util.h>
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
+#include "Emulator/HLE/Libraries/LibPad/pad.h"
 #include "version.h"
 
-namespace Emulator {
+namespace Emu {
 
 bool m_emu_needs_exit = false;
 
 void emuInit(u32 width, u32 height) {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
 
     window_ctx->m_graphic_ctx.screen_width = width;
     window_ctx->m_graphic_ctx.screen_height = height;
 }
 
 void checkAndWaitForGraphicsInit() {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     while (!window_ctx->m_is_graphic_initialized) {
@@ -48,7 +50,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
 }
 void emuRun() {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
     window_ctx->m_mutex.LockMutex();
     {
         // init window and wait until init finishes
@@ -82,7 +84,7 @@ void emuRun() {
                 case SDL_EVENT_DID_ENTER_FOREGROUND: break;
 
                 case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP: break;
+                case SDL_EVENT_KEY_UP: keyboardEvent(&event); break;
             }
             continue;
         }
@@ -96,14 +98,14 @@ void emuRun() {
 }
 
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     return &window_ctx->m_graphic_ctx;
 }
 
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
     if (window_ctx->is_window_hidden) {
         SDL_ShowWindow(window_ctx->m_window);
         window_ctx->is_window_hidden = false;
@@ -198,4 +200,29 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     }
 }
 
-}  // namespace Emulator
+void keyboardEvent(SDL_Event* event) {
+    using Emulator::HLE::Libraries::LibPad::ScePadButton;
+
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+        u32 button = 0;
+        switch (event->key.keysym.sym) {
+            case SDLK_UP: button = ScePadButton::SCE_PAD_BUTTON_UP; break;
+            case SDLK_DOWN: button = ScePadButton::SCE_PAD_BUTTON_DOWN; break;
+            case SDLK_LEFT: button = ScePadButton::SCE_PAD_BUTTON_LEFT; break;
+            case SDLK_RIGHT: button = ScePadButton::SCE_PAD_BUTTON_RIGHT; break;
+            case SDLK_KP_8: button = ScePadButton ::SCE_PAD_BUTTON_TRIANGLE; break;
+            case SDLK_KP_6: button = ScePadButton ::SCE_PAD_BUTTON_CIRCLE; break;
+            case SDLK_KP_2: button = ScePadButton ::SCE_PAD_BUTTON_CROSS; break;
+            case SDLK_KP_4: button = ScePadButton ::SCE_PAD_BUTTON_SQUARE; break;
+            case SDLK_RETURN: button = ScePadButton ::SCE_PAD_BUTTON_OPTIONS; break;
+
+            default: break;
+        }
+        if (button != 0) {
+            auto* controller = Singleton<Emulator::Host::Controller::GameController>::Instance();
+            controller->checKButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
+        }
+    }
+}
+
+}  // namespace Emu

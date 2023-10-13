@@ -3,41 +3,43 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_opengl3.h"
-#include <stdio.h>
 #include <SDL3/SDL.h>
+#include <stdio.h>
+
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_sdl3.h"
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <SDL3/SDL_opengles2.h>
 #else
 #include <SDL3/SDL_opengl.h>
 #endif
 
+#include <Util/log.h>
+
+#include "GUI/ElfViewer.h"
 #include "spdlog/spdlog.h"
 #include "types.h"
-#include "GUI/ElfViewer.h"
-#include <Util/log.h>
 
 // This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
 #ifdef __EMSCRIPTEN__
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
-#include "Core/PS4/Linker.h"
-#include "Util/Singleton.h"
-#include <stdio.h>
-#include <inttypes.h>
-#include <Zydis/Zydis.h>
-#include "Core/PS4/HLE/Libs.h"
-#include "Lib/Threads.h"
-#include <emulator.h>
-#include "discord.h"
-#include <Util/config.h>
 #include <Core/PS4/HLE/Graphics/video_out.h>
+#include <Util/config.h>
+#include <Zydis/Zydis.h>
+#include <emulator.h>
+#include <inttypes.h>
+#include <stdio.h>
+
+#include "Core/PS4/HLE/Libs.h"
+#include "Core/PS4/Linker.h"
+#include "Lib/Threads.h"
+#include "Util/Singleton.h"
+#include "discord.h"
 
 // Main code
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     if (argc == 1) {
         printf("Usage: %s <elf or eboot.bin path>\n", argv[0]);
         return -1;
@@ -46,7 +48,7 @@ int main(int argc, char* argv[])
     logging::init(true);  // init logging
     auto width = Config::getScreenWidth();
     auto height = Config::getScreenHeight();
-    Emulator::emuInit(width, height);
+    Emu::emuInit(width, height);
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
     Lib::InitThreads();
 
@@ -54,7 +56,7 @@ int main(int argc, char* argv[])
 
     auto* linker = Singleton<Linker>::Instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
-    auto *module =linker->LoadModule(path);//load main executable
+    auto* module = linker->LoadModule(path);  // load main executable
     Lib::Thread mainthread(
         [](void*) {
             auto* linker = Singleton<Linker>::Instance();
@@ -65,12 +67,9 @@ int main(int argc, char* argv[])
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");
-    Emulator::emuRun();
+    Emu::emuRun();
     mainthread.JoinThread();
 
-   
-
- 
 #if 0
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMEPAD) != 0)

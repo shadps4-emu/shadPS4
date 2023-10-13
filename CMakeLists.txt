@@ -34,10 +34,16 @@ set(USERSERVICE_SOURCES src/Emulator/HLE/Libraries/LibUserService/user_service.c
 
 set(PAD_SOURCES src/Emulator/HLE/Libraries/LibPad/pad.cpp
                 src/Emulator/HLE/Libraries/LibPad/pad.h
+                src/Emulator/HLE/Libraries/LibPad/controller.cpp
+                src/Emulator/HLE/Libraries/LibPad/controller.h
+
 )
 
 set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_service.cpp
                           src/Emulator/HLE/Libraries/LibSystemService/system_service.h
+)
+
+set(UTIL_SOURCES src/Emulator/Util/singleton.h
 )
 
 add_executable(shadps4
@@ -45,6 +51,7 @@ add_executable(shadps4
     ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
     ${SYSTEMSERVICE_SOURCES}
+    ${UTIL_SOURCES}
     src/main.cpp
     src/types.h
     src/Core/FsFile.cpp

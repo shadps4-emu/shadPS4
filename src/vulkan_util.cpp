@@ -12,8 +12,8 @@
 
 constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
 
-void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
-    Emulator::VulkanExt ext;
+void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
+    Emu::VulkanExt ext;
     vulkanGetInstanceExtensions(&ext);
 
     VkApplicationInfo app_info{};
@@ -53,8 +53,8 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
                                                   VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME, "VK_KHR_maintenance1"};
 
-    ctx->m_surface_capabilities = new Emulator::VulkanSurfaceCapabilities{};
-    Emulator::VulkanQueues queues;
+    ctx->m_surface_capabilities = new Emu::VulkanSurfaceCapabilities{};
+    Emu::VulkanQueues queues;
 
     vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, ctx->m_surface_capabilities,
                                        &ctx->m_graphic_ctx.m_physical_device, &queues);
@@ -79,11 +79,11 @@ void Graphics::Vulkan::vulkanCreate(Emulator::WindowCtx* ctx) {
     ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
 }
 
-Emulator::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
-    auto* window_ctx = Singleton<Emulator::WindowCtx>::Instance();
+Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
+    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
-    auto* s = new Emulator::VulkanSwapchain;
+    auto* s = new Emu::VulkanSwapchain;
 
     VkExtent2D extent{};
     extent.width = clamp(ctx->screen_width, window_ctx->m_surface_capabilities->capabilities.minImageExtent.width,
@@ -183,8 +183,8 @@ Emulator::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Gr
     return s;
 }
 
-void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues) {
-    auto get_queue = [ctx](int id, const Emulator::VulkanQueueInfo& info, bool with_mutex = false) {
+void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emu::VulkanQueues& queues) {
+    auto get_queue = [ctx](int id, const Emu::VulkanQueueInfo& info, bool with_mutex = false) {
         ctx->queues[id].family = info.family;
         ctx->queues[id].index = info.index;
         vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
@@ -203,8 +203,8 @@ void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, 
     }
 }
 
-VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emulator::VulkanExt* r,
-                                              const Emulator::VulkanQueues& queues, const std::vector<const char*>& device_extensions) {
+VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emu::VulkanExt* r,
+                                              const Emu::VulkanQueues& queues, const std::vector<const char*>& device_extensions) {
     std::vector<VkDeviceQueueCreateInfo> queue_create_info(queues.family_count);
     std::vector<std::vector<float>> queue_priority(queues.family_count);
     uint32_t queue_create_info_num = 0;
@@ -247,7 +247,7 @@ VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, 
 
     return device;
 }
-void Graphics::Vulkan::vulkanGetInstanceExtensions(Emulator::VulkanExt* ext) {
+void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
     u32 required_extensions_count = 0;
     u32 available_extensions_count = 0;
     u32 available_layers_count = 0;
@@ -283,8 +283,8 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emulator::VulkanExt* ext) {
 
 void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
                                                           const std::vector<const char*>& device_extensions,
-                                                          Emulator::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
-                                                          Emulator::VulkanQueues* out_queues) {
+                                                          Emu::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
+                                                          Emu::VulkanQueues* out_queues) {
     u32 count_devices = 0;
     vkEnumeratePhysicalDevices(instance, &count_devices, nullptr);
 
@@ -292,7 +292,7 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     vkEnumeratePhysicalDevices(instance, &count_devices, devices.data());
 
     VkPhysicalDevice found_best_device = nullptr;
-    Emulator::VulkanQueues found_best_queues;
+    Emu::VulkanQueues found_best_queues;
 
     for (const auto& device : devices) {
         VkPhysicalDeviceProperties device_properties{};
@@ -316,8 +316,8 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     *out_queues = found_best_queues;
 }
 
-Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    Emulator::VulkanQueues qs;
+Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    Emu::VulkanQueues qs;
 
     u32 queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
@@ -334,7 +334,7 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
         LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n", string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
                     (presentation_supported == VK_TRUE ? "true" : "false"));
         for (uint32_t i = 0; i < f.queueCount; i++) {
-            Emulator::VulkanQueueInfo info;
+            Emu::VulkanQueueInfo info;
             info.family = family;
             info.index = i;
             info.is_graphics = (f.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0;
@@ -401,7 +401,7 @@ Emulator::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice devic
 }
 
 void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface,
-                                                    Emulator::VulkanSurfaceCapabilities* surfaceCap) {
+                                                    Emu::VulkanSurfaceCapabilities* surfaceCap) {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surfaceCap->capabilities);
 
     uint32_t formats_count = 0;
@@ -488,7 +488,7 @@ static void set_image_layout(VkCommandBuffer buffer, HLE::Libs::Graphics::Vulkan
 }
 
 void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanImage* src_image,
-                                       Emulator::VulkanSwapchain* dst_swapchain) {
+                                       Emu::VulkanSwapchain* dst_swapchain) {
     auto* vk_buffer = buffer->getPool()->buffers[buffer->getIndex()];
 
     HLE::Libs::Graphics::VulkanImage swapchain_image(HLE::Libs::Graphics::VulkanImageType::Unknown);
