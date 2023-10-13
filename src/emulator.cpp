@@ -1,13 +1,13 @@
 #include "emulator.h"
 
 #include <Core/PS4/HLE/Graphics/graphics_render.h>
+#include <Emulator/HLE/Libraries/LibPad/controller.h>
 #include <Util/Singleton.h>
 #include <vulkan_util.h>
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
 #include "Emulator/HLE/Libraries/LibPad/pad.h"
 #include "version.h"
-#include <Emulator/HLE/Libraries/LibPad/controller.h>
 
 namespace Emu {
 
