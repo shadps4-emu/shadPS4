@@ -623,11 +623,11 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
                 if (aeronid) {
                     return_info->name = aeronid->name;
                     return_info->virtual_address = GetStub(aeronid->nid);
-                    LOG_ERROR_IF(debug_loader, "Linker: Stub resolved {} as {} (lib: {}, mod: {}) \n", sr.name, return_info->name, library->name, module->name);
                 } else {
-                    return_info->virtual_address = (u64)&UnresolvedStub;
-                    return_info->name = "Unresolved!!!";
+                    return_info->virtual_address = GetStub(sr.name.c_str());
+                    return_info->name = "Unknown !!!";
 				}
+                LOG_ERROR_IF(debug_loader, "Linker: Stub resolved {} as {} (lib: {}, mod: {}) \n", sr.name, return_info->name, library->name, module->name);
             }
 		}
 		else
