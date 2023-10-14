@@ -19,23 +19,27 @@
 #define MAX_STUBS 128
 
 u64 UnresolvedStub() {
-    LOG_ERROR("Unknown Stub: called, returning zero\n");
+    LOG_ERROR("Unresolved Stub: called, returning zero\n");
     return 0;
 }
 
 static u64 UnknownStub() {
-    LOG_ERROR("Unknown Stub: called, returning zero\n");
+    LOG_ERROR("Stub: Unknown (nid: Unknown) called, returning zero\n");
     return 0;
 }
 
 
 static aerolib::nid_entry* stub_nids[MAX_STUBS];
+static std::string stub_nids_unknown[MAX_STUBS];
 
 template <int stub_index>
 static u64 CommonStub() {
     auto entry = stub_nids[stub_index];
-
-    LOG_ERROR("Stub: {} ({}) called, returning zero\n", entry->name, entry->nid);
+    if (entry) {
+        LOG_ERROR("Stub: {} (nid: {}) called, returning zero\n", entry->name, entry->nid);
+    } else {
+        LOG_ERROR("Stub: Unknown (nid: {}) called, returning zero\n", stub_nids_unknown[stub_index]);
+    }
     return 0;
 }
 
@@ -61,11 +65,16 @@ static u64 (*stub_handlers[MAX_STUBS])() = {
 };
 
 u64 GetStub(const char* nid) {
-	auto entry = aerolib::find_by_nid(nid);
-    if (!entry || UsedStubEntries >= MAX_STUBS) {
+    if (UsedStubEntries >= MAX_STUBS) {
         return (u64)&UnknownStub;
+    }
+
+	auto entry = aerolib::find_by_nid(nid);
+    if (!entry) {
+        stub_nids_unknown[UsedStubEntries] = nid;
     } else {
         stub_nids[UsedStubEntries] = entry;
-        return (u64)stub_handlers[UsedStubEntries++];
     }
+
+    return (u64)stub_handlers[UsedStubEntries++];
 }
