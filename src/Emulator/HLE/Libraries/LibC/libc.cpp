@@ -28,4 +28,9 @@ void* PS4_SYSV_ABI memcpy(void* dest, const void* src, size_t n) { return std::m
 
 void* PS4_SYSV_ABI memset(void* s, int c, size_t n) { return std::memset(s, c, n); }
 
+void* PS4_SYSV_ABI malloc(size_t size) { return std::malloc(size); }
+
+int PS4_SYSV_ABI strcmp(const char* str1, const char* str2) { return std::strcmp(str1, str2); }
+
+size_t PS4_SYSV_ABI strlen(const char* str) { return std::strlen(str); }
 };  // namespace Emulator::HLE::Libraries::LibC

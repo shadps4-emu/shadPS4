@@ -109,6 +109,9 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
+    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcmp);
+    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::malloc);
+    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strlen);
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 
     LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, _ZdlPv);
