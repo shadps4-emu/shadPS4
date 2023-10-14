@@ -1,7 +1,9 @@
 #include "video_out.h"
 
+#include <Core/PS4/GPU/gpu_memory.h>
 #include <Core/PS4/GPU/video_out_buffer.h>
 #include <Core/PS4/HLE/ErrorCodes.h>
+#include <Core/PS4/HLE/LibSceGnmDriver.h>
 #include <Core/PS4/HLE/Libs.h>
 #include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
 #include <Util/config.h>
@@ -15,9 +17,7 @@
 #include "Objects/video_out_ctx.h"
 #include "Util/Singleton.h"
 #include "emulator.h"
-#include <Core/PS4/GPU/gpu_memory.h>
 #include "graphics_render.h"
-#include <Core/PS4/HLE/LibSceGnmDriver.h>
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -168,9 +168,8 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
-    u64 buffer_size = 0;//still calculation is probably partial or wrong :D
-    if (attribute->tilingMode == 0)
-    {
+    u64 buffer_size = 0;  // still calculation is probably partial or wrong :D
+    if (attribute->tilingMode == 0) {
         buffer_size = 1920 * 1088 * 4;
     } else {
         buffer_size = 1920 * 1080 * 4;
@@ -207,8 +206,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         ctx->buffers[i + startIndex].buffer_size = buffer_size;
         ctx->buffers[i + startIndex].buffer_pitch = buffer_pitch;
         ctx->buffers[i + startIndex].buffer_render = static_cast<Graphics::VideoOutVulkanImage*>(
-            GPU::memoryCreateObj(
-            0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
+            GPU::memoryCreateObj(0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
 
         LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, log_hex_full(reinterpret_cast<uint64_t>(addresses[i])));
     }
@@ -233,7 +231,8 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     auto* ctx = videoOut->getCtx(handle);
 
     if (flipMode != 1) {
-        BREAKPOINT();  // only flipmode==1 is supported
+       // BREAKPOINT();  // only flipmode==1 is supported
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flipmode {}\n", bufferIndex);//openBOR needs 2 but seems to work
     }
     if (bufferIndex == -1) {
         BREAKPOINT();  // blank output not supported
@@ -250,7 +249,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();//hackish should be done that neccesary for niko's homebrew 
+    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();  // hackish should be done that neccesary for niko's homebrew
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
@@ -277,7 +276,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 }
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param) {
     PRINT_FUNCTION_NAME();
-    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM) {
+    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM && userId != 0) {
         BREAKPOINT();
     }
     if (busType != SCE_VIDEO_OUT_BUS_TYPE_MAIN) {
