@@ -9,6 +9,10 @@
 #include "HLE/Kernel/ThreadManagement.h"
 #include "Stubs.h"
 
+#include "../third-party/xbyak/xbyak/xbyak.h"
+
+#include <set>
+
 constexpr bool debug_loader = true;
 
 static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
@@ -575,6 +579,21 @@ void Linker::Relocate(Module* m)
 	}
 }
 
+void GenerateTrampoline(u64 hle_handler, u64 context_base);
+
+__declspec(align(32)) struct Context {
+    u64 gpr[16];
+    u64 ymm[16 * 4];
+    u64 rip;
+    u64 rflags;
+
+	// misc
+    u64 host_rsp;
+    u64 trampoline_ret;
+};
+Context thread_context;
+
+
 void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
 	auto ids = StringUtil::split_string(name, '#');
 
@@ -619,7 +638,7 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
 	{
         __debugbreak();//oute edo mallon
 	}
-
+    GenerateTrampoline(return_info->virtual_address, (u64)&thread_context);
 }
 
 using exit_func_t          = PS4_SYSV_ABI void (*)();
@@ -629,32 +648,575 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
 }
 
-static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
-    //reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have a specific layout
+auto gen = new Xbyak::CodeGenerator(64 * 1024 * 1024);
 
-	asm volatile (
-        "andq $-16, %%rsp\n"// Align to 16 bytes
-        "subq $8, %%rsp\n"	// videoout_basic expects the stack to be misaligned
 
-							// Kernel also pushes some more things here during process init
-							// at least: environment, auxv, possibly other things
 
-        "pushq 8(%1)\n"		// copy EntryParams to top of stack like the kernel does
-        "pushq 0(%1)\n"		// OpenOrbis expects to find it there
+constexpr auto rip_offs = offsetof(Context, rip);
+constexpr auto ymm_offs = offsetof(Context, ymm[0]);
+constexpr auto ymm_size = 32;
+constexpr auto rflags_offs = offsetof(Context, rflags);
+constexpr auto host_rsp_offs = offsetof(Context, host_rsp);
+constexpr auto trampoline_ret_offs = offsetof(Context, trampoline_ret);
 
-		"movq %1, %%rdi\n"	// also pass params and exit func
-        "movq %2, %%rsi\n"	// as before
+std::unordered_map<u64, PS4_SYSV_ABI u64 (*)()> translated_entries;
 
-        "jmp *%0\n"			// can't use call here, as that would mangle the prepared stack.
-							// there's no coming back
-        :
-        : "r"(addr), "r"(params), "r"(exit_func)
-        : "rax", "rsi", "rdi", "rsp", "rbp"
-		);
+void push_abi_regs() {
+	using namespace Xbyak;
+    for (int i = 3; i < 16; i++) {
+        if (i == 4) continue;
+        gen->push(Reg64(i));
+    }
 }
 
-void Linker::Execute()
-{
+void pop_abi_regs() {
+	using namespace Xbyak;
+    for (int i = 15; i >= 3; i--) {
+        if (i == 4) continue;
+        gen->pop(Reg64(i));
+    }
+}
+auto TranslateCode(u08* runtime_address, u64 context_base) -> PS4_SYSV_ABI u64 (*)() {
+    printf("TranslateCode: %p, ctx: %llX\n", runtime_address, context_base);
+
+	using namespace Xbyak;
+	using namespace Xbyak::util;
+
+	auto Entry = (PS4_SYSV_ABI u64(*)())gen->getCurr();
+
+	const Reg* reg_z2x[ZYDIS_REGISTER_MAX_VALUE] = {
+        [ZYDIS_REGISTER_AL] = &gen->rax,
+        [ZYDIS_REGISTER_CL] = &gen->rcx,
+        [ZYDIS_REGISTER_DL] = &gen->rdx,
+        [ZYDIS_REGISTER_BL] = &gen->rbx,
+        [ZYDIS_REGISTER_AH] = &gen->rax,
+        [ZYDIS_REGISTER_CH] = &gen->rcx,
+        [ZYDIS_REGISTER_DH] = &gen->rdx,
+        [ZYDIS_REGISTER_BH] = &gen->rbx,
+        [ZYDIS_REGISTER_SPL] = &gen->rsp,
+        [ZYDIS_REGISTER_BPL] = &gen->rbp,
+        [ZYDIS_REGISTER_SIL] = &gen->rsi,
+        [ZYDIS_REGISTER_DIL] = &gen->rdi,
+        [ZYDIS_REGISTER_R8B] = &gen->r8,
+        [ZYDIS_REGISTER_R9B] = &gen->r9,
+        [ZYDIS_REGISTER_R10B] = &gen->r10,
+        [ZYDIS_REGISTER_R11B] = &gen->r11,
+        [ZYDIS_REGISTER_R12B] = &gen->r12,
+        [ZYDIS_REGISTER_R13B] = &gen->r13,
+        [ZYDIS_REGISTER_R14B] = &gen->r14,
+        [ZYDIS_REGISTER_R15B] = &gen->r15,
+
+        [ZYDIS_REGISTER_AX] = &gen->rax,
+        [ZYDIS_REGISTER_CX] = &gen->rcx,
+        [ZYDIS_REGISTER_DX] = &gen->rdx,
+        [ZYDIS_REGISTER_BX] = &gen->rbx,
+        [ZYDIS_REGISTER_SP] = &gen->rsp,
+        [ZYDIS_REGISTER_BP] = &gen->rbp,
+        [ZYDIS_REGISTER_SI] = &gen->rsi,
+        [ZYDIS_REGISTER_DI] = &gen->rdi,
+        [ZYDIS_REGISTER_R8W] = &gen->r8,
+        [ZYDIS_REGISTER_R9W] = &gen->r9,
+        [ZYDIS_REGISTER_R10W] = &gen->r10,
+        [ZYDIS_REGISTER_R11W] = &gen->r11,
+        [ZYDIS_REGISTER_R12W] = &gen->r12,
+        [ZYDIS_REGISTER_R13W] = &gen->r13,
+        [ZYDIS_REGISTER_R14W] = &gen->r14,
+        [ZYDIS_REGISTER_R15W] = &gen->r15,
+
+		[ZYDIS_REGISTER_EAX] = &gen->rax,
+        [ZYDIS_REGISTER_ECX] = &gen->rcx,
+        [ZYDIS_REGISTER_EDX] = &gen->rdx,
+        [ZYDIS_REGISTER_EBX] = &gen->rbx,
+        [ZYDIS_REGISTER_ESP] = &gen->rsp,
+        [ZYDIS_REGISTER_EBP] = &gen->rbp,
+        [ZYDIS_REGISTER_ESI] = &gen->rsi,
+        [ZYDIS_REGISTER_EDI] = &gen->rdi,
+        [ZYDIS_REGISTER_R8D] = &gen->r8,
+        [ZYDIS_REGISTER_R9D] = &gen->r9,
+        [ZYDIS_REGISTER_R10D] = &gen->r10,
+        [ZYDIS_REGISTER_R11D] = &gen->r11,
+        [ZYDIS_REGISTER_R12D] = &gen->r12,
+        [ZYDIS_REGISTER_R13D] = &gen->r13,
+        [ZYDIS_REGISTER_R14D] = &gen->r14,
+        [ZYDIS_REGISTER_R15D] = &gen->r15,
+
+		[ZYDIS_REGISTER_RAX] = &gen->rax,
+        [ZYDIS_REGISTER_RCX] = &gen->rcx,
+        [ZYDIS_REGISTER_RDX] = &gen->rdx,
+        [ZYDIS_REGISTER_RBX] = &gen->rbx,
+        [ZYDIS_REGISTER_RSP] = &gen->rsp,
+        [ZYDIS_REGISTER_RBP] = &gen->rbp,
+        [ZYDIS_REGISTER_RSI] = &gen->rsi,
+        [ZYDIS_REGISTER_RDI] = &gen->rdi,
+        [ZYDIS_REGISTER_R8] = &gen->r8,
+        [ZYDIS_REGISTER_R9] = &gen->r9,
+        [ZYDIS_REGISTER_R10] =  &gen->r10,
+        [ZYDIS_REGISTER_R11] =  &gen->r11,
+        [ZYDIS_REGISTER_R12] =  &gen->r12,
+        [ZYDIS_REGISTER_R13] =  &gen->r13,
+        [ZYDIS_REGISTER_R14] =  &gen->r14,
+        [ZYDIS_REGISTER_R15] =  &gen->r15,
+		
+		[ZYDIS_REGISTER_XMM0] =  &gen->ymm0,
+        [ZYDIS_REGISTER_XMM1] =  &gen->ymm1,
+        [ZYDIS_REGISTER_XMM2] =  &gen->ymm2,
+        [ZYDIS_REGISTER_XMM3] =  &gen->ymm3,
+        [ZYDIS_REGISTER_XMM4] =  &gen->ymm4,
+        [ZYDIS_REGISTER_XMM5] =  &gen->ymm5,
+        [ZYDIS_REGISTER_XMM6] =  &gen->ymm6,
+        [ZYDIS_REGISTER_XMM7] =  &gen->ymm7,
+        [ZYDIS_REGISTER_XMM8] =  &gen->ymm8,
+        [ZYDIS_REGISTER_XMM9] =  &gen->ymm9,
+        [ZYDIS_REGISTER_XMM10] = &gen->ymm10,
+        [ZYDIS_REGISTER_XMM11] = &gen->ymm11,
+        [ZYDIS_REGISTER_XMM12] = &gen->ymm12,
+        [ZYDIS_REGISTER_XMM13] = &gen->ymm13,
+        [ZYDIS_REGISTER_XMM14] = &gen->ymm14,
+        [ZYDIS_REGISTER_XMM15] = &gen->ymm15,
+
+		[ZYDIS_REGISTER_YMM0] =  &gen->ymm0,
+		[ZYDIS_REGISTER_YMM1] =  &gen->ymm1,
+		[ZYDIS_REGISTER_YMM2] =  &gen->ymm2,
+		[ZYDIS_REGISTER_YMM3] =  &gen->ymm3,
+		[ZYDIS_REGISTER_YMM4] =  &gen->ymm4,
+		[ZYDIS_REGISTER_YMM5] =  &gen->ymm5,
+		[ZYDIS_REGISTER_YMM6] =  &gen->ymm6,
+		[ZYDIS_REGISTER_YMM7] =  &gen->ymm7,
+		[ZYDIS_REGISTER_YMM8] =  &gen->ymm8,
+		[ZYDIS_REGISTER_YMM9] =  &gen->ymm9,
+		[ZYDIS_REGISTER_YMM10] = &gen->ymm10,
+		[ZYDIS_REGISTER_YMM11] = &gen->ymm11,
+		[ZYDIS_REGISTER_YMM12] = &gen->ymm12,
+		[ZYDIS_REGISTER_YMM13] = &gen->ymm13,
+		[ZYDIS_REGISTER_YMM14] = &gen->ymm14,
+		[ZYDIS_REGISTER_YMM15] = &gen->ymm15,
+    };
+
+	push_abi_regs();
+
+	gen->mov(gen->rax, context_base + host_rsp_offs);
+    gen->mov(gen->qword[gen->rax], gen->rsp);
+
+	std::set<ZydisRegister> UsedRegs;
+    
+    ZydisDisassembledInstruction instruction;
+    while (ZYAN_SUCCESS(ZydisDisassembleIntel(
+        /* machine_mode:    */ ZYDIS_MACHINE_MODE_LONG_64,
+        /* runtime_address: */ (uint64_t)runtime_address,
+        /* buffer:          */ runtime_address,
+        /* length:          */ 15,
+        /* instruction:     */ &instruction))) {
+        printf("%016" PRIX64 "  %s\n", (u64)runtime_address, instruction.text);
+
+		auto next_address = runtime_address + instruction.info.length;
+        
+		UsedRegs.clear();
+
+		bool UsesFlags = false;
+
+		if (instruction.info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
+            if (instruction.info.mnemonic == ZYDIS_MNEMONIC_CALL || instruction.info.mnemonic == ZYDIS_MNEMONIC_JMP) {
+
+                if (instruction.info.mnemonic == ZYDIS_MNEMONIC_CALL) {
+                    gen->mov(gen->rax, context_base + 4 * 8);
+                    gen->mov(gen->rcx, gen->rax);
+                    gen->mov(gen->rsp, gen->qword[gen->rax]);
+                    gen->mov(gen->rax, (u64)next_address);
+                    gen->push(gen->rax);
+                    gen->mov(gen->qword[gen->rcx], gen->rsp);
+                }
+
+                gen->mov(gen->rax, context_base);
+                gen->mov(gen->rsp, gen->qword[gen->rax + host_rsp_offs]);
+                pop_abi_regs();
+
+                if (instruction.operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+                    gen->mov(gen->rax, (u64)next_address + instruction.operands[0].imm.value.s);
+                } else if (instruction.operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER) {
+                    gen->mov(gen->rax, ptr[gen->rax + reg_z2x[instruction.operands[0].reg.value]->getIdx() * 8]);
+                } else if (instruction.operands[0].type == ZYDIS_OPERAND_TYPE_MEMORY) {
+                    if (instruction.operands[0].mem.base == ZYDIS_REGISTER_RIP) {
+                        assert(instruction.operands[0].mem.index == ZYDIS_REGISTER_NONE);
+                        assert(instruction.operands[0].mem.disp.has_displacement);
+                        gen->mov(gen->rax, (u64)next_address + instruction.operands[0].mem.disp.value);
+                        gen->mov(rax, ptr[rax]);
+                    } else {
+                        assert(instruction.operands[0].mem.index == ZYDIS_REGISTER_NONE);
+
+                        gen->mov(gen->rax, context_base);
+                        gen->mov(rcx, ptr[rax + reg_z2x[instruction.operands[0].mem.base]->getIdx() * 8]);
+                        if (instruction.operands[0].mem.disp.has_displacement) {
+                            gen->mov(rax, ptr[rcx + instruction.operands[0].mem.disp.value]);
+                        } else {
+                            gen->mov(rax, ptr[rcx]);
+                        }
+                    }
+                } else {
+                    assert(false);
+                }
+                gen->ret();
+            } else if (instruction.info.mnemonic == ZYDIS_MNEMONIC_RET) {
+                gen->mov(gen->rax, context_base + 4 * 8);
+                gen->mov(gen->rsp, gen->qword[gen->rax]);
+                gen->pop(gen->rcx);
+                gen->mov(gen->qword[gen->rax], gen->rsp);
+
+                gen->mov(gen->rax, context_base);
+                gen->mov(gen->rsp, gen->qword[gen->rax + host_rsp_offs]);
+                pop_abi_regs();
+
+                gen->mov(gen->rax, gen->rcx);
+                gen->ret();
+            } else if (instruction.info.mnemonic == ZYDIS_MNEMONIC_JB || instruction.info.mnemonic == ZYDIS_MNEMONIC_JBE ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JL || instruction.info.mnemonic == ZYDIS_MNEMONIC_JLE ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JNB || instruction.info.mnemonic == ZYDIS_MNEMONIC_JNBE ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JNL || instruction.info.mnemonic == ZYDIS_MNEMONIC_JNLE ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JNO || instruction.info.mnemonic == ZYDIS_MNEMONIC_JNP ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JNS || instruction.info.mnemonic == ZYDIS_MNEMONIC_JNZ ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JO || instruction.info.mnemonic == ZYDIS_MNEMONIC_JP ||
+                       instruction.info.mnemonic == ZYDIS_MNEMONIC_JS || instruction.info.mnemonic == ZYDIS_MNEMONIC_JZ) {
+                void (CodeGenerator::*jump_map[])(const Label& label, CodeGenerator::LabelType type) = {
+                    [ZYDIS_MNEMONIC_JB] = &CodeGenerator::jb,   [ZYDIS_MNEMONIC_JBE] = &CodeGenerator::jbe,
+                    [ZYDIS_MNEMONIC_JL] = &CodeGenerator::jl,   [ZYDIS_MNEMONIC_JLE] = &CodeGenerator::jle,
+                    [ZYDIS_MNEMONIC_JNB] = &CodeGenerator::jnb, [ZYDIS_MNEMONIC_JNBE] = &CodeGenerator::jnbe,
+                    [ZYDIS_MNEMONIC_JNL] = &CodeGenerator::jnl, [ZYDIS_MNEMONIC_JNLE] = &CodeGenerator::jnle,
+                    [ZYDIS_MNEMONIC_JNO] = &CodeGenerator::jno, [ZYDIS_MNEMONIC_JNP] = &CodeGenerator::jnp,
+                    [ZYDIS_MNEMONIC_JNS] = &CodeGenerator::jns, [ZYDIS_MNEMONIC_JNZ] = &CodeGenerator::jnz,
+                    [ZYDIS_MNEMONIC_JO] = &CodeGenerator::jo,   [ZYDIS_MNEMONIC_JP] = &CodeGenerator::jp,
+                    [ZYDIS_MNEMONIC_JS] = &CodeGenerator::js,   [ZYDIS_MNEMONIC_JZ] = &CodeGenerator::jz,
+                };
+
+				assert(instruction.operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE);
+
+                // restore regs, rsp
+                gen->mov(gen->rax, context_base + host_rsp_offs);
+                gen->mov(gen->rsp, gen->qword[gen->rax]);
+                pop_abi_regs();
+
+                // load flags
+                gen->mov(gen->rax, context_base);
+                gen->mov(rax, ptr[gen->rax + rflags_offs]);
+                gen->push(rax);
+                gen->popf();
+
+                u64 dest_addr = (u64)next_address + instruction.operands[0].imm.value.s;
+
+                gen->mov(rax, (u64)dest_addr);  // if jump is taken, go to dest_addr
+                Label dest_jump;
+                (gen->*jump_map[instruction.info.mnemonic])(dest_jump, CodeGenerator::T_NEAR);
+                gen->mov(rax, (u64)next_address);  // else fall through to next_addr
+                gen->L(dest_jump);
+
+                // all done, return
+                gen->ret();
+
+            } else if (instruction.info.mnemonic == ZYDIS_MNEMONIC_LOOP || 
+				instruction.info.mnemonic == ZYDIS_MNEMONIC_LOOPNE || 
+				instruction.info.mnemonic == ZYDIS_MNEMONIC_LOOPE) {
+                void (CodeGenerator::*jump_map[])(const Label& label) = {
+                    [ZYDIS_MNEMONIC_LOOP] = &CodeGenerator::loop,
+                    [ZYDIS_MNEMONIC_LOOPNE] = &CodeGenerator::loopne,
+                    [ZYDIS_MNEMONIC_LOOPE] = &CodeGenerator::loope
+                };
+
+				// restore regs, rsp
+                gen->mov(gen->rax, context_base + host_rsp_offs);
+                gen->mov(gen->rsp, gen->qword[gen->rax]);
+                pop_abi_regs();
+
+				// load flags
+                gen->mov(gen->rax, context_base);
+                // backup ctx
+                gen->mov(rdx, rax);
+
+                gen->mov(rax, ptr[gen->rax + rflags_offs]);
+                gen->push(rax);
+                gen->popf();
+
+				// load rcx
+                gen->mov(rcx, ptr[rdx + rcx.getIdx() * 8]);
+
+
+				u64 dest_addr = (u64)next_address + instruction.operands[0].imm.value.s;
+
+                gen->mov(rax, (u64)dest_addr);  // if jump is taken, go to dest_addr
+                Label dest_jump;
+                (gen->*jump_map[instruction.info.mnemonic])(dest_jump);
+                gen->mov(rax, (u64)next_address);  // else fall through to next_addr
+                gen->L(dest_jump);
+
+				// store rcx
+
+				gen->mov(ptr[gen->rdx + rcx.getIdx() * 8], rcx);
+
+				gen->ret();
+
+			} else {
+				// Handle more Branches
+				assert(false);
+			}
+            break;
+        } else {
+            for (int i = 0; i < instruction.info.operand_count; i++) {
+                auto operand = &instruction.operands[i];
+                if (operand->type == ZYDIS_OPERAND_TYPE_REGISTER) {
+                    if (operand->reg.value == ZYDIS_REGISTER_RFLAGS) {
+                        UsesFlags = true;
+                    } else {
+						UsedRegs.insert(operand->reg.value);
+					}
+                } else if (operand->type == ZYDIS_OPERAND_TYPE_MEMORY) {
+                    if (operand->mem.base && operand->mem.base != ZYDIS_REGISTER_RIP) UsedRegs.insert(operand->mem.base);
+                    if (operand->mem.index) UsedRegs.insert(operand->mem.index);
+                }
+            }
+
+			if (UsesFlags) {
+                gen->mov(gen->rax, context_base);
+                gen->mov(rsp, ptr[gen->rax + host_rsp_offs]);
+                gen->mov(rax, ptr[gen->rax + rflags_offs]);
+                gen->push(rax);
+                gen->popf();
+			}
+
+            u16 used_mask = 0;
+
+            for (auto used_reg : UsedRegs) {
+                if (reg_z2x[used_reg] && reg_z2x[used_reg]->isREG()) {
+                    used_mask |= 1 << reg_z2x[used_reg]->getIdx();
+                }
+            }
+
+            u16 unused_mask = ~used_mask;
+
+            // not really possible?
+            assert(unused_mask != 0);
+
+            Reg64 context_reg;
+            Reg64 rip_reg;
+
+			int free_reg = 0;
+
+            for (; free_reg < 16; free_reg++) {
+                if (unused_mask & (1 << free_reg)) {
+                    context_reg = Reg64(free_reg);
+                    break;
+                }
+            }
+
+			free_reg++;
+
+			for (; free_reg < 16; free_reg++) {
+                if (unused_mask & (1 << free_reg)) {
+                    rip_reg = Reg64(free_reg);
+                    break;
+                }
+            }
+
+			if (instruction.info.attributes & ZYDIS_ATTRIB_IS_RELATIVE) {
+                gen->mov(gen->rax, (u64)next_address);
+                gen->mov(rip_reg, gen->rax);
+            }
+
+            gen->mov(gen->rax, context_base);
+
+            if (context_reg != gen->rax) {
+				gen->mov(context_reg, gen->rax);
+			}
+
+            for (auto used_reg : UsedRegs) {
+                if (!reg_z2x[used_reg]) {
+                    assert(false);
+                    //if (used_reg == ZYDIS_REGISTER_RIP) {
+					//	// handled
+                    ////} else if (used_reg == ZYDIS_REGISTER_EFLAGS) {
+					//} else {
+					//}
+				} else if (reg_z2x[used_reg]->isREG()) {
+                    gen->mov(*reg_z2x[used_reg], gen->ptr[context_reg + reg_z2x[used_reg]->getIdx() * 8]);
+                } else if (reg_z2x[used_reg]->isYMM()) {
+                    gen->vmovaps(*(Ymm*)reg_z2x[used_reg], gen->ptr[context_reg + ymm_offs + reg_z2x[used_reg]->getIdx() * ymm_size]);
+                } else {
+                    assert(false);
+                }
+            }
+
+			if (instruction.info.attributes & ZYDIS_ATTRIB_IS_RELATIVE) {
+                assert(rip_reg.getIdx() < 8);
+                assert(instruction.info.raw.modrm.offset != 0);
+                for (int op_byte = 0; op_byte < instruction.info.length; op_byte++) {
+                    if (op_byte == instruction.info.raw.modrm.offset) {
+                        assert(instruction.info.raw.modrm.mod == 0 && instruction.info.raw.modrm.rm == 5);
+                        gen->db((0x2 << 6) | (instruction.info.raw.modrm.reg << 3) | (rip_reg.getIdx() & 7));
+                    } else {
+                        gen->db(runtime_address[op_byte]);
+					}
+                }
+            } else {
+                for (int op_byte = 0; op_byte < instruction.info.length; op_byte++) gen->db(runtime_address[op_byte]);
+			}
+
+            for (auto used_reg : UsedRegs) {
+                if (reg_z2x[used_reg]->isREG()) {
+                    gen->mov(gen->ptr[context_reg + reg_z2x[used_reg]->getIdx() * 8], *reg_z2x[used_reg]);
+                } else if (reg_z2x[used_reg]->isYMM()) {
+                    gen->vmovaps(gen->ptr[context_reg + ymm_offs + reg_z2x[used_reg]->getIdx() * ymm_size], *(Ymm*)reg_z2x[used_reg]);
+                } else {
+                    assert(false);
+                }
+            }
+
+			if (UsesFlags) {
+                gen->mov(gen->rax, context_base);
+                gen->mov(rsp, ptr[gen->rax + host_rsp_offs]);
+                gen->pushf();
+                gen->pop(rcx);
+                gen->mov(ptr[gen->rax + rflags_offs], rcx);
+            }
+        }
+
+		runtime_address = next_address;
+    }
+
+	gen->int3();
+    gen->int3();
+    gen->int3();
+    gen->int3();
+
+	gen->ready();
+	return Entry;
+}
+
+void GenerateTrampoline(u64 hle_handler, u64 context_base) {
+    printf("Generating trampoline %llX\n", hle_handler);
+
+	using namespace Xbyak;
+	using namespace Xbyak::util;
+
+    auto entry = translated_entries.find(hle_handler);
+    if (entry == translated_entries.end()) {
+
+		translated_entries[hle_handler] = gen->getCurr<PS4_SYSV_ABI u64 (*)()>();
+
+        push_abi_regs();
+
+        gen->mov(gen->rax, context_base);
+        gen->mov(gen->qword[gen->rax + host_rsp_offs], gen->rsp);
+
+        gen->mov(rax, context_base);
+
+		// RSP
+		gen->mov(rsp, ptr[rax + rsp.getIdx() * 8]);
+        
+		// pop & store original return address
+        gen->pop(rdx);
+        gen->mov(ptr[rax + trampoline_ret_offs], rdx);
+
+        // args: RDI, RSI, RDX, RCX, R8, R9
+        Reg64 args_64[] = {rdi, rsi, rdx, rcx, r8, r9};
+        for (const auto& reg : args_64) {
+            gen->mov(reg, ptr[rax + reg.getIdx() * 8]);
+		}
+        // args: XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6 and XMM7
+        for (int i = 0; i < 8; i++) {
+            gen->vmovaps(Ymm(i), ptr[rax + ymm_offs + i * ymm_size]);
+		}
+
+		gen->mov(rax, hle_handler);
+        gen->call(rax) ;// this replaces the original return address
+
+        // rets: RAX, RDX
+        gen->mov(rcx, rax);
+        Reg64 rets_64[] = {rcx /* rax is used as temp */, rdx};
+
+        gen->mov(rax, context_base);
+        gen->mov(ptr[rax + rax.getIdx() * 8], rets_64[0]);
+        gen->mov(ptr[rax + rets_64[1].getIdx() * 8], rets_64[1]);
+        
+        // rets: XMM0
+        gen->vmovaps(ptr[rax + ymm_offs + 0 * ymm_size], Ymm(0));
+
+		// faux ret
+		gen->mov(gen->rax, context_base + 4 * 8);
+        gen->mov(gen->rsp, gen->qword[gen->rax]);
+        gen->pop(gen->rcx);
+        gen->mov(gen->qword[gen->rax], gen->rsp);
+
+        gen->mov(gen->rax, context_base);
+        gen->mov(gen->rsp, gen->qword[gen->rax + host_rsp_offs]);
+        pop_abi_regs();
+
+        gen->mov(gen->rax, ptr[gen->rax + trampoline_ret_offs]);
+        gen->ret();
+    }
+}
+
+static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
+    // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have a specific layout
+
+    // Allocate stack for guest thread
+    auto stack_top = 8 * 1024 * 1024 + (u64)VirtualAlloc(0, 8 * 1024 * 1024, MEM_COMMIT, PAGE_READWRITE);
+
+	{
+        auto& rsp = thread_context.gpr[4];
+        auto& rsi = thread_context.gpr[6];
+        auto& rdi = thread_context.gpr[7];
+
+        rsp = stack_top;
+
+        rsp = rsp & ~16;
+        rsp = rsp - 8;
+
+        rsp = rsp - 8;
+        *(void**)rsp = params->argv;
+
+        rsp = rsp - 8;
+        *(u64*)rsp = params->argc;
+
+        rsi = (u64)params;
+        rdi = (u64)exit_func;
+    }
+
+    thread_context.rip = addr;
+
+    for (;;) {
+        auto entry = translated_entries.find(thread_context.rip);
+        if (entry == translated_entries.end()) {
+            auto Entry = TranslateCode((u08*)thread_context.rip, (u64)&thread_context);
+            translated_entries[thread_context.rip] = Entry;
+            thread_context.rip = Entry();
+        } else {
+            thread_context.rip = entry->second();
+        }
+    }
+}
+
+
+static void run_main_entry_native(u64 addr, EntryParams* params, exit_func_t exit_func) {
+    // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have a specific layout
+
+    asm volatile(
+        "andq $-16, %%rsp\n"  // Align to 16 bytes
+        "subq $8, %%rsp\n"    // videoout_basic expects the stack to be misaligned
+
+        // Kernel also pushes some more things here during process init
+        // at least: environment, auxv, possibly other things
+
+        "pushq 8(%1)\n"  // copy EntryParams to top of stack like the kernel does
+        "pushq 0(%1)\n"  // OpenOrbis expects to find it there
+
+        "movq %1, %%rdi\n"  // also pass params and exit func
+        "movq %2, %%rsi\n"  // as before
+
+        "jmp *%0\n"  // can't use call here, as that would mangle the prepared stack.
+                     // there's no coming back
+        :
+        : "r"(addr), "r"(params), "r"(exit_func)
+        : "rax", "rsi", "rdi", "rsp", "rbp");
+}
+
+
+void Linker::Execute() {
     HLE::Libs::LibKernel::ThreadManagement::Pthread_Init_Self_MainThread();
     EntryParams p{};
     p.argc = 1;
