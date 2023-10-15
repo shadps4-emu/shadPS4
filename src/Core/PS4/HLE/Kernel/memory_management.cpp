@@ -8,7 +8,7 @@
 #include <bit>
 #include <magic_enum.hpp>
 
-#include "../../../../Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
 #include "Objects/physical_memory.h"
@@ -55,7 +55,7 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     LOG_INFO_IF(log_file_memory, "memory_type  = {}\n", magic_enum::enum_name(memtype.value()));
 
     u64 physical_addr = 0;
-    auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
     if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
         LOG_TRACE_IF(log_file_memory, "sceKernelAllocateDirectMemory returned SCE_KERNEL_ERROR_EAGAIN can't allocate physical memory\n");
         return SCE_KERNEL_ERROR_EAGAIN;
@@ -115,7 +115,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         return SCE_KERNEL_ERROR_ENOMEM;
     }
 
-    auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
     if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode, gpu_mode)) {
         BREAKPOINT();
     }

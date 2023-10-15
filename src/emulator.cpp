@@ -2,7 +2,7 @@
 
 #include <Core/PS4/HLE/Graphics/graphics_render.h>
 #include <Emulator/HLE/Libraries/LibPad/controller.h>
-#include <Util/Singleton.h>
+#include "Emulator/Util/singleton.h"
 #include <vulkan_util.h>
 
 #include "Core/PS4/HLE/Graphics/video_out.h"
@@ -14,14 +14,14 @@ namespace Emu {
 bool m_emu_needs_exit = false;
 
 void emuInit(u32 width, u32 height) {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
 
     window_ctx->m_graphic_ctx.screen_width = width;
     window_ctx->m_graphic_ctx.screen_height = height;
 }
 
 void checkAndWaitForGraphicsInit() {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     while (!window_ctx->m_is_graphic_initialized) {
@@ -50,7 +50,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
 }
 void emuRun() {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     window_ctx->m_mutex.LockMutex();
     {
         // init window and wait until init finishes
@@ -98,14 +98,14 @@ void emuRun() {
 }
 
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     return &window_ctx->m_graphic_ctx;
 }
 
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     if (window_ctx->is_window_hidden) {
         SDL_ShowWindow(window_ctx->m_window);
         window_ctx->is_window_hidden = false;
@@ -219,7 +219,7 @@ void keyboardEvent(SDL_Event* event) {
             default: break;
         }
         if (button != 0) {
-            auto* controller = Singleton<Emulator::Host::Controller::GameController>::Instance();
+            auto* controller = singleton<Emulator::Host::Controller::GameController>::instance();
             controller->checKButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
         }
     }

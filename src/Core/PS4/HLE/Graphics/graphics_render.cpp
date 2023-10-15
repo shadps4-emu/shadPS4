@@ -1,12 +1,12 @@
 #include "graphics_render.h"
 
-#include "Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "emulator.h"
 
 static thread_local GPU::CommandPool g_command_pool;
 
 void GPU::renderCreateCtx() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
 
     render_ctx->setGraphicCtx(Emu::getGraphicCtx());
 }
@@ -37,7 +37,7 @@ void GPU::CommandBuffer::freeBuffer() {
 }
 
 void GPU::CommandBuffer::waitForFence() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
 
     if (m_execute) {
         auto* device = render_ctx->getGraphicCtx()->m_device;
@@ -89,7 +89,7 @@ void GPU::CommandBuffer::executeWithSemaphore() {
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &m_pool->semaphores[m_index];
 
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     const auto& queue = render_ctx->getGraphicCtx()->queues[m_queue];
 
     if (queue.mutex != nullptr) {
@@ -124,7 +124,7 @@ void GPU::CommandBuffer::execute() {
     submit_info.signalSemaphoreCount = 0;
     submit_info.pSignalSemaphores = nullptr;
 
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     const auto& queue = render_ctx->getGraphicCtx()->queues[m_queue];
 
     if (queue.mutex != nullptr) {
@@ -145,7 +145,7 @@ void GPU::CommandBuffer::execute() {
     }
 }
 void GPU::CommandPool::createPool(int id) {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     auto* ctx = render_ctx->getGraphicCtx();
 
     m_pool[id] = new HLE::Libs::Graphics::VulkanCommandPool;
@@ -206,7 +206,7 @@ void GPU::CommandPool::createPool(int id) {
 }
 
 void GPU::CommandPool::deleteAllPool() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     auto* ctx = render_ctx->getGraphicCtx();
 
     for (auto& pool : m_pool) {

@@ -3,7 +3,7 @@
 #include <Core/PS4/HLE/ErrorCodes.h>
 #include <Core/PS4/HLE/Libs.h>
 
-#include "Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "controller.h"
 #include <debug.h>
 #include <Util/log.h>
@@ -20,7 +20,7 @@ int PS4_SYSV_ABI scePadOpen(Emulator::HLE::Libraries::LibUserService::SceUserSer
 }
 
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
-    auto* controller = Singleton<Emulator::Host::Controller::GameController>::Instance();
+    auto* controller = singleton<Emulator::Host::Controller::GameController>::instance();
 
     int connectedCount = 0;
     bool isConnected = false;

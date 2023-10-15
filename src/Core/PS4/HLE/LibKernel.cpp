@@ -3,7 +3,7 @@
 #include <Util/log.h>
 #include <debug.h>
 
-#include "../../../Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "../Loader/Elf.h"
 #include "Kernel/Objects/physical_memory.h"
 #include "Kernel/cpu_management.h"

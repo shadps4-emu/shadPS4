@@ -2,7 +2,7 @@
 
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
-#include <Util/Singleton.h>
+#include <Emulator/Util/singleton.h>
 #include <Util/log.h>
 #include <debug.h>
 #include <vulkan/vk_enum_string_helper.h>
@@ -80,7 +80,7 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
 }
 
 Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
-    auto* window_ctx = Singleton<Emu::WindowCtx>::Instance();
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     Lib::LockMutexGuard lock(window_ctx->m_mutex);
 
     auto* s = new Emu::VulkanSwapchain;

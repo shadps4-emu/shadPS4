@@ -35,7 +35,7 @@
 #include "Core/PS4/HLE/Libs.h"
 #include "Core/PS4/Linker.h"
 #include "Lib/Threads.h"
-#include "Util/Singleton.h"
+#include "Emulator/Util\singleton.h"
 #include "discord.h"
 
 // Main code
@@ -54,12 +54,12 @@ int main(int argc, char* argv[]) {
 
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
 
-    auto* linker = Singleton<Linker>::Instance();
+    auto* linker = singleton<Linker>::instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto* module = linker->LoadModule(path);  // load main executable
     Lib::Thread mainthread(
         [](void*) {
-            auto* linker = Singleton<Linker>::Instance();
+            auto* linker = singleton<Linker>::instance();
             linker->Execute();
         },
         nullptr);
