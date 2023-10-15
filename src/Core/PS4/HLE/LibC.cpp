@@ -95,6 +95,18 @@ PS4_SYSV_ABI void* _Znwm(u64 count) {
     return ptr;
 }
 
+float PS4_SYSV_ABI _Fsin(float arg) { return std::sinf(arg); }
+
+typedef int(PS4_SYSV_ABI* pfunc_QsortCmp)(const void*, const void*);
+thread_local static pfunc_QsortCmp compair_ps4;
+
+int qsort_compair(const void* arg1, const void* arg2) { return compair_ps4(arg1, arg2); }
+
+void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* comp)(const void*, const void*)) {
+    compair_ps4 = comp;
+    std::qsort(ptr, count, size, qsort_compair);
+}
+
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
@@ -109,9 +121,14 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
+    LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
+    LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
     LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcmp);
     LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::malloc);
+    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::free);
     LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strncpy);
+    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memmove);
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 
     LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, _ZdlPv);
