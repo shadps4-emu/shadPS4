@@ -27,6 +27,8 @@ set(LIBC_SOURCES src/Emulator/HLE/Libraries/LibC/Libc.cpp
                  src/Emulator/HLE/Libraries/LibC/Libc.h
                  src/Emulator/HLE/Libraries/LibC/printf.h
                  src/Emulator/HLE/Libraries/LibC/va_ctx.h
+                 src/Emulator/HLE/Libraries/LibC/libc_cxa.cpp
+                 src/Emulator/HLE/Libraries/LibC/libc_cxa.h
 )
 set(USERSERVICE_SOURCES src/Emulator/HLE/Libraries/LibUserService/user_service.cpp
                         src/Emulator/HLE/Libraries/LibUserService/user_service.h
