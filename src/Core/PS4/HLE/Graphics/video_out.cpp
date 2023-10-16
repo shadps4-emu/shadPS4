@@ -299,6 +299,11 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
 
     return handle;
 }
+s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle) {
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
+    videoOut->Close(handle);
+    return SCE_OK;
+}
 s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) { BREAKPOINT(); }
 
 void videoOutRegisterLib(SymbolsResolver* sym) {
@@ -312,5 +317,6 @@ void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutOpen);
     LIB_FUNCTION("zgXifHT9ErY", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutIsFlipPending);
     LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutUnregisterBuffers);
+    LIB_FUNCTION("uquVH4-Du78", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutClose);
 }
 }  // namespace HLE::Libs::Graphics::VideoOut

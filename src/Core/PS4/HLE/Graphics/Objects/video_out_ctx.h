@@ -58,6 +58,7 @@ class VideoOutCtx {
     virtual ~VideoOutCtx() {}
     void Init(u32 width, u32 height);
     int Open();
+    void Close(s32 handle);
     VideoConfigInternal* getCtx(int handle);
     FlipQueue& getFlipQueue() { return m_flip_queue; }
     HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {

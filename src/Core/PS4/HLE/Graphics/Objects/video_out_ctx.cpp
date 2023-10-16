@@ -1,6 +1,7 @@
 #include "video_out_ctx.h"
 
 #include <Core/PS4/HLE/LibKernel.h>
+#include <debug.h>
 
 namespace HLE::Graphics::Objects {
 
@@ -27,6 +28,30 @@ int VideoOutCtx::Open() {
     m_video_out_ctx.m_vblank_status = SceVideoOutVblankStatus();
 
     return handle;
+}
+void VideoOutCtx::Close(s32 handle) {
+    Lib::LockMutexGuard lock(m_mutex); 
+
+    m_video_out_ctx.isOpened = false;
+
+    if (m_video_out_ctx.m_flip_evtEq.size() > 0)
+    {
+        BREAKPOINT(); //we need to clear all events if they have been created
+    }
+    
+    m_video_out_ctx.m_flip_rate = 0;
+
+    // clear buffers
+    for (auto& buffer : m_video_out_ctx.buffers) {
+        buffer.buffer = nullptr;
+        buffer.buffer_render = nullptr;
+        buffer.buffer_size = 0;
+        buffer.set_id = 0;
+    }
+
+    m_video_out_ctx.buffers_sets.clear();
+
+    m_video_out_ctx.buffers_registration_index = 0;
 }
 
 VideoConfigInternal* VideoOutCtx::getCtx(int handle) {
