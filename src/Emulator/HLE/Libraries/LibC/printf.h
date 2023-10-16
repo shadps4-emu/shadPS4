@@ -56,7 +56,7 @@
 #include <cstdbool>
 #include <cstddef>
 #include <cstdint>
-
+#include <string>
 #include "va_ctx.h"
 
 namespace Emulator::HLE::Libraries::LibC {
@@ -693,4 +693,10 @@ static int printf_ctx(VaCtx* ctx) {
     return result;
 }
 
+static int vsnprintf_ctx(char* s, size_t n, const char* format, VaList* arg) { 
+    char buffer[n]; 
+    int result = _vsnprintf(_out_buffer, buffer, format, arg);
+    std::strcpy(s, buffer);
+    return result;
+}
 }  // namespace Emulator::HLE::Libraries::LibC

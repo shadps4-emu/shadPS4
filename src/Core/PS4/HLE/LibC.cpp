@@ -107,6 +107,7 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* c
     std::qsort(ptr, count, size, qsort_compair);
 }
 
+
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
@@ -119,6 +120,7 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
+    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);

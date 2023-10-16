@@ -8,6 +8,7 @@ namespace Emulator::HLE::Libraries::LibC {
 
 // HLE functions
 PS4_SYSV_ABI int printf(VA_ARGS);
+int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg);
 PS4_SYSV_ABI void exit(int code);
 PS4_SYSV_ABI int atexit(void (*func)());
 int PS4_SYSV_ABI memcmp(const void* s1, const void* s2, size_t n);

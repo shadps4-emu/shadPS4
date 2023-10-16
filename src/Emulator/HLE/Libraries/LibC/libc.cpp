@@ -12,6 +12,8 @@ PS4_SYSV_ABI int printf(VA_ARGS) {
     return printf_ctx(&ctx);
 }
 
+int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) { return vsnprintf_ctx(s, n, format, arg); }
+
 PS4_SYSV_ABI void exit(int code) { std::exit(code); }
 
 PS4_SYSV_ABI int atexit(void (*func)()) {
