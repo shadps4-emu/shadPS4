@@ -107,6 +107,9 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* c
     std::qsort(ptr, count, size, qsort_compair);
 }
 
+void* PS4_SYSV_ABI fopen(const char* filename, const char* mode) { 
+    return std::fopen(filename, mode);
+}
 
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
@@ -137,6 +140,7 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("eT2UsmTewbU", "libc", 1, "libc", 1, 1, _ZSt11_Xbad_allocv);
     LIB_FUNCTION("tQIo+GIPklo", "libc", 1, "libc", 1, 1, _ZSt14_Xlength_errorPKc);
     LIB_FUNCTION("fJnpuVVBbKk", "libc", 1, "libc", 1, 1, _Znwm);
+    LIB_FUNCTION("xeYO4u7uyJ0", "libc", 1, "libc", 1, 1, fopen);
 }
 
 };  // namespace HLE::Libs::LibC
