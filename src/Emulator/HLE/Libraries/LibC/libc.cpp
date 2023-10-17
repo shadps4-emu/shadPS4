@@ -43,6 +43,16 @@ char* PS4_SYSV_ABI strncpy(char* dest, const char* src, size_t count) { return s
 
 void* PS4_SYSV_ABI memmove(void* dest, const void* src, std::size_t count) { return std::memmove(dest, src, count); }
 
+char* PS4_SYSV_ABI strcpy(char* dest, const char* src) { return std::strcpy(dest, src); }
+
+char* PS4_SYSV_ABI strcat(char* dest, const char* src) { return std::strcat(dest, src); }
+
+// math
 float PS4_SYSV_ABI atan2f(float y, float x) { return std::atan2f(y, x); }
 
+float PS4_SYSV_ABI acosf(float num) { return std::acosf(num); }
+
+float PS4_SYSV_ABI tanf(float num) { return std::tanf(num); }
+
+float PS4_SYSV_ABI asinf(float num) { return std::asinf(num); }
 };  // namespace Emulator::HLE::Libraries::LibC

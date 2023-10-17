@@ -54,7 +54,6 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* c
     std::qsort(ptr, count, size, qsort_compair);
 }
 
-
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::Cxa::__cxa_guard_acquire);
@@ -79,7 +78,13 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strlen);
     LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strncpy);
     LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memmove);
+    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcpy); 
+    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcat);
     LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atan2f);
+    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::acosf);
+    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::tanf);
+    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::asinf);
+
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 
     LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, _ZdlPv);
