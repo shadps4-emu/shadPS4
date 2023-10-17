@@ -20,4 +20,6 @@ int PS4_SYSV_ABI strcmp(const char* str1, const char* str2);
 size_t PS4_SYSV_ABI strlen(const char* str);
 char* PS4_SYSV_ABI strncpy(char* dest, const char* src, size_t count);
 void* PS4_SYSV_ABI memmove(void* dest, const void* src, std::size_t count);
+float PS4_SYSV_ABI atan2f(float y, float x);
+
 }  // namespace Emulator::HLE::Libraries::LibC

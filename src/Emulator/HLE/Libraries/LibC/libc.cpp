@@ -2,6 +2,7 @@
 
 #include <debug.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -41,5 +42,7 @@ size_t PS4_SYSV_ABI strlen(const char* str) { return std::strlen(str); }
 char* PS4_SYSV_ABI strncpy(char* dest, const char* src, size_t count) { return std::strncpy(dest, src, count); }
 
 void* PS4_SYSV_ABI memmove(void* dest, const void* src, std::size_t count) { return std::memmove(dest, src, count); }
+
+float PS4_SYSV_ABI atan2f(float y, float x) { return std::atan2f(y, x); }
 
 };  // namespace Emulator::HLE::Libraries::LibC
