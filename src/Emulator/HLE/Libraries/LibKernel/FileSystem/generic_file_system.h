@@ -19,6 +19,8 @@ class GenericHandleAllocator {
 };
 
 class AbstractFileSystem {
+  public:
+    virtual bool ownsHandle(u32 handle) = 0;
     virtual u32 openFile(std::string filename, FileAccess access) = 0;
     virtual void closeFile(u32 handle) = 0;
 };
