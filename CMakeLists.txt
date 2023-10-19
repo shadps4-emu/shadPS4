@@ -19,6 +19,7 @@ include_directories(third-party/zydis/include/Zydis)
 include_directories(third-party/winpthread/include)
 include_directories(third-party/vulkan/include)
 include_directories(third-party/xxhash/include)
+include_directories(third-party/result/include)
 add_subdirectory("third-party")
 #=================== EXAMPLE ===================
 include_directories(src)
