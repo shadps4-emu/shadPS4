@@ -45,6 +45,12 @@ set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_ser
                           src/Emulator/HLE/Libraries/LibSystemService/system_service.h
 )
 
+set(FILESYSTEM_SOURCES src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.cpp
+                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h
+                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.cpp
+                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h
+)
+
 set(UTIL_SOURCES src/Emulator/Util/singleton.h
 )
 
@@ -53,6 +59,7 @@ add_executable(shadps4
     ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
     ${SYSTEMSERVICE_SOURCES}
+    ${FILESYSTEM_SOURCES}
     ${UTIL_SOURCES}
     src/main.cpp
     src/types.h
