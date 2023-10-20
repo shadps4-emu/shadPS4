@@ -1,15 +1,35 @@
 #pragma once
+#include <types.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <optional>
 #include <vector>
-#include <types.h>
 
 #include "Lib/Threads.h"
 
 namespace Emulator::Host::Fs {
+
+class MntPoints {
+  public:
+    struct MntPair {
+        std::string host_path;
+        std::string guest_path;  // e.g /app0/
+    };
+
+    MntPoints() {}
+    virtual ~MntPoints() {}
+    void mount(const std::string& host_folder, const std::string& quest_folder);
+    void unMount(const std::string& path);
+    void unMountAll();
+
+  private:
+    std::vector<MntPair> m_mnt_pairs;
+    Lib::Mutex m_mutex;
+
+};
 struct File {
     bool valid = false;          // Το descriptor ειναι οντως ανοιχτο;
     FILE* file;                  // File handle του αρχειο
@@ -82,4 +102,4 @@ class HandleTable {
         }
     }
 };
-}
+}  // namespace Emulator::Host::Fs
