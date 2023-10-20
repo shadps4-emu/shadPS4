@@ -4,7 +4,7 @@
 #include <Core/PS4/HLE/Libs.h>
 
 #include "Emulator/Util/singleton.h"
-#include "controller.h"
+#include "Emulator/Host/controller.h"
 #include <debug.h>
 #include <Util/log.h>
 

@@ -1,7 +1,7 @@
 #include "emulator.h"
 
 #include <Core/PS4/HLE/Graphics/graphics_render.h>
-#include <Emulator/HLE/Libraries/LibPad/controller.h>
+#include <Emulator/Host/controller.h>
 #include "Emulator/Util/singleton.h"
 #include <vulkan_util.h>
 
