@@ -40,4 +40,12 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
 	return handle; 
 }
 
+int PS4_SYSV_ABI sceKernelClose(int d) {
+    LOG_INFO_IF(log_file_fs, "sceKernelClose descriptor  = {}\n", d);
+    auto* h = singleton<Emulator::Host::Fs::HandleTable>::instance();
+    Emulator::Host::Fs::File file = h->getFile(d);
+    file.valid = false;
+    h->freeHandle(d);
+    return SCE_OK;
+}
 }  // namespace Emulator::HLE::Libraries::LibKernel::FileSystem

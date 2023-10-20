@@ -48,6 +48,7 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
     // fs
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
+    LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelClose);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
 }
 
