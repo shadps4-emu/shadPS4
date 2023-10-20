@@ -24,16 +24,17 @@ class MntPoints {
     void mount(const std::string& host_folder, const std::string& guest_folder);
     void unMount(const std::string& path);
     void unMountAll();
+    std::string getHostDirectory(const std::string& guest_directory);
 
   private:
     std::vector<MntPair> m_mnt_pairs;
     Lib::Mutex m_mutex;
-
 };
 struct File {
-    bool valid = false;          // Το descriptor ειναι οντως ανοιχτο;
-    FILE* file;                  // File handle του αρχειο
-    std::filesystem::path path;  // Path του στο host FS
+    bool valid = false;               // Το descriptor ειναι οντως ανοιχτο;
+    FILE* file;                       // File handle του αρχειο
+    std::filesystem::path host_path;  // Path in host FS
+    std::string guest_path;           // Path in PS4 FS
 
     File() : valid(true) {}
 };
@@ -86,6 +87,8 @@ class HandleTable {
 
         return handle;
     }
+
+    File getFile(u32 handle) { return files[handle]; }
 
     void freeHandle(u32 handle) {
         if (handle >= files.size()) {

@@ -1,4 +1,5 @@
 #include "fs.h"
+#include <algorithm>
 
 namespace Emulator::Host::Fs {
 void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) { 
@@ -12,4 +13,21 @@ void MntPoints::mount(const std::string& host_folder, const std::string& guest_f
 }
 void MntPoints::unMount(const std::string& path) {}
 void MntPoints::unMountAll() {}
+std::string MntPoints::getHostDirectory(const std::string& guest_directory) { 
+	Lib::LockMutexGuard lock(m_mutex);
+    for (auto& pair : m_mnt_pairs)
+    {
+        if (pair.guest_path.starts_with(guest_directory)) {
+            return pair.host_path + guest_directory;
+        }
+    }
+    //hack for relative path , get app0 and assuming it goes from there
+    for (auto& pair : m_mnt_pairs) {
+        if (pair.guest_path.starts_with("/app0")) {
+            std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
+            return pair.host_path + guest_directory;
+        }
+    }
+	return std::string(); 
+}
 }  // namespace Emulator::Host::Fs
