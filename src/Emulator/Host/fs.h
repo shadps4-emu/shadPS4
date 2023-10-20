@@ -21,7 +21,7 @@ class MntPoints {
 
     MntPoints() {}
     virtual ~MntPoints() {}
-    void mount(const std::string& host_folder, const std::string& quest_folder);
+    void mount(const std::string& host_folder, const std::string& guest_folder);
     void unMount(const std::string& path);
     void unMountAll();
 

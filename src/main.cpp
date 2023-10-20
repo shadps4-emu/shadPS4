@@ -5,7 +5,7 @@
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
-
+#include <filesystem>
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl3.h"
@@ -35,7 +35,8 @@
 #include "Core/PS4/HLE/Libs.h"
 #include "Core/PS4/Linker.h"
 #include "Lib/Threads.h"
-#include "Emulator/Util\singleton.h"
+#include "Emulator\Util\singleton.h"
+#include "Emulator\Host\fs.h"
 #include "discord.h"
 
 // Main code
@@ -51,8 +52,11 @@ int main(int argc, char* argv[]) {
     Emu::emuInit(width, height);
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
     Lib::InitThreads();
-
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
+
+    auto* mnt = singleton<Emulator::Host::Fs::MntPoints>::instance();
+    std::filesystem::path p = std::string(path);
+    mnt->mount(p.parent_path().string(), "/app0");
 
     auto* linker = singleton<Linker>::instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
