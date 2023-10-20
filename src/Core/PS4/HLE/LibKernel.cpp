@@ -10,6 +10,8 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
+#include "Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h"
+#include "Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -44,6 +46,9 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     // time
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
+    // fs
+    LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
+    LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
 }
 
 };  // namespace HLE::Libs::LibKernel
