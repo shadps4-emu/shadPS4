@@ -23,7 +23,7 @@ class MntPoints {
     virtual ~MntPoints() {}
     void mount(const std::string& host_folder, const std::string& guest_folder);
     void unMount(const std::string& path);
-    void unMountAll();
+    void unmountAll();
     std::string getHostDirectory(const std::string& guest_directory);
 
   private:
@@ -88,7 +88,7 @@ class HandleTable {
         return handle;
     }
 
-    File getFile(u32 handle) { return files[handle]; }
+    File* getFile(u32 handle) { return &files[handle]; }
 
     void freeHandle(u32 handle) {
         if (handle >= files.size()) {
