@@ -1,6 +1,8 @@
 #pragma once
+
+#include <condition_variable>
+#include <mutex>
 #include <Core/PS4/HLE/Graphics/video_out.h>
-#include <Lib/Threads.h>
 #include <Core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <emulator.h>
 
@@ -17,7 +19,7 @@ struct VideoOutBufferInfo {
 };
 
 struct VideoConfigInternal {
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
     SceVideoOutResolutionStatus m_resolution;
     bool isOpened = false;
     SceVideoOutFlipStatus m_flip_status;
@@ -45,9 +47,9 @@ class FlipQueue {
         uint64_t submit_tsc;
     };
 
-    Lib::Mutex m_mutex;
-    Lib::ConditionVariable m_submit_cond;
-    Lib::ConditionVariable m_done_cond;
+    std::mutex m_mutex;
+    std::condition_variable m_submit_cond;
+    std::condition_variable m_done_cond;
     std::vector<Request> m_requests;
 };
 
@@ -62,16 +64,16 @@ class VideoOutCtx {
     VideoConfigInternal* getCtx(int handle);
     FlipQueue& getFlipQueue() { return m_flip_queue; }
     HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
-        Lib::LockMutexGuard lock(m_mutex);
-
-        if (m_graphic_ctx == nullptr) {
+        std::scoped_lock lock{m_mutex};
+        
+        if (!m_graphic_ctx) {
             m_graphic_ctx = Emu::getGraphicCtx();
         }
 
         return m_graphic_ctx;
     }
   private:
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
     VideoConfigInternal m_video_out_ctx;
     FlipQueue m_flip_queue;
     HLE::Libs::Graphics::GraphicCtx* m_graphic_ctx = nullptr;

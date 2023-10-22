@@ -1,6 +1,6 @@
 #pragma once
 #include <types.h>
-#include "Lib/Threads.h"
+#include <mutex>
 
 namespace Emulator::Host::Controller {
 struct State {
@@ -21,7 +21,7 @@ class GameController {
 
 
   private:
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
     bool m_connected = false;
     State m_last_state;
     int m_connected_count = 0;

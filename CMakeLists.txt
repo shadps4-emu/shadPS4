@@ -83,8 +83,6 @@ add_executable(shadps4
     src/Core/PS4/Stubs.cpp
     src/Core/PS4/Stubs.h
     src/Core/PS4/Util/aerolib.cpp
-    src/Lib/Threads.cpp
-    src/Lib/Threads.h
     src/Core/PS4/HLE/Kernel/Objects/physical_memory.h
     src/Core/PS4/HLE/Kernel/Objects/physical_memory.cpp
     src/Util/string_util.cpp

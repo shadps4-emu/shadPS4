@@ -94,7 +94,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
     if (ctx == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
-    Lib::LockMutexGuard lock(ctx->m_mutex);
+    std::scoped_lock lock(ctx->m_mutex);
 
     if (eq == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;

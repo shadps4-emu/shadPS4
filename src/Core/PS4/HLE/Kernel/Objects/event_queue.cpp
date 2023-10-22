@@ -8,7 +8,7 @@ namespace HLE::Kernel::Objects {
 EqueueInternal::~EqueueInternal() {}
 
 int EqueueInternal::addEvent(const EqueueEvent& event) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 
     if (m_events.size() > 0) {
         BREAKPOINT();
@@ -24,7 +24,7 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
 }
 
 int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::unique_lock lock{m_mutex};
 
     u32 timeElapsed = 0;
     Lib::Timer t;
@@ -38,9 +38,9 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
         }
 
         if (micros == 0) {
-            m_cond.WaitCondVar(&m_mutex);
+            m_cond.wait(lock);
         } else {
-            m_cond.WaitCondVarFor(&m_mutex, micros - timeElapsed);
+            m_cond.wait_for(lock, std::chrono::microseconds(micros - timeElapsed));
         }
 
         timeElapsed = static_cast<uint32_t>(t.GetTimeSec() * 1000000.0);
@@ -50,7 +50,7 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
 }
 
 bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 
     if (m_events.size() > 1) {
         BREAKPOINT();  // we currently support one event
@@ -63,14 +63,12 @@ bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
         event.isTriggered = true;
     }
 
-    m_cond.SignalCondVar();
+    m_cond.notify_one();
 
     return true;
 }
 
 int EqueueInternal::getTriggeredEvents(SceKernelEvent* ev, int num) {
-    Lib::LockMutexGuard lock(m_mutex);
-
     int ret = 0;
 
     if (m_events.size() > 1) {
