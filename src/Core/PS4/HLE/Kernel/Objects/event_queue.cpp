@@ -1,8 +1,7 @@
 #include "event_queue.h"
-
-#include <Lib/Timer.h>
-
 #include "debug.h"
+
+#include <chrono>
 
 namespace HLE::Kernel::Objects {
 EqueueInternal::~EqueueInternal() {}
@@ -26,9 +25,8 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
 int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     std::unique_lock lock{m_mutex};
 
-    u32 timeElapsed = 0;
-    Lib::Timer t;
-    t.Start();
+    u64 timeElapsed = 0;
+    const auto start = std::chrono::high_resolution_clock::now();
 
     for (;;) {
         int ret = getTriggeredEvents(ev, num);
@@ -43,7 +41,8 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
             m_cond.wait_for(lock, std::chrono::microseconds(micros - timeElapsed));
         }
 
-        timeElapsed = static_cast<uint32_t>(t.GetTimeSec() * 1000000.0);
+        const auto end = std::chrono::high_resolution_clock::now();
+        timeElapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     }
 
     return 0;
