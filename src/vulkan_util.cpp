@@ -81,8 +81,6 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
 
 Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    Lib::LockMutexGuard lock(window_ctx->m_mutex);
-
     auto* s = new Emu::VulkanSwapchain;
 
     VkExtent2D extent{};
@@ -189,7 +187,7 @@ void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, 
         ctx->queues[id].index = info.index;
         vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
         if (with_mutex) {
-            ctx->queues[id].mutex = new Lib::Mutex;
+            ctx->queues[id].mutex = new std::mutex;
         }
     };
 

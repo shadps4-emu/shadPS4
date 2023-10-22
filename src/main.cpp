@@ -31,10 +31,10 @@
 #include <emulator.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <thread>
 
 #include "Core/PS4/HLE/Libs.h"
 #include "Core/PS4/Linker.h"
-#include "Lib/Threads.h"
 #include "Emulator/Util\singleton.h"
 #include "discord.h"
 
@@ -50,25 +50,22 @@ int main(int argc, char* argv[]) {
     auto height = Config::getScreenHeight();
     Emu::emuInit(width, height);
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
-    Lib::InitThreads();
 
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
 
     auto* linker = singleton<Linker>::instance();
     HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
     auto* module = linker->LoadModule(path);  // load main executable
-    Lib::Thread mainthread(
-        [](void*) {
+    std::jthread mainthread(
+        [](std::stop_token stop_token, void*) {
             auto* linker = singleton<Linker>::instance();
             linker->Execute();
         },
         nullptr);
-    mainthread.DetachThread();
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");
     Emu::emuRun();
-    mainthread.JoinThread();
 
 #if 0
     // Setup SDL

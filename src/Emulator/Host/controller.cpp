@@ -5,7 +5,7 @@ GameController::GameController() { m_states_num = 0;
     m_last_state = State();
 }
 void GameController::readState(State* state, bool* isConnected, int* connectedCount) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
@@ -37,7 +37,7 @@ void GameController::addState(const State& state) {
 }
 
 void GameController::checKButton(int id, u32 button, bool isPressed) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
     auto state = getLastState();
     if (isPressed) {
         state.buttonsState |= button;

@@ -70,7 +70,7 @@ static std::string encodeId(u64 nVal)
 }
 Module* Linker::LoadModule(const std::string& elf_name)
 {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 	auto* m = new Module;
     m->linker = this;
 	m->elf = new Elf;

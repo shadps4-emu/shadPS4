@@ -14,7 +14,7 @@ void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, 
 void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
     auto* gpumemory = singleton<GPUMemory>::instance();
 
-    Lib::LockMutexGuard lock(gpumemory->m_mutex);
+    std::scoped_lock lock{gpumemory->m_mutex};
 
     MemoryHeap h;
     h.allocated_virtual_addr = virtual_addr;
@@ -80,7 +80,7 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
                                       int virtual_addr_num, const GPUObject& info) {
     auto* gpumemory = singleton<GPUMemory>::instance();
 
-    Lib::LockMutexGuard lock(gpumemory->m_mutex);
+    std::scoped_lock lock{gpumemory->m_mutex};
 
     int heap_id = gpumemory->getHeapId(virtual_addr[0], size[0]);
 
@@ -172,7 +172,7 @@ void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
 }
 
 void GPU::GPUMemory::flushAllHeaps(HLE::Libs::Graphics::GraphicCtx* ctx) {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 
     int heap_id = 0;
     for (auto& heap : m_heaps) {

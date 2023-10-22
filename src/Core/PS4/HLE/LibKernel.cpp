@@ -2,6 +2,7 @@
 
 #include <Util/log.h>
 #include <debug.h>
+#include <windows.h>
 
 #include "Emulator/Util/singleton.h"
 #include "../Loader/Elf.h"

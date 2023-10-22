@@ -22,10 +22,10 @@ void emuInit(u32 width, u32 height) {
 
 void checkAndWaitForGraphicsInit() {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    Lib::LockMutexGuard lock(window_ctx->m_mutex);
+    std::unique_lock lock{window_ctx->m_mutex};
 
     while (!window_ctx->m_is_graphic_initialized) {
-        window_ctx->m_graphic_initialized_cond.WaitCondVar(&window_ctx->m_mutex);
+        window_ctx->m_graphic_initialized_cond.wait(lock);
     }
 }
 static void CreateSdlWindow(WindowCtx* ctx) {
@@ -51,15 +51,14 @@ static void CreateSdlWindow(WindowCtx* ctx) {
 }
 void emuRun() {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    window_ctx->m_mutex.LockMutex();
     {
         // init window and wait until init finishes
+        std::scoped_lock lock{window_ctx->m_mutex};
         CreateSdlWindow(window_ctx);
         Graphics::Vulkan::vulkanCreate(window_ctx);
         window_ctx->m_is_graphic_initialized = true;
-        window_ctx->m_graphic_initialized_cond.SignalCondVar();
+        window_ctx->m_graphic_initialized_cond.notify_one();
     }
-    window_ctx->m_mutex.UnlockMutex();
 
     bool exit_loop = false;
 
@@ -99,8 +98,7 @@ void emuRun() {
 
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    Lib::LockMutexGuard lock(window_ctx->m_mutex);
-
+    std::scoped_lock lock{window_ctx->m_mutex};
     return &window_ctx->m_graphic_ctx;
 }
 
