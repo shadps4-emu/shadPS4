@@ -2,13 +2,13 @@
 
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <Core/virtual_memory.h>
+#include <Util/log.h>
 #include <debug.h>
 
 #include <bit>
 #include <magic_enum.hpp>
 
-#include <Util/log.h>
-#include "../../../../Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
 #include "Objects/physical_memory.h"
@@ -55,7 +55,7 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     LOG_INFO_IF(log_file_memory, "memory_type  = {}\n", magic_enum::enum_name(memtype.value()));
 
     u64 physical_addr = 0;
-    auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
     if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
         LOG_TRACE_IF(log_file_memory, "sceKernelAllocateDirectMemory returned SCE_KERNEL_ERROR_EAGAIN can't allocate physical memory\n");
         return SCE_KERNEL_ERROR_EAGAIN;
@@ -76,10 +76,10 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
-        if ((!isPowerOfTwo(alignment) && !is16KBAligned(alignment))){
+        if ((!isPowerOfTwo(alignment) && !is16KBAligned(alignment))) {
             LOG_TRACE_IF(log_file_memory, "sceKernelMapDirectMemory returned SCE_KERNEL_ERROR_EINVAL alignment invalid\n");
             return SCE_KERNEL_ERROR_EINVAL;
-            }
+        }
     }
 
     LOG_INFO_IF(log_file_memory, "len               = {}\n", log_hex_full(len));
@@ -92,6 +92,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
 
     switch (prot) {
+        case 0x32:
         case 0x33:  // SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
             cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
             gpu_mode = GPU::MemoryMode::ReadWrite;
@@ -114,7 +115,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         return SCE_KERNEL_ERROR_ENOMEM;
     }
 
-    auto* physical_memory = Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
+    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
     if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode, gpu_mode)) {
         BREAKPOINT();
     }

@@ -1,6 +1,6 @@
 #include "tile_manager.h"
-#include "Lib/Threads.h"
-#include "Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
+#include <mutex>
 
 namespace GPU {
 
@@ -10,7 +10,7 @@ class TileManager {
   public:
     TileManager(){}
     virtual ~TileManager() {  }
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
 };
 
 class TileManager32 {
@@ -143,9 +143,9 @@ void convertTileToLinear(void* dst, const void* src,u32 width, u32 height, bool 
     TileManager32 t;
     t.Init(width, height, is_neo);
 
-    auto* g_TileManager = Singleton<TileManager>::Instance();
+    auto* g_TileManager = singleton<TileManager>::instance();
 
-    Lib::LockMutexGuard lock(g_TileManager->m_mutex);
+    std::scoped_lock lock{g_TileManager->m_mutex};
     
     for (u32 y = 0; y < height; y++) {
         u32 x = 0;

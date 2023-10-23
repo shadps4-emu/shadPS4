@@ -1,20 +1,20 @@
 #include "graphics_render.h"
 
-#include "Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "emulator.h"
 
 static thread_local GPU::CommandPool g_command_pool;
 
 void GPU::renderCreateCtx() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
 
-    render_ctx->setGraphicCtx(Emulator::getGraphicCtx());
+    render_ctx->setGraphicCtx(Emu::getGraphicCtx());
 }
 
 void GPU::CommandBuffer::allocateBuffer() {
     m_pool = g_command_pool.getPool(m_queue);
 
-    Lib::LockMutexGuard lock(m_pool->mutex);
+    std::scoped_lock lock{m_pool->mutex};
 
     for (uint32_t i = 0; i < m_pool->buffers_count; i++) {
         if (!m_pool->busy[i]) {
@@ -27,7 +27,7 @@ void GPU::CommandBuffer::allocateBuffer() {
 }
 
 void GPU::CommandBuffer::freeBuffer() {
-    Lib::LockMutexGuard lock(m_pool->mutex);
+    std::scoped_lock lock{m_pool->mutex};
 
     waitForFence();
 
@@ -37,7 +37,7 @@ void GPU::CommandBuffer::freeBuffer() {
 }
 
 void GPU::CommandBuffer::waitForFence() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
 
     if (m_execute) {
         auto* device = render_ctx->getGraphicCtx()->m_device;
@@ -89,18 +89,9 @@ void GPU::CommandBuffer::executeWithSemaphore() {
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &m_pool->semaphores[m_index];
 
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     const auto& queue = render_ctx->getGraphicCtx()->queues[m_queue];
-
-    if (queue.mutex != nullptr) {
-        queue.mutex->LockMutex();
-    }
-
     auto result = vkQueueSubmit(queue.vk_queue, 1, &submit_info, fence);
-
-    if (queue.mutex != nullptr) {
-        queue.mutex->LockMutex();
-    }
 
     m_execute = true;
 
@@ -124,18 +115,9 @@ void GPU::CommandBuffer::execute() {
     submit_info.signalSemaphoreCount = 0;
     submit_info.pSignalSemaphores = nullptr;
 
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     const auto& queue = render_ctx->getGraphicCtx()->queues[m_queue];
-
-    if (queue.mutex != nullptr) {
-        queue.mutex->LockMutex();
-    }
-
     auto result = vkQueueSubmit(queue.vk_queue, 1, &submit_info, fence);
-
-    if (queue.mutex != nullptr) {
-        queue.mutex->UnlockMutex();
-    }
 
     m_execute = true;
 
@@ -145,7 +127,7 @@ void GPU::CommandBuffer::execute() {
     }
 }
 void GPU::CommandPool::createPool(int id) {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     auto* ctx = render_ctx->getGraphicCtx();
 
     m_pool[id] = new HLE::Libs::Graphics::VulkanCommandPool;
@@ -206,7 +188,7 @@ void GPU::CommandPool::createPool(int id) {
 }
 
 void GPU::CommandPool::deleteAllPool() {
-    auto* render_ctx = Singleton<RenderCtx>::Instance();
+    auto* render_ctx = singleton<RenderCtx>::instance();
     auto* ctx = render_ctx->getGraphicCtx();
 
     for (auto& pool : m_pool) {

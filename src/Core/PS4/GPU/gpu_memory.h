@@ -2,6 +2,7 @@
 
 #include <Core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <types.h>
+#include <mutex>
 #include <vector>
 
 namespace GPU {
@@ -66,7 +67,7 @@ class GPUMemory {
     GPUMemory() {}
     virtual ~GPUMemory() {}
     int getHeapId(u64 vaddr, u64 size);
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
     std::vector<MemoryHeap> m_heaps;
     void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, const u64* virtual_addr,
                           const u64* size, int virtual_addr_num, const GPUObject& info);

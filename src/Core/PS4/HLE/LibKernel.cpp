@@ -5,8 +5,7 @@
 #include <io.h>
 #include <sys/types.h>
 #include <windows.h>
-
-#include "../../../Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "../Loader/Elf.h"
 #include "Kernel/Objects/physical_memory.h"
 #include "Kernel/ThreadManagement.h"
@@ -14,11 +13,13 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
+#include "Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h"
+#include "Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h"
 
 namespace HLE::Libs::LibKernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC;  // dummy return
-
+  
 int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
     BREAKPOINT();
     return 0;
@@ -207,6 +208,7 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelGetDirectMemorySize);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, MemoryManagement::sceKernelMapDirectMemory);
     LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
+    LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", 1, 1, sceKernelMunmap);
     // equeue
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, EventQueues::sceKernelCreateEqueue);
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, EventQueues::sceKernelWaitEqueue);
@@ -215,6 +217,7 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     // time
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
+
     // Pthreads
     LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrInit);
     LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadMutexattrSettype);
@@ -225,7 +228,6 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadCondInit);
     LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, ThreadManagement::scePthreadCondBroadcast);
 
-    // TODO
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", 1, 1, sysconf);
 
@@ -276,6 +278,11 @@ void LibKernel_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("t0fXUzq61Z4", "libkernel", 1, "libkernel", 1, 1, POSIX::_fcntl);
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, POSIX::_readv);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, POSIX::_read);
+
+    // fs
+    LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
+    LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
+
 }
 
 };  // namespace HLE::Libs::LibKernel

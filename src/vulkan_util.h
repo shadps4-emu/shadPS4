@@ -26,18 +26,18 @@ const T& clamp(const T& x, const T& min, const T& max) {
     return x;
 }
 
-void vulkanCreate(Emulator::WindowCtx* ctx);
-void vulkanGetInstanceExtensions(Emulator::VulkanExt* ext);
+void vulkanCreate(Emu::WindowCtx* ctx);
+void vulkanGetInstanceExtensions(Emu::VulkanExt* ext);
 void vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, const std::vector<const char*>& device_extensions,
-                                        Emulator::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
-                                        Emulator::VulkanQueues* out_queues);
-VkDevice vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emulator::VulkanExt* r,
-                            const Emulator::VulkanQueues& queues, const std::vector<const char*>& device_extensions);
-Emulator::VulkanQueues vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface);
-void vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emulator::VulkanSurfaceCapabilities* surfaceCap);
-void vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emulator::VulkanQueues& queues);
-Emulator::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count);
-void vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanImage* src_image, Emulator::VulkanSwapchain* dst_swapchain);
+                                        Emu::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
+                                        Emu::VulkanQueues* out_queues);
+VkDevice vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emu::VulkanExt* r,
+                            const Emu::VulkanQueues& queues, const std::vector<const char*>& device_extensions);
+Emu::VulkanQueues vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface);
+void vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface, Emu::VulkanSurfaceCapabilities* surfaceCap);
+void vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emu::VulkanQueues& queues);
+Emu::VulkanSwapchain* vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count);
+void vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanImage* src_image, Emu::VulkanSwapchain* dst_swapchain);
 void vulkanFillImage(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanImage* dst_image, const void* src_data, u64 size, u32 src_pitch,
                      u64 dst_layout);
 void vulkanBufferToImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanBuffer* src_buffer, u32 src_pitch,

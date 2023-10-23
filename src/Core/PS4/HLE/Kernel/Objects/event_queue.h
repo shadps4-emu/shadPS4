@@ -1,6 +1,7 @@
 #pragma once
+
 #include <types.h>
-#include <Lib/Threads.h>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -71,8 +72,8 @@ class EqueueInternal {
     int getTriggeredEvents(SceKernelEvent* ev, int num);
   private:
     std::string m_name;
-    Lib::Mutex m_mutex; 
+    std::mutex m_mutex; 
     std::vector<EqueueEvent> m_events;
-    Lib::ConditionVariable m_cond;
+    std::condition_variable m_cond;
 };
 };  // namespace HLE::Kernel::Objects

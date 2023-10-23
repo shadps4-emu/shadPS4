@@ -1,15 +1,13 @@
 # shadPS4
 
 An early PS4 emulator for Windows and Linux written in C++
-
+by shadow , skmp , wheremyfoodat
 
 [Check us on twitter](https://twitter.com/shadps4 "Check us on twitter")
 
 # Status
 
-Currently, it can only load PS4 ELF files.
-
-Progress is focused on videoout_basic.elf from SDK demos, currently, it can load with fully working graphics. Others probably won't run since they might not be able to relocate all necessary functions
+Early progress , a small amount of ps4 sdk demos and homebrew games working
 
 ![](https://geps.dev/progress/60) Elf Loader
 

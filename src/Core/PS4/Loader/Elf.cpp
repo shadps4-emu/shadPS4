@@ -206,8 +206,8 @@ bool Elf::isElfFile() const {
         return false;
     }
 
-    if (m_elf_header->e_type != ET_SCE_DYNEXEC && m_elf_header->e_type != ET_SCE_DYNAMIC) {
-        printf("ERROR:e_type expected 0xFE10 OR 0xFE18 is (%04x)\n", m_elf_header->e_type);
+    if (m_elf_header->e_type != ET_SCE_DYNEXEC&& m_elf_header->e_type != ET_SCE_DYNAMIC&& m_elf_header->e_type != ET_SCE_EXEC) {
+        printf("ERROR:e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is (%04x)\n", m_elf_header->e_type);
         return false;
     }
 

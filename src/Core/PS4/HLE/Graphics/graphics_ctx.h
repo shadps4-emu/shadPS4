@@ -2,13 +2,12 @@
 
 #include <types.h>
 #include <vulkan/vulkan_core.h>
-
-#include "Lib/Threads.h"
+#include <mutex>
 
 namespace HLE::Libs::Graphics {
 
 struct VulkanCommandPool {
-    Lib::Mutex mutex;
+    std::mutex mutex;
     VkCommandPool pool = nullptr;
     VkCommandBuffer* buffers = nullptr;
     VkFence* fences = nullptr;
@@ -18,7 +17,7 @@ struct VulkanCommandPool {
 };
 
 struct VulkanQueueInfo {
-    Lib::Mutex* mutex = nullptr;
+    std::mutex* mutex = nullptr;
     u32 family = static_cast<u32>(-1);
     u32 index = static_cast<u32>(-1);
     VkQueue vk_queue = nullptr;

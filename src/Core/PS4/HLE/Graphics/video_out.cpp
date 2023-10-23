@@ -1,7 +1,9 @@
 #include "video_out.h"
 
+#include <Core/PS4/GPU/gpu_memory.h>
 #include <Core/PS4/GPU/video_out_buffer.h>
 #include <Core/PS4/HLE/ErrorCodes.h>
+#include <Core/PS4/HLE/LibSceGnmDriver.h>
 #include <Core/PS4/HLE/Libs.h>
 #include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
 #include <Util/config.h>
@@ -13,9 +15,8 @@
 #include <string>
 
 #include "Objects/video_out_ctx.h"
-#include "Util/Singleton.h"
+#include "Emulator/Util/singleton.h"
 #include "emulator.h"
-#include <Core/PS4/GPU/gpu_memory.h>
 #include "graphics_render.h"
 #include <Core/PS4/HLE/LibSceGnmDriver.h>
 
@@ -24,12 +25,12 @@ namespace HLE::Libs::Graphics::VideoOut {
 constexpr bool log_file_videoout = true;  // disable it to disable logging
 
 void videoOutInit(u32 width, u32 height) {
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     videoOut->Init(width, height);
 }
 
 bool videoOutFlip(u32 micros) {
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     return videoOut->getFlipQueue().flip(micros);
 }
 
@@ -87,14 +88,14 @@ static void flip_delete_event_func(LibKernel::EventQueues::SceKernelEqueue eq, H
 
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue eq, s32 handle, void* udata) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
 
     auto* ctx = videoOut->getCtx(handle);
 
     if (ctx == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
-    Lib::LockMutexGuard lock(ctx->m_mutex);
+    std::scoped_lock lock(ctx->m_mutex);
 
     if (eq == nullptr) {
         return SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -122,7 +123,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(LibKernel::EventQueues::SceKernelEqueue
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,
                                             const SceVideoOutBufferAttribute* attribute) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     auto* ctx = videoOut->getCtx(handle);
 
     if (handle == 1) {  // main port
@@ -164,7 +165,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 
     int registration_index = ctx->buffers_registration_index++;
 
-    Emulator::checkAndWaitForGraphicsInit();
+    Emu::checkAndWaitForGraphicsInit();
     GPU::renderCreateCtx();
 
     // try to calculate buffer size
@@ -206,8 +207,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         ctx->buffers[i + startIndex].buffer_size = buffer_size;
         ctx->buffers[i + startIndex].buffer_pitch = buffer_pitch;
         ctx->buffers[i + startIndex].buffer_render = static_cast<Graphics::VideoOutVulkanImage*>(
-            GPU::memoryCreateObj(
-            0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
+            GPU::memoryCreateObj(0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]), buffer_size, buffer_info));
 
         LOG_INFO_IF(log_file_videoout, "buffers[{}] = {}\n", i + startIndex, log_hex_full(reinterpret_cast<uint64_t>(addresses[i])));
     }
@@ -216,22 +216,24 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 }
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     videoOut->getCtx(handle)->m_flip_rate = rate;
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    // BREAKPOINT();
-    PRINT_DUMMY_FUNCTION_NAME();
-    return 0;
+    PRINT_FUNCTION_NAME();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
+    s32 pending = videoOut->getCtx(handle)->m_flip_status.flipPendingNum;
+    return pending;
 }
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     auto* ctx = videoOut->getCtx(handle);
 
     if (flipMode != 1) {
-        BREAKPOINT();  // only flipmode==1 is supported
+       // BREAKPOINT();  // only flipmode==1 is supported
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flipmode {}\n", bufferIndex);//openBOR needs 2 but seems to work
     }
     if (bufferIndex == -1) {
         BREAKPOINT();  // blank output not supported
@@ -248,12 +250,14 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();
+  
+    HLE::Libs::LibSceGnmDriver::sceGnmFlushGarlic();  // hackish should be done that neccesary for niko's homebrew
+
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     auto* ctx = videoOut->getCtx(handle);
     videoOut->getFlipQueue().getFlipStatus(ctx, status);
 
@@ -269,13 +273,13 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* sta
 }
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status) {
     PRINT_FUNCTION_NAME();
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     *status = videoOut->getCtx(handle)->m_resolution;
     return SCE_OK;
 }
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index, const void* param) {
     PRINT_FUNCTION_NAME();
-    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM) {
+    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM && userId != 0) {
         BREAKPOINT();
     }
     if (busType != SCE_VIDEO_OUT_BUS_TYPE_MAIN) {
@@ -288,7 +292,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
     if (param != nullptr) {
         BREAKPOINT();
     }
-    auto* videoOut = Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
     int handle = videoOut->Open();
 
     if (handle < 0) {
@@ -298,6 +302,12 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
 
     return handle;
 }
+s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle) {
+    auto* videoOut = singleton<HLE::Graphics::Objects::VideoOutCtx>::instance();
+    videoOut->Close(handle);
+    return SCE_OK;
+}
+s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) { BREAKPOINT(); }
 
 void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetFlipStatus);
@@ -309,6 +319,8 @@ void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("6kPnj51T62Y", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetResolutionStatus);
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutOpen);
     LIB_FUNCTION("zgXifHT9ErY", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutIsFlipPending);
+    LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutUnregisterBuffers);
+    LIB_FUNCTION("uquVH4-Du78", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutClose);
 
     //openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);
@@ -318,7 +330,5 @@ void videoOutRegisterLib(SymbolsResolver* sym) {
     LIB_FUNCTION("w3BY+tAEiQY", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutRegisterBuffers);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutSubmitFlip);
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutGetFlipStatus);
-
-
 }
 }  // namespace HLE::Libs::Graphics::VideoOut

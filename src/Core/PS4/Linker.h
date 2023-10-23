@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <mutex>
 #include "Loader/Elf.h"
 #include "Loader/SymbolsResolver.h"
-#include "Lib/Threads.h"
 
 struct DynamicModuleInfo;
 class Linker;
@@ -130,5 +130,5 @@ public:
 
 	std::vector<Module*> m_modules;
 	SymbolsResolver* m_HLEsymbols = nullptr;
-    Lib::Mutex m_mutex;
+    std::mutex m_mutex;
 };

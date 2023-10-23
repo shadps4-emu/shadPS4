@@ -6,7 +6,7 @@
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
 #include "HLE/Kernel/ThreadManagement.h"
-
+#include "Stubs.h"
 
 constexpr bool debug_loader = true;
 
@@ -70,7 +70,7 @@ static std::string encodeId(u64 nVal)
 }
 Module* Linker::LoadModule(const std::string& elf_name)
 {
-    Lib::LockMutexGuard lock(m_mutex);
+    std::scoped_lock lock{m_mutex};
 	auto* m = new Module;
     m->linker = this;
 	m->elf = new Elf;
@@ -469,14 +469,18 @@ void Linker::LoadSymbols(Module* m)
 				//if st_value!=0 then it's export symbol
 				bool is_sym_export = sym->st_value != 0;
 				std::string nidName = "";
-				if (aerolib::symbolsMap.find(ids.at(0)) != aerolib::symbolsMap.end())
+
+				auto aeronid = aerolib::find_by_nid(ids.at(0).c_str());
+
+				if (aeronid != nullptr)
 				{
-					nidName = aerolib::symbolsMap.at(ids.at(0));
+                    nidName = aeronid->name;
 				}
 				else
 				{
 					nidName = "UNK";
 				}
+
 				SymbolRes sym_r{};
 				sym_r.name = ids.at(0);
 				sym_r.nidName = nidName;
@@ -591,7 +595,6 @@ void Linker::Relocate(Module* m)
 	}
 }
 
-
 void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
 	auto ids = StringUtil::split_string(name, '#');
 
@@ -618,8 +621,15 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
             if (rec != nullptr) {
                 *return_info = *rec;
             } else {
-                return_info->virtual_address = 0;
-                return_info->name = "Unresolved!!!";
+                auto aeronid = aerolib::find_by_nid(sr.name.c_str());
+                if (aeronid) {
+                    return_info->name = aeronid->name;
+                    return_info->virtual_address = GetStub(aeronid->nid);
+                } else {
+                    return_info->virtual_address = GetStub(sr.name.c_str());
+                    return_info->name = "Unknown !!!";
+				}
+                LOG_ERROR_IF(debug_loader, "Linker: Stub resolved {} as {} (lib: {}, mod: {}) \n", sr.name, return_info->name, library->name, module->name);
             }
 		}
 		else
