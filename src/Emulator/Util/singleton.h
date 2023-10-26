@@ -1,24 +1,21 @@
 #pragma once
 
-#include <cstdlib>
-#include <new>
+#include <memory>
 
 template <class T>
 class singleton {
-  public:
+public:
     static T* instance() {
         if (!m_instance) {
-            m_instance = static_cast<T*>(std::malloc(sizeof(T)));
-            new (m_instance) T;
+            m_instance = std::make_unique<T>();
         }
-
         return m_instance;
     }
 
-  protected:
+protected:
     singleton();
     ~singleton();
 
-  private:
-    static inline T* m_instance = nullptr;
+private:
+    static inline std::unique_ptr<T> m_instance{};
 };

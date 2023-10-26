@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
 
     auto* linker = singleton<Linker>::instance();
-    HLE::Libs::Init_HLE_Libs(linker->getHLESymbols());
+    HLE::Libs::Init_HLE_Libs(&linker->getHLESymbols());
     auto* module = linker->LoadModule(path);  // load main executable
     std::jthread mainthread(
         [](std::stop_token stop_token, void*) {

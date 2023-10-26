@@ -500,7 +500,6 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
     bool rel_isResolved = false;
     u08 rel_sym_type = 0;
     std::string rel_name;
-    u08 rel_bind_type = -1;  //-1 means it didn't resolve
 
     switch (type) {
         case R_X86_64_RELATIVE:
@@ -531,7 +530,6 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
             }
             switch (sym_bind) {
                 case STB_GLOBAL:
-                    rel_bind_type = STB_GLOBAL;
                     rel_name = namesTlb + sym.st_name;
                     m->linker->Resolve(rel_name, rel_sym_type, m, &symrec);
                     symbol_vitrual_addr = symrec.virtual_address;
