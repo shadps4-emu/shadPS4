@@ -49,8 +49,8 @@ struct VulkanSwapchain {
     VkSwapchainKHR swapchain = nullptr;
     VkFormat swapchain_format = VK_FORMAT_UNDEFINED;
     VkExtent2D swapchain_extent = {};
-    VkImage* swapchain_images = nullptr;
-    VkImageView* swapchain_image_views = nullptr;
+    std::vector<VkImage> swapchain_images;
+    std::vector<VkImageView> swapchain_image_views;
     u32 swapchain_images_count = 0;
     VkSemaphore present_complete_semaphore = nullptr;
     VkFence present_complete_fence = nullptr;
@@ -65,8 +65,8 @@ struct WindowCtx {
     SDL_Window* m_window = nullptr;
     bool is_window_hidden = true;
     VkSurfaceKHR m_surface = nullptr;
-    VulkanSurfaceCapabilities* m_surface_capabilities = nullptr;
-    VulkanSwapchain* swapchain = nullptr;
+    VulkanSurfaceCapabilities m_surface_capabilities;
+    VulkanSwapchain swapchain;
 };
 
 struct EmuPrivate {
@@ -78,6 +78,7 @@ struct EmuPrivate {
     u32 m_screen_width = {0};
     u32 m_screen_height = {0};
 };
+
 void emuInit(u32 width, u32 height);
 void emuRun();
 void checkAndWaitForGraphicsInit();

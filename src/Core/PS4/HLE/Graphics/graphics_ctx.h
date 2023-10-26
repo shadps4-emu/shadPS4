@@ -17,7 +17,7 @@ struct VulkanCommandPool {
 };
 
 struct VulkanQueueInfo {
-    std::mutex* mutex = nullptr;
+    std::unique_ptr<std::mutex> mutex{};
     u32 family = static_cast<u32>(-1);
     u32 index = static_cast<u32>(-1);
     VkQueue vk_queue = nullptr;
