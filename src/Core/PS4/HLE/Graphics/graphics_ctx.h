@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types.h>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 #include <mutex>
 
@@ -9,10 +10,10 @@ namespace HLE::Libs::Graphics {
 struct VulkanCommandPool {
     std::mutex mutex;
     VkCommandPool pool = nullptr;
-    VkCommandBuffer* buffers = nullptr;
-    VkFence* fences = nullptr;
-    VkSemaphore* semaphores = nullptr;
-    bool* busy = nullptr;
+    std::vector<VkCommandBuffer> buffers;
+    std::vector<VkFence> fences;
+    std::vector<VkSemaphore> semaphores;
+    std::vector<bool> busy;
     u32 buffers_count = 0;
 };
 

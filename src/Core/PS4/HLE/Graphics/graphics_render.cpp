@@ -130,47 +130,45 @@ void GPU::CommandPool::createPool(int id) {
     auto* render_ctx = singleton<RenderCtx>::instance();
     auto* ctx = render_ctx->getGraphicCtx();
 
-    m_pool[id] = new HLE::Libs::Graphics::VulkanCommandPool;
-
     VkCommandPoolCreateInfo pool_info{};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     pool_info.pNext = nullptr;
     pool_info.queueFamilyIndex = ctx->queues[id].family;
     pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    vkCreateCommandPool(ctx->m_device, &pool_info, nullptr, &m_pool[id]->pool);
+    vkCreateCommandPool(ctx->m_device, &pool_info, nullptr, &m_pool[id].pool);
 
-    if (m_pool[id]->pool == nullptr) {
+    if (!m_pool[id].pool) {
         fmt::print("pool is nullptr");
         std::exit(0);
     }
 
-    m_pool[id]->buffers_count = 4;
-    m_pool[id]->buffers = new VkCommandBuffer[m_pool[id]->buffers_count];
-    m_pool[id]->fences = new VkFence[m_pool[id]->buffers_count];
-    m_pool[id]->semaphores = new VkSemaphore[m_pool[id]->buffers_count];
-    m_pool[id]->busy = new bool[m_pool[id]->buffers_count];
+    m_pool[id].buffers_count = 4;
+    m_pool[id].buffers.resize(m_pool[id].buffers_count);
+    m_pool[id].fences.resize(m_pool[id].buffers_count);
+    m_pool[id].semaphores.resize(m_pool[id].buffers_count);
+    m_pool[id].busy.resize(m_pool[id].buffers_count);
 
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = m_pool[id]->pool;
+    alloc_info.commandPool = m_pool[id].pool;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = m_pool[id]->buffers_count;
+    alloc_info.commandBufferCount = m_pool[id].buffers_count;
 
-    if (vkAllocateCommandBuffers(ctx->m_device, &alloc_info, m_pool[id]->buffers) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(ctx->m_device, &alloc_info, m_pool[id].buffers.data()) != VK_SUCCESS) {
         fmt::print("Can't allocate command buffers\n");
         std::exit(0);
     }
 
-    for (uint32_t i = 0; i < m_pool[id]->buffers_count; i++) {
-        m_pool[id]->busy[i] = false;
+    for (u32 i = 0; i < m_pool[id].buffers_count; i++) {
+        m_pool[id].busy[i] = false;
 
         VkFenceCreateInfo fence_info{};
         fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fence_info.pNext = nullptr;
         fence_info.flags = 0;
 
-        if (vkCreateFence(ctx->m_device, &fence_info, nullptr, &m_pool[id]->fences[i]) != VK_SUCCESS) {
+        if (vkCreateFence(ctx->m_device, &fence_info, nullptr, &m_pool[id].fences[i]) != VK_SUCCESS) {
             fmt::print("Can't create fence\n");
             std::exit(0);
         }
@@ -180,7 +178,7 @@ void GPU::CommandPool::createPool(int id) {
         semaphore_info.pNext = nullptr;
         semaphore_info.flags = 0;
 
-        if (vkCreateSemaphore(ctx->m_device, &semaphore_info, nullptr, &m_pool[id]->semaphores[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(ctx->m_device, &semaphore_info, nullptr, &m_pool[id].semaphores[i]) != VK_SUCCESS) {
             fmt::print("Can't create semas\n");
             std::exit(0);
         }
@@ -192,23 +190,12 @@ void GPU::CommandPool::deleteAllPool() {
     auto* ctx = render_ctx->getGraphicCtx();
 
     for (auto& pool : m_pool) {
-        if (pool != nullptr) {
-            for (uint32_t i = 0; i < pool->buffers_count; i++) {
-                vkDestroySemaphore(ctx->m_device, pool->semaphores[i], nullptr);
-                vkDestroyFence(ctx->m_device, pool->fences[i], nullptr);
+        if (pool.pool) {
+            for (u32 i = 0; i < pool.buffers_count; i++) {
+                vkDestroySemaphore(ctx->m_device, pool.semaphores[i], nullptr);
+                vkDestroyFence(ctx->m_device, pool.fences[i], nullptr);
             }
-
-            vkFreeCommandBuffers(ctx->m_device, pool->pool, pool->buffers_count, pool->buffers);
-
-            vkDestroyCommandPool(ctx->m_device, pool->pool, nullptr);
-
-            delete[] pool->semaphores;
-            delete[] pool->fences;
-            delete[] pool->buffers;
-            delete[] pool->busy;
-
-            delete pool;
-            pool = nullptr;
+            vkDestroyCommandPool(ctx->m_device, pool.pool, nullptr);
         }
     }
 }
