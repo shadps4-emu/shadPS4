@@ -1,7 +1,7 @@
 #include "Linker.h"
 #include "../virtual_memory.h"
 #include <Util/log.h>
-#include "../../Util/Disassembler.h"
+#include "Zydis.h"
 #include <Util/string_util.h>
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
@@ -12,15 +12,6 @@ constexpr bool debug_loader = true;
 
 static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
 
-Linker::Linker()
-{
-	m_HLEsymbols = new SymbolsResolver;
-}
-
-Linker::~Linker()
-{
-}
-
 static u64 get_aligned_size(const elf_program_header& phdr)
 {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1) : phdr.p_memsz);
@@ -28,78 +19,78 @@ static u64 get_aligned_size(const elf_program_header& phdr)
 
 static u64 calculate_base_size(const elf_header& ehdr, std::span<const elf_program_header> phdr)
 {
-	u64 base_size = 0;
+    u64 base_size = 0;
     for (u16 i = 0; i < ehdr.e_phnum; i++)
-	{
-		if (phdr[i].p_memsz != 0 && (phdr[i].p_type == PT_LOAD || phdr[i].p_type == PT_SCE_RELRO))
-		{
+    {
+        if (phdr[i].p_memsz != 0 && (phdr[i].p_type == PT_LOAD || phdr[i].p_type == PT_SCE_RELRO))
+        {
             u64 last_addr = phdr[i].p_vaddr + get_aligned_size(phdr[i]);
-			if (last_addr > base_size)
-			{
-				base_size = last_addr;
-			}
-		}
-	}
-	return base_size;
+            if (last_addr > base_size)
+            {
+                base_size = last_addr;
+            }
+        }
+    }
+    return base_size;
 }
 
 static std::string encodeId(u64 nVal)
 {
-	std::string enc;
-	const char pCodes[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
-	if (nVal < 0x40u)
-	{
-		enc += pCodes[nVal];
-	}
-	else
-	{
-		if (nVal < 0x1000u)
-		{
-			enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
-			enc += pCodes[nVal & 0x3fu];
-		}
-		else
-		{
-			enc += pCodes[static_cast<u16>(nVal >> 12u) & 0x3fu];
-			enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
-			enc += pCodes[nVal & 0x3fu];
-		}
-	}
-	return enc;
+    std::string enc;
+    const char pCodes[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
+    if (nVal < 0x40u)
+    {
+        enc += pCodes[nVal];
+    }
+    else
+    {
+        if (nVal < 0x1000u)
+        {
+            enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
+            enc += pCodes[nVal & 0x3fu];
+        }
+        else
+        {
+            enc += pCodes[static_cast<u16>(nVal >> 12u) & 0x3fu];
+            enc += pCodes[static_cast<u16>(nVal >> 6u) & 0x3fu];
+            enc += pCodes[nVal & 0x3fu];
+        }
+    }
+    return enc;
 }
+
+Linker::Linker() = default;
+
+Linker::~Linker() = default;
+
 Module* Linker::LoadModule(const std::string& elf_name)
 {
     std::scoped_lock lock{m_mutex};
-	auto* m = new Module;
-    m->linker = this;
-    m->elf.Open(elf_name);
 
-    if (m->elf.isElfFile())
-	{
-		LoadModuleToMemory(m);
-		LoadDynamicInfo(m);
-		LoadSymbols(m);
-		Relocate(m);
-	}
-	else
-	{
-		return nullptr;//it is not a valid elf file //TODO check it why!
-	}
-	m_modules.push_back(m);//added it to load modules
+    auto& m = m_modules.emplace_back();
+    m.linker = this;
+    m.elf.Open(elf_name);
 
-	return m;
+    if (m.elf.isElfFile()) {
+        LoadModuleToMemory(&m);
+        LoadDynamicInfo(&m);
+        LoadSymbols(&m);
+        Relocate(&m);
+    } else {
+        m_modules.pop_back();
+        return nullptr; // It is not a valid elf file //TODO check it why!
+    }
+
+    return &m;
 }
 
 Module* Linker::FindModule(/*u32 id*/)
 {
-	//find module . TODO atm we only have 1 module so we don't need to iterate on vector
-	Module* m = m_modules.at(0);
-
-	if (m)
-	{
-		return m;
-	}
-	return nullptr;
+    // TODO atm we only have 1 module so we don't need to iterate on vector
+    if (m_modules.empty()) [[unlikely]] {
+        return nullptr;
+    }
+    return &m_modules[0];
 }
 
 void Linker::LoadModuleToMemory(Module* m)
@@ -146,9 +137,8 @@ void Linker::LoadModuleToMemory(Module* m)
 			case PT_DYNAMIC:
 				if (elf_pheader[i].p_filesz != 0)
 				{
-					void* dynamic = new u08[elf_pheader[i].p_filesz];
-                    m->elf.LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
-					m->m_dynamic = dynamic;
+                    m->m_dynamic.resize(elf_pheader[i].p_filesz);
+                    m->elf.LoadSegment(reinterpret_cast<u64>(m->m_dynamic.data()), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
 				}
 				else
 				{
@@ -158,9 +148,8 @@ void Linker::LoadModuleToMemory(Module* m)
 			case PT_SCE_DYNLIBDATA:
 				if (elf_pheader[i].p_filesz != 0)
 				{
-					void* dynamic = new u08[elf_pheader[i].p_filesz];
-                    m->elf.LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
-					m->m_dynamic_data = dynamic;
+                    m->m_dynamic_data.resize(elf_pheader[i].p_filesz);
+                    m->elf.LoadSegment(reinterpret_cast<u64>(m->m_dynamic_data.data()), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
 				}
 				else
 				{
@@ -194,107 +183,105 @@ void Linker::LoadModuleToMemory(Module* m)
 
 void Linker::LoadDynamicInfo(Module* m)
 {
-	m->dynamic_info = new DynamicModuleInfo;
-
-	for (const auto* dyn = static_cast<elf_dynamic*>(m->m_dynamic); dyn->d_tag != DT_NULL; dyn++)
+    for (const auto* dyn = reinterpret_cast<elf_dynamic*>(m->m_dynamic.data()); dyn->d_tag != DT_NULL; dyn++)
 	{
 		switch (dyn->d_tag)
 		{
 		case DT_SCE_HASH: //Offset of the hash table.
-			m->dynamic_info->hash_table = reinterpret_cast<void*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+            m->dynamic_info.hash_table = reinterpret_cast<void*>(m->m_dynamic_data.data() + dyn->d_un.d_ptr);
 			break;
 		case DT_SCE_HASHSZ: //Size of the hash table
-			m->dynamic_info->hash_table_size = dyn->d_un.d_val;
+            m->dynamic_info.hash_table_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_STRTAB://Offset of the string table. 
-			m->dynamic_info->str_table = reinterpret_cast<char*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+            m->dynamic_info.str_table = reinterpret_cast<char*>(m->m_dynamic_data.data() + dyn->d_un.d_ptr);
 			break;
 		case DT_SCE_STRSZ: //Size of the string table.
-			m->dynamic_info->str_table_size = dyn->d_un.d_val;
+            m->dynamic_info.str_table_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_SYMTAB://Offset of the symbol table.
-			m->dynamic_info->symbol_table = reinterpret_cast<elf_symbol*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+            m->dynamic_info.symbol_table = reinterpret_cast<elf_symbol*>(m->m_dynamic_data.data() + dyn->d_un.d_ptr);
 			break;
 		case DT_SCE_SYMTABSZ://Size of the symbol table.
-			m->dynamic_info->symbol_table_total_size = dyn->d_un.d_val;
+            m->dynamic_info.symbol_table_total_size = dyn->d_un.d_val;
 			break;
 		case DT_INIT:
-			m->dynamic_info->init_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.init_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_FINI:
-			m->dynamic_info->fini_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.fini_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_SCE_PLTGOT: //Offset of the global offset table.
-			m->dynamic_info->pltgot_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.pltgot_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_SCE_JMPREL: //Offset of the table containing jump slots.
-			m->dynamic_info->jmp_relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+            m->dynamic_info.jmp_relocation_table = reinterpret_cast<elf_relocation*>(m->m_dynamic_data.data() + dyn->d_un.d_ptr);
 			break;
 		case DT_SCE_PLTRELSZ: //Size of the global offset table.
-			m->dynamic_info->jmp_relocation_table_size = dyn->d_un.d_val;
+            m->dynamic_info.jmp_relocation_table_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_PLTREL: //The type of relocations in the relocation table. Should be DT_RELA
-			m->dynamic_info->jmp_relocation_type = dyn->d_un.d_val;
-			if (m->dynamic_info->jmp_relocation_type != DT_RELA)
+            m->dynamic_info.jmp_relocation_type = dyn->d_un.d_val;
+            if (m->dynamic_info.jmp_relocation_type != DT_RELA)
 			{
 				LOG_WARN_IF(debug_loader, "DT_SCE_PLTREL is NOT DT_RELA should check!");
 			}
 			break;
 		case DT_SCE_RELA: //Offset of the relocation table.
-			m->dynamic_info->relocation_table = reinterpret_cast<elf_relocation*>(static_cast<uint8_t*>(m->m_dynamic_data) + dyn->d_un.d_ptr);
+            m->dynamic_info.relocation_table = reinterpret_cast<elf_relocation*>(m->m_dynamic_data.data() + dyn->d_un.d_ptr);
 			break;
 		case DT_SCE_RELASZ: //Size of the relocation table.
-			m->dynamic_info->relocation_table_size = dyn->d_un.d_val;
+            m->dynamic_info.relocation_table_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_RELAENT : //The size of relocation table entries.
-			m->dynamic_info->relocation_table_entries_size = dyn->d_un.d_val;
-			if (m->dynamic_info->relocation_table_entries_size != 0x18) //this value should always be 0x18
+            m->dynamic_info.relocation_table_entries_size = dyn->d_un.d_val;
+            if (m->dynamic_info.relocation_table_entries_size != 0x18) //this value should always be 0x18
 			{
 				LOG_WARN_IF(debug_loader, "DT_SCE_RELAENT is NOT 0x18 should check!");
 			}
 			break;
 		case DT_INIT_ARRAY:// Address of the array of pointers to initialization functions 
-			m->dynamic_info->init_array_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.init_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_FINI_ARRAY: // Address of the array of pointers to termination functions
-			m->dynamic_info->fini_array_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.fini_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_INIT_ARRAYSZ://Size in bytes of the array of initialization functions
-			m->dynamic_info->init_array_size = dyn->d_un.d_val;
+            m->dynamic_info.init_array_size = dyn->d_un.d_val;
 			break;
 		case DT_FINI_ARRAYSZ://Size in bytes of the array of terminationfunctions
-			m->dynamic_info->fini_array_size = dyn->d_un.d_val;
+            m->dynamic_info.fini_array_size = dyn->d_un.d_val;
 			break;
 		case DT_PREINIT_ARRAY://Address of the array of pointers to pre - initialization functions
-			m->dynamic_info->preinit_array_virtual_addr = dyn->d_un.d_ptr;
+            m->dynamic_info.preinit_array_virtual_addr = dyn->d_un.d_ptr;
 			break;
 		case DT_PREINIT_ARRAYSZ://Size in bytes of the array of pre - initialization functions
-			m->dynamic_info->preinit_array_size = dyn->d_un.d_val;
+            m->dynamic_info.preinit_array_size = dyn->d_un.d_val;
 			break;
 		case DT_SCE_SYMENT: //The size of symbol table entries
-			m->dynamic_info->symbol_table_entries_size = dyn->d_un.d_val;
-			if (m->dynamic_info->symbol_table_entries_size != 0x18) //this value should always be 0x18
+            m->dynamic_info.symbol_table_entries_size = dyn->d_un.d_val;
+            if (m->dynamic_info.symbol_table_entries_size != 0x18) //this value should always be 0x18
 			{
 				LOG_WARN_IF(debug_loader, "DT_SCE_SYMENT is NOT 0x18 should check!");
 			}
 			break;
 		case DT_DEBUG:
-			m->dynamic_info->debug = dyn->d_un.d_val;
+            m->dynamic_info.debug = dyn->d_un.d_val;
 			break;
 		case DT_TEXTREL:
-			m->dynamic_info->textrel = dyn->d_un.d_val;
+            m->dynamic_info.textrel = dyn->d_un.d_val;
 			break;
 		case DT_FLAGS:
-			m->dynamic_info->flags = dyn->d_un.d_val;
-			if (m->dynamic_info->flags != 0x04) //this value should always be DF_TEXTREL (0x04)
+            m->dynamic_info.flags = dyn->d_un.d_val;
+            if (m->dynamic_info.flags != 0x04) //this value should always be DF_TEXTREL (0x04)
 			{
 				LOG_WARN_IF(debug_loader, "DT_FLAGS is NOT 0x04 should check!");
 			}
 			break;
 		case DT_NEEDED://Offset of the library string in the string table to be linked in.
-			if (m->dynamic_info->str_table != nullptr)//in theory this should already be filled from about just make a test case
+            if (m->dynamic_info.str_table != nullptr)//in theory this should already be filled from about just make a test case
 			{
-				m->dynamic_info->needed.push_back(m->dynamic_info->str_table + dyn->d_un.d_val);
+                m->dynamic_info.needed.push_back(m->dynamic_info.str_table + dyn->d_un.d_val);
 			}
 			else
 			{
@@ -305,18 +292,18 @@ void Linker::LoadDynamicInfo(Module* m)
 			{
 				ModuleInfo info{};
 				info.value = dyn->d_un.d_val;
-				info.name = m->dynamic_info->str_table + info.name_offset;
+                info.name = m->dynamic_info.str_table + info.name_offset;
 				info.enc_id = encodeId(info.id);
-				m->dynamic_info->import_modules.push_back(info);
+                m->dynamic_info.import_modules.push_back(info);
 			}
 			break;
 		case DT_SCE_IMPORT_LIB:
 			{
 				LibraryInfo info{};
 				info.value = dyn->d_un.d_val;
-				info.name = m->dynamic_info->str_table + info.name_offset;
+                info.name = m->dynamic_info.str_table + info.name_offset;
 				info.enc_id = encodeId(info.id);
-				m->dynamic_info->import_libs.push_back(info);
+                m->dynamic_info.import_libs.push_back(info);
 			}
 			break;
 		case DT_SCE_FINGERPRINT:
@@ -330,15 +317,15 @@ void Linker::LoadDynamicInfo(Module* m)
 			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
 			break;
 		case DT_SCE_ORIGINAL_FILENAME:
-			m->dynamic_info->filename = m->dynamic_info->str_table + dyn->d_un.d_val;
+            m->dynamic_info.filename = m->dynamic_info.str_table + dyn->d_un.d_val;
 			break;
 		case DT_SCE_MODULE_INFO://probably only useable in shared modules
 			{
 				ModuleInfo info{};
 				info.value = dyn->d_un.d_val;
-				info.name = m->dynamic_info->str_table + info.name_offset;
+                info.name = m->dynamic_info.str_table + info.name_offset;
 				info.enc_id = encodeId(info.id);
-				m->dynamic_info->export_modules.push_back(info);
+                m->dynamic_info.export_modules.push_back(info);
 			}
 			break;
 		case DT_SCE_MODULE_ATTR:
@@ -349,9 +336,9 @@ void Linker::LoadDynamicInfo(Module* m)
 			{
 				LibraryInfo info{};
 				info.value = dyn->d_un.d_val;
-				info.name = m->dynamic_info->str_table + info.name_offset;
+                info.name = m->dynamic_info.str_table + info.name_offset;
 				info.enc_id = encodeId(info.id);
-				m->dynamic_info->export_libs.push_back(info);
+                m->dynamic_info.export_libs.push_back(info);
 			}
 			break;
 		default:
@@ -363,9 +350,9 @@ void Linker::LoadDynamicInfo(Module* m)
 
 const ModuleInfo* Linker::FindModule(const Module& m, const std::string& id)
 {
-	const auto& import_modules = m.dynamic_info->import_modules;
+    const auto& import_modules = m.dynamic_info.import_modules;
 	int index = 0;
-	for (auto mod : import_modules)
+    for (const auto& mod : import_modules)
 	{
 		if (mod.enc_id.compare(id) == 0)
 		{
@@ -373,9 +360,9 @@ const ModuleInfo* Linker::FindModule(const Module& m, const std::string& id)
 		}
 		index++;
 	}
-	const auto& export_modules = m.dynamic_info->export_modules;
+    const auto& export_modules = m.dynamic_info.export_modules;
 	index = 0;
-	for (auto mod : export_modules)
+    for (const auto& mod : export_modules)
 	{
 		if (mod.enc_id.compare(id) == 0)
 		{
@@ -388,9 +375,9 @@ const ModuleInfo* Linker::FindModule(const Module& m, const std::string& id)
 
 const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id)
 {
-	const auto& import_libs = m.dynamic_info->import_libs;
+    const auto& import_libs = m.dynamic_info.import_libs;
 	int index = 0;
-	for (auto lib : import_libs)
+    for (const auto& lib : import_libs)
 	{
 		if (lib.enc_id.compare(id) == 0)
 		{
@@ -398,9 +385,9 @@ const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id)
 		}
 		index++;
 	}
-	const auto& export_libs = m.dynamic_info->export_libs;
+    const auto& export_libs = m.dynamic_info.export_libs;
 	index = 0;
-	for (auto lib : export_libs)
+    for (const auto& lib : export_libs)
 	{
 		if (lib.enc_id.compare(id) == 0)
 		{
@@ -413,19 +400,17 @@ const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id)
 
 void Linker::LoadSymbols(Module* m)
 {
-	if (m->dynamic_info->symbol_table == nullptr || m->dynamic_info->str_table == nullptr || m->dynamic_info->symbol_table_total_size==0)
+    if (m->dynamic_info.symbol_table == nullptr || m->dynamic_info.str_table == nullptr || m->dynamic_info.symbol_table_total_size==0)
 	{
 		LOG_INFO_IF(debug_loader, "Symbol table not found!\n");
 		return;
 	}
-	m->export_sym = new SymbolsResolver;
-	m->import_sym = new SymbolsResolver;
 
-	for (auto* sym = m->dynamic_info->symbol_table;
-		reinterpret_cast<uint8_t*>(sym) < reinterpret_cast<uint8_t*>(m->dynamic_info->symbol_table) + m->dynamic_info->symbol_table_total_size;
+    for (auto* sym = m->dynamic_info.symbol_table;
+        reinterpret_cast<uint8_t*>(sym) < reinterpret_cast<uint8_t*>(m->dynamic_info.symbol_table) + m->dynamic_info.symbol_table_total_size;
 		sym++)
 	{
-		std::string id = std::string(m->dynamic_info->str_table + sym->st_name);
+        std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
         auto ids = StringUtil::split_string(id, '#');
 		if (ids.size() == 3)//symbols are 3 parts name , library , module 
 		{
@@ -489,11 +474,11 @@ void Linker::LoadSymbols(Module* m)
 
 				if (is_sym_export)
 				{
-					m->export_sym->AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
+                    m->export_sym.AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
 				}
 				else
 				{
-					m->import_sym->AddSymbol(sym_r,0);
+                    m->import_sym.AddSymbol(sym_r,0);
 				}
 				
 
@@ -506,8 +491,8 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
     auto type = rel->GetType();
     auto symbol = rel->GetSymbol();
     auto addend = rel->rel_addend;
-    auto* symbolsTlb = m->dynamic_info->symbol_table;
-    auto* namesTlb = m->dynamic_info->str_table;
+    auto* symbolsTlb = m->dynamic_info.symbol_table;
+    auto* namesTlb = m->dynamic_info.str_table;
 
     u64 rel_value = 0;
     u64 rel_base_virtual_addr = m->base_virtual_addr;
@@ -580,12 +565,12 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
 void Linker::Relocate(Module* m)
 {
 	u32 idx = 0;
-	for (auto* rel = m->dynamic_info->relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->relocation_table) + m->dynamic_info->relocation_table_size; rel++, idx++)
+    for (auto* rel = m->dynamic_info.relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info.relocation_table) + m->dynamic_info.relocation_table_size; rel++, idx++)
 	{
 		relocate(idx, rel, m, false);
 	}
 	idx = 0;
-	for (auto* rel = m->dynamic_info->jmp_relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info->jmp_relocation_table) + m->dynamic_info->jmp_relocation_table_size; rel++, idx++)
+    for (auto* rel = m->dynamic_info.jmp_relocation_table; reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info.jmp_relocation_table) + m->dynamic_info.jmp_relocation_table_size; rel++, idx++)
 	{
 		relocate(idx, rel, m, true);
 	}
@@ -610,10 +595,8 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolReco
             sr.type = Symtype;
 
 			const SymbolRecord* rec = nullptr;
+            rec = m_hle_symbols.FindSymbol(sr);
 
-            if (m_HLEsymbols != nullptr) {
-				rec = m_HLEsymbols->FindSymbol(sr);
-            }
             if (rec != nullptr) {
                 *return_info = *rec;
             } else {
@@ -679,6 +662,6 @@ void Linker::Execute()
     p.argc = 1;
     p.argv[0] = "eboot.bin"; //hmm should be ok?
 
-    run_main_entry(m_modules.at(0)->elf.GetElfEntry()+m_modules.at(0)->base_virtual_addr, &p, ProgramExitFunc);
-    
+    const auto& module = m_modules.at(0);
+    run_main_entry(module.elf.GetElfEntry() + module.base_virtual_addr, &p, ProgramExitFunc);
 }
