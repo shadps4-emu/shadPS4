@@ -1,7 +1,8 @@
 #include <SDL3/SDL.h>
 #include <cstdio>
-#include <Util/log.h>
+#include <fmt/core.h>
 #include "types.h"
+#include "Util/log.h"
 #include <Core/PS4/HLE/Graphics/video_out.h>
 #include <Util/config.h>
 #include <Zydis/Zydis.h>
@@ -16,7 +17,7 @@
 // Main code
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        printf("Usage: %s <elf or eboot.bin path>\n", argv[0]);
+        fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
     }
     Config::load("config.toml");

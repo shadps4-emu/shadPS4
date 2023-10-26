@@ -1,6 +1,7 @@
 #include "Linker.h"
 #include "../virtual_memory.h"
 #include <Util/log.h>
+#include <fmt/core.h>
 #include "Zydis.h"
 #include <Util/string_util.h>
 #include "Util/aerolib.h"
@@ -175,7 +176,7 @@ void Linker::LoadModuleToMemory(Module* m)
 		/* length:          */ sizeof(rt1) - offset,
 		/* instruction:     */ &instruction
 	))) {
-		printf("%016" PRIX64 "  %s\n", runtime_address, instruction.text);
+		fmt::print("{:#x}" PRIX64 "  {}\n", runtime_address, instruction.text);
 		offset += instruction.info.length;
 		runtime_address += instruction.info.length;
 	}
@@ -625,8 +626,7 @@ using exit_func_t          = PS4_SYSV_ABI void (*)();
 using entry_func_t           = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
-
-    printf("exit function called\n");
+    fmt::print("exit function called\n");
 }
 
 static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {

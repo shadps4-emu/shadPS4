@@ -1,5 +1,5 @@
 #include "graphics_render.h"
-
+#include <fmt/core.h>
 #include "Emulator/Util/singleton.h"
 #include "emulator.h"
 
@@ -60,7 +60,7 @@ void GPU::CommandBuffer::begin() const {
     auto result = vkBeginCommandBuffer(buffer, &begin_info);
 
     if (result != VK_SUCCESS) {
-        printf("vkBeginCommandBuffer failed\n");
+        fmt::print("vkBeginCommandBuffer failed\n");
         std::exit(0);
     }
 }
@@ -70,7 +70,7 @@ void GPU::CommandBuffer::end() const {
     auto result = vkEndCommandBuffer(buffer);
 
     if (result != VK_SUCCESS) {
-        printf("vkEndCommandBuffer failed\n");
+        fmt::print("vkEndCommandBuffer failed\n");
         std::exit(0);
     }
 }
@@ -96,7 +96,7 @@ void GPU::CommandBuffer::executeWithSemaphore() {
     m_execute = true;
 
     if (result != VK_SUCCESS) {
-        printf("vkQueueSubmit failed\n");
+        fmt::print("vkQueueSubmit failed\n");
         std::exit(0);
     }
 }
@@ -122,7 +122,7 @@ void GPU::CommandBuffer::execute() {
     m_execute = true;
 
     if (result != VK_SUCCESS) {
-        printf("vkQueueSubmit failed\n");
+        fmt::print("vkQueueSubmit failed\n");
         std::exit(0);
     }
 }
@@ -141,7 +141,7 @@ void GPU::CommandPool::createPool(int id) {
     vkCreateCommandPool(ctx->m_device, &pool_info, nullptr, &m_pool[id]->pool);
 
     if (m_pool[id]->pool == nullptr) {
-        printf("pool is nullptr");
+        fmt::print("pool is nullptr");
         std::exit(0);
     }
 
@@ -158,7 +158,7 @@ void GPU::CommandPool::createPool(int id) {
     alloc_info.commandBufferCount = m_pool[id]->buffers_count;
 
     if (vkAllocateCommandBuffers(ctx->m_device, &alloc_info, m_pool[id]->buffers) != VK_SUCCESS) {
-        printf("Can't allocate command buffers\n");
+        fmt::print("Can't allocate command buffers\n");
         std::exit(0);
     }
 
@@ -171,7 +171,7 @@ void GPU::CommandPool::createPool(int id) {
         fence_info.flags = 0;
 
         if (vkCreateFence(ctx->m_device, &fence_info, nullptr, &m_pool[id]->fences[i]) != VK_SUCCESS) {
-            printf("Can't create fence\n");
+            fmt::print("Can't create fence\n");
             std::exit(0);
         }
 
@@ -181,7 +181,7 @@ void GPU::CommandPool::createPool(int id) {
         semaphore_info.flags = 0;
 
         if (vkCreateSemaphore(ctx->m_device, &semaphore_info, nullptr, &m_pool[id]->semaphores[i]) != VK_SUCCESS) {
-            printf("Can't create semas\n");
+            fmt::print("Can't create semas\n");
             std::exit(0);
         }
     }

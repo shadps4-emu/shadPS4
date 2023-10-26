@@ -1,5 +1,5 @@
 #include "emulator.h"
-
+#include <fmt/core.h>
 #include <Core/PS4/HLE/Graphics/graphics_render.h>
 #include <Emulator/Host/controller.h>
 #include "Emulator/Util/singleton.h"
@@ -33,7 +33,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     int height = static_cast<int>(ctx->m_graphic_ctx.screen_height);
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("%s\n", SDL_GetError());
+        fmt::print("{}\n", SDL_GetError());
         std::exit(0);
     }
     std::string title = "shadps4 v" + std::string(Emulator::VERSION);
@@ -43,7 +43,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
     ctx->is_window_hidden = true;  // hide window until we need to show something (should draw something in buffers)
 
     if (ctx->m_window == nullptr) {
-        printf("%s\n", SDL_GetError());
+        fmt::print("{}\n", SDL_GetError());
         std::exit(0);
     }
 
@@ -115,11 +115,11 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
                                         window_ctx->swapchain->present_complete_fence, &window_ctx->swapchain->current_index);
 
     if (result != VK_SUCCESS) {
-        printf("Can't aquireNextImage\n");
+        fmt::print("Can't aquireNextImage\n");
         std::exit(0);
     }
     if (window_ctx->swapchain->current_index == static_cast<u32>(-1)) {
-        printf("Unsupported:swapchain current index is -1\n");
+        fmt::print("Unsupported:swapchain current index is -1\n");
         std::exit(0);
     }
 
@@ -127,7 +127,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
         result = vkWaitForFences(window_ctx->m_graphic_ctx.m_device, 1, &window_ctx->swapchain->present_complete_fence, VK_TRUE, 100000000);
     } while (result == VK_TIMEOUT);
     if (result != VK_SUCCESS) {
-        printf("vkWaitForFences is not success\n");
+        fmt::print("vkWaitForFences is not success\n");
         std::exit(0);
     }
 
@@ -137,11 +137,11 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     auto* blt_dst_image = window_ctx->swapchain;
 
     if (blt_src_image == nullptr) {
-        printf("blt_src_image is null\n");
+        fmt::print("blt_src_image is null\n");
         std::exit(0);
     }
     if (blt_dst_image == nullptr) {
-        printf("blt_dst_image is null\n");
+        fmt::print("blt_dst_image is null\n");
         std::exit(0);
     }
 
@@ -187,13 +187,13 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     const auto& queue = window_ctx->m_graphic_ctx.queues[10];
 
     if (queue.mutex != nullptr) {
-        printf("queue.mutexe is null\n");
+        fmt::print("queue.mutexe is null\n");
         std::exit(0);
     }
 
     result = vkQueuePresentKHR(queue.vk_queue, &present);
     if (result != VK_SUCCESS) {
-        printf("vkQueuePresentKHR failed\n");
+        fmt::print("vkQueuePresentKHR failed\n");
         std::exit(0);
     }
 }

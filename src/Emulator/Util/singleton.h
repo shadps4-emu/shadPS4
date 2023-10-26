@@ -9,7 +9,7 @@ public:
         if (!m_instance) {
             m_instance = std::make_unique<T>();
         }
-        return m_instance;
+        return m_instance.get();
     }
 
 protected:

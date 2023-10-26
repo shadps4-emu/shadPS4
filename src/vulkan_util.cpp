@@ -1,5 +1,5 @@
 #include "vulkan_util.h"
-
+#include <fmt/core.h>
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
 #include <Emulator/Util/singleton.h>
@@ -588,7 +588,7 @@ void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, 
 
     bool allocated = GPU::vulkanAllocateMemory(ctx, &buffer->memory);
     if (!allocated) {
-        printf("Can't allocate vulkan\n");
+        fmt::print("Can't allocate vulkan\n");
         std::exit(0);
     }
     vkBindBufferMemory(ctx->m_device, buffer->buffer, buffer->memory.memory, buffer->memory.offset);
