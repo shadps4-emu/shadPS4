@@ -30,8 +30,8 @@ void ElfViewer::display(bool enabled)
           
             if (ImGui::TreeNode("Self Segment Header"))
             {
-                const auto* self = elf->GetSElfHeader();
-                for (u16 i = 0; i < self->segment_count; i++)
+                const auto self = elf->GetSElfHeader();
+                for (u16 i = 0; i < self.segment_count; i++)
                 {
                     if (ImGui::TreeNodeEx((void*)(intptr_t)i, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d", i))
                     {
@@ -47,18 +47,18 @@ void ElfViewer::display(bool enabled)
     }
     if (ImGui::TreeNode("Elf"))
     {
-        const auto* elf_header = elf->GetElfHeader();
+        const auto elf_header = elf->GetElfHeader();
         if (ImGui::TreeNodeEx("Elf Header", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Elf Header"))
         {
             if (ImGui::IsItemClicked())
                 selected = ELF_HEADER;
         }
         if (ImGui::TreeNode("Elf Program Headers"))
-        {          
-            for (u16 i = 0; i < elf_header->e_phnum; i++)
+        {
+            const auto pheader = elf->GetProgramHeader();
+            for (u16 i = 0; i < elf_header.e_phnum; i++)
             {
-                const auto* pheader = elf->GetProgramHeader();
-                std::string ProgramInfo = elf->ElfPheaderFlagsStr((pheader + i)->p_flags) + " " + elf->ElfPheaderTypeStr((pheader + i)->p_type);
+                std::string ProgramInfo = elf->ElfPheaderFlagsStr(pheader[i].p_flags) + " " + elf->ElfPheaderTypeStr(pheader[i].p_type);
                 if (ImGui::TreeNodeEx((void*)(intptr_t)i,ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "%d - %s", i,ProgramInfo.c_str()))
                 {
                     if (ImGui::IsItemClicked())
@@ -67,7 +67,7 @@ void ElfViewer::display(bool enabled)
             }
             ImGui::TreePop();
         }
-        if (elf_header->e_shnum != 0)
+        if (elf_header.e_shnum != 0)
         {
             if (ImGui::TreeNode("Elf Section Headers"))
             {
@@ -82,18 +82,18 @@ void ElfViewer::display(bool enabled)
 
     ImGui::BeginChild("Table View", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
     if (selected == SELF_HEADER) {
-        ImGui::TextWrapped(elf->SElfHeaderStr().c_str());
+        ImGui::TextWrapped("%s", elf->SElfHeaderStr().c_str());
     }
     if (selected >= 100 && selected < 200)
     {
-        ImGui::TextWrapped(elf->SELFSegHeader(selected-100).c_str());
+        ImGui::TextWrapped("%s", elf->SELFSegHeader(selected-100).c_str());
     }
     if (selected == ELF_HEADER) {
-        ImGui::TextWrapped(elf->ElfHeaderStr().c_str());
+        ImGui::TextWrapped("%s", elf->ElfHeaderStr().c_str());
     }
     if (selected >= 200 && selected < 300)
     {
-        ImGui::TextWrapped(elf->ElfPHeaderStr(selected - 200).c_str());
+        ImGui::TextWrapped("%s", elf->ElfPHeaderStr(selected - 200).c_str());
     }
     ImGui::EndChild();
     ImGui::End();

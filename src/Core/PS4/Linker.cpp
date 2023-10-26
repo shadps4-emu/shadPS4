@@ -21,20 +21,19 @@ Linker::~Linker()
 {
 }
 
-static u64 get_aligned_size(const elf_program_header* phdr)
+static u64 get_aligned_size(const elf_program_header& phdr)
 {
-	return (phdr->p_align != 0 ? (phdr->p_memsz + (phdr->p_align - 1)) & ~(phdr->p_align - 1) : phdr->p_memsz);
+    return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1) : phdr.p_memsz);
 }
 
-static u64 calculate_base_size(const elf_header* ehdr, const elf_program_header* phdr)
+static u64 calculate_base_size(const elf_header& ehdr, std::span<const elf_program_header> phdr)
 {
 	u64 base_size = 0;
-	for (u16 i = 0; i < ehdr->e_phnum; i++)
+    for (u16 i = 0; i < ehdr.e_phnum; i++)
 	{
 		if (phdr[i].p_memsz != 0 && (phdr[i].p_type == PT_LOAD || phdr[i].p_type == PT_SCE_RELRO))
 		{
-			auto phdrh = phdr + i;
-			u64 last_addr = phdr[i].p_vaddr + get_aligned_size(phdrh);
+            u64 last_addr = phdr[i].p_vaddr + get_aligned_size(phdr[i]);
 			if (last_addr > base_size)
 			{
 				base_size = last_addr;
@@ -73,10 +72,9 @@ Module* Linker::LoadModule(const std::string& elf_name)
     std::scoped_lock lock{m_mutex};
 	auto* m = new Module;
     m->linker = this;
-	m->elf = new Elf;
-	m->elf->Open(elf_name);//load elf
+    m->elf.Open(elf_name);
 
-	if (m->elf->isElfFile())
+    if (m->elf.isElfFile())
 	{
 		LoadModuleToMemory(m);
 		LoadDynamicInfo(m);
@@ -107,8 +105,8 @@ Module* Linker::FindModule(/*u32 id*/)
 void Linker::LoadModuleToMemory(Module* m)
 {
 	//get elf header, program header
-	auto* elf_header = m->elf->GetElfHeader();
-	auto* elf_pheader = m->elf->GetProgramHeader();
+    const auto elf_header = m->elf.GetElfHeader();
+    const auto elf_pheader = m->elf.GetProgramHeader();
 
 	u64 base_size = calculate_base_size(elf_header, elf_pheader);
 	m->aligned_base_size = (base_size & ~(static_cast<u64>(0x1000) - 1)) + 0x1000;//align base size to 0x1000 block size (TODO is that the default block size or it can be changed?
@@ -120,9 +118,9 @@ void Linker::LoadModuleToMemory(Module* m)
 	LOG_INFO_IF(debug_loader, "base_size ..............: {:#018x}\n", base_size);
 	LOG_INFO_IF(debug_loader, "aligned_base_size ......: {:#018x}\n", m->aligned_base_size);
 
-	for (u16 i = 0; i < elf_header->e_phnum; i++)
+    for (u16 i = 0; i < elf_header.e_phnum; i++)
 	{
-		switch(elf_pheader[i].p_type)
+        switch (elf_pheader[i].p_type)
 		{
 			case PT_LOAD:
 			case PT_SCE_RELRO:
@@ -130,53 +128,53 @@ void Linker::LoadModuleToMemory(Module* m)
 				{
 					u64 segment_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
 					u64 segment_file_size = elf_pheader[i].p_filesz;
-					u64 segment_memory_size = get_aligned_size(elf_pheader + i);
-					auto segment_mode = m->elf->ElfPheaderFlagsStr((elf_pheader + i)->p_flags);
-					LOG_INFO_IF(debug_loader, "program header = [{}] type = {}\n",i,m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+                    u64 segment_memory_size = get_aligned_size(elf_pheader[i]);
+                    auto segment_mode = m->elf.ElfPheaderFlagsStr(elf_pheader[i].p_flags);
+                    LOG_INFO_IF(debug_loader, "program header = [{}] type = {}\n",i,m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 					LOG_INFO_IF(debug_loader, "segment_addr ..........: {:#018x}\n", segment_addr);
 					LOG_INFO_IF(debug_loader, "segment_file_size .....: {}\n", segment_file_size);
 					LOG_INFO_IF(debug_loader, "segment_memory_size ...: {}\n", segment_memory_size);
 					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
 					
-					m->elf->LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
+                    m->elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
 				}
 				else
 				{
-					LOG_ERROR_IF(debug_loader, "p_memsz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+                    LOG_ERROR_IF(debug_loader, "p_memsz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
 			case PT_DYNAMIC:
 				if (elf_pheader[i].p_filesz != 0)
 				{
 					void* dynamic = new u08[elf_pheader[i].p_filesz];
-					m->elf->LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+                    m->elf.LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
 					m->m_dynamic = dynamic;
 				}
 				else
 				{
-					LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+                    LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
 			case PT_SCE_DYNLIBDATA:
 				if (elf_pheader[i].p_filesz != 0)
 				{
 					void* dynamic = new u08[elf_pheader[i].p_filesz];
-					m->elf->LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+                    m->elf.LoadSegment(reinterpret_cast<u64>(dynamic), elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
 					m->m_dynamic_data = dynamic;
 				}
 				else
 				{
-					LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+                    LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
 			default:
-				LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf->ElfPheaderTypeStr(elf_pheader[i].p_type));
+                LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 		}
 	}
-	LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf->GetElfEntry() + m->base_virtual_addr);
+    LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf.GetElfEntry() + m->base_virtual_addr);
 
-	auto* rt1 = reinterpret_cast<uint8_t*>(m->elf->GetElfEntry() + m->base_virtual_addr);
-	ZyanU64 runtime_address = m->elf->GetElfEntry() + m->base_virtual_addr;
+    auto* rt1 = reinterpret_cast<uint8_t*>(m->elf.GetElfEntry() + m->base_virtual_addr);
+    ZyanU64 runtime_address = m->elf.GetElfEntry() + m->base_virtual_addr;
 
 	// Loop over the instructions in our buffer.
 	ZyanUSize offset = 0;
@@ -681,6 +679,6 @@ void Linker::Execute()
     p.argc = 1;
     p.argv[0] = "eboot.bin"; //hmm should be ok?
 
-    run_main_entry(m_modules.at(0)->elf->GetElfEntry()+m_modules.at(0)->base_virtual_addr, &p, ProgramExitFunc);
+    run_main_entry(m_modules.at(0)->elf.GetElfEntry()+m_modules.at(0)->base_virtual_addr, &p, ProgramExitFunc);
     
 }

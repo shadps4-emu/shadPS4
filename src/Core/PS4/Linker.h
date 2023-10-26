@@ -14,17 +14,17 @@ struct EntryParams {
     const char* argv[3];
 };
 
-/*this struct keeps neccesary info about loaded modules.Main executeable is included too as well*/
+// This struct keeps neccesary info about loaded modules. Main executeable is included too as well
 struct Module
 {
-	Elf* elf = nullptr;
+    Elf elf;
 	u64 aligned_base_size = 0;
-	u64 base_virtual_addr = 0; //base virtual address
+    u64 base_virtual_addr = 0; // Base virtual address
 
-	Linker* linker = nullptr;
+    Linker* linker = nullptr;
 
-	void* m_dynamic = nullptr;
-	void* m_dynamic_data = nullptr;
+    void* m_dynamic = nullptr;
+    void* m_dynamic_data = nullptr;
 	DynamicModuleInfo* dynamic_info = nullptr;
 
 	SymbolsResolver* export_sym = nullptr;
