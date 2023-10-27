@@ -1,7 +1,7 @@
 # shadPS4
 
 An early PS4 emulator for Windows and Linux written in C++
-by shadow , skmp , wheremyfoodat
+by shadow , skmp , wheremyfoodat , GPUCode
 
 [Check us on twitter](https://twitter.com/shadps4 "Check us on twitter")
 
