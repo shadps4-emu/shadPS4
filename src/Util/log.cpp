@@ -33,7 +33,7 @@ static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
                 default: break;
             }
             break;
-        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED ({}). ", log_hex(ec)); break;
+        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED ({:#x}). ", ec); break;
         case EXCEPTION_DATATYPE_MISALIGNMENT: LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_DATATYPE_MISALIGNMENT ({}). ", log_hex(ec)); break;
         case EXCEPTION_FLT_DIVIDE_BY_ZERO: LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_FLT_DIVIDE_BY_ZERO ({}). ", log_hex(ec)); break;
         case EXCEPTION_ILLEGAL_INSTRUCTION: LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_ILLEGAL_INSTRUCTION ({}). ", log_hex(ec)); break;
