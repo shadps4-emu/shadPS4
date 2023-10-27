@@ -22,7 +22,7 @@ void flush() { spdlog::details::registry::instance().flush_all(); }
 #ifdef _WIN64
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
-    const unsigned ec = pExp->ExceptionRecord->ExceptionCode;
+    const u32 ec = pExp->ExceptionRecord->ExceptionCode;
     switch (ec) {
         case EXCEPTION_ACCESS_VIOLATION:
             LOG_CRITICAL_IF(log_file_exceptions,"Exception EXCEPTION_ACCESS_VIOLATION ({}). ", log_hex(ec));
