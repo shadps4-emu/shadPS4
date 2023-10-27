@@ -1,4 +1,6 @@
 #pragma once
+
+#include <array>
 #include "graphics_ctx.h"
 
 namespace GPU {
@@ -9,17 +11,17 @@ class CommandPool {
     ~CommandPool() {}
 
     HLE::Libs::Graphics::VulkanCommandPool* getPool(int id) {
-        if (m_pool[id] == nullptr) {
+        if (!m_pool[id].pool) {
             createPool(id);
         }
-        return m_pool[id];
+        return &m_pool[id];
     }
 
   private:
     void createPool(int id);
     void deleteAllPool();
 
-    HLE::Libs::Graphics::VulkanCommandPool* m_pool[11] = {};
+    std::array<HLE::Libs::Graphics::VulkanCommandPool, 11> m_pool{};
 };
 class CommandBuffer {
   public:
@@ -48,14 +50,14 @@ class Framebuffer {
 };
 class RenderCtx {
   public:
-    RenderCtx() : m_framebuffer(new Framebuffer) {}
+    RenderCtx() = default;
 
     virtual ~RenderCtx() {}
     void setGraphicCtx(HLE::Libs::Graphics::GraphicCtx* ctx) { m_graphic_ctx = ctx; }
     HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() { return m_graphic_ctx; }
 
   private:
-    Framebuffer* m_framebuffer = nullptr;
+    Framebuffer m_framebuffer{};
     HLE::Libs::Graphics::GraphicCtx* m_graphic_ctx = nullptr;
 };
 

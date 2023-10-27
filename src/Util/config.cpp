@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <fmt/core.h>
 #include <toml11/toml.hpp>
 
 namespace Config {
@@ -29,7 +30,7 @@ void load(const std::filesystem::path& path) {
     try {
         data = toml::parse(path);
     } catch (std::exception& ex) {
-        printf("Got exception trying to load config file. Exception: %s\n", ex.what());
+        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
 
@@ -61,14 +62,14 @@ void save(const std::filesystem::path& path) {
         try {
             data = toml::parse<toml::preserve_comments>(path);
         } catch (const std::exception& ex) {
-            printf("Exception trying to parse config file. Exception: %s\n", ex.what());
+            fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
         }
     } else {
         if (error) {
-            printf("Filesystem error accessing %s (error: %s)\n", path.string().c_str(), error.message().c_str());
+            fmt::print("Filesystem error accessing {} (error: {})\n", path.string(), error.message().c_str());
         }
-        printf("Saving new configuration file %s\n", path.string().c_str());
+        fmt::print("Saving new configuration file {}\n", path.string());
     }
 
     data["General"]["isPS4Pro"] = isNeo;

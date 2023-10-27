@@ -2,7 +2,6 @@
 #include "SymbolsResolver.h"
 #include <Util/log.h>
 
-
 void SymbolsResolver::AddSymbol(const SymbolRes& s, u64 virtual_addr)
 {
 	SymbolRecord r{};
@@ -12,21 +11,19 @@ void SymbolsResolver::AddSymbol(const SymbolRes& s, u64 virtual_addr)
 }
 
 std::string SymbolsResolver::GenerateName(const SymbolRes& s) {
-    char str[256];
-    sprintf(str, "%s lib[%s_v%d]mod[%s_v%d.%d]", s.name.c_str(),s.library.c_str(), s.library_version, s.module.c_str(),
-            s.module_version_major, s.module_version_minor);
-    return std::string(str);
+    return fmt::format("{} lib[{}_v{}]mod[{}_v{}.{}]",
+                       s.name, s.library, s.library_version,
+                       s.module, s.module_version_major, s.module_version_minor);
 }
 
 const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolRes& s) const { 
-	std::string name = GenerateName(s);
-    int index = 0;
-    for (auto symbol : m_symbols) {
-        if (symbol.name.compare(name) == 0) {
-            return &m_symbols.at(index);
+	const std::string name = GenerateName(s);
+    for (u32 i = 0; i < m_symbols.size(); i++) {
+        if (m_symbols[i].name.compare(name) == 0) {
+            return &m_symbols[i];
         }
-        index++;
     }
-    LOG_INFO_IF(true, "unresolved! {}\n", name);
+
+    LOG_INFO("Unresolved! {}\n", name);
 	return nullptr; 
 }

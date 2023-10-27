@@ -1,6 +1,10 @@
 #pragma once
+
 #include <string>
-#include <inttypes.h>
+#include <cinttypes>
+#include <span>
+#include <vector>
+
 #include "../../../types.h"
 #include "../../FsFile.h"
 
@@ -54,7 +58,7 @@ struct self_segment_header
     u64 flags;
     u64 file_offset;
     u64 file_size;
-    u64 memory_size; 
+    u64 memory_size;
 };
 
 
@@ -188,7 +192,7 @@ typedef enum :u32 {
 typedef enum : u08 {
     ELF_CLASS_NONE  =0x0,
     ELF_CLASS_32	=0x1,
-	ELF_CLASS_64	=0x2,
+    ELF_CLASS_64	=0x2,
     ELF_CLASS_NUM	=0x3
 } ident_class_es;
 
@@ -302,7 +306,7 @@ typedef enum : u32 {
     PF_READ_WRITE_EXEC = 0x7
 } elf_program_flags;
 
-struct elf_program_header 
+struct elf_program_header
 {
     elf_program_type p_type;   /* Type of segment */
     elf_program_flags p_flags;  /* Segment attributes */
@@ -386,7 +390,7 @@ constexpr s64 DT_SCE_SYMTAB            = 0x61000039;
 constexpr s64 DT_SCE_SYMTABSZ          = 0x6100003f;
 
 
-struct elf_dynamic 
+struct elf_dynamic
 {
     s64 d_tag;
     union
@@ -446,9 +450,8 @@ constexpr u32 R_X86_64_64 = 1; // Direct 64 bit
 constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
 constexpr u32 R_X86_64_RELATIVE = 8; // Adjust by program base
 
-class Elf
-{
-public:
+class Elf {
+  public:
     Elf() = default;
     virtual ~Elf();
 
@@ -456,29 +459,46 @@ public:
     bool isSelfFile() const;
     bool isElfFile() const;
     void DebugDump();
-    [[nodiscard]] const self_header* GetSElfHeader() const { return m_self; }
-    [[nodiscard]] const elf_header* GetElfHeader() const { return m_elf_header; }
-    [[nodiscard]] const elf_program_header* GetProgramHeader() const { return m_elf_phdr; }
-    [[nodiscard]] const self_segment_header* GetSegmentHeader() const { return m_self_segments; }
+
+    [[nodiscard]] self_header GetSElfHeader() const {
+        return m_self;
+    }
+
+    [[nodiscard]] elf_header GetElfHeader() const {
+        return m_elf_header;
+    }
+
+    [[nodiscard]] std::span<const elf_program_header> GetProgramHeader() const {
+        return m_elf_phdr;
+    }
+
+    [[nodiscard]] std::span<const self_segment_header> GetSegmentHeader() const {
+        return m_self_segments;
+    }
+
+    [[nodiscard]] u64 GetElfEntry() const {
+        return m_elf_header.e_entry;
+    }
+
     std::string SElfHeaderStr();
     std::string SELFSegHeader(u16 no);
     std::string ElfHeaderStr();
     std::string ElfPHeaderStr(u16 no);
     std::string ElfPheaderTypeStr(u32 type);
     std::string ElfPheaderFlagsStr(u32 flags);
+
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
-    u64 GetElfEntry();
 
-private:
-
+  private:
     void Reset();
 
-    FsFile* m_f = nullptr;
-    self_header* m_self = nullptr;
-    self_segment_header* m_self_segments = nullptr;
-    elf_header* m_elf_header = nullptr;
-    elf_program_header* m_elf_phdr = nullptr;
-    elf_section_header* m_elf_shdr = nullptr;
-    elf_program_id_header* m_self_id_header = nullptr;
+  private:
+    Common::FS::File m_f{};
+    bool is_self{};
+    self_header m_self{};
+    std::vector<self_segment_header> m_self_segments;
+    elf_header m_elf_header{};
+    std::vector<elf_program_header> m_elf_phdr;
+    std::vector<elf_section_header> m_elf_shdr;
+    elf_program_id_header m_self_id_header{};
 };
-

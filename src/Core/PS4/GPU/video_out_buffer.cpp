@@ -23,13 +23,12 @@ static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
 
     if (tiled)
     {
-        auto* tempbuff = new u08[*size];
-        GPU::convertTileToLinear(tempbuff, reinterpret_cast<void*>(*virtual_addr), width, height, neo);
-        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, tempbuff, *size, pitch, static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
-        delete[] tempbuff;
+        std::vector<u08> tempbuff(*size);
+        GPU::convertTileToLinear(tempbuff.data(), reinterpret_cast<void*>(*virtual_addr), width, height, neo);
+        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, tempbuff.data(), *size, pitch, static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
     } else {
         Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
-                                          static_cast<uint64_t>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+                                          static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
     }
     
 }

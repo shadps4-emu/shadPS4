@@ -1,5 +1,5 @@
 #include "vulkan_util.h"
-
+#include <fmt/core.h>
 #include <Core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
 #include <Emulator/Util/singleton.h>
@@ -53,10 +53,9 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
                                                   VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME, "VK_KHR_maintenance1"};
 
-    ctx->m_surface_capabilities = new Emu::VulkanSurfaceCapabilities{};
     Emu::VulkanQueues queues;
 
-    vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, ctx->m_surface_capabilities,
+    vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, &ctx->m_surface_capabilities,
                                        &ctx->m_graphic_ctx.m_physical_device, &queues);
 
     if (ctx->m_graphic_ctx.m_physical_device == nullptr) {
@@ -79,18 +78,17 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
 }
 
-Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    auto* s = new Emu::VulkanSwapchain;
+Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
+    auto window_ctx = singleton<Emu::WindowCtx>::instance();
+    const auto& capabilities = window_ctx->m_surface_capabilities.capabilities;
+    Emu::VulkanSwapchain s{};
 
     VkExtent2D extent{};
-    extent.width = clamp(ctx->screen_width, window_ctx->m_surface_capabilities->capabilities.minImageExtent.width,
-                         window_ctx->m_surface_capabilities->capabilities.maxImageExtent.width);
-    extent.height = clamp(ctx->screen_height, window_ctx->m_surface_capabilities->capabilities.minImageExtent.height,
-                          window_ctx->m_surface_capabilities->capabilities.maxImageExtent.height);
-
-    image_count = clamp(image_count, window_ctx->m_surface_capabilities->capabilities.minImageCount,
-                        window_ctx->m_surface_capabilities->capabilities.maxImageCount);
+    extent.width = std::clamp(ctx->screen_width, capabilities.minImageExtent.width,
+                              capabilities.maxImageExtent.width);
+    extent.height = std::clamp(ctx->screen_height, capabilities.minImageExtent.height,
+                               capabilities.maxImageExtent.height);
+    image_count = std::clamp(image_count, capabilities.minImageCount, capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -99,15 +97,15 @@ Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphic
     create_info.surface = window_ctx->m_surface;
     create_info.minImageCount = image_count;
 
-    if (window_ctx->m_surface_capabilities->is_format_unorm_bgra32) {
+    if (window_ctx->m_surface_capabilities.is_format_unorm_bgra32) {
         create_info.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    } else if (window_ctx->m_surface_capabilities->is_format_srgb_bgra32) {
+    } else if (window_ctx->m_surface_capabilities.is_format_srgb_bgra32) {
         create_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
         create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     } else {
-        create_info.imageFormat = window_ctx->m_surface_capabilities->formats.at(0).format;
-        create_info.imageColorSpace = window_ctx->m_surface_capabilities->formats.at(0).colorSpace;
+        create_info.imageFormat = window_ctx->m_surface_capabilities.formats.at(0).format;
+        create_info.imageColorSpace = window_ctx->m_surface_capabilities.formats.at(0).colorSpace;
     }
 
     create_info.imageExtent = extent;
@@ -116,31 +114,31 @@ Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphic
     create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     create_info.queueFamilyIndexCount = 0;
     create_info.pQueueFamilyIndices = nullptr;
-    create_info.preTransform = window_ctx->m_surface_capabilities->capabilities.currentTransform;
+    create_info.preTransform = window_ctx->m_surface_capabilities.capabilities.currentTransform;
     create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     create_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = nullptr;
 
-    s->swapchain_format = create_info.imageFormat;
-    s->swapchain_extent = extent;
+    s.swapchain_format = create_info.imageFormat;
+    s.swapchain_extent = extent;
 
-    vkCreateSwapchainKHR(ctx->m_device, &create_info, nullptr, &s->swapchain);
+    vkCreateSwapchainKHR(ctx->m_device, &create_info, nullptr, &s.swapchain);
 
-    vkGetSwapchainImagesKHR(ctx->m_device, s->swapchain, &s->swapchain_images_count, nullptr);
+    vkGetSwapchainImagesKHR(ctx->m_device, s.swapchain, &s.swapchain_images_count, nullptr);
 
-    s->swapchain_images = new VkImage[s->swapchain_images_count];
-    vkGetSwapchainImagesKHR(ctx->m_device, s->swapchain, &s->swapchain_images_count, s->swapchain_images);
+    s.swapchain_images.resize(s.swapchain_images_count);
+    vkGetSwapchainImagesKHR(ctx->m_device, s.swapchain, &s.swapchain_images_count, s.swapchain_images.data());
 
-    s->swapchain_image_views = new VkImageView[s->swapchain_images_count];
-    for (uint32_t i = 0; i < s->swapchain_images_count; i++) {
+    s.swapchain_image_views.resize(s.swapchain_images_count);
+    for (uint32_t i = 0; i < s.swapchain_images_count; i++) {
         VkImageViewCreateInfo create_info{};
         create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         create_info.pNext = nullptr;
         create_info.flags = 0;
-        create_info.image = (s->swapchain_images)[i];
+        create_info.image = s.swapchain_images[i];
         create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        create_info.format = s->swapchain_format;
+        create_info.format = s.swapchain_format;
         create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -151,28 +149,28 @@ Emu::VulkanSwapchain* Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphic
         create_info.subresourceRange.layerCount = 1;
         create_info.subresourceRange.levelCount = 1;
 
-        vkCreateImageView(ctx->m_device, &create_info, nullptr, &((s->swapchain_image_views)[i]));
+        vkCreateImageView(ctx->m_device, &create_info, nullptr, &s.swapchain_image_views[i]);
     }
-    if (s->swapchain == nullptr) {
+    if (s.swapchain == nullptr) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Could not create swapchain\n");
         std::exit(0);
     }
 
-    s->current_index = static_cast<uint32_t>(-1);
+    s.current_index = static_cast<uint32_t>(-1);
 
     VkSemaphoreCreateInfo present_complete_info{};
     present_complete_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     present_complete_info.pNext = nullptr;
     present_complete_info.flags = 0;
 
-    auto result = vkCreateSemaphore(ctx->m_device, &present_complete_info, nullptr, &s->present_complete_semaphore);
+    auto result = vkCreateSemaphore(ctx->m_device, &present_complete_info, nullptr, &s.present_complete_semaphore);
 
     VkFenceCreateInfo fence_info{};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.pNext = nullptr;
     fence_info.flags = 0;
 
-    result = vkCreateFence(ctx->m_device, &fence_info, nullptr, &s->present_complete_fence);
+    result = vkCreateFence(ctx->m_device, &fence_info, nullptr, &s.present_complete_fence);
     if (result != VK_SUCCESS) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan fence\n");
         std::exit(0);
@@ -187,7 +185,7 @@ void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, 
         ctx->queues[id].index = info.index;
         vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
         if (with_mutex) {
-            ctx->queues[id].mutex = new std::mutex;
+            ctx->queues[id].mutex = std::make_unique<std::mutex>();
         }
     };
 
@@ -588,7 +586,7 @@ void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, 
 
     bool allocated = GPU::vulkanAllocateMemory(ctx, &buffer->memory);
     if (!allocated) {
-        printf("Can't allocate vulkan\n");
+        fmt::print("Can't allocate vulkan\n");
         std::exit(0);
     }
     vkBindBufferMemory(ctx->m_device, buffer->buffer, buffer->memory.memory, buffer->memory.offset);
