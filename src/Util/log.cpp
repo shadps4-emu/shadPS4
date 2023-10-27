@@ -85,8 +85,6 @@ int init(bool use_stdout) {
     return 0;  // all ok
 }
 
-
-
 void set_level(spdlog::level::level_enum log_level) { spdlog::set_level(log_level); }
 
 }  // namespace logging
