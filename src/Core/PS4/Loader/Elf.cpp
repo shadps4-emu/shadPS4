@@ -139,8 +139,8 @@ void Elf::Open(const std::string& file_name) {
 
 bool Elf::isSelfFile() const {
     if (m_self.magic != self_header::signature) [[unlikely]] {
-        LOG_ERROR_IF(log_file_loader, "Not a SELF file.Magic file mismatched !current = {} required = {}\n ", log_hex_full(m_self.magic),
-                     log_hex_full(self_header::signature));
+        LOG_ERROR_IF(log_file_loader, "Not a SELF file.Magic file mismatched !current = {:#x} required = {:#x}\n ", m_self.magic,
+                     self_header::signature);
         return false;
     }
 
@@ -164,43 +164,43 @@ bool Elf::isElfFile() const {
         return false;
     }
     if (m_elf_header.e_ident.ei_class != ELF_CLASS_64) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_CLASS] expected 0x02 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_ident.ei_class)));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_CLASS] expected 0x02 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_class));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_data != ELF_DATA_2LSB) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_DATA] expected 0x01 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_ident.ei_data)));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_DATA] expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_data));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_version != ELF_VERSION_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_VERSION] expected 0x01 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_ident.ei_version)));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_VERSION] expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_version));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_OSABI] expected 0x09 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_ident.ei_osabi)));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_osabi));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({})\n",
-                     log_hex_full(static_cast<u32>(m_elf_header.e_ident.ei_abiversion)));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
         return false;
     }
 
     if (m_elf_header.e_type != ET_SCE_DYNEXEC && m_elf_header.e_type != ET_SCE_DYNAMIC && m_elf_header.e_type != ET_SCE_EXEC) {
-        LOG_ERROR_IF(log_file_loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_type)));
+        LOG_ERROR_IF(log_file_loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({:#x})\n", static_cast<u32>(m_elf_header.e_type));
         return false;
     }
 
     if (m_elf_header.e_machine != EM_X86_64) {
-        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_machine)));
+        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n",static_cast<u32>(m_elf_header.e_machine));
         return false;
     }
 
     if (m_elf_header.e_version != EV_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "m_elf_header.e_version expected 0x01 is ({})\n", log_hex_full(static_cast<u32>(m_elf_header.e_version)));
+        LOG_ERROR_IF(log_file_loader, "m_elf_header.e_version expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_version));
         return false;
     }
 
@@ -239,25 +239,25 @@ void Elf::DebugDump() {
         LOG_INFO_IF(log_file_loader,"Section headers:\n");
         for (u16 i = 0; i < m_elf_header.e_shnum; i++) {
             LOG_INFO_IF(log_file_loader, "--- shdr {} --\n", i);
-            LOG_INFO_IF(log_file_loader, "sh_name ........: {}\n", log_hex_full(m_elf_shdr[i].sh_name));
-            LOG_INFO_IF(log_file_loader, "sh_type ........: {}\n", log_hex_full(m_elf_shdr[i].sh_type));
-            LOG_INFO_IF(log_file_loader, "sh_flags .......: {}\n", log_hex_full(m_elf_shdr[i].sh_flags));
-            LOG_INFO_IF(log_file_loader, "sh_addr ........: {}\n", log_hex_full(m_elf_shdr[i].sh_addr));
-            LOG_INFO_IF(log_file_loader, "sh_offset ......: {}\n", log_hex_full(m_elf_shdr[i].sh_offset));
-            LOG_INFO_IF(log_file_loader, "sh_size ........: {}\n", log_hex_full(m_elf_shdr[i].sh_size));
-            LOG_INFO_IF(log_file_loader, "sh_link ........: {}\n", log_hex_full(m_elf_shdr[i].sh_link));
-            LOG_INFO_IF(log_file_loader, "sh_info ........: {}\n", log_hex_full(m_elf_shdr[i].sh_info));
-            LOG_INFO_IF(log_file_loader, "sh_addralign ...: {}\n", log_hex_full(m_elf_shdr[i].sh_addralign));
-            LOG_INFO_IF(log_file_loader, "sh_entsize .....: {}\n", log_hex_full(m_elf_shdr[i].sh_entsize));
+            LOG_INFO_IF(log_file_loader, "sh_name ........: {}\n", m_elf_shdr[i].sh_name);
+            LOG_INFO_IF(log_file_loader, "sh_type ........: {:#010x}\n", m_elf_shdr[i].sh_type);
+            LOG_INFO_IF(log_file_loader, "sh_flags .......: {:#018x}\n", m_elf_shdr[i].sh_flags);
+            LOG_INFO_IF(log_file_loader, "sh_addr ........: {:#018x}\n", m_elf_shdr[i].sh_addr);
+            LOG_INFO_IF(log_file_loader, "sh_offset ......: {:#018x}\n", m_elf_shdr[i].sh_offset);
+            LOG_INFO_IF(log_file_loader, "sh_size ........: {:#018x}\n", m_elf_shdr[i].sh_size);
+            LOG_INFO_IF(log_file_loader, "sh_link ........: {:#010x}\n", m_elf_shdr[i].sh_link);
+            LOG_INFO_IF(log_file_loader, "sh_info ........: {:#010x}\n", m_elf_shdr[i].sh_info);
+            LOG_INFO_IF(log_file_loader, "sh_addralign ...: {:#018x}\n", m_elf_shdr[i].sh_addralign);
+            LOG_INFO_IF(log_file_loader, "sh_entsize .....: {:#018x}\n", m_elf_shdr[i].sh_entsize);
         }
     }
 
     if (is_self) {
         LOG_INFO_IF(log_file_loader, "SELF info:\n");
-        LOG_INFO_IF(log_file_loader, "auth id ............: {}\n", log_hex_full(m_self_id_header.authid));
+        LOG_INFO_IF(log_file_loader, "auth id ............: {:#018x}\n", m_self_id_header.authid);
         LOG_INFO_IF(log_file_loader, "program type .......: {}\n", getProgramTypeName(m_self_id_header.program_type));
-        LOG_INFO_IF(log_file_loader, "app version ........: {}\n", log_hex_full(m_self_id_header.appver));
-        LOG_INFO_IF(log_file_loader, "fw version .........: {}\n", log_hex_full(m_self_id_header.firmver));
+        LOG_INFO_IF(log_file_loader, "app version ........: {:#018x}\n", m_self_id_header.appver);
+        LOG_INFO_IF(log_file_loader, "fw version .........: {:#018x}\n", m_self_id_header.firmver);
         std::string digest;
         for (int i = 0; i < 32; i++) {
             digest += fmt::format("{:02X}", m_self_id_header.digest[i]);
@@ -268,21 +268,21 @@ void Elf::DebugDump() {
 
 std::string Elf::SElfHeaderStr() {
     std::string header = fmt::format("======= SELF HEADER =========\n", m_self.magic);
-    header += fmt::format("magic ..............: {}\n", log_hex_full(m_self.magic));
+    header += fmt::format("magic ..............: 0x{:X}\n", m_self.magic);
     header += fmt::format("version ............: {}\n", m_self.version);
     header += fmt::format("mode ...............: {:#04x}\n", m_self.mode);
     header += fmt::format("endian .............: {}\n", m_self.endian);
     header += fmt::format("attributes .........: {:#04x}\n", m_self.attributes);
     header += fmt::format("category ...........: {:#04x}\n", m_self.category);
     header += fmt::format("program_type........: {:#04x}\n", m_self.program_type);
-    header += fmt::format("padding1 ...........: {}\n", log_hex_full(m_self.padding1));
+    header += fmt::format("padding1 ...........: {:#06x}\n", m_self.padding1);
     header += fmt::format("header size ........: {}\n", m_self.header_size);
     header += fmt::format("meta size ..........: {}\n", m_self.meta_size);
     header += fmt::format("file size ..........: {}\n", m_self.file_size);
-    header += fmt::format("padding2 ...........: {}\n", log_hex_full(m_self.padding2));
+    header += fmt::format("padding2 ...........: {:#010x}\n", m_self.padding2);
     header += fmt::format("segment count ......: {}\n", m_self.segment_count);
-    header += fmt::format("unknown 1A .........: {}\n", log_hex_full(m_self.unknown1A));
-    header += fmt::format("padding3 ...........: {}\n", log_hex_full(m_self.padding3));
+    header += fmt::format("unknown 1A .........: {:#06x}\n", m_self.unknown1A);
+    header += fmt::format("padding3 ...........: {:#010x}\n", m_self.padding3);
     return header;
 }
 
@@ -319,10 +319,10 @@ std::string Elf::ElfHeaderStr() {
     header += fmt::format("type  ............: {}\n", static_cast<u32>(m_elf_header.e_type));
     header += fmt::format("machine ..........: {}\n", static_cast<u32>(m_elf_header.e_machine));
     header += fmt::format("version ..........: {}\n", static_cast<u32>(m_elf_header.e_version));
-    header += fmt::format("entry ............: {}\n", log_hex_full(m_elf_header.e_entry));
-    header += fmt::format("phoff ............: {}\n", log_hex_full(m_elf_header.e_phoff));
-    header += fmt::format("shoff ............: {}\n", log_hex_full(m_elf_header.e_shoff));
-    header += fmt::format("flags ............: {}\n", log_hex_full(m_elf_header.e_flags));
+    header += fmt::format("entry ............: {:#018x}\n", m_elf_header.e_entry);
+    header += fmt::format("phoff ............: {:#018x}\n", m_elf_header.e_phoff);
+    header += fmt::format("shoff ............: {:#018x}\n", m_elf_header.e_shoff);
+    header += fmt::format("flags ............: {:#010x}\n", m_elf_header.e_flags);
     header += fmt::format("ehsize ...........: {}\n", m_elf_header.e_ehsize);
     header += fmt::format("phentsize ........: {}\n", m_elf_header.e_phentsize);
     header += fmt::format("phnum ............: {}\n", m_elf_header.e_phnum);
@@ -369,13 +369,13 @@ std::string Elf::ElfPheaderFlagsStr(u32 flags) {
 std::string Elf::ElfPHeaderStr(u16 no) {
     std::string header = fmt::format("====== PROGRAM HEADER {} ========\n", no);
     header += fmt::format("p_type ....: {}\n", ElfPheaderTypeStr(m_elf_phdr[no].p_type));
-    header += fmt::format("p_flags ...: {}\n", log_hex_full(static_cast<u32>(m_elf_phdr[no].p_flags)));
-    header += fmt::format("p_offset ..: {}\n", log_hex_full(m_elf_phdr[no].p_offset));
-    header += fmt::format("p_vaddr ...: {}\n", log_hex_full(m_elf_phdr[no].p_vaddr));
-    header += fmt::format("p_paddr ...: {}\n", log_hex_full(m_elf_phdr[no].p_paddr));
-    header += fmt::format("p_filesz ..: {}\n", log_hex_full(m_elf_phdr[no].p_filesz));
-    header += fmt::format("p_memsz ...: {}\n", log_hex_full(m_elf_phdr[no].p_memsz));
-    header += fmt::format("p_align ...: {}\n", log_hex_full(m_elf_phdr[no].p_align));
+    header += fmt::format("p_flags ...: {:#010x}\n", static_cast<u32>(m_elf_phdr[no].p_flags));
+    header += fmt::format("p_offset ..: {:#018x}\n", m_elf_phdr[no].p_offset);
+    header += fmt::format("p_vaddr ...: {:#018x}\n", m_elf_phdr[no].p_vaddr);
+    header += fmt::format("p_paddr ...: {:#018x}\n", m_elf_phdr[no].p_paddr);
+    header += fmt::format("p_filesz ..: {:#018x}\n", m_elf_phdr[no].p_filesz);
+    header += fmt::format("p_memsz ...: {:#018x}\n", m_elf_phdr[no].p_memsz);
+    header += fmt::format("p_align ...: {:#018x}\n", m_elf_phdr[no].p_align);
     return header;
 }
 
