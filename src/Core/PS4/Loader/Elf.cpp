@@ -81,6 +81,35 @@ static std::string_view getIdentAbiversionName(ident_abiversion_es version) {
         default: return "INVALID";
     }
 }
+static std::string_view getVersion(e_version_es version) {
+    switch (version) {
+        case EV_NONE: return "EV_NONE";
+        case EV_CURRENT: return "EV_CURRENT";
+        default: return "INVALID";
+    }
+}
+
+static std::string_view getType(e_type_s type) {
+    switch (type) {
+        case ET_NONE: return "ET_NONE";
+        case ET_REL: return "ET_REL";
+        case ET_EXEC: return "ET_EXEC";
+        case ET_DYN: return "ET_DYN";
+        case ET_CORE: return "ET_CORE";
+        case ET_SCE_EXEC: return "ET_SCE_EXEC";
+        case ET_SCE_STUBLIB: return "ET_SCE_STUBLIB";
+        case ET_SCE_DYNEXEC: return "ET_SCE_DYNEXEC";
+        case ET_SCE_DYNAMIC: return "ET_SCE_DYNAMIC";
+        default: return "INVALID";
+    }
+}
+
+static std::string_view getMachine(e_machine_es machine) {
+    switch (machine) {
+        case EM_X86_64: return "EM_X86_64";
+        default: return "INVALID";
+    }
+}
 
 Elf::~Elf() { Reset(); }
 
@@ -184,8 +213,7 @@ bool Elf::isElfFile() const {
     }
 
     if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
         return false;
     }
 
@@ -195,7 +223,7 @@ bool Elf::isElfFile() const {
     }
 
     if (m_elf_header.e_machine != EM_X86_64) {
-        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n",static_cast<u32>(m_elf_header.e_machine));
+        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n", static_cast<u32>(m_elf_header.e_machine));
         return false;
     }
 
@@ -221,7 +249,7 @@ bool Elf::isElfFile() const {
 
 void Elf::DebugDump() {
     if (is_self) {  // If we load elf instead
-        LOG_INFO_IF(log_file_loader,(SElfHeaderStr()));
+        LOG_INFO_IF(log_file_loader, (SElfHeaderStr()));
         for (u16 i = 0; i < m_self.segment_count; i++) {
             LOG_INFO_IF(log_file_loader, SELFSegHeader(i));
         }
@@ -236,7 +264,7 @@ void Elf::DebugDump() {
         }
     }
     if (m_elf_header.e_shentsize > 0) {
-        LOG_INFO_IF(log_file_loader,"Section headers:\n");
+        LOG_INFO_IF(log_file_loader, "Section headers:\n");
         for (u16 i = 0; i < m_elf_header.e_shnum; i++) {
             LOG_INFO_IF(log_file_loader, "--- shdr {} --\n", i);
             LOG_INFO_IF(log_file_loader, "sh_name ........: {}\n", m_elf_shdr[i].sh_name);
@@ -316,9 +344,9 @@ std::string Elf::ElfHeaderStr() {
     }
     header += fmt::format("\n");
 
-    header += fmt::format("type  ............: {}\n", static_cast<u32>(m_elf_header.e_type));
-    header += fmt::format("machine ..........: {}\n", static_cast<u32>(m_elf_header.e_machine));
-    header += fmt::format("version ..........: {}\n", static_cast<u32>(m_elf_header.e_version));
+    header += fmt::format("type  ............: {}\n", getType(m_elf_header.e_type));
+    header += fmt::format("machine ..........: {}\n", getMachine(m_elf_header.e_machine));
+    header += fmt::format("version ..........: {}\n", getVersion(m_elf_header.e_version));
     header += fmt::format("entry ............: {:#018x}\n", m_elf_header.e_entry);
     header += fmt::format("phoff ............: {:#018x}\n", m_elf_header.e_phoff);
     header += fmt::format("shoff ............: {:#018x}\n", m_elf_header.e_shoff);
