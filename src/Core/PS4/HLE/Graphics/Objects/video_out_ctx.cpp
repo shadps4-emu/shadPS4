@@ -30,15 +30,14 @@ int VideoOutCtx::Open() {
     return handle;
 }
 void VideoOutCtx::Close(s32 handle) {
-    std::scoped_lock lock{m_mutex}; 
+    std::scoped_lock lock{m_mutex};
 
     m_video_out_ctx.isOpened = false;
 
-    if (m_video_out_ctx.m_flip_evtEq.size() > 0)
-    {
-        BREAKPOINT(); //we need to clear all events if they have been created
+    if (m_video_out_ctx.m_flip_evtEq.size() > 0) {
+        BREAKPOINT();  // we need to clear all events if they have been created
     }
-    
+
     m_video_out_ctx.m_flip_rate = 0;
 
     // clear buffers
@@ -89,22 +88,21 @@ bool FlipQueue::submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg) {
     return true;
 }
 
-bool FlipQueue::flip(u32 micros) { 
+bool FlipQueue::flip(u32 micros) {
     const auto request = [&]() -> Request* {
         std::unique_lock lock{m_mutex};
-        m_submit_cond.wait_for(lock, std::chrono::microseconds(micros),
-                               [&] { return !m_requests.empty(); });
+        m_submit_cond.wait_for(lock, std::chrono::microseconds(micros), [&] { return !m_requests.empty(); });
         if (m_requests.empty()) {
             return nullptr;
         }
         return &m_requests.at(0);  // Process first request
     }();
-    
+
     if (!request) {
         return false;
     }
 
-   const auto buffer = request->cfg->buffers[request->index].buffer_render;
+    const auto buffer = request->cfg->buffers[request->index].buffer_render;
     Emu::DrawBuffer(buffer);
 
     std::scoped_lock lock{m_mutex};
@@ -113,8 +111,7 @@ bool FlipQueue::flip(u32 micros) {
         std::scoped_lock cfg_lock{request->cfg->m_mutex};
         for (auto& flip_eq : request->cfg->m_flip_evtEq) {
             if (flip_eq != nullptr) {
-                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, HLE::Kernel::Objects::EVFILT_VIDEO_OUT,
-                                      reinterpret_cast<void*>(request->flip_arg));
+                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, HLE::Kernel::Objects::EVFILT_VIDEO_OUT, reinterpret_cast<void*>(request->flip_arg));
             }
         }
     }
@@ -123,14 +120,14 @@ bool FlipQueue::flip(u32 micros) {
     m_done_cond.notify_one();
 
     request->cfg->m_flip_status.count++;
-    //TODO request.cfg->m_flip_status.processTime = LibKernel::KernelGetProcessTime();
+    // TODO request.cfg->m_flip_status.processTime = LibKernel::KernelGetProcessTime();
     request->cfg->m_flip_status.tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
     request->cfg->m_flip_status.submitTsc = request->submit_tsc;
     request->cfg->m_flip_status.flipArg = request->flip_arg;
     request->cfg->m_flip_status.currentBuffer = request->index;
     request->cfg->m_flip_status.flipPendingNum = static_cast<int>(m_requests.size());
 
-    return false; 
+    return true;
 }
 
-}; // namespace HLE::Graphics::Objects
+};  // namespace HLE::Graphics::Objects
