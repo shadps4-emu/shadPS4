@@ -64,6 +64,8 @@ add_executable(shadps4
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
     ${UTIL_SOURCES}
+    src/Lib/Timer.cpp
+    src/Lib/Timer.h
     src/main.cpp
     src/types.h
     src/Core/FsFile.cpp
