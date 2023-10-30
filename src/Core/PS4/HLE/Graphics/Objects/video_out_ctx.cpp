@@ -77,7 +77,7 @@ bool FlipQueue::submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg) {
     r.cfg = cfg;
     r.index = index;
     r.flip_arg = flip_arg;
-    r.submit_tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
+    r.submit_tsc = Core::Libraries::LibKernel::sceKernelReadTsc();
 
     m_requests.push_back(r);
 
@@ -122,7 +122,7 @@ bool FlipQueue::flip(u32 micros) {
 
     request->cfg->m_flip_status.count++;
     request->cfg->m_flip_status.processTime = Core::Libraries::LibKernel::sceKernelGetProcessTime();
-    request->cfg->m_flip_status.tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
+    request->cfg->m_flip_status.tsc = Core::Libraries::LibKernel::sceKernelReadTsc();
     request->cfg->m_flip_status.submitTsc = request->submit_tsc;
     request->cfg->m_flip_status.flipArg = request->flip_arg;
     request->cfg->m_flip_status.currentBuffer = request->index;

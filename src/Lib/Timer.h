@@ -18,7 +18,7 @@ namespace Lib {
 		double GetTimeSec() const;// return time in seconds		
 		u64 GetTicks() const;// return time in ticks
 		u64 GetFrequency() const;// return ticks frequency
-
+        [[nodiscard]] static u64 getQueryPerformanceCounter();
 	public:
 		Timer(const Timer&) = delete;
 		Timer& operator=(const Timer&) = delete;

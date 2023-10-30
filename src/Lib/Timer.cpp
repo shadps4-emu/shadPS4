@@ -101,3 +101,9 @@ u64 Lib::Timer::GetTicks() const {
 
 u64 Lib::Timer::GetFrequency() const { return m_Frequency; }
 
+u64 Lib::Timer::getQueryPerformanceCounter() {
+    LARGE_INTEGER c;
+    QueryPerformanceCounter(&c);
+    return c.QuadPart;
+}
+

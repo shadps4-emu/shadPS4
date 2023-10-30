@@ -25,11 +25,7 @@ int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT(); }
-u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    LARGE_INTEGER c;
-    QueryPerformanceCounter(&c);
-    return c.QuadPart;
-}
+
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) { BREAKPOINT(); }
 void LibKernel_Register(SymbolsResolver* sym) {
     // obj
@@ -46,8 +42,6 @@ void LibKernel_Register(SymbolsResolver* sym) {
     // misc
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, CPUManagement::sceKernelIsNeoMode);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
-    // time
-    LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
     // fs
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
