@@ -14,6 +14,7 @@
 namespace Emu {
 
 bool m_emu_needs_exit = false;
+bool m_game_is_paused = {false};
 double m_current_time_seconds = {0.0};
 double m_previous_time_seconds = {0.0};
 int m_update_num = {0};
@@ -128,17 +129,67 @@ void emuRun() {
                 case SDL_EVENT_DID_ENTER_FOREGROUND: break;
 
                 case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP: keyboardEvent(&event); break;
+                case SDL_EVENT_KEY_UP:
+                    if (event.type == SDL_EVENT_KEY_DOWN){
+                        if (event.key.keysym.sym == SDLK_p) {
+                            m_game_is_paused = !m_game_is_paused;
+                        }
+                    }
+                    keyboardEvent(&event);
+                    break;
             }
             continue;
         }
-        exit_loop = m_emu_needs_exit;
-        if (!exit_loop) {
-            update();
+        if (m_game_is_paused) {
+            if (!timer.IsPaused()) {
+                timer.Pause();
+            }
+
+            SDL_WaitEvent(&event);
+
+            switch (event.type) {
+                case SDL_EVENT_QUIT: m_emu_needs_exit = true; break;
+
+                case SDL_EVENT_TERMINATING: m_emu_needs_exit = true; break;
+
+                case SDL_EVENT_WILL_ENTER_BACKGROUND: break;
+
+                case SDL_EVENT_DID_ENTER_BACKGROUND: break;
+
+                case SDL_EVENT_WILL_ENTER_FOREGROUND: break;
+
+                case SDL_EVENT_DID_ENTER_FOREGROUND: break;
+
+                case SDL_EVENT_KEY_DOWN:
+                case SDL_EVENT_KEY_UP:
+                    if (event.type == SDL_EVENT_KEY_DOWN) {
+                        if (event.key.keysym.sym == SDLK_p) {
+                            m_game_is_paused = !m_game_is_paused;
+                        }
+                    }
+                    keyboardEvent(&event);
+                    break;
+            }
+            exit_loop = m_emu_needs_exit;
+            continue;
         }
-        if (!exit_loop) {
-            if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) {  // flip every 0.1 sec
-                calculateFps(timer.GetTimeSec());
+        exit_loop = m_emu_needs_exit;
+        if (m_game_is_paused) {
+            if (!timer.IsPaused()) {
+                timer.Pause();
+            }
+        } else {
+            if (timer.IsPaused()) {
+                timer.Resume();
+            }
+
+            if (!exit_loop) {
+                update();
+            }
+            if (!exit_loop) {
+                if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) {  // flip every 0.1 sec
+                    calculateFps(timer.GetTimeSec());
+                }
             }
         }
     }
