@@ -38,7 +38,7 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
     pData->orientation.y = 0;
     pData->orientation.z = 0;
     pData->orientation.w = 0;
-
+    pData->timestamp = state.time;
     pData->connected = true;  // isConnected; //TODO fix me proper
     pData->connectedCount = 1;//connectedCount;
     pData->deviceUniqueDataLen = 0;
