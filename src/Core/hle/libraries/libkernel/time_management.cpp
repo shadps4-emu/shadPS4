@@ -4,7 +4,7 @@
 
 #include "emuTimer.h"
 
-namespace Core::Libraries {
+namespace Core::Libraries::LibKernel {
 u64 sceKernelGetProcessTime() {
     return static_cast<u64>(Emulator::emuTimer::getTimeMsec() * 1000.0);  // return time in microseconds
 }

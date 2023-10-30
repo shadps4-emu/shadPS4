@@ -40,7 +40,7 @@ void GameController::addState(const State& state) {
 void GameController::checKButton(int id, u32 button, bool isPressed) {
     std::scoped_lock lock{m_mutex};
     auto state = getLastState();
-    state.time = Core::Libraries::sceKernelGetProcessTime();
+    state.time = Core::Libraries::LibKernel::sceKernelGetProcessTime();
     if (isPressed) {
         state.buttonsState |= button;
     } else {
