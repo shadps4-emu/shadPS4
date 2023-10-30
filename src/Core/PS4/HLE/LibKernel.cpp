@@ -13,6 +13,7 @@
 #include "Libs.h"
 #include "Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h"
 #include "Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h"
+#include "Core/hle/libraries/libkernel/time_management.h"
 
 namespace HLE::Libs::LibKernel {
 
@@ -50,6 +51,8 @@ void LibKernel_Register(SymbolsResolver* sym) {
     // fs
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
+
+    Core::Libraries::LibKernel::timeSymbolsRegister(sym);
 }
 
 };  // namespace HLE::Libs::LibKernel

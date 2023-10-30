@@ -7,4 +7,8 @@ void start() { timer.Start(); }
 
 double getTimeMsec() { return timer.GetTimeMsec(); }
 
-}
+u64 getTimeCounter() { return timer.GetTicks(); }
+
+u64 getTimeFrequency() { return timer.GetFrequency(); }
+
+}  // namespace Emulator::emuTimer
