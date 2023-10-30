@@ -2,6 +2,7 @@
 
 #include <Core/PS4/HLE/LibKernel.h>
 #include <debug.h>
+#include <Core/hle/libraries/libkernel/time_management.h>
 
 namespace HLE::Graphics::Objects {
 
@@ -120,7 +121,7 @@ bool FlipQueue::flip(u32 micros) {
     m_done_cond.notify_one();
 
     request->cfg->m_flip_status.count++;
-    // TODO request.cfg->m_flip_status.processTime = LibKernel::KernelGetProcessTime();
+    request->cfg->m_flip_status.processTime = Core::Libraries::sceKernelGetProcessTime();
     request->cfg->m_flip_status.tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
     request->cfg->m_flip_status.submitTsc = request->submit_tsc;
     request->cfg->m_flip_status.flipArg = request->flip_arg;
