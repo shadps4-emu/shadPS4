@@ -11,8 +11,7 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
-#include "Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h"
-#include "Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h"
+#include "Core/hle/libraries/libkernel/file_system.h"
 #include "Core/hle/libraries/libkernel/time_management.h"
 
 namespace HLE::Libs::LibKernel {
@@ -42,10 +41,8 @@ void LibKernel_Register(SymbolsResolver* sym) {
     // misc
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, CPUManagement::sceKernelIsNeoMode);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
-    // fs
-    LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::sceKernelOpen);
-    LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, Emulator::HLE::Libraries::LibKernel::FileSystem::POSIX::open);
-
+    
+    Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
 }
 

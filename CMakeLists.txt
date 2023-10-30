@@ -43,10 +43,10 @@ set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_ser
                           src/Emulator/HLE/Libraries/LibSystemService/system_service.h
 )
 
-set(FILESYSTEM_SOURCES src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.cpp
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.cpp
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h
+set(FILESYSTEM_SOURCES "src/Core/hle/libraries/libkernel/file_system.cpp"
+                       "src/Core/hle/libraries/libkernel/file_system.h"
+                       
+                       
 )
 
 set(HOST_SOURCES src/Emulator/Host/controller.cpp
