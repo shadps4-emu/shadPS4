@@ -815,6 +815,7 @@ auto TranslateCode(u08* runtime_address, u64 context_base) -> PS4_SYSV_ABI u64 (
 		bool UsesFlags = false;
 
 		if (instruction.info.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
+            assert((instruction.info.attributes & (ZYDIS_ATTRIB_HAS_SEGMENT_FS | ZYDIS_ATTRIB_HAS_SEGMENT_GS)) == 0);
             if (instruction.info.mnemonic == ZYDIS_MNEMONIC_CALL || instruction.info.mnemonic == ZYDIS_MNEMONIC_JMP) {
 
                 if (instruction.info.mnemonic == ZYDIS_MNEMONIC_CALL) {
@@ -957,6 +958,8 @@ auto TranslateCode(u08* runtime_address, u64 context_base) -> PS4_SYSV_ABI u64 (
 			}
             break;
         } else {
+            assert((instruction.info.attributes & (ZYDIS_ATTRIB_HAS_SEGMENT_FS | ZYDIS_ATTRIB_HAS_SEGMENT_GS)) == 0);
+
             for (int i = 0; i < instruction.info.operand_count; i++) {
                 auto operand = &instruction.operands[i];
                 if (operand->type == ZYDIS_OPERAND_TYPE_REGISTER) {
