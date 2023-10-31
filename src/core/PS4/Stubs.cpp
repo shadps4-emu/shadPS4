@@ -25,7 +25,7 @@ u64 UnresolvedStub() {
 static std::string snid;
 
 static u64 UnknownStub() {
-    LOG_ERROR("Stub: Unknown (nid: {} ) called, returning zero to {}\n",snid, __builtin_return_address(0));
+    LOG_ERROR("Stub: Unknown (nid: {}) called, returning zero to {}\n",snid, __builtin_return_address(0));
     return 0;
 }
 
