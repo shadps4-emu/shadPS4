@@ -7,11 +7,7 @@ namespace Core::Libraries::LibC {
 
 // HLE functions
 
-void PS4_SYSV_ABI exit(int code);
-int PS4_SYSV_ABI atexit(void (*func)());
 
-void* PS4_SYSV_ABI malloc(size_t size);
-void PS4_SYSV_ABI free(void* ptr);
 
 
 

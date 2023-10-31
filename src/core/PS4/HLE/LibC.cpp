@@ -9,6 +9,7 @@
 #include "core/hle/libraries/libc/libc_math.h"
 #include "core/hle/libraries/libc/libc_stdio.h"
 #include "core/hle/libraries/libc/libc_string.h"
+#include "core/hle/libraries/libc/libc_stdlib.h"
 #include "ErrorCodes.h"
 #include "Libs.h"
 
@@ -66,8 +67,8 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::string::memcpy);
     LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::memset);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
-    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::exit);
-    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atexit);
+    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::stdlib::exit);
+    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::stdlib::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::stdio::printf);
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::stdio::vsnprintf);
@@ -76,8 +77,8 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
     LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
     LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strcmp);
-    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::malloc);
-    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::free);
+    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::stdlib::malloc);
+    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::stdlib::free);
     LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strlen);
     LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strncpy);
     LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::memmove);
