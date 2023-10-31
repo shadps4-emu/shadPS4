@@ -22,9 +22,10 @@ u64 UnresolvedStub() {
     LOG_ERROR("Unresolved Stub: called, returning zero to {}\n", __builtin_return_address(0));
     return 0;
 }
+static std::string snid;
 
 static u64 UnknownStub() {
-    LOG_ERROR("Stub: Unknown (nid: Unknown) called, returning zero to {}\n", __builtin_return_address(0));
+    LOG_ERROR("Stub: Unknown (nid: {} ) called, returning zero to {}\n",snid, __builtin_return_address(0));
     return 0;
 }
 
@@ -66,6 +67,7 @@ static u64 (*stub_handlers[MAX_STUBS])() = {
 
 u64 GetStub(const char* nid) {
     if (UsedStubEntries >= MAX_STUBS) {
+        snid = std::string(nid);
         return (u64)&UnknownStub;
     }
 
