@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace Core::Libraries::LibC::string {
+namespace Core::Libraries::LibC {
 
 int PS4_SYSV_ABI memcmp(const void* s1, const void* s2, size_t n) { return std::memcmp(s1, s2, n); }
 
@@ -22,4 +22,4 @@ char* PS4_SYSV_ABI strcat(char* dest, const char* src) { return std::strcat(dest
 
 size_t PS4_SYSV_ABI strlen(const char* str) { return std::strlen(str); }
 
-}  // namespace Core::Libraries::LibC::string
+}  // namespace Core::Libraries::LibC

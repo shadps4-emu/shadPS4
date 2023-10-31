@@ -105,8 +105,8 @@ add_executable(shadps4
     src/core/PS4/HLE/Kernel/event_queues.h
     src/core/PS4/HLE/Kernel/cpu_management.cpp
     src/core/PS4/HLE/Kernel/cpu_management.h
-    src/core/PS4/HLE/LibC.cpp
-    src/core/PS4/HLE/LibC.h
+    
+    
     
     "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
 

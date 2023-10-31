@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace Core::Libraries::LibC::math {
+namespace Core::Libraries::LibC {
 
 float PS4_SYSV_ABI atan2f(float y, float x) { return std::atan2f(y, x); }
 
@@ -15,4 +15,7 @@ float PS4_SYSV_ABI asinf(float num) { return std::asinf(num); }
 double PS4_SYSV_ABI pow(double base, double exponent) { return std::pow(base, exponent); }
 
 double PS4_SYSV_ABI _Sin(double x) { return std::sin(x); }
-}  // namespace Core::Libraries::LibC::math
+
+float PS4_SYSV_ABI _Fsin(float arg) { return std::sinf(arg); }
+
+}  // namespace Core::Libraries::LibC
