@@ -2,22 +2,14 @@
 
 #include <debug.h>
 
-#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
 namespace Core::Libraries::LibC {
 
-PS4_SYSV_ABI int printf(VA_ARGS) {
-    VA_CTX(ctx);
-    return printf_ctx(&ctx);
-}
+void PS4_SYSV_ABI exit(int code) { std::exit(code); }
 
-int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) { return vsnprintf_ctx(s, n, format, arg); }
-
-PS4_SYSV_ABI void exit(int code) { std::exit(code); }
-
-PS4_SYSV_ABI int atexit(void (*func)()) {
+int PS4_SYSV_ABI atexit(void (*func)()) {
     int rt = std::atexit(func);
     if (rt != 0) {
         BREAKPOINT();
@@ -48,16 +40,5 @@ char* PS4_SYSV_ABI strcpy(char* dest, const char* src) { return std::strcpy(dest
 char* PS4_SYSV_ABI strcat(char* dest, const char* src) { return std::strcat(dest, src); }
 
 // math
-float PS4_SYSV_ABI atan2f(float y, float x) { return std::atan2f(y, x); }
-
-float PS4_SYSV_ABI acosf(float num) { return std::acosf(num); }
-
-float PS4_SYSV_ABI tanf(float num) { return std::tanf(num); }
-
-float PS4_SYSV_ABI asinf(float num) { return std::asinf(num); }
-
-double PS4_SYSV_ABI pow(double base, double exponent) { return std::pow(base, exponent); }
-
-double PS4_SYSV_ABI _Sin(double x) { return std::sin(x); }
 
 };  // namespace Core::Libraries::LibC

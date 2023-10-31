@@ -6,6 +6,8 @@
 #include "../Loader/Elf.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libc/libc_cxa.h"
+#include "core/hle/libraries/libc/libc_math.h"
+#include "core/hle/libraries/libc/libc_stdio.h"
 #include "ErrorCodes.h"
 #include "Libs.h"
 
@@ -66,8 +68,8 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::exit);
     LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
-    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::printf);
-    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::vsnprintf);
+    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::stdio::printf);
+    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::stdio::vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
@@ -80,12 +82,12 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memmove);
     LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcpy); 
     LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcat);
-    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atan2f);
-    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::acosf);
-    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::tanf);
-    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::asinf);
-    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::pow);
-    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::_Sin);
+    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::math::atan2f);
+    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::acosf);
+    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::tanf);
+    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::asinf);
+    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::pow);
+    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::_Sin);
 
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 
