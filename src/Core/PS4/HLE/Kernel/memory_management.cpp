@@ -1,7 +1,7 @@
 #include "memory_management.h"
 
-#include <Core/PS4/GPU/gpu_memory.h>
-#include <Core/virtual_memory.h>
+#include <core/PS4/GPU/gpu_memory.h>
+#include <core/virtual_memory.h>
 #include <Util/log.h>
 #include <debug.h>
 

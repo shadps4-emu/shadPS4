@@ -2,8 +2,8 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <Core/PS4/HLE/Graphics/video_out.h>
-#include <Core/PS4/HLE/Graphics/graphics_ctx.h>
+#include <core/PS4/HLE/Graphics/video_out.h>
+#include <core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <emulator.h>
 
 using namespace HLE::Libs::Graphics::VideoOut;

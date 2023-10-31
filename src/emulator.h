@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/PS4/HLE/Graphics/graphics_ctx.h>
+#include <core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <SDL.h>
 
 #include <mutex>

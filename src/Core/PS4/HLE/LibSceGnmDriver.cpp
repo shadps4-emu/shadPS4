@@ -3,7 +3,7 @@
 #include "../Loader/Elf.h"
 #include <Util/log.h>
 #include <debug.h>
-#include <Core/PS4/GPU/gpu_memory.h>
+#include <core/PS4/GPU/gpu_memory.h>
 #include <emulator.h>
 
 namespace HLE::Libs::LibSceGnmDriver {

@@ -5,6 +5,7 @@
 namespace Emulator::Host::Controller {
 struct State {
     u32 buttonsState =0;
+    u64 time = 0;
 };
 
 constexpr u32 MAX_STATES = 64;

@@ -1,7 +1,7 @@
 #include "cpu_management.h"
 #include "Util/config.h"
 #include <Util/log.h>
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/Libs.h>
 
 namespace HLE::Libs::LibKernel::CPUManagement {
 int PS4_SYSV_ABI sceKernelIsNeoMode() {

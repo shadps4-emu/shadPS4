@@ -1,7 +1,7 @@
 #pragma once
-#include "Core/PS4/Loader/SymbolsResolver.h"
+#include "core/PS4/Loader/SymbolsResolver.h"
 
-namespace Emulator::HLE::Libraries::LibUserService {
+namespace Core::Libraries::LibUserService {
 
 using SceUserServiceUserId = s32;
 
@@ -16,5 +16,5 @@ struct SceUserServiceLoginUserIdList {
 s32 PS4_SYSV_ABI sceUserServiceInitialize(const SceUserServiceInitializeParams* initParams);
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList);
 
-void libUserService_Register(SymbolsResolver* sym);
+void userServiceSymbolsRegister(SymbolsResolver* sym);
 };  // namespace Emulator::HLE::Libraries::LibUserService

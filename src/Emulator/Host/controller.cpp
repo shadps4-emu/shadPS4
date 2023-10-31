@@ -1,4 +1,5 @@
 #include "controller.h"
+#include <core/hle/libraries/libkernel/time_management.h>
 
 namespace Emulator::Host::Controller {
 GameController::GameController() { m_states_num = 0;
@@ -39,6 +40,7 @@ void GameController::addState(const State& state) {
 void GameController::checKButton(int id, u32 button, bool isPressed) {
     std::scoped_lock lock{m_mutex};
     auto state = getLastState();
+    state.time = Core::Libraries::LibKernel::sceKernelGetProcessTime();
     if (isPressed) {
         state.buttonsState |= button;
     } else {

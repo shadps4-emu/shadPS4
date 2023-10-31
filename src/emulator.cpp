@@ -1,17 +1,30 @@
 #include "emulator.h"
-#include <fmt/core.h>
-#include <Core/PS4/HLE/Graphics/graphics_render.h>
+
+#include <core/PS4/HLE/Graphics/graphics_render.h>
 #include <Emulator/Host/controller.h>
-#include "Emulator/Util/singleton.h"
+#include <Lib/Timer.h>
+#include <fmt/core.h>
 #include <vulkan_util.h>
 
-#include "Core/PS4/HLE/Graphics/video_out.h"
-#include "Emulator/HLE/Libraries/LibPad/pad.h"
+#include "core/PS4/HLE/Graphics/video_out.h"
+#include "core/hle/libraries/libpad/pad.h"
+#include "Emulator/Util/singleton.h"
 #include "version.h"
 
 namespace Emu {
 
 bool m_emu_needs_exit = false;
+bool m_game_is_paused = {false};
+double m_current_time_seconds = {0.0};
+double m_previous_time_seconds = {0.0};
+int m_update_num = {0};
+int m_frame_num = {0};
+double m_update_time_seconds = {0.0};
+double m_current_fps = {0.0};
+int m_max_updates_per_frame = {4};
+double m_update_fixed_time = 1.0 / 60.0;
+int m_fps_frames_num = {0};
+double m_fps_start_time = {0};
 
 void emuInit(u32 width, u32 height) {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
@@ -49,7 +62,39 @@ static void CreateSdlWindow(WindowCtx* ctx) {
 
     SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
 }
+static void update() {
+    static double lag = 0.0;
+
+    lag += m_current_time_seconds - m_previous_time_seconds;
+
+    int num = 0;
+
+    while (lag >= m_update_fixed_time) {
+        if (num < m_max_updates_per_frame) {
+            m_update_num++;
+            num++;
+            m_update_time_seconds = m_update_num * m_update_fixed_time;
+        }
+
+        lag -= m_update_fixed_time;
+    }
+}
+static void calculateFps(double game_time_s) {
+    m_previous_time_seconds = m_current_time_seconds;
+    m_current_time_seconds = game_time_s;
+
+    m_frame_num++;
+
+    m_fps_frames_num++;
+    if (m_current_time_seconds - m_fps_start_time > 0.25f) {
+        m_current_fps = static_cast<double>(m_fps_frames_num) / (m_current_time_seconds - m_fps_start_time);
+        m_fps_frames_num = 0;
+        m_fps_start_time = m_current_time_seconds;
+    }
+}
 void emuRun() {
+    Lib::Timer timer;
+    timer.Start();
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     {
         // init window and wait until init finishes
@@ -58,6 +103,7 @@ void emuRun() {
         Graphics::Vulkan::vulkanCreate(window_ctx);
         window_ctx->m_is_graphic_initialized = true;
         window_ctx->m_graphic_initialized_cond.notify_one();
+        calculateFps(timer.GetTimeSec());
     }
 
     bool exit_loop = false;
@@ -83,14 +129,68 @@ void emuRun() {
                 case SDL_EVENT_DID_ENTER_FOREGROUND: break;
 
                 case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP: keyboardEvent(&event); break;
+                case SDL_EVENT_KEY_UP:
+                    if (event.type == SDL_EVENT_KEY_DOWN){
+                        if (event.key.keysym.sym == SDLK_p) {
+                            m_game_is_paused = !m_game_is_paused;
+                        }
+                    }
+                    keyboardEvent(&event);
+                    break;
             }
             continue;
         }
-        exit_loop = m_emu_needs_exit;
+        if (m_game_is_paused) {
+            if (!timer.IsPaused()) {
+                timer.Pause();
+            }
 
-        if (!exit_loop) {
-            HLE::Libs::Graphics::VideoOut::videoOutFlip(100000);  // flip every 0.1 sec
+            SDL_WaitEvent(&event);
+
+            switch (event.type) {
+                case SDL_EVENT_QUIT: m_emu_needs_exit = true; break;
+
+                case SDL_EVENT_TERMINATING: m_emu_needs_exit = true; break;
+
+                case SDL_EVENT_WILL_ENTER_BACKGROUND: break;
+
+                case SDL_EVENT_DID_ENTER_BACKGROUND: break;
+
+                case SDL_EVENT_WILL_ENTER_FOREGROUND: break;
+
+                case SDL_EVENT_DID_ENTER_FOREGROUND: break;
+
+                case SDL_EVENT_KEY_DOWN:
+                case SDL_EVENT_KEY_UP:
+                    if (event.type == SDL_EVENT_KEY_DOWN) {
+                        if (event.key.keysym.sym == SDLK_p) {
+                            m_game_is_paused = !m_game_is_paused;
+                        }
+                    }
+                    keyboardEvent(&event);
+                    break;
+            }
+            exit_loop = m_emu_needs_exit;
+            continue;
+        }
+        exit_loop = m_emu_needs_exit;
+        if (m_game_is_paused) {
+            if (!timer.IsPaused()) {
+                timer.Pause();
+            }
+        } else {
+            if (timer.IsPaused()) {
+                timer.Resume();
+            }
+
+            if (!exit_loop) {
+                update();
+            }
+            if (!exit_loop) {
+                if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) {  // flip every 0.1 sec
+                    calculateFps(timer.GetTimeSec());
+                }
+            }
         }
     }
     std::exit(0);
@@ -102,6 +202,12 @@ HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
     return &window_ctx->m_graphic_ctx;
 }
 
+void updateSDLTitle() {
+    char title[256];
+    sprintf(title, "shadps4 v %s FPS: %f", Emulator::VERSION, m_current_fps);
+    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
+    SDL_SetWindowTitle(window_ctx->m_window, title);
+}
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     auto* window_ctx = singleton<Emu::WindowCtx>::instance();
     if (window_ctx->is_window_hidden) {
@@ -192,10 +298,11 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
         fmt::print("vkQueuePresentKHR failed\n");
         std::exit(0);
     }
+    updateSDLTitle();
 }
 
 void keyboardEvent(SDL_Event* event) {
-    using Emulator::HLE::Libraries::LibPad::ScePadButton;
+    using Core::Libraries::LibPad::ScePadButton;
 
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;

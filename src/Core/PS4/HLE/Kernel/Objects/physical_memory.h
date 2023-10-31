@@ -1,7 +1,7 @@
 #pragma once
 #include <types.h>
-#include <Core/virtual_memory.h>
-#include <Core/PS4/GPU/gpu_memory.h>
+#include <core/virtual_memory.h>
+#include <core/PS4/GPU/gpu_memory.h>
 #include <mutex>
 #include <vector>
 

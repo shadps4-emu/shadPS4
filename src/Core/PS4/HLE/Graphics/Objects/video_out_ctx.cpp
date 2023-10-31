@@ -1,7 +1,8 @@
 #include "video_out_ctx.h"
 
-#include <Core/PS4/HLE/LibKernel.h>
+#include <core/PS4/HLE/LibKernel.h>
 #include <debug.h>
+#include <core/hle/libraries/libkernel/time_management.h>
 
 namespace HLE::Graphics::Objects {
 
@@ -76,7 +77,7 @@ bool FlipQueue::submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg) {
     r.cfg = cfg;
     r.index = index;
     r.flip_arg = flip_arg;
-    r.submit_tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
+    r.submit_tsc = Core::Libraries::LibKernel::sceKernelReadTsc();
 
     m_requests.push_back(r);
 
@@ -120,8 +121,8 @@ bool FlipQueue::flip(u32 micros) {
     m_done_cond.notify_one();
 
     request->cfg->m_flip_status.count++;
-    // TODO request.cfg->m_flip_status.processTime = LibKernel::KernelGetProcessTime();
-    request->cfg->m_flip_status.tsc = HLE::Libs::LibKernel::sceKernelReadTsc();
+    request->cfg->m_flip_status.processTime = Core::Libraries::LibKernel::sceKernelGetProcessTime();
+    request->cfg->m_flip_status.tsc = Core::Libraries::LibKernel::sceKernelReadTsc();
     request->cfg->m_flip_status.submitTsc = request->submit_tsc;
     request->cfg->m_flip_status.flipArg = request->flip_arg;
     request->cfg->m_flip_status.currentBuffer = request->index;

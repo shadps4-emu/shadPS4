@@ -1,6 +1,6 @@
 #include "vulkan_util.h"
 #include <fmt/core.h>
-#include <Core/PS4/GPU/gpu_memory.h>
+#include <core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
 #include <Emulator/Util/singleton.h>
 #include <Util/log.h>

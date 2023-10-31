@@ -31,22 +31,22 @@ set(LIBC_SOURCES src/Emulator/HLE/Libraries/LibC/Libc.cpp
                  src/Emulator/HLE/Libraries/LibC/libc_cxa.cpp
                  src/Emulator/HLE/Libraries/LibC/libc_cxa.h
 )
-set(USERSERVICE_SOURCES src/Emulator/HLE/Libraries/LibUserService/user_service.cpp
-                        src/Emulator/HLE/Libraries/LibUserService/user_service.h
+set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/user_service.cpp
+                        src/core/hle/libraries/libuserservice/user_service.h
 )
 
-set(PAD_SOURCES src/Emulator/HLE/Libraries/LibPad/pad.cpp
-                src/Emulator/HLE/Libraries/LibPad/pad.h
+set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
+                src/core/hle/libraries/libpad/pad.h
 )
 
-set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_service.cpp
-                          src/Emulator/HLE/Libraries/LibSystemService/system_service.h
+set(SYSTEMSERVICE_SOURCES src/core/hle/libraries/libsystemservice/system_service.cpp
+                          src/core/hle/libraries/libsystemservice/system_service.h
 )
 
-set(FILESYSTEM_SOURCES src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.cpp
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/file_system.h
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.cpp
-                       src/Emulator/HLE/Libraries/LibKernel/FileSystem/posix_file_system.h
+set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
+                       src/core/hle/libraries/libkernel/file_system.h
+                       
+                       
 )
 
 set(HOST_SOURCES src/Emulator/Host/controller.cpp
@@ -64,39 +64,41 @@ add_executable(shadps4
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
     ${UTIL_SOURCES}
+    src/Lib/Timer.cpp
+    src/Lib/Timer.h
     src/main.cpp
     src/types.h
-    src/Core/FsFile.cpp
-    src/Core/FsFile.h
-    src/Core/PS4/Loader/Elf.cpp
-    src/Core/PS4/Loader/Elf.h
+    src/core/FsFile.cpp
+    src/core/FsFile.h
+    src/core/PS4/Loader/Elf.cpp
+    src/core/PS4/Loader/Elf.h
     src/GUI/ElfViewer.cpp
     src/GUI/ElfViewer.h 
     src/Util/log.h
     src/Util/log.cpp
     src/Util/config.cpp
     src/Util/config.h
-    src/Core/virtual_memory.cpp
-    src/Core/virtual_memory.h
-    src/Core/PS4/Linker.cpp
-    src/Core/PS4/Linker.h
-    src/Core/PS4/Stubs.cpp
-    src/Core/PS4/Stubs.h
-    src/Core/PS4/Util/aerolib.cpp
-    src/Core/PS4/HLE/Kernel/Objects/physical_memory.h
-    src/Core/PS4/HLE/Kernel/Objects/physical_memory.cpp
+    src/core/virtual_memory.cpp
+    src/core/virtual_memory.h
+    src/core/PS4/Linker.cpp
+    src/core/PS4/Linker.h
+    src/core/PS4/Stubs.cpp
+    src/core/PS4/Stubs.h
+    src/core/PS4/Util/aerolib.cpp
+    src/core/PS4/HLE/Kernel/Objects/physical_memory.h
+    src/core/PS4/HLE/Kernel/Objects/physical_memory.cpp
     src/Util/string_util.cpp
     src/Util/string_util.cpp
-    src/Core/PS4/HLE/Graphics/video_out.cpp
-    src/Core/PS4/HLE/Graphics/video_out.h
+    src/core/PS4/HLE/Graphics/video_out.cpp
+    src/core/PS4/HLE/Graphics/video_out.h
     src/discord.h
     src/discord.cpp
-    src/Core/PS4/HLE/Kernel/event_queues.cpp
-    src/Core/PS4/HLE/Kernel/event_queues.h
-    src/Core/PS4/HLE/Kernel/cpu_management.cpp
-    src/Core/PS4/HLE/Kernel/cpu_management.h
+    src/core/PS4/HLE/Kernel/event_queues.cpp
+    src/core/PS4/HLE/Kernel/event_queues.h
+    src/core/PS4/HLE/Kernel/cpu_management.cpp
+    src/core/PS4/HLE/Kernel/cpu_management.h
     
-    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/Core/PS4/Util/aerolib.h" "src/Core/PS4/Loader/SymbolsResolver.h" "src/Core/PS4/Loader/SymbolsResolver.cpp" "src/Core/PS4/HLE/Libs.cpp" "src/Core/PS4/HLE/Libs.h" "src/Core/PS4/HLE/LibC.cpp" "src/Core/PS4/HLE/LibC.h" "src/Core/PS4/HLE/LibKernel.cpp" "src/Core/PS4/HLE/LibKernel.h"   "src/Core/PS4/HLE/LibSceGnmDriver.cpp" "src/Core/PS4/HLE/LibSceGnmDriver.h" "src/Core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/Core/PS4/HLE/Kernel/ThreadManagement.h" "src/Core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/Core/PS4/HLE/Kernel/memory_management.cpp" "src/Core/PS4/HLE/Kernel/memory_management.h" "src/Core/PS4/GPU/gpu_memory.cpp" "src/Core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/Core/PS4/HLE/Kernel/Objects/event_queue.h" "src/Core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/Core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/Core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/Core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/Core/PS4/GPU/video_out_buffer.cpp" "src/Core/PS4/GPU/video_out_buffer.h" "src/Core/PS4/HLE/Graphics/graphics_render.cpp" "src/Core/PS4/HLE/Graphics/graphics_render.h" "src/Core/PS4/GPU/tile_manager.cpp" "src/Core/PS4/GPU/tile_manager.h" "src/version.h" "src/Emulator/HLE/Libraries/LibSystemService/system_service.cpp" "src/Emulator/HLE/Libraries/LibSystemService/system_service.h"  )
+    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibC.cpp" "src/core/PS4/HLE/LibC.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(shadps4 PUBLIC fmt mincore spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY} vulkan-1 spirv-tools-opt spirv-tools)
