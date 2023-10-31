@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace Emulator::HLE::Libraries::LibC {
+namespace Core::Libraries::LibC {
 
 PS4_SYSV_ABI int printf(VA_ARGS) {
     VA_CTX(ctx);
@@ -60,4 +60,4 @@ double PS4_SYSV_ABI pow(double base, double exponent) { return std::pow(base, ex
 
 double PS4_SYSV_ABI _Sin(double x) { return std::sin(x); }
 
-};  // namespace Emulator::HLE::Libraries::LibC
+};  // namespace Core::Libraries::LibC

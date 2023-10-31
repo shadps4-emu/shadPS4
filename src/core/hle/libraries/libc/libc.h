@@ -4,7 +4,7 @@
 
 #include "printf.h"
 
-namespace Emulator::HLE::Libraries::LibC {
+namespace Core::Libraries::LibC {
 
 // HLE functions
 PS4_SYSV_ABI int printf(VA_ARGS);
@@ -29,4 +29,4 @@ float PS4_SYSV_ABI asinf(float num);
 double PS4_SYSV_ABI pow(double base, double exponent);
 double PS4_SYSV_ABI _Sin(double x);
 
-}  // namespace Emulator::HLE::Libraries::LibC
+}  // namespace Core::Libraries::LibC

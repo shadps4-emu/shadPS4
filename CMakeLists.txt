@@ -24,12 +24,12 @@ add_subdirectory("third-party")
 #=================== EXAMPLE ===================
 include_directories(src)
 
-set(LIBC_SOURCES src/Emulator/HLE/Libraries/LibC/Libc.cpp 
-                 src/Emulator/HLE/Libraries/LibC/Libc.h
-                 src/Emulator/HLE/Libraries/LibC/printf.h
-                 src/Emulator/HLE/Libraries/LibC/va_ctx.h
-                 src/Emulator/HLE/Libraries/LibC/libc_cxa.cpp
-                 src/Emulator/HLE/Libraries/LibC/libc_cxa.h
+set(LIBC_SOURCES src/core/hle/libraries/Libc/Libc.cpp 
+                 src/core/hle/libraries/Libc/Libc.h
+                 src/core/hle/libraries/Libc/printf.h
+                 src/core/hle/libraries/Libc/va_ctx.h
+                 src/core/hle/libraries/Libc/libc_cxa.cpp
+                 src/core/hle/libraries/Libc/libc_cxa.h
 )
 set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/user_service.cpp
                         src/core/hle/libraries/libuserservice/user_service.h
@@ -97,8 +97,10 @@ add_executable(shadps4
     src/core/PS4/HLE/Kernel/event_queues.h
     src/core/PS4/HLE/Kernel/cpu_management.cpp
     src/core/PS4/HLE/Kernel/cpu_management.h
+    src/core/PS4/HLE/LibC.cpp
+    src/core/PS4/HLE/LibC.h
     
-    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibC.cpp" "src/core/PS4/HLE/LibC.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
+    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
 
 find_package(OpenGL REQUIRED)
 target_link_libraries(shadps4 PUBLIC fmt mincore spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY} vulkan-1 spirv-tools-opt spirv-tools)

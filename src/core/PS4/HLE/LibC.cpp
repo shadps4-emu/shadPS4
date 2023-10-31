@@ -4,8 +4,8 @@
 #include <pthread.h>
 
 #include "../Loader/Elf.h"
-#include "Emulator/HLE/Libraries/LibC/libc.h"
-#include "Emulator/HLE/Libraries/LibC/libc_cxa.h"
+#include "core/hle/libraries/libc/libc.h"
+#include "core/hle/libraries/libc/libc_cxa.h"
 #include "ErrorCodes.h"
 #include "Libs.h"
 
@@ -56,36 +56,36 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* c
 
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
-    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::Cxa::__cxa_guard_acquire);
-    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::Cxa::__cxa_guard_release);
-    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::Cxa::__cxa_guard_abort);
-    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcmp);
-    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memcpy);
-    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memset);
+    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_acquire);
+    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_release);
+    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_abort);
+    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memcmp);
+    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memcpy);
+    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memset);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
-    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::exit);
-    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atexit);
+    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::exit);
+    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atexit);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
-    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::printf);
-    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::vsnprintf);
+    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::printf);
+    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
     LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
-    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcmp);
-    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::malloc);
-    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::free);
-    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strlen);
-    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strncpy);
-    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::memmove);
-    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcpy); 
-    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::strcat);
-    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::atan2f);
-    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::acosf);
-    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::tanf);
-    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::asinf);
-    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::pow);
-    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, Emulator::HLE::Libraries::LibC::_Sin);
+    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcmp);
+    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::malloc);
+    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::free);
+    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strncpy);
+    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memmove);
+    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcpy); 
+    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcat);
+    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atan2f);
+    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::acosf);
+    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::tanf);
+    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::asinf);
+    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::pow);
+    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::_Sin);
 
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &HLE::Libs::LibC::g_need_sceLibc);
 

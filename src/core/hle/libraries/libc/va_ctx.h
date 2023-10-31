@@ -26,7 +26,7 @@
     (ctx).va_list.fp_offset = offsetof(VaRegSave, fp);  \
     (ctx).va_list.overflow_arg_area = &overflow_arg_area;
 
-namespace Emulator::HLE::Libraries::LibC {
+namespace Core::Libraries::LibC {
 
 // https://stackoverflow.com/questions/4958384/what-is-the-format-of-the-x86-64-va-list-structure
 
@@ -103,4 +103,4 @@ T* vaArgPtr(VaList* l) {
     return vaArgOverflowArgArea<T*, 1, 8>(l);
 }
 
-}  // namespace Emulator::HLE::Libraries::LibC
+}  // namespace Core::Libraries::LibC

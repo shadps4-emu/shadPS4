@@ -1,10 +1,11 @@
 #include "libc_cxa.h"
-#include "debug.h"
+
 #include "Util/log.h"
+#include "debug.h"
 
 // adapted from https://opensource.apple.com/source/libcppabi/libcppabi-14/src/cxa_guard.cxx.auto.html
 
-namespace Emulator::HLE::Libraries::LibC::Cxa {
+namespace Core::Libraries::LibC::Cxa {
 constexpr bool log_file_cxa = true;  // disable it to disable logging
 
 // This file implements the __cxa_guard_* functions as defined at:
@@ -87,7 +88,7 @@ int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object) {
 
     int result = ::pthread_mutex_lock(guard_mutex());
     if (result != 0) {
-        LOG_TRACE_IF(log_file_cxa, "__cxa_guard_acquire(): pthread_mutex_lock failed with {}\n",result);
+        LOG_TRACE_IF(log_file_cxa, "__cxa_guard_acquire(): pthread_mutex_lock failed with {}\n", result);
     }
     // At this point all other threads will block in __cxa_guard_acquire()
 
@@ -95,7 +96,7 @@ int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object) {
     if (initializerHasRun(guard_object)) {
         int result = ::pthread_mutex_unlock(guard_mutex());
         if (result != 0) {
-            LOG_TRACE_IF(log_file_cxa,"__cxa_guard_acquire(): pthread_mutex_unlock failed with {}\n",result);
+            LOG_TRACE_IF(log_file_cxa, "__cxa_guard_acquire(): pthread_mutex_unlock failed with {}\n", result);
         }
         return 0;
     }
@@ -105,7 +106,7 @@ int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object) {
     // But if the same thread can call __cxa_guard_acquire() on the
     // *same* guard object again, we call abort();
     if (inUse(guard_object)) {
-        LOG_TRACE_IF(log_file_cxa,"__cxa_guard_acquire(): initializer for function local static variable called enclosing function\n");
+        LOG_TRACE_IF(log_file_cxa, "__cxa_guard_acquire(): initializer for function local static variable called enclosing function\n");
     }
 
     // mark this guard object as being in use
@@ -127,7 +128,7 @@ void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
     // release global mutex
     int result = ::pthread_mutex_unlock(guard_mutex());
     if (result != 0) {
-        LOG_TRACE_IF(log_file_cxa,"__cxa_guard_acquire(): pthread_mutex_unlock failed with {}\n",result);
+        LOG_TRACE_IF(log_file_cxa, "__cxa_guard_acquire(): pthread_mutex_unlock failed with {}\n", result);
     }
 }
 
@@ -137,11 +138,11 @@ void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
 void PS4_SYSV_ABI __cxa_guard_abort(u64* guard_object) {
     int result = ::pthread_mutex_unlock(guard_mutex());
     if (result != 0) {
-        LOG_TRACE_IF(log_file_cxa,"__cxa_guard_abort(): pthread_mutex_unlock failed with {}\n",result);
+        LOG_TRACE_IF(log_file_cxa, "__cxa_guard_abort(): pthread_mutex_unlock failed with {}\n", result);
     }
 
     // now reset state, so possible to try to initialize again
     setNotInUse(guard_object);
 }
 
-}  // namespace Emulator::HLE::Libraries::LibC::Cxa
+}  // namespace Core::Libraries::LibC::Cxa
