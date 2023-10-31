@@ -1,5 +1,5 @@
 #include "controller.h"
-#include <Core/hle/libraries/libkernel/time_management.h>
+#include <core/hle/libraries/libkernel/time_management.h>
 
 namespace Emulator::Host::Controller {
 GameController::GameController() { m_states_num = 0;

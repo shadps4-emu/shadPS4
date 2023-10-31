@@ -1,7 +1,7 @@
 #include "pad.h"
 
-#include <Core/PS4/HLE/ErrorCodes.h>
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/ErrorCodes.h>
+#include <core/PS4/HLE/Libs.h>
 
 #include "Emulator/Util/singleton.h"
 #include "Emulator/Host/controller.h"

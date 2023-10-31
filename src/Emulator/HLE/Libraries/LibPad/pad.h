@@ -2,7 +2,7 @@
 #include <Emulator/HLE/Libraries/LibUserService/user_service.h>
 #include <types.h>
 
-#include "Core/PS4/Loader/SymbolsResolver.h"
+#include "core/PS4/Loader/SymbolsResolver.h"
 
 namespace Emulator::HLE::Libraries::LibPad {
 

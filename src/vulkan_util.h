@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/PS4/HLE/Graphics/graphics_render.h>
+#include <core/PS4/HLE/Graphics/graphics_render.h>
 #include <SDL.h>
 #include <src/video/khronos/vulkan/vulkan_core.h>
 

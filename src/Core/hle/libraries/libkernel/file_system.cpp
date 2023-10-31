@@ -1,6 +1,6 @@
 #include "file_system.h"
 
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/Libs.h>
 #include <Util/log.h>
 #include <debug.h>
 

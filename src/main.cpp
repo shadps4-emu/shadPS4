@@ -3,14 +3,14 @@
 #include <fmt/core.h>
 #include "types.h"
 #include "Util/log.h"
-#include <Core/PS4/HLE/Graphics/video_out.h>
+#include <core/PS4/HLE/Graphics/video_out.h>
 #include <Util/config.h>
 #include <Zydis/Zydis.h>
 #include <emulator.h>
 #include <cinttypes>
 #include <thread>
-#include "Core/PS4/HLE/Libs.h"
-#include "Core/PS4/Linker.h"
+#include "core/PS4/HLE/Libs.h"
+#include "core/PS4/Linker.h"
 #include "Emulator/Util\singleton.h"
 #include "discord.h"
 #include "emuTimer.h"

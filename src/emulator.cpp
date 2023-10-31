@@ -1,12 +1,12 @@
 #include "emulator.h"
 
-#include <Core/PS4/HLE/Graphics/graphics_render.h>
+#include <core/PS4/HLE/Graphics/graphics_render.h>
 #include <Emulator/Host/controller.h>
 #include <Lib/Timer.h>
 #include <fmt/core.h>
 #include <vulkan_util.h>
 
-#include "Core/PS4/HLE/Graphics/video_out.h"
+#include "core/PS4/HLE/Graphics/video_out.h"
 #include "Emulator/HLE/Libraries/LibPad/pad.h"
 #include "Emulator/Util/singleton.h"
 #include "version.h"

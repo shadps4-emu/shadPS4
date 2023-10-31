@@ -1,6 +1,6 @@
 #pragma once
 #include <types.h>
-#include "Core/PS4/Loader/SymbolsResolver.h"
+#include "core/PS4/Loader/SymbolsResolver.h"
 
 namespace Core::Libraries::LibKernel {
 int PS4_SYSV_ABI sceKernelOpen(const char *path, int flags, /* SceKernelMode*/ u16 mode);

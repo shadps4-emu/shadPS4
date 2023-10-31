@@ -1,6 +1,6 @@
 #include "time_management.h"
 
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/Libs.h>
 #include "Lib/Timer.h"
 #include "emuTimer.h"
 

@@ -1,7 +1,7 @@
 #include "event_queues.h"
 
-#include <Core/PS4/HLE/ErrorCodes.h>
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/ErrorCodes.h>
+#include <core/PS4/HLE/Libs.h>
 #include <Util/log.h>
 #include <debug.h>
 

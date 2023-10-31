@@ -11,8 +11,8 @@
 #include "Kernel/event_queues.h"
 #include "Kernel/memory_management.h"
 #include "Libs.h"
-#include "Core/hle/libraries/libkernel/file_system.h"
-#include "Core/hle/libraries/libkernel/time_management.h"
+#include "core/hle/libraries/libkernel/file_system.h"
+#include "core/hle/libraries/libkernel/time_management.h"
 
 namespace HLE::Libs::LibKernel {
 

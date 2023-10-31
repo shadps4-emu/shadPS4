@@ -1,5 +1,5 @@
-#include <Core/PS4/HLE/ErrorCodes.h>
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/ErrorCodes.h>
+#include <core/PS4/HLE/Libs.h>
 
 #include "system_service.h"
 

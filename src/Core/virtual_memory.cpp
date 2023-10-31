@@ -1,6 +1,6 @@
 #include "virtual_memory.h"
 
-#include "Core/PS4/Loader/Elf.h"
+#include "core/PS4/Loader/Elf.h"
 
 #ifdef _WIN64
 #include <windows.h>

@@ -1,7 +1,7 @@
 #include "user_service.h"
 
-#include <Core/PS4/HLE/ErrorCodes.h>
-#include <Core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/ErrorCodes.h>
+#include <core/PS4/HLE/Libs.h>
 
 namespace Emulator::HLE::Libraries::LibUserService {
 

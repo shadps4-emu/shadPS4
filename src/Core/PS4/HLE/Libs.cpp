@@ -3,7 +3,7 @@
 #include "LibC.h"
 #include "LibKernel.h"
 #include "LibSceGnmDriver.h"
-#include <Core/PS4/HLE/Graphics/video_out.h>
+#include <core/PS4/HLE/Graphics/video_out.h>
 #include "Emulator/HLE/Libraries/LibUserService/user_service.h"
 #include "Emulator/HLE/Libraries/LibPad/pad.h"
 #include <Emulator/HLE/Libraries/LibSystemService/system_service.h>

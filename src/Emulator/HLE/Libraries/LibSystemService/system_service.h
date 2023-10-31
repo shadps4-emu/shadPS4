@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/PS4/Loader/SymbolsResolver.h"
+#include "core/PS4/Loader/SymbolsResolver.h"
 
 namespace Emulator::HLE::Libraries::LibSystemService {
 

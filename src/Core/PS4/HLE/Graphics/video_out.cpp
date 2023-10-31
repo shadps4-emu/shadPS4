@@ -1,11 +1,11 @@
 #include "video_out.h"
 
-#include <Core/PS4/GPU/gpu_memory.h>
-#include <Core/PS4/GPU/video_out_buffer.h>
-#include <Core/PS4/HLE/ErrorCodes.h>
-#include <Core/PS4/HLE/LibSceGnmDriver.h>
-#include <Core/PS4/HLE/Libs.h>
-#include <Core/PS4/HLE/UserManagement/UsrMngCodes.h>
+#include <core/PS4/GPU/gpu_memory.h>
+#include <core/PS4/GPU/video_out_buffer.h>
+#include <core/PS4/HLE/ErrorCodes.h>
+#include <core/PS4/HLE/LibSceGnmDriver.h>
+#include <core/PS4/HLE/Libs.h>
+#include <core/PS4/HLE/UserManagement/UsrMngCodes.h>
 #include <Util/config.h>
 #include <Util/log.h>
 #include <debug.h>
