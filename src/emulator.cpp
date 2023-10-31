@@ -7,7 +7,7 @@
 #include <vulkan_util.h>
 
 #include "core/PS4/HLE/Graphics/video_out.h"
-#include "Emulator/HLE/Libraries/LibPad/pad.h"
+#include "core/hle/libraries/libpad/pad.h"
 #include "Emulator/Util/singleton.h"
 #include "version.h"
 
@@ -302,7 +302,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 }
 
 void keyboardEvent(SDL_Event* event) {
-    using Emulator::HLE::Libraries::LibPad::ScePadButton;
+    using Core::Libraries::LibPad::ScePadButton;
 
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;

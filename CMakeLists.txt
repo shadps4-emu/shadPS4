@@ -35,8 +35,8 @@ set(USERSERVICE_SOURCES src/Emulator/HLE/Libraries/LibUserService/user_service.c
                         src/Emulator/HLE/Libraries/LibUserService/user_service.h
 )
 
-set(PAD_SOURCES src/Emulator/HLE/Libraries/LibPad/pad.cpp
-                src/Emulator/HLE/Libraries/LibPad/pad.h
+set(PAD_SOURCES "src/core/hle/libraries/libpad/pad.cpp"
+                "src/core/hle/libraries/libpad/pad.h"
 )
 
 set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_service.cpp

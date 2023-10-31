@@ -4,7 +4,7 @@
 
 #include "core/PS4/Loader/SymbolsResolver.h"
 
-namespace Emulator::HLE::Libraries::LibPad {
+namespace Core::Libraries::LibPad {
 
 typedef enum : u32 {
     SCE_PAD_BUTTON_L3 = 0x00000002,

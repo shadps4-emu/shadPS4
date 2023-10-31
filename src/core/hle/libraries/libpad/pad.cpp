@@ -8,7 +8,7 @@
 #include <debug.h>
 #include <Util/log.h>
 
-namespace Emulator::HLE::Libraries::LibPad {
+namespace Core::Libraries::LibPad {
 
 constexpr bool log_file_pad = true;  // disable it to disable logging
 
