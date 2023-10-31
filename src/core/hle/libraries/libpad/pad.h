@@ -1,8 +1,8 @@
 #pragma once
-#include <Emulator/HLE/Libraries/LibUserService/user_service.h>
 #include <types.h>
 
 #include "core/PS4/Loader/SymbolsResolver.h"
+#include "core/hle/libraries/libuserservice/user_service.h"
 
 namespace Core::Libraries::LibPad {
 
@@ -90,9 +90,9 @@ struct ScePadData {
 };
 // hle functions
 int PS4_SYSV_ABI scePadInit();
-int PS4_SYSV_ABI scePadOpen(Emulator::HLE::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
+int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
                             const ScePadOpenParam* pParam);
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
-void libPad_Register(SymbolsResolver* sym);
-};  // namespace Emulator::HLE::Libraries::LibPad
+void padSymbolsRegister(SymbolsResolver* sym);
+};  // namespace Core::Libraries::LibPad

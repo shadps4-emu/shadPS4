@@ -31,20 +31,20 @@ set(LIBC_SOURCES src/Emulator/HLE/Libraries/LibC/Libc.cpp
                  src/Emulator/HLE/Libraries/LibC/libc_cxa.cpp
                  src/Emulator/HLE/Libraries/LibC/libc_cxa.h
 )
-set(USERSERVICE_SOURCES src/Emulator/HLE/Libraries/LibUserService/user_service.cpp
-                        src/Emulator/HLE/Libraries/LibUserService/user_service.h
+set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/user_service.cpp
+                        src/core/hle/libraries/libuserservice/user_service.h
 )
 
-set(PAD_SOURCES "src/core/hle/libraries/libpad/pad.cpp"
-                "src/core/hle/libraries/libpad/pad.h"
+set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
+                src/core/hle/libraries/libpad/pad.h
 )
 
 set(SYSTEMSERVICE_SOURCES src/Emulator/HLE/Libraries/LibSystemService/system_service.cpp
                           src/Emulator/HLE/Libraries/LibSystemService/system_service.h
 )
 
-set(FILESYSTEM_SOURCES "src/core/hle/libraries/libkernel/file_system.cpp"
-                       "src/core/hle/libraries/libkernel/file_system.h"
+set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
+                       src/core/hle/libraries/libkernel/file_system.h
                        
                        
 )
