@@ -1167,8 +1167,10 @@ static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func)
         rsp = rsp & ~16;
         rsp = rsp - 8;
 
-        rsp = rsp - 8;
-        *(void**)rsp = params->argv;
+        for (int i = params->argc; i > 0; i--) {
+            rsp = rsp - 8;
+            *(void**)rsp = &params->argv[i - 1];
+        }
 
         rsp = rsp - 8;
         *(u64*)rsp = params->argc;
@@ -1202,6 +1204,8 @@ static void run_main_entry_native(u64 addr, EntryParams* params, exit_func_t exi
         // Kernel also pushes some more things here during process init
         // at least: environment, auxv, possibly other things
 
+        // TODO: The array should be pushed here, not the pointer to the array
+        //       similar to run_main_entry 
         "pushq 8(%1)\n"  // copy EntryParams to top of stack like the kernel does
         "pushq 0(%1)\n"  // OpenOrbis expects to find it there
 
