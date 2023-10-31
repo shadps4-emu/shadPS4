@@ -34,6 +34,8 @@ set(LIBC_SOURCES src/core/hle/libraries/Libc/Libc.cpp
                  src/core/hle/libraries/libc/libc_stdio.h
                  src/core/hle/libraries/libc/libc_math.cpp
                  src/core/hle/libraries/libc/libc_math.h
+                 src/core/hle/libraries/libc/libc_string.cpp
+                 src/core/hle/libraries/libc/libc_string.h
 )
 set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/user_service.cpp
                         src/core/hle/libraries/libuserservice/user_service.h

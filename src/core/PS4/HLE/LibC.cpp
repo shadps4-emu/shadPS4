@@ -8,6 +8,7 @@
 #include "core/hle/libraries/libc/libc_cxa.h"
 #include "core/hle/libraries/libc/libc_math.h"
 #include "core/hle/libraries/libc/libc_stdio.h"
+#include "core/hle/libraries/libc/libc_string.h"
 #include "ErrorCodes.h"
 #include "Libs.h"
 
@@ -58,12 +59,12 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count,size_t size, int(PS4_SYSV_ABI* c
 
 void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
-    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_acquire);
-    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_release);
-    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::Cxa::__cxa_guard_abort);
-    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memcmp);
-    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memcpy);
-    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memset);
+    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::cxa::__cxa_guard_acquire);
+    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::cxa::__cxa_guard_release);
+    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::cxa::__cxa_guard_abort);
+    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::string::memcmp);
+    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::string::memcpy);
+    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::memset);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
     LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::exit);
     LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::atexit);
@@ -74,14 +75,14 @@ void LibC_Register(SymbolsResolver* sym) {
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
     LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
-    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcmp);
+    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strcmp);
     LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::malloc);
     LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::free);
-    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strlen);
-    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strncpy);
-    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::memmove);
-    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcpy); 
-    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::strcat);
+    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strncpy);
+    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::memmove);
+    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strcpy); 
+    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::string::strcat);
     LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1,Core::Libraries::LibC::math::atan2f);
     LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::acosf);
     LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, Core::Libraries::LibC::math::tanf);
