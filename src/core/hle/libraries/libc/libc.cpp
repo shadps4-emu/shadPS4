@@ -3,6 +3,7 @@
 #include <debug.h>
 #include <stdlib.h>
 
+#include "Emulator/Util/singleton.h"
 #include "Util/log.h"
 #include "core/PS4/HLE/Libs.h"
 #include "core/hle/libraries/libc/libc.h"
@@ -15,6 +16,32 @@
 namespace Core::Libraries::LibC {
 constexpr bool log_file_libc = true;  // disable it to disable logging
 static u32 g_need_sceLibc = 1;
+
+using cxa_destructor_func_t = void (*)(void*);
+
+struct CxaDestructor {
+    cxa_destructor_func_t destructor_func;
+    void* destructor_object;
+    void* module_id;
+};
+
+struct CContext {
+    std::vector<CxaDestructor> cxa;
+};
+
+static PS4_SYSV_ABI int __cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
+    auto* cc = singleton<CContext>::instance();
+    CxaDestructor c{};
+    c.destructor_func = func;
+    c.destructor_object = arg;
+    c.module_id = dso_handle;
+    cc->cxa.push_back(c);
+    return 0;
+}
+
+void PS4_SYSV_ABI __cxa_finalize(void* d) { __debugbreak(); }
+
+void PS4_SYSV_ABI __cxa_pure_virtual() { __debugbreak(); }
 
 static PS4_SYSV_ABI void init_env() { PRINT_DUMMY_FUNCTION_NAME(); }
 
@@ -65,6 +92,7 @@ void libcSymbolsRegister(SymbolsResolver* sym) {
     LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1, pow);
     LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, _Sin);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
+    LIB_FUNCTION("dnaeGXbjP6E", "libc", 1, "libc", 1, 1, exp2);
 
     // string functions
     LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, strcmp);
@@ -91,6 +119,9 @@ void libcSymbolsRegister(SymbolsResolver* sym) {
     LIB_FUNCTION("eT2UsmTewbU", "libc", 1, "libc", 1, 1, _ZSt11_Xbad_allocv);
     LIB_FUNCTION("tQIo+GIPklo", "libc", 1, "libc", 1, 1, _ZSt14_Xlength_errorPKc);
     LIB_FUNCTION("fJnpuVVBbKk", "libc", 1, "libc", 1, 1, _Znwm);
+    LIB_FUNCTION("tsvEmnenz48", "libc", 1, "libc", 1, 1, __cxa_atexit);
+    LIB_FUNCTION("H2e8t5ScQGc", "libc", 1, "libc", 1, 1, __cxa_finalize);
+    LIB_FUNCTION("zr094EQ39Ww", "libc", 1, "libc", 1, 1, __cxa_pure_virtual);
 }
 
 };  // namespace Core::Libraries::LibC

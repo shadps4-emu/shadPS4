@@ -18,4 +18,6 @@ double PS4_SYSV_ABI _Sin(double x) { return std::sin(x); }
 
 float PS4_SYSV_ABI _Fsin(float arg) { return std::sinf(arg); }
 
+double PS4_SYSV_ABI exp2(double arg) { return std::exp2(arg); }
+
 }  // namespace Core::Libraries::LibC

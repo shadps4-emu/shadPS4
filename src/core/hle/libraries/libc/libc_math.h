@@ -10,4 +10,5 @@ float PS4_SYSV_ABI asinf(float num);
 double PS4_SYSV_ABI pow(double base, double exponent);
 double PS4_SYSV_ABI _Sin(double x);
 float PS4_SYSV_ABI _Fsin(float arg);
+double PS4_SYSV_ABI exp2(double arg);
 }  // namespace Core::Libraries::LibC
