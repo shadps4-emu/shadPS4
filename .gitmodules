@@ -41,3 +41,8 @@
 	path = third-party/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
 	branch = dev
+[submodule "third-party/xbyak"]
+	path = third-party/xbyak
+	url = https://github.com/herumi/xbyak.git
+	shallow = true
+	branch = v6.73

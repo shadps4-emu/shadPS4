@@ -18,12 +18,12 @@
 // Must match STUBS_LIST define
 #define MAX_STUBS 128
 
-u64 UnresolvedStub() {
+PS4_SYSV_ABI u64 UnresolvedStub() {
     LOG_ERROR("Unresolved Stub: called, returning zero to {}\n", __builtin_return_address(0));
     return 0;
 }
 
-static u64 UnknownStub() {
+static PS4_SYSV_ABI u64 UnknownStub() {
     LOG_ERROR("Stub: Unknown (nid: Unknown) called, returning zero to {}\n", __builtin_return_address(0));
     return 0;
 }
@@ -33,7 +33,7 @@ static aerolib::nid_entry* stub_nids[MAX_STUBS];
 static std::string stub_nids_unknown[MAX_STUBS];
 
 template <int stub_index>
-static u64 CommonStub() {
+static PS4_SYSV_ABI u64 CommonStub() {
     auto entry = stub_nids[stub_index];
     if (entry) {
         LOG_ERROR("Stub: {} (nid: {}) called, returning zero to {}\n", entry->name, entry->nid, __builtin_return_address(0));
@@ -60,7 +60,7 @@ static u32 UsedStubEntries;
 
 #define STUBS_LIST XREP_128(0)
 
-static u64 (*stub_handlers[MAX_STUBS])() = {
+static PS4_SYSV_ABI u64 (*stub_handlers[MAX_STUBS])() = {
     STUBS_LIST
 };
 
