@@ -109,9 +109,12 @@ void libcSymbolsRegister(SymbolsResolver* sym) {
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, printf);
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
+    LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, fprintf);
 
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);
+    LIB_OBJ("2sWzhYqFH4E","libc", 1, "libc", 1, 1,stdout);
+    LIB_OBJ("H8AprKeZtNg", "libc", 1, "libc", 1, 1, stderr); 
     LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
     LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
     LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
