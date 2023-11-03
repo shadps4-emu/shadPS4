@@ -59,6 +59,8 @@ set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
 
 set(HOST_SOURCES src/Emulator/Host/controller.cpp
                  src/Emulator/Host/controller.h
+                 src/core/file_sys/fs.cpp 
+                 src/core/file_sys/fs.h
 )
 
 set(UTIL_SOURCES src/Emulator/Util/singleton.h
