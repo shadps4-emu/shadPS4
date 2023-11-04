@@ -24,4 +24,18 @@ class MntPoints {
     std::mutex m_mutex;
 };
 
+struct File {};
+class HandleTable {
+    HandleTable() {}
+    virtual ~HandleTable() {}
+    int createHandle();
+    void deleteHandle(int d);
+    File* getFile(int d);
+    File* getFile(const std::string& real_name);
+
+  private:
+    std::vector<File*> m_files;
+    std::mutex m_mutex;
+};
+
 }  // namespace Core::FileSys

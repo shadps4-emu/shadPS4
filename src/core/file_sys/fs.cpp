@@ -12,7 +12,7 @@ void MntPoints::mount(const std::string& host_folder, const std::string& guest_f
 
     m_mnt_pairs.push_back(pair);
 }
-void MntPoints::unmount(const std::string& path) {}//TODO!
+void MntPoints::unmount(const std::string& path) {}  // TODO!
 void MntPoints::unmountAll() {
     std::unique_lock lock{m_mutex};
     m_mnt_pairs.clear();
@@ -33,4 +33,8 @@ std::string MntPoints::getHostDirectory(const std::string& guest_directory) {
     }
     return "";
 }
+int HandleTable::createHandle() { return 0; }
+void HandleTable::deleteHandle(int d) {}
+File* HandleTable::getFile(int d) { return nullptr; }
+File* HandleTable::getFile(const std::string& real_name) { return nullptr; }
 }  // namespace Core::FileSys
