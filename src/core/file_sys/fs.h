@@ -24,7 +24,11 @@ class MntPoints {
     std::mutex m_mutex;
 };
 
-struct File {};
+struct File {
+    std::atomic_bool isOpened;
+    std::atomic_bool isDirectory;
+    std::string m_real_name;
+};
 class HandleTable {
     HandleTable() {}
     virtual ~HandleTable() {}
