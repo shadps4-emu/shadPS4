@@ -1,7 +1,7 @@
 #include "libc_stdlib.h"
 
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 
 #include <cstdlib>
 

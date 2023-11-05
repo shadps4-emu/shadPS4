@@ -7,15 +7,15 @@
 #include <core/PS4/HLE/Libs.h>
 #include <core/PS4/HLE/UserManagement/UsrMngCodes.h>
 #include <Util/config.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 #include <stdio.h>
 
 #include <magic_enum.hpp>
 #include <string>
 
 #include "Objects/video_out_ctx.h"
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "emulator.h"
 #include "graphics_render.h"
 

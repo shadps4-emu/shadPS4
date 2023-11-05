@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include "common/types.h"
 #include "core/PS4/Loader/SymbolsResolver.h"
 
 namespace Core::Libraries::LibC {

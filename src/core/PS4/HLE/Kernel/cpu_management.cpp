@@ -1,6 +1,6 @@
 #include "cpu_management.h"
 #include "Util/config.h"
-#include <Util/log.h>
+#include "common/log.h"
 #include <core/PS4/HLE/Libs.h>
 
 namespace HLE::Libs::LibKernel::CPUManagement {

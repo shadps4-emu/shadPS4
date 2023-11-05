@@ -2,9 +2,9 @@
 #include <fmt/core.h>
 #include <core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
-#include <Emulator/Util/singleton.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/singleton.h"
+#include "common/log.h"
+#include "common/debug.h"
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
 

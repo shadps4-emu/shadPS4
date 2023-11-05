@@ -1,7 +1,6 @@
 #pragma once
 #include <core/PS4/HLE/Kernel/event_queues.h>
 #include <core/PS4/Loader/SymbolsResolver.h>
-#include <types.h>
 
 #include <string>
 

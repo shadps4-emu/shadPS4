@@ -1,5 +1,5 @@
 #include "tile_manager.h"
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include <mutex>
 
 namespace GPU {

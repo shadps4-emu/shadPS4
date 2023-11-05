@@ -5,8 +5,8 @@
 #include <span>
 #include <vector>
 
-#include "../../../types.h"
-#include "../../FsFile.h"
+#include "common/types.h"
+#include "common/fs_file.h"
 
 struct self_header
 {

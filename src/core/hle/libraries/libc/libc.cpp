@@ -1,10 +1,10 @@
 #include "libc.h"
 
-#include <debug.h>
+#include "common/debug.h"
 #include <stdlib.h>
 
-#include "Emulator/Util/singleton.h"
-#include "Util/log.h"
+#include "common/singleton.h"
+#include "common/log.h"
 #include "core/PS4/HLE/Libs.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libc/libc_cxa.h"

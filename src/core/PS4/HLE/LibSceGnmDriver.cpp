@@ -1,8 +1,8 @@
 #include "LibSceGnmDriver.h"
 #include "Libs.h"
 #include "../Loader/Elf.h"
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 #include <core/PS4/GPU/gpu_memory.h>
 #include <emulator.h>
 

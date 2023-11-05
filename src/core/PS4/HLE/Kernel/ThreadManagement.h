@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include <sched.h>
-#include "../../../../types.h"
+#include "common/types.h"
 #include <string>
 
 namespace HLE::Libs::LibKernel::ThreadManagement {

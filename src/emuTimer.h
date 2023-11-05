@@ -1,5 +1,6 @@
 #pragma once
-#include "types.h"
+
+#include "common/types.h"
 
 namespace Emulator::emuTimer {
 void start();

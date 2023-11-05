@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Zydis/Zydis.h>
-#include "../types.h"
+#include "common/types.h"
 
 class Disassembler
 {

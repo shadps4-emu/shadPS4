@@ -3,8 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "../../../types.h"
-
+#include "common/types.h"
 
 struct SymbolRecord
 {

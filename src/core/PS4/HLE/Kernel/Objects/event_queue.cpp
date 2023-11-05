@@ -2,7 +2,7 @@
 
 #include <Lib/Timer.h>
 
-#include "debug.h"
+#include "common/debug.h"
 
 namespace HLE::Kernel::Objects {
 EqueueInternal::~EqueueInternal() {}

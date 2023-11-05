@@ -1,8 +1,7 @@
-#include "string_util.h"
-
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include "common/string_util.h"
 
 namespace StringUtil {
 

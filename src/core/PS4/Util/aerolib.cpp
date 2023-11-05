@@ -1,10 +1,10 @@
 #include "aerolib.h"
 
-#include "types.h"
+#include "common/types.h"
 
 #include <string.h>
 
-#include "Util/log.h"
+#include "common/log.h"
 
 namespace aerolib {
 

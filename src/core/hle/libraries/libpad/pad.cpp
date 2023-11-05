@@ -3,10 +3,10 @@
 #include <core/PS4/HLE/ErrorCodes.h>
 #include <core/PS4/HLE/Libs.h>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "Emulator/Host/controller.h"
-#include <debug.h>
-#include <Util/log.h>
+#include "common/debug.h"
+#include "common/log.h"
 
 namespace Core::Libraries::LibPad {
 

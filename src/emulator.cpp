@@ -8,8 +8,8 @@
 
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libpad/pad.h"
-#include "Emulator/Util/singleton.h"
-#include "version.h"
+#include "common/singleton.h"
+#include "common/version.h"
 
 namespace Emu {
 

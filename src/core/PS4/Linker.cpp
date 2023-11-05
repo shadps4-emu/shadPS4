@@ -1,9 +1,9 @@
 #include "Linker.h"
 #include "../virtual_memory.h"
-#include <Util/log.h>
+#include "common/log.h"
 #include <fmt/core.h>
 #include <Zydis/Zydis.h>
-#include <Util/string_util.h>
+#include "common/string_util.h"
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
 #include "HLE/Kernel/ThreadManagement.h"

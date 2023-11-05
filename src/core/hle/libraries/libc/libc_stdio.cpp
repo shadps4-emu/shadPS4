@@ -1,7 +1,7 @@
 #include "libc_stdio.h"
 
-#include <debug.h>
-#include <Util/log.h>
+#include "common/debug.h"
+#include "common/log.h"
 
 namespace Core::Libraries::LibC {
 constexpr bool log_file_libc = true;  // disable it to disable logging

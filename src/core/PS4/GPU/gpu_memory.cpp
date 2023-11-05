@@ -2,7 +2,7 @@
 
 #include <xxh3.h>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 
 void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
                            const GPUObject& info) {

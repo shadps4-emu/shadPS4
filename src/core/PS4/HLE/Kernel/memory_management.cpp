@@ -2,13 +2,13 @@
 
 #include <core/PS4/GPU/gpu_memory.h>
 #include <core/virtual_memory.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 
 #include <bit>
 #include <magic_enum.hpp>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
 #include "Objects/physical_memory.h"

@@ -1,6 +1,6 @@
 #include "graphics_render.h"
 #include <fmt/core.h>
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "emulator.h"
 
 static thread_local GPU::CommandPool g_command_pool;

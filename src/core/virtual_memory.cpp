@@ -1,5 +1,6 @@
+#include "common/debug.h"
+#include "common/log.h"
 #include "virtual_memory.h"
-
 #include "core/PS4/Loader/Elf.h"
 
 #ifdef _WIN64
@@ -18,10 +19,6 @@ enum PosixPageProtection {
     PAGE_EXECUTE_READWRITE = PROT_EXEC | PROT_READ | PROT_WRITE
 };
 #endif
-
-#include <debug.h>
-
-#include "../Util/Log.h"
 
 namespace VirtualMemory {
 static u32 convertMemoryMode(MemoryMode mode) {
