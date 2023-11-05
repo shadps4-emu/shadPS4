@@ -1,17 +1,16 @@
 #include "common/debug.h"
-#include "core/hle/kernel/ThreadManagement.h"
+#include "core/hle/kernel/thread_management.h"
 #include "core/hle/error_codes.h"
 
 namespace Core::Kernel {
 
-thread_local PthreadInternal* g_pthread_self = nullptr;
+thread_local PthreadInternal g_pthread_self{};
 PThreadCxt* g_pthread_cxt = nullptr;
 
 void Pthread_Init_Self_MainThread() {
-    g_pthread_self = new PthreadInternal{};
-    scePthreadAttrInit(&g_pthread_self->attr);
-    g_pthread_self->pth = pthread_self();
-    g_pthread_self->name = "Main_Thread";
+    scePthreadAttrInit(&g_pthread_self.attr);
+    g_pthread_self.pth = pthread_self();
+    g_pthread_self.name = "Main_Thread";
 }
 
 int scePthreadAttrInit(ScePthreadAttr* attr) {

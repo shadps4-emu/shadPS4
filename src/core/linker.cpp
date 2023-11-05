@@ -4,9 +4,9 @@
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/hle/kernel/thread_management.h"
 #include "core/linker.h"
 #include "core/virtual_memory.h"
-#include "core/hle/kernel/ThreadManagement.h"
 
 namespace Core {
 
