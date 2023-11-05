@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef _MSC_VER
 #define BREAKPOINT __debugbreak
 #elif defined(__GNUC__)

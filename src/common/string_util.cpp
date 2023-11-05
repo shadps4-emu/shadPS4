@@ -3,21 +3,18 @@
 #include <string>
 #include "common/string_util.h"
 
-namespace StringUtil {
+namespace Common {
 
-std::vector<std::string> split_string(const std::string &str, char delimiter) {
-    std::stringstream str_stream(str);
-    std::string segment;
-    std::vector<std::string> seglist;
+std::vector<std::string> SplitString(const std::string &str, char delimiter) {
+    std::istringstream iss(str);
+    std::vector<std::string> output(1);
 
-    const size_t num_segments = std::count_if(str.begin(), str.end(), [&](char c) { return c == delimiter; }) + (str.empty() ? 1 : 0);
-
-    seglist.reserve(num_segments);
-
-    while (std::getline(str_stream, segment, delimiter)) {
-        seglist.push_back(segment);
+    while (std::getline(iss, *output.rbegin(), delimiter)) {
+        output.emplace_back();
     }
-    return seglist;
+
+    output.pop_back();
+    return output;
 }
 
-}  // namespace StringUtil
+} // namespace Common

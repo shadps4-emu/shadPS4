@@ -30,7 +30,7 @@ struct CContext {
 };
 
 static PS4_SYSV_ABI int __cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
-    auto* cc = singleton<CContext>::instance();
+    auto* cc = Common::Singleton<CContext>::Instance();
     CxaDestructor c{};
     c.destructor_func = func;
     c.destructor_object = arg;

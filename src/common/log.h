@@ -4,7 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace logging {
+namespace Common::Log {
 
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG
@@ -26,48 +26,8 @@ namespace logging {
 #define LOG_CRITICAL_IF(flag, ...) \
     if (flag) LOG_CRITICAL(__VA_ARGS__)
 
-int init(bool use_stdout);
-void set_level(spdlog::level::level_enum log_level);
-}  // namespace logging
+int Init(bool use_stdout);
 
-// copyright vita3k emu https://github.com/Vita3K/Vita3K/blob/master/vita3k/util/include/util/log.h
-/*
-    returns: A string with the input number formatted in hexadecimal
-    Examples:
-        * `12` returns: `"0xC"`
-        * `1337` returns: `"0x539"`
-        * `72742069` returns: `"0x455F4B5"`
-*/
-template <typename T>
-std::string log_hex(T val) {
-    using unsigned_type = typename std::make_unsigned<T>::type;
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::hex << static_cast<unsigned_type>(val);
-    return ss.str();
-}
+void SetLevel(spdlog::level::level_enum log_level);
 
-/*
-    returns: A string with the input number formatted in hexadecimal with padding of the inputted type size
-    Examples:
-        * `uint8_t 5` returns: `"0x05"`
-        * `uint8_t 15` returns: `"0x0F"`
-        * `uint8_t 255` returns: `"0xFF"`
-
-        * `uint16_t 15` returns: `"0x000F"`
-        * `uint16_t 1337` returns: `"0x0539"`
-        * `uint16_t 65535` returns: `"0xFFFF"`
-
-
-        * `uint32_t 15` returns: `"0x0000000F"`
-        * `uint32_t 1337` returns: `"0x00000539"`
-        * `uint32_t 65535` returns: `"0x0000FFFF"`
-        * `uint32_t 134217728` returns: `"0x08000000"`
-*/
-template <typename T>
-std::string log_hex_full(T val) {
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
-    return ss.str();
-}
+} // namespace Common::Log

@@ -79,7 +79,7 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
 }
 
 Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
-    auto window_ctx = singleton<Emu::WindowCtx>::instance();
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     const auto& capabilities = window_ctx->m_surface_capabilities.capabilities;
     Emu::VulkanSwapchain s{};
 
