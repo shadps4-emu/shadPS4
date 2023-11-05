@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Zydis.h"
+#include <Zydis/Zydis.h>
 #include "../types.h"
 
 class Disassembler

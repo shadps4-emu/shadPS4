@@ -2,7 +2,7 @@
 #include "../virtual_memory.h"
 #include <Util/log.h>
 #include <fmt/core.h>
-#include "Zydis.h"
+#include <Zydis/Zydis.h>
 #include <Util/string_util.h>
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"

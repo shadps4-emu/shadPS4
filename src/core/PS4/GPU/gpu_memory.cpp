@@ -1,6 +1,6 @@
 #include "gpu_memory.h"
 
-#include <xxhash/xxh3.h>
+#include <xxh3.h>
 
 #include "Emulator/Util/singleton.h"
 

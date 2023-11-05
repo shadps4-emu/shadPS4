@@ -1,69 +1,70 @@
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+if (MSVC)
+    # Silence "deprecation" warnings
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+endif()
 
+# Discord-RPC
+set(BUILD_EXAMPLES OFF CACHE BOOL "")
+add_subdirectory(discord-rpc EXCLUDE_FROM_ALL)
+target_include_directories(discord-rpc INTERFACE ./discord-rpc/include)
 
-#====================FMT ====================
-set(fmt_DIR ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-add_subdirectory(${fmt_DIR})
+# fmtlib
+add_subdirectory(fmt EXCLUDE_FROM_ALL)
 
-#=================== SPD ====================
+# MagicEnum
+add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
+
+# Spdlog
 set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
 set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
+target_include_directories(stb INTERFACE ./stb)
 
-#=================== SDL3 ===================
+# SDL3
+add_subdirectory(SDL EXCLUDE_FROM_ALL)
 
-set(SDL3_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SDL)
-add_subdirectory(${SDL3_DIR})
+# Toml11
+add_subdirectory(toml11 EXCLUDE_FROM_ALL)
 
-#================ Zydis ========================
-# Register Zydis dependency.
-# Disable build of tools and examples.
+# Vulkan
+add_subdirectory(vulkan EXCLUDE_FROM_ALL)
+target_include_directories(vulkan-1 INTERFACE vulkan/include)
+
+# Winpthreads
+if (WIN32)
+    add_subdirectory(winpthread EXCLUDE_FROM_ALL)
+endif()
+
+# xxHash
+add_library(xxhash INTERFACE)
+target_include_directories(xxhash INTERFACE xxhash)
+
+# Zydis
 option(ZYDIS_BUILD_TOOLS "" OFF)
 option(ZYDIS_BUILD_EXAMPLES "" OFF)
-set(zydis_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zydis)
-add_subdirectory(${zydis_DIR})
+add_subdirectory(zydis EXCLUDE_FROM_ALL)
 
-#========== winpthreads ======================
-add_subdirectory(winpthread)
-#=================== discord-rpc ===================
-add_subdirectory(discord-rpc)
-#=================== toml11 ===================
-add_subdirectory(toml11)
-#=================== vulkan ==================
-add_subdirectory(vulkan)
-#=================== IMGUI ===================
+# Imgui
+add_library(imgui STATIC)
 
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
-add_library(IMGUI STATIC)
+target_sources(imgui PRIVATE
+    imgui/imgui_demo.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_tables.cpp
+    imgui/imgui_widgets.cpp
+    imgui/imgui.cpp
+    imgui/backends/imgui_impl_opengl3.cpp
+    imgui/backends/imgui_impl_sdl3.cpp
+)
 
+target_include_directories(imgui PUBLIC
+    imgui
+    imgui/backends
+    imgui/include
+)
 
-target_sources( IMGUI
-                PRIVATE
-                    ${IMGUI_DIR}/imgui_demo.cpp
-                    ${IMGUI_DIR}/imgui_draw.cpp
-                    ${IMGUI_DIR}/imgui_tables.cpp
-                    ${IMGUI_DIR}/imgui_widgets.cpp
-                    ${IMGUI_DIR}/imgui.cpp
-
-                PRIVATE
-                    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
-                    ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
-                )
-
-target_include_directories( IMGUI
-                            PUBLIC ${IMGUI_DIR}
-                            PUBLIC ${IMGUI_DIR}/backends
-                            PUBLIC ${SDL3_DIR}/include
-                            )
-
-find_package(OpenGL REQUIRED)
-target_link_libraries(IMGUI PUBLIC ${OPENGL_LIBRARIES})
-
-
-target_link_libraries(IMGUI PUBLIC SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread discord-rpc)
+target_link_libraries(imgui PRIVATE SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread discord-rpc)
 
 
