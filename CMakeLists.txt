@@ -9,6 +9,24 @@ endif()
 
 project(shadps4)
 
+# This function should be passed a list of all files in a target. It will automatically generate
+# file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
+# one in the filesystem.
+function(create_target_directory_groups target_name)
+    # Place any files that aren't in the source list in a separate group so that they don't get in
+    # the way.
+    source_group("Other Files" REGULAR_EXPRESSION ".")
+
+    get_target_property(target_sources "${target_name}" SOURCES)
+
+    foreach(file_name IN LISTS target_sources)
+        get_filename_component(dir_name "${file_name}" PATH)
+        # Group names use '\' as a separator even though the entire rest of CMake uses '/'...
+        string(REPLACE "/" "\\" group_name "${dir_name}")
+        source_group("${group_name}" FILES "${file_name}")
+    endforeach()
+endfunction()
+
 add_subdirectory(third-party)
 include_directories(src)
 
@@ -128,6 +146,8 @@ add_executable(shadps4
     src/core/hle/libraries/libkernel/time_management.cpp
     src/core/hle/libraries/libkernel/time_management.h
 )
+
+create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt spdlog::spdlog toml11::toml11)
 target_link_libraries(shadps4 PRIVATE discord-rpc imgui SDL3-shared vulkan-1 xxhash Zydis)
