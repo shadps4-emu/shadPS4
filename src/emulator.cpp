@@ -202,10 +202,9 @@ HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
 }
 
 void updateSDLTitle() {
-    char title[256];
-    sprintf(title, "shadps4 v %s FPS: %f", Common::VERSION, m_current_fps);
+    const auto title = fmt::format("shadps4 v {} FPS: {}", Common::VERSION, m_current_fps);
     auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
-    SDL_SetWindowTitle(window_ctx->m_window, title);
+    SDL_SetWindowTitle(window_ctx->m_window, title.c_str());
 }
 
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
