@@ -1,7 +1,7 @@
 #pragma once
 #include <core/PS4/HLE/Graphics/graphics_render.h>
 #include <SDL.h>
-#include <src/video/khronos/vulkan/vulkan_core.h>
+#include <vulkan/vulkan_core.h>
 
 #include <vector>
 

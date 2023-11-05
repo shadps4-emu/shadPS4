@@ -2,7 +2,7 @@
 #define _TIMESPEC_DEFINED
 
 #include <pthread.h>
-#include <types.h>
+#include "common/types.h"
 
 namespace Core::Libraries::LibC {
 int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object);

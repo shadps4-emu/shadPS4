@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/PS4/HLE/Graphics/graphics_ctx.h>
-#include <types.h>
+#include "common/types.h"
 #include <mutex>
 #include <vector>
 

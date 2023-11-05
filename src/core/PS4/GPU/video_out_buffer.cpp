@@ -1,8 +1,8 @@
 #include "video_out_buffer.h"
 
-#include <Util/log.h>
+#include "common/log.h"
 
-#include "debug.h"
+#include "common/debug.h"
 #include <vulkan_util.h>
 #include "tile_manager.h"
 

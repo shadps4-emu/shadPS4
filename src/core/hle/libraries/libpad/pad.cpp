@@ -3,10 +3,10 @@
 #include <core/PS4/HLE/ErrorCodes.h>
 #include <core/PS4/HLE/Libs.h>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "Emulator/Host/controller.h"
-#include <debug.h>
-#include <Util/log.h>
+#include "common/debug.h"
+#include "common/log.h"
 
 namespace Core::Libraries::LibPad {
 
@@ -21,7 +21,7 @@ int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserI
 }
 
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
-    auto* controller = singleton<Emulator::Host::Controller::GameController>::instance();
+    auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
 
     int connectedCount = 0;
     bool isConnected = false;

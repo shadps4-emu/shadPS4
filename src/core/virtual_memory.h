@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include "common/types.h"
 
 constexpr u64 SYSTEM_RESERVED = 0x800000000u;
 constexpr u64 CODE_BASE_OFFSET = 0x100000000u;

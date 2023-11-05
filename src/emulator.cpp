@@ -8,8 +8,8 @@
 
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libpad/pad.h"
-#include "Emulator/Util/singleton.h"
-#include "version.h"
+#include "common/singleton.h"
+#include "common/version.h"
 
 namespace Emu {
 
@@ -27,14 +27,13 @@ int m_fps_frames_num = {0};
 double m_fps_start_time = {0};
 
 void emuInit(u32 width, u32 height) {
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     window_ctx->m_graphic_ctx.screen_width = width;
     window_ctx->m_graphic_ctx.screen_height = height;
 }
 
 void checkAndWaitForGraphicsInit() {
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     std::unique_lock lock{window_ctx->m_mutex};
 
     while (!window_ctx->m_is_graphic_initialized) {
@@ -49,7 +48,7 @@ static void CreateSdlWindow(WindowCtx* ctx) {
         fmt::print("{}\n", SDL_GetError());
         std::exit(0);
     }
-    std::string title = "shadps4 v" + std::string(Emulator::VERSION);
+    std::string title = "shadps4 v" + std::string(Common::VERSION);
     ctx->m_window = SDL_CreateWindowWithPosition(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
                                                  (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN)));
 
@@ -95,7 +94,7 @@ static void calculateFps(double game_time_s) {
 void emuRun() {
     Lib::Timer timer;
     timer.Start();
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     {
         // init window and wait until init finishes
         std::scoped_lock lock{window_ctx->m_mutex};
@@ -197,19 +196,19 @@ void emuRun() {
 }
 
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     std::scoped_lock lock{window_ctx->m_mutex};
     return &window_ctx->m_graphic_ctx;
 }
 
 void updateSDLTitle() {
-    char title[256];
-    sprintf(title, "shadps4 v %s FPS: %f", Emulator::VERSION, m_current_fps);
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
-    SDL_SetWindowTitle(window_ctx->m_window, title);
+    const auto title = fmt::format("shadps4 v {} FPS: {}", Common::VERSION, m_current_fps);
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
+    SDL_SetWindowTitle(window_ctx->m_window, title.c_str());
 }
+
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
-    auto* window_ctx = singleton<Emu::WindowCtx>::instance();
+    auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     if (window_ctx->is_window_hidden) {
         SDL_ShowWindow(window_ctx->m_window);
         window_ctx->is_window_hidden = false;
@@ -316,11 +315,10 @@ void keyboardEvent(SDL_Event* event) {
             case SDLK_KP_2: button = ScePadButton ::SCE_PAD_BUTTON_CROSS; break;
             case SDLK_KP_4: button = ScePadButton ::SCE_PAD_BUTTON_SQUARE; break;
             case SDLK_RETURN: button = ScePadButton ::SCE_PAD_BUTTON_OPTIONS; break;
-
             default: break;
         }
         if (button != 0) {
-            auto* controller = singleton<Emulator::Host::Controller::GameController>::instance();
+            auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
             controller->checKButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
         }
     }

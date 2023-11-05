@@ -2,8 +2,8 @@
 
 #include <core/PS4/HLE/ErrorCodes.h>
 #include <core/PS4/HLE/Libs.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 
 namespace HLE::Libs::LibKernel::EventQueues {
 constexpr bool log_file_equeues = true;  // disable it to disable logging

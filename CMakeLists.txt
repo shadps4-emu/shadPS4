@@ -1,27 +1,33 @@
 cmake_minimum_required(VERSION 3.16.3)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 project(shadps4)
 
-include_directories(third-party/)
-include_directories(third-party/discord-rpc/include)
-include_directories(third-party/imgui/)
-include_directories(third-party/imgui/backends)
-include_directories(third-party/sdl/)
-include_directories(third-party/fmt/include)
-include_directories(third-party/magic_enum/include)
-include_directories(third-party/zydis/include/Zydis)
-include_directories(third-party/winpthread/include)
-include_directories(third-party/vulkan/include)
-include_directories(third-party/xxhash/include)
-include_directories(third-party/result/include)
-add_subdirectory("third-party")
-#=================== EXAMPLE ===================
+# This function should be passed a list of all files in a target. It will automatically generate
+# file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
+# one in the filesystem.
+function(create_target_directory_groups target_name)
+    # Place any files that aren't in the source list in a separate group so that they don't get in
+    # the way.
+    source_group("Other Files" REGULAR_EXPRESSION ".")
+
+    get_target_property(target_sources "${target_name}" SOURCES)
+
+    foreach(file_name IN LISTS target_sources)
+        get_filename_component(dir_name "${file_name}" PATH)
+        # Group names use '\' as a separator even though the entire rest of CMake uses '/'...
+        string(REPLACE "/" "\\" group_name "${dir_name}")
+        source_group("${group_name}" FILES "${file_name}")
+    endforeach()
+endfunction()
+
+add_subdirectory(third-party)
 include_directories(src)
 
 set(LIBC_SOURCES src/core/hle/libraries/Libc/Libc.cpp 
@@ -52,38 +58,41 @@ set(SYSTEMSERVICE_SOURCES src/core/hle/libraries/libsystemservice/system_service
 )
 
 set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
-                       src/core/hle/libraries/libkernel/file_system.h
-                       
-                       
+                       src/core/hle/libraries/libkernel/file_system.h                  
 )
 
 set(HOST_SOURCES src/Emulator/Host/controller.cpp
                  src/Emulator/Host/controller.h
 )
 
-set(UTIL_SOURCES src/Emulator/Util/singleton.h
-)
-
 add_executable(shadps4
+    src/common/debug.h
+    src/common/disassembler.cpp
+    src/common/disassembler.h
+    src/common/discord.cpp
+    src/common/discord.h
+    src/common/fs_file.cpp
+    src/common/fs_file.h
+    src/common/log.cpp
+    src/common/log.h
+    src/common/singleton.h
+    src/common/string_util.cpp
+    src/common/string_util.h
+    src/common/types.h
+    src/common/version.h
     ${LIBC_SOURCES}
     ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
     ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
-    ${UTIL_SOURCES}
     src/Lib/Timer.cpp
     src/Lib/Timer.h
     src/main.cpp
-    src/types.h
-    src/core/FsFile.cpp
-    src/core/FsFile.h
     src/core/PS4/Loader/Elf.cpp
     src/core/PS4/Loader/Elf.h
     src/GUI/ElfViewer.cpp
     src/GUI/ElfViewer.h 
-    src/Util/log.h
-    src/Util/log.cpp
     src/Util/config.cpp
     src/Util/config.h
     src/core/virtual_memory.cpp
@@ -95,23 +104,56 @@ add_executable(shadps4
     src/core/PS4/Util/aerolib.cpp
     src/core/PS4/HLE/Kernel/Objects/physical_memory.h
     src/core/PS4/HLE/Kernel/Objects/physical_memory.cpp
-    src/Util/string_util.cpp
-    src/Util/string_util.cpp
     src/core/PS4/HLE/Graphics/video_out.cpp
     src/core/PS4/HLE/Graphics/video_out.h
-    src/discord.h
-    src/discord.cpp
     src/core/PS4/HLE/Kernel/event_queues.cpp
     src/core/PS4/HLE/Kernel/event_queues.h
     src/core/PS4/HLE/Kernel/cpu_management.cpp
     src/core/PS4/HLE/Kernel/cpu_management.h
-    
-    
-    
-    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
+    src/core/PS4/Util/aerolib.h
+    src/core/PS4/Loader/SymbolsResolver.h
+    src/core/PS4/Loader/SymbolsResolver.cpp
+    src/core/PS4/HLE/Libs.cpp
+    src/core/PS4/HLE/Libs.h
+    src/core/PS4/HLE/LibKernel.cpp
+    src/core/PS4/HLE/LibKernel.h
+    src/core/PS4/HLE/LibSceGnmDriver.cpp
+    src/core/PS4/HLE/LibSceGnmDriver.h
+    src/core/PS4/HLE/Kernel/ThreadManagement.cpp
+    src/core/PS4/HLE/Kernel/ThreadManagement.h
+    src/core/PS4/HLE/ErrorCodes.h
+    src/core/PS4/HLE/Kernel/memory_management.cpp
+    src/core/PS4/HLE/Kernel/memory_management.h
+    src/core/PS4/GPU/gpu_memory.cpp
+    src/core/PS4/GPU/gpu_memory.h
+    src/emulator.cpp
+    src/emulator.h
+    src/core/PS4/HLE/Kernel/Objects/event_queue.h
+    src/core/PS4/HLE/Kernel/Objects/event_queue.cpp
+    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
+    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
+    src/core/PS4/HLE/Graphics/graphics_ctx.h
+    src/vulkan_util.cpp
+    src/vulkan_util.h
+    src/core/PS4/GPU/video_out_buffer.cpp
+    src/core/PS4/GPU/video_out_buffer.h
+    src/core/PS4/HLE/Graphics/graphics_render.cpp
+    src/core/PS4/HLE/Graphics/graphics_render.h
+    src/core/PS4/GPU/tile_manager.cpp
+    src/core/PS4/GPU/tile_manager.h
+    src/emuTimer.cpp
+    src/emuTimer.h
+    src/core/hle/libraries/libkernel/time_management.cpp
+    src/core/hle/libraries/libkernel/time_management.h
+)
 
-find_package(OpenGL REQUIRED)
-target_link_libraries(shadps4 PUBLIC fmt mincore spdlog IMGUI SDL3-shared ${OPENGL_LIBRARY} vulkan-1 spirv-tools-opt spirv-tools)
+create_target_directory_groups(shadps4)
+
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt spdlog::spdlog toml11::toml11)
+target_link_libraries(shadps4 PRIVATE discord-rpc imgui SDL3-shared vulkan-1 xxhash Zydis)
+if (WIN32)
+    target_link_libraries(shadps4 PRIVATE mincore winpthread)
+endif()
 
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different

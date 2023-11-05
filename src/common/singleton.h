@@ -2,10 +2,12 @@
 
 #include <memory>
 
+namespace Common {
+
 template <class T>
-class singleton {
+class Singleton {
 public:
-    static T* instance() {
+    static T* Instance() {
         if (!m_instance) {
             m_instance = std::make_unique<T>();
         }
@@ -13,9 +15,11 @@ public:
     }
 
 protected:
-    singleton();
-    ~singleton();
+    Singleton();
+    ~Singleton();
 
 private:
     static inline std::unique_ptr<T> m_instance{};
 };
+
+} // namespace Common

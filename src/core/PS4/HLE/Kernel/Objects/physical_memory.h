@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include "common/types.h"
 #include <core/virtual_memory.h>
 #include <core/PS4/GPU/gpu_memory.h>
 #include <mutex>

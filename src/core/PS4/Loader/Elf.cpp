@@ -1,7 +1,7 @@
 #include "Elf.h"
 
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 #include <fmt/core.h>
 
 constexpr bool log_file_loader = true;  // disable it to disable logging

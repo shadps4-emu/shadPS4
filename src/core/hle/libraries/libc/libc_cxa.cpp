@@ -1,7 +1,7 @@
 #include "libc_cxa.h"
 
-#include "Util/log.h"
-#include "debug.h"
+#include "common/log.h"
+#include "common/debug.h"
 
 // adapted from https://opensource.apple.com/source/libcppabi/libcppabi-14/src/cxa_guard.cxx.auto.html
 

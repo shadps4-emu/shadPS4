@@ -1,18 +1,18 @@
 #include "gpu_memory.h"
 
-#include <xxhash/xxh3.h>
+#include <xxh3.h>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 
 void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
                            const GPUObject& info) {
-    auto* gpumemory = singleton<GPUMemory>::instance();
+    auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
 
     return gpumemory->memoryCreateObj(submit_id, ctx, nullptr, &virtual_addr, &size, 1, info);
 }
 
 void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
-    auto* gpumemory = singleton<GPUMemory>::instance();
+    auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
 
     std::scoped_lock lock{gpumemory->m_mutex};
 
@@ -59,7 +59,7 @@ bool GPU::vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::
 }
 
 void GPU::flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx) {
-    auto* gpumemory = singleton<GPUMemory>::instance();
+    auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
     gpumemory->flushAllHeaps(ctx);
 }
 
@@ -78,7 +78,7 @@ int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
 
 void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo, const u64* virtual_addr, const u64* size,
                                       int virtual_addr_num, const GPUObject& info) {
-    auto* gpumemory = singleton<GPUMemory>::instance();
+    auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
 
     std::scoped_lock lock{gpumemory->m_mutex};
 

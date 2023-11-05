@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <fmt/core.h>
-#include <toml11/toml.hpp>
+#include <toml.hpp>
 
 namespace Config {
 

@@ -1,7 +1,7 @@
 #include "video_out_ctx.h"
 
 #include <core/PS4/HLE/LibKernel.h>
-#include <debug.h>
+#include "common/debug.h"
 #include <core/hle/libraries/libkernel/time_management.h>
 
 namespace HLE::Graphics::Objects {

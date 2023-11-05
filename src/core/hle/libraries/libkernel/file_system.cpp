@@ -1,8 +1,8 @@
 #include "file_system.h"
 
 #include <core/PS4/HLE/Libs.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 
 namespace Core::Libraries::LibKernel {
 constexpr bool log_file_fs = true;  // disable it to disable logging

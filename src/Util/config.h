@@ -1,6 +1,6 @@
 #pragma once
 #include <filesystem>
-#include <types.h>
+#include "common/types.h"
 
 namespace Config {
 void load(const std::filesystem::path& path);

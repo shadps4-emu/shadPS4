@@ -1,6 +1,6 @@
 #include <core/PS4/HLE/ErrorCodes.h>
 #include <core/PS4/HLE/Libs.h>
-#include <Util/log.h>
+#include "common/log.h"
 #include "system_service.h"
 
 namespace Core::Libraries::LibSystemService {

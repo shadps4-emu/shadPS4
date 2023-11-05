@@ -1,9 +1,9 @@
 #include "Linker.h"
 #include "../virtual_memory.h"
-#include <Util/log.h>
+#include "common/log.h"
 #include <fmt/core.h>
-#include "Zydis.h"
-#include <Util/string_util.h>
+#include <Zydis/Zydis.h>
+#include "common/string_util.h"
 #include "Util/aerolib.h"
 #include "Loader/SymbolsResolver.h"
 #include "HLE/Kernel/ThreadManagement.h"
@@ -412,7 +412,7 @@ void Linker::LoadSymbols(Module* m)
 		sym++)
 	{
         std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
-        auto ids = StringUtil::split_string(id, '#');
+        const auto ids = Common::SplitString(id, '#');
 		if (ids.size() == 3)//symbols are 3 parts name , library , module 
 		{
 			const auto* library = FindLibrary(*m, ids.at(1));
@@ -575,9 +575,8 @@ void Linker::Relocate(Module* m)
 	}
 }
 
-void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) { 
-	auto ids = StringUtil::split_string(name, '#');
-
+void Linker::Resolve(const std::string& name, int Symtype, Module* m, SymbolRecord* return_info) {
+    const auto ids = Common::SplitString(name, '#');
 	if (ids.size() == 3)  // symbols are 3 parts name , library , module
     {
         const auto* library = FindLibrary(*m, ids.at(1));

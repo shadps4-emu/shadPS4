@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include "common/types.h"
 
 namespace Core::Libraries::LibC {
 float PS4_SYSV_ABI atan2f(float y, float x);

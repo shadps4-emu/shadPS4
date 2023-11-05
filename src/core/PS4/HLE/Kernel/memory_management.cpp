@@ -2,13 +2,13 @@
 
 #include <core/PS4/GPU/gpu_memory.h>
 #include <core/virtual_memory.h>
-#include <Util/log.h>
-#include <debug.h>
+#include "common/log.h"
+#include "common/debug.h"
 
 #include <bit>
 #include <magic_enum.hpp>
 
-#include "Emulator/Util/singleton.h"
+#include "common/singleton.h"
 #include "../ErrorCodes.h"
 #include "../Libs.h"
 #include "Objects/physical_memory.h"
@@ -48,20 +48,20 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     }
     auto memtype = magic_enum::enum_cast<MemoryTypes>(memoryType);
 
-    LOG_INFO_IF(log_file_memory, "search_start = {}\n", log_hex_full(searchStart));
-    LOG_INFO_IF(log_file_memory, "search_end   = {}\n", log_hex_full(searchEnd));
-    LOG_INFO_IF(log_file_memory, "len          = {}\n", log_hex_full(len));
-    LOG_INFO_IF(log_file_memory, "alignment    = {}\n", log_hex_full(alignment));
+    LOG_INFO_IF(log_file_memory, "search_start = {:#x}\n", searchStart);
+    LOG_INFO_IF(log_file_memory, "search_end   = {:#x}\n", searchEnd);
+    LOG_INFO_IF(log_file_memory, "len          = {:#x}\n", len);
+    LOG_INFO_IF(log_file_memory, "alignment    = {:#x}\n", alignment);
     LOG_INFO_IF(log_file_memory, "memory_type  = {}\n", magic_enum::enum_name(memtype.value()));
 
     u64 physical_addr = 0;
-    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
+    auto* physical_memory = Common::Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
     if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr, memoryType)) {
         LOG_TRACE_IF(log_file_memory, "sceKernelAllocateDirectMemory returned SCE_KERNEL_ERROR_EAGAIN can't allocate physical memory\n");
         return SCE_KERNEL_ERROR_EAGAIN;
     }
     *physAddrOut = static_cast<s64>(physical_addr);
-    LOG_INFO_IF(true, "physAddrOut  = {}\n", log_hex_full(physical_addr));
+    LOG_INFO_IF(true, "physAddrOut  = {:#x}\n", physical_addr);
     return SCE_OK;
 }
 
@@ -82,11 +82,11 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         }
     }
 
-    LOG_INFO_IF(log_file_memory, "len               = {}\n", log_hex_full(len));
-    LOG_INFO_IF(log_file_memory, "prot              = {}\n", log_hex_full(prot));
-    LOG_INFO_IF(log_file_memory, "flags             = {}\n", log_hex_full(flags));
-    LOG_INFO_IF(log_file_memory, "directMemoryStart = {}\n", log_hex_full(directMemoryStart));
-    LOG_INFO_IF(log_file_memory, "alignment         = {}\n", log_hex_full(alignment));
+    LOG_INFO_IF(log_file_memory, "len               = {:#x}\n", len);
+    LOG_INFO_IF(log_file_memory, "prot              = {:#x}\n", prot);
+    LOG_INFO_IF(log_file_memory, "flags             = {:#x}\n", flags);
+    LOG_INFO_IF(log_file_memory, "directMemoryStart = {:#x}\n", directMemoryStart);
+    LOG_INFO_IF(log_file_memory, "alignment         = {:#x}\n", alignment);
 
     VirtualMemory::MemoryMode cpu_mode = VirtualMemory::MemoryMode::NoAccess;
     GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
@@ -106,8 +106,8 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     if (flags == 0) {
         out_addr = VirtualMemory::memory_alloc_aligned(in_addr, len, cpu_mode, alignment);
     }
-    LOG_INFO_IF(log_file_memory, "in_addr           = {}\n", log_hex_full(in_addr));
-    LOG_INFO_IF(log_file_memory, "out_addr          = {}\n", log_hex_full(out_addr));
+    LOG_INFO_IF(log_file_memory, "in_addr           = {:#x}\n", in_addr);
+    LOG_INFO_IF(log_file_memory, "out_addr          = {:#x}\n", out_addr);
 
     *addr = reinterpret_cast<void*>(out_addr);  // return out_addr to first functions parameter
 
@@ -115,7 +115,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         return SCE_KERNEL_ERROR_ENOMEM;
     }
 
-    auto* physical_memory = singleton<HLE::Kernel::Objects::PhysicalMemory>::instance();
+    auto* physical_memory = Common::Singleton<HLE::Kernel::Objects::PhysicalMemory>::Instance();
     if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode, gpu_mode)) {
         BREAKPOINT();
     }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <types.h>
-
 #include "Objects/event_queue.h"
 
 namespace HLE::Libs::LibKernel::EventQueues {
