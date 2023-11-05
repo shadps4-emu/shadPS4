@@ -1,10 +1,12 @@
-#include "Timer.h"
+#include "common/timer.h"
 
 #ifdef _WIN64
 #include <windows.h>
 #endif
 
-Lib::Timer::Timer() {
+namespace Common {
+
+Timer::Timer() {
 #ifdef _WIN64
     LARGE_INTEGER f;
     QueryPerformanceFrequency(&f);
@@ -14,7 +16,7 @@ Lib::Timer::Timer() {
 #endif
 }
 
-void Lib::Timer::Start() {
+void Timer::Start() {
 #ifdef _WIN64
     LARGE_INTEGER c;
     QueryPerformanceCounter(&c);
@@ -25,7 +27,7 @@ void Lib::Timer::Start() {
     m_is_timer_paused = false;
 }
 
-void Lib::Timer::Pause() {
+void Timer::Pause() {
 #ifdef _WIN64
     LARGE_INTEGER c;
     QueryPerformanceCounter(&c);
@@ -36,7 +38,7 @@ void Lib::Timer::Pause() {
     m_is_timer_paused = true;
 }
 
-void Lib::Timer::Resume() {
+void Timer::Resume() {
     u64 current_time = 0;
 #ifdef _WIN64
     LARGE_INTEGER c;
@@ -49,9 +51,7 @@ void Lib::Timer::Resume() {
     m_is_timer_paused = false;
 }
 
-bool Lib::Timer::IsPaused() const { return m_is_timer_paused; }
-
-double Lib::Timer::GetTimeMsec() const {
+double Timer::GetTimeMsec() const {
     if (m_is_timer_paused) {
         return 1000.0 * (static_cast<double>(m_PauseTime - m_StartTime)) / static_cast<double>(m_Frequency);
     }
@@ -67,7 +67,7 @@ double Lib::Timer::GetTimeMsec() const {
     return 1000.0 * (static_cast<double>(current_time - m_StartTime)) / static_cast<double>(m_Frequency);
 }
 
-double Lib::Timer::GetTimeSec() const {
+double Timer::GetTimeSec() const {
     if (m_is_timer_paused) {
         return (static_cast<double>(m_PauseTime - m_StartTime)) / static_cast<double>(m_Frequency);
     }
@@ -83,7 +83,7 @@ double Lib::Timer::GetTimeSec() const {
     return (static_cast<double>(current_time - m_StartTime)) / static_cast<double>(m_Frequency);
 }
 
-u64 Lib::Timer::GetTicks() const {
+u64 Timer::GetTicks() const {
     if (m_is_timer_paused) {
         return (m_PauseTime - m_StartTime);
     }
@@ -99,11 +99,10 @@ u64 Lib::Timer::GetTicks() const {
     return (current_time - m_StartTime);
 }
 
-u64 Lib::Timer::GetFrequency() const { return m_Frequency; }
-
-u64 Lib::Timer::getQueryPerformanceCounter() {
+u64 Timer::getQueryPerformanceCounter() {
     LARGE_INTEGER c;
     QueryPerformanceCounter(&c);
     return c.QuadPart;
 }
 
+} // namespace Common

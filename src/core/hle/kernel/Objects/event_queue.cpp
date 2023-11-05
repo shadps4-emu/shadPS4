@@ -1,6 +1,6 @@
 #include "common/debug.h"
+#include "common/timer.h"
 #include "core/hle/kernel/objects/event_queue.h"
-#include "Lib/Timer.h"
 
 namespace Core::Kernel {
 
@@ -26,7 +26,7 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     std::unique_lock lock{m_mutex};
 
     u32 timeElapsed = 0;
-    Lib::Timer t;
+    Common::Timer t;
     t.Start();
 
     for (;;) {

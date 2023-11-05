@@ -1,6 +1,6 @@
+#include "common/timer.h"
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"
-#include "Lib/Timer.h"
 #include "emuTimer.h"
 
 namespace Core::Libraries::LibKernel {
@@ -18,7 +18,7 @@ u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    return Lib::Timer::getQueryPerformanceCounter();
+    return Common::Timer::getQueryPerformanceCounter();
 }
 
 void timeSymbolsRegister(Loader::SymbolsResolver* sym) {

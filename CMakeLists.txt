@@ -78,6 +78,8 @@ add_executable(shadps4
     src/common/singleton.h
     src/common/string_util.cpp
     src/common/string_util.h
+    src/common/timer.cpp
+    src/common/timer.h
     src/common/types.h
     src/common/version.h
     ${LIBC_SOURCES}
@@ -86,8 +88,6 @@ add_executable(shadps4
     ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
-    src/Lib/Timer.cpp
-    src/Lib/Timer.h
     src/main.cpp
     src/core/loader/elf.cpp
     src/core/loader/elf.h

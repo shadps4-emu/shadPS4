@@ -1,15 +1,13 @@
-#include "emulator.h"
-
-#include <core/PS4/HLE/Graphics/graphics_render.h>
-#include <Emulator/Host/controller.h>
-#include <Lib/Timer.h>
 #include <fmt/core.h>
 #include <vulkan_util.h>
-
-#include "core/PS4/HLE/Graphics/video_out.h"
-#include "core/hle/libraries/libpad/pad.h"
+#include "common/timer.h"
 #include "common/singleton.h"
 #include "common/version.h"
+#include "emulator.h"
+#include "core/PS4/HLE/Graphics/graphics_render.h"
+#include "Emulator/Host/controller.h"
+#include "core/PS4/HLE/Graphics/video_out.h"
+#include "core/hle/libraries/libpad/pad.h"
 
 namespace Emu {
 
@@ -92,7 +90,7 @@ static void calculateFps(double game_time_s) {
     }
 }
 void emuRun() {
-    Lib::Timer timer;
+    Common::Timer timer;
     timer.Start();
     auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     {
