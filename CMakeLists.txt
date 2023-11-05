@@ -47,29 +47,34 @@ set(HOST_SOURCES src/Emulator/Host/controller.cpp
                  src/Emulator/Host/controller.h
 )
 
-set(UTIL_SOURCES src/Emulator/Util/singleton.h
-)
-
 add_executable(shadps4
+    src/common/debug.h
+    src/common/disassembler.cpp
+    src/common/disassembler.h
+    src/common/discord.cpp
+    src/common/discord.h
+    src/common/fs_file.cpp
+    src/common/fs_file.h
+    src/common/log.cpp
+    src/common/log.h
+    src/common/singleton.h
+    src/common/string_util.cpp
+    src/common/string_util.h
+    src/common/types.h
+    src/common/version.h
     ${LIBC_SOURCES}
     ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
     ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
-    ${UTIL_SOURCES}
     src/Lib/Timer.cpp
     src/Lib/Timer.h
     src/main.cpp
-    src/types.h
-    src/core/FsFile.cpp
-    src/core/FsFile.h
     src/core/PS4/Loader/Elf.cpp
     src/core/PS4/Loader/Elf.h
     src/GUI/ElfViewer.cpp
     src/GUI/ElfViewer.h 
-    src/Util/log.h
-    src/Util/log.cpp
     src/Util/config.cpp
     src/Util/config.h
     src/core/virtual_memory.cpp
@@ -81,20 +86,48 @@ add_executable(shadps4
     src/core/PS4/Util/aerolib.cpp
     src/core/PS4/HLE/Kernel/Objects/physical_memory.h
     src/core/PS4/HLE/Kernel/Objects/physical_memory.cpp
-    src/Util/string_util.cpp
-    src/Util/string_util.cpp
     src/core/PS4/HLE/Graphics/video_out.cpp
     src/core/PS4/HLE/Graphics/video_out.h
-    src/discord.h
-    src/discord.cpp
     src/core/PS4/HLE/Kernel/event_queues.cpp
     src/core/PS4/HLE/Kernel/event_queues.h
     src/core/PS4/HLE/Kernel/cpu_management.cpp
     src/core/PS4/HLE/Kernel/cpu_management.h
-    
-    
-    
-    "src/Util/Disassembler.cpp" "src/Util/Disassembler.h" "src/core/PS4/Util/aerolib.h" "src/core/PS4/Loader/SymbolsResolver.h" "src/core/PS4/Loader/SymbolsResolver.cpp" "src/core/PS4/HLE/Libs.cpp" "src/core/PS4/HLE/Libs.h" "src/core/PS4/HLE/LibKernel.cpp" "src/core/PS4/HLE/LibKernel.h"   "src/core/PS4/HLE/LibSceGnmDriver.cpp" "src/core/PS4/HLE/LibSceGnmDriver.h" "src/core/PS4/HLE/Kernel/ThreadManagement.cpp" "src/core/PS4/HLE/Kernel/ThreadManagement.h" "src/core/PS4/HLE/ErrorCodes.h" "src/debug.h" "src/core/PS4/HLE/Kernel/memory_management.cpp" "src/core/PS4/HLE/Kernel/memory_management.h" "src/core/PS4/GPU/gpu_memory.cpp" "src/core/PS4/GPU/gpu_memory.h" "src/emulator.cpp" "src/emulator.h"  "src/core/PS4/HLE/Kernel/Objects/event_queue.h" "src/core/PS4/HLE/Kernel/Objects/event_queue.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp" "src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h" "src/core/PS4/HLE/Graphics/graphics_ctx.h" "src/vulkan_util.cpp" "src/vulkan_util.h" "src/core/PS4/GPU/video_out_buffer.cpp" "src/core/PS4/GPU/video_out_buffer.h" "src/core/PS4/HLE/Graphics/graphics_render.cpp" "src/core/PS4/HLE/Graphics/graphics_render.h" "src/core/PS4/GPU/tile_manager.cpp" "src/core/PS4/GPU/tile_manager.h" "src/version.h"  "src/emuTimer.cpp" "src/emuTimer.h" "src/core/hle/libraries/libkernel/time_management.cpp" "src/core/hle/libraries/libkernel/time_management.h")
+    src/core/PS4/Util/aerolib.h
+    src/core/PS4/Loader/SymbolsResolver.h
+    src/core/PS4/Loader/SymbolsResolver.cpp
+    src/core/PS4/HLE/Libs.cpp
+    src/core/PS4/HLE/Libs.h
+    src/core/PS4/HLE/LibKernel.cpp
+    src/core/PS4/HLE/LibKernel.h
+    src/core/PS4/HLE/LibSceGnmDriver.cpp
+    src/core/PS4/HLE/LibSceGnmDriver.h
+    src/core/PS4/HLE/Kernel/ThreadManagement.cpp
+    src/core/PS4/HLE/Kernel/ThreadManagement.h
+    src/core/PS4/HLE/ErrorCodes.h
+    src/core/PS4/HLE/Kernel/memory_management.cpp
+    src/core/PS4/HLE/Kernel/memory_management.h
+    src/core/PS4/GPU/gpu_memory.cpp
+    src/core/PS4/GPU/gpu_memory.h
+    src/emulator.cpp
+    src/emulator.h
+    src/core/PS4/HLE/Kernel/Objects/event_queue.h
+    src/core/PS4/HLE/Kernel/Objects/event_queue.cpp
+    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
+    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
+    src/core/PS4/HLE/Graphics/graphics_ctx.h
+    src/vulkan_util.cpp
+    src/vulkan_util.h
+    src/core/PS4/GPU/video_out_buffer.cpp
+    src/core/PS4/GPU/video_out_buffer.h
+    src/core/PS4/HLE/Graphics/graphics_render.cpp
+    src/core/PS4/HLE/Graphics/graphics_render.h
+    src/core/PS4/GPU/tile_manager.cpp
+    src/core/PS4/GPU/tile_manager.h
+    src/emuTimer.cpp
+    src/emuTimer.h
+    src/core/hle/libraries/libkernel/time_management.cpp
+    src/core/hle/libraries/libkernel/time_management.h
+)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt spdlog::spdlog toml11::toml11)
 target_link_libraries(shadps4 PRIVATE discord-rpc imgui SDL3-shared vulkan-1 xxhash Zydis)
