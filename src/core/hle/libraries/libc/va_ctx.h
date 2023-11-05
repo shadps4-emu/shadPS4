@@ -103,4 +103,4 @@ T* vaArgPtr(VaList* l) {
     return vaArgOverflowArgArea<T*, 1, 8>(l);
 }
 
-}  // namespace Core::Libraries::LibC
+} // namespace Core::Libraries::LibC

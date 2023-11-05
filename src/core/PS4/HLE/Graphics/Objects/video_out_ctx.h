@@ -24,7 +24,7 @@ struct VideoConfigInternal {
     bool isOpened = false;
     SceVideoOutFlipStatus m_flip_status;
     SceVideoOutVblankStatus m_vblank_status;
-    std::vector<HLE::Libs::LibKernel::EventQueues::SceKernelEqueue> m_flip_evtEq;
+    std::vector<Core::Kernel::SceKernelEqueue> m_flip_evtEq;
     int m_flip_rate = 0;
     VideoOutBufferInfo buffers[16];
     std::vector<VideoOutBufferSetInternal> buffers_sets;
@@ -78,4 +78,5 @@ class VideoOutCtx {
     FlipQueue m_flip_queue;
     HLE::Libs::Graphics::GraphicCtx* m_graphic_ctx = nullptr;
 };
-};  // namespace HLE::Graphics::Objects
+
+} // namespace HLE::Graphics::Objects

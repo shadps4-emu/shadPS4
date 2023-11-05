@@ -1,8 +1,6 @@
-#include "video_out_ctx.h"
-
-#include <core/PS4/HLE/LibKernel.h>
 #include "common/debug.h"
-#include <core/hle/libraries/libkernel/time_management.h>
+#include "core/PS4/HLE/Graphics/Objects/video_out_ctx.h"
+#include "core/hle/libraries/libkernel/time_management.h"
 
 namespace HLE::Graphics::Objects {
 
@@ -12,6 +10,7 @@ void VideoOutCtx::Init(u32 width, u32 height) {
     m_video_out_ctx.m_resolution.paneWidth = width;
     m_video_out_ctx.m_resolution.paneHeight = height;
 }
+
 int VideoOutCtx::Open() {
     std::scoped_lock lock{m_mutex};
 
@@ -112,7 +111,7 @@ bool FlipQueue::flip(u32 micros) {
         std::scoped_lock cfg_lock{request->cfg->m_mutex};
         for (auto& flip_eq : request->cfg->m_flip_evtEq) {
             if (flip_eq != nullptr) {
-                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, HLE::Kernel::Objects::EVFILT_VIDEO_OUT, reinterpret_cast<void*>(request->flip_arg));
+                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Core::Kernel::EVFILT_VIDEO_OUT, reinterpret_cast<void*>(request->flip_arg));
             }
         }
     }
@@ -131,4 +130,4 @@ bool FlipQueue::flip(u32 micros) {
     return true;
 }
 
-};  // namespace HLE::Graphics::Objects
+} // namespace HLE::Graphics::Objects

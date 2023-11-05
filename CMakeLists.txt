@@ -30,12 +30,12 @@ endfunction()
 add_subdirectory(third-party)
 include_directories(src)
 
-set(LIBC_SOURCES src/core/hle/libraries/Libc/Libc.cpp 
-                 src/core/hle/libraries/Libc/Libc.h
-                 src/core/hle/libraries/Libc/printf.h
-                 src/core/hle/libraries/Libc/va_ctx.h
-                 src/core/hle/libraries/Libc/libc_cxa.cpp
-                 src/core/hle/libraries/Libc/libc_cxa.h
+set(LIBC_SOURCES src/core/hle/libraries/libc/Libc.cpp
+                 src/core/hle/libraries/libc/Libc.h
+                 src/core/hle/libraries/libc/printf.h
+                 src/core/hle/libraries/libc/va_ctx.h
+                 src/core/hle/libraries/libc/libc_cxa.cpp
+                 src/core/hle/libraries/libc/libc_cxa.h
                  src/core/hle/libraries/libc/libc_stdio.cpp
                  src/core/hle/libraries/libc/libc_stdio.h
                  src/core/hle/libraries/libc/libc_math.cpp
@@ -45,8 +45,8 @@ set(LIBC_SOURCES src/core/hle/libraries/Libc/Libc.cpp
                  src/core/hle/libraries/libc/libc_stdlib.cpp
                  src/core/hle/libraries/libc/libc_stdlib.h
 )
-set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/user_service.cpp
-                        src/core/hle/libraries/libuserservice/user_service.h
+set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/libuserservice.cpp
+                        src/core/hle/libraries/libuserservice/libuserservice.h
 )
 
 set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
@@ -89,47 +89,47 @@ add_executable(shadps4
     src/Lib/Timer.cpp
     src/Lib/Timer.h
     src/main.cpp
-    src/core/PS4/Loader/Elf.cpp
-    src/core/PS4/Loader/Elf.h
+    src/core/loader/elf.cpp
+    src/core/loader/elf.h
     src/GUI/ElfViewer.cpp
     src/GUI/ElfViewer.h 
     src/Util/config.cpp
     src/Util/config.h
     src/core/virtual_memory.cpp
     src/core/virtual_memory.h
-    src/core/PS4/Linker.cpp
-    src/core/PS4/Linker.h
-    src/core/PS4/Stubs.cpp
-    src/core/PS4/Stubs.h
-    src/core/PS4/Util/aerolib.cpp
-    src/core/PS4/HLE/Kernel/Objects/physical_memory.h
-    src/core/PS4/HLE/Kernel/Objects/physical_memory.cpp
+    src/core/linker.cpp
+    src/core/linker.h
+    src/core/aerolib/stubs.cpp
+    src/core/aerolib/stubs.h
+    src/core/aerolib/aerolib.cpp
+    src/core/aerolib/aerolib.h
+    src/core/hle/kernel/Objects/physical_memory.h
+    src/core/hle/kernel/Objects/physical_memory.cpp
     src/core/PS4/HLE/Graphics/video_out.cpp
     src/core/PS4/HLE/Graphics/video_out.h
-    src/core/PS4/HLE/Kernel/event_queues.cpp
-    src/core/PS4/HLE/Kernel/event_queues.h
-    src/core/PS4/HLE/Kernel/cpu_management.cpp
-    src/core/PS4/HLE/Kernel/cpu_management.h
-    src/core/PS4/Util/aerolib.h
-    src/core/PS4/Loader/SymbolsResolver.h
-    src/core/PS4/Loader/SymbolsResolver.cpp
-    src/core/PS4/HLE/Libs.cpp
-    src/core/PS4/HLE/Libs.h
-    src/core/PS4/HLE/LibKernel.cpp
-    src/core/PS4/HLE/LibKernel.h
-    src/core/PS4/HLE/LibSceGnmDriver.cpp
-    src/core/PS4/HLE/LibSceGnmDriver.h
-    src/core/PS4/HLE/Kernel/ThreadManagement.cpp
-    src/core/PS4/HLE/Kernel/ThreadManagement.h
-    src/core/PS4/HLE/ErrorCodes.h
-    src/core/PS4/HLE/Kernel/memory_management.cpp
-    src/core/PS4/HLE/Kernel/memory_management.h
+    src/core/hle/kernel/event_queues.cpp
+    src/core/hle/kernel/event_queues.h
+    src/core/hle/kernel/cpu_management.cpp
+    src/core/hle/kernel/cpu_management.h
+    src/core/loader/symbols_resolver.h
+    src/core/loader/symbols_resolver.cpp
+    src/core/hle/libraries/libs.cpp
+    src/core/hle/libraries/libs.h
+    src/core/hle/libraries/libkernel/libkernel.cpp
+    src/core/hle/libraries/libkernel/libkernel.h
+    src/core/hle/libraries/libscegnmdriver/libscegnmdriver.cpp
+    src/core/hle/libraries/libscegnmdriver/libscegnmdriver.h
+    src/core/hle/kernel/ThreadManagement.cpp
+    src/core/hle/kernel/ThreadManagement.h
+    src/core/hle/kernel/memory_management.cpp
+    src/core/hle/kernel/memory_management.h
+    src/core/hle/error_codes.h
     src/core/PS4/GPU/gpu_memory.cpp
     src/core/PS4/GPU/gpu_memory.h
     src/emulator.cpp
     src/emulator.h
-    src/core/PS4/HLE/Kernel/Objects/event_queue.h
-    src/core/PS4/HLE/Kernel/Objects/event_queue.cpp
+    src/core/hle/kernel/Objects/event_queue.h
+    src/core/hle/kernel/Objects/event_queue.cpp
     src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
     src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
     src/core/PS4/HLE/Graphics/graphics_ctx.h

@@ -1,11 +1,15 @@
 #pragma once
-#include "../core/PS4/Loader/Elf.h"
+
+namespace Core::Loader {
+class Elf;
+}
 
 class ElfViewer {
-private:
-	Elf* elf;
 public:
-	ElfViewer(Elf* elf);
-	void display(bool enabled);//display imgui window
+    explicit ElfViewer(Core::Loader::Elf* elf);
 
+    void Display(bool enabled);
+
+private:
+    Core::Loader::Elf* elf;
 };

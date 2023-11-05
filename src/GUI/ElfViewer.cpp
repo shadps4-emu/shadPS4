@@ -1,14 +1,12 @@
-#include "ElfViewer.h"
+#include "core/loader/elf.h"
+#include "GUI/ElfViewer.h"
 #include "imgui.h"
 
-ElfViewer::ElfViewer(Elf* elf)
-{
+ElfViewer::ElfViewer(Core::Loader::Elf* elf) {
     this->elf = elf;
 }
 
-//function to display Self/Elf window
-void ElfViewer::display(bool enabled)
-{
+void ElfViewer::Display(bool enabled) {
     int SELF_HEADER = 0;
     int ELF_HEADER = 1;
     int SEG_HEADER_START = 100;
@@ -97,5 +95,4 @@ void ElfViewer::display(bool enabled)
     }
     ImGui::EndChild();
     ImGui::End();
-    
 }

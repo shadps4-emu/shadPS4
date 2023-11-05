@@ -306,15 +306,15 @@ void keyboardEvent(SDL_Event* event) {
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;
         switch (event->key.keysym.sym) {
-            case SDLK_UP: button = ScePadButton::SCE_PAD_BUTTON_UP; break;
-            case SDLK_DOWN: button = ScePadButton::SCE_PAD_BUTTON_DOWN; break;
-            case SDLK_LEFT: button = ScePadButton::SCE_PAD_BUTTON_LEFT; break;
-            case SDLK_RIGHT: button = ScePadButton::SCE_PAD_BUTTON_RIGHT; break;
-            case SDLK_KP_8: button = ScePadButton ::SCE_PAD_BUTTON_TRIANGLE; break;
-            case SDLK_KP_6: button = ScePadButton ::SCE_PAD_BUTTON_CIRCLE; break;
-            case SDLK_KP_2: button = ScePadButton ::SCE_PAD_BUTTON_CROSS; break;
-            case SDLK_KP_4: button = ScePadButton ::SCE_PAD_BUTTON_SQUARE; break;
-            case SDLK_RETURN: button = ScePadButton ::SCE_PAD_BUTTON_OPTIONS; break;
+            case SDLK_UP: button = ScePadButton::UP; break;
+            case SDLK_DOWN: button = ScePadButton::DOWN; break;
+            case SDLK_LEFT: button = ScePadButton::LEFT; break;
+            case SDLK_RIGHT: button = ScePadButton::RIGHT; break;
+            case SDLK_KP_8: button = ScePadButton ::TRIANGLE; break;
+            case SDLK_KP_6: button = ScePadButton ::CIRCLE; break;
+            case SDLK_KP_2: button = ScePadButton ::CROSS; break;
+            case SDLK_KP_4: button = ScePadButton ::SQUARE; break;
+            case SDLK_RETURN: button = ScePadButton ::OPTIONS; break;
             default: break;
         }
         if (button != 0) {

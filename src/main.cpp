@@ -1,18 +1,18 @@
-#include <SDL3/SDL.h>
 #include <cstdio>
+#include <cinttypes>
+#include <thread>
 #include <fmt/core.h>
+#include <SDL3/SDL.h>
+#include <Zydis/Zydis.h>
 #include "common/discord.h"
 #include "common/types.h"
 #include "common/log.h"
 #include "common/singleton.h"
-#include <core/PS4/HLE/Graphics/video_out.h>
-#include <Util/config.h>
-#include <Zydis/Zydis.h>
-#include <emulator.h>
-#include <cinttypes>
-#include <thread>
-#include "core/PS4/HLE/Libs.h"
-#include "core/PS4/Linker.h"
+#include "core/PS4/HLE/Graphics/video_out.h"
+#include "Util/config.h"
+#include "emulator.h"
+#include "core/hle/libraries/libs.h"
+#include "core/linker.h"
 #include "emuTimer.h"
 
 int main(int argc, char* argv[]) {
@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     // Argument 1 is the path of self file to boot
     const char* const path = argv[1];
 
-    auto linker = Common::Singleton<Linker>::Instance();
-    HLE::Libs::Init_HLE_Libs(&linker->getHLESymbols());
+    auto linker = Common::Singleton<Core::Linker>::Instance();
+    Core::Libraries::InitHLELibs(&linker->getHLESymbols());
     linker->LoadModule(path);
     std::jthread mainthread(
         [linker](std::stop_token stop_token, void*) {
