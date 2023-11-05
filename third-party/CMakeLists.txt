@@ -35,6 +35,7 @@ target_include_directories(vulkan-1 INTERFACE vulkan/include)
 # Winpthreads
 if (WIN32)
     add_subdirectory(winpthread EXCLUDE_FROM_ALL)
+    target_include_directories(winpthread INTERFACE winpthread/include)
 endif()
 
 # xxHash
