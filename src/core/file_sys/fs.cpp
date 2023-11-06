@@ -40,7 +40,14 @@ int HandleTable::createHandle() {
     file->isOpened = false;
 
     int existingFilesNum = m_files.size();
-    // TODO when i close a file m_files probably have a open pos , so we can fill this
+
+    for (int index = 0; index < existingFilesNum; index++) {
+        if (m_files.at(index) == nullptr) {
+            m_files[index] = file;
+            return index;
+        }
+    }
+
     m_files.push_back(file);
 
     return existingFilesNum - 1;
