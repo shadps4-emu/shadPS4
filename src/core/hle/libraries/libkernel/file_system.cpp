@@ -1,5 +1,5 @@
 #include "core/hle/libraries/libkernel/file_system.h"
-
+#include <filesystem>
 #include "common/debug.h"
 #include "common/log.h"
 #include "common/singleton.h"
@@ -28,9 +28,25 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->isDirectory = true;
         file->m_guest_name = path;
         file->m_host_name = mnt->getHostDirectory(file->m_guest_name);
+        if (!std::filesystem::is_directory(file->m_host_name)) {  // directory doesn't exist
+            if (create) {                                       // if we have a create flag create it
+                if (std::filesystem::create_directories(file->m_host_name)) {
+                    return handle;
+                } else {
+                    return SCE_KERNEL_ERROR_ENOTDIR;
+                }
+                return SCE_KERNEL_ERROR_ENOTDIR;
+            }
+        } else {
+            if (create) {
+                return handle;//directory already exists
+            } else {
+                BREAKPOINT();//here we should handle open directory mode
+            }
+        }
     }
 
-    return 0;
+    return handle;
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
