@@ -23,7 +23,7 @@ constexpr u32 SCE_KERNEL_O_DIRECT = 0x00010000;     // Use cache as little as po
 constexpr u32 SCE_KERNEL_O_DIRECTORY = 0x00020000;  // Error will occur if not a directory
 
 int PS4_SYSV_ABI sceKernelOpen(const char *path, int flags, /* SceKernelMode*/ u16 mode);
-
+int PS4_SYSV_ABI sceKernelClose(int handle);
 int PS4_SYSV_ABI posix_open(const char *path, int flags, /* SceKernelMode*/ u16 mode);
 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver *sym);

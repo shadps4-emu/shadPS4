@@ -1,5 +1,7 @@
 #include "core/hle/libraries/libkernel/file_system.h"
+
 #include <filesystem>
+
 #include "common/debug.h"
 #include "common/log.h"
 #include "common/singleton.h"
@@ -29,7 +31,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->m_guest_name = path;
         file->m_host_name = mnt->getHostDirectory(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) {  // directory doesn't exist
-            if (create) {                                       // if we have a create flag create it
+            if (create) {                                         // if we have a create flag create it
                 if (std::filesystem::create_directories(file->m_host_name)) {
                     return handle;
                 } else {
@@ -39,14 +41,23 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
             }
         } else {
             if (create) {
-                return handle;//directory already exists
+                return handle;  // directory already exists
             } else {
-                BREAKPOINT();//here we should handle open directory mode
+                BREAKPOINT();  // here we should handle open directory mode
             }
         }
     }
 
     return handle;
+}
+
+int PS4_SYSV_ABI sceKernelClose(int handle) {
+    LOG_INFO_IF(log_file_fs, "sceKernelClose descriptor = {}\n", handle);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->getFile(handle);
+    file->isOpened = false;
+    h->deleteHandle(handle);
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
@@ -60,6 +71,7 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
+    LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
 }
 
