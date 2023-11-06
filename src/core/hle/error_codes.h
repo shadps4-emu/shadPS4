@@ -21,3 +21,6 @@ constexpr int SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE = 0x8029000C;   // Invalid
 constexpr int SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED = 0x80290010;         // slot already used
 constexpr int SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL = 0x80290012;       // flip queue is full
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_OPTION = 0x8029001A;        // Invalid buffer attribute option
+
+//filesystem
+constexpr int SCE_KERNEL_ERROR_EMFILE = 0x80020018;//limit of max descriptors reached

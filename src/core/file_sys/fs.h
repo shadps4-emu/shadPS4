@@ -27,15 +27,17 @@ class MntPoints {
 struct File {
     std::atomic_bool isOpened;
     std::atomic_bool isDirectory;
-    std::string m_real_name;
+    std::string m_host_name;
+    std::string m_guest_name;
 };
 class HandleTable {
+  public:
     HandleTable() {}
     virtual ~HandleTable() {}
     int createHandle();
     void deleteHandle(int d);
     File* getFile(int d);
-    File* getFile(const std::string& real_name);
+    File* getFile(const std::string& host_name);
 
   private:
     std::vector<File*> m_files;

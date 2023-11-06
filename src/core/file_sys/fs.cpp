@@ -53,7 +53,7 @@ int HandleTable::createHandle() {
 
     m_files.push_back(file);
 
-    return existingFilesNum + RESERVED_HANDLES  - 1;
+    return m_files.size() + RESERVED_HANDLES - 1;
 }
 void HandleTable::deleteHandle(int d) {
     std::unique_lock lock{m_mutex};
@@ -64,10 +64,10 @@ File* HandleTable::getFile(int d) {
     std::unique_lock lock{m_mutex};
     return m_files.at(d - RESERVED_HANDLES);
 }
-File* HandleTable::getFile(const std::string& real_name) {
+File* HandleTable::getFile(const std::string& host_name) {
     std::unique_lock lock{m_mutex};
     for (auto* file : m_files) {
-        if (file != nullptr && file->m_real_name == real_name) {
+        if (file != nullptr && file->m_host_name == host_name) {
             return file;
         }
     }
