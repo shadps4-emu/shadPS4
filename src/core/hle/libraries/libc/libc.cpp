@@ -1,19 +1,17 @@
-#include "libc.h"
-
+#include <cstdlib>
 #include "common/debug.h"
-#include <stdlib.h>
-
 #include "common/singleton.h"
 #include "common/log.h"
-#include "core/PS4/HLE/Libs.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libc/libc_cxa.h"
 #include "core/hle/libraries/libc/libc_math.h"
 #include "core/hle/libraries/libc/libc_stdio.h"
 #include "core/hle/libraries/libc/libc_stdlib.h"
 #include "core/hle/libraries/libc/libc_string.h"
+#include "core/hle/libraries/libs.h"
 
 namespace Core::Libraries::LibC {
+
 constexpr bool log_file_libc = true;  // disable it to disable logging
 static u32 g_need_sceLibc = 1;
 
@@ -39,28 +37,41 @@ static PS4_SYSV_ABI int __cxa_atexit(void (*func)(void*), void* arg, void* dso_h
     return 0;
 }
 
-void PS4_SYSV_ABI __cxa_finalize(void* d) { __debugbreak(); }
+void PS4_SYSV_ABI __cxa_finalize(void* d) {
+    BREAKPOINT();
+}
 
-void PS4_SYSV_ABI __cxa_pure_virtual() { __debugbreak(); }
+void PS4_SYSV_ABI __cxa_pure_virtual() {
+    BREAKPOINT();
+}
 
-static PS4_SYSV_ABI void init_env() { PRINT_DUMMY_FUNCTION_NAME(); }
+static PS4_SYSV_ABI void init_env() {
+    PRINT_DUMMY_FUNCTION_NAME();
+}
 
-static PS4_SYSV_ABI void catchReturnFromMain(int status) { LOG_INFO_IF(log_file_libc, "catchReturnFromMain returned ={}\n", status); }
+static PS4_SYSV_ABI void catchReturnFromMain(int status) {
+    LOG_INFO_IF(log_file_libc, "catchReturnFromMain returned ={}\n", status);
+}
 
 static PS4_SYSV_ABI void _Assert() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
 
-PS4_SYSV_ABI void _ZdlPv(void* ptr) { std::free(ptr); }
+PS4_SYSV_ABI void _ZdlPv(void* ptr) {
+    std::free(ptr);
+}
+
 PS4_SYSV_ABI void _ZSt11_Xbad_allocv() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
+
 PS4_SYSV_ABI void _ZSt14_Xlength_errorPKc() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
+
 PS4_SYSV_ABI void* _Znwm(u64 count) {
     if (count == 0) {
         LOG_ERROR_IF(log_file_libc, "_Znwm count ={}\n", count);
@@ -70,7 +81,7 @@ PS4_SYSV_ABI void* _Znwm(u64 count) {
     return ptr;
 }
 
-void libcSymbolsRegister(SymbolsResolver* sym) {
+void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     // cxa functions
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
     LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, __cxa_guard_release);

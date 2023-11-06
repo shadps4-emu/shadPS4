@@ -1,7 +1,5 @@
-#include "common/debug.h"
 #include "common/log.h"
-#include "virtual_memory.h"
-#include "core/PS4/Loader/Elf.h"
+#include "core/virtual_memory.h"
 
 #ifdef _WIN64
 #include <windows.h>

@@ -1,30 +1,29 @@
 #pragma once
-#include "common/types.h"
 
-#include "core/PS4/Loader/SymbolsResolver.h"
-#include "core/hle/libraries/libuserservice/user_service.h"
+#include "common/types.h"
+#include "core/hle/libraries/libuserservice/libuserservice.h"
 
 namespace Core::Libraries::LibPad {
 
-typedef enum : u32 {
-    SCE_PAD_BUTTON_L3 = 0x00000002,
-    SCE_PAD_BUTTON_R3 = 0x00000004,
-    SCE_PAD_BUTTON_OPTIONS = 0x00000008,
-    SCE_PAD_BUTTON_UP = 0x00000010,
-    SCE_PAD_BUTTON_RIGHT = 0x00000020,
-    SCE_PAD_BUTTON_DOWN = 0x00000040,
-    SCE_PAD_BUTTON_LEFT = 0x00000080,
-    SCE_PAD_BUTTON_L2 = 0x00000100,
-    SCE_PAD_BUTTON_R2 = 0x00000200,
-    SCE_PAD_BUTTON_L1 = 0x00000400,
-    SCE_PAD_BUTTON_R1 = 0x00000800,
-    SCE_PAD_BUTTON_TRIANGLE = 0x00001000,
-    SCE_PAD_BUTTON_CIRCLE = 0x00002000,
-    SCE_PAD_BUTTON_CROSS = 0x00004000,
-    SCE_PAD_BUTTON_SQUARE = 0x00008000,
-    SCE_PAD_BUTTON_TOUCH_PAD = 0x00100000,
-    SCE_PAD_BUTTON_INTERCEPTED = 0x80000000,
-} ScePadButton;
+enum ScePadButton : u32 {
+    L3 = 0x00000002,
+    R3 = 0x00000004,
+    OPTIONS = 0x00000008,
+    UP = 0x00000010,
+    RIGHT = 0x00000020,
+    DOWN = 0x00000040,
+    LEFT = 0x00000080,
+    L2 = 0x00000100,
+    R2 = 0x00000200,
+    L1 = 0x00000400,
+    R1 = 0x00000800,
+    TRIANGLE = 0x00001000,
+    CIRCLE = 0x00002000,
+    CROSS = 0x00004000,
+    SQUARE = 0x00008000,
+    TOUCH_PAD = 0x00100000,
+    INTERCEPTED = 0x80000000,
+};
 
 struct ScePadOpenParam {
     u08 reserve[8];
@@ -88,11 +87,12 @@ struct ScePadData {
     uint8_t deviceUniqueDataLen;
     uint8_t deviceUniqueData[12];
 };
-// hle functions
+
 int PS4_SYSV_ABI scePadInit();
-int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
+int PS4_SYSV_ABI scePadOpen(LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
                             const ScePadOpenParam* pParam);
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
-void padSymbolsRegister(SymbolsResolver* sym);
+void padSymbolsRegister(Loader::SymbolsResolver* sym);
+
 };  // namespace Core::Libraries::LibPad

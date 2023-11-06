@@ -1,18 +1,17 @@
-#include "pad.h"
-
-#include <core/PS4/HLE/ErrorCodes.h>
-#include <core/PS4/HLE/Libs.h>
-
-#include "common/singleton.h"
-#include "Emulator/Host/controller.h"
-#include "common/debug.h"
 #include "common/log.h"
+#include "common/singleton.h"
+#include "core/hle/libraries/libpad/pad.h"
+#include "core/hle/error_codes.h"
+#include "core/hle/libraries/libs.h"
+#include "Emulator/Host/controller.h"
 
 namespace Core::Libraries::LibPad {
 
 constexpr bool log_file_pad = true;  // disable it to disable logging
 
-int PS4_SYSV_ABI scePadInit() { return SCE_OK; }
+int PS4_SYSV_ABI scePadInit() {
+    return SCE_OK;
+}
 
 int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
                             const ScePadOpenParam* pParam) {
@@ -47,7 +46,7 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
     return SCE_OK;
 }
 
-void padSymbolsRegister(SymbolsResolver* sym) {
+void padSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hv1luiJrqQM", "libScePad", 1, "libScePad", 1, 1, scePadInit);
     LIB_FUNCTION("xk0AcarP3V4", "libScePad", 1, "libScePad", 1, 1, scePadOpen);
     LIB_FUNCTION("YndgXqQVV7c", "libScePad", 1, "libScePad", 1, 1, scePadReadState);

@@ -6,6 +6,7 @@
 // adapted from https://opensource.apple.com/source/libcppabi/libcppabi-14/src/cxa_guard.cxx.auto.html
 
 namespace Core::Libraries::LibC {
+
 constexpr bool log_file_cxa = true;  // disable it to disable logging
 
 // This file implements the __cxa_guard_* functions as defined at:

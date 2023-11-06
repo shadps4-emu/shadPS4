@@ -1,10 +1,10 @@
-#include "file_system.h"
-
-#include <core/PS4/HLE/Libs.h>
 #include "common/log.h"
 #include "common/debug.h"
+#include "core/hle/libraries/libkernel/file_system.h"
+#include "core/hle/libraries/libs.h"
 
 namespace Core::Libraries::LibKernel {
+
 constexpr bool log_file_fs = true;  // disable it to disable logging
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
@@ -21,9 +21,9 @@ int PS4_SYSV_ABI open(const char* path, int flags, /* SceKernelMode*/ u16 mode) 
     return result;
 }
 
-void fileSystemSymbolsRegister(SymbolsResolver* sym) {
+void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, open);
 }
 
-}  // namespace Core::Libraries::LibKernel
+} // namespace Core::Libraries::LibKernel
