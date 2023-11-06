@@ -10,7 +10,7 @@ namespace Core::Libraries::LibKernel {
 
 int PS4_SYSV_ABI sceKernelOpen(const char *path, int flags, /* SceKernelMode*/ u16 mode);
 
-int PS4_SYSV_ABI open(const char *path, int flags, /* SceKernelMode*/ u16 mode);
+int PS4_SYSV_ABI posix_open(const char *path, int flags, /* SceKernelMode*/ u16 mode);
 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver *sym);
 
