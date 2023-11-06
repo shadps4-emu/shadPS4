@@ -3,6 +3,9 @@
 #include <algorithm>
 
 namespace Core::FileSys {
+
+constexpr int RESERVED_HANDLES = 3; //first 3 handles are stdin,stdout,stderr
+
 void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) {
     std::unique_lock lock{m_mutex};
 
@@ -44,22 +47,22 @@ int HandleTable::createHandle() {
     for (int index = 0; index < existingFilesNum; index++) {
         if (m_files.at(index) == nullptr) {
             m_files[index] = file;
-            return index;
+            return index + RESERVED_HANDLES;
         }
     }
 
     m_files.push_back(file);
 
-    return existingFilesNum - 1;
+    return existingFilesNum + RESERVED_HANDLES  - 1;
 }
 void HandleTable::deleteHandle(int d) {
     std::unique_lock lock{m_mutex};
-    delete m_files.at(d);
-    m_files[d] = nullptr;
+    delete m_files.at(d - RESERVED_HANDLES);
+    m_files[d - RESERVED_HANDLES] = nullptr;
 }
 File* HandleTable::getFile(int d) {
     std::unique_lock lock{m_mutex};
-    return m_files.at(d);
+    return m_files.at(d - RESERVED_HANDLES);
 }
 File* HandleTable::getFile(const std::string& real_name) {
     std::unique_lock lock{m_mutex};
