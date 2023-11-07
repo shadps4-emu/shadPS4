@@ -14,5 +14,5 @@ void* PS4_SYSV_ABI memmove(void* dest, const void* src, std::size_t count);
 char* PS4_SYSV_ABI strcpy(char* destination, const char* source);
 char* PS4_SYSV_ABI strcat(char* dest, const char* src);
 size_t PS4_SYSV_ABI strlen(const char* str);
-
+char* PS4_SYSV_ABI strstr(const char* haystack, const char* needle);
 } // namespace Core::Libraries::LibC
