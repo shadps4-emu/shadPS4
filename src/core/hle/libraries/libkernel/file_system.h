@@ -7,6 +7,16 @@ class SymbolsResolver;
 }
 
 namespace Core::Libraries::LibKernel {
+constexpr int SCE_MAX_PATH = 255;
+
+struct SceKernelDirent {
+    uint32_t d_fileno;             /* file number of entry */
+    uint16_t d_reclen;             /* length of this record */
+    uint8_t d_type;                /* file type, see below */
+    uint8_t d_namlen;              /* length of string in d_name */
+    char d_name[SCE_MAX_PATH + 1]; /* name must be no longer than this */
+};
+
 // open flags
 constexpr u32 SCE_KERNEL_O_RDONLY = 0x0000;         // Open as read-only
 constexpr u32 SCE_KERNEL_O_WRONLY = 0x0001;         // Open as write-only
@@ -24,6 +34,7 @@ constexpr u32 SCE_KERNEL_O_DIRECTORY = 0x00020000;  // Error will occur if not a
 
 int PS4_SYSV_ABI sceKernelOpen(const char *path, int flags, /* SceKernelMode*/ u16 mode);
 int PS4_SYSV_ABI sceKernelClose(int handle);
+int PS4_SYSV_ABI sceKernelGetdents(int fd, char *buf, int nbytes);
 int PS4_SYSV_ABI posix_open(const char *path, int flags, /* SceKernelMode*/ u16 mode);
 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver *sym);

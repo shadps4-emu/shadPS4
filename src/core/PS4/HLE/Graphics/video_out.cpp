@@ -1,19 +1,21 @@
-#include <cstdio>
-#include <string>
-#include <magic_enum.hpp>
-#include "common/log.h"
-#include "common/debug.h"
-#include "core/loader/symbols_resolver.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
+
+#include <cstdio>
+#include <magic_enum.hpp>
+#include <string>
+
+#include "Objects/video_out_ctx.h"
+#include "Util/config.h"
+#include "common/debug.h"
+#include "common/log.h"
+#include "common/singleton.h"
 #include "core/PS4/GPU/gpu_memory.h"
 #include "core/PS4/GPU/video_out_buffer.h"
 #include "core/hle/error_codes.h"
-#include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
 #include "core/hle/libraries/libs.h"
+#include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
 #include "core/hle/libraries/libuserservice/usr_mng_codes.h"
-#include "Util/config.h"
-#include "Objects/video_out_ctx.h"
-#include "common/singleton.h"
+#include "core/loader/symbols_resolver.h"
 #include "emulator.h"
 #include "graphics_render.h"
 
@@ -222,7 +224,7 @@ s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
 }
 
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    PRINT_FUNCTION_NAME();
+    // PRINT_FUNCTION_NAME();
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     s32 pending = videoOut->getCtx(handle)->m_flip_status.flipPendingNum;
     return pending;
@@ -234,8 +236,8 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     auto* ctx = videoOut->getCtx(handle);
 
     if (flipMode != 1) {
-       // BREAKPOINT();  // only flipmode==1 is supported
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flipmode {}\n", bufferIndex);//openBOR needs 2 but seems to work
+        // BREAKPOINT();  // only flipmode==1 is supported
+        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flipmode {}\n", bufferIndex);  // openBOR needs 2 but seems to work
     }
     if (bufferIndex == -1) {
         BREAKPOINT();  // blank output not supported

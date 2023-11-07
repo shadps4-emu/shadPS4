@@ -32,8 +32,8 @@ struct File {
     std::string m_host_name;
     std::string m_guest_name;
     Common::FS::File f;
-    std::vector<Common::FS::DirEntry> dents;
-    u32 dents_index;
+    std::vector<Common::FS::DirEntry> dirents;
+    u32 dirents_index;
 };
 class HandleTable {
   public:

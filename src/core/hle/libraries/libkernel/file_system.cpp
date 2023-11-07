@@ -40,8 +40,8 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
                     return SCE_KERNEL_ERROR_ENOTDIR;
                 }
                 return SCE_KERNEL_ERROR_ENOTDIR;*/
-                //there is seems to be a bug with create_directories return false even if the directory creates so don't check until we find
-                //a better solution
+                // there is seems to be a bug with create_directories return false even if the directory creates so don't check until we find
+                // a better solution
                 std::filesystem::create_directories(file->m_host_name);
                 return handle;
             }
@@ -49,11 +49,12 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
             if (create) {
                 return handle;  // directory already exists
             } else {
-                BREAKPOINT();  // here we should handle open directory mode
+                file->dirents = Common::FS::File::getDirectoryEntries(file->m_host_name);
+                file->dirents_index = 0;
             }
         }
     }
-
+    file->isOpened = true;
     return handle;
 }
 
@@ -64,6 +65,30 @@ int PS4_SYSV_ABI sceKernelClose(int handle) {
     file->isOpened = false;
     h->deleteHandle(handle);
     return SCE_OK;
+}
+
+int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) { 
+    PRINT_FUNCTION_NAME(); 
+    //TODO error codes
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->getFile(fd);
+
+    if (file->dirents_index == file->dirents.size()) {
+        return 0;
+    }
+
+    const auto& entry = file->dirents.at(file->dirents_index++);
+    auto str = entry.name;
+    auto str_size = str.size() - 1;
+
+    SceKernelDirent* sce_ent = (SceKernelDirent*)buf;
+    sce_ent->d_fileno = fd; //TODO this should be unique but atm it changes maybe switch to a hash or something?
+    sce_ent->d_reclen = sizeof(SceKernelDirent);
+    sce_ent->d_type = (entry.isFile ? 8 : 4);
+    sce_ent->d_namlen = str_size;
+    strcpy_s(sce_ent->d_name, SCE_MAX_PATH, str.data());
+
+    return sizeof(SceKernelDirent);
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
@@ -78,6 +103,7 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
+    LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
 }
 
