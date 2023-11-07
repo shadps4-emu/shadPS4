@@ -36,6 +36,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char *path, int flags, /* SceKernelMode*/ u
 int PS4_SYSV_ABI sceKernelClose(int handle);
 int PS4_SYSV_ABI sceKernelGetdents(int fd, char *buf, int nbytes);
 int PS4_SYSV_ABI posix_open(const char *path, int flags, /* SceKernelMode*/ u16 mode);
+int PS4_SYSV_ABI posix_close(int handle);
 
 void fileSystemSymbolsRegister(Loader::SymbolsResolver *sym);
 

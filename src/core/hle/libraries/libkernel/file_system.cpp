@@ -67,9 +67,9 @@ int PS4_SYSV_ABI sceKernelClose(int handle) {
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) { 
-    PRINT_FUNCTION_NAME(); 
-    //TODO error codes
+int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
+    PRINT_FUNCTION_NAME();
+    // TODO error codes
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->getFile(fd);
 
@@ -82,7 +82,7 @@ int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
     auto str_size = str.size() - 1;
 
     SceKernelDirent* sce_ent = (SceKernelDirent*)buf;
-    sce_ent->d_fileno = fd; //TODO this should be unique but atm it changes maybe switch to a hash or something?
+    sce_ent->d_fileno = fd;  // TODO this should be unique but atm it changes maybe switch to a hash or something?
     sce_ent->d_reclen = sizeof(SceKernelDirent);
     sce_ent->d_type = (entry.isFile ? 8 : 4);
     sce_ent->d_namlen = str_size;
@@ -100,11 +100,21 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     return result;
 }
 
+int PS4_SYSV_ABI posix_close(int handle) {
+    LOG_INFO_IF(log_file_fs, "posix close redirect to sceKernelClose\n");
+    int result = sceKernelClose(handle);
+    if (result < 0) {
+        BREAKPOINT();  // posix calls different only for their return values
+    }
+    return result;
+}
+
 void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
+    LIB_FUNCTION("bY-PO6JhzhQ", "libScePosix", 1, "libkernel", 1, 1, posix_close);
 }
 
 }  // namespace Core::Libraries::LibKernel
