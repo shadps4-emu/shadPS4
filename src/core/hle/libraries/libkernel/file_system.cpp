@@ -32,12 +32,18 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->m_host_name = mnt->getHostDirectory(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) {  // directory doesn't exist
             if (create) {                                         // if we have a create flag create it
-                if (std::filesystem::create_directories(file->m_host_name)) {
+                /* std::error_code e;
+                if (std::filesystem::create_directories(file->m_host_name,e)) {
                     return handle;
                 } else {
+                    std::string message =e.message();
                     return SCE_KERNEL_ERROR_ENOTDIR;
                 }
-                return SCE_KERNEL_ERROR_ENOTDIR;
+                return SCE_KERNEL_ERROR_ENOTDIR;*/
+                //there is seems to be a bug with create_directories return false even if the directory creates so don't check until we find
+                //a better solution
+                std::filesystem::create_directories(file->m_host_name);
+                return handle;
             }
         } else {
             if (create) {
