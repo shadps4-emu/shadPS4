@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "common/fs_file.h"
+
 namespace Core::FileSys {
 
 class MntPoints {
@@ -29,6 +31,9 @@ struct File {
     std::atomic_bool isDirectory;
     std::string m_host_name;
     std::string m_guest_name;
+    Common::FS::File f;
+
+
 };
 class HandleTable {
   public:

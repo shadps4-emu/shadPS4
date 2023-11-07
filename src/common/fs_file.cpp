@@ -1,16 +1,13 @@
 #include "common/fs_file.h"
+#include <filesystem>
 
 namespace Common::FS {
 
 File::File() = default;
 
-File::File(const std::string& path, OpenMode mode) {
-    open(path, mode);
-}
+File::File(const std::string& path, OpenMode mode) { open(path, mode); }
 
-File::~File() {
-    close();
-}
+File::~File() { close(); }
 
 bool File::open(const std::string& path, OpenMode mode) {
     close();
@@ -24,21 +21,17 @@ bool File::open(const std::string& path, OpenMode mode) {
 
 bool File::close() {
     if (!isOpen() || std::fclose(m_file) != 0) [[unlikely]] {
-            m_file = nullptr;
-            return false;
+        m_file = nullptr;
+        return false;
     }
 
     m_file = nullptr;
     return true;
 }
 
-bool File::write(std::span<const u08> data) {
-    return isOpen() && std::fwrite(data.data(), 1, data.size(), m_file) == data.size();
-}
+bool File::write(std::span<const u08> data) { return isOpen() && std::fwrite(data.data(), 1, data.size(), m_file) == data.size(); }
 
-bool File::read(void* data, u64 size) const {
-    return isOpen() && std::fread(data, 1, size, m_file) == size;
-}
+bool File::read(void* data, u64 size) const { return isOpen() && std::fread(data, 1, size, m_file) == size; }
 
 bool File::seek(s64 offset, SeekMode mode) {
 #ifdef _WIN64
@@ -56,38 +49,51 @@ bool File::seek(s64 offset, SeekMode mode) {
 u64 File::tell() const {
     if (isOpen()) [[likely]] {
 #ifdef _WIN64
-            return _ftelli64(m_file);
+        return _ftelli64(m_file);
 #else
-            return ftello64(m_file);
+        return ftello64(m_file);
 #endif
     }
 
     return -1;
 }
 
+std::vector<DirEntry> File::getDirectoryEntries(const std::string& path) { 
+    std::vector < DirEntry> files;
+
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+        if (std::filesystem::is_regular_file(path)) {
+        
+        }
+        //entry.path()
+    }
+
+    return files;
+}
+
 u64 File::getFileSize() {
 #ifdef _WIN64
     const u64 pos = _ftelli64(m_file);
     if (_fseeki64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = _ftelli64(m_file);
     if (_fseeki64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #else
     const u64 pos = ftello64(m_file);
     if (fseeko64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = ftello64(m_file);
     if (fseeko64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #endif
     return size;
 }
 
-} // namespace Common::FS
+}  // namespace Common::FS

@@ -2,24 +2,25 @@
 
 #include <bit>
 #include <cstdio>
-#include <string>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "common/types.h"
 
 namespace Common::FS {
 
-enum class OpenMode : u32 {
-    Read = 0x1,
-    Write = 0x2,
-    ReadWrite = Read | Write
-};
+enum class OpenMode : u32 { Read = 0x1, Write = 0x2, ReadWrite = Read | Write };
 
 enum class SeekMode : u32 {
     Set,
     Cur,
     End,
+};
+
+struct DirEntry {
+    std::string name;
+    bool isFile;
 };
 
 class File {
@@ -46,42 +47,31 @@ class File {
         return read(data.data(), data.size() * sizeof(T));
     }
 
-    bool isOpen() const {
-        return m_file != nullptr;
-    }
+    bool isOpen() const { return m_file != nullptr; }
 
     const char* getOpenMode(OpenMode mode) const {
         switch (mode) {
-            case OpenMode::Read:
-                return "rb";
-            case OpenMode::Write:
-                return "wb";
-            case OpenMode::ReadWrite:
-                return "r+b";
-            default:
-                return "r";
+            case OpenMode::Read: return "rb";
+            case OpenMode::Write: return "wb";
+            case OpenMode::ReadWrite: return "r+b";
+            default: return "r";
         }
     }
 
     int getSeekMode(SeekMode mode) const {
         switch (mode) {
-            case SeekMode::Set:
-                return SEEK_SET;
-            case SeekMode::Cur:
-                return SEEK_CUR;
-            case SeekMode::End:
-                return SEEK_END;
-            default:
-                return SEEK_SET;
+            case SeekMode::Set: return SEEK_SET;
+            case SeekMode::Cur: return SEEK_CUR;
+            case SeekMode::End: return SEEK_END;
+            default: return SEEK_SET;
         }
     }
 
-    [[nodiscard]] std::FILE* fileDescr() const {
-        return m_file;
-    }
+    [[nodiscard]] std::FILE* fileDescr() const { return m_file; }
+    static std::vector<DirEntry> getDirectoryEntries(const std::string& path);
 
   private:
     std::FILE* m_file{};
 };
 
-} // namespace Common::FS
+}  // namespace Common::FS
