@@ -74,4 +74,4 @@ class File {
     std::FILE* m_file{};
 };
 
-}  // namespace Common::FS
+} // namespace Common::FS
