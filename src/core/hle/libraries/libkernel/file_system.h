@@ -12,8 +12,8 @@ constexpr int SCE_MAX_PATH = 255;
 struct SceKernelDirent {
     u32 d_fileno;              /* file number of entry */
     u16 d_reclen;             /* length of this record */
-    u8 d_type;                  /* file type, see below */
-    u8 d_namlen;             /* length of string in d_name */
+    u08 d_type;                  /* file type, see below */
+    u08 d_namlen;             /* length of string in d_name */
     char d_name[SCE_MAX_PATH + 1]; /* name must be no longer than this */
 };
 
