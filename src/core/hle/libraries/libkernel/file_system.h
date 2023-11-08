@@ -17,7 +17,7 @@ struct SceKernelDirent {
     char d_name[SCE_MAX_PATH + 1]; /* name must be no longer than this */
 };
 
-// open flags
+// Open flags
 constexpr u32 SCE_KERNEL_O_RDONLY = 0x0000;         // Open as read-only
 constexpr u32 SCE_KERNEL_O_WRONLY = 0x0001;         // Open as write-only
 constexpr u32 SCE_KERNEL_O_RDWR = 0x0002;           // Open for reading and writing
