@@ -7,7 +7,7 @@ namespace Core::FileSys {
 constexpr int RESERVED_HANDLES = 3; //first 3 handles are stdin,stdout,stderr
 
 void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
 
     MntPair pair;
     pair.host_path = host_folder;
@@ -17,11 +17,11 @@ void MntPoints::mount(const std::string& host_folder, const std::string& guest_f
 }
 void MntPoints::unmount(const std::string& path) {}  // TODO!
 void MntPoints::unmountAll() {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     m_mnt_pairs.clear();
 }
 std::string MntPoints::getHostDirectory(const std::string& guest_directory) {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     for (auto& pair : m_mnt_pairs) {
         if (pair.guest_path.starts_with(guest_directory)) {
             return pair.host_path + guest_directory;
@@ -37,7 +37,7 @@ std::string MntPoints::getHostDirectory(const std::string& guest_directory) {
     return "";
 }
 int HandleTable::createHandle() {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     auto* file = new File{};
     file->isDirectory = false;
     file->isOpened = false;
@@ -56,17 +56,17 @@ int HandleTable::createHandle() {
     return m_files.size() + RESERVED_HANDLES - 1;
 }
 void HandleTable::deleteHandle(int d) {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     delete m_files.at(d - RESERVED_HANDLES);
     m_files[d - RESERVED_HANDLES] = nullptr;
 }
 
 File* HandleTable::getFile(int d) {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     return m_files.at(d - RESERVED_HANDLES);
 }
 File* HandleTable::getFile(const std::string& host_name) {
-    std::unique_lock lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     for (auto* file : m_files) {
         if (file != nullptr && file->m_host_name == host_name) {
             return file;
