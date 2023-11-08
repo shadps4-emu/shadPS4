@@ -60,11 +60,10 @@ u64 File::tell() const {
 
 std::vector<DirEntry> File::getDirectoryEntries(const std::string& path) { 
     std::string curpath = path;
-    if (!curpath.ends_with("/"))
-    {
+    if (!curpath.ends_with("/")) {
         curpath = std::string(curpath + "/");
     }
-    std::vector < DirEntry> files;
+    std::vector<DirEntry> files;
 
     for (const auto& entry : std::filesystem::directory_iterator(curpath)) {
         if (std::filesystem::is_regular_file( entry.path().string())) {
