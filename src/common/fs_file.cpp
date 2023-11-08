@@ -1,4 +1,5 @@
 #include "common/fs_file.h"
+
 #include <filesystem>
 
 namespace Common::FS {
@@ -58,7 +59,7 @@ u64 File::tell() const {
     return -1;
 }
 
-std::vector<DirEntry> File::getDirectoryEntries(const std::string& path) { 
+std::vector<DirEntry> File::getDirectoryEntries(const std::string& path) {
     std::string curpath = path;
     if (!curpath.ends_with("/")) {
         curpath = std::string(curpath + "/");
@@ -66,17 +67,16 @@ std::vector<DirEntry> File::getDirectoryEntries(const std::string& path) {
     std::vector<DirEntry> files;
 
     for (const auto& entry : std::filesystem::directory_iterator(curpath)) {
-        if (std::filesystem::is_regular_file( entry.path().string())) {
-            DirEntry e = {};
+        DirEntry e = {};
+        if (std::filesystem::is_regular_file(entry.path().string())) {
             e.name = entry.path().filename().string();
             e.isFile = true;
-            files.push_back(e);
         } else {
             DirEntry e = {};
-            e.name = entry.path().filename().string() + "/"; //hmmm not sure if it has to be like this...
+            e.name = entry.path().filename().string() + "/";  // hmmm not sure if it has to be like this...
             e.isFile = false;
-            files.push_back(e);
         }
+        files.push_back(e);
     }
 
     return files;
