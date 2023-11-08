@@ -60,6 +60,7 @@ void HandleTable::deleteHandle(int d) {
     delete m_files.at(d - RESERVED_HANDLES);
     m_files[d - RESERVED_HANDLES] = nullptr;
 }
+
 File* HandleTable::getFile(int d) {
     std::unique_lock lock{m_mutex};
     return m_files.at(d - RESERVED_HANDLES);
