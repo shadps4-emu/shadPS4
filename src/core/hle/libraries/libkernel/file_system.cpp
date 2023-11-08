@@ -80,9 +80,9 @@ int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
     const auto& entry = file->dirents.at(file->dirents_index++);
     auto str = entry.name;
     auto str_size = str.size() - 1;
-
+    static int fileno = 1000;//random
     SceKernelDirent* sce_ent = (SceKernelDirent*)buf;
-    sce_ent->d_fileno = fd;  // TODO this should be unique but atm it changes maybe switch to a hash or something?
+    sce_ent->d_fileno = fileno++;  // TODO this should be unique but atm it changes maybe switch to a hash or something?
     sce_ent->d_reclen = sizeof(SceKernelDirent);
     sce_ent->d_type = (entry.isFile ? 8 : 4);
     sce_ent->d_namlen = str_size;
