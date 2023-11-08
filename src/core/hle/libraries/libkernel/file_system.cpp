@@ -86,7 +86,7 @@ int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
     sce_ent->d_reclen = sizeof(SceKernelDirent);
     sce_ent->d_type = (entry.isFile ? 8 : 4);
     sce_ent->d_namlen = str_size;
-    strcpy_s(sce_ent->d_name, SCE_MAX_PATH, str.data());
+    str.copy(sce_ent->d_name, SCE_MAX_PATH);
 
     return sizeof(SceKernelDirent);
 }
