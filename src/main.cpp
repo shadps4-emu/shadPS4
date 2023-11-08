@@ -14,7 +14,7 @@
 #include "core/hle/libraries/libs.h"
 #include "core/linker.h"
 #include "emuTimer.h"
-#include <core/file_sys/fs.h>
+#include "core/file_sys/fs.h"
 #include "common/singleton.h"
 
 int main(int argc, char* argv[]) {
