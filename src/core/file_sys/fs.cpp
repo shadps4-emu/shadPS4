@@ -4,7 +4,7 @@
 
 namespace Core::FileSys {
 
-constexpr int RESERVED_HANDLES = 3; //first 3 handles are stdin,stdout,stderr
+constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
 void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
