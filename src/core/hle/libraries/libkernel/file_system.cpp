@@ -15,8 +15,8 @@ constexpr bool log_file_fs = true;  // disable it to disable logging
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     LOG_INFO_IF(log_file_fs, "sceKernelOpen path = {} flags = {:#x} mode = {:#x}\n", path, flags, mode);
-    bool isDirectory = (flags & SCE_KERNEL_O_DIRECTORY) != 0;
-    bool create = (flags & SCE_KERNEL_O_CREAT) != 0;
+    const bool isDirectory = (flags & SCE_KERNEL_O_DIRECTORY) != 0;
+    const bool create = (flags & SCE_KERNEL_O_CREAT) != 0;
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
