@@ -15,7 +15,7 @@ class MntPoints {
     };
 
     MntPoints() {}
-    virtual ~MntPoints() {}
+    virtual ~MntPoints() = default;
     void mount(const std::string& host_folder, const std::string& guest_folder);
     void unmount(const std::string& path);
     void unmountAll();
