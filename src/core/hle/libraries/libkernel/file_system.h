@@ -10,10 +10,10 @@ namespace Core::Libraries::LibKernel {
 constexpr int SCE_MAX_PATH = 255;
 
 struct SceKernelDirent {
-    uint32_t d_fileno;             /* file number of entry */
-    uint16_t d_reclen;             /* length of this record */
-    uint8_t d_type;                /* file type, see below */
-    uint8_t d_namlen;              /* length of string in d_name */
+    u32 d_fileno;              /* file number of entry */
+    u16 d_reclen;             /* length of this record */
+    u8 d_type;                  /* file type, see below */
+    u8 d_namlen;             /* length of string in d_name */
     char d_name[SCE_MAX_PATH + 1]; /* name must be no longer than this */
 };
 
