@@ -1,5 +1,5 @@
 #include "common/debug.h"
-#include "core/hle/kernel/thread_management.h"
+#include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/hle/error_codes.h"
 
 namespace Core::Kernel {

@@ -119,8 +119,8 @@ add_executable(shadps4
     src/core/hle/libraries/libkernel/libkernel.h
     src/core/hle/libraries/libscegnmdriver/libscegnmdriver.cpp
     src/core/hle/libraries/libscegnmdriver/libscegnmdriver.h
-    src/core/hle/kernel/thread_management.cpp
-    src/core/hle/kernel/thread_management.h
+    src/core/hle/libraries/libkernel/thread_management.cpp
+    src/core/hle/libraries/libkernel/thread_management.h
     src/core/hle/kernel/memory_management.cpp
     src/core/hle/kernel/memory_management.h
     src/core/hle/error_codes.h
