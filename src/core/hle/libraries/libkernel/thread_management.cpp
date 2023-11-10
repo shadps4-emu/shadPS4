@@ -133,6 +133,8 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     *mutex = new PthreadMutexInternal{};
     if (name != nullptr) {
         (*mutex)->name = name;
+    } else {
+        (*mutex)->name = "dummy";
     }
 
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
@@ -193,8 +195,39 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
-int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {}
-int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {}
+int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
+    PRINT_FUNCTION_NAME();
+    if (mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
+    printf("mutex lock: %s, %d\n", (*mutex)->name.c_str(), result);
+    switch (result) {
+        case 0: return SCE_OK;
+        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case EDEADLK: return SCE_KERNEL_ERROR_EDEADLK;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
+    PRINT_FUNCTION_NAME();
+
+    if (mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
+    printf("mutex unlock: %s, %d\n", (*mutex)->name.c_str(), result);
+    switch (result) {
+        case 0: return SCE_OK;
+
+        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
+        case EPERM: return SCE_KERNEL_ERROR_EPERM;
+        default: return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
 
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_init redirect to scePthreadMutexInit\n");
@@ -236,6 +269,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     // posix calls
+    LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
 }
