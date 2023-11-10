@@ -58,17 +58,14 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
     switch (detachstate) {
         case 0: pstate = PTHREAD_CREATE_JOINABLE; break;
         case 1: pstate = PTHREAD_CREATE_DETACHED; break;
-        default: BREAKPOINT();  // unknown state
+        default: LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetdetachstate invalid detachstate: {}\n", detachstate); std::exit(0);
     }
 
     int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
 
     (*attr)->detached = (pstate == PTHREAD_CREATE_DETACHED);
 
-    if (result == 0) {
-        return SCE_OK;
-    }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
@@ -80,15 +77,12 @@ int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inherit
     switch (inheritSched) {
         case 0: pinherit_sched = PTHREAD_EXPLICIT_SCHED; break;
         case 4: pinherit_sched = PTHREAD_INHERIT_SCHED; break;
-        default: BREAKPOINT();  // unknown inheritSched
+        default: LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetinheritsched invalid inheritSched: {}\n", inheritSched); std::exit(0);
     }
 
     int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
 
-    if (result == 0) {
-        return SCE_OK;
-    }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param) {
@@ -107,10 +101,7 @@ int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKern
 
     int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
 
-    if (result == 0) {
-        return SCE_OK;
-    }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
@@ -118,18 +109,13 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    if (policy != SCHED_OTHER) {
-        BREAKPOINT();  // invest if policy is other and if winpthreadlibrary support it
-    }
+    int ppolicy = SCHED_OTHER;  // winpthreads only supports SCHED_OTHER
 
     (*attr)->policy = policy;
 
     int result = pthread_attr_setschedpolicy(&(*attr)->pth_attr, policy);
 
-    if (result == 0) {
-        return SCE_OK;
-    }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
 /****
@@ -222,6 +208,11 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
     LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSettype);
     LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
+    LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
+    LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
+    LIB_FUNCTION("eXbUSpEaTsA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetinheritsched);
+    LIB_FUNCTION("DzES9hQF4f4", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedparam);
+    LIB_FUNCTION("nsYoNRywwNg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrInit);
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
 }
