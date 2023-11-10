@@ -75,10 +75,14 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type);
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol);
+int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
+int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 /****
  * Posix calls
  */
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr);
+int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex);
+int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex);
 
 void pthreadSymbolsRegister(Loader::SymbolsResolver* sym);
 }  // namespace Core::Libraries::LibKernel
