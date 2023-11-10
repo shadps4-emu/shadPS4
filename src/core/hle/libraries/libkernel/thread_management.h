@@ -3,15 +3,25 @@
 
 #include <pthread.h>
 #include <sched.h>
-#include "common/types.h"
+
 #include <string>
 
-namespace Core::Kernel {
+#include "common/types.h"
+
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
+namespace Core::Libraries::LibKernel {
 
 struct PthreadAttrInternal;
+struct PthreadMutexInternal;
+struct PthreadMutexattrInternal;
 
-using SceKernelSchedParam  = ::sched_param;
+using SceKernelSchedParam = ::sched_param;
 using ScePthreadAttr = PthreadAttrInternal*;
+using ScePthreadMutex = PthreadMutexInternal*;
+using ScePthreadMutexattr = PthreadMutexattrInternal*;
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -29,14 +39,46 @@ struct PthreadAttrInternal {
     pthread_attr_t pth_attr;
 };
 
-class PThreadCxt {};
+struct PthreadMutexInternal {
+    u08 reserved[256];
+    std::string name;
+    pthread_mutex_t pth_mutex;
+};
 
+struct PthreadMutexattrInternal {
+    u08 reserved[64];
+    pthread_mutexattr_t pth_mutex_attr;
+    int pprotocol;
+};
+
+class PThreadCxt {
+  public:
+    ScePthreadMutexattr* getDefaultMutexattr() { return &m_default_mutexattr; }
+    void setDefaultMutexattr(ScePthreadMutexattr attr) { m_default_mutexattr = attr; }
+
+  private:
+    ScePthreadMutexattr m_default_mutexattr = nullptr;
+};
+void init_pthreads();
 void Pthread_Init_Self_MainThread();
 
-int scePthreadAttrInit(ScePthreadAttr* attr);
-int scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate);
-int scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
-int scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param);
-int scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy);
+int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr);
+int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate);
+int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
+int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param);
+int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy);
 
-} // namespace Core::Kernel
+/***
+ * Mutex calls
+ */
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name);
+int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr);
+int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type);
+int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol);
+/****
+ * Posix calls
+ */
+int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr);
+
+void pthreadSymbolsRegister(Loader::SymbolsResolver* sym);
+}  // namespace Core::Libraries::LibKernel

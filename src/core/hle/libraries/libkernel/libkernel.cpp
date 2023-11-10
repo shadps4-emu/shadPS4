@@ -14,6 +14,7 @@
 #ifdef _WIN64
 #include <windows.h>
 #endif
+#include "thread_management.h"
 
 namespace Core::Libraries::LibKernel {
 
@@ -50,6 +51,7 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
+    Core::Libraries::LibKernel::pthreadSymbolsRegister(sym);
 }
 
 } // namespace Core::Libraries::LibKernel
