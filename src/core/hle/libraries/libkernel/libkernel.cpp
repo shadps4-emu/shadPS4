@@ -1,15 +1,16 @@
-#include "common/log.h"
+#include "core/hle/libraries/libkernel/libkernel.h"
+
 #include "common/debug.h"
+#include "common/log.h"
 #include "common/singleton.h"
-#include "core/loader/elf.h"
 #include "core/hle/kernel/Objects/physical_memory.h"
 #include "core/hle/kernel/cpu_management.h"
 #include "core/hle/kernel/event_queues.h"
 #include "core/hle/kernel/memory_management.h"
-#include "core/hle/libraries/libkernel/libkernel.h"
 #include "core/hle/libraries/libkernel/file_system.h"
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"
+#include "core/loader/elf.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -25,13 +26,12 @@ int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
     return 0;
 }
 
-static PS4_SYSV_ABI void stack_chk_fail() {
-    BREAKPOINT();
-}
+static PS4_SYSV_ABI void stack_chk_fail() { BREAKPOINT(); }
 
-int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
-    BREAKPOINT();
-}
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) { BREAKPOINT(); }
+
+static thread_local int libc_error;
+int* PS4_SYSV_ABI __Error() { return &libc_error; }
 
 void LibKernel_Register(Loader::SymbolsResolver* sym) {
     // obj
@@ -48,10 +48,11 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     // misc
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, Kernel::sceKernelIsNeoMode);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
-    
+    LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
+
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
     Core::Libraries::LibKernel::pthreadSymbolsRegister(sym);
 }
 
-} // namespace Core::Libraries::LibKernel
+}  // namespace Core::Libraries::LibKernel

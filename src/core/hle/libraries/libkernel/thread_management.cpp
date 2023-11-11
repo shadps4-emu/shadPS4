@@ -151,6 +151,18 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
         default: return SCE_KERNEL_ERROR_EINVAL;
     }
 }
+
+void* createMutex(void* addr) {
+    if (addr == nullptr || *static_cast<void**>(addr) != nullptr) {
+        return addr;
+    }
+    auto vaddr = reinterpret_cast<u64>(addr);
+    
+    std::string name = fmt::format("mutex{:#x}",vaddr);
+    scePthreadMutexInit(static_cast<ScePthreadMutex*>(addr), nullptr, name.c_str());
+    return addr;
+}
+
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
     *attr = new PthreadMutexattrInternal{};
 
@@ -197,9 +209,7 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
 }
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     PRINT_FUNCTION_NAME();
-    if (mutex != nullptr || *static_cast<void**>((void*)mutex) == nullptr) {
-        scePthreadMutexInit(mutex, nullptr, "nomame");  // init mutex if it doesn't exist
-    }
+    mutex = static_cast<ScePthreadMutex*>(createMutex(mutex));
 
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -217,9 +227,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 }
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     PRINT_FUNCTION_NAME();
-    if (mutex != nullptr || *static_cast<void**>((void*)mutex) == nullptr) {
-        scePthreadMutexInit(mutex, nullptr, "nomame");  // init mutex if it doesn't exist this probably won't need
-    }
+    mutex = static_cast<ScePthreadMutex*>(createMutex(mutex));
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -284,6 +292,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
+    LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
 }
 
 }  // namespace Core::Libraries::LibKernel
