@@ -134,7 +134,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     if (name != nullptr) {
         (*mutex)->name = name;
     } else {
-        (*mutex)->name = "dummy";
+        (*mutex)->name = "noname";
     }
 
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
@@ -202,7 +202,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
-    printf("mutex lock: %s, %d\n", (*mutex)->name.c_str(), result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexLock name={} result={}\n", (*mutex)->name, result);
     switch (result) {
         case 0: return SCE_OK;
         case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
@@ -219,7 +219,7 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
-    printf("mutex unlock: %s, %d\n", (*mutex)->name.c_str(), result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexUnlock name={} result={}\n", (*mutex)->name, result);
     switch (result) {
         case 0: return SCE_OK;
 
