@@ -233,7 +233,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthre
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_init redirect to scePthreadMutexInit\n");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
     if (result < 0) {
-        BREAKPOINT();  // posix calls different only for their return values
+        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        return rt;
     }
     return result;
 }
@@ -242,7 +243,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_lock redirect to scePthreadMutexLock\n");
     int result = scePthreadMutexLock(mutex);
     if (result < 0) {
-        BREAKPOINT();  // posix calls different only for their return values
+        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        return rt;
     }
     return result;
 }
@@ -251,7 +253,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock\n");
     int result = scePthreadMutexUnlock(mutex);
     if (result < 0) {
-        BREAKPOINT();  // posix calls different only for their return values
+        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        return rt;
     }
     return result;
 }
