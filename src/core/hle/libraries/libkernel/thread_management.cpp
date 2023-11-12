@@ -140,7 +140,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
 
     if (name != nullptr) {
-        LOG_INFO_IF(log_pthread_file, "mutex_init name={},result={}\n",name,result);
+        LOG_INFO_IF(log_pthread_file, "mutex_init name={},result={}\n", name, result);
     }
 
     switch (result) {
@@ -157,8 +157,8 @@ void* createMutex(void* addr) {
         return addr;
     }
     auto vaddr = reinterpret_cast<u64>(addr);
-    
-    std::string name = fmt::format("mutex{:#}",vaddr);
+
+    std::string name = fmt::format("mutex{:#}", vaddr);
     scePthreadMutexInit(static_cast<ScePthreadMutex*>(addr), nullptr, name.c_str());
     return addr;
 }
@@ -247,7 +247,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthre
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_init redirect to scePthreadMutexInit\n");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
     if (result < 0) {
-        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
         return rt;
     }
     return result;
@@ -257,7 +257,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_lock redirect to scePthreadMutexLock\n");
     int result = scePthreadMutexLock(mutex);
     if (result < 0) {
-        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
         return rt;
     }
     return result;
@@ -267,7 +267,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock\n");
     int result = scePthreadMutexUnlock(mutex);
     if (result < 0) {
-        int rt = result > 0x80020000 && result <= 0x80020065 ? result + -0x80020000 : 1062;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
         return rt;
     }
     return result;

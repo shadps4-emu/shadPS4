@@ -654,7 +654,7 @@ static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func)
 }
 
 void Linker::Execute() {
-    Core::Libraries::LibKernel::Pthread_Init_Self_MainThread();
+    Core::Libraries::LibKernel::pthreadInitSelfMainThread();
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin"; //hmm should be ok?
