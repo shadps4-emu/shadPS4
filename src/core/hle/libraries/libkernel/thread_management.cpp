@@ -20,7 +20,7 @@ void init_pthreads() {
     g_pthread_cxt->setDefaultMutexattr(default_mutexattr);
 }
 
-void Pthread_Init_Self_MainThread() {
+void pthreadInitSelfMainThread() {
     scePthreadAttrInit(&g_pthread_self.attr);
     g_pthread_self.pth = pthread_self();
     g_pthread_self.name = "Main_Thread";
@@ -158,7 +158,7 @@ void* createMutex(void* addr) {
     }
     auto vaddr = reinterpret_cast<u64>(addr);
     
-    std::string name = fmt::format("mutex{:#x}",vaddr);
+    std::string name = fmt::format("mutex{:#}",vaddr);
     scePthreadMutexInit(static_cast<ScePthreadMutex*>(addr), nullptr, name.c_str());
     return addr;
 }

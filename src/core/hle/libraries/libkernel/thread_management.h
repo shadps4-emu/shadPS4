@@ -59,8 +59,9 @@ class PThreadCxt {
   private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
 };
+
 void init_pthreads();
-void Pthread_Init_Self_MainThread();
+void pthreadInitSelfMainThread();
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr);
 int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate);
