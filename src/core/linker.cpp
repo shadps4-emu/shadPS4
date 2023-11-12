@@ -4,7 +4,7 @@
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
-#include "core/hle/kernel/thread_management.h"
+#include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/linker.h"
 #include "core/virtual_memory.h"
 
@@ -654,7 +654,7 @@ static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func)
 }
 
 void Linker::Execute() {
-    Core::Kernel::Pthread_Init_Self_MainThread();
+    Core::Libraries::LibKernel::pthreadInitSelfMainThread();
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin"; //hmm should be ok?
