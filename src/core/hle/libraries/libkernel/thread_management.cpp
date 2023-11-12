@@ -123,6 +123,17 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
 /****
  * Mutex calls
  */
+void* createMutex(void* addr) {
+    if (addr == nullptr || *static_cast<ScePthreadMutex*>(addr) != nullptr) {
+        return addr;
+    }
+    auto vaddr = reinterpret_cast<u64>(addr);
+
+    std::string name = fmt::format("mutex{:#x}", vaddr);
+    scePthreadMutexInit(static_cast<ScePthreadMutex*>(addr), nullptr, name.c_str());
+    return addr;
+}
+
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name) {
     PRINT_FUNCTION_NAME();
     if (mutex == nullptr) {
@@ -152,17 +163,6 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
         case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
         default: return SCE_KERNEL_ERROR_EINVAL;
     }
-}
-
-void* createMutex(void* addr) {
-    if (addr == nullptr || *static_cast<void**>(addr) != nullptr) {
-        return addr;
-    }
-    auto vaddr = reinterpret_cast<u64>(addr);
-
-    std::string name = fmt::format("mutex{:#}", vaddr);
-    scePthreadMutexInit(static_cast<ScePthreadMutex*>(addr), nullptr, name.c_str());
-    return addr;
 }
 
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
