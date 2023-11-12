@@ -110,10 +110,12 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
     }
 
     int ppolicy = SCHED_OTHER;  // winpthreads only supports SCHED_OTHER
-
+    if (policy != SCHED_OTHER) {
+        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetschedpolicy policy={} not supported by winpthreads\n", policy);
+    }
     (*attr)->policy = policy;
 
-    int result = pthread_attr_setschedpolicy(&(*attr)->pth_attr, policy);
+    int result = pthread_attr_setschedpolicy(&(*attr)->pth_attr, ppolicy);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
