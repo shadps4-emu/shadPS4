@@ -702,6 +702,14 @@ static int snprintf_ctx(char* s, size_t n,VaCtx* ctx) {
     return result;
 }
 
+static int sprintf_ctx(char* s, VaCtx* ctx) {
+    const char* format = vaArgPtr<const char>(&ctx->va_list);
+    char buffer[256];  // it is big enough?
+    int result = _vsnprintf(_out_buffer, buffer, format, &ctx->va_list);
+    std::strcpy(s, buffer);
+    return result;
+}
+
 static int vsnprintf_ctx(char* s, size_t n, const char* format, VaList* arg) {
     char buffer[n];
     int result = _vsnprintf(_out_buffer, buffer, format, arg);
