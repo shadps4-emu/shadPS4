@@ -444,6 +444,10 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tcVi5SivF7Q", "libc", 1, "libc", 1, 1, sprintf);
     LIB_FUNCTION("xeYO4u7uyJ0", "libc", 1, "libc", 1, 1, fopen);
     LIB_FUNCTION("uodLYyUip20", "libc", 1, "libc", 1, 1, fclose);
+    LIB_FUNCTION("QMFyLoqNxIg", "libc", 1, "libc", 1, 1, setvbuf);
+    LIB_FUNCTION("rQFVBXp-Cxg", "libc", 1, "libc", 1, 1, fseek);
+    LIB_FUNCTION("SHlt7EhOtqA", "libc", 1, "libc", 1, 1, fgetpos);
+    LIB_FUNCTION("lbB+UlZqVG0", "libc", 1, "libc", 1, 1, fread);
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);
     LIB_OBJ("2sWzhYqFH4E","libc", 1, "libc", 1, 1,stdout);

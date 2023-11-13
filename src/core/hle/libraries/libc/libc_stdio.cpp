@@ -51,12 +51,15 @@ FILE* PS4_SYSV_ABI fopen(const char* filename, const char* mode) {
     FILE* f = std::fopen(file->m_host_name.c_str(), mode);
     return f;
 }
-int PS4_SYSV_ABI fclose(FILE* stream) { 
+int PS4_SYSV_ABI fclose(FILE* stream) {
     LOG_ERROR_IF(log_file_libc, "fclose\n");
-    if (stream != nullptr)
-    {
+    if (stream != nullptr) {
         std::fclose(stream);
     }
     return 0;
 }
+int PS4_SYSV_ABI setvbuf(FILE* stream, char* buffer, int mode, size_t size) { return std::setvbuf(stream, buffer, mode, size); }
+int PS4_SYSV_ABI fseek(FILE* stream, long int offset, int origin) { return std::fseek(stream, offset, origin); }
+int PS4_SYSV_ABI fgetpos(FILE* stream, fpos_t* pos) { return std::fgetpos(stream, pos); }
+size_t PS4_SYSV_ABI fread(void* ptr, size_t size, size_t count, FILE* stream) { return std::fread(ptr, size, count, stream); }
 }  // namespace Core::Libraries::LibC
