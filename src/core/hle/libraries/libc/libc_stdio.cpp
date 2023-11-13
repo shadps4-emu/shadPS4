@@ -1,6 +1,7 @@
+#include "core/hle/libraries/libc/libc_stdio.h"
+
 #include "common/debug.h"
 #include "common/log.h"
-#include "core/hle/libraries/libc/libc_stdio.h"
 
 namespace Core::Libraries::LibC {
 
@@ -22,22 +23,26 @@ int PS4_SYSV_ABI fprintf(FILE* file, VA_ARGS) {
     return 0;
 }
 
-int PS4_SYSV_ABI snprintf(char* s, size_t n, VA_ARGS) { 
+int PS4_SYSV_ABI snprintf(char* s, size_t n, VA_ARGS) {
     VA_CTX(ctx);
     return snprintf_ctx(s, n, &ctx);
 }
 
-int PS4_SYSV_ABI sprintf(char* s,VA_ARGS) {
+int PS4_SYSV_ABI sprintf(char* s, VA_ARGS) {
     VA_CTX(ctx);
-    return sprintf_ctx(s,&ctx);
+    return sprintf_ctx(s, &ctx);
 }
 
-int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) {
-    return vsnprintf_ctx(s, n, format, arg);
-}
+int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) { return vsnprintf_ctx(s, n, format, arg); }
 
-int PS4_SYSV_ABI puts(const char* s) {
-    return std::puts(s);
-}
+int PS4_SYSV_ABI puts(const char* s) { return std::puts(s); }
 
-} // namespace Core::Libraries::LibC
+FILE* PS4_SYSV_ABI fopen(const char* filename, const char* mode) {
+    LOG_ERROR_IF(log_file_libc, "Unimplemented fopen filename={} , mode ={}\n", filename, mode);
+    return nullptr;
+}
+int PS4_SYSV_ABI fclose(FILE* stream) { 
+    LOG_ERROR_IF(log_file_libc, "Unimplemented fclose\n");
+    return 0;
+}
+}  // namespace Core::Libraries::LibC

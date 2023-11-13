@@ -11,4 +11,6 @@ int PS4_SYSV_ABI puts(const char* s);
 int PS4_SYSV_ABI fprintf(FILE* file, VA_ARGS);
 int PS4_SYSV_ABI snprintf(char* s, size_t n, VA_ARGS);
 int PS4_SYSV_ABI sprintf(char* s, VA_ARGS);
+FILE* PS4_SYSV_ABI fopen(const char* filename, const char* mode);
+int PS4_SYSV_ABI fclose(FILE* stream);
 }  // namespace Core::Libraries::LibC
