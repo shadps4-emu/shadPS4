@@ -440,6 +440,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
     LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, fprintf);
+    LIB_FUNCTION("eLdDw6l0-bU", "libc", 1, "libc", 1, 1, snprintf);
 
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);

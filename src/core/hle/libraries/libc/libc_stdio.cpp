@@ -22,6 +22,11 @@ int PS4_SYSV_ABI fprintf(FILE* file, VA_ARGS) {
     return 0;
 }
 
+int PS4_SYSV_ABI snprintf(char* s, size_t n, VA_ARGS) { 
+    VA_CTX(ctx);
+    return snprintf_ctx(s, n, &ctx);
+}
+
 int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) {
     return vsnprintf_ctx(s, n, format, arg);
 }
