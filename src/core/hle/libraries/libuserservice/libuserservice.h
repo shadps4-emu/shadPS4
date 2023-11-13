@@ -20,6 +20,7 @@ struct SceUserServiceLoginUserIdList {
 
 s32 PS4_SYSV_ABI sceUserServiceInitialize(const SceUserServiceInitializeParams* initParams);
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList);
+s32 sceUserServiceGetInitialUser(SceUserServiceUserId* userId);
 
 void userServiceSymbolsRegister(Loader::SymbolsResolver* sym);
 

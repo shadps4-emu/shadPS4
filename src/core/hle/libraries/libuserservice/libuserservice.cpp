@@ -1,5 +1,6 @@
-#include "common/log.h"
 #include "core/hle/libraries/libuserservice/libuserservice.h"
+
+#include "common/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
 
@@ -20,9 +21,16 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList*
     return SCE_OK;
 }
 
+s32 sceUserServiceGetInitialUser(SceUserServiceUserId* userId) {
+    PRINT_DUMMY_FUNCTION_NAME();
+    *userId = 1;  // first player only
+    return SCE_OK;
+}
+
 void userServiceSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("j3YMu1MVNNo", "libSceUserService", 1, "libSceUserService", 1, 1, sceUserServiceInitialize);
     LIB_FUNCTION("fPhymKNvK-A", "libSceUserService", 1, "libSceUserService", 1, 1, sceUserServiceGetLoginUserIdList);
+    LIB_FUNCTION("CdWp0oHWGr0", "libSceUserService", 1, "libSceUserService", 1, 1, sceUserServiceGetInitialUser);
 }
 
-} // namespace Core::Libraries::LibUserService
+}  // namespace Core::Libraries::LibUserService
