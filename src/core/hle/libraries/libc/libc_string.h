@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+
 #include "common/types.h"
 
 namespace Core::Libraries::LibC {
@@ -14,5 +15,7 @@ void* PS4_SYSV_ABI memmove(void* dest, const void* src, std::size_t count);
 char* PS4_SYSV_ABI strcpy(char* destination, const char* source);
 char* PS4_SYSV_ABI strcat(char* dest, const char* src);
 size_t PS4_SYSV_ABI strlen(const char* str);
+int PS4_SYSV_ABI strncmp(const char* str1, const char* str2, size_t num);
+char* PS4_SYSV_ABI strrchr(char* str, int character);
 
-} // namespace Core::Libraries::LibC
+}  // namespace Core::Libraries::LibC

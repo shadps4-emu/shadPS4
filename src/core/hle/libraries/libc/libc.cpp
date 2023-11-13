@@ -432,6 +432,8 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, memcmp);
     LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, memcpy);
     LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, memset);
+    LIB_FUNCTION("aesyjrHVWy4", "libc", 1, "libc", 1, 1, strncmp);
+    LIB_FUNCTION("9yDWMxEFdJU", "libc", 1, "libc", 1, 1, strrchr);
 
     // stdio functions
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, printf);
