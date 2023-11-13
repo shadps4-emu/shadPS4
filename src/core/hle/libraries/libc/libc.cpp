@@ -9,6 +9,7 @@
 #include "core/hle/libraries/libc/libc_stdlib.h"
 #include "core/hle/libraries/libc/libc_string.h"
 #include "core/hle/libraries/libs.h"
+#include <csetjmp>
 
 namespace Core::Libraries::LibC {
 
@@ -398,6 +399,8 @@ static constexpr u16 characterTypeTable[256] = {
 
 const PS4_SYSV_ABI u16* _Getpctype() { return &characterTypeTable[0]; }
 
+int PS4_SYSV_ABI ps4_setjmp(jmp_buf env) { return std::setjmp(env); }
+
 void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     // cxa functions
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
@@ -411,6 +414,8 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, free);
     LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
     LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
+    LIB_FUNCTION("zlfEH8FmyUA", "libc", 1, "libc", 1, 1, _Stoul);
+    LIB_FUNCTION("VPbJwTCgME0", "libc", 1, "libc", 1, 1, srand);
 
     // math functions
     LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, atan2f);
@@ -434,7 +439,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, memset);
     LIB_FUNCTION("aesyjrHVWy4", "libc", 1, "libc", 1, 1, strncmp);
     LIB_FUNCTION("9yDWMxEFdJU", "libc", 1, "libc", 1, 1, strrchr);
-
+    LIB_FUNCTION("g7zzzLDYGw0", "libc", 1, "libc", 1, 1, strdup);
     // stdio functions
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, printf);
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, vsnprintf);
@@ -448,6 +453,8 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("rQFVBXp-Cxg", "libc", 1, "libc", 1, 1, fseek);
     LIB_FUNCTION("SHlt7EhOtqA", "libc", 1, "libc", 1, 1, fgetpos);
     LIB_FUNCTION("lbB+UlZqVG0", "libc", 1, "libc", 1, 1, fread);
+    LIB_FUNCTION("aZK8lNei-Qw", "libc", 1, "libc", 1, 1, fputc);
+    
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);
     LIB_OBJ("2sWzhYqFH4E","libc", 1, "libc", 1, 1,stdout);
@@ -465,6 +472,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1uJgoVq3bQU", "libc", 1, "libc", 1, 1, _Getptolower);
     LIB_FUNCTION("rcQCUr0EaRU", "libc", 1, "libc", 1, 1, _Getptoupper);
     LIB_FUNCTION("sUP1hBaouOw", "libc", 1, "libc", 1, 1, _Getpctype);
+    LIB_FUNCTION("gNQ1V2vfXDE", "libc", 1, "libc", 1, 1, ps4_setjmp);
 }
 
 };  // namespace Core::Libraries::LibC

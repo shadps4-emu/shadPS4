@@ -65,4 +65,5 @@ int PS4_SYSV_ABI setvbuf(FILE* stream, char* buffer, int mode, size_t size) { re
 int PS4_SYSV_ABI fseek(FILE* stream, long int offset, int origin) { return std::fseek(stream, offset, origin); }
 int PS4_SYSV_ABI fgetpos(FILE* stream, fpos_t* pos) { return std::fgetpos(stream, pos); }
 size_t PS4_SYSV_ABI fread(void* ptr, size_t size, size_t count, FILE* stream) { return std::fread(ptr, size, count, stream); }
+int PS4_SYSV_ABI fputc(int character, FILE* stream) { return std::fputc(character, stream); }
 }  // namespace Core::Libraries::LibC

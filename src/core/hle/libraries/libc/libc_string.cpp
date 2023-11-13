@@ -1,5 +1,6 @@
 #include "core/hle/libraries/libc/libc_string.h"
 
+#include <cstdlib>
 #include <cstring>
 
 namespace Core::Libraries::LibC {
@@ -25,5 +26,11 @@ size_t PS4_SYSV_ABI strlen(const char* str) { return std::strlen(str); }
 int PS4_SYSV_ABI strncmp(const char* str1, const char* str2, size_t num) { return std::strncmp(str1, str2, num); }
 
 char* PS4_SYSV_ABI strrchr(char* str, int character) { return (char*)std::strrchr(str, character); }
+
+char* PS4_SYSV_ABI strdup(const char* str1) {
+    char* dup = (char*)std::malloc(std::strlen(str1) + 1);
+    if (dup != NULL) strcpy(dup, str1);
+    return dup;
+}
 
 }  // namespace Core::Libraries::LibC

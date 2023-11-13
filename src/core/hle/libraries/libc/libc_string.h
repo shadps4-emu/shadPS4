@@ -17,5 +17,6 @@ char* PS4_SYSV_ABI strcat(char* dest, const char* src);
 size_t PS4_SYSV_ABI strlen(const char* str);
 int PS4_SYSV_ABI strncmp(const char* str1, const char* str2, size_t num);
 char* PS4_SYSV_ABI strrchr(char* str, int character);
+char* PS4_SYSV_ABI strdup(const char* str1);
 
 }  // namespace Core::Libraries::LibC
