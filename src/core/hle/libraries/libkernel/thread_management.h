@@ -17,11 +17,15 @@ namespace Core::Libraries::LibKernel {
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;
 struct PthreadMutexattrInternal;
+struct PthreadInternal;
 
 using SceKernelSchedParam = ::sched_param;
+using ScePthread = PthreadInternal*;
 using ScePthreadAttr = PthreadAttrInternal*;
 using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
+
+using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -68,10 +72,14 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
 int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param);
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy);
-
+ScePthread PS4_SYSV_ABI scePthreadSelf();
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr, pthreadEntryFunc start_routine, void* arg, const char* name);
+    
 /***
- * Mutex calls
- */
+     * Mutex calls
+     */
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name);
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type);
