@@ -36,6 +36,20 @@ std::string MntPoints::getHostDirectory(const std::string& guest_directory) {
     }
     return "";
 }
+std::string MntPoints::getHostFile(const std::string& guest_file) {
+    std::scoped_lock lock{m_mutex};
+
+    for (auto& pair : m_mnt_pairs) {
+        //horrible code but it works :D
+        int find = guest_file.find(pair.guest_path);
+        if (find == 0) {
+            std::string npath = guest_file.substr(pair.guest_path.size(), guest_file.size()-1);
+            std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
+            return pair.host_path + npath;
+        }
+    }
+    return "";
+}
 int HandleTable::createHandle() {
     std::scoped_lock lock{m_mutex};
     auto* file = new File{};

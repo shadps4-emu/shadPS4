@@ -2,6 +2,8 @@
 
 #include "common/debug.h"
 #include "common/log.h"
+#include "common/singleton.h"
+#include "core/file_sys/fs.h"
 
 namespace Core::Libraries::LibC {
 
@@ -38,11 +40,23 @@ int PS4_SYSV_ABI vsnprintf(char* s, size_t n, const char* format, VaList* arg) {
 int PS4_SYSV_ABI puts(const char* s) { return std::puts(s); }
 
 FILE* PS4_SYSV_ABI fopen(const char* filename, const char* mode) {
-    LOG_ERROR_IF(log_file_libc, "Unimplemented fopen filename={} , mode ={}\n", filename, mode);
-    return nullptr;
+    LOG_ERROR_IF(log_file_libc, "fopen filename={} , mode ={}\n", filename, mode);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
+    u32 handle = h->createHandle();
+    auto* file = h->getFile(handle);
+    file->m_guest_name = filename;
+    file->m_host_name = mnt->getHostFile(file->m_guest_name);
+    FILE* f = std::fopen(file->m_host_name.c_str(), mode);
+    return f;
 }
 int PS4_SYSV_ABI fclose(FILE* stream) { 
-    LOG_ERROR_IF(log_file_libc, "Unimplemented fclose\n");
+    LOG_ERROR_IF(log_file_libc, "fclose\n");
+    if (stream != nullptr)
+    {
+        std::fclose(stream);
+    }
     return 0;
 }
 }  // namespace Core::Libraries::LibC
