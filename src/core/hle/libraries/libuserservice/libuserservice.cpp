@@ -21,7 +21,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList*
     return SCE_OK;
 }
 
-s32 sceUserServiceGetInitialUser(SceUserServiceUserId* userId) {
+s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(SceUserServiceUserId* userId) {
     PRINT_DUMMY_FUNCTION_NAME();
     *userId = 1;  // first player only
     return SCE_OK;
