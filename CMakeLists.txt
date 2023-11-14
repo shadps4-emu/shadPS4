@@ -45,10 +45,14 @@ set(LIBC_SOURCES src/core/hle/libraries/libc/Libc.cpp
                  src/core/hle/libraries/libc/libc_stdlib.cpp
                  src/core/hle/libraries/libc/libc_stdlib.h
 )
+
 set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/libuserservice.cpp
                         src/core/hle/libraries/libuserservice/libuserservice.h
 )
 
+set(SAVEDATA_SOURCES  src/core/hle/libraries/libsavedata/save_data.cpp
+                     src/core/hle/libraries/libsavedata/save_data.h
+)
 set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
                 src/core/hle/libraries/libpad/pad.h
 )
@@ -90,6 +94,7 @@ add_executable(shadps4
     ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
+    ${SAVEDATA_SOURCES}
     src/main.cpp
     src/core/loader/elf.cpp
     src/core/loader/elf.h
