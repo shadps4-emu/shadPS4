@@ -40,4 +40,5 @@ unsigned long int PS4_SYSV_ABI _Stoul(const char* str, char** endptr, int base) 
 
 void PS4_SYSV_ABI srand(unsigned int seed) { return std::srand(seed); }
 
+s64 PS4_SYSV_ABI time(s64* pt) { return std::time(pt); }
 }  // namespace Core::Libraries::LibC

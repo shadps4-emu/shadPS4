@@ -416,6 +416,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
     LIB_FUNCTION("zlfEH8FmyUA", "libc", 1, "libc", 1, 1, _Stoul);
     LIB_FUNCTION("VPbJwTCgME0", "libc", 1, "libc", 1, 1, srand);
+    LIB_FUNCTION("wLlFkwG9UcQ", "libc", 1, "libc", 1, 1, time);
 
     // math functions
     LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, atan2f);

@@ -8,6 +8,7 @@ class SymbolsResolver;
 
 namespace Core::Libraries::LibSystemService {
 
+using SceSystemServiceParamId = s32;
 struct SceSystemServiceStatus {
     s32 eventNum;
     bool isSystemUiOverlaid;
@@ -20,6 +21,7 @@ struct SceSystemServiceStatus {
 
 s32 PS4_SYSV_ABI sceSystemServiceHideSplashScreen();
 s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status);
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(SceSystemServiceParamId paramId, s32* value);
 
 void systemServiceSymbolsRegister(Loader::SymbolsResolver* sym);
 

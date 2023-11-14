@@ -13,4 +13,5 @@ void PS4_SYSV_ABI qsort(void* ptr, size_t count, size_t size, int(PS4_SYSV_ABI* 
 int PS4_SYSV_ABI rand();
 unsigned long int PS4_SYSV_ABI _Stoul(const char* str, char** endptr, int base);
 void PS4_SYSV_ABI srand(unsigned int seed);
+s64 PS4_SYSV_ABI time(s64* pt);
 } // namespace Core::Libraries::LibC
