@@ -18,4 +18,5 @@ int PS4_SYSV_ABI fseek(FILE* stream, long int offset, int origin);
 int PS4_SYSV_ABI fgetpos(FILE* stream, fpos_t* pos);
 size_t PS4_SYSV_ABI fread(void* ptr, size_t size, size_t count, FILE* stream);
 int PS4_SYSV_ABI fputc(int character, FILE* stream);
+long PS4_SYSV_ABI libc_ftell(FILE* stream);
 }  // namespace Core::Libraries::LibC

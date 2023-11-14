@@ -27,6 +27,8 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status) {
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(SceSystemServiceParamId paramId, s32* value) { 
     if (paramId == 1) {
         *value = 1; //english
+    } else if (paramId == 1000) {
+        *value = 1;//button assing cross
     } else {
         BREAKPOINT();
     }

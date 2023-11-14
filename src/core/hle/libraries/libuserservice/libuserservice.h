@@ -10,6 +10,13 @@ namespace Core::Libraries::LibUserService {
 
 using SceUserServiceUserId = s32;
 
+enum UserServiceEventType { UserServiceEventTypeLogin, UserServiceEventTypeLogout };
+
+struct SceUserServiceEvent {
+    UserServiceEventType event_type;
+    int user_id;
+};
+
 struct SceUserServiceInitializeParams {
     s32 priority;
 };
