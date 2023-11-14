@@ -6,7 +6,7 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libsystemservice/system_service.h"
 #include "core/hle/libraries/libc/libc.h"
-
+#include "core/hle/libraries/libsavedata/save_data.h"
 namespace Core::Libraries {
 
 void InitHLELibs(Loader::SymbolsResolver* sym) {
@@ -17,6 +17,7 @@ void InitHLELibs(Loader::SymbolsResolver* sym) {
     LibPad::padSymbolsRegister(sym);
     LibSystemService::systemServiceSymbolsRegister(sym);
     LibC::libcSymbolsRegister(sym);
+    LibSaveData::saveDataSymbolsRegister(sym);
 }
 
 }  // namespace Core::Libraries
