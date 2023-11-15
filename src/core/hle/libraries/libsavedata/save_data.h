@@ -44,7 +44,7 @@ struct SceSaveDataMountResult {
     s32 padding;
 };
 
-s32 sceSaveDataMount2(const SceSaveDataMount2* mount, SceSaveDataMountResult* mountResult);
+s32 PS4_SYSV_ABI sceSaveDataMount2(const SceSaveDataMount2* mount, SceSaveDataMountResult* mountResult);
 
 void saveDataSymbolsRegister(Loader::SymbolsResolver* sym);
 

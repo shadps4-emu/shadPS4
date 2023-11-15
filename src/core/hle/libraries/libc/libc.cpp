@@ -474,7 +474,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1uJgoVq3bQU", "libc", 1, "libc", 1, 1, _Getptolower);
     LIB_FUNCTION("rcQCUr0EaRU", "libc", 1, "libc", 1, 1, _Getptoupper);
     LIB_FUNCTION("sUP1hBaouOw", "libc", 1, "libc", 1, 1, _Getpctype);
-    LIB_FUNCTION("gNQ1V2vfXDE", "libc", 1, "libc", 1, 1, ps4_setjmp);
+    //LIB_FUNCTION("gNQ1V2vfXDE", "libc", 1, "libc", 1, 1, ps4_setjmp);
 }
 
 };  // namespace Core::Libraries::LibC
