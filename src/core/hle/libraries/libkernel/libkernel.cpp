@@ -37,6 +37,23 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     return SCE_OK;
 }
 
+void PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+}
+
+struct iovec {
+    void* iov_base; /* Base	address. */
+    size_t iov_len; /* Length. */
+};
+
+size_t PS4_SYSV_ABI _writev(int fd, const struct iovec* iov, int iovcn) {
+    size_t total_written = 0;
+    for (int i = 0; i < iovcn; i++) {
+        total_written += ::fwrite(iov[i].iov_base, 1, iov[i].iov_len, stdout);
+    }
+    return total_written;
+}
+
 static thread_local int libc_error;
 int* PS4_SYSV_ABI __Error() { return &libc_error; }
 
@@ -105,6 +122,8 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
+    LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
 
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);

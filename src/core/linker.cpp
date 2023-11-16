@@ -7,6 +7,7 @@
 #include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/linker.h"
 #include "core/virtual_memory.h"
+#include <windows.h>
 
 namespace Core {
 
@@ -622,6 +623,31 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, Loader::Sy
 
 }
 
+static thread_local void* tls_block_top;
+
+// this assumes TLS will do mov rax|rcx, fs:[0] and
+// that fs:[0] will be a nullptr in windows (seems to be so)
+// and, that fs:[0] points to the top of the static TLS
+static LONG CALLBACK ExceptionHandlerTLS(PEXCEPTION_POINTERS ExceptionInfo) {
+    static const uint8_t rax_fs0_deref[] = {0x64, 0x48, 0x8B, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00};
+
+    static const uint8_t rcx_fs0_deref[] = {0x64, 0x48, 0x8B, 0x0C, 0x25, 0x00, 0x00, 0x00, 0x00};
+
+    if (memcmp((void*)ExceptionInfo->ContextRecord->Rip, rax_fs0_deref, sizeof(rax_fs0_deref)) == 0) {
+        ExceptionInfo->ContextRecord->Rip += sizeof(rax_fs0_deref);
+        ExceptionInfo->ContextRecord->Rax = *(DWORD64*)tls_block_top;
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    } else if (memcmp((void*)ExceptionInfo->ContextRecord->Rip, rcx_fs0_deref, sizeof(rcx_fs0_deref)) == 0) {
+        ExceptionInfo->ContextRecord->Rip += sizeof(rcx_fs0_deref);
+        ExceptionInfo->ContextRecord->Rcx = *(DWORD64*)tls_block_top;
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 using exit_func_t          = PS4_SYSV_ABI void (*)();
 using entry_func_t           = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
 
@@ -631,6 +657,11 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
 
 static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
     //reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have a specific layout
+
+	void** tls_block = (void**)malloc(16);  // this assumes 8 bytes of TLS storage, with the top of TLS pointing to itself
+    tls_block_top = tls_block[1] = &tls_block[1];
+
+    AddVectoredExceptionHandler(TRUE, ExceptionHandlerTLS);
 
 	asm volatile (
         "andq $-16, %%rsp\n"// Align to 16 bytes
