@@ -73,7 +73,7 @@ static void setNotInUse(u64* guard_object) { ((u08*)guard_object)[1] = 0; }
 // aborts if called again on the same guard object without an intervening
 // call to __cxa_guard_release() or __cxa_guard_abort().
 //
-int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object) {
+int PS4_SYSV_ABI ps4___cxa_guard_acquire(u64* guard_object) {
     // Double check that the initializer has not already been run
     if (initializerHasRun(guard_object)) return 0;
 
@@ -121,7 +121,7 @@ int PS4_SYSV_ABI __cxa_guard_acquire(u64* guard_object) {
 // Sets the first byte of the guard_object to a non-zero value.
 // Releases any locks acquired by __cxa_guard_acquire().
 //
-void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
+void PS4_SYSV_ABI ps4___cxa_guard_release(u64* guard_object) {
     // first mark initalizer as having been run, so
     // other threads won't try to re-run it.
     setInitializerHasRun(guard_object);
@@ -136,7 +136,7 @@ void PS4_SYSV_ABI __cxa_guard_release(u64* guard_object) {
 //
 // Releases any locks acquired by __cxa_guard_acquire().
 //
-void PS4_SYSV_ABI __cxa_guard_abort(u64* guard_object) {
+void PS4_SYSV_ABI ps4___cxa_guard_abort(u64* guard_object) {
     int result = ::pthread_mutex_unlock(guard_mutex());
     if (result != 0) {
         LOG_TRACE_IF(log_file_cxa, "__cxa_guard_abort(): pthread_mutex_unlock failed with {}\n", result);
