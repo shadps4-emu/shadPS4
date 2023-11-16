@@ -14,16 +14,20 @@ class SymbolsResolver;
 
 namespace Core::Libraries::LibKernel {
 
+struct PthreadInternal;
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;
 struct PthreadMutexattrInternal;
-struct PthreadInternal;
+struct PthreadCondInternal;
+struct PthreadCondAttrInternal;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthread = PthreadInternal*;
 using ScePthreadAttr = PthreadAttrInternal*;
 using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
+using ScePthreadCond = PthreadCondInternal*;
+using ScePthreadCondattr = PthreadCondAttrInternal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
@@ -55,13 +59,27 @@ struct PthreadMutexattrInternal {
     int pprotocol;
 };
 
+struct PthreadCondInternal {
+    u08 reserved[256];
+    std::string name;
+    pthread_cond_t cond;
+};
+
+struct PthreadCondAttrInternal {
+    u08 reserved[64];
+    pthread_condattr_t cond_attr;
+};
+
 class PThreadCxt {
   public:
     ScePthreadMutexattr* getDefaultMutexattr() { return &m_default_mutexattr; }
     void setDefaultMutexattr(ScePthreadMutexattr attr) { m_default_mutexattr = attr; }
+    ScePthreadCondattr* getDefaultCondattr() { return &m_default_condattr; }
+    void setDefaultCondattr(ScePthreadCondattr attr) { m_default_condattr = attr; }
 
   private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
+    ScePthreadCondattr m_default_condattr = nullptr;
 };
 
 void init_pthreads();
