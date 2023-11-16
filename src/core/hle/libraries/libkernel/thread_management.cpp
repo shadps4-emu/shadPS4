@@ -8,7 +8,7 @@
 
 namespace Core::Libraries::LibKernel {
 
-thread_local PthreadInternal g_pthread_self{};
+thread_local ScePthread g_pthread_self{};
 PThreadCxt* g_pthread_cxt = nullptr;
 
 constexpr bool log_pthread_file = true;  // disable it to disable logging
@@ -21,9 +21,10 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
-    scePthreadAttrInit(&g_pthread_self.attr);
-    g_pthread_self.pth = pthread_self();
-    g_pthread_self.name = "Main_Thread";
+    g_pthread_self = new PthreadInternal{};
+    scePthreadAttrInit(&g_pthread_self->attr);
+    g_pthread_self->pth = pthread_self();
+    g_pthread_self->name = "Main_Thread";
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
@@ -61,7 +62,8 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
         default: LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetdetachstate invalid detachstate: {}\n", detachstate); std::exit(0);
     }
 
-    int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
+    //int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate); doesn't seem to work correctly
+    int result = 0;
 
     (*attr)->detached = (pstate == PTHREAD_CREATE_DETACHED);
 
@@ -119,7 +121,35 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
+ScePthread PS4_SYSV_ABI scePthreadSelf() { return g_pthread_self; }
 
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr, const /*SceKernelCpumask*/ u64 mask) {
+    PRINT_FUNCTION_NAME();
+
+    if (pattr == nullptr || *pattr == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    (*pattr)->affinity = mask;
+
+    return SCE_OK;
+}
+
+int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
+    PRINT_FUNCTION_NAME();
+
+    if (thread == nullptr) {
+        return SCE_KERNEL_ERROR_ESRCH;
+    }
+
+    auto result = scePthreadAttrSetaffinity(&thread->attr, mask);
+
+    return result;
+}
+int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr, pthreadEntryFunc start_routine, void* arg, const char* name) {
+    PRINT_DUMMY_FUNCTION_NAME();
+    return 0;
+}
 /****
  * Mutex calls
  */
@@ -276,17 +306,23 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
 }
 
 void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
-    LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
-    LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSettype);
-    LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
     LIB_FUNCTION("eXbUSpEaTsA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetinheritsched);
     LIB_FUNCTION("DzES9hQF4f4", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedparam);
     LIB_FUNCTION("nsYoNRywwNg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrInit);
+    LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
+    LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
+    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
+    LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
+    //mutex calls
+    LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
+    LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
+    LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSettype);
+    LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
+
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
