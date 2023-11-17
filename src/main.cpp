@@ -19,10 +19,10 @@
 #include "emulator.h"
 
 int main(int argc, char* argv[]) {
-    /* if (argc == 1) {
+    if (argc == 1) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
-    }*/
+    }
     Config::load("config.toml");
     Common::Log::Init(true);
     Core::Libraries::LibKernel::init_pthreads();
@@ -33,12 +33,8 @@ int main(int argc, char* argv[]) {
     Emulator::emuTimer::start();
 
     // Argument 1 is the path of self file to boot
-    // const char* const path = argv[1];
-    // const char* const path = "C:\\ps4\\homebrew\\openbor\\eboot.bin";
-    // const char* const path = "C:\\ps4\\ps4sdk\\simplet-single-triangle_debug.elf";
-    // const char* const path = "C:\\ps4\\ps4sdk\\videoout_cursor.elf";
-    // const char* const path = "C:\\ps4\\games\\UnderTale\\eboot.bin";
-    const char* const path = "C:\\ps4\\openorbis\\HelloWorld\\eboot.bin";
+    // Argument 1 is the path of self file to boot
+    const char* const path = argv[1];  // argument 1 is the path of self file to boot
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
