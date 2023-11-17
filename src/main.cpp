@@ -17,6 +17,7 @@
 #include "core/linker.h"
 #include "emuTimer.h"
 #include "emulator.h"
+#include "core/file_sys/fs.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
@@ -33,8 +34,11 @@ int main(int argc, char* argv[]) {
     Emulator::emuTimer::start();
 
     // Argument 1 is the path of self file to boot
-    // Argument 1 is the path of self file to boot
     const char* const path = argv[1];  // argument 1 is the path of self file to boot
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    std::filesystem::path p = std::string(path);
+    mnt->mount(p.parent_path().string(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
