@@ -40,6 +40,8 @@ bool File::read(void* data, u64 size) const {
     return isOpen() && std::fread(data, 1, size, m_file) == size;
 }
 
+size_t File::reads(void* data, u64 size) const { return std::fread(data, 1, size, m_file); }
+
 bool File::seek(s64 offset, SeekMode mode) {
 #ifdef _WIN64
     if (!isOpen() || _fseeki64(m_file, offset, getSeekMode(mode)) != 0) {
