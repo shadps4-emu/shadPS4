@@ -14,14 +14,22 @@ class SymbolsResolver;
 
 namespace Core::Libraries::LibKernel {
 
+struct PthreadInternal;
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;
 struct PthreadMutexattrInternal;
+struct PthreadCondInternal;
+struct PthreadCondAttrInternal;
 
 using SceKernelSchedParam = ::sched_param;
+using ScePthread = PthreadInternal*;
 using ScePthreadAttr = PthreadAttrInternal*;
 using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
+using ScePthreadCond = PthreadCondInternal*;
+using ScePthreadCondattr = PthreadCondAttrInternal*;
+
+using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
 struct PthreadInternal {
     u08 reserved[4096];
@@ -51,13 +59,27 @@ struct PthreadMutexattrInternal {
     int pprotocol;
 };
 
+struct PthreadCondInternal {
+    u08 reserved[256];
+    std::string name;
+    pthread_cond_t cond;
+};
+
+struct PthreadCondAttrInternal {
+    u08 reserved[64];
+    pthread_condattr_t cond_attr;
+};
+
 class PThreadCxt {
   public:
     ScePthreadMutexattr* getDefaultMutexattr() { return &m_default_mutexattr; }
     void setDefaultMutexattr(ScePthreadMutexattr attr) { m_default_mutexattr = attr; }
+    ScePthreadCondattr* getDefaultCondattr() { return &m_default_condattr; }
+    void setDefaultCondattr(ScePthreadCondattr attr) { m_default_condattr = attr; }
 
   private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
+    ScePthreadCondattr m_default_condattr = nullptr;
 };
 
 void init_pthreads();
@@ -68,6 +90,10 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
 int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param);
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy);
+ScePthread PS4_SYSV_ABI scePthreadSelf();
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr, pthreadEntryFunc start_routine, void* arg, const char* name);
 
 /***
  * Mutex calls
@@ -79,11 +105,18 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 /****
+ * Cond calls
+ */
+int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name);
+int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
+int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
+    /****
  * Posix calls
  */
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex);
+int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond);
 
 void pthreadSymbolsRegister(Loader::SymbolsResolver* sym);
 }  // namespace Core::Libraries::LibKernel

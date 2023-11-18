@@ -27,7 +27,7 @@ struct CContext {
     std::vector<CxaDestructor> cxa;
 };
 
-static PS4_SYSV_ABI int __cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
+static PS4_SYSV_ABI int ps4___cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
     auto* cc = Common::Singleton<CContext>::Instance();
     CxaDestructor c{};
     c.destructor_func = func;
@@ -37,42 +37,42 @@ static PS4_SYSV_ABI int __cxa_atexit(void (*func)(void*), void* arg, void* dso_h
     return 0;
 }
 
-void PS4_SYSV_ABI __cxa_finalize(void* d) {
+void PS4_SYSV_ABI ps4___cxa_finalize(void* d) {
     BREAKPOINT();
 }
 
-void PS4_SYSV_ABI __cxa_pure_virtual() {
+void PS4_SYSV_ABI ps4___cxa_pure_virtual() {
     BREAKPOINT();
 }
 
-static PS4_SYSV_ABI void init_env() {
+static PS4_SYSV_ABI void ps4_init_env() {
     PRINT_DUMMY_FUNCTION_NAME();
 }
 
-static PS4_SYSV_ABI void catchReturnFromMain(int status) {
+static PS4_SYSV_ABI void ps4_catchReturnFromMain(int status) {
     LOG_INFO_IF(log_file_libc, "catchReturnFromMain returned ={}\n", status);
 }
 
-static PS4_SYSV_ABI void _Assert() {
+static PS4_SYSV_ABI void ps4__Assert() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
 
-PS4_SYSV_ABI void _ZdlPv(void* ptr) {
+PS4_SYSV_ABI void ps4__ZdlPv(void* ptr) {
     std::free(ptr);
 }
 
-PS4_SYSV_ABI void _ZSt11_Xbad_allocv() {
+PS4_SYSV_ABI void ps4__ZSt11_Xbad_allocv() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
 
-PS4_SYSV_ABI void _ZSt14_Xlength_errorPKc() {
+PS4_SYSV_ABI void ps4__ZSt14_Xlength_errorPKc() {
     PRINT_DUMMY_FUNCTION_NAME();
     BREAKPOINT();
 }
 
-PS4_SYSV_ABI void* _Znwm(u64 count) {
+PS4_SYSV_ABI void* ps4__Znwm(u64 count) {
     if (count == 0) {
         LOG_ERROR_IF(log_file_libc, "_Znwm count ={}\n", count);
         BREAKPOINT();
@@ -99,7 +99,7 @@ static constexpr u16 lowercaseTable[256] = {
     0x00FC, 0x00FD, 0x00FE, 0x00FF,
 };
 
-const PS4_SYSV_ABI u16* _Getptolower() { return &lowercaseTable[0]; }
+const PS4_SYSV_ABI u16* ps4__Getptolower() { return &lowercaseTable[0]; }
 
 static constexpr u16 uppercaseTable[256] = {
     0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F, 0x0010, 0x0011,
@@ -119,7 +119,7 @@ static constexpr u16 uppercaseTable[256] = {
     0x00FC, 0x00FD, 0x00FE, 0x00FF,
 };
 
-const PS4_SYSV_ABI u16* _Getptoupper() { return &uppercaseTable[0]; }
+const PS4_SYSV_ABI u16* ps4__Getptoupper() { return &uppercaseTable[0]; }
 
 namespace CharacterType {
 enum : u16 {
@@ -396,66 +396,66 @@ static constexpr u16 characterTypeTable[256] = {
     0,
 };
 
-const PS4_SYSV_ABI u16* _Getpctype() { return &characterTypeTable[0]; }
+const PS4_SYSV_ABI u16* ps4__Getpctype() { return &characterTypeTable[0]; }
 
 void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     // cxa functions
-    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, __cxa_guard_acquire);
-    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, __cxa_guard_release);
-    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1, __cxa_guard_abort);
+    LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, ps4___cxa_guard_acquire);
+    LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, ps4___cxa_guard_release);
+    LIB_FUNCTION("2emaaluWzUw", "libc", 1, "libc", 1, 1, ps4___cxa_guard_abort);
 
     // stdlib functions
-    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, exit);
-    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, atexit);
-    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1, malloc);
-    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, free);
-    LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, rand);
-    LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, qsort);
+    LIB_FUNCTION("uMei1W9uyNo", "libc", 1, "libc", 1, 1, ps4_exit);
+    LIB_FUNCTION("8G2LB+A3rzg", "libc", 1, "libc", 1, 1, ps4_atexit);
+    LIB_FUNCTION("gQX+4GDQjpM", "libc", 1, "libc", 1, 1, ps4_malloc);
+    LIB_FUNCTION("tIhsqj0qsFE", "libc", 1, "libc", 1, 1, ps4_free);
+    LIB_FUNCTION("cpCOXWMgha0", "libc", 1, "libc", 1, 1, ps4_rand);
+    LIB_FUNCTION("AEJdIVZTEmo", "libc", 1, "libc", 1, 1, ps4_qsort);
 
     // math functions
-    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, atan2f);
-    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, acosf);
-    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, tanf);
-    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1, asinf);
-    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1, pow);
-    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, _Sin);
-    LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, _Fsin);
-    LIB_FUNCTION("dnaeGXbjP6E", "libc", 1, "libc", 1, 1, exp2);
+    LIB_FUNCTION("EH-x713A99c", "libc", 1, "libc", 1, 1, ps4_atan2f);
+    LIB_FUNCTION("QI-x0SL8jhw", "libc", 1, "libc", 1, 1, ps4_acosf);
+    LIB_FUNCTION("ZE6RNL+eLbk", "libc", 1, "libc", 1, 1, ps4_tanf);
+    LIB_FUNCTION("GZWjF-YIFFk", "libc", 1, "libc", 1, 1, ps4_asinf);
+    LIB_FUNCTION("9LCjpWyQ5Zc", "libc", 1, "libc", 1, 1, ps4_pow);
+    LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, ps4__Sin);
+    LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, ps4__Fsin);
+    LIB_FUNCTION("dnaeGXbjP6E", "libc", 1, "libc", 1, 1, ps4_exp2);
 
     // string functions
-    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, strcmp);
-    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, strlen);
-    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, strncpy);
-    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, memmove);
-    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1, strcpy);
-    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1, strcat);
-    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, memcmp);
-    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, memcpy);
-    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, memset);
+    LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, ps4_strcmp);
+    LIB_FUNCTION("j4ViWNHEgww", "libc", 1, "libc", 1, 1, ps4_strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libc", 1, "libc", 1, 1, ps4_strncpy);
+    LIB_FUNCTION("+P6FRGH4LfA", "libc", 1, "libc", 1, 1, ps4_memmove);
+    LIB_FUNCTION("kiZSXIWd9vg", "libc", 1, "libc", 1, 1, ps4_strcpy);
+    LIB_FUNCTION("Ls4tzzhimqQ", "libc", 1, "libc", 1, 1, ps4_strcat);
+    LIB_FUNCTION("DfivPArhucg", "libc", 1, "libc", 1, 1, ps4_memcmp);
+    LIB_FUNCTION("Q3VBxCXhUHs", "libc", 1, "libc", 1, 1, ps4_memcpy);
+    LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, ps4_memset);
 
     // stdio functions
-    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, printf);
-    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, vsnprintf);
-    LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, puts);
-    LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, fprintf);
+    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, ps4_printf);
+    LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, ps4_vsnprintf);
+    LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, ps4_puts);
+    LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, ps4_fprintf);
 
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);
     LIB_OBJ("2sWzhYqFH4E","libc", 1, "libc", 1, 1,stdout);
     LIB_OBJ("H8AprKeZtNg", "libc", 1, "libc", 1, 1, stderr); 
-    LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, init_env);
-    LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, catchReturnFromMain);
-    LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, _Assert);
-    LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, _ZdlPv);
-    LIB_FUNCTION("eT2UsmTewbU", "libc", 1, "libc", 1, 1, _ZSt11_Xbad_allocv);
-    LIB_FUNCTION("tQIo+GIPklo", "libc", 1, "libc", 1, 1, _ZSt14_Xlength_errorPKc);
-    LIB_FUNCTION("fJnpuVVBbKk", "libc", 1, "libc", 1, 1, _Znwm);
-    LIB_FUNCTION("tsvEmnenz48", "libc", 1, "libc", 1, 1, __cxa_atexit);
-    LIB_FUNCTION("H2e8t5ScQGc", "libc", 1, "libc", 1, 1, __cxa_finalize);
-    LIB_FUNCTION("zr094EQ39Ww", "libc", 1, "libc", 1, 1, __cxa_pure_virtual);
-    LIB_FUNCTION("1uJgoVq3bQU", "libc", 1, "libc", 1, 1, _Getptolower);
-    LIB_FUNCTION("rcQCUr0EaRU", "libc", 1, "libc", 1, 1, _Getptoupper);
-    LIB_FUNCTION("sUP1hBaouOw", "libc", 1, "libc", 1, 1, _Getpctype);
+    LIB_FUNCTION("bzQExy189ZI", "libc", 1, "libc", 1, 1, ps4_init_env);
+    LIB_FUNCTION("XKRegsFpEpk", "libc", 1, "libc", 1, 1, ps4_catchReturnFromMain);
+    LIB_FUNCTION("-QgqOT5u2Vk", "libc", 1, "libc", 1, 1, ps4__Assert);
+    LIB_FUNCTION("z+P+xCnWLBk", "libc", 1, "libc", 1, 1, ps4__ZdlPv);
+    LIB_FUNCTION("eT2UsmTewbU", "libc", 1, "libc", 1, 1, ps4__ZSt11_Xbad_allocv);
+    LIB_FUNCTION("tQIo+GIPklo", "libc", 1, "libc", 1, 1, ps4__ZSt14_Xlength_errorPKc);
+    LIB_FUNCTION("fJnpuVVBbKk", "libc", 1, "libc", 1, 1, ps4__Znwm);
+    LIB_FUNCTION("tsvEmnenz48", "libc", 1, "libc", 1, 1, ps4___cxa_atexit);
+    LIB_FUNCTION("H2e8t5ScQGc", "libc", 1, "libc", 1, 1, ps4___cxa_finalize);
+    LIB_FUNCTION("zr094EQ39Ww", "libc", 1, "libc", 1, 1, ps4___cxa_pure_virtual);
+    LIB_FUNCTION("1uJgoVq3bQU", "libc", 1, "libc", 1, 1, ps4__Getptolower);
+    LIB_FUNCTION("rcQCUr0EaRU", "libc", 1, "libc", 1, 1, ps4__Getptoupper);
+    LIB_FUNCTION("sUP1hBaouOw", "libc", 1, "libc", 1, 1, ps4__Getpctype);
 }
 
 };  // namespace Core::Libraries::LibC
