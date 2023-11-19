@@ -20,7 +20,7 @@ class MntPoints {
     void unmount(const std::string& path);
     void unmountAll();
     std::string getHostDirectory(const std::string& guest_directory);
-    std::string MntPoints::getHostFile(const std::string& guest_file);
+    std::string getHostFile(const std::string& guest_file);
 
   private:
     std::vector<MntPair> m_mnt_pairs;
