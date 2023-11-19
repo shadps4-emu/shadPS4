@@ -58,7 +58,9 @@ set(SYSTEMSERVICE_SOURCES src/core/hle/libraries/libsystemservice/system_service
 )
 
 set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
-                       src/core/hle/libraries/libkernel/file_system.h                  
+                       src/core/hle/libraries/libkernel/file_system.h
+                       src/core/file_sys/fs.cpp
+                       src/core/file_sys/fs.h
 )
 
 set(HOST_SOURCES src/Emulator/Host/controller.cpp
