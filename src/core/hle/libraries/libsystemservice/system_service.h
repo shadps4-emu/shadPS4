@@ -8,6 +8,8 @@ class SymbolsResolver;
 
 namespace Core::Libraries::LibSystemService {
 
+using SceSystemServiceParamId = s32;
+
 struct SceSystemServiceStatus {
     s32 eventNum;
     bool isSystemUiOverlaid;
