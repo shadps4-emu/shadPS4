@@ -36,8 +36,9 @@ bool File::write(std::span<const u08> data) {
     return isOpen() && std::fwrite(data.data(), 1, data.size(), m_file) == data.size();
 }
 
-bool File::read(void* data, u64 size) const {
-    return isOpen() && std::fread(data, 1, size, m_file) == size;
+bool File::read(void* data, u64 size, u64* bytes_read) const {
+    *bytes_read = std::fread(data, 1, size, m_file);
+    return isOpen() && *bytes_read == size;
 }
 
 bool File::seek(s64 offset, SeekMode mode) {

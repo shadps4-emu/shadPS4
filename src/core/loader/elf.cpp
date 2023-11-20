@@ -120,17 +120,18 @@ void Elf::Open(const std::string& file_name) {
     Reset();
 
     m_f.open(file_name, Common::FS::OpenMode::Read);
-    m_f.read(m_self);
+    u64 bytes_read = 0;
+    m_f.read(m_self, &bytes_read);
 
     if (is_self = isSelfFile(); !is_self) {
         m_f.seek(0, Common::FS::SeekMode::Set);
     } else {
         m_self_segments.resize(m_self.segment_count);
-        m_f.read(m_self_segments);
+        m_f.read(m_self_segments, &bytes_read);
     }
 
     const u64 elf_header_pos = m_f.tell();
-    m_f.read(m_elf_header);
+    m_f.read(m_elf_header, &bytes_read);
     if (!isElfFile()) {
         return;
     }
@@ -142,7 +143,8 @@ void Elf::Open(const std::string& file_name) {
 
         out.resize(num);
         m_f.seek(offset, Common::FS::SeekMode::Set);
-        m_f.read(out);
+        u64 bytes_read = 0;
+        m_f.read(out, &bytes_read);
     };
 
     load_headers(m_elf_phdr, elf_header_pos + m_elf_header.e_phoff, m_elf_header.e_phnum);
@@ -160,7 +162,8 @@ void Elf::Open(const std::string& file_name) {
 
         if (m_elf_header.e_ehsize - header_size >= sizeof(elf_program_id_header)) {
             m_f.seek(header_size, Common::FS::SeekMode::Set);
-            m_f.read(m_self_id_header);
+            u64 bytes_read = 0;
+            m_f.read(m_self_id_header,&bytes_read);
         }
     }
 
@@ -412,7 +415,8 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     if (!is_self) {
         // It's elf file
         m_f.seek(file_offset, Common::FS::SeekMode::Set);
-        m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+        u64 bytes_read = 0;
+        m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size,&bytes_read);
         return;
     }
 
@@ -426,7 +430,8 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
             if (file_offset >= phdr.p_offset && file_offset < phdr.p_offset + phdr.p_filesz) {
                 auto offset = file_offset - phdr.p_offset;
                 m_f.seek(offset + seg.file_offset, Common::FS::SeekMode::Set);
-                m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+                u64 bytes_read = 0;
+                m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size, &bytes_read);
                 return;
             }
         }

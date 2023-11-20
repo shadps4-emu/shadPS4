@@ -30,20 +30,20 @@ class File {
 
     bool open(const std::string& path, OpenMode mode = OpenMode::Read);
     bool close();
-    bool read(void* data, u64 size) const;
+    bool read(void* data, u64 size, u64* bytes_read) const;
     bool write(std::span<const u08> data);
     bool seek(s64 offset, SeekMode mode);
     u64 getFileSize();
     u64 tell() const;
 
     template <typename T>
-    bool read(T& data) const {
-        return read(&data, sizeof(T));
+    bool read(T& data, u64* bytes_read) const {
+        return read(&data, sizeof(T),bytes_read);
     }
 
     template <typename T>
-    bool read(std::vector<T>& data) const {
-        return read(data.data(), data.size() * sizeof(T));
+    bool read(std::vector<T>& data, u64* bytes_read) const {
+        return read(data.data(), data.size() * sizeof(T),bytes_read);
     }
 
     bool isOpen() const {
