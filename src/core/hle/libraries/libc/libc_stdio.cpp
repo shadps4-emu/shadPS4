@@ -28,7 +28,9 @@ int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
 
 int PS4_SYSV_ABI ps4_vsnprintf(char* s, size_t n, const char* format, VaList* arg) { return vsnprintf_ctx(s, n, format, arg); }
 
-int PS4_SYSV_ABI ps4_puts(const char* s) { return std::puts(s); }
+int PS4_SYSV_ABI ps4_puts(const char* s) { 
+    return std::puts(s); 
+}
 
 FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode) {
     LOG_INFO_IF(log_file_libc, "fopen filename={} , mode ={}\n", filename, mode);
@@ -37,26 +39,66 @@ FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode) {
 
     u32 handle = h->createHandle();
     auto* file = h->getFile(handle);
+    //file->m_mutex.lock();
     file->m_guest_name = filename;
     file->m_host_name = mnt->getHostFile(file->m_guest_name);
-    FILE* f = std::fopen(file->m_host_name.c_str(), mode);
-    if (!f) {
+    if (!file->f.open(file->m_host_name.c_str(), Common::FS::OpenMode::Read)) {
         LOG_ERROR_IF(log_file_libc, "fopen can't open file={}\n", filename);
     }
-    return f;
+    FILE* descr = file->f.fileDescr();
+    int handle1 = _fileno(descr);
+    file->isOpened = true;
+    //file->m_mutex.unlock();
+    return descr;
 }
 
-int PS4_SYSV_ABI ps4_fseek(FILE* stream, long int offset, int origin) { return std::fseek(stream, offset, origin); }
+int PS4_SYSV_ABI ps4_fseek(FILE* stream, long int offset, int origin) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int handle = _fileno(stream);
+    auto* file = h->getFile(handle - 2);
+    file->m_mutex.lock();
+    int seek = 0;
+    switch (origin) {
+        case 0: seek = file->f.seek(offset, Common::FS::SeekMode::Set); break;
+        case 1: seek = file->f.seek(offset, Common::FS::SeekMode::Cur); break;
+        case 2: seek = file->f.seek(offset, Common::FS::SeekMode::End); break;
+    }
+    file->m_mutex.unlock();
+    return seek;
+}
 
-long PS4_SYSV_ABI ps4_ftell(FILE* stream) { return std::ftell(stream); }
+long PS4_SYSV_ABI ps4_ftell(FILE* stream) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int handle = _fileno(stream);
+    auto* file = h->getFile(handle - 2);
+    //file->m_mutex.lock();
+    long ftell = file->f.tell();
+    //file->m_mutex.unlock();
+    return ftell;
+}
 
-size_t PS4_SYSV_ABI ps4_fread(void* ptr, size_t size, size_t count, FILE* stream) { return std::fread(ptr, size, count, stream); }
+size_t PS4_SYSV_ABI ps4_fread(void* ptr, size_t size, size_t count, FILE* stream) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int handle = _fileno(stream);
+    auto* file = h->getFile(handle - 2);
+    file->m_mutex.lock();
+    u64 bytes_read = 0;
+    file->f.read(ptr, size,count, &bytes_read);
+    file->m_mutex.unlock();
+    return bytes_read;
+}
 
 int PS4_SYSV_ABI ps4_fclose(FILE* stream) {
     LOG_INFO_IF(log_file_libc, "fclose\n");
-    if (stream != nullptr) {
-        std::fclose(stream);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int handle = _fileno(stream);
+    auto* file = h->getFile(handle - 2);
+    //file->m_mutex.lock();
+    if (file->isOpened) {
+        file->f.close();
     }
+    h->deleteHandle(handle-2);
+    //file->m_mutex.unlock();
     return 0;
 }
 

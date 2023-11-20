@@ -31,6 +31,7 @@ class File {
     bool open(const std::string& path, OpenMode mode = OpenMode::Read);
     bool close();
     bool read(void* data, u64 size, u64* bytes_read) const;
+    bool File::read(void* data, u64 size, u64 count, u64* bytes_read) const; 
     bool write(std::span<const u08> data);
     bool seek(s64 offset, SeekMode mode);
     u64 getFileSize();
