@@ -158,29 +158,17 @@ void Linker::LoadModuleToMemory(Module* m)
                     LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
+            case PT_TLS:
+                m->tls.image_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
+                m->tls.image_size = get_aligned_size(elf_pheader[i]);
+                LOG_INFO_IF(debug_loader, "tls virtual address ={:#x}\n", m->tls.image_virtual_addr);
+                LOG_INFO_IF(debug_loader, "tls image size      ={}\n", m->tls.image_size);
+                break;
 			default:
                 LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 		}
 	}
     LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf.GetElfEntry() + m->base_virtual_addr);
-
-    auto* rt1 = reinterpret_cast<uint8_t*>(m->elf.GetElfEntry() + m->base_virtual_addr);
-    ZyanU64 runtime_address = m->elf.GetElfEntry() + m->base_virtual_addr;
-
-	// Loop over the instructions in our buffer.
-	ZyanUSize offset = 0;
-	ZydisDisassembledInstruction instruction;
-	while (ZYAN_SUCCESS(ZydisDisassembleIntel(
-		/* machine_mode:    */ ZYDIS_MACHINE_MODE_LONG_64,
-		/* runtime_address: */ runtime_address,
-		/* buffer:          */ rt1 + offset,
-		/* length:          */ sizeof(rt1) - offset,
-		/* instruction:     */ &instruction
-	))) {
-		fmt::print("{:#x}" PRIX64 "  {}\n", runtime_address, instruction.text);
-		offset += instruction.info.length;
-		runtime_address += instruction.info.length;
-	}
 }
 
 void Linker::LoadDynamicInfo(Module* m)
@@ -316,7 +304,7 @@ void Linker::LoadDynamicInfo(Module* m)
 			break;
 		case DT_SCE_IMPORT_LIB_ATTR:
 			//The upper 32-bits should contain the module index multiplied by 0x10000. The lower 32-bits should be a constant 0x9.
-			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ......: {:#018x}\n", dyn->d_un.d_val);
 			break;
 		case DT_SCE_ORIGINAL_FILENAME:
             m->dynamic_info.filename = m->dynamic_info.str_table + dyn->d_un.d_val;
@@ -507,7 +495,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
         case R_X86_64_RELATIVE:
             if (symbol != 0)  // should be always zero
             {
-                LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);
+                //LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);//found it openorbis but i am not sure it worth logging
             }
             rel_value = rel_base_virtual_addr + addend;
             rel_isResolved = true;

@@ -43,6 +43,11 @@ struct LibraryInfo {
 	std::string enc_id;
 };
 
+struct PS4ThreadLocal {
+    u64 image_virtual_addr = 0;
+    u64 image_size = 0;
+    u64 handler_virtual_addr = 0;
+};
 struct DynamicModuleInfo {
     void* hash_table = nullptr;
     u64 hash_table_size = 0;
@@ -99,6 +104,8 @@ struct Module {
 
     Loader::SymbolsResolver export_sym;
     Loader::SymbolsResolver import_sym;
+
+    PS4ThreadLocal tls;
 };
 
 class Linker {
