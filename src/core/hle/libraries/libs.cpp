@@ -6,6 +6,7 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libsystemservice/system_service.h"
 #include "core/hle/libraries/libc/libc.h"
+#include "Util/config.h"
 
 namespace Core::Libraries {
 
@@ -16,7 +17,9 @@ void InitHLELibs(Loader::SymbolsResolver* sym) {
     LibUserService::userServiceSymbolsRegister(sym);
     LibPad::padSymbolsRegister(sym);
     LibSystemService::systemServiceSymbolsRegister(sym);
-    LibC::libcSymbolsRegister(sym);
+    if (!Config::isLleLibc()) {
+        LibC::libcSymbolsRegister(sym);
+    }
 }
 
 }  // namespace Core::Libraries

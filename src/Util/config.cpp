@@ -11,10 +11,12 @@ bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
 u32 logLevel = 0;  // TRACE = 0 , DEBUG = 1 , INFO = 2 , WARN = 3 , ERROR = 4 , CRITICAL = 5, OFF = 6
+bool isLibc = true;
 
 bool isNeoMode() { return isNeo; }
 u32 getScreenWidth() { return screenWidth; }
 u32 getScreenHeight() { return screenHeight; }
+bool isLleLibc() { return isLibc; }
 u32 getLogLevel() { return logLevel; }
 
 void load(const std::filesystem::path& path) {
@@ -52,7 +54,15 @@ void load(const std::filesystem::path& path) {
             screenHeight = toml::find_or<toml::integer>(general, "screenHeight", false);
         }
     }
-    int k = 0;
+
+    if (data.contains("LLE")) {
+        auto generalResult = toml::expect<toml::value>(data.at("LLE"));
+        if (generalResult.is_ok()) {
+            auto general = generalResult.unwrap();
+
+            isLibc = toml::find_or<toml::boolean>(general, "libc", true);
+        }
+    }
 }
 void save(const std::filesystem::path& path) {
     toml::basic_value<toml::preserve_comments> data;
@@ -76,6 +86,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logLevel"] = logLevel;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
+    data["LLE"]["libc"] = isLibc;
 
     std::ofstream file(path, std::ios::out);
     file << data;
