@@ -43,6 +43,15 @@ int main(int argc, char* argv[]) {
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
     linker->LoadModule(path);
+    //check if there is a libc.prx in sce_module folder
+    if (Config::isLleLibc()) {
+        std::filesystem::path sce_module_folder = std::string(p.parent_path().string() + "\\sce_module");
+        if (std::filesystem::exists(sce_module_folder)) {
+            for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
+                printf("%s\n", entry.path().string().c_str());
+            }
+        }
+    }
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); }, nullptr);
     Discord::RPC discordRPC;
     discordRPC.init();
