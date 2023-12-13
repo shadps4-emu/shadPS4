@@ -434,4 +434,6 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     BREAKPOINT();  // Hmm we didn't return something...
 }
 
+bool Elf::IsSharedLib() { return m_elf_header.e_type == ET_SCE_DYNAMIC; }
+
 } // namespace Core::Loader

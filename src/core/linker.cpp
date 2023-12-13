@@ -659,8 +659,11 @@ void Linker::Execute() {
     p.argc = 1;
     p.argv[0] = "eboot.bin"; //hmm should be ok?
 
-    const auto& module = m_modules.at(0);
-    run_main_entry(module.elf.GetElfEntry() + module.base_virtual_addr, &p, ProgramExitFunc);
+	for (auto& m : m_modules) {
+        if (!m.elf.IsSharedLib()) {
+            run_main_entry(m.elf.GetElfEntry() + m.base_virtual_addr, &p, ProgramExitFunc);
+        }
+    }
 }
 
 } // namespace Core
