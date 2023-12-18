@@ -30,7 +30,7 @@ public:
 
 	void AddSymbol(const SymbolRes& s, u64 virtual_addr);
     const SymbolRecord* FindSymbol(const SymbolRes& s) const;
-
+    int GetSize();
     static std::string GenerateName(const SymbolRes& s);
 
 private:

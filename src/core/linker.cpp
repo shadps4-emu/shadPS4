@@ -576,7 +576,28 @@ void Linker::Relocate(Module* m)
 	}
 }
 
+template <typename T>
+bool contains(const std::vector<T>& vecObj, const T& element) {
+    auto it = std::find(vecObj.begin(), vecObj.end(), element);
+    return it != vecObj.end();
+}
+
+Module* Linker::FindModuleExp(const ModuleInfo& module, const LibraryInfo& library) {
+    //std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        const auto& export_libs = m.dynamic_info.export_libs;
+        const auto& export_modules = m.dynamic_info.export_modules;
+
+		if (contains(export_libs, library) && contains(export_modules,module)) {
+            return &m;
+        }
+    }
+    return nullptr;
+}
+
 void Linker::Resolve(const std::string& name, int Symtype, Module* m, Loader::SymbolRecord* return_info) {
+    //std::scoped_lock lock{m_mutex};
     const auto ids = Common::SplitString(name, '#');
 	if (ids.size() == 3)  // symbols are 3 parts name , library , module
     {
@@ -596,6 +617,12 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, Loader::Sy
             const Loader::SymbolRecord* rec = nullptr;
             rec = m_hle_symbols.FindSymbol(sr);
 
+			if (rec == nullptr) {
+                if (auto* p = FindModuleExp(*module, *library); p != nullptr && p->export_sym.GetSize()>0) {
+                    rec = p->export_sym.FindSymbol(sr);
+
+                }
+            }
             if (rec != nullptr) {
                 *return_info = *rec;
             } else {

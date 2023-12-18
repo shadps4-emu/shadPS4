@@ -17,6 +17,11 @@ struct EntryParams {
 };
 
 struct ModuleInfo {
+
+    bool operator==(const ModuleInfo& other) const {
+        return version_major == other.version_major && version_minor == other.version_minor && name == other.name;
+    }
+
 	std::string name;
     union {
 		u64 value;
@@ -31,6 +36,9 @@ struct ModuleInfo {
 };
 
 struct LibraryInfo {
+
+    bool operator==(const LibraryInfo& other) const { return version == other.version && name == other.name; }
+
 	std::string name;
     union {
 		u64 value;
@@ -119,6 +127,7 @@ public:
 private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);
 	const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
+    Module* Linker::FindModuleExp(const ModuleInfo& m, const LibraryInfo& l);
 
     std::vector<Module> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
