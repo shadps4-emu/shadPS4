@@ -449,6 +449,7 @@ struct elf_relocation
 constexpr u32 R_X86_64_64 = 1; // Direct 64 bit
 constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
 constexpr u32 R_X86_64_RELATIVE = 8; // Adjust by program base
+constexpr u32 R_X86_64_DTPMOD64 = 16;
 
 namespace Core::Loader {
 
