@@ -61,6 +61,7 @@ Module* Linker::LoadModule(const std::string& elf_name) {
 
     auto& m = m_modules.emplace_back();
     m.linker = this;
+    m.filename = elf_name;
     m.elf.Open(elf_name);
 
     if (m.elf.isElfFile()) {
@@ -592,6 +593,7 @@ static PS4_SYSV_ABI int run_module(uint64_t addr, size_t args, const void* argp,
 }
 
 int Linker::StartModule(Module* m, size_t args, const void* argp, module_func_t func) {
+    LOG_INFO_IF(debug_loader, "Module started : {}\n",m->filename);
     return run_module(m->dynamic_info.init_virtual_addr + m->base_virtual_addr, args, argp, func);
 }
 

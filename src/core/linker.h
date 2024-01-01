@@ -100,7 +100,7 @@ struct Module {
     Loader::Elf elf;
     u64 aligned_base_size = 0;
     u64 base_virtual_addr = 0; // Base virtual address
-
+    std::string filename;
     Linker* linker = nullptr;
 
     std::vector<u08> m_dynamic;
