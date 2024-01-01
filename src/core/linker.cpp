@@ -66,7 +66,6 @@ Module* Linker::LoadModule(const std::string& elf_name) {
         LoadModuleToMemory(&m);
         LoadDynamicInfo(&m);
         LoadSymbols(&m);
-        Relocate(&m);
     } else {
         m_modules.pop_back();
         return nullptr;  // It is not a valid elf file //TODO check it why!
@@ -491,6 +490,11 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
     }
 }
 
+void Linker::RelocateAll() {
+    for (auto& m : m_modules) {
+        Relocate(&m);
+    }
+}
 void Linker::Relocate(Module* m) {
     u32 idx = 0;
     for (auto* rel = m->dynamic_info.relocation_table;
@@ -577,6 +581,27 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, Loader::Sy
 using exit_func_t = PS4_SYSV_ABI void (*)();
 using entry_func_t = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
 
+
+using module_ini_func_t = PS4_SYSV_ABI int (*)(size_t args, const void* argp, module_func_t func);
+
+static PS4_SYSV_ABI int run_module(uint64_t addr, size_t args, const void* argp, module_func_t func) {
+    return reinterpret_cast<module_ini_func_t>(addr)(args, argp, func);
+}
+
+int Linker::StartModule(Module* m, size_t args, const void* argp, module_func_t func) {
+    return run_module(m->dynamic_info.init_virtual_addr + m->base_virtual_addr, args, argp, func);
+}
+
+void Linker::StartAllModules() {
+    std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (m.elf.IsSharedLib()) {
+            StartModule(&m, 0, nullptr, nullptr);
+        }
+    }
+
+}
 static PS4_SYSV_ABI void ProgramExitFunc() { fmt::print("exit function called\n"); }
 
 static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
@@ -604,6 +629,8 @@ static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func)
 
 void Linker::Execute() {
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
+    RelocateAll();
+    StartAllModules();
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin";  // hmm should be ok?
