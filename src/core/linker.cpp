@@ -15,6 +15,7 @@ namespace Core {
 constexpr bool debug_loader = true;
 
 static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
+constexpr u64 CODE_BASE_INCR = 0x010000000u;
 
 static u64 get_aligned_size(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1) : phdr.p_memsz);
@@ -89,6 +90,8 @@ void Linker::LoadModuleToMemory(Module* m) {
     LOG_INFO_IF(debug_loader, "base_virtual_addr ......: {:#018x}\n", m->base_virtual_addr);
     LOG_INFO_IF(debug_loader, "base_size ..............: {:#018x}\n", base_size);
     LOG_INFO_IF(debug_loader, "aligned_base_size ......: {:#018x}\n", m->aligned_base_size);
+
+    g_load_addr += CODE_BASE_INCR * (1 + m->aligned_base_size / CODE_BASE_INCR);
 
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
         switch (elf_pheader[i].p_type) {
