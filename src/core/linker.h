@@ -93,6 +93,7 @@ struct DynamicModuleInfo {
     std::vector<LibraryInfo> export_libs;
 
     std::string filename; // Filename with absolute path
+
 };
 
 // This struct keeps neccesary info about loaded modules. Main executeable is included too as well
@@ -109,6 +110,8 @@ struct Module {
 
     Loader::SymbolsResolver export_sym;
     Loader::SymbolsResolver import_sym;
+
+     u64 proc_param_virtual_addr = 0;
 };
 
 class Linker {
@@ -127,6 +130,7 @@ public:
     void RelocateAll();
     int StartModule(Module* m, size_t args, const void* argp, module_func_t func);
     void StartAllModules();
+    u64 GetProcParam();
 
 private:
 	const ModuleInfo* FindModule(const Module& m, const std::string& id);

@@ -130,6 +130,7 @@ void Linker::LoadModuleToMemory(Module* m) {
                     LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
                 }
                 break;
+            case PT_SCE_PROCPARAM: m->proc_param_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr; break;
             default: LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
         }
     }
@@ -607,6 +608,17 @@ void Linker::StartAllModules() {
     }
 
 }
+u64 Linker::GetProcParam() {
+    //std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (!m.elf.IsSharedLib()) {
+            return m.proc_param_virtual_addr;
+        }
+    }
+    return 0;
+}
+
 static PS4_SYSV_ABI void ProgramExitFunc() { fmt::print("exit function called\n"); }
 
 static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {

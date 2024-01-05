@@ -11,6 +11,7 @@
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"
 #include "core/loader/elf.h"
+#include "core/linker.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -33,6 +34,14 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) { BREAKPOINT(); }
 static thread_local int libc_error;
 int* PS4_SYSV_ABI __Error() { return &libc_error; }
 
+static void* PS4_SYSV_ABI sceKernelGetProcParam() {
+    PRINT_FUNCTION_NAME();
+
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+
+    return reinterpret_cast<void*>(linker->GetProcParam());
+}
+
 void LibKernel_Register(Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -49,6 +58,8 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, Kernel::sceKernelIsNeoMode);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
+    LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
+
 
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
