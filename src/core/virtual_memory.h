@@ -25,4 +25,14 @@ bool memory_protect(u64 address, u64 size, MemoryMode mode, MemoryMode* old_mode
 bool memory_flush(u64 address, u64 size);
 bool memory_patch(u64 vaddr, u64 value);
 
+inline bool containsExecuteMode(MemoryMode mode) {
+    switch (mode) {
+        case MemoryMode::Execute: return true;
+        case MemoryMode::ExecuteRead: return true;
+        case MemoryMode::ExecuteWrite: return true;
+        case MemoryMode::ExecuteReadWrite: return true;
+        default: return false;
+    }
+}
+
 }  // namespace VirtualMemory

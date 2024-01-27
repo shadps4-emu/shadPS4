@@ -19,8 +19,38 @@ void Flush() {
     spdlog::details::registry::instance().flush_all();
 }
 
+thread_local uint8_t TLS[1024];
+
+uint64_t tls_access(int64_t tls_offset) {
+    if (tls_offset == 0) {
+        return (uint64_t)TLS;
+    }
+}
+
 #ifdef _WIN64
 static LONG WINAPI ExceptionHandler(PEXCEPTION_POINTERS pExp) noexcept {
+    auto orig_rip = pExp->ContextRecord->Rip;
+    while (*(uint8_t *)pExp->ContextRecord->Rip == 0x66) pExp->ContextRecord->Rip++;
+
+    if (*(uint8_t *)pExp->ContextRecord->Rip == 0xcd) {
+        int reg = *(uint8_t *)(pExp->ContextRecord->Rip + 1) - 0x80;
+        int sizes = *(uint8_t *)(pExp->ContextRecord->Rip + 2);
+        int pattern_size = sizes & 0xF;
+        int imm_size = sizes >> 4;
+
+        int64_t tls_offset;
+        if (imm_size == 4)
+            tls_offset = *(int32_t *)(pExp->ContextRecord->Rip + pattern_size);
+        else
+            tls_offset = *(int64_t *)(pExp->ContextRecord->Rip + pattern_size);
+
+        (&pExp->ContextRecord->Rax)[reg] = tls_access(tls_offset); /* TLS_ACCESS */
+        pExp->ContextRecord->Rip += pattern_size + imm_size;
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    pExp->ContextRecord->Rip = orig_rip;
     const u32 ec = pExp->ExceptionRecord->ExceptionCode;
     switch (ec) {
         case EXCEPTION_ACCESS_VIOLATION: {

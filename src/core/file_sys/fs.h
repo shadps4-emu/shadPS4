@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "common/fs_file.h"
+#include <common/io_file.h>
 
 namespace Core::FileSys {
 
@@ -32,7 +33,7 @@ struct File {
     std::atomic_bool isDirectory;
     std::string m_host_name;
     std::string m_guest_name;
-    Common::FS::File f;
+    IOFile f;
     //std::vector<Common::FS::DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;

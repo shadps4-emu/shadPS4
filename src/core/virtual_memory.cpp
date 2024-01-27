@@ -1,5 +1,6 @@
-#include "common/log.h"
 #include "core/virtual_memory.h"
+
+#include "common/log.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -107,8 +108,7 @@ bool memory_patch(u64 vaddr, u64 value) {
     memory_protect(vaddr, 8, old_mode, nullptr);
 
     // if mode is executable flush it so insure that cpu finds it
-    if ((old_mode == MemoryMode::Execute || old_mode == MemoryMode::ExecuteRead || old_mode == MemoryMode::ExecuteWrite ||
-         old_mode == MemoryMode::ExecuteReadWrite)) {
+    if (containsExecuteMode(old_mode)) {
         memory_flush(vaddr, 8);
     }
 

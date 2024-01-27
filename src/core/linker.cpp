@@ -95,8 +95,62 @@ Module* Linker::FindModule(/*u32 id*/)
     return &m_modules[0];
 }
 
-void Linker::LoadModuleToMemory(Module* m)
-{
+struct TLSPattern{
+    uint8_t pattern[5];
+    uint8_t pattern_size;
+    uint8_t imm_size;
+    uint8_t target_reg;
+};
+
+constexpr TLSPattern tls_patterns[] = {
+    {{0x64, 0x48, 0xA1}, 3, 8, 0},			   // 64 48 A1 | 00 00 00 00 00 00 00 00 # mov rax, qword ptr fs:[64b imm]
+
+    {{0x64, 0x48, 0x8B, 0x4, 0x25}, 5, 4, 0},  // 64 48 8B 04 25 | 00 00 00 00 # mov rax,qword ptr fs:[0]
+    {{0x64, 0x48, 0x8B, 0xC, 0x25}, 5, 4, 1},  // rcx
+    {{0x64, 0x48, 0x8B, 0x14, 0x25}, 5, 4, 2}, // rdx
+    {{0x64, 0x48, 0x8B, 0x1C, 0x25}, 5, 4, 3}, // rbx
+    {{0x64, 0x48, 0x8B, 0x24, 0x25}, 5, 4, 4}, // rsp
+    {{0x64, 0x48, 0x8B, 0x2C, 0x25}, 5, 4, 5}, // rbp
+    {{0x64, 0x48, 0x8B, 0x34, 0x25}, 5, 4, 6}, // rsi
+    {{0x64, 0x48, 0x8B, 0x3C, 0x25}, 5, 4, 7}, // rdi
+    {{0x64, 0x4C, 0x8B, 0x4, 0x25}, 5, 4, 8},  // r8
+    {{0x64, 0x4C, 0x8B, 0xC, 0x25}, 5, 4, 9},  // r9
+    {{0x64, 0x4C, 0x8B, 0x14, 0x25}, 5, 4, 10},// r10
+    {{0x64, 0x4C, 0x8B, 0x1C, 0x25}, 5, 4, 11},// r11
+    {{0x64, 0x4C, 0x8B, 0x24, 0x25}, 5, 4, 12},// r12
+    {{0x64, 0x4C, 0x8B, 0x2C, 0x25}, 5, 4, 13},// r13
+    {{0x64, 0x4C, 0x8B, 0x34, 0x25}, 5, 4, 14},// r14
+    {{0x64, 0x4C, 0x8B, 0x3C, 0x25}, 5, 4, 15},// r15
+};
+
+void PatchTLS(u64 segment_addr, u64 segment_size) {
+    uint8_t* code = (uint8_t*)segment_addr;
+    auto remaining_size = segment_size;
+
+    while (remaining_size) {
+        for (auto& tls_pattern : tls_patterns) {
+            auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
+            if (remaining_size >= total_size) {
+                if (memcmp(code, tls_pattern.pattern, tls_pattern.pattern_size) == 0) {
+                    if (tls_pattern.imm_size == 4)
+						printf("PATTERN32 FOUND @ %p, reg: %d offset: %X\n", code, tls_pattern.target_reg, *(uint32_t*)(code + tls_pattern.pattern_size));
+                    else
+						printf("PATTERN64 FOUND @ %p, reg: %d offset: %lX\n", code, tls_pattern.target_reg, *(uint64_t*)(code + tls_pattern.pattern_size));
+                    code[0] = 0xcd;
+                    code[1] = 0x80 + tls_pattern.target_reg;
+                    code[2] = tls_pattern.pattern_size | (tls_pattern.imm_size << 4);
+                    code += total_size - 1;
+                    remaining_size -= total_size - 1;
+                    break;
+                }
+            }
+        }
+        code++;
+        remaining_size--;
+    }
+}
+
+void Linker::LoadModuleToMemory(Module* m) {
 	//get elf header, program header
     const auto elf_header = m->elf.GetElfHeader();
     const auto elf_pheader = m->elf.GetProgramHeader();
@@ -130,6 +184,10 @@ void Linker::LoadModuleToMemory(Module* m)
 					LOG_INFO_IF(debug_loader, "segment_mode ..........: {}\n", segment_mode);
 					
                     m->elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
+
+					if (elf_pheader[i].p_flags & PF_EXEC) {
+                        PatchTLS(segment_addr, segment_file_size);
+					}
 				}
 				else
 				{
@@ -158,29 +216,17 @@ void Linker::LoadModuleToMemory(Module* m)
                     LOG_ERROR_IF(debug_loader, "p_filesz==0 in type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 				}
 				break;
+            case PT_TLS:
+                m->tls.image_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
+                m->tls.image_size = get_aligned_size(elf_pheader[i]);
+                LOG_INFO_IF(debug_loader, "tls virtual address ={:#x}\n", m->tls.image_virtual_addr);
+                LOG_INFO_IF(debug_loader, "tls image size      ={}\n", m->tls.image_size);
+                break;
 			default:
                 LOG_ERROR_IF(debug_loader, "Unimplemented type {}\n", m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
 		}
 	}
     LOG_INFO_IF(debug_loader, "program entry addr ..........: {:#018x}\n", m->elf.GetElfEntry() + m->base_virtual_addr);
-
-    auto* rt1 = reinterpret_cast<uint8_t*>(m->elf.GetElfEntry() + m->base_virtual_addr);
-    ZyanU64 runtime_address = m->elf.GetElfEntry() + m->base_virtual_addr;
-
-	// Loop over the instructions in our buffer.
-	ZyanUSize offset = 0;
-	ZydisDisassembledInstruction instruction;
-	while (ZYAN_SUCCESS(ZydisDisassembleIntel(
-		/* machine_mode:    */ ZYDIS_MACHINE_MODE_LONG_64,
-		/* runtime_address: */ runtime_address,
-		/* buffer:          */ rt1 + offset,
-		/* length:          */ sizeof(rt1) - offset,
-		/* instruction:     */ &instruction
-	))) {
-		fmt::print("{:#x}" PRIX64 "  {}\n", runtime_address, instruction.text);
-		offset += instruction.info.length;
-		runtime_address += instruction.info.length;
-	}
 }
 
 void Linker::LoadDynamicInfo(Module* m)
@@ -316,7 +362,7 @@ void Linker::LoadDynamicInfo(Module* m)
 			break;
 		case DT_SCE_IMPORT_LIB_ATTR:
 			//The upper 32-bits should contain the module index multiplied by 0x10000. The lower 32-bits should be a constant 0x9.
-			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ..........: {:#018x}\n", dyn->d_un.d_val);
+			LOG_INFO_IF(debug_loader, "unsupported DT_SCE_IMPORT_LIB_ATTR value = ......: {:#018x}\n", dyn->d_un.d_val);
 			break;
 		case DT_SCE_ORIGINAL_FILENAME:
             m->dynamic_info.filename = m->dynamic_info.str_table + dyn->d_un.d_val;
@@ -507,7 +553,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
         case R_X86_64_RELATIVE:
             if (symbol != 0)  // should be always zero
             {
-                LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);
+                //LOG_INFO_IF(debug_loader, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type, symbol);//found it openorbis but i am not sure it worth logging
             }
             rel_value = rel_base_virtual_addr + addend;
             rel_isResolved = true;
