@@ -147,7 +147,7 @@ add_executable(shadps4
     src/emuTimer.h
     src/core/hle/libraries/libkernel/time_management.cpp
     src/core/hle/libraries/libkernel/time_management.h
-)
+ "src/common/io_file.cpp" "src/common/io_file.h")
 
 create_target_directory_groups(shadps4)
 
