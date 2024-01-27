@@ -29,6 +29,9 @@ uint64_t tls_access(int64_t tls_offset) {
 
 #ifdef _WIN64
 static LONG WINAPI ExceptionHandler(PEXCEPTION_POINTERS pExp) noexcept {
+    auto orig_rip = pExp->ContextRecord->Rip;
+    while (*(uint8_t *)pExp->ContextRecord->Rip == 0x66) pExp->ContextRecord->Rip++;
+
     if (*(uint8_t *)pExp->ContextRecord->Rip == 0xcd) {
         int reg = *(uint8_t *)(pExp->ContextRecord->Rip + 1) - 0x80;
         int sizes = *(uint8_t *)(pExp->ContextRecord->Rip + 2);
@@ -47,6 +50,7 @@ static LONG WINAPI ExceptionHandler(PEXCEPTION_POINTERS pExp) noexcept {
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
+    pExp->ContextRecord->Rip = orig_rip;
     const u32 ec = pExp->ExceptionRecord->ExceptionCode;
     switch (ec) {
         case EXCEPTION_ACCESS_VIOLATION: {
