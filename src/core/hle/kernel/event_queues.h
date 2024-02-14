@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/hle/kernel/objects/event_queue.h"
+#include "core/hle/kernel/Objects/event_queue.h"
 
 namespace Core::Kernel {
 

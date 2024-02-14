@@ -4,35 +4,35 @@
 namespace Core::Libraries::LibC {
 
 float PS4_SYSV_ABI ps4_atan2f(float y, float x) {
-    return std::atan2f(y, x);
+    return atan2f(y, x);
 }
 
 float PS4_SYSV_ABI ps4_acosf(float num) {
-    return std::acosf(num);
+    return acosf(num);
 }
 
 float PS4_SYSV_ABI ps4_tanf(float num) {
-    return std::tanf(num);
+    return tanf(num);
 }
 
 float PS4_SYSV_ABI ps4_asinf(float num) {
-    return std::asinf(num);
+    return asinf(num);
 }
 
 double PS4_SYSV_ABI ps4_pow(double base, double exponent) {
-    return std::pow(base, exponent);
+    return pow(base, exponent);
 }
 
 double PS4_SYSV_ABI ps4__Sin(double x) {
-    return std::sin(x);
+    return sin(x);
 }
 
 float PS4_SYSV_ABI ps4__Fsin(float arg) {
-    return std::sinf(arg);
+    return sinf(arg);
 }
 
 double PS4_SYSV_ABI ps4_exp2(double arg) {
-    return std::exp2(arg);
+    return exp2(arg);
 }
 
 } // namespace Core::Libraries::LibC

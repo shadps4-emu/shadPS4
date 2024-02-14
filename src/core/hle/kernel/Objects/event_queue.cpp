@@ -1,6 +1,5 @@
 #include "common/debug.h"
-#include "common/timer.h"
-#include "core/hle/kernel/objects/event_queue.h"
+#include "core/hle/kernel/Objects/event_queue.h"
 
 namespace Core::Kernel {
 
@@ -24,28 +23,19 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
 
 int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     std::unique_lock lock{m_mutex};
+    int ret = 0;
 
-    u32 timeElapsed = 0;
-    Common::Timer t;
-    t.Start();
+    const auto predicate = [&] {
+        ret = getTriggeredEvents(ev, num);
+        return ret > 0;
+    };
 
-    for (;;) {
-        int ret = getTriggeredEvents(ev, num);
-
-        if (ret > 0 || (timeElapsed >= micros && micros != 0)) {
-            return ret;
-        }
-
-        if (micros == 0) {
-            m_cond.wait(lock);
-        } else {
-            m_cond.wait_for(lock, std::chrono::microseconds(micros - timeElapsed));
-        }
-
-        timeElapsed = static_cast<uint32_t>(t.GetTimeSec() * 1000000.0);
+    if (micros == 0) {
+        m_cond.wait(lock, predicate);
+    } else {
+        m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
-
-    return 0;
+    return ret;
 }
 
 bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {

@@ -33,11 +33,10 @@
 	path = third-party/toml11
 	url = https://github.com/ToruNiina/toml11
 	branch = master
-[submodule "third-party/vulkan"]
-	path = third-party/vulkan
-	url = https://github.com/shadps4/vulkan.git
-	branch = main
 [submodule "third-party/xxHash"]
 	path = third-party/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
 	branch = dev
+[submodule "third-party/vulkan"]
+	path = third-party/vulkan
+	url = https://github.com/GPUCode/vulkan

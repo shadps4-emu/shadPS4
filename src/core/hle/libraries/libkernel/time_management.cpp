@@ -1,27 +1,31 @@
-#include "common/timer.h"
+#include "common/native_clock.h"
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"
-#include "emuTimer.h"
 
 namespace Core::Libraries::LibKernel {
 
+static u64 initial_ptc;
+static std::unique_ptr<Common::NativeClock> clock;
+
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    return static_cast<u64>(Emulator::emuTimer::getTimeMsec() * 1000.0);  // return time in microseconds
+    return clock->GetProcessTimeUS();
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return Emulator::emuTimer::getTimeCounter();
+    return clock->GetUptime() - initial_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
-    return Emulator::emuTimer::getTimeFrequency();
+    return clock->GetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    return Common::Timer::getQueryPerformanceCounter();
+    return clock->GetUptime();
 }
 
 void timeSymbolsRegister(Loader::SymbolsResolver* sym) {
+    clock = std::make_unique<Common::NativeClock>();
+    initial_ptc = clock->GetUptime();
     LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime); 
     LIB_FUNCTION("fgxnMeTNUtY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounter);
     LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounterFrequency);

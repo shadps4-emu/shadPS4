@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 using s08 = std::int8_t;
@@ -15,9 +16,12 @@ using u64 = std::uint64_t;
 using f32 = float;
 using f64 = double;
 
+using u128 = std::array<std::uint64_t, 2>;
+static_assert(sizeof(u128) == 16, "u128 must be 128 bits wide");
+
 #define PS4_SYSV_ABI __attribute__((sysv_abi))
 
 // UDLs for memory size values
-constexpr u64 operator""_KB(u64 x) { return 1024ULL * x; }
-constexpr u64 operator""_MB(u64 x) { return 1024_KB * x; }
-constexpr u64 operator""_GB(u64 x) { return 1024_MB * x; }
+constexpr unsigned long long operator""_KB(unsigned long long x) { return 1024ULL * x; }
+constexpr unsigned long long operator""_MB(unsigned long long x) { return 1024_KB * x; }
+constexpr unsigned long long operator""_GB(unsigned long long x) { return 1024_MB * x; }

@@ -91,7 +91,7 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
 
     ObjInfo objInfo = {};
 
-    // copy parameters from info to obj
+    // Copy parameters from info to obj
     for (int i = 0; i < 8; i++) {
         objInfo.obj_params[i] = info.obj_params[i];
     }

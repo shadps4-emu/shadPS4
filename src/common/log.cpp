@@ -109,7 +109,11 @@ int Init(bool use_stdout) {
     if (use_stdout) {
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
     }
+#ifdef _WIN64
     sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(L"shadps4.txt", true));
+#else
+    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("shadps4.txt", true));
+#endif
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("shadps4 logger", begin(sinks), end(sinks)));
     auto f = std::make_unique<spdlog::pattern_formatter>("%^|%L|: %v%$", spdlog::pattern_time_type::local, std::string(""));  // disable eol
     spdlog::set_formatter(std::move(f));

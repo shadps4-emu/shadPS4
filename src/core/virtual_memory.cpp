@@ -79,7 +79,8 @@ bool memory_protect(u64 address, u64 size, MemoryMode mode, MemoryMode* old_mode
     }
     return true;
 #else
-#error Unimplement memory_protect function
+    int ret = mprotect(reinterpret_cast<void*>(address), size, convertMemoryMode(mode));
+    return true;
 #endif
 }
 
@@ -117,6 +118,7 @@ bool memory_patch(u64 vaddr, u64 value) {
 static u64 AlignUp(u64 pos, u64 align) { return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos); }
 
 u64 memory_alloc_aligned(u64 address, u64 size, MemoryMode mode, u64 alignment) {
+#ifdef _WIN64
     // try allocate aligned address inside user area
     MEM_ADDRESS_REQUIREMENTS req{};
     MEM_EXTENDED_PARAMETER param{};
@@ -134,5 +136,13 @@ u64 memory_alloc_aligned(u64 address, u64 size, MemoryMode mode, u64 alignment) 
         LOG_ERROR_IF(true, "VirtualAlloc2() failed: 0x{:X}\n", err);
     }
     return ptr;
+#else
+    void* hint_address = reinterpret_cast<void*>(AlignUp(address, alignment));
+    void* ptr = mmap(hint_address, size, convertMemoryMode(mode), MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (ptr == MAP_FAILED) {
+        std::abort();
+    }
+    return reinterpret_cast<u64>(ptr);
+#endif
 }
 }  // namespace VirtualMemory

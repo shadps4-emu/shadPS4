@@ -30,8 +30,8 @@ endfunction()
 add_subdirectory(third-party)
 include_directories(src)
 
-set(LIBC_SOURCES src/core/hle/libraries/libc/Libc.cpp
-                 src/core/hle/libraries/libc/Libc.h
+set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
+                 src/core/hle/libraries/libc/libc.h
                  src/core/hle/libraries/libc/printf.h
                  src/core/hle/libraries/libc/va_ctx.h
                  src/core/hle/libraries/libc/libc_cxa.cpp
@@ -77,12 +77,15 @@ add_executable(shadps4
     src/common/fs_file.h
     src/common/log.cpp
     src/common/log.h
+    src/common/native_clock.cpp
+    src/common/native_clock.h
+    src/common/rdtsc.cpp
+    src/common/rdtsc.h
     src/common/singleton.h
     src/common/string_util.cpp
     src/common/string_util.h
-    src/common/timer.cpp
-    src/common/timer.h
     src/common/types.h
+    src/common/uint128.h
     src/common/version.h
     ${LIBC_SOURCES}
     ${USERSERVICE_SOURCES}
@@ -143,8 +146,6 @@ add_executable(shadps4
     src/core/PS4/HLE/Graphics/graphics_render.h
     src/core/PS4/GPU/tile_manager.cpp
     src/core/PS4/GPU/tile_manager.h
-    src/emuTimer.cpp
-    src/emuTimer.h
     src/core/hle/libraries/libkernel/time_management.cpp
     src/core/hle/libraries/libkernel/time_management.h
  "src/common/io_file.cpp" "src/common/io_file.h")
@@ -161,6 +162,8 @@ add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:SDL3-shared>
      $<TARGET_FILE_DIR:shadps4>)
-add_custom_command(TARGET shadps4 POST_BUILD
+if (WIN32)
+ add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      "${PROJECT_SOURCE_DIR}/third-party/winpthread/bin/libwinpthread-1.dll" $<TARGET_FILE_DIR:shadps4>)
+endif()

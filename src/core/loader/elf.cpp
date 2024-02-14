@@ -5,7 +5,7 @@
 
 namespace Core::Loader {
 
-constexpr bool log_file_loader = true;  // disable it to disable logging
+constexpr bool log_file_loader = false;  // disable it to disable logging
 
 static std::string_view getProgramTypeName(program_type_es type) {
     switch (type) {
