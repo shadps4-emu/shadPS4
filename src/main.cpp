@@ -6,17 +6,17 @@
 #include <cstdio>
 #include <thread>
 
+#include <core/hle/libraries/libkernel/thread_management.h>
 #include "Util/config.h"
 #include "common/discord.h"
 #include "common/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
+#include "core/file_sys/fs.h"
 #include "core/hle/libraries/libs.h"
 #include "core/linker.h"
 #include "emulator.h"
-#include <core/hle/libraries/libkernel/thread_management.h>
-#include "core/file_sys/fs.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
     linker->LoadModule(path);
-    std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); }, nullptr);
+    std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
+                            nullptr);
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");

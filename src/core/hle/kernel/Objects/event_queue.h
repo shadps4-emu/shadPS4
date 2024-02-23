@@ -1,23 +1,23 @@
 #pragma once
 
+#include <condition_variable>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <condition_variable>
 #include "common/types.h"
 
 namespace Core::Kernel {
 
 constexpr s16 EVFILT_READ = -1;
 constexpr s16 EVFILT_WRITE = -2;
-constexpr s16 EVFILT_AIO = -3;     // attached to aio requests
-constexpr s16 EVFILT_VNODE = -4;   // attached to vnodes
-constexpr s16 EVFILT_PROC = -5;    // attached to struct proc
-constexpr s16 EVFILT_SIGNAL = -6;  // attached to struct proc
-constexpr s16 EVFILT_TIMER = -7;   // timers
-constexpr s16 EVFILT_FS = -9;      // filesystem events
-constexpr s16 EVFILT_LIO = -10;    // attached to lio requests
-constexpr s16 EVFILT_USER = -11;   // User events
+constexpr s16 EVFILT_AIO = -3;    // attached to aio requests
+constexpr s16 EVFILT_VNODE = -4;  // attached to vnodes
+constexpr s16 EVFILT_PROC = -5;   // attached to struct proc
+constexpr s16 EVFILT_SIGNAL = -6; // attached to struct proc
+constexpr s16 EVFILT_TIMER = -7;  // timers
+constexpr s16 EVFILT_FS = -9;     // filesystem events
+constexpr s16 EVFILT_LIO = -10;   // attached to lio requests
+constexpr s16 EVFILT_USER = -11;  // User events
 constexpr s16 EVFILT_POLLING = -12;
 constexpr s16 EVFILT_VIDEO_OUT = -13;
 constexpr s16 EVFILT_GRAPHICS_CORE = -14;
@@ -61,17 +61,20 @@ struct EqueueEvent {
 };
 
 class EqueueInternal {
-  public:  
+public:
     EqueueInternal() = default;
     virtual ~EqueueInternal();
-    void setName(const std::string& m_name) { this->m_name = m_name; }
+    void setName(const std::string& m_name) {
+        this->m_name = m_name;
+    }
     int addEvent(const EqueueEvent& event);
     int waitForEvents(SceKernelEvent* ev, int num, u32 micros);
     bool triggerEvent(u64 ident, s16 filter, void* trigger_data);
     int getTriggeredEvents(SceKernelEvent* ev, int num);
-  private:
+
+private:
     std::string m_name;
-    std::mutex m_mutex; 
+    std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
     std::condition_variable m_cond;
 };

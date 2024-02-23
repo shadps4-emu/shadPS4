@@ -5,7 +5,7 @@
 
 namespace Common {
 
-std::vector<std::string> SplitString(const std::string &str, char delimiter) {
+std::vector<std::string> SplitString(const std::string& str, char delimiter) {
     std::istringstream iss(str);
     std::vector<std::string> output(1);
 

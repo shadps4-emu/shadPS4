@@ -26,10 +26,11 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 void timeSymbolsRegister(Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
-    LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime); 
+    LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime);
     LIB_FUNCTION("fgxnMeTNUtY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounter);
-    LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounterFrequency);
+    LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelGetProcessTimeCounterFrequency);
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
 }
 
-}  // namespace Core::Libraries::LibKernel
+} // namespace Core::Libraries::LibKernel

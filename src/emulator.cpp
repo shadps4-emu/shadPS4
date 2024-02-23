@@ -1,12 +1,12 @@
 #include <fmt/core.h>
 #include <vulkan_util.h>
+#include "Emulator/Host/controller.h"
 #include "common/singleton.h"
 #include "common/version.h"
-#include "emulator.h"
 #include "core/PS4/HLE/Graphics/graphics_render.h"
-#include "Emulator/Host/controller.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libpad/pad.h"
+#include "emulator.h"
 
 namespace Emu {
 
@@ -46,17 +46,19 @@ static void CreateSdlWindow(WindowCtx* ctx) {
         std::exit(0);
     }
     std::string title = "shadps4 v" + std::string(Common::VERSION);
-    ctx->m_window = SDL_CreateWindowWithPosition(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-                                                 (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN)));
+    ctx->m_window = SDL_CreateWindowWithPosition(
+        title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+        (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN)));
 
-    ctx->is_window_hidden = true;  // hide window until we need to show something (should draw something in buffers)
+    ctx->is_window_hidden =
+        true; // hide window until we need to show something (should draw something in buffers)
 
     if (ctx->m_window == nullptr) {
         fmt::print("{}\n", SDL_GetError());
         std::exit(0);
     }
 
-    SDL_SetWindowResizable(ctx->m_window, SDL_FALSE);  // we don't support resizable atm
+    SDL_SetWindowResizable(ctx->m_window, SDL_FALSE); // we don't support resizable atm
 }
 static void update() {
     static double lag = 0.0;
@@ -83,7 +85,8 @@ static void calculateFps(double game_time_s) {
 
     m_fps_frames_num++;
     if (m_current_time_seconds - m_fps_start_time > 0.25f) {
-        m_current_fps = static_cast<double>(m_fps_frames_num) / (m_current_time_seconds - m_fps_start_time);
+        m_current_fps =
+            static_cast<double>(m_fps_frames_num) / (m_current_time_seconds - m_fps_start_time);
         m_fps_frames_num = 0;
         m_fps_start_time = m_current_time_seconds;
     }
@@ -110,27 +113,35 @@ void emuRun() {
         SDL_Event event;
         if (SDL_PollEvent(&event) != 0) {
             switch (event.type) {
-                case SDL_EVENT_QUIT: m_emu_needs_exit = true; break;
+            case SDL_EVENT_QUIT:
+                m_emu_needs_exit = true;
+                break;
 
-                case SDL_EVENT_TERMINATING: m_emu_needs_exit = true; break;
+            case SDL_EVENT_TERMINATING:
+                m_emu_needs_exit = true;
+                break;
 
-                case SDL_EVENT_WILL_ENTER_BACKGROUND: break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:
+                break;
 
-                case SDL_EVENT_DID_ENTER_BACKGROUND: break;
+            case SDL_EVENT_DID_ENTER_BACKGROUND:
+                break;
 
-                case SDL_EVENT_WILL_ENTER_FOREGROUND: break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND:
+                break;
 
-                case SDL_EVENT_DID_ENTER_FOREGROUND: break;
+            case SDL_EVENT_DID_ENTER_FOREGROUND:
+                break;
 
-                case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP:
-                    if (event.type == SDL_EVENT_KEY_DOWN){
-                        if (event.key.keysym.sym == SDLK_p) {
-                            m_game_is_paused = !m_game_is_paused;
-                        }
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
+                if (event.type == SDL_EVENT_KEY_DOWN) {
+                    if (event.key.keysym.sym == SDLK_p) {
+                        m_game_is_paused = !m_game_is_paused;
                     }
-                    keyboardEvent(&event);
-                    break;
+                }
+                keyboardEvent(&event);
+                break;
             }
             continue;
         }
@@ -138,27 +149,35 @@ void emuRun() {
             SDL_WaitEvent(&event);
 
             switch (event.type) {
-                case SDL_EVENT_QUIT: m_emu_needs_exit = true; break;
+            case SDL_EVENT_QUIT:
+                m_emu_needs_exit = true;
+                break;
 
-                case SDL_EVENT_TERMINATING: m_emu_needs_exit = true; break;
+            case SDL_EVENT_TERMINATING:
+                m_emu_needs_exit = true;
+                break;
 
-                case SDL_EVENT_WILL_ENTER_BACKGROUND: break;
+            case SDL_EVENT_WILL_ENTER_BACKGROUND:
+                break;
 
-                case SDL_EVENT_DID_ENTER_BACKGROUND: break;
+            case SDL_EVENT_DID_ENTER_BACKGROUND:
+                break;
 
-                case SDL_EVENT_WILL_ENTER_FOREGROUND: break;
+            case SDL_EVENT_WILL_ENTER_FOREGROUND:
+                break;
 
-                case SDL_EVENT_DID_ENTER_FOREGROUND: break;
+            case SDL_EVENT_DID_ENTER_FOREGROUND:
+                break;
 
-                case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP:
-                    if (event.type == SDL_EVENT_KEY_DOWN) {
-                        if (event.key.keysym.sym == SDLK_p) {
-                            m_game_is_paused = !m_game_is_paused;
-                        }
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
+                if (event.type == SDL_EVENT_KEY_DOWN) {
+                    if (event.key.keysym.sym == SDLK_p) {
+                        m_game_is_paused = !m_game_is_paused;
                     }
-                    keyboardEvent(&event);
-                    break;
+                }
+                keyboardEvent(&event);
+                break;
             }
             exit_loop = m_emu_needs_exit;
             continue;
@@ -169,8 +188,8 @@ void emuRun() {
                 update();
             }
             if (!exit_loop) {
-                if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) {  // flip every 0.1 sec
-                    calculateFps(0); // TODO: Proper fps
+                if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) { // flip every 0.1 sec
+                    calculateFps(0);                                       // TODO: Proper fps
                 }
             }
         }
@@ -199,7 +218,8 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 
     window_ctx->swapchain.current_index = static_cast<u32>(-1);
 
-    auto result = vkAcquireNextImageKHR(window_ctx->m_graphic_ctx.m_device, window_ctx->swapchain.swapchain, UINT64_MAX, nullptr,
+    auto result = vkAcquireNextImageKHR(window_ctx->m_graphic_ctx.m_device,
+                                        window_ctx->swapchain.swapchain, UINT64_MAX, nullptr,
                                         VK_NULL_HANDLE, &window_ctx->swapchain.current_index);
 
     if (result != VK_SUCCESS) {
@@ -241,8 +261,10 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     pre_present_barrier.subresourceRange.levelCount = 1;
     pre_present_barrier.subresourceRange.baseArrayLayer = 0;
     pre_present_barrier.subresourceRange.layerCount = 1;
-    pre_present_barrier.image = window_ctx->swapchain.swapchain_images[window_ctx->swapchain.current_index];
-    vkCmdPipelineBarrier(vk_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
+    pre_present_barrier.image =
+        window_ctx->swapchain.swapchain_images[window_ctx->swapchain.current_index];
+    vkCmdPipelineBarrier(vk_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
                          &pre_present_barrier);
 
     buffer.end();
@@ -280,22 +302,42 @@ void keyboardEvent(SDL_Event* event) {
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;
         switch (event->key.keysym.sym) {
-            case SDLK_UP: button = ScePadButton::UP; break;
-            case SDLK_DOWN: button = ScePadButton::DOWN; break;
-            case SDLK_LEFT: button = ScePadButton::LEFT; break;
-            case SDLK_RIGHT: button = ScePadButton::RIGHT; break;
-            case SDLK_KP_8: button = ScePadButton ::TRIANGLE; break;
-            case SDLK_KP_6: button = ScePadButton ::CIRCLE; break;
-            case SDLK_KP_2: button = ScePadButton ::CROSS; break;
-            case SDLK_KP_4: button = ScePadButton ::SQUARE; break;
-            case SDLK_RETURN: button = ScePadButton ::OPTIONS; break;
-            default: break;
+        case SDLK_UP:
+            button = ScePadButton::UP;
+            break;
+        case SDLK_DOWN:
+            button = ScePadButton::DOWN;
+            break;
+        case SDLK_LEFT:
+            button = ScePadButton::LEFT;
+            break;
+        case SDLK_RIGHT:
+            button = ScePadButton::RIGHT;
+            break;
+        case SDLK_KP_8:
+            button = ScePadButton ::TRIANGLE;
+            break;
+        case SDLK_KP_6:
+            button = ScePadButton ::CIRCLE;
+            break;
+        case SDLK_KP_2:
+            button = ScePadButton ::CROSS;
+            break;
+        case SDLK_KP_4:
+            button = ScePadButton ::SQUARE;
+            break;
+        case SDLK_RETURN:
+            button = ScePadButton ::OPTIONS;
+            break;
+        default:
+            break;
         }
         if (button != 0) {
-            auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
+            auto* controller =
+                Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
             controller->checKButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
         }
     }
 }
 
-}  // namespace Emu
+} // namespace Emu

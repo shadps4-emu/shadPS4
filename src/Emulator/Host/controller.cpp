@@ -1,8 +1,9 @@
-#include "controller.h"
 #include <core/hle/libraries/libkernel/time_management.h>
+#include "controller.h"
 
 namespace Emulator::Host::Controller {
-GameController::GameController() { m_states_num = 0;
+GameController::GameController() {
+    m_states_num = 0;
     m_last_state = State();
 }
 void GameController::readState(State* state, bool* isConnected, int* connectedCount) {
@@ -50,4 +51,4 @@ void GameController::checKButton(int id, u32 button, bool isPressed) {
     addState(state);
 }
 
-}  // namespace Emulator::Host::Controller
+} // namespace Emulator::Host::Controller

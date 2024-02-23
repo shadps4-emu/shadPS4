@@ -5,16 +5,16 @@
 #include <string>
 #include <vector>
 
-#include "common/fs_file.h"
 #include <common/io_file.h>
+#include "common/fs_file.h"
 
 namespace Core::FileSys {
 
 class MntPoints {
-  public:
+public:
     struct MntPair {
         std::string host_path;
-        std::string guest_path;  // e.g /app0/
+        std::string guest_path; // e.g /app0/
     };
 
     MntPoints() = default;
@@ -25,7 +25,7 @@ class MntPoints {
     std::string getHostDirectory(const std::string& guest_directory);
     std::string getHostFile(const std::string& guest_file);
 
-  private:
+private:
     std::vector<MntPair> m_mnt_pairs;
     std::mutex m_mutex;
 };
@@ -36,12 +36,12 @@ struct File {
     std::string m_host_name;
     std::string m_guest_name;
     IOFile f;
-    //std::vector<Common::FS::DirEntry> dirents;
+    // std::vector<Common::FS::DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;
 };
 class HandleTable {
-  public:
+public:
     HandleTable() {}
     virtual ~HandleTable() {}
     int createHandle();
@@ -49,9 +49,9 @@ class HandleTable {
     File* getFile(int d);
     File* getFile(const std::string& host_name);
 
-  private:
+private:
     std::vector<File*> m_files;
     std::mutex m_mutex;
 };
 
-}  // namespace Core::FileSys
+} // namespace Core::FileSys

@@ -1,6 +1,6 @@
 #include "io_file.h"
 
-//#include "helpers.hpp"
+// #include "helpers.hpp"
 
 #ifdef _MSC_VER
 // 64 bit offsets for MSVC
@@ -118,8 +118,8 @@ FILE* IOFile::getHandle() {
 }
 
 void IOFile::setAppDataDir(const std::filesystem::path& dir) {
-    //if (dir == "")
-    //    Helpers::panic("Failed to set app data directory");
+    // if (dir == "")
+    //     Helpers::panic("Failed to set app data directory");
     appData = dir;
 }
 

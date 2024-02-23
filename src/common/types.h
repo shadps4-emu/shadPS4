@@ -22,6 +22,12 @@ static_assert(sizeof(u128) == 16, "u128 must be 128 bits wide");
 #define PS4_SYSV_ABI __attribute__((sysv_abi))
 
 // UDLs for memory size values
-constexpr unsigned long long operator""_KB(unsigned long long x) { return 1024ULL * x; }
-constexpr unsigned long long operator""_MB(unsigned long long x) { return 1024_KB * x; }
-constexpr unsigned long long operator""_GB(unsigned long long x) { return 1024_MB * x; }
+constexpr unsigned long long operator""_KB(unsigned long long x) {
+    return 1024ULL * x;
+}
+constexpr unsigned long long operator""_MB(unsigned long long x) {
+    return 1024_KB * x;
+}
+constexpr unsigned long long operator""_GB(unsigned long long x) {
+    return 1024_MB * x;
+}

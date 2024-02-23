@@ -95,4 +95,4 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
 void padSymbolsRegister(Loader::SymbolsResolver* sym);
 
-};  // namespace Core::Libraries::LibPad
+}; // namespace Core::Libraries::LibPad

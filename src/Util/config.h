@@ -12,4 +12,4 @@ u32 getLogLevel();
 u32 getScreenWidth();
 u32 getScreenHeight();
 
-};  // namespace Config
+}; // namespace Config

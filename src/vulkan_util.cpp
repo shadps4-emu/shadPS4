@@ -1,16 +1,16 @@
-#include "vulkan_util.h"
-#include <fmt/core.h>
-#include <core/PS4/GPU/gpu_memory.h>
 #include <SDL_vulkan.h>
-#include "common/singleton.h"
-#include "common/log.h"
-#include "common/debug.h"
+#include <core/PS4/GPU/gpu_memory.h>
+#include <fmt/core.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
+#include "common/debug.h"
+#include "common/log.h"
+#include "common/singleton.h"
+#include "vulkan_util.h"
 
 #include <algorithm>
 
-constexpr bool log_file_vulkanutil = true;  // disable it to disable logging
+constexpr bool log_file_vulkanutil = true; // disable it to disable logging
 
 void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     Emu::VulkanExt ext;
@@ -44,18 +44,21 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
         std::exit(0);
     }
 
-    if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, &ctx->m_surface) == SDL_FALSE) {
+    if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, &ctx->m_surface) ==
+        SDL_FALSE) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan surface\n");
         std::exit(0);
     }
 
     // TODO i am not sure if it's that it is neccesary or if it needs more
-    std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
-                                                  VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME, "VK_KHR_maintenance1"};
+    std::vector<const char*> device_extensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
+        VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME, "VK_KHR_maintenance1"};
 
     Emu::VulkanQueues queues;
 
-    vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface, device_extensions, &ctx->m_surface_capabilities,
+    vulkanFindCompatiblePhysicalDevice(ctx->m_graphic_ctx.m_instance, ctx->m_surface,
+                                       device_extensions, &ctx->m_surface_capabilities,
                                        &ctx->m_graphic_ctx.m_physical_device, &queues);
 
     if (ctx->m_graphic_ctx.m_physical_device == nullptr) {
@@ -68,7 +71,8 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
 
     LOG_INFO_IF(log_file_vulkanutil, "GFX device to be used : {}\n", device_properties.deviceName);
 
-    ctx->m_graphic_ctx.m_device = vulkanCreateDevice(ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
+    ctx->m_graphic_ctx.m_device = vulkanCreateDevice(
+        ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
     if (ctx->m_graphic_ctx.m_device == nullptr) {
         LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan device\n");
         std::exit(0);
@@ -78,7 +82,8 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
 }
 
-Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx, u32 image_count) {
+Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics::GraphicCtx* ctx,
+                                                             u32 image_count) {
     auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     const auto& capabilities = window_ctx->m_surface_capabilities.capabilities;
     Emu::VulkanSwapchain s{};
@@ -128,7 +133,8 @@ Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics
     vkGetSwapchainImagesKHR(ctx->m_device, s.swapchain, &s.swapchain_images_count, nullptr);
 
     s.swapchain_images.resize(s.swapchain_images_count);
-    vkGetSwapchainImagesKHR(ctx->m_device, s.swapchain, &s.swapchain_images_count, s.swapchain_images.data());
+    vkGetSwapchainImagesKHR(ctx->m_device, s.swapchain, &s.swapchain_images_count,
+                            s.swapchain_images.data());
 
     s.swapchain_image_views.resize(s.swapchain_images_count);
     for (uint32_t i = 0; i < s.swapchain_images_count; i++) {
@@ -163,7 +169,8 @@ Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics
     present_complete_info.pNext = nullptr;
     present_complete_info.flags = 0;
 
-    auto result = vkCreateSemaphore(ctx->m_device, &present_complete_info, nullptr, &s.present_complete_semaphore);
+    auto result = vkCreateSemaphore(ctx->m_device, &present_complete_info, nullptr,
+                                    &s.present_complete_semaphore);
 
     VkFenceCreateInfo fence_info{};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -179,11 +186,13 @@ Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics
     return s;
 }
 
-void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, const Emu::VulkanQueues& queues) {
+void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx,
+                                          const Emu::VulkanQueues& queues) {
     auto get_queue = [ctx](int id, const Emu::VulkanQueueInfo& info, bool with_mutex = false) {
         ctx->queues[id].family = info.family;
         ctx->queues[id].index = info.index;
-        vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index, &ctx->queues[id].vk_queue);
+        vkGetDeviceQueue(ctx->m_device, ctx->queues[id].family, ctx->queues[id].index,
+                         &ctx->queues[id].vk_queue);
         if (with_mutex) {
             ctx->queues[id].mutex = std::make_unique<std::mutex>();
         }
@@ -199,8 +208,10 @@ void Graphics::Vulkan::vulkanCreateQueues(HLE::Libs::Graphics::GraphicCtx* ctx, 
     }
 }
 
-VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const Emu::VulkanExt* r,
-                                              const Emu::VulkanQueues& queues, const std::vector<const char*>& device_extensions) {
+VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device,
+                                              VkSurfaceKHR surface, const Emu::VulkanExt* r,
+                                              const Emu::VulkanQueues& queues,
+                                              const std::vector<const char*>& device_extensions) {
     std::vector<VkDeviceQueueCreateInfo> queue_create_info(queues.family_count);
     std::vector<std::vector<float>> queue_priority(queues.family_count);
     uint32_t queue_create_info_num = 0;
@@ -211,12 +222,14 @@ VkDevice Graphics::Vulkan::vulkanCreateDevice(VkPhysicalDevice physical_device, 
                 queue_priority[queue_create_info_num].push_back(1.0f);
             }
 
-            queue_create_info[queue_create_info_num].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queue_create_info[queue_create_info_num].sType =
+                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queue_create_info[queue_create_info_num].pNext = nullptr;
             queue_create_info[queue_create_info_num].flags = 0;
             queue_create_info[queue_create_info_num].queueFamilyIndex = i;
             queue_create_info[queue_create_info_num].queueCount = queues.family_used[i];
-            queue_create_info[queue_create_info_num].pQueuePriorities = queue_priority[queue_create_info_num].data();
+            queue_create_info[queue_create_info_num].pQueuePriorities =
+                queue_priority[queue_create_info_num].data();
 
             queue_create_info_num++;
         }
@@ -251,13 +264,15 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
 
     ext->required_extensions = std::vector<const char*>(required_extensions_count);
 
-    result = SDL_Vulkan_GetInstanceExtensions(&required_extensions_count, ext->required_extensions.data());
+    result = SDL_Vulkan_GetInstanceExtensions(&required_extensions_count,
+                                              ext->required_extensions.data());
 
     vkEnumerateInstanceExtensionProperties(nullptr, &available_extensions_count, nullptr);
 
     ext->available_extensions = std::vector<VkExtensionProperties>(available_extensions_count);
 
-    vkEnumerateInstanceExtensionProperties(nullptr, &available_extensions_count, ext->available_extensions.data());
+    vkEnumerateInstanceExtensionProperties(nullptr, &available_extensions_count,
+                                           ext->available_extensions.data());
 
     vkEnumerateInstanceLayerProperties(&available_layers_count, nullptr);
     ext->available_layers = std::vector<VkLayerProperties>(available_layers_count);
@@ -268,19 +283,21 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
     }
 
     for (const auto& ext : ext->available_extensions) {
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available extension: {}, version = {}\n", ext.extensionName, ext.specVersion);
+        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available extension: {}, version = {}\n",
+                    ext.extensionName, ext.specVersion);
     }
 
     for (const auto& l : ext->available_layers) {
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}\n", l.layerName, l.specVersion,
-                    l.implementationVersion, l.description);
+        LOG_INFO_IF(log_file_vulkanutil,
+                    "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}\n",
+                    l.layerName, l.specVersion, l.implementationVersion, l.description);
     }
 }
 
-void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
-                                                          const std::vector<const char*>& device_extensions,
-                                                          Emu::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
-                                                          Emu::VulkanQueues* out_queues) {
+void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(
+    VkInstance instance, VkSurfaceKHR surface, const std::vector<const char*>& device_extensions,
+    Emu::VulkanSurfaceCapabilities* out_capabilities, VkPhysicalDevice* out_device,
+    Emu::VulkanQueues* out_queues) {
     u32 count_devices = 0;
     vkEnumeratePhysicalDevices(instance, &count_devices, nullptr);
 
@@ -297,7 +314,8 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
         vkGetPhysicalDeviceProperties(device, &device_properties);
         vkGetPhysicalDeviceFeatures2(device, &device_features2);
         if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-            continue;  // we don't want integrated gpu for now .Later we will check the requirements and see what we can support (TODO fix me)
+            continue; // we don't want integrated gpu for now .Later we will check the requirements
+                      // and see what we can support (TODO fix me)
         }
         LOG_INFO_IF(log_file_vulkanutil, "Vulkan device: {}\n", device_properties.deviceName);
 
@@ -312,7 +330,8 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(VkInstance instance, V
     *out_queues = found_best_queues;
 }
 
-Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, VkSurfaceKHR surface) {
+Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device,
+                                                     VkSurfaceKHR surface) {
     Emu::VulkanQueues qs;
 
     u32 queue_family_count = 0;
@@ -327,7 +346,8 @@ Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, Vk
         VkBool32 presentation_supported = VK_FALSE;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, family, surface, &presentation_supported);
 
-        LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n", string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
+        LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n",
+                    string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
                     (presentation_supported == VK_TRUE ? "true" : "false"));
         for (uint32_t i = 0; i < f.queueCount; i++) {
             Emu::VulkanQueueInfo info;
@@ -396,7 +416,8 @@ Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device, Vk
     return qs;
 }
 
-void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device, VkSurfaceKHR surface,
+void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_device,
+                                                    VkSurfaceKHR surface,
                                                     Emu::VulkanSurfaceCapabilities* surfaceCap) {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surfaceCap->capabilities);
 
@@ -404,28 +425,34 @@ void Graphics::Vulkan::vulkanGetSurfaceCapabilities(VkPhysicalDevice physical_de
     vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &formats_count, nullptr);
 
     surfaceCap->formats = std::vector<VkSurfaceFormatKHR>(formats_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &formats_count, surfaceCap->formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &formats_count,
+                                         surfaceCap->formats.data());
 
     uint32_t present_modes_count = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count,
+                                              nullptr);
 
     surfaceCap->present_modes = std::vector<VkPresentModeKHR>(present_modes_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count, surfaceCap->present_modes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_modes_count,
+                                              surfaceCap->present_modes.data());
 
     for (const auto& f : surfaceCap->formats) {
-        if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
+            f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             surfaceCap->is_format_srgb_bgra32 = true;
             break;
         }
-        if (f.format == VK_FORMAT_B8G8R8A8_UNORM && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (f.format == VK_FORMAT_B8G8R8A8_UNORM &&
+            f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             surfaceCap->is_format_unorm_bgra32 = true;
             break;
         }
     }
 }
 
-static void set_image_layout(VkCommandBuffer buffer, HLE::Libs::Graphics::VulkanImage* dst_image, uint32_t base_level, uint32_t levels,
-                             VkImageAspectFlags aspect_mask, VkImageLayout old_image_layout, VkImageLayout new_image_layout) {
+static void set_image_layout(VkCommandBuffer buffer, HLE::Libs::Graphics::VulkanImage* dst_image,
+                             uint32_t base_level, uint32_t levels, VkImageAspectFlags aspect_mask,
+                             VkImageLayout old_image_layout, VkImageLayout new_image_layout) {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.pNext = nullptr;
@@ -478,12 +505,14 @@ static void set_image_layout(VkCommandBuffer buffer, HLE::Libs::Graphics::Vulkan
     VkPipelineStageFlags src_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-    vkCmdPipelineBarrier(buffer, src_stages, dest_stages, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    vkCmdPipelineBarrier(buffer, src_stages, dest_stages, 0, 0, nullptr, 0, nullptr, 1,
+                         &imageMemoryBarrier);
 
     dst_image->layout = new_image_layout;
 }
 
-void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanImage* src_image,
+void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer,
+                                       HLE::Libs::Graphics::VulkanImage* src_image,
                                        Emu::VulkanSwapchain* dst_swapchain) {
     auto* vk_buffer = buffer->getPool()->buffers[buffer->getIndex()];
 
@@ -492,9 +521,11 @@ void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Gr
     swapchain_image.image = dst_swapchain->swapchain_images[dst_swapchain->current_index];
     swapchain_image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    set_image_layout(vk_buffer, &swapchain_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    set_image_layout(vk_buffer, &swapchain_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkImageBlit region{};
     region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -518,22 +549,28 @@ void Graphics::Vulkan::vulkanBlitImage(GPU::CommandBuffer* buffer, HLE::Libs::Gr
     region.dstOffsets[1].y = static_cast<int>(dst_swapchain->swapchain_extent.height);
     region.dstOffsets[1].z = 1;
 
-    vkCmdBlitImage(vk_buffer, src_image->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                   &region, VK_FILTER_LINEAR);
+    vkCmdBlitImage(vk_buffer, src_image->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   swapchain_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region,
+                   VK_FILTER_LINEAR);
 
-    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    set_image_layout(vk_buffer, src_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 }
 
-void Graphics::Vulkan::vulkanFillImage(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanImage* dst_image, const void* src_data,
-                                       u64 size, u32 src_pitch, u64 dst_layout) {
+void Graphics::Vulkan::vulkanFillImage(HLE::Libs::Graphics::GraphicCtx* ctx,
+                                       HLE::Libs::Graphics::VulkanImage* dst_image,
+                                       const void* src_data, u64 size, u32 src_pitch,
+                                       u64 dst_layout) {
     HLE::Libs::Graphics::VulkanBuffer staging_buffer{};
     staging_buffer.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    staging_buffer.memory.property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    staging_buffer.memory.property =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     vulkanCreateBuffer(ctx, size, &staging_buffer);
 
     void* data = nullptr;
-    vkMapMemory(ctx->m_device, staging_buffer.memory.memory, staging_buffer.memory.offset, staging_buffer.memory.requirements.size, 0, &data);
+    vkMapMemory(ctx->m_device, staging_buffer.memory.memory, staging_buffer.memory.offset,
+                staging_buffer.memory.requirements.size, 0, &data);
     std::memcpy(data, src_data, size);
     vkUnmapMemory(ctx->m_device, staging_buffer.memory.memory);
 
@@ -548,11 +585,15 @@ void Graphics::Vulkan::vulkanFillImage(HLE::Libs::Graphics::GraphicCtx* ctx, HLE
     vulkanDeleteBuffer(ctx, &staging_buffer);
 }
 
-void Graphics::Vulkan::vulkanBufferToImage(GPU::CommandBuffer* buffer, HLE::Libs::Graphics::VulkanBuffer* src_buffer, u32 src_pitch,
-                                           HLE::Libs::Graphics::VulkanImage* dst_image, u64 dst_layout) {
+void Graphics::Vulkan::vulkanBufferToImage(GPU::CommandBuffer* buffer,
+                                           HLE::Libs::Graphics::VulkanBuffer* src_buffer,
+                                           u32 src_pitch,
+                                           HLE::Libs::Graphics::VulkanImage* dst_image,
+                                           u64 dst_layout) {
     auto* vk_buffer = buffer->getPool()->buffers[buffer->getIndex()];
 
-    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -567,13 +608,15 @@ void Graphics::Vulkan::vulkanBufferToImage(GPU::CommandBuffer* buffer, HLE::Libs
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {dst_image->extent.width, dst_image->extent.height, 1};
 
-    vkCmdCopyBufferToImage(vk_buffer, src_buffer->buffer, dst_image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(vk_buffer, src_buffer->buffer, dst_image->image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                     static_cast<VkImageLayout>(dst_layout));
+    set_image_layout(vk_buffer, dst_image, 0, 1, VK_IMAGE_ASPECT_COLOR_BIT,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<VkImageLayout>(dst_layout));
 }
 
-void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, u64 size, HLE::Libs::Graphics::VulkanBuffer* buffer) {
+void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, u64 size,
+                                          HLE::Libs::Graphics::VulkanBuffer* buffer) {
     VkBufferCreateInfo buffer_info{};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = size;
@@ -592,7 +635,8 @@ void Graphics::Vulkan::vulkanCreateBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, 
     vkBindBufferMemory(ctx->m_device, buffer->buffer, buffer->memory.memory, buffer->memory.offset);
 }
 
-void Graphics::Vulkan::vulkanDeleteBuffer(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanBuffer* buffer) {
+void Graphics::Vulkan::vulkanDeleteBuffer(HLE::Libs::Graphics::GraphicCtx* ctx,
+                                          HLE::Libs::Graphics::VulkanBuffer* buffer) {
     vkDestroyBuffer(ctx->m_device, buffer->buffer, nullptr);
     vkFreeMemory(ctx->m_device, buffer->memory.memory, nullptr);
     buffer->memory.memory = nullptr;

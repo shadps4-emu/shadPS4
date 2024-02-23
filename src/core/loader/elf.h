@@ -14,7 +14,7 @@ struct self_header {
     u32 magic;
     u08 version;
     u08 mode;
-    u08 endian;  // 1 is little endian
+    u08 endian; // 1 is little endian
     u08 attributes;
     u08 category;
     u08 program_type;
@@ -24,31 +24,33 @@ struct self_header {
     u32 file_size;
     u32 padding2;
     u16 segment_count;
-    u16 unknown1A;  // always 0x22
+    u16 unknown1A; // always 0x22
     u32 padding3;
 };
 
 struct self_segment_header {
     bool IsBlocked() const {
-        return (flags & 0x800) != 0;  // 0 or 0x800
+        return (flags & 0x800) != 0; // 0 or 0x800
     }
 
-    u32 GetId() const { return (flags >> 20u) & 0xFFFu; }
+    u32 GetId() const {
+        return (flags >> 20u) & 0xFFFu;
+    }
 
     bool IsOrdered() const {
-        return (flags & 1) != 0;  // 0 or 1
+        return (flags & 1) != 0; // 0 or 1
     }
 
     bool IsEncrypted() const {
-        return (flags & 2) != 0;  // 0 or 2
+        return (flags & 2) != 0; // 0 or 2
     }
 
     bool IsSigned() const {
-        return (flags & 4) != 0;  // 0 or 4
+        return (flags & 4) != 0; // 0 or 4
     }
 
     bool IsCompressed() const {
-        return (flags & 8) != 0;  // 0 or 8
+        return (flags & 8) != 0; // 0 or 8
     }
 
     u64 flags;
@@ -181,11 +183,25 @@ typedef enum : u16 {
 
 typedef enum : u32 { EV_NONE = 0x0, EV_CURRENT = 0x1 } e_version_es;
 
-typedef enum : u08 { ELF_CLASS_NONE = 0x0, ELF_CLASS_32 = 0x1, ELF_CLASS_64 = 0x2, ELF_CLASS_NUM = 0x3 } ident_class_es;
+typedef enum : u08 {
+    ELF_CLASS_NONE = 0x0,
+    ELF_CLASS_32 = 0x1,
+    ELF_CLASS_64 = 0x2,
+    ELF_CLASS_NUM = 0x3
+} ident_class_es;
 
-typedef enum : u08 { ELF_DATA_NONE = 0x0, ELF_DATA_2LSB = 0x1, ELF_DATA_2MSB = 0x2, ELF_DATA_NUM = 0x3 } ident_endian_es;
+typedef enum : u08 {
+    ELF_DATA_NONE = 0x0,
+    ELF_DATA_2LSB = 0x1,
+    ELF_DATA_2MSB = 0x2,
+    ELF_DATA_NUM = 0x3
+} ident_endian_es;
 
-typedef enum : u08 { ELF_VERSION_NONE = 0x0, ELF_VERSION_CURRENT = 0x1, ELF_VERSION_NUM = 0x2 } ident_version_es;
+typedef enum : u08 {
+    ELF_VERSION_NONE = 0x0,
+    ELF_VERSION_CURRENT = 0x1,
+    ELF_VERSION_NUM = 0x2
+} ident_version_es;
 
 typedef enum : u08 {
     ELF_OSABI_NONE = 0x0,       /* No extensions or unspecified */
@@ -383,7 +399,7 @@ constexpr u08 STT_FILE = 4;
 constexpr u08 STT_COMMON = 5;
 constexpr u08 STT_TLS = 6;
 constexpr u08 STT_LOOS = 10;
-constexpr u08 STT_SCE = 11;  // module_start/module_stop
+constexpr u08 STT_SCE = 11; // module_start/module_stop
 constexpr u08 STT_HIOS = 12;
 constexpr u08 STT_LOPRO = 13;
 constexpr u08 STT_SPARC_REGISTER = 13;
@@ -395,9 +411,15 @@ constexpr u08 STV_HIDDEN = 2;
 constexpr u08 STV_PROTECTED = 3;
 
 struct elf_symbol {
-    u08 GetBind() const { return st_info >> 4u; }
-    u08 GetType() const { return st_info & 0xfu; }
-    u08 GetVisibility() const { return st_other & 3u; }
+    u08 GetBind() const {
+        return st_info >> 4u;
+    }
+    u08 GetType() const {
+        return st_info & 0xfu;
+    }
+    u08 GetVisibility() const {
+        return st_other & 3u;
+    }
 
     u32 st_name;
     u08 st_info;
@@ -408,23 +430,27 @@ struct elf_symbol {
 };
 
 struct elf_relocation {
-    u32 GetSymbol() const { return static_cast<u32>(rel_info >> 32u); }
-    u32 GetType() const { return static_cast<u32>(rel_info & 0xffffffff); }
+    u32 GetSymbol() const {
+        return static_cast<u32>(rel_info >> 32u);
+    }
+    u32 GetType() const {
+        return static_cast<u32>(rel_info & 0xffffffff);
+    }
 
     u64 rel_offset;
     u64 rel_info;
     s64 rel_addend;
 };
-constexpr u32 R_X86_64_64 = 1;  // Direct 64 bit
+constexpr u32 R_X86_64_64 = 1; // Direct 64 bit
 constexpr u32 R_X86_64_GLOB_DAT = 6;
-constexpr u32 R_X86_64_JUMP_SLOT = 7;  // Create PLT entry
-constexpr u32 R_X86_64_RELATIVE = 8;   // Adjust by program base
+constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
+constexpr u32 R_X86_64_RELATIVE = 8;  // Adjust by program base
 constexpr u32 R_X86_64_DTPMOD64 = 16;
 
 namespace Core::Loader {
 
 class Elf {
-  public:
+public:
     Elf() = default;
     virtual ~Elf();
 
@@ -433,15 +459,25 @@ class Elf {
     bool isElfFile() const;
     void DebugDump();
 
-    [[nodiscard]] self_header GetSElfHeader() const { return m_self; }
+    [[nodiscard]] self_header GetSElfHeader() const {
+        return m_self;
+    }
 
-    [[nodiscard]] elf_header GetElfHeader() const { return m_elf_header; }
+    [[nodiscard]] elf_header GetElfHeader() const {
+        return m_elf_header;
+    }
 
-    [[nodiscard]] std::span<const elf_program_header> GetProgramHeader() const { return m_elf_phdr; }
+    [[nodiscard]] std::span<const elf_program_header> GetProgramHeader() const {
+        return m_elf_phdr;
+    }
 
-    [[nodiscard]] std::span<const self_segment_header> GetSegmentHeader() const { return m_self_segments; }
+    [[nodiscard]] std::span<const self_segment_header> GetSegmentHeader() const {
+        return m_self_segments;
+    }
 
-    [[nodiscard]] u64 GetElfEntry() const { return m_elf_header.e_entry; }
+    [[nodiscard]] u64 GetElfEntry() const {
+        return m_elf_header.e_entry;
+    }
 
     std::string SElfHeaderStr();
     std::string SELFSegHeader(u16 no);
@@ -452,10 +488,10 @@ class Elf {
 
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
 
-  private:
+private:
     void Reset();
 
-  private:
+private:
     Common::FS::File m_f{};
     bool is_self{};
     self_header m_self{};
@@ -466,4 +502,4 @@ class Elf {
     elf_program_id_header m_self_id_header{};
 };
 
-}  // namespace Core::Loader
+} // namespace Core::Loader

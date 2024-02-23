@@ -24,8 +24,10 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status) {
 }
 
 void systemServiceSymbolsRegister(Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("Vo5V8KAwCmk", "libSceSystemService", 1, "libSceSystemService", 1, 1, sceSystemServiceHideSplashScreen);
-    LIB_FUNCTION("rPo6tV8D9bM", "libSceSystemService", 1, "libSceSystemService", 1, 1, sceSystemServiceGetStatus);
+    LIB_FUNCTION("Vo5V8KAwCmk", "libSceSystemService", 1, "libSceSystemService", 1, 1,
+                 sceSystemServiceHideSplashScreen);
+    LIB_FUNCTION("rPo6tV8D9bM", "libSceSystemService", 1, "libSceSystemService", 1, 1,
+                 sceSystemServiceGetStatus);
 }
 
-};  // namespace Core::Libraries::LibSystemService
+}; // namespace Core::Libraries::LibSystemService

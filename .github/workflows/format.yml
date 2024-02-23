@@ -1,4 +1,4 @@
-name: shad-format
+name: Clang Format
 
 on:
   push:

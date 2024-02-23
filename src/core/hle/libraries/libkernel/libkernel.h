@@ -15,4 +15,4 @@ int* PS4_SYSV_ABI __Error();
 
 void LibKernel_Register(Loader::SymbolsResolver* sym);
 
-}  // namespace Core::Libraries::LibKernel
+} // namespace Core::Libraries::LibKernel
