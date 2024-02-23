@@ -1,10 +1,11 @@
-#include "gpu_memory.h"
 #include <atomic>
 #include <xxh3.h>
+#include "gpu_memory.h"
 
 #include "common/singleton.h"
 
-void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
+void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                           void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
                            const GPUObject& info) {
     auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
 
@@ -23,9 +24,12 @@ void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
     gpumemory->m_heaps.push_back(h);
 }
 
-u64 GPU::calculate_hash(const u08* buf, u64 size) { return (size > 0 && buf != nullptr ? XXH3_64bits(buf, size) : 0); }
+u64 GPU::calculate_hash(const u08* buf, u64 size) {
+    return (size > 0 && buf != nullptr ? XXH3_64bits(buf, size) : 0);
+}
 
-bool GPU::vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanMemory* mem) {
+bool GPU::vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx,
+                               HLE::Libs::Graphics::VulkanMemory* mem) {
     static std::atomic_uint64_t unique_id = 0;
 
     VkPhysicalDeviceMemoryProperties memory_properties{};
@@ -66,7 +70,8 @@ void GPU::flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx) {
 int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
     int index = 0;
     for (const auto& heap : m_heaps) {
-        if ((virtual_addr >= heap.allocated_virtual_addr && virtual_addr < heap.allocated_virtual_addr + heap.allocated_size) ||
+        if ((virtual_addr >= heap.allocated_virtual_addr &&
+             virtual_addr < heap.allocated_virtual_addr + heap.allocated_size) ||
             ((virtual_addr + size - 1) >= heap.allocated_virtual_addr &&
              (virtual_addr + size - 1) < heap.allocated_virtual_addr + heap.allocated_size)) {
             return index;
@@ -76,7 +81,8 @@ int GPU::GPUMemory::getHeapId(u64 virtual_addr, u64 size) {
     return -1;
 }
 
-void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, void* todo, const u64* virtual_addr, const u64* size,
+void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                                      void* todo, const u64* virtual_addr, const u64* size,
                                       int virtual_addr_num, const GPUObject& info) {
     auto* gpumemory = Common::Singleton<GPUMemory>::Instance();
 
@@ -101,7 +107,8 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
 
     for (int h = 0; h < virtual_addr_num; h++) {
         if (info.check_hash) {
-            objInfo.hash[h] = GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
+            objInfo.hash[h] =
+                GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
         } else {
             objInfo.hash[h] = 0;
         }
@@ -109,7 +116,8 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
     objInfo.submit_id = submit_id;
     objInfo.check_hash = info.check_hash;
 
-    objInfo.gpu_object.obj = info.getCreateFunc()(ctx, objInfo.obj_params, virtual_addr, size, virtual_addr_num, &objInfo.mem);
+    objInfo.gpu_object.obj = info.getCreateFunc()(ctx, objInfo.obj_params, virtual_addr, size,
+                                                  virtual_addr_num, &objInfo.mem);
 
     objInfo.update_func = info.getUpdateFunc();
     int index = static_cast<int>(heap.objects.size());
@@ -123,7 +131,8 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
     return objInfo.gpu_object.obj;
 }
 
-GPU::HeapBlock GPU::GPUMemory::createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num, int heap_id, int obj_id) {
+GPU::HeapBlock GPU::GPUMemory::createHeapBlock(const u64* virtual_addr, const u64* size,
+                                               int virtual_addr_num, int heap_id, int obj_id) {
     auto& heap = m_heaps[heap_id];
 
     GPU::HeapBlock heapBlock{};
@@ -135,7 +144,8 @@ GPU::HeapBlock GPU::GPUMemory::createHeapBlock(const u64* virtual_addr, const u6
     return heapBlock;
 }
 
-void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, int heap_id, int obj_id) {
+void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, int heap_id,
+                            int obj_id) {
     auto& heap = m_heaps[heap_id];
 
     auto& heapObj = heap.objects[obj_id];
@@ -147,7 +157,9 @@ void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
 
         for (int i = 0; i < heapObj.block.virtual_addr_num; i++) {
             if (objInfo.check_hash) {
-                hash[i] = GPU::calculate_hash(reinterpret_cast<const uint8_t*>(heapObj.block.virtual_addr[i]), heapObj.block.size[i]);
+                hash[i] = GPU::calculate_hash(
+                    reinterpret_cast<const uint8_t*>(heapObj.block.virtual_addr[i]),
+                    heapObj.block.size[i]);
             } else {
                 hash[i] = 0;
             }
@@ -166,7 +178,8 @@ void GPU::GPUMemory::update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
     }
 
     if (need_update) {
-        objInfo.update_func(ctx, objInfo.obj_params, objInfo.gpu_object.obj, heapObj.block.virtual_addr, heapObj.block.size,
+        objInfo.update_func(ctx, objInfo.obj_params, objInfo.gpu_object.obj,
+                            heapObj.block.virtual_addr, heapObj.block.size,
                             heapObj.block.virtual_addr_num);
     }
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/types.h"
 #include <mutex>
 #include <vector>
+#include "common/types.h"
 
 namespace VideoCore {
 
@@ -65,9 +65,11 @@ public:
     GPUMemory() {}
     virtual ~GPUMemory() {}
     int getHeapId(u64 vaddr, u64 size);
-    void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, const u64* virtual_addr,
+    void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                          /*CommandBuffer* buffer*/ void* todo, const u64* virtual_addr,
                           const u64* size, int virtual_addr_num, const GPUObject& info);
-    HeapBlock createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num, int heap_id, int obj_id);
+    HeapBlock createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num,
+                              int heap_id, int obj_id);
     void update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, int heap_id, int obj_id);
     void flushAllHeaps(HLE::Libs::Graphics::GraphicCtx* ctx);
 
@@ -77,10 +79,12 @@ private:
 };
 
 void memorySetAllocArea(u64 virtual_addr, u64 size);
-void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
+void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                      /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
                       const GPUObject& info);
 u64 calculate_hash(const u08* buf, u64 size);
-bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanMemory* mem);
+bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx,
+                          HLE::Libs::Graphics::VulkanMemory* mem);
 void flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx);
 
-}  // namespace VideoCore
+} // namespace VideoCore

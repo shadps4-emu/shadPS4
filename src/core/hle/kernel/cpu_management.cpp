@@ -1,7 +1,7 @@
+#include "Util/config.h"
 #include "common/log.h"
 #include "core/hle/kernel/cpu_management.h"
 #include "core/hle/libraries/libs.h"
-#include "Util/config.h"
 
 namespace Core::Kernel {
 

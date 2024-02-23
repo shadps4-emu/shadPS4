@@ -1,9 +1,9 @@
 #pragma once
 
-#include <core/PS4/HLE/Graphics/graphics_ctx.h>
-#include "common/types.h"
 #include <mutex>
 #include <vector>
+#include <core/PS4/HLE/Graphics/graphics_ctx.h>
+#include "common/types.h"
 
 namespace GPU {
 
@@ -24,7 +24,7 @@ struct HeapBlock {
 };
 
 class GPUObject {
-  public:
+public:
     GPUObject() = default;
     virtual ~GPUObject() = default;
     u64 obj_params[8] = {};
@@ -32,9 +32,11 @@ class GPUObject {
     bool isReadOnly = false;
     MemoryObjectType objectType = MemoryObjectType::InvalidObj;
 
-    using create_func_t = void* (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* virtual_addr, const u64* size, int virtual_addr_num,
+    using create_func_t = void* (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
+                                    const u64* virtual_addr, const u64* size, int virtual_addr_num,
                                     HLE::Libs::Graphics::VulkanMemory* mem);
-    using update_func_t = void (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj, const u64* virtual_addr, const u64* size,
+    using update_func_t = void (*)(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
+                                   void* obj, const u64* virtual_addr, const u64* size,
                                    int virtual_addr_num);
 
     virtual create_func_t getCreateFunc() const = 0;
@@ -63,23 +65,27 @@ struct MemoryHeap {
 };
 
 class GPUMemory {
-  public:
+public:
     GPUMemory() {}
     virtual ~GPUMemory() {}
     int getHeapId(u64 vaddr, u64 size);
     std::mutex m_mutex;
     std::vector<MemoryHeap> m_heaps;
-    void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, const u64* virtual_addr,
+    void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                          /*CommandBuffer* buffer*/ void* todo, const u64* virtual_addr,
                           const u64* size, int virtual_addr_num, const GPUObject& info);
-    HeapBlock createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num, int heap_id, int obj_id);
+    HeapBlock createHeapBlock(const u64* virtual_addr, const u64* size, int virtual_addr_num,
+                              int heap_id, int obj_id);
     void update(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, int heap_id, int obj_id);
     void flushAllHeaps(HLE::Libs::Graphics::GraphicCtx* ctx);
 };
 
 void memorySetAllocArea(u64 virtual_addr, u64 size);
-void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx, /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
+void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
+                      /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
                       const GPUObject& info);
 u64 calculate_hash(const u08* buf, u64 size);
-bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx, HLE::Libs::Graphics::VulkanMemory* mem);
+bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx,
+                          HLE::Libs::Graphics::VulkanMemory* mem);
 void flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx);
-}  // namespace GPU
+} // namespace GPU

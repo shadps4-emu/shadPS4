@@ -24,8 +24,8 @@ bool File::open(const std::string& path, OpenMode mode) {
 
 bool File::close() {
     if (!isOpen() || std::fclose(m_file) != 0) [[unlikely]] {
-            m_file = nullptr;
-            return false;
+        m_file = nullptr;
+        return false;
     }
 
     m_file = nullptr;
@@ -56,9 +56,9 @@ bool File::seek(s64 offset, SeekMode mode) {
 u64 File::tell() const {
     if (isOpen()) [[likely]] {
 #ifdef _WIN64
-            return _ftelli64(m_file);
+        return _ftelli64(m_file);
 #else
-            return ftello64(m_file);
+        return ftello64(m_file);
 #endif
     }
 
@@ -69,22 +69,22 @@ u64 File::getFileSize() {
 #ifdef _WIN64
     const u64 pos = _ftelli64(m_file);
     if (_fseeki64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = _ftelli64(m_file);
     if (_fseeki64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #else
     const u64 pos = ftello64(m_file);
     if (fseeko64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = ftello64(m_file);
     if (fseeko64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #endif
     return size;

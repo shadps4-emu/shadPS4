@@ -5,7 +5,7 @@
 namespace VideoCore {
 
 class TileManager32 {
-  public:
+public:
     u32 m_macro_tile_height = 0;
     u32 m_bank_height = 0;
     u32 m_num_banks = 0;
@@ -60,25 +60,26 @@ class TileManager32 {
         return pipe;
     }
 
-    static u32 GetBankIndex(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks, u32 num_pipes) {
+    static u32 GetBankIndex(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks,
+                            u32 num_pipes) {
         const u32 x_shift_offset = std::bit_width(bank_width * num_pipes);
         const u32 y_shift_offset = std::bit_width(bank_height);
         const u32 xs = x >> x_shift_offset;
         const u32 ys = y >> y_shift_offset;
         u32 bank = 0;
         switch (num_banks) {
-            case 8:
-                bank |= (((xs >> 3u) ^ (ys >> 5u)) & 0x1u) << 0u;
-                bank |= (((xs >> 4u) ^ (ys >> 4u) ^ (ys >> 5u)) & 0x1u) << 1u;
-                bank |= (((xs >> 5u) ^ (ys >> 3u)) & 0x1u) << 2u;
-                break;
-            case 16:
-                bank |= (((xs >> 3u) ^ (ys >> 6u)) & 0x1u) << 0u;
-                bank |= (((xs >> 4u) ^ (ys >> 5u) ^ (ys >> 6u)) & 0x1u) << 1u;
-                bank |= (((xs >> 5u) ^ (ys >> 4u)) & 0x1u) << 2u;
-                bank |= (((xs >> 6u) ^ (ys >> 3u)) & 0x1u) << 3u;
-                break;
-            default:;
+        case 8:
+            bank |= (((xs >> 3u) ^ (ys >> 5u)) & 0x1u) << 0u;
+            bank |= (((xs >> 4u) ^ (ys >> 4u) ^ (ys >> 5u)) & 0x1u) << 1u;
+            bank |= (((xs >> 5u) ^ (ys >> 3u)) & 0x1u) << 2u;
+            break;
+        case 16:
+            bank |= (((xs >> 3u) ^ (ys >> 6u)) & 0x1u) << 0u;
+            bank |= (((xs >> 4u) ^ (ys >> 5u) ^ (ys >> 6u)) & 0x1u) << 1u;
+            bank |= (((xs >> 5u) ^ (ys >> 4u)) & 0x1u) << 2u;
+            bank |= (((xs >> 6u) ^ (ys >> 3u)) & 0x1u) << 3u;
+            break;
+        default:;
         }
 
         return bank;
@@ -101,11 +102,13 @@ class TileManager32 {
             tile_bytes = 512;
         }
 
-        u64 macro_tile_bytes = (128 / 8) * (m_macro_tile_height / 8) * tile_bytes / (m_num_pipes * m_num_banks);
+        u64 macro_tile_bytes =
+            (128 / 8) * (m_macro_tile_height / 8) * tile_bytes / (m_num_pipes * m_num_banks);
         u64 macro_tiles_per_row = m_padded_width / 128;
         u64 macro_tile_row_index = y / m_macro_tile_height;
         u64 macro_tile_column_index = x / 128;
-        u64 macro_tile_index = (macro_tile_row_index * macro_tiles_per_row) + macro_tile_column_index;
+        u64 macro_tile_index =
+            (macro_tile_row_index * macro_tiles_per_row) + macro_tile_column_index;
         u64 macro_tile_offset = macro_tile_index * macro_tile_bytes;
         u64 macro_tiles_per_slice = macro_tiles_per_row * (m_padded_height / m_macro_tile_height);
         u64 slice_bytes = macro_tiles_per_slice * macro_tile_bytes;
@@ -124,13 +127,14 @@ class TileManager32 {
 
         u64 pipe_interleave_offset = total_offset & 0xffu;
         u64 offset = total_offset >> 8u;
-        u64 byte_offset = pipe_interleave_offset | (pipe << (8u)) | (bank << (8u + m_pipe_bits)) | (offset << (8u + m_pipe_bits + m_bank_bits));
+        u64 byte_offset = pipe_interleave_offset | (pipe << (8u)) | (bank << (8u + m_pipe_bits)) |
+                          (offset << (8u + m_pipe_bits + m_bank_bits));
 
         return ((byte_offset << 3u) | bit_offset) / 8;
     }
 };
 
-void ConvertTileToLinear(u08* dst, const u08* src,u32 width, u32 height, bool is_neo) {
+void ConvertTileToLinear(u08* dst, const u08* src, u32 width, u32 height, bool is_neo) {
     const TileManager32 t{width, height, is_neo};
     for (u32 y = 0; y < height; y++) {
         u32 x = 0;

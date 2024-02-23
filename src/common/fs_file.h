@@ -2,19 +2,15 @@
 
 #include <bit>
 #include <cstdio>
-#include <string>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "common/types.h"
 
 namespace Common::FS {
 
-enum class OpenMode : u32 {
-    Read = 0x1,
-    Write = 0x2,
-    ReadWrite = Read | Write
-};
+enum class OpenMode : u32 { Read = 0x1, Write = 0x2, ReadWrite = Read | Write };
 
 enum class SeekMode : u32 {
     Set,
@@ -23,7 +19,7 @@ enum class SeekMode : u32 {
 };
 
 class File {
-  public:
+public:
     File();
     explicit File(const std::string& path, OpenMode mode = OpenMode::Read);
     ~File();
@@ -52,27 +48,27 @@ class File {
 
     const char* getOpenMode(OpenMode mode) const {
         switch (mode) {
-            case OpenMode::Read:
-                return "rb";
-            case OpenMode::Write:
-                return "wb";
-            case OpenMode::ReadWrite:
-                return "r+b";
-            default:
-                return "r";
+        case OpenMode::Read:
+            return "rb";
+        case OpenMode::Write:
+            return "wb";
+        case OpenMode::ReadWrite:
+            return "r+b";
+        default:
+            return "r";
         }
     }
 
     int getSeekMode(SeekMode mode) const {
         switch (mode) {
-            case SeekMode::Set:
-                return SEEK_SET;
-            case SeekMode::Cur:
-                return SEEK_CUR;
-            case SeekMode::End:
-                return SEEK_END;
-            default:
-                return SEEK_SET;
+        case SeekMode::Set:
+            return SEEK_SET;
+        case SeekMode::Cur:
+            return SEEK_CUR;
+        case SeekMode::End:
+            return SEEK_END;
+        default:
+            return SEEK_SET;
         }
     }
 
@@ -80,7 +76,7 @@ class File {
         return m_file;
     }
 
-  private:
+private:
     std::FILE* m_file{};
 };
 

@@ -4,7 +4,7 @@
 
 namespace Core::FileSys {
 
-constexpr int RESERVED_HANDLES = 3;  // First 3 handles are stdin,stdout,stderr
+constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
 void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
@@ -15,7 +15,7 @@ void MntPoints::mount(const std::string& host_folder, const std::string& guest_f
 
     m_mnt_pairs.push_back(pair);
 }
-void MntPoints::unmount(const std::string& path) {}  // TODO!
+void MntPoints::unmount(const std::string& path) {} // TODO!
 void MntPoints::unmountAll() {
     std::scoped_lock lock{m_mutex};
     m_mnt_pairs.clear();
@@ -40,10 +40,10 @@ std::string MntPoints::getHostFile(const std::string& guest_file) {
     std::scoped_lock lock{m_mutex};
 
     for (auto& pair : m_mnt_pairs) {
-        //horrible code but it works :D
+        // horrible code but it works :D
         int find = guest_file.find(pair.guest_path);
         if (find == 0) {
-            std::string npath = guest_file.substr(pair.guest_path.size(), guest_file.size()-1);
+            std::string npath = guest_file.substr(pair.guest_path.size(), guest_file.size() - 1);
             std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
             return pair.host_path + npath;
         }
@@ -88,4 +88,4 @@ File* HandleTable::getFile(const std::string& host_name) {
     }
     return nullptr;
 }
-}  // namespace Core::FileSys
+} // namespace Core::FileSys

@@ -5,7 +5,8 @@
 
 class IOFile {
     FILE* handle = nullptr;
-    static inline std::filesystem::path appData =""; // Directory for holding app data. AppData on Windows
+    static inline std::filesystem::path appData =
+        ""; // Directory for holding app data. AppData on Windows
 
 public:
     IOFile() : handle(nullptr) {}

@@ -28,7 +28,7 @@ static u64 GetTimeNs() {
     FILETIME filetime;
     GetSystemTimePreciseAsFileTime(&filetime);
     return Multiplier * ((static_cast<u64>(filetime.dwHighDateTime) << 32) +
-                          static_cast<u64>(filetime.dwLowDateTime) - WindowsEpochToUnixEpoch);
+                         static_cast<u64>(filetime.dwLowDateTime) - WindowsEpochToUnixEpoch);
 #elif defined(__APPLE__)
     return clock_gettime_nsec_np(CLOCK_REALTIME);
 #else

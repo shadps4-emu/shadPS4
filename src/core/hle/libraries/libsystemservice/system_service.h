@@ -23,4 +23,4 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status);
 
 void systemServiceSymbolsRegister(Loader::SymbolsResolver* sym);
 
-};  // namespace Core::Libraries::LibSystemService
+}; // namespace Core::Libraries::LibSystemService

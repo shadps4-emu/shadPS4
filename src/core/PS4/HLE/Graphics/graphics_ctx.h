@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common/types.h"
+#include <memory>
+#include <mutex>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include <mutex>
-#include <memory>
+#include "common/types.h"
 
 namespace HLE::Libs::Graphics {
 
@@ -31,7 +31,7 @@ struct GraphicCtx {
     VkInstance m_instance = nullptr;
     VkPhysicalDevice m_physical_device = nullptr;
     VkDevice m_device = nullptr;
-    VulkanQueueInfo queues[11];  // VULKAN_QUEUES_NUM
+    VulkanQueueInfo queues[11]; // VULKAN_QUEUES_NUM
 };
 
 enum class VulkanImageType { Unknown, VideoOut };
@@ -71,4 +71,4 @@ struct VideoOutVulkanImage : public VulkanImage {
     VideoOutVulkanImage() : VulkanImage(VulkanImageType::VideoOut) {}
 };
 
-}  // namespace HLE::Libs::Graphics
+} // namespace HLE::Libs::Graphics

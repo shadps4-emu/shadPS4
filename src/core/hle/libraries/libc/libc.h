@@ -8,4 +8,4 @@ namespace Core::Libraries::LibC {
 
 void libcSymbolsRegister(Loader::SymbolsResolver* sym);
 
-}  // namespace Core::Libraries::LibC
+} // namespace Core::Libraries::LibC

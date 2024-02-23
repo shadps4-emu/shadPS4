@@ -11,7 +11,7 @@ namespace Core::Libraries::LibKernel {
 thread_local ScePthread g_pthread_self{};
 PThreadCxt* g_pthread_cxt = nullptr;
 
-constexpr bool log_pthread_file = true;  // disable it to disable logging
+constexpr bool log_pthread_file = true; // disable it to disable logging
 
 void init_pthreads() {
     g_pthread_cxt = new PThreadCxt{};
@@ -49,9 +49,12 @@ int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
     result = (result == 0 ? scePthreadAttrSetdetachstate(attr, PTHREAD_CREATE_JOINABLE) : result);
 
     switch (result) {
-        case 0: return SCE_OK;
-        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -62,12 +65,20 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
 
     int pstate = PTHREAD_CREATE_JOINABLE;
     switch (detachstate) {
-        case 0: pstate = PTHREAD_CREATE_JOINABLE; break;
-        case 1: pstate = PTHREAD_CREATE_DETACHED; break;
-        default: LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetdetachstate invalid detachstate: {}\n", detachstate); std::exit(0);
+    case 0:
+        pstate = PTHREAD_CREATE_JOINABLE;
+        break;
+    case 1:
+        pstate = PTHREAD_CREATE_DETACHED;
+        break;
+    default:
+        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetdetachstate invalid detachstate: {}\n",
+                     detachstate);
+        std::exit(0);
     }
 
-    // int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate); doesn't seem to work correctly
+    // int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate); doesn't seem to work
+    // correctly
     int result = 0;
 
     (*attr)->detached = (pstate == PTHREAD_CREATE_DETACHED);
@@ -82,9 +93,16 @@ int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inherit
 
     int pinherit_sched = PTHREAD_INHERIT_SCHED;
     switch (inheritSched) {
-        case 0: pinherit_sched = PTHREAD_EXPLICIT_SCHED; break;
-        case 4: pinherit_sched = PTHREAD_INHERIT_SCHED; break;
-        default: LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetinheritsched invalid inheritSched: {}\n", inheritSched); std::exit(0);
+    case 0:
+        pinherit_sched = PTHREAD_EXPLICIT_SCHED;
+        break;
+    case 4:
+        pinherit_sched = PTHREAD_INHERIT_SCHED;
+        break;
+    default:
+        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetinheritsched invalid inheritSched: {}\n",
+                     inheritSched);
+        std::exit(0);
     }
 
     int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
@@ -92,7 +110,8 @@ int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inherit
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
-int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr, const SceKernelSchedParam* param) {
+int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
+                                             const SceKernelSchedParam* param) {
     if (param == nullptr || attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -116,9 +135,11 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int ppolicy = SCHED_OTHER;  // winpthreads only supports SCHED_OTHER
+    int ppolicy = SCHED_OTHER; // winpthreads only supports SCHED_OTHER
     if (policy != SCHED_OTHER) {
-        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetschedpolicy policy={} not supported by winpthreads\n", policy);
+        LOG_TRACE_IF(log_pthread_file,
+                     "scePthreadAttrSetschedpolicy policy={} not supported by winpthreads\n",
+                     policy);
     }
     (*attr)->policy = policy;
 
@@ -126,9 +147,12 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
-ScePthread PS4_SYSV_ABI scePthreadSelf() { return g_pthread_self; }
+ScePthread PS4_SYSV_ABI scePthreadSelf() {
+    return g_pthread_self;
+}
 
-int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr, const /*SceKernelCpumask*/ u64 mask) {
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
+                                           const /*SceKernelCpumask*/ u64 mask) {
     PRINT_FUNCTION_NAME();
 
     if (pattr == nullptr || *pattr == nullptr) {
@@ -151,7 +175,8 @@ int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpuma
 
     return result;
 }
-int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr, pthreadEntryFunc start_routine, void* arg, const char* name) {
+int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
+                                  pthreadEntryFunc start_routine, void* arg, const char* name) {
     PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
@@ -169,7 +194,8 @@ void* createMutex(void* addr) {
     return addr;
 }
 
-int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr, const char* name) {
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
+                                     const char* name) {
     PRINT_FUNCTION_NAME();
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -192,11 +218,16 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     }
 
     switch (result) {
-        case 0: return SCE_OK;
-        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
-        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
-        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EINVAL:
+        return SCE_KERNEL_ERROR_EINVAL;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -209,20 +240,31 @@ int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
     result = (result == 0 ? scePthreadMutexattrSetprotocol(attr, 0) : result);
 
     switch (result) {
-        case 0: return SCE_OK;
-        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type) {
     int ptype = PTHREAD_MUTEX_DEFAULT;
     switch (type) {
-        case 1: ptype = PTHREAD_MUTEX_ERRORCHECK; break;
-        case 2: ptype = PTHREAD_MUTEX_RECURSIVE; break;
-        case 3:
-        case 4: ptype = PTHREAD_MUTEX_NORMAL; break;
-        default: LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSettype invalid type: {}\n", type); std::exit(0);
+    case 1:
+        ptype = PTHREAD_MUTEX_ERRORCHECK;
+        break;
+    case 2:
+        ptype = PTHREAD_MUTEX_RECURSIVE;
+        break;
+    case 3:
+    case 4:
+        ptype = PTHREAD_MUTEX_NORMAL;
+        break;
+    default:
+        LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSettype invalid type: {}\n", type);
+        std::exit(0);
     }
 
     int result = pthread_mutexattr_settype(&(*attr)->pth_mutex_attr, ptype);
@@ -233,13 +275,23 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol) {
     int pprotocol = PTHREAD_PRIO_NONE;
     switch (protocol) {
-        case 0: pprotocol = PTHREAD_PRIO_NONE; break;
-        case 1: pprotocol = PTHREAD_PRIO_INHERIT; break;
-        case 2: pprotocol = PTHREAD_PRIO_PROTECT; break;
-        default: LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSetprotocol invalid protocol: {}\n", protocol); std::exit(0);
+    case 0:
+        pprotocol = PTHREAD_PRIO_NONE;
+        break;
+    case 1:
+        pprotocol = PTHREAD_PRIO_INHERIT;
+        break;
+    case 2:
+        pprotocol = PTHREAD_PRIO_PROTECT;
+        break;
+    default:
+        LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSetprotocol invalid protocol: {}\n",
+                     protocol);
+        std::exit(0);
     }
 
-    int result = 0;  // pthread_mutexattr_setprotocol(&(*attr)->p, pprotocol); //it appears that pprotocol has issues in winpthreads
+    int result = 0; // pthread_mutexattr_setprotocol(&(*attr)->p, pprotocol); //it appears that
+                    // pprotocol has issues in winpthreads
     (*attr)->pprotocol = pprotocol;
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
@@ -253,13 +305,19 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
-    LOG_INFO_IF(log_pthread_file, "scePthreadMutexLock name={} result={}\n", (*mutex)->name, result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexLock name={} result={}\n", (*mutex)->name,
+                result);
     switch (result) {
-        case 0: return SCE_OK;
-        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
-        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
-        case EDEADLK: return SCE_KERNEL_ERROR_EDEADLK;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EINVAL:
+        return SCE_KERNEL_ERROR_EINVAL;
+    case EDEADLK:
+        return SCE_KERNEL_ERROR_EDEADLK;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
@@ -270,13 +328,18 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
-    LOG_INFO_IF(log_pthread_file, "scePthreadMutexUnlock name={} result={}\n", (*mutex)->name, result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexUnlock name={} result={}\n", (*mutex)->name,
+                result);
     switch (result) {
-        case 0: return SCE_OK;
+    case 0:
+        return SCE_OK;
 
-        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
-        case EPERM: return SCE_KERNEL_ERROR_EPERM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case EINVAL:
+        return SCE_KERNEL_ERROR_EINVAL;
+    case EPERM:
+        return SCE_KERNEL_ERROR_EPERM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -294,7 +357,8 @@ void* createCond(void* addr) {
     return addr;
 }
 
-int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr, const char* name) {
+int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr,
+                                    const char* name) {
     if (cond == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -318,11 +382,16 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     }
 
     switch (result) {
-        case 0: return SCE_OK;
-        case EAGAIN: return SCE_KERNEL_ERROR_EAGAIN;
-        case EINVAL: return SCE_KERNEL_ERROR_EINVAL;
-        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EINVAL:
+        return SCE_KERNEL_ERROR_EINVAL;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -332,9 +401,12 @@ int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
     int result = pthread_condattr_init(&(*attr)->cond_attr);
 
     switch (result) {
-        case 0: return SCE_OK;
-        case ENOMEM: return SCE_KERNEL_ERROR_ENOMEM;
-        default: return SCE_KERNEL_ERROR_EINVAL;
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -359,7 +431,9 @@ int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthre
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_init redirect to scePthreadMutexInit\n");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
         return rt;
     }
     return result;
@@ -369,7 +443,9 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_lock redirect to scePthreadMutexLock\n");
     int result = scePthreadMutexLock(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
         return rt;
     }
     return result;
@@ -379,17 +455,22 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
     LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock\n");
     int result = scePthreadMutexUnlock(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
         return rt;
     }
     return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
-    LOG_INFO_IF(log_pthread_file, "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast\n");
+    LOG_INFO_IF(log_pthread_file,
+                "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast\n");
     int result = scePthreadCondBroadcast(cond);
     if (result != 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP ? result + -SCE_KERNEL_ERROR_UNKNOWN : POSIX_EOTHER;
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
         return rt;
     }
     return result;
@@ -412,7 +493,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
-    //cond calls
+    // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
     LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, scePthreadCondBroadcast);
@@ -428,4 +509,4 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
 }
 
-}  // namespace Core::Libraries::LibKernel
+} // namespace Core::Libraries::LibKernel

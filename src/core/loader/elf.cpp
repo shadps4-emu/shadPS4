@@ -1,120 +1,185 @@
 #include <fmt/core.h>
-#include "common/log.h"
 #include "common/debug.h"
+#include "common/log.h"
 #include "core/loader/elf.h"
 
 namespace Core::Loader {
 
-constexpr bool log_file_loader = false;  // disable it to disable logging
+constexpr bool log_file_loader = false; // disable it to disable logging
 
 static std::string_view getProgramTypeName(program_type_es type) {
     switch (type) {
-        case PT_FAKE: return "PT_FAKE";
-        case PT_NPDRM_EXEC: return "PT_NPDRM_EXEC";
-        case PT_NPDRM_DYNLIB: return "PT_NPDRM_DYNLIB";
-        case PT_SYSTEM_EXEC: return "PT_SYSTEM_EXEC";
-        case PT_SYSTEM_DYNLIB: return "PT_SYSTEM_DYNLIB";
-        case PT_HOST_KERNEL: return "PT_HOST_KERNEL";
-        case PT_SECURE_MODULE: return "PT_SECURE_MODULE";
-        case PT_SECURE_KERNEL: return "PT_SECURE_KERNEL";
-        default: return "INVALID";
+    case PT_FAKE:
+        return "PT_FAKE";
+    case PT_NPDRM_EXEC:
+        return "PT_NPDRM_EXEC";
+    case PT_NPDRM_DYNLIB:
+        return "PT_NPDRM_DYNLIB";
+    case PT_SYSTEM_EXEC:
+        return "PT_SYSTEM_EXEC";
+    case PT_SYSTEM_DYNLIB:
+        return "PT_SYSTEM_DYNLIB";
+    case PT_HOST_KERNEL:
+        return "PT_HOST_KERNEL";
+    case PT_SECURE_MODULE:
+        return "PT_SECURE_MODULE";
+    case PT_SECURE_KERNEL:
+        return "PT_SECURE_KERNEL";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getIdentClassName(ident_class_es elf_class) {
     switch (elf_class) {
-        case ELF_CLASS_NONE: return "ELF_CLASS_NONE";
-        case ELF_CLASS_32: return "ELF_CLASS_32";
-        case ELF_CLASS_64: return "ELF_CLASS_64";
-        case ELF_CLASS_NUM: return "ELF_CLASS_NUM";
-        default: return "INVALID";
+    case ELF_CLASS_NONE:
+        return "ELF_CLASS_NONE";
+    case ELF_CLASS_32:
+        return "ELF_CLASS_32";
+    case ELF_CLASS_64:
+        return "ELF_CLASS_64";
+    case ELF_CLASS_NUM:
+        return "ELF_CLASS_NUM";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getIdentEndianName(ident_endian_es endian) {
     switch (endian) {
-        case ELF_DATA_NONE: return "ELF_DATA_NONE";
-        case ELF_DATA_2LSB: return "ELF_DATA_2LSB";
-        case ELF_DATA_2MSB: return "ELF_DATA_2MSB";
-        case ELF_DATA_NUM: return "ELF_DATA_NUM";
-        default: return "INVALID";
+    case ELF_DATA_NONE:
+        return "ELF_DATA_NONE";
+    case ELF_DATA_2LSB:
+        return "ELF_DATA_2LSB";
+    case ELF_DATA_2MSB:
+        return "ELF_DATA_2MSB";
+    case ELF_DATA_NUM:
+        return "ELF_DATA_NUM";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getIdentVersionName(ident_version_es version) {
     switch (version) {
-        case ELF_VERSION_NONE: return "ELF_VERSION_NONE";
-        case ELF_VERSION_CURRENT: return "ELF_VERSION_CURRENT";
-        case ELF_VERSION_NUM: return "ELF_VERSION_NUM";
-        default: return "INVALID";
+    case ELF_VERSION_NONE:
+        return "ELF_VERSION_NONE";
+    case ELF_VERSION_CURRENT:
+        return "ELF_VERSION_CURRENT";
+    case ELF_VERSION_NUM:
+        return "ELF_VERSION_NUM";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getIdentOsabiName(ident_osabi_es osabi) {
     switch (osabi) {
-        case ELF_OSABI_NONE: return "ELF_OSABI_NONE";
-        case ELF_OSABI_HPUX: return "ELF_OSABI_HPUX";
-        case ELF_OSABI_NETBSD: return "ELF_OSABI_NETBSD";
-        case ELF_OSABI_LINUX: return "ELF_OSABI_LINUX";
-        case ELF_OSABI_SOLARIS: return "ELF_OSABI_SOLARIS";
-        case ELF_OSABI_AIX: return "ELF_OSABI_AIX";
-        case ELF_OSABI_IRIX: return "ELF_OSABI_IRIX";
-        case ELF_OSABI_FREEBSD: return "ELF_OSABI_FREEBSD";
-        case ELF_OSABI_TRU64: return "ELF_OSABI_TRU64";
-        case ELF_OSABI_MODESTO: return "ELF_OSABI_MODESTO";
-        case ELF_OSABI_OPENBSD: return "ELF_OSABI_OPENBSD";
-        case ELF_OSABI_OPENVMS: return "ELF_OSABI_OPENVMS";
-        case ELF_OSABI_NSK: return "ELF_OSABI_NSK";
-        case ELF_OSABI_AROS: return "ELF_OSABI_AROS";
-        case ELF_OSABI_ARM_AEABI: return "ELF_OSABI_ARM_AEABI";
-        case ELF_OSABI_ARM: return "ELF_OSABI_ARM";
-        case ELF_OSABI_STANDALONE: return "ELF_OSABI_STANDALONE";
-        default: return "INVALID";
+    case ELF_OSABI_NONE:
+        return "ELF_OSABI_NONE";
+    case ELF_OSABI_HPUX:
+        return "ELF_OSABI_HPUX";
+    case ELF_OSABI_NETBSD:
+        return "ELF_OSABI_NETBSD";
+    case ELF_OSABI_LINUX:
+        return "ELF_OSABI_LINUX";
+    case ELF_OSABI_SOLARIS:
+        return "ELF_OSABI_SOLARIS";
+    case ELF_OSABI_AIX:
+        return "ELF_OSABI_AIX";
+    case ELF_OSABI_IRIX:
+        return "ELF_OSABI_IRIX";
+    case ELF_OSABI_FREEBSD:
+        return "ELF_OSABI_FREEBSD";
+    case ELF_OSABI_TRU64:
+        return "ELF_OSABI_TRU64";
+    case ELF_OSABI_MODESTO:
+        return "ELF_OSABI_MODESTO";
+    case ELF_OSABI_OPENBSD:
+        return "ELF_OSABI_OPENBSD";
+    case ELF_OSABI_OPENVMS:
+        return "ELF_OSABI_OPENVMS";
+    case ELF_OSABI_NSK:
+        return "ELF_OSABI_NSK";
+    case ELF_OSABI_AROS:
+        return "ELF_OSABI_AROS";
+    case ELF_OSABI_ARM_AEABI:
+        return "ELF_OSABI_ARM_AEABI";
+    case ELF_OSABI_ARM:
+        return "ELF_OSABI_ARM";
+    case ELF_OSABI_STANDALONE:
+        return "ELF_OSABI_STANDALONE";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getIdentAbiversionName(ident_abiversion_es version) {
     switch (version) {
-        case ELF_ABI_VERSION_AMDGPU_HSA_V2: return "ELF_ABI_VERSION_AMDGPU_HSA_V2";
-        case ELF_ABI_VERSION_AMDGPU_HSA_V3: return "ELF_ABI_VERSION_AMDGPU_HSA_V3";
-        case ELF_ABI_VERSION_AMDGPU_HSA_V4: return "ELF_ABI_VERSION_AMDGPU_HSA_V4";
-        case ELF_ABI_VERSION_AMDGPU_HSA_V5: return "ELF_ABI_VERSION_AMDGPU_HSA_V5";
-        default: return "INVALID";
+    case ELF_ABI_VERSION_AMDGPU_HSA_V2:
+        return "ELF_ABI_VERSION_AMDGPU_HSA_V2";
+    case ELF_ABI_VERSION_AMDGPU_HSA_V3:
+        return "ELF_ABI_VERSION_AMDGPU_HSA_V3";
+    case ELF_ABI_VERSION_AMDGPU_HSA_V4:
+        return "ELF_ABI_VERSION_AMDGPU_HSA_V4";
+    case ELF_ABI_VERSION_AMDGPU_HSA_V5:
+        return "ELF_ABI_VERSION_AMDGPU_HSA_V5";
+    default:
+        return "INVALID";
     }
 }
 static std::string_view getVersion(e_version_es version) {
     switch (version) {
-        case EV_NONE: return "EV_NONE";
-        case EV_CURRENT: return "EV_CURRENT";
-        default: return "INVALID";
+    case EV_NONE:
+        return "EV_NONE";
+    case EV_CURRENT:
+        return "EV_CURRENT";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getType(e_type_s type) {
     switch (type) {
-        case ET_NONE: return "ET_NONE";
-        case ET_REL: return "ET_REL";
-        case ET_EXEC: return "ET_EXEC";
-        case ET_DYN: return "ET_DYN";
-        case ET_CORE: return "ET_CORE";
-        case ET_SCE_EXEC: return "ET_SCE_EXEC";
-        case ET_SCE_STUBLIB: return "ET_SCE_STUBLIB";
-        case ET_SCE_DYNEXEC: return "ET_SCE_DYNEXEC";
-        case ET_SCE_DYNAMIC: return "ET_SCE_DYNAMIC";
-        default: return "INVALID";
+    case ET_NONE:
+        return "ET_NONE";
+    case ET_REL:
+        return "ET_REL";
+    case ET_EXEC:
+        return "ET_EXEC";
+    case ET_DYN:
+        return "ET_DYN";
+    case ET_CORE:
+        return "ET_CORE";
+    case ET_SCE_EXEC:
+        return "ET_SCE_EXEC";
+    case ET_SCE_STUBLIB:
+        return "ET_SCE_STUBLIB";
+    case ET_SCE_DYNEXEC:
+        return "ET_SCE_DYNEXEC";
+    case ET_SCE_DYNAMIC:
+        return "ET_SCE_DYNAMIC";
+    default:
+        return "INVALID";
     }
 }
 
 static std::string_view getMachine(e_machine_es machine) {
     switch (machine) {
-        case EM_X86_64: return "EM_X86_64";
-        default: return "INVALID";
+    case EM_X86_64:
+        return "EM_X86_64";
+    default:
+        return "INVALID";
     }
 }
 
-Elf::~Elf() { Reset(); }
+Elf::~Elf() {
+    Reset();
+}
 
-void Elf::Reset() { m_f.close(); }
+void Elf::Reset() {
+    m_f.close();
+}
 
 void Elf::Open(const std::string& file_name) {
     Reset();
@@ -156,7 +221,7 @@ void Elf::Open(const std::string& file_name) {
         header_size += m_elf_header.e_phnum * m_elf_header.e_phentsize;
         header_size += m_elf_header.e_shnum * m_elf_header.e_shentsize;
         header_size += 15;
-        header_size &= ~15;  // Align
+        header_size &= ~15; // Align
 
         if (m_elf_header.e_ehsize - header_size >= sizeof(elf_program_id_header)) {
             m_f.seek(header_size, Common::FS::SeekMode::Set);
@@ -169,12 +234,14 @@ void Elf::Open(const std::string& file_name) {
 
 bool Elf::isSelfFile() const {
     if (m_self.magic != self_header::signature) [[unlikely]] {
-        LOG_ERROR_IF(log_file_loader, "Not a SELF file.Magic file mismatched !current = {:#x} required = {:#x}\n ", m_self.magic,
-                     self_header::signature);
+        LOG_ERROR_IF(log_file_loader,
+                     "Not a SELF file.Magic file mismatched !current = {:#x} required = {:#x}\n ",
+                     m_self.magic, self_header::signature);
         return false;
     }
 
-    if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.endian != 0x01 || m_self.attributes != 0x12) [[unlikely]] {
+    if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.endian != 0x01 ||
+        m_self.attributes != 0x12) [[unlikely]] {
         LOG_ERROR_IF(log_file_loader, "Unknown SELF file\n");
         return false;
     }
@@ -188,60 +255,74 @@ bool Elf::isSelfFile() const {
 }
 
 bool Elf::isElfFile() const {
-    if (m_elf_header.e_ident.magic[EI_MAG0] != ELFMAG0 || m_elf_header.e_ident.magic[EI_MAG1] != ELFMAG1 ||
-        m_elf_header.e_ident.magic[EI_MAG2] != ELFMAG2 || m_elf_header.e_ident.magic[EI_MAG3] != ELFMAG3) {
+    if (m_elf_header.e_ident.magic[EI_MAG0] != ELFMAG0 ||
+        m_elf_header.e_ident.magic[EI_MAG1] != ELFMAG1 ||
+        m_elf_header.e_ident.magic[EI_MAG2] != ELFMAG2 ||
+        m_elf_header.e_ident.magic[EI_MAG3] != ELFMAG3) {
         LOG_ERROR_IF(log_file_loader, "Not an ELF file magic is wrong!\n");
         return false;
     }
     if (m_elf_header.e_ident.ei_class != ELF_CLASS_64) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_CLASS] expected 0x02 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_class));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_CLASS] expected 0x02 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_class));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_data != ELF_DATA_2LSB) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_DATA] expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_data));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_DATA] expected 0x01 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_data));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_version != ELF_VERSION_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_VERSION] expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_version));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_VERSION] expected 0x01 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_version));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_osabi));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_osabi));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n", static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
+        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
         return false;
     }
 
-    if (m_elf_header.e_type != ET_SCE_DYNEXEC && m_elf_header.e_type != ET_SCE_DYNAMIC && m_elf_header.e_type != ET_SCE_EXEC) {
-        LOG_ERROR_IF(log_file_loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({:#x})\n", static_cast<u32>(m_elf_header.e_type));
+    if (m_elf_header.e_type != ET_SCE_DYNEXEC && m_elf_header.e_type != ET_SCE_DYNAMIC &&
+        m_elf_header.e_type != ET_SCE_EXEC) {
+        LOG_ERROR_IF(log_file_loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_type));
         return false;
     }
 
     if (m_elf_header.e_machine != EM_X86_64) {
-        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n", static_cast<u32>(m_elf_header.e_machine));
+        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_machine));
         return false;
     }
 
     if (m_elf_header.e_version != EV_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "m_elf_header.e_version expected 0x01 is ({:#x})\n", static_cast<u32>(m_elf_header.e_version));
+        LOG_ERROR_IF(log_file_loader, "m_elf_header.e_version expected 0x01 is ({:#x})\n",
+                     static_cast<u32>(m_elf_header.e_version));
         return false;
     }
 
     if (m_elf_header.e_phentsize != sizeof(elf_program_header)) {
-        LOG_ERROR_IF(log_file_loader, "e_phentsize ({}) != sizeof(elf_program_header)\n", static_cast<u32>(m_elf_header.e_phentsize));
+        LOG_ERROR_IF(log_file_loader, "e_phentsize ({}) != sizeof(elf_program_header)\n",
+                     static_cast<u32>(m_elf_header.e_phentsize));
         return false;
     }
 
     if (m_elf_header.e_shentsize > 0 &&
-        m_elf_header.e_shentsize != sizeof(elf_section_header))  // Commercial games doesn't appear to have section headers
+        m_elf_header.e_shentsize !=
+            sizeof(elf_section_header)) // Commercial games doesn't appear to have section headers
     {
-        LOG_ERROR_IF(log_file_loader, "e_shentsize ({}) != sizeof(elf_section_header)\n", m_elf_header.e_shentsize);
+        LOG_ERROR_IF(log_file_loader, "e_shentsize ({}) != sizeof(elf_section_header)\n",
+                     m_elf_header.e_shentsize);
         return false;
     }
 
@@ -249,7 +330,7 @@ bool Elf::isElfFile() const {
 }
 
 void Elf::DebugDump() {
-    if (is_self) {  // If we load elf instead
+    if (is_self) { // If we load elf instead
         LOG_INFO_IF(log_file_loader, (SElfHeaderStr()));
         for (u16 i = 0; i < m_self.segment_count; i++) {
             LOG_INFO_IF(log_file_loader, SELFSegHeader(i));
@@ -276,7 +357,8 @@ void Elf::DebugDump() {
             LOG_INFO_IF(log_file_loader, "sh_size ........: {:#018x}\n", m_elf_shdr[i].sh_size);
             LOG_INFO_IF(log_file_loader, "sh_link ........: {:#010x}\n", m_elf_shdr[i].sh_link);
             LOG_INFO_IF(log_file_loader, "sh_info ........: {:#010x}\n", m_elf_shdr[i].sh_info);
-            LOG_INFO_IF(log_file_loader, "sh_addralign ...: {:#018x}\n", m_elf_shdr[i].sh_addralign);
+            LOG_INFO_IF(log_file_loader, "sh_addralign ...: {:#018x}\n",
+                        m_elf_shdr[i].sh_addralign);
             LOG_INFO_IF(log_file_loader, "sh_entsize .....: {:#018x}\n", m_elf_shdr[i].sh_entsize);
         }
     }
@@ -284,7 +366,8 @@ void Elf::DebugDump() {
     if (is_self) {
         LOG_INFO_IF(log_file_loader, "SELF info:\n");
         LOG_INFO_IF(log_file_loader, "auth id ............: {:#018x}\n", m_self_id_header.authid);
-        LOG_INFO_IF(log_file_loader, "program type .......: {}\n", getProgramTypeName(m_self_id_header.program_type));
+        LOG_INFO_IF(log_file_loader, "program type .......: {}\n",
+                    getProgramTypeName(m_self_id_header.program_type));
         LOG_INFO_IF(log_file_loader, "app version ........: {:#018x}\n", m_self_id_header.appver);
         LOG_INFO_IF(log_file_loader, "fw version .........: {:#018x}\n", m_self_id_header.firmver);
         std::string digest;
@@ -333,11 +416,16 @@ std::string Elf::ElfHeaderStr() {
     }
     header += fmt::format("\n");
 
-    header += fmt::format("ident class.......: {}\n", getIdentClassName(m_elf_header.e_ident.ei_class));
-    header += fmt::format("ident data .......: {}\n", getIdentEndianName(m_elf_header.e_ident.ei_data));
-    header += fmt::format("ident version.....: {}\n", getIdentVersionName(m_elf_header.e_ident.ei_version));
-    header += fmt::format("ident osabi  .....: {}\n", getIdentOsabiName(m_elf_header.e_ident.ei_osabi));
-    header += fmt::format("ident abiversion..: {}\n", getIdentAbiversionName(m_elf_header.e_ident.ei_abiversion));
+    header +=
+        fmt::format("ident class.......: {}\n", getIdentClassName(m_elf_header.e_ident.ei_class));
+    header +=
+        fmt::format("ident data .......: {}\n", getIdentEndianName(m_elf_header.e_ident.ei_data));
+    header += fmt::format("ident version.....: {}\n",
+                          getIdentVersionName(m_elf_header.e_ident.ei_version));
+    header +=
+        fmt::format("ident osabi  .....: {}\n", getIdentOsabiName(m_elf_header.e_ident.ei_osabi));
+    header += fmt::format("ident abiversion..: {}\n",
+                          getIdentAbiversionName(m_elf_header.e_ident.ei_abiversion));
 
     header += fmt::format("ident UNK ........: 0x");
     for (auto i : m_elf_header.e_ident.pad) {
@@ -363,26 +451,46 @@ std::string Elf::ElfHeaderStr() {
 
 std::string Elf::ElfPheaderTypeStr(u32 type) {
     switch (type) {
-        case PT_NULL: return "Null";
-        case PT_LOAD: return "Loadable";
-        case PT_DYNAMIC: return "Dynamic";
-        case PT_INTERP: return "Interpreter Path";
-        case PT_NOTE: return "Note";
-        case PT_SHLIB: return "Section Header Library";
-        case PT_PHDR: return "Program Header";
-        case PT_TLS: return "Thread-Local Storage";
-        case PT_NUM: return "Defined Sections Number";
-        case PT_SCE_RELA: return "SCE Relative";
-        case PT_SCE_DYNLIBDATA: return "SCE Dynamic Library Data";
-        case PT_SCE_PROCPARAM: return "SCE Processor Parameters";
-        case PT_SCE_MODULE_PARAM: return "SCE Module Parameters";
-        case PT_SCE_RELRO: return "SCE Read-Only After Relocation";
-        case PT_GNU_EH_FRAME: return "GNU Entry Header Frame";
-        case PT_GNU_STACK: return "GNU Stack (executability)";
-        case PT_GNU_RELRO: return "GNU Read-Only After Relocation";
-        case PT_SCE_COMMENT: return "SCE Comment";
-        case PT_SCE_LIBVERSION: return "SCE Library Version";
-        default: return "Unknown Section";
+    case PT_NULL:
+        return "Null";
+    case PT_LOAD:
+        return "Loadable";
+    case PT_DYNAMIC:
+        return "Dynamic";
+    case PT_INTERP:
+        return "Interpreter Path";
+    case PT_NOTE:
+        return "Note";
+    case PT_SHLIB:
+        return "Section Header Library";
+    case PT_PHDR:
+        return "Program Header";
+    case PT_TLS:
+        return "Thread-Local Storage";
+    case PT_NUM:
+        return "Defined Sections Number";
+    case PT_SCE_RELA:
+        return "SCE Relative";
+    case PT_SCE_DYNLIBDATA:
+        return "SCE Dynamic Library Data";
+    case PT_SCE_PROCPARAM:
+        return "SCE Processor Parameters";
+    case PT_SCE_MODULE_PARAM:
+        return "SCE Module Parameters";
+    case PT_SCE_RELRO:
+        return "SCE Read-Only After Relocation";
+    case PT_GNU_EH_FRAME:
+        return "GNU Entry Header Frame";
+    case PT_GNU_STACK:
+        return "GNU Stack (executability)";
+    case PT_GNU_RELRO:
+        return "GNU Read-Only After Relocation";
+    case PT_SCE_COMMENT:
+        return "SCE Comment";
+    case PT_SCE_LIBVERSION:
+        return "SCE Library Version";
+    default:
+        return "Unknown Section";
     }
 }
 
@@ -431,7 +539,7 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
             }
         }
     }
-    BREAKPOINT();  // Hmm we didn't return something...
+    BREAKPOINT(); // Hmm we didn't return something...
 }
 
 } // namespace Core::Loader

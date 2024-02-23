@@ -6,8 +6,7 @@ namespace Core::AeroLib {
 
 // Use a direct table here + binary search as contents are static
 static constexpr NidEntry NIDS[] = {
-#define STUB(nid, name) \
-    { nid, #name },
+#define STUB(nid, name) {nid, #name},
 #include "aerolib.inl"
 #undef STUB
 };

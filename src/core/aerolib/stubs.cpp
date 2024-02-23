@@ -5,16 +5,16 @@
 namespace Core::AeroLib {
 
 // Helper to provide stub implementations for missing functions
-// 
+//
 // This works by pre-compiling generic stub functions ("slots"), and then
 // on lookup, setting up the nid_entry they are matched with
-// 
+//
 // If it runs out of stubs with name information, it will return
 // a default implemetnation without function name details
 
 // Up to 512, larger values lead to more resolve stub slots
 // and to longer compile / CI times
-// 
+//
 // Must match STUBS_LIST define
 constexpr u32 MAX_STUBS = 128;
 
@@ -24,10 +24,10 @@ u64 UnresolvedStub() {
 }
 
 static u64 UnknownStub() {
-    LOG_ERROR("Stub: Unknown (nid: Unknown) called, returning zero to {}\n", __builtin_return_address(0));
+    LOG_ERROR("Stub: Unknown (nid: Unknown) called, returning zero to {}\n",
+              __builtin_return_address(0));
     return 0;
 }
-
 
 static const NidEntry* stub_nids[MAX_STUBS];
 static std::string stub_nids_unknown[MAX_STUBS];
@@ -36,17 +36,18 @@ template <int stub_index>
 static u64 CommonStub() {
     auto entry = stub_nids[stub_index];
     if (entry) {
-        LOG_ERROR("Stub: {} (nid: {}) called, returning zero to {}\n", entry->name, entry->nid, __builtin_return_address(0));
+        LOG_ERROR("Stub: {} (nid: {}) called, returning zero to {}\n", entry->name, entry->nid,
+                  __builtin_return_address(0));
     } else {
-        LOG_ERROR("Stub: Unknown (nid: {}) called, returning zero to {}\n", stub_nids_unknown[stub_index], __builtin_return_address(0));
+        LOG_ERROR("Stub: Unknown (nid: {}) called, returning zero to {}\n",
+                  stub_nids_unknown[stub_index], __builtin_return_address(0));
     }
     return 0;
 }
 
 static u32 UsedStubEntries;
 
-#define XREP_1(x)        \
-    &CommonStub<x>,
+#define XREP_1(x) &CommonStub<x>,
 
 #define XREP_2(x) XREP_1(x) XREP_1(x + 1)
 #define XREP_4(x) XREP_2(x) XREP_2(x + 2)
@@ -60,9 +61,7 @@ static u32 UsedStubEntries;
 
 #define STUBS_LIST XREP_128(0)
 
-static u64 (*stub_handlers[MAX_STUBS])() = {
-    STUBS_LIST
-};
+static u64 (*stub_handlers[MAX_STUBS])() = {STUBS_LIST};
 
 u64 GetStub(const char* nid) {
     if (UsedStubEntries >= MAX_STUBS) {

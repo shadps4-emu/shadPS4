@@ -27,12 +27,17 @@ bool memory_patch(u64 vaddr, u64 value);
 
 inline bool containsExecuteMode(MemoryMode mode) {
     switch (mode) {
-        case MemoryMode::Execute: return true;
-        case MemoryMode::ExecuteRead: return true;
-        case MemoryMode::ExecuteWrite: return true;
-        case MemoryMode::ExecuteReadWrite: return true;
-        default: return false;
+    case MemoryMode::Execute:
+        return true;
+    case MemoryMode::ExecuteRead:
+        return true;
+    case MemoryMode::ExecuteWrite:
+        return true;
+    case MemoryMode::ExecuteReadWrite:
+        return true;
+    default:
+        return false;
     }
 }
 
-}  // namespace VirtualMemory
+} // namespace VirtualMemory

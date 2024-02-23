@@ -2,14 +2,14 @@
 
 #include "common/log.h"
 
-#include "common/debug.h"
 #include <vulkan_util.h>
+#include "common/debug.h"
 #include "tile_manager.h"
 
-constexpr bool log_file_videoOutBuffer = true;  // disable it to disable logging
+constexpr bool log_file_videoOutBuffer = true; // disable it to disable logging
 
-static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj, const u64* virtual_addr, const u64* size,
-                        int virtual_addr_num) {
+static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj,
+                        const u64* virtual_addr, const u64* size, int virtual_addr_num) {
 
     auto pitch = params[GPU::VideoOutBufferObj::PITCH_PARAM];
     bool tiled = (params[GPU::VideoOutBufferObj::IS_TILE_PARAM] != 0);
@@ -21,19 +21,22 @@ static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
 
     vk_obj->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    if (tiled)
-    {
+    if (tiled) {
         std::vector<u08> tempbuff(*size);
-        GPU::convertTileToLinear(tempbuff.data(), reinterpret_cast<void*>(*virtual_addr), width, height, neo);
-        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, tempbuff.data(), *size, pitch, static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        GPU::convertTileToLinear(tempbuff.data(), reinterpret_cast<void*>(*virtual_addr), width,
+                                 height, neo);
+        Graphics::Vulkan::vulkanFillImage(
+            ctx, vk_obj, tempbuff.data(), *size, pitch,
+            static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
     } else {
-        Graphics::Vulkan::vulkanFillImage(ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
-                                          static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        Graphics::Vulkan::vulkanFillImage(
+            ctx, vk_obj, reinterpret_cast<void*>(*virtual_addr), *size, pitch,
+            static_cast<u64>(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
     }
-    
 }
 
-static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, const u64* virtual_addr, const u64* size, int virtual_addr_num,
+static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
+                         const u64* virtual_addr, const u64* size, int virtual_addr_num,
                          HLE::Libs::Graphics::VulkanMemory* mem) {
     auto pixel_format = params[GPU::VideoOutBufferObj::PIXEL_FORMAT_PARAM];
     auto width = params[GPU::VideoOutBufferObj::WIDTH_PARAM];
@@ -44,9 +47,15 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     VkFormat vk_format = VK_FORMAT_UNDEFINED;
 
     switch (pixel_format) {
-        case static_cast<uint64_t>(GPU::VideoOutBufferFormat::R8G8B8A8Srgb): vk_format = VK_FORMAT_R8G8B8A8_SRGB; break;
-        case static_cast<uint64_t>(GPU::VideoOutBufferFormat::B8G8R8A8Srgb): vk_format = VK_FORMAT_B8G8R8A8_SRGB; break;
-        default: LOG_CRITICAL_IF(log_file_videoOutBuffer, "unknown pixelFormat  = {}\n", pixel_format); std::exit(0);
+    case static_cast<uint64_t>(GPU::VideoOutBufferFormat::R8G8B8A8Srgb):
+        vk_format = VK_FORMAT_R8G8B8A8_SRGB;
+        break;
+    case static_cast<uint64_t>(GPU::VideoOutBufferFormat::B8G8R8A8Srgb):
+        vk_format = VK_FORMAT_B8G8R8A8_SRGB;
+        break;
+    default:
+        LOG_CRITICAL_IF(log_file_videoOutBuffer, "unknown pixelFormat  = {}\n", pixel_format);
+        std::exit(0);
     }
 
     vk_obj->extent.width = width;
@@ -72,8 +81,9 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     image_info.format = vk_obj->format;
     image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
     image_info.initialLayout = vk_obj->layout;
-    image_info.usage =
-        static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT) | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    image_info.usage = static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                      VK_IMAGE_USAGE_TRANSFER_SRC_BIT) |
+                       VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -124,7 +134,8 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     create_info.subresourceRange.layerCount = 1;
     create_info.subresourceRange.levelCount = 1;
 
-    vkCreateImageView(ctx->m_device, &create_info, nullptr, &vk_obj->image_view[HLE::Libs::Graphics::VulkanImage::VIEW_DEFAULT]);
+    vkCreateImageView(ctx->m_device, &create_info, nullptr,
+                      &vk_obj->image_view[HLE::Libs::Graphics::VulkanImage::VIEW_DEFAULT]);
 
     if (vk_obj->image_view[HLE::Libs::Graphics::VulkanImage::VIEW_DEFAULT] == nullptr) {
         LOG_CRITICAL_IF(log_file_videoOutBuffer, "vk_obj->image_view is null\n");
@@ -134,6 +145,10 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     return vk_obj;
 }
 
-GPU::GPUObject::create_func_t GPU::VideoOutBufferObj::getCreateFunc() const { return create_func; }
+GPU::GPUObject::create_func_t GPU::VideoOutBufferObj::getCreateFunc() const {
+    return create_func;
+}
 
-GPU::GPUObject::update_func_t GPU::VideoOutBufferObj::getUpdateFunc() const { return update_func; }
+GPU::GPUObject::update_func_t GPU::VideoOutBufferObj::getUpdateFunc() const {
+    return update_func;
+}

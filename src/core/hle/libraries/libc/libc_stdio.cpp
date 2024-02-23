@@ -4,7 +4,7 @@
 
 namespace Core::Libraries::LibC {
 
-constexpr bool log_file_libc = true;  // disable it to disable logging
+constexpr bool log_file_libc = true; // disable it to disable logging
 
 int PS4_SYSV_ABI ps4_printf(VA_ARGS) {
     VA_CTX(ctx);
@@ -13,7 +13,7 @@ int PS4_SYSV_ABI ps4_printf(VA_ARGS) {
 
 int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
     int fd = fileno(file);
-    if (fd == 1 || fd == 2) {  // output stdout and stderr to console
+    if (fd == 1 || fd == 2) { // output stdout and stderr to console
         VA_CTX(ctx);
         return printf_ctx(&ctx);
     }

@@ -2,8 +2,8 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <core/PS4/HLE/Graphics/video_out.h>
 #include <core/PS4/HLE/Graphics/graphics_ctx.h>
+#include <core/PS4/HLE/Graphics/video_out.h>
 #include <emulator.h>
 
 using namespace HLE::Libs::Graphics::VideoOut;
@@ -32,14 +32,15 @@ struct VideoConfigInternal {
 };
 
 class FlipQueue {
-  public:
+public:
     FlipQueue() {}
     virtual ~FlipQueue() {}
 
     void getFlipStatus(VideoConfigInternal* cfg, SceVideoOutFlipStatus* out);
     bool submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg);
     bool flip(u32 micros);
-  private:
+
+private:
     struct Request {
         VideoConfigInternal* cfg;
         int index;
@@ -55,24 +56,27 @@ class FlipQueue {
 
 class VideoOutCtx {
 
-  public:
+public:
     VideoOutCtx() {}
     virtual ~VideoOutCtx() {}
     void Init(u32 width, u32 height);
     int Open();
     void Close(s32 handle);
     VideoConfigInternal* getCtx(int handle);
-    FlipQueue& getFlipQueue() { return m_flip_queue; }
+    FlipQueue& getFlipQueue() {
+        return m_flip_queue;
+    }
     HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {
         std::scoped_lock lock{m_mutex};
-        
+
         if (!m_graphic_ctx) {
             m_graphic_ctx = Emu::getGraphicCtx();
         }
 
         return m_graphic_ctx;
     }
-  private:
+
+private:
     std::mutex m_mutex;
     VideoConfigInternal m_video_out_ctx;
     FlipQueue m_flip_queue;

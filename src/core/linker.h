@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <mutex>
+#include <vector>
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
 
@@ -17,30 +17,30 @@ struct EntryParams {
 };
 
 struct ModuleInfo {
-	std::string name;
+    std::string name;
     union {
-		u64 value;
+        u64 value;
         struct {
-			u32 name_offset;
-			u08 version_minor;
-			u08 version_major;
-			u16 id;
-		};
-	};
-	std::string enc_id;
+            u32 name_offset;
+            u08 version_minor;
+            u08 version_major;
+            u16 id;
+        };
+    };
+    std::string enc_id;
 };
 
 struct LibraryInfo {
-	std::string name;
+    std::string name;
     union {
-		u64 value;
+        u64 value;
         struct {
-			u32 name_offset;
-			u16 version;
-			u16 id;
-		};
-	};
-	std::string enc_id;
+            u32 name_offset;
+            u16 version;
+            u16 id;
+        };
+    };
+    std::string enc_id;
 };
 
 struct PS4ThreadLocal {
@@ -110,22 +110,25 @@ struct Module {
 
 class Linker {
 public:
-	Linker();
-	virtual ~Linker();
+    Linker();
+    virtual ~Linker();
 
-	Module* LoadModule(const std::string& elf_name);
-	Module* FindModule(/*u32 id*/);
-	void LoadModuleToMemory(Module* m);
-	void LoadDynamicInfo(Module* m);
-	void LoadSymbols(Module* m);
-    Loader::SymbolsResolver& getHLESymbols() { return m_hle_symbols; }
-	void Relocate(Module* m);
-    void Resolve(const std::string& name, int Symtype, Module* m, Loader::SymbolRecord* return_info);
+    Module* LoadModule(const std::string& elf_name);
+    Module* FindModule(/*u32 id*/);
+    void LoadModuleToMemory(Module* m);
+    void LoadDynamicInfo(Module* m);
+    void LoadSymbols(Module* m);
+    Loader::SymbolsResolver& getHLESymbols() {
+        return m_hle_symbols;
+    }
+    void Relocate(Module* m);
+    void Resolve(const std::string& name, int Symtype, Module* m,
+                 Loader::SymbolRecord* return_info);
     void Execute();
 
 private:
-	const ModuleInfo* FindModule(const Module& m, const std::string& id);
-	const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
+    const ModuleInfo* FindModule(const Module& m, const std::string& id);
+    const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
 
     std::vector<Module> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

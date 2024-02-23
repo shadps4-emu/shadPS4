@@ -1,15 +1,15 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 #include "common/types.h"
 
 namespace Core::Loader {
 
 struct SymbolRecord {
     std::string name;
-	u64 virtual_address;
+    u64 virtual_address;
 };
 
 struct SymbolRes {
@@ -25,10 +25,10 @@ struct SymbolRes {
 
 class SymbolsResolver {
 public:
-	SymbolsResolver() = default;
-	virtual ~SymbolsResolver() = default;
+    SymbolsResolver() = default;
+    virtual ~SymbolsResolver() = default;
 
-	void AddSymbol(const SymbolRes& s, u64 virtual_addr);
+    void AddSymbol(const SymbolRes& s, u64 virtual_addr);
     const SymbolRecord* FindSymbol(const SymbolRes& s) const;
 
     static std::string GenerateName(const SymbolRes& s);
