@@ -1,5 +1,8 @@
 #!/bin/bash -ex
 
+# SPDX-FileCopyrightText: 2023 Citra Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 if grep -nrI '\s$' src *.yml *.txt *.md Doxyfile .gitignore .gitmodules .ci* dist/*.desktop \
                  dist/*.svg dist/*.xml; then
     echo Trailing whitespace found, aborting

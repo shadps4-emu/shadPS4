@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/native_clock.h"
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"

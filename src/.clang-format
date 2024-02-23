@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2016 Emmanuel Gil Peyrot <linkmauve@linkmauve.fr>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 ---
 Language:        Cpp
 # BasedOnStyle:  LLVM

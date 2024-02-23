@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/fs_file.h"
 
 namespace Common::FS {
@@ -32,7 +35,7 @@ bool File::close() {
     return true;
 }
 
-bool File::write(std::span<const u08> data) {
+bool File::write(std::span<const u8> data) {
     return isOpen() && std::fwrite(data.data(), 1, data.size(), m_file) == data.size();
 }
 

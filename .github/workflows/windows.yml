@@ -1,7 +1,5 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
 
 name: Windows
 
@@ -21,21 +19,17 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
     - uses: actions/checkout@v3
       with:
           submodules: recursive
-
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL
-      
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.2
       with:

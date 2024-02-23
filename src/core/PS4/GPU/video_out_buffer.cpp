@@ -1,10 +1,11 @@
-#include "video_out_buffer.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/log.h"
-
-#include <vulkan_util.h>
 #include "common/debug.h"
-#include "tile_manager.h"
+#include "common/log.h"
+#include "core/PS4/GPU/tile_manager.h"
+#include "core/PS4/GPU/video_out_buffer.h"
+#include "vulkan_util.h"
 
 constexpr bool log_file_videoOutBuffer = true; // disable it to disable logging
 
@@ -22,7 +23,7 @@ static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params,
     vk_obj->layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     if (tiled) {
-        std::vector<u08> tempbuff(*size);
+        std::vector<u8> tempbuff(*size);
         GPU::convertTileToLinear(tempbuff.data(), reinterpret_cast<void*>(*virtual_addr), width,
                                  height, neo);
         Graphics::Vulkan::vulkanFillImage(

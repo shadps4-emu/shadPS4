@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <fmt/core.h>
 #include "common/singleton.h"
+#include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "emulator.h"
-#include "graphics_render.h"
 
 static thread_local GPU::CommandPool g_command_pool;
 

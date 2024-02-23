@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2014-2018 Marco Paland (info@paland.com)
+// SPDX-License-Identifier: MIT
+
 ///////////////////////////////////////////////////////////////////////////////
 // \author (c) Marco Paland (info@paland.com)
 //             2014-2018, PALANDesign Hannover, Germany
@@ -609,7 +612,7 @@ static inline int _vsnprintf(out_fct_type out, char* buffer, const char* format,
                     //     (unsigned short int)va.next<unsigned int>(cpu, mem) : va.next<unsigned
                     //     int>(cpu, mem);
                     const unsigned int value =
-                        (flags & FLAGS_CHAR)    ? static_cast<u08>(vaArgInteger(va_list))
+                        (flags & FLAGS_CHAR)    ? static_cast<u8>(vaArgInteger(va_list))
                         : (flags & FLAGS_SHORT) ? static_cast<u16>(vaArgInteger(va_list))
                                                 : static_cast<u32>(vaArgInteger(va_list));
                     idx = _ntoa_long(out, buffer, idx, maxlen, value, false, base, precision, width,

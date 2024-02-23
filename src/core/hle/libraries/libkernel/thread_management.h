@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 #define _TIMESPEC_DEFINED
 
+#include <string>
 #include <pthread.h>
 #include <sched.h>
-
-#include <string>
 
 #include "common/types.h"
 
@@ -32,14 +34,14 @@ using ScePthreadCondattr = PthreadCondAttrInternal*;
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
 struct PthreadInternal {
-    u08 reserved[4096];
+    u8 reserved[4096];
     std::string name;
     pthread_t pth;
     ScePthreadAttr attr;
 };
 
 struct PthreadAttrInternal {
-    u08 reserved[64];
+    u8 reserved[64];
     u64 affinity;
     size_t guard_size;
     int policy;
@@ -48,25 +50,25 @@ struct PthreadAttrInternal {
 };
 
 struct PthreadMutexInternal {
-    u08 reserved[256];
+    u8 reserved[256];
     std::string name;
     pthread_mutex_t pth_mutex;
 };
 
 struct PthreadMutexattrInternal {
-    u08 reserved[64];
+    u8 reserved[64];
     pthread_mutexattr_t pth_mutex_attr;
     int pprotocol;
 };
 
 struct PthreadCondInternal {
-    u08 reserved[256];
+    u8 reserved[256];
     std::string name;
     pthread_cond_t cond;
 };
 
 struct PthreadCondAttrInternal {
-    u08 reserved[64];
+    u8 reserved[64];
     pthread_condattr_t cond_attr;
 };
 

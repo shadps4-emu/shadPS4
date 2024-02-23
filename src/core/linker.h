@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <mutex>
@@ -22,8 +25,8 @@ struct ModuleInfo {
         u64 value;
         struct {
             u32 name_offset;
-            u08 version_minor;
-            u08 version_major;
+            u8 version_minor;
+            u8 version_major;
             u16 id;
         };
     };
@@ -98,8 +101,8 @@ struct Module {
 
     Linker* linker = nullptr;
 
-    std::vector<u08> m_dynamic;
-    std::vector<u08> m_dynamic_data;
+    std::vector<u8> m_dynamic;
+    std::vector<u8> m_dynamic_data;
     DynamicModuleInfo dynamic_info{};
 
     Loader::SymbolsResolver export_sym;

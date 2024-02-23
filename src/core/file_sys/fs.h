@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <atomic>
 #include <mutex>
 #include <string>
 #include <vector>
-
-#include <common/io_file.h>
 #include "common/fs_file.h"
+#include "common/io_file.h"
 
 namespace Core::FileSys {
 

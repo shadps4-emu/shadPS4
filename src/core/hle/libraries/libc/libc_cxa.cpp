@@ -1,7 +1,9 @@
-#include "libc_cxa.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
 #include "common/log.h"
+#include "core/hle/libraries/libc/libc_cxa.h"
 
 // adapted from
 // https://opensource.apple.com/source/libcppabi/libcppabi-14/src/cxa_guard.cxx.auto.html
@@ -57,23 +59,23 @@ __attribute__((noinline)) static pthread_mutex_t* guard_mutex() {
 
 // helper functions for getting/setting flags in guard_object
 static bool initializerHasRun(u64* guard_object) {
-    return (*((u08*)guard_object) != 0);
+    return (*((u8*)guard_object) != 0);
 }
 
 static void setInitializerHasRun(u64* guard_object) {
-    *((u08*)guard_object) = 1;
+    *((u8*)guard_object) = 1;
 }
 
 static bool inUse(u64* guard_object) {
-    return (((u08*)guard_object)[1] != 0);
+    return (((u8*)guard_object)[1] != 0);
 }
 
 static void setInUse(u64* guard_object) {
-    ((u08*)guard_object)[1] = 1;
+    ((u8*)guard_object)[1] = 1;
 }
 
 static void setNotInUse(u64* guard_object) {
-    ((u08*)guard_object)[1] = 0;
+    ((u8*)guard_object)[1] = 0;
 }
 
 //

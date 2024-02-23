@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <xmmintrin.h>
 #include "common/types.h"
 
@@ -50,7 +53,7 @@ struct VaCtx {
 
 template <class T, uint32_t Size>
 T vaArgRegSaveAreaGp(VaList* l) {
-    auto* addr = reinterpret_cast<T*>(static_cast<u08*>(l->reg_save_area) + l->gp_offset);
+    auto* addr = reinterpret_cast<T*>(static_cast<u8*>(l->reg_save_area) + l->gp_offset);
     l->gp_offset += Size;
     return *addr;
 }
@@ -64,7 +67,7 @@ T vaArgOverflowArgArea(VaList* l) {
 
 template <class T, uint32_t Size>
 T vaArgRegSaveAreaFp(VaList* l) {
-    auto* addr = reinterpret_cast<T*>(static_cast<u08*>(l->reg_save_area) + l->fp_offset);
+    auto* addr = reinterpret_cast<T*>(static_cast<u8*>(l->reg_save_area) + l->fp_offset);
     l->fp_offset += Size;
     return *addr;
 }

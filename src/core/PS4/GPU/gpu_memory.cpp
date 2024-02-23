@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <atomic>
 #include <xxh3.h>
-#include "gpu_memory.h"
-
 #include "common/singleton.h"
+#include "core/PS4/GPU/gpu_memory.h"
 
 void* GPU::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
                            void* todo /*CommandBuffer?*/, u64 virtual_addr, u64 size,
@@ -24,7 +26,7 @@ void GPU::memorySetAllocArea(u64 virtual_addr, u64 size) {
     gpumemory->m_heaps.push_back(h);
 }
 
-u64 GPU::calculate_hash(const u08* buf, u64 size) {
+u64 GPU::calculate_hash(const u8* buf, u64 size) {
     return (size > 0 && buf != nullptr ? XXH3_64bits(buf, size) : 0);
 }
 
@@ -108,7 +110,7 @@ void* GPU::GPUMemory::memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::Graphi
     for (int h = 0; h < virtual_addr_num; h++) {
         if (info.check_hash) {
             objInfo.hash[h] =
-                GPU::calculate_hash(reinterpret_cast<const u08*>(virtual_addr[h]), size[h]);
+                GPU::calculate_hash(reinterpret_cast<const u8*>(virtual_addr[h]), size[h]);
         } else {
             objInfo.hash[h] = 0;
         }

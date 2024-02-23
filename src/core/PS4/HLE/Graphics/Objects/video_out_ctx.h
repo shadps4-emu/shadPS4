@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <condition_variable>
 #include <mutex>
-#include <core/PS4/HLE/Graphics/graphics_ctx.h>
-#include <core/PS4/HLE/Graphics/video_out.h>
-#include <emulator.h>
+#include "core/PS4/HLE/Graphics/graphics_ctx.h"
+#include "core/PS4/HLE/Graphics/video_out.h"
+#include "emulator.h"
 
 using namespace HLE::Libs::Graphics::VideoOut;
 

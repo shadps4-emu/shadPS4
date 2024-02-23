@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Comment: It is best to use this file to record copyright information about
+         generated, binary and third party files
+
+Files: CMakeSettings.json
+       scripts/ps4_names.txt
+       documents/changelog.txt
+       documents/readme.txt
+Copyright: shadPS4 Emulator Project
+License: GPL-2.0-or-later

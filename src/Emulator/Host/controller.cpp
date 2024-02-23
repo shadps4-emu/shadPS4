@@ -1,11 +1,16 @@
-#include <core/hle/libraries/libkernel/time_management.h>
-#include "controller.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "Emulator/Host/controller.h"
+#include "core/hle/libraries/libkernel/time_management.h"
 
 namespace Emulator::Host::Controller {
+
 GameController::GameController() {
     m_states_num = 0;
     m_last_state = State();
 }
+
 void GameController::readState(State* state, bool* isConnected, int* connectedCount) {
     std::scoped_lock lock{m_mutex};
 
