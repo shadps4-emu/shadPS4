@@ -658,12 +658,12 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m, Loader::Sy
 		}
 		else
 		{
-            __debugbreak();//den tha prepei na ftasoume edo
+            //__debugbreak();//den tha prepei na ftasoume edo
 		}
 	}
 	else
 	{
-        __debugbreak();//oute edo mallon
+        //__debugbreak();//oute edo mallon
 	}
 
 }

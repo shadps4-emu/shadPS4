@@ -2,8 +2,9 @@
 
 #include "common/types.h"
 #include <vector>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include <mutex>
+#include <memory>
 
 namespace HLE::Libs::Graphics {
 

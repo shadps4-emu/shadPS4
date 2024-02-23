@@ -14,7 +14,6 @@
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libs.h"
 #include "core/linker.h"
-#include "emuTimer.h"
 #include "emulator.h"
 #include <core/hle/libraries/libkernel/thread_management.h>
 #include "core/file_sys/fs.h"
@@ -31,7 +30,6 @@ int main(int argc, char* argv[]) {
     auto height = Config::getScreenHeight();
     Emu::emuInit(width, height);
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
-    Emulator::emuTimer::start();
 
     // Argument 1 is the path of self file to boot
     const char* const path = argv[1];

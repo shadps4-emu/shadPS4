@@ -12,7 +12,7 @@ int PS4_SYSV_ABI ps4_printf(VA_ARGS) {
 }
 
 int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
-    int fd = _fileno(file);
+    int fd = fileno(file);
     if (fd == 1 || fd == 2) {  // output stdout and stderr to console
         VA_CTX(ctx);
         return printf_ctx(&ctx);

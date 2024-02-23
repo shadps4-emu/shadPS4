@@ -15,6 +15,8 @@
 #ifdef _WIN64
 #include <windows.h>
 #include <io.h>
+#else
+#include <sys/mman.h>
 #endif
 #include "thread_management.h"
 
@@ -56,6 +58,7 @@ int* PS4_SYSV_ABI __Error() { return &libc_error; }
 #define PROT_WRITE 0x2
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, off_t offset, void** res) {
+#ifdef _WIN64
     PRINT_FUNCTION_NAME();
     if (prot > 3)  // READ,WRITE or bitwise READ | WRITE supported
     {
@@ -86,6 +89,14 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
     }
     *res = ret;
     return 0;
+#else
+    void* result = mmap(addr, len, prot, flags, fd, offset);
+    if (result != MAP_FAILED) {
+        *res = result;
+        return 0;
+    }
+    std::abort();
+#endif
 }
 
 PS4_SYSV_ABI void* posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {

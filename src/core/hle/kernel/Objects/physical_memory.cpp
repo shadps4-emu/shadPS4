@@ -1,4 +1,4 @@
-#include "core/hle/kernel/objects/physical_memory.h"
+#include "core/hle/kernel/Objects/physical_memory.h"
 
 namespace Core::Kernel {
 
