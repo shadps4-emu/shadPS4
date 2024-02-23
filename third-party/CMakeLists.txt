@@ -30,7 +30,6 @@ add_subdirectory(toml11 EXCLUDE_FROM_ALL)
 
 # Vulkan
 add_subdirectory(vulkan EXCLUDE_FROM_ALL)
-target_include_directories(vulkan-1 INTERFACE vulkan/include)
 
 # Winpthreads
 if (WIN32)
@@ -66,6 +65,6 @@ target_include_directories(imgui PUBLIC
     imgui/include
 )
 
-target_link_libraries(imgui PRIVATE SDL3-shared ${CMAKE_DL_LIBS} Zydis winpthread discord-rpc)
+target_link_libraries(imgui PRIVATE SDL3-shared ${CMAKE_DL_LIBS} Zydis discord-rpc)
 
 

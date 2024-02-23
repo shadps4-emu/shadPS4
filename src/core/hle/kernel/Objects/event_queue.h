@@ -3,6 +3,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <condition_variable>
 #include "common/types.h"
 
 namespace Core::Kernel {

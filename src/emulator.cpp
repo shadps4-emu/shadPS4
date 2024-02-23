@@ -1,6 +1,5 @@
 #include <fmt/core.h>
 #include <vulkan_util.h>
-#include "common/timer.h"
 #include "common/singleton.h"
 #include "common/version.h"
 #include "emulator.h"
@@ -90,8 +89,6 @@ static void calculateFps(double game_time_s) {
     }
 }
 void emuRun() {
-    Common::Timer timer;
-    timer.Start();
     auto window_ctx = Common::Singleton<Emu::WindowCtx>::Instance();
     {
         // init window and wait until init finishes
@@ -100,7 +97,7 @@ void emuRun() {
         Graphics::Vulkan::vulkanCreate(window_ctx);
         window_ctx->m_is_graphic_initialized = true;
         window_ctx->m_graphic_initialized_cond.notify_one();
-        calculateFps(timer.GetTimeSec());
+        calculateFps(0); // TODO: Proper fps
     }
 
     bool exit_loop = false;
@@ -138,10 +135,6 @@ void emuRun() {
             continue;
         }
         if (m_game_is_paused) {
-            if (!timer.IsPaused()) {
-                timer.Pause();
-            }
-
             SDL_WaitEvent(&event);
 
             switch (event.type) {
@@ -171,21 +164,13 @@ void emuRun() {
             continue;
         }
         exit_loop = m_emu_needs_exit;
-        if (m_game_is_paused) {
-            if (!timer.IsPaused()) {
-                timer.Pause();
-            }
-        } else {
-            if (timer.IsPaused()) {
-                timer.Resume();
-            }
-
+        if (!m_game_is_paused) {
             if (!exit_loop) {
                 update();
             }
             if (!exit_loop) {
                 if (HLE::Libs::Graphics::VideoOut::videoOutFlip(100000)) {  // flip every 0.1 sec
-                    calculateFps(timer.GetTimeSec());
+                    calculateFps(0); // TODO: Proper fps
                 }
             }
         }
@@ -215,7 +200,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
     window_ctx->swapchain.current_index = static_cast<u32>(-1);
 
     auto result = vkAcquireNextImageKHR(window_ctx->m_graphic_ctx.m_device, window_ctx->swapchain.swapchain, UINT64_MAX, nullptr,
-                                        window_ctx->swapchain.present_complete_fence, &window_ctx->swapchain.current_index);
+                                        VK_NULL_HANDLE, &window_ctx->swapchain.current_index);
 
     if (result != VK_SUCCESS) {
         fmt::print("Can't aquireNextImage\n");
@@ -225,16 +210,6 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
         fmt::print("Unsupported:swapchain current index is -1\n");
         std::exit(0);
     }
-
-    do {
-        result = vkWaitForFences(window_ctx->m_graphic_ctx.m_device, 1, &window_ctx->swapchain.present_complete_fence, VK_TRUE, 100000000);
-    } while (result == VK_TIMEOUT);
-    if (result != VK_SUCCESS) {
-        fmt::print("vkWaitForFences is not success\n");
-        std::exit(0);
-    }
-
-    vkResetFences(window_ctx->m_graphic_ctx.m_device, 1, &window_ctx->swapchain.present_complete_fence);
 
     auto blt_src_image = image;
     auto blt_dst_image = window_ctx->swapchain;
@@ -272,6 +247,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 
     buffer.end();
     buffer.executeWithSemaphore();
+    buffer.waitForFence(); // HACK: The whole vulkan backend needs a rewrite
 
     VkPresentInfoKHR present{};
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
