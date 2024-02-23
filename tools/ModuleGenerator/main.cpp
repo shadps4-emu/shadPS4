@@ -1,13 +1,12 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
-#include "json.hpp"
 #include <unordered_map>
-
+#include "json.hpp"
 
 struct NidFuncTable {
     std::string m_id;
@@ -26,11 +25,9 @@ void GenerateCodeFiles(
     std::string headerName(lowModName + ".h");
     std::string headerCode("#pragma once\n\n#include \"library_common.h\" \n\n");
     std::string trimmedName = moduleName;
-    if (moduleName.find("libSce") != std::string::npos)
-    {
-        trimmedName = moduleName.substr(6, moduleName.size()-1);
-    }
-    else if (moduleName.find("lib") != std::string::npos) {
+    if (moduleName.find("libSce") != std::string::npos) {
+        trimmedName = moduleName.substr(6, moduleName.size() - 1);
+    } else if (moduleName.find("lib") != std::string::npos) {
         trimmedName = moduleName.substr(3, moduleName.size() - 1);
         trimmedName[0] = toupper(trimmedName[0]);
     }
@@ -64,11 +61,11 @@ void GenerateCodeFiles(
     for (const auto& lib : libName2FuncTableMap) {
         for (const auto& func : lib.second) {
             if (funcImplementation.find(func.m_funcName) == funcImplementation.end()) {
-                const std::string funcDeclare(
-                    "int PS4_SYSV_ABI " + func.m_funcName + "()\n" + "{\n" +
-                    "	PRINT_UNIMPLEMENTED_FUNCTION_NAME();\n"
-                    "	return ORBIS_OK;\n" +
-                    "}\n\n");
+                const std::string funcDeclare("int PS4_SYSV_ABI " + func.m_funcName + "()\n" +
+                                              "{\n" +
+                                              "	PRINT_UNIMPLEMENTED_FUNCTION_NAME();\n"
+                                              "	return ORBIS_OK;\n" +
+                                              "}\n\n");
                 sourceCode += funcDeclare;
                 funcImplementation.insert(func.m_funcName);
             }
@@ -77,9 +74,10 @@ void GenerateCodeFiles(
     sourceCode += "void Register" + moduleName + "(Loader::SymbolsResolver * sym) {\n";
     for (const auto& lib : libName2FuncTableMap) {
         for (const auto& func : lib.second) {
-            sourceCode += " LIB_FUNCTION(\"" + func.m_id + ", " + lib.first + " , " + std::to_string(func.m_libversion) + " , " + moduleName +
-                ", " + std::to_string(func.m_version_major) + ", " +
-                    std::to_string(func.m_version_minor) + " , " + func.m_funcName + " ),\n";
+            sourceCode += " LIB_FUNCTION(\"" + func.m_id + ", " + lib.first + " , " +
+                          std::to_string(func.m_libversion) + " , " + moduleName + ", " +
+                          std::to_string(func.m_version_major) + ", " +
+                          std::to_string(func.m_version_minor) + " , " + func.m_funcName + " ),\n";
         }
     }
 
