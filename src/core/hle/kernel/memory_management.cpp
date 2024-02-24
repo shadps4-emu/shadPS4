@@ -1,14 +1,17 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <bit>
-#include <core/PS4/GPU/gpu_memory.h>
-#include <core/virtual_memory.h>
 #include <magic_enum.hpp>
 #include "common/debug.h"
 #include "common/log.h"
 #include "common/singleton.h"
+#include "core/PS4/GPU/gpu_memory.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/kernel/Objects/physical_memory.h"
 #include "core/hle/kernel/memory_management.h"
 #include "core/hle/libraries/libs.h"
+#include "core/virtual_memory.h"
 
 namespace Core::Kernel {
 

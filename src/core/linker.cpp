@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <Zydis/Zydis.h>
 #include <fmt/core.h>
 #include "common/log.h"
@@ -531,7 +534,7 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
     u64 rel_base_virtual_addr = m->base_virtual_addr;
     u64 rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
     bool rel_isResolved = false;
-    u08 rel_sym_type = 0;
+    u8 rel_sym_type = 0;
     std::string rel_name;
 
     switch (type) {
@@ -605,16 +608,15 @@ static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
 void Linker::Relocate(Module* m) {
     u32 idx = 0;
     for (auto* rel = m->dynamic_info.relocation_table;
-         reinterpret_cast<u08*>(rel) < reinterpret_cast<u08*>(m->dynamic_info.relocation_table) +
-                                           m->dynamic_info.relocation_table_size;
+         reinterpret_cast<u8*>(rel) < reinterpret_cast<u8*>(m->dynamic_info.relocation_table) +
+                                          m->dynamic_info.relocation_table_size;
          rel++, idx++) {
         relocate(idx, rel, m, false);
     }
     idx = 0;
     for (auto* rel = m->dynamic_info.jmp_relocation_table;
-         reinterpret_cast<u08*>(rel) <
-         reinterpret_cast<u08*>(m->dynamic_info.jmp_relocation_table) +
-             m->dynamic_info.jmp_relocation_table_size;
+         reinterpret_cast<u8*>(rel) < reinterpret_cast<u8*>(m->dynamic_info.jmp_relocation_table) +
+                                          m->dynamic_info.jmp_relocation_table_size;
          rel++, idx++) {
         relocate(idx, rel, m, true);
     }

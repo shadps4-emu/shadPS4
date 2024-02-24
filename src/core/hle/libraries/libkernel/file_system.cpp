@@ -1,8 +1,11 @@
-#include <common/singleton.h>
-#include <core/file_sys/fs.h>
-#include <core/hle/error_codes.h>
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/debug.h"
 #include "common/log.h"
+#include "common/singleton.h"
+#include "core/file_sys/fs.h"
+#include "core/hle/error_codes.h"
 #include "core/hle/libraries/libkernel/file_system.h"
 #include "core/hle/libraries/libs.h"
 

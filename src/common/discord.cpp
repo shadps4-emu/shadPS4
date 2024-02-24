@@ -1,9 +1,13 @@
-#include "discord.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
 #include <ctime>
+#include "common/discord.h"
 
-void Discord::RPC::init() {
+namespace Discord {
+
+void RPC::init() {
     DiscordEventHandlers handlers{};
     Discord_Initialize("1139939140494971051", &handlers, 1, nullptr);
 
@@ -11,7 +15,7 @@ void Discord::RPC::init() {
     enabled = true;
 }
 
-void Discord::RPC::update(Discord::RPCStatus status, const std::string& game) {
+void RPC::update(Discord::RPCStatus status, const std::string& game) {
     DiscordRichPresence rpc{};
 
     if (status == Discord::RPCStatus::Playing) {
@@ -28,10 +32,12 @@ void Discord::RPC::update(Discord::RPCStatus status, const std::string& game) {
     Discord_UpdatePresence(&rpc);
 }
 
-void Discord::RPC::stop() {
+void RPC::stop() {
     if (enabled) {
         enabled = false;
         Discord_ClearPresence();
         Discord_Shutdown();
     }
 }
+
+} // namespace Discord

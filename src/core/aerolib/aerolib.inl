@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // generated using ps4_names2stubs.py
 
 STUB("++DO8Y1JaYU", sceAvSettingDebugSetProcessAttribute)

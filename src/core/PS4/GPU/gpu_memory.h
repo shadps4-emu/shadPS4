@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <mutex>
 #include <vector>
-#include <core/PS4/HLE/Graphics/graphics_ctx.h>
 #include "common/types.h"
+#include "core/PS4/HLE/Graphics/graphics_ctx.h"
 
 namespace GPU {
 
@@ -84,7 +87,7 @@ void memorySetAllocArea(u64 virtual_addr, u64 size);
 void* memoryCreateObj(u64 submit_id, HLE::Libs::Graphics::GraphicCtx* ctx,
                       /*CommandBuffer* buffer*/ void* todo, u64 virtual_addr, u64 size,
                       const GPUObject& info);
-u64 calculate_hash(const u08* buf, u64 size);
+u64 calculate_hash(const u8* buf, u64 size);
 bool vulkanAllocateMemory(HLE::Libs::Graphics::GraphicCtx* ctx,
                           HLE::Libs::Graphics::VulkanMemory* mem);
 void flushGarlic(HLE::Libs::Graphics::GraphicCtx* ctx);

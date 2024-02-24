@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include "common/types.h"
@@ -26,17 +29,17 @@ enum ScePadButton : u32 {
 };
 
 struct ScePadOpenParam {
-    u08 reserve[8];
+    u8 reserve[8];
 };
 
 struct ScePadAnalogStick {
-    u08 x;
-    u08 y;
+    u8 x;
+    u8 y;
 };
 struct ScePadAnalogButtons {
-    u08 l2;
-    u08 r2;
-    u08 padding[2];
+    u8 l2;
+    u8 r2;
+    u8 padding[2];
 };
 
 struct SceFQuaternion {
@@ -50,24 +53,24 @@ struct SceFVector3 {
 struct ScePadTouch {
     u16 x;
     u16 y;
-    u08 id;
-    u08 reserve[3];
+    u8 id;
+    u8 reserve[3];
 };
 
 constexpr int SCE_PAD_MAX_TOUCH_NUM = 2;
 
 typedef struct ScePadTouchData {
-    u08 touchNum;
-    u08 reserve[3];
+    u8 touchNum;
+    u8 reserve[3];
     u32 reserve1;
     ScePadTouch touch[SCE_PAD_MAX_TOUCH_NUM];
 } ScePadTouchData;
 
 struct ScePadExtensionUnitData {
     u32 extensionUnitId;
-    u08 reserve[1];
-    u08 dataLength;
-    u08 data[10];
+    u8 reserve[1];
+    u8 dataLength;
+    u8 data[10];
 };
 
 struct ScePadData {

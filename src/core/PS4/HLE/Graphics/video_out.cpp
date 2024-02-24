@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <cstdio>
 #include <string>
 #include <magic_enum.hpp>
@@ -8,6 +11,7 @@
 #include "common/singleton.h"
 #include "core/PS4/GPU/gpu_memory.h"
 #include "core/PS4/GPU/video_out_buffer.h"
+#include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
@@ -15,7 +19,6 @@
 #include "core/hle/libraries/libuserservice/usr_mng_codes.h"
 #include "core/loader/symbols_resolver.h"
 #include "emulator.h"
-#include "graphics_render.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 

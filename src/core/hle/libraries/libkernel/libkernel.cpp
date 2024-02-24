@@ -1,4 +1,5 @@
-#include "core/hle/libraries/libkernel/libkernel.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
 #include "common/log.h"
@@ -8,6 +9,8 @@
 #include "core/hle/kernel/event_queues.h"
 #include "core/hle/kernel/memory_management.h"
 #include "core/hle/libraries/libkernel/file_system.h"
+#include "core/hle/libraries/libkernel/libkernel.h"
+#include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/hle/libraries/libkernel/time_management.h"
 #include "core/hle/libraries/libs.h"
 #include "core/loader/elf.h"
@@ -18,7 +21,6 @@
 #else
 #include <sys/mman.h>
 #endif
-#include "thread_management.h"
 
 namespace Core::Libraries::LibKernel {
 

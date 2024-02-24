@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <mutex>
 #include "common/singleton.h"
-#include "tile_manager.h"
+#include "core/PS4/GPU/tile_manager.h"
 
 namespace GPU {
 
@@ -160,15 +163,15 @@ void convertTileToLinear(void* dst, const void* src, u32 width, u32 height, bool
         for (; x + 1 < width; x += 2) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
 
-            *reinterpret_cast<u64*>(static_cast<u08*>(dst) + linear_offset) =
-                *reinterpret_cast<const u64*>(static_cast<const u08*>(src) + tiled_offset);
+            *reinterpret_cast<u64*>(static_cast<u8*>(dst) + linear_offset) =
+                *reinterpret_cast<const u64*>(static_cast<const u8*>(src) + tiled_offset);
             linear_offset += 8;
         }
         if (x < width) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
 
-            *reinterpret_cast<u32*>(static_cast<u08*>(dst) + linear_offset) =
-                *reinterpret_cast<const u32*>(static_cast<const u08*>(src) + tiled_offset);
+            *reinterpret_cast<u32*>(static_cast<u8*>(dst) + linear_offset) =
+                *reinterpret_cast<const u32*>(static_cast<const u8*>(src) + tiled_offset);
         }
     }
 }

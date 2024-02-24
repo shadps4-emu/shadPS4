@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <string>
@@ -18,8 +21,8 @@ struct SymbolRes {
     std::string library;
     u16 library_version;
     std::string module;
-    u08 module_version_major;
-    u08 module_version_minor;
+    u8 module_version_major;
+    u8 module_version_minor;
     u32 type;
 };
 

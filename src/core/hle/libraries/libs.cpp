@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libkernel/libkernel.h"
