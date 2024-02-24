@@ -55,7 +55,7 @@ void GenerateCodeFiles(
         }
     }
 
-    headerCode += "\nvoid Register" + moduleName + "(Loader::SymbolsResolver * sym);\n";
+    headerCode += "\nvoid Register" + moduleName + "(Core::Loader::SymbolsResolver * sym);\n";
 
     headerCode += "}";
     std::ofstream headerFile(MODULE_DIR + headerName);
@@ -85,13 +85,13 @@ void GenerateCodeFiles(
             }
         }
     }
-    sourceCode += "void Register" + moduleName + "(Loader::SymbolsResolver * sym) {\n";
+    sourceCode += "void Register" + moduleName + "(Core::Loader::SymbolsResolver * sym) {\n";
     for (const auto& lib : libName2FuncTableMap) {
         for (const auto& func : lib.second) {
-            sourceCode += " LIB_FUNCTION(\"" + func.m_encoded_id + ", " + lib.first + " , " +
-                          std::to_string(func.m_libversion) + " , " + moduleName + ", " +
+            sourceCode += " LIB_FUNCTION(\"" + func.m_encoded_id + "\", \"" + lib.first + "\" , " +
+                          std::to_string(func.m_libversion) + " , \"" + moduleName + "\", " +
                           std::to_string(func.m_version_major) + ", " +
-                          std::to_string(func.m_version_minor) + " , " + func.m_funcName + " ),\n";
+                          std::to_string(func.m_version_minor) + " , " + func.m_funcName + " );\n";
         }
     }
 

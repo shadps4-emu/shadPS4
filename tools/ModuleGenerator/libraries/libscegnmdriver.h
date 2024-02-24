@@ -259,5 +259,5 @@ int PS4_SYSV_ABI Func_BFB41C057478F0BF();
 int PS4_SYSV_ABI Func_E51D44DB8151238C();
 int PS4_SYSV_ABI Func_F916890425496553();
 
-void RegisterlibSceGnmDriver(Loader::SymbolsResolver * sym);
+void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver * sym);
 }

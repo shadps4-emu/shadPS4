@@ -1057,5 +1057,5 @@ int PS4_SYSV_ABI Func_9889095293F9BCAA();
 int PS4_SYSV_ABI sceCoredumpDebugForceCoredumpOnAppClose();
 int PS4_SYSV_ABI sceCoredumpDebugTriggerCoredump();
 
-void Registerlibkernel(Loader::SymbolsResolver * sym);
+void Registerlibkernel(Core::Loader::SymbolsResolver * sym);
 }

@@ -158,5 +158,5 @@ int PS4_SYSV_ABI sceVideoOutGetHdmiRawEdid_();
 int PS4_SYSV_ABI sceVideoOutAddBufferHdrPrivilege();
 int PS4_SYSV_ABI Func_DF1AD257C5341EC8();
 
-void RegisterlibSceVideoOut(Loader::SymbolsResolver * sym);
+void RegisterlibSceVideoOut(Core::Loader::SymbolsResolver * sym);
 }

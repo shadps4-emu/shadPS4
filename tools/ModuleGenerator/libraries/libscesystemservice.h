@@ -477,5 +477,5 @@ int PS4_SYSV_ABI sceSystemServiceReenableVoiceRecognition();
 int PS4_SYSV_ABI Func_6B1CDB955F0EBD65();
 int PS4_SYSV_ABI Func_CB5E885E225F69F0();
 
-void RegisterlibSceSystemService(Loader::SymbolsResolver * sym);
+void RegisterlibSceSystemService(Core::Loader::SymbolsResolver * sym);
 }

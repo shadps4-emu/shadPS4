@@ -431,5 +431,5 @@ int PS4_SYSV_ABI Func_A6BDC9DFDAFD02B4();
 int PS4_SYSV_ABI Func_BB9491DFE6B4953C();
 int PS4_SYSV_ABI Func_D2B814603E7B4477();
 
-void RegisterlibSceUserService(Loader::SymbolsResolver * sym);
+void RegisterlibSceUserService(Core::Loader::SymbolsResolver * sym);
 }
