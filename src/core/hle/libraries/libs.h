@@ -8,7 +8,7 @@
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
     {                                                                                              \
-        Loader::SymbolRes sr{};                                                                    \
+        Core::Loader::SymbolRes sr{};                                                              \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
@@ -22,7 +22,7 @@
 
 #define LIB_OBJ(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)       \
     {                                                                                              \
-        Loader::SymbolRes sr{};                                                                    \
+        Core::Loader::SymbolRes sr{};                                                              \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
@@ -39,6 +39,9 @@
 
 #define PRINT_DUMMY_FUNCTION_NAME()                                                                \
     { LOG_WARN_IF(true, "dummy {}()\n", __func__); }
+
+#define PRINT_UNIMPLEMENTED_FUNCTION_NAME()                                                        \
+    { LOG_ERROR_IF(true, "{}()\n", __func__); }
 
 namespace Core::Libraries {
 

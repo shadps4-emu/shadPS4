@@ -40,6 +40,10 @@
 	path = third-party/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
 	branch = dev
+[submodule "externals/ps4libdoc"]
+	path = externals/ps4libdoc
+	url = https://github.com/idc/ps4libdoc.git
+	branch = 9.00
 [submodule "third-party/vulkan"]
 	path = third-party/vulkan
 	url = https://github.com/GPUCode/vulkan
