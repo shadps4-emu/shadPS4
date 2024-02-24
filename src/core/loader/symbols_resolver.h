@@ -1,15 +1,18 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 #include "common/types.h"
 
 namespace Core::Loader {
 
 struct SymbolRecord {
     std::string name;
-	u64 virtual_address;
+    u64 virtual_address;
 };
 
 struct SymbolRes {
@@ -18,17 +21,17 @@ struct SymbolRes {
     std::string library;
     u16 library_version;
     std::string module;
-    u08 module_version_major;
-    u08 module_version_minor;
+    u8 module_version_major;
+    u8 module_version_minor;
     u32 type;
 };
 
 class SymbolsResolver {
 public:
-	SymbolsResolver() = default;
-	virtual ~SymbolsResolver() = default;
+    SymbolsResolver() = default;
+    virtual ~SymbolsResolver() = default;
 
-	void AddSymbol(const SymbolRes& s, u64 virtual_addr);
+    void AddSymbol(const SymbolRes& s, u64 virtual_addr);
     const SymbolRecord* FindSymbol(const SymbolRes& s) const;
 
     static std::string GenerateName(const SymbolRes& s);

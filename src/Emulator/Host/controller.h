@@ -1,17 +1,21 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
-#include "common/types.h"
+
 #include <mutex>
+#include "common/types.h"
 
 namespace Emulator::Host::Controller {
 struct State {
-    u32 buttonsState =0;
+    u32 buttonsState = 0;
     u64 time = 0;
 };
 
 constexpr u32 MAX_STATES = 64;
 
 class GameController {
-  public:
+public:
     GameController();
     virtual ~GameController() = default;
 
@@ -20,8 +24,7 @@ class GameController {
     void checKButton(int id, u32 button, bool isPressed);
     void addState(const State& state);
 
-
-  private:
+private:
     std::mutex m_mutex;
     bool m_connected = false;
     State m_last_state;
@@ -31,4 +34,4 @@ class GameController {
     State m_states[MAX_STATES];
 };
 
-}  // namespace Emulator::HLE::Libraries::Controller
+} // namespace Emulator::Host::Controller

@@ -1,6 +1,9 @@
-#include "io_file.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-//#include "helpers.hpp"
+#include "common/io_file.h"
+
+// #include "helpers.hpp"
 
 #ifdef _MSC_VER
 // 64 bit offsets for MSVC
@@ -118,8 +121,8 @@ FILE* IOFile::getHandle() {
 }
 
 void IOFile::setAppDataDir(const std::filesystem::path& dir) {
-    //if (dir == "")
-    //    Helpers::panic("Failed to set app data directory");
+    // if (dir == "")
+    //     Helpers::panic("Failed to set app data directory");
     appData = dir;
 }
 

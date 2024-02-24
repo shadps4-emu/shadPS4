@@ -1,6 +1,9 @@
-#include "graphics_render.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <fmt/core.h>
 #include "common/singleton.h"
+#include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "emulator.h"
 
 static thread_local GPU::CommandPool g_command_pool;
@@ -155,7 +158,8 @@ void GPU::CommandPool::createPool(int id) {
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandBufferCount = m_pool[id].buffers_count;
 
-    if (vkAllocateCommandBuffers(ctx->m_device, &alloc_info, m_pool[id].buffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(ctx->m_device, &alloc_info, m_pool[id].buffers.data()) !=
+        VK_SUCCESS) {
         fmt::print("Can't allocate command buffers\n");
         std::exit(0);
     }
@@ -168,7 +172,8 @@ void GPU::CommandPool::createPool(int id) {
         fence_info.pNext = nullptr;
         fence_info.flags = 0;
 
-        if (vkCreateFence(ctx->m_device, &fence_info, nullptr, &m_pool[id].fences[i]) != VK_SUCCESS) {
+        if (vkCreateFence(ctx->m_device, &fence_info, nullptr, &m_pool[id].fences[i]) !=
+            VK_SUCCESS) {
             fmt::print("Can't create fence\n");
             std::exit(0);
         }
@@ -178,7 +183,8 @@ void GPU::CommandPool::createPool(int id) {
         semaphore_info.pNext = nullptr;
         semaphore_info.flags = 0;
 
-        if (vkCreateSemaphore(ctx->m_device, &semaphore_info, nullptr, &m_pool[id].semaphores[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(ctx->m_device, &semaphore_info, nullptr, &m_pool[id].semaphores[i]) !=
+            VK_SUCCESS) {
             fmt::print("Can't create semas\n");
             std::exit(0);
         }

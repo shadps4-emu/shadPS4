@@ -1,20 +1,25 @@
-#include "tile_manager.h"
-#include "common/singleton.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <mutex>
+#include "common/singleton.h"
+#include "core/PS4/GPU/tile_manager.h"
 
 namespace GPU {
 
-static u32 IntLog2(u32 i) { return 31 - __builtin_clz(i | 1u); }
+static u32 IntLog2(u32 i) {
+    return 31 - __builtin_clz(i | 1u);
+}
 
 class TileManager {
-  public:
-    TileManager(){}
-    virtual ~TileManager() {  }
+public:
+    TileManager() {}
+    virtual ~TileManager() {}
     std::mutex m_mutex;
 };
 
 class TileManager32 {
-  public:
+public:
     u32 m_macro_tile_height = 0;
     u32 m_bank_height = 0;
     u32 m_num_banks = 0;
@@ -69,25 +74,26 @@ class TileManager32 {
         return pipe;
     }
 
-    static u32 getBankIdx(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks, u32 num_pipes) {
+    static u32 getBankIdx(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks,
+                          u32 num_pipes) {
         const u32 x_shift_offset = IntLog2(bank_width * num_pipes);
         const u32 y_shift_offset = IntLog2(bank_height);
         const u32 xs = x >> x_shift_offset;
         const u32 ys = y >> y_shift_offset;
         u32 bank = 0;
         switch (num_banks) {
-            case 8:
-                bank |= (((xs >> 3u) ^ (ys >> 5u)) & 0x1u) << 0u;
-                bank |= (((xs >> 4u) ^ (ys >> 4u) ^ (ys >> 5u)) & 0x1u) << 1u;
-                bank |= (((xs >> 5u) ^ (ys >> 3u)) & 0x1u) << 2u;
-                break;
-            case 16:
-                bank |= (((xs >> 3u) ^ (ys >> 6u)) & 0x1u) << 0u;
-                bank |= (((xs >> 4u) ^ (ys >> 5u) ^ (ys >> 6u)) & 0x1u) << 1u;
-                bank |= (((xs >> 5u) ^ (ys >> 4u)) & 0x1u) << 2u;
-                bank |= (((xs >> 6u) ^ (ys >> 3u)) & 0x1u) << 3u;
-                break;
-            default:;
+        case 8:
+            bank |= (((xs >> 3u) ^ (ys >> 5u)) & 0x1u) << 0u;
+            bank |= (((xs >> 4u) ^ (ys >> 4u) ^ (ys >> 5u)) & 0x1u) << 1u;
+            bank |= (((xs >> 5u) ^ (ys >> 3u)) & 0x1u) << 2u;
+            break;
+        case 16:
+            bank |= (((xs >> 3u) ^ (ys >> 6u)) & 0x1u) << 0u;
+            bank |= (((xs >> 4u) ^ (ys >> 5u) ^ (ys >> 6u)) & 0x1u) << 1u;
+            bank |= (((xs >> 5u) ^ (ys >> 4u)) & 0x1u) << 2u;
+            bank |= (((xs >> 6u) ^ (ys >> 3u)) & 0x1u) << 3u;
+            break;
+        default:;
         }
 
         return bank;
@@ -110,11 +116,13 @@ class TileManager32 {
             tile_bytes = 512;
         }
 
-        u64 macro_tile_bytes = (128 / 8) * (m_macro_tile_height / 8) * tile_bytes / (m_num_pipes * m_num_banks);
+        u64 macro_tile_bytes =
+            (128 / 8) * (m_macro_tile_height / 8) * tile_bytes / (m_num_pipes * m_num_banks);
         u64 macro_tiles_per_row = m_padded_width / 128;
         u64 macro_tile_row_index = y / m_macro_tile_height;
         u64 macro_tile_column_index = x / 128;
-        u64 macro_tile_index = (macro_tile_row_index * macro_tiles_per_row) + macro_tile_column_index;
+        u64 macro_tile_index =
+            (macro_tile_row_index * macro_tiles_per_row) + macro_tile_column_index;
         u64 macro_tile_offset = macro_tile_index * macro_tile_bytes;
         u64 macro_tiles_per_slice = macro_tiles_per_row * (m_padded_height / m_macro_tile_height);
         u64 slice_bytes = macro_tiles_per_slice * macro_tile_bytes;
@@ -133,20 +141,21 @@ class TileManager32 {
 
         u64 pipe_interleave_offset = total_offset & 0xffu;
         u64 offset = total_offset >> 8u;
-        u64 byte_offset = pipe_interleave_offset | (pipe << (8u)) | (bank << (8u + m_pipe_bits)) | (offset << (8u + m_pipe_bits + m_bank_bits));
+        u64 byte_offset = pipe_interleave_offset | (pipe << (8u)) | (bank << (8u + m_pipe_bits)) |
+                          (offset << (8u + m_pipe_bits + m_bank_bits));
 
         return ((byte_offset << 3u) | bit_offset) / 8;
     }
 };
 
-void convertTileToLinear(void* dst, const void* src,u32 width, u32 height, bool is_neo) {
+void convertTileToLinear(void* dst, const void* src, u32 width, u32 height, bool is_neo) {
     TileManager32 t;
     t.Init(width, height, is_neo);
 
     auto* g_TileManager = Common::Singleton<TileManager>::Instance();
 
     std::scoped_lock lock{g_TileManager->m_mutex};
-    
+
     for (u32 y = 0; y < height; y++) {
         u32 x = 0;
         u64 linear_offset = y * width * 4;
@@ -154,16 +163,16 @@ void convertTileToLinear(void* dst, const void* src,u32 width, u32 height, bool 
         for (; x + 1 < width; x += 2) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
 
-            *reinterpret_cast<u64*>(static_cast<u08*>(dst) + linear_offset) =
-                *reinterpret_cast<const u64*>(static_cast<const u08*>(src) + tiled_offset);
+            *reinterpret_cast<u64*>(static_cast<u8*>(dst) + linear_offset) =
+                *reinterpret_cast<const u64*>(static_cast<const u8*>(src) + tiled_offset);
             linear_offset += 8;
         }
         if (x < width) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
 
-            *reinterpret_cast<u32*>(static_cast<u08*>(dst) + linear_offset) =
-                *reinterpret_cast<const u32*>(static_cast<const u08*>(src) + tiled_offset);
+            *reinterpret_cast<u32*>(static_cast<u8*>(dst) + linear_offset) =
+                *reinterpret_cast<const u32*>(static_cast<const u8*>(src) + tiled_offset);
         }
     }
 }
-}  // namespace GPU
+} // namespace GPU

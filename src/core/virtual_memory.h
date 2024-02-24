@@ -1,4 +1,8 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
+
 #include "common/types.h"
 
 constexpr u64 SYSTEM_RESERVED = 0x800000000u;
@@ -27,12 +31,17 @@ bool memory_patch(u64 vaddr, u64 value);
 
 inline bool containsExecuteMode(MemoryMode mode) {
     switch (mode) {
-        case MemoryMode::Execute: return true;
-        case MemoryMode::ExecuteRead: return true;
-        case MemoryMode::ExecuteWrite: return true;
-        case MemoryMode::ExecuteReadWrite: return true;
-        default: return false;
+    case MemoryMode::Execute:
+        return true;
+    case MemoryMode::ExecuteRead:
+        return true;
+    case MemoryMode::ExecuteWrite:
+        return true;
+    case MemoryMode::ExecuteReadWrite:
+        return true;
+    default:
+        return false;
     }
 }
 
-}  // namespace VirtualMemory
+} // namespace VirtualMemory

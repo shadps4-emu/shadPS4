@@ -1,29 +1,33 @@
-#include "common/types.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <xmmintrin.h>
+#include "common/types.h"
 
-#define VA_ARGS                                                                                                                             \
-    uint64_t rdi, uint64_t rsi, uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9, uint64_t overflow_arg_area, __m128 xmm0, __m128 xmm1, \
-        __m128 xmm2, __m128 xmm3, __m128 xmm4, __m128 xmm5, __m128 xmm6, __m128 xmm7, ...
+#define VA_ARGS                                                                                    \
+    uint64_t rdi, uint64_t rsi, uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9,              \
+        uint64_t overflow_arg_area, __m128 xmm0, __m128 xmm1, __m128 xmm2, __m128 xmm3,            \
+        __m128 xmm4, __m128 xmm5, __m128 xmm6, __m128 xmm7, ...
 
-#define VA_CTX(ctx)                                     \
-    alignas(16) VaCtx ctx;                              \
-    (ctx).reg_save_area.gp[0] = rdi;                    \
-    (ctx).reg_save_area.gp[1] = rsi;                    \
-    (ctx).reg_save_area.gp[2] = rdx;                    \
-    (ctx).reg_save_area.gp[3] = rcx;                    \
-    (ctx).reg_save_area.gp[4] = r8;                     \
-    (ctx).reg_save_area.gp[5] = r9;                     \
-    (ctx).reg_save_area.fp[0] = xmm0;                   \
-    (ctx).reg_save_area.fp[1] = xmm1;                   \
-    (ctx).reg_save_area.fp[2] = xmm2;                   \
-    (ctx).reg_save_area.fp[3] = xmm3;                   \
-    (ctx).reg_save_area.fp[4] = xmm4;                   \
-    (ctx).reg_save_area.fp[5] = xmm5;                   \
-    (ctx).reg_save_area.fp[6] = xmm6;                   \
-    (ctx).reg_save_area.fp[7] = xmm7;                   \
-    (ctx).va_list.reg_save_area = &(ctx).reg_save_area; \
-    (ctx).va_list.gp_offset = offsetof(VaRegSave, gp);  \
-    (ctx).va_list.fp_offset = offsetof(VaRegSave, fp);  \
+#define VA_CTX(ctx)                                                                                \
+    alignas(16) VaCtx ctx;                                                                         \
+    (ctx).reg_save_area.gp[0] = rdi;                                                               \
+    (ctx).reg_save_area.gp[1] = rsi;                                                               \
+    (ctx).reg_save_area.gp[2] = rdx;                                                               \
+    (ctx).reg_save_area.gp[3] = rcx;                                                               \
+    (ctx).reg_save_area.gp[4] = r8;                                                                \
+    (ctx).reg_save_area.gp[5] = r9;                                                                \
+    (ctx).reg_save_area.fp[0] = xmm0;                                                              \
+    (ctx).reg_save_area.fp[1] = xmm1;                                                              \
+    (ctx).reg_save_area.fp[2] = xmm2;                                                              \
+    (ctx).reg_save_area.fp[3] = xmm3;                                                              \
+    (ctx).reg_save_area.fp[4] = xmm4;                                                              \
+    (ctx).reg_save_area.fp[5] = xmm5;                                                              \
+    (ctx).reg_save_area.fp[6] = xmm6;                                                              \
+    (ctx).reg_save_area.fp[7] = xmm7;                                                              \
+    (ctx).va_list.reg_save_area = &(ctx).reg_save_area;                                            \
+    (ctx).va_list.gp_offset = offsetof(VaRegSave, gp);                                             \
+    (ctx).va_list.fp_offset = offsetof(VaRegSave, fp);                                             \
     (ctx).va_list.overflow_arg_area = &overflow_arg_area;
 
 namespace Core::Libraries::LibC {
@@ -49,7 +53,7 @@ struct VaCtx {
 
 template <class T, uint32_t Size>
 T vaArgRegSaveAreaGp(VaList* l) {
-    auto* addr = reinterpret_cast<T*>(static_cast<u08*>(l->reg_save_area) + l->gp_offset);
+    auto* addr = reinterpret_cast<T*>(static_cast<u8*>(l->reg_save_area) + l->gp_offset);
     l->gp_offset += Size;
     return *addr;
 }
@@ -63,7 +67,7 @@ T vaArgOverflowArgArea(VaList* l) {
 
 template <class T, uint32_t Size>
 T vaArgRegSaveAreaFp(VaList* l) {
-    auto* addr = reinterpret_cast<T*>(static_cast<u08*>(l->reg_save_area) + l->fp_offset);
+    auto* addr = reinterpret_cast<T*>(static_cast<u8*>(l->reg_save_area) + l->fp_offset);
     l->fp_offset += Size;
     return *addr;
 }

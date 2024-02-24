@@ -1,21 +1,31 @@
-#include "config.h"
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
 #include <string>
 #include <fmt/core.h>
 #include <toml.hpp>
+#include "config.h"
 
 namespace Config {
 
 bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
-u32 logLevel = 0;  // TRACE = 0 , DEBUG = 1 , INFO = 2 , WARN = 3 , ERROR = 4 , CRITICAL = 5, OFF = 6
+u32 logLevel = 0; // TRACE = 0 , DEBUG = 1 , INFO = 2 , WARN = 3 , ERROR = 4 , CRITICAL = 5, OFF = 6
 
-bool isNeoMode() { return isNeo; }
-u32 getScreenWidth() { return screenWidth; }
-u32 getScreenHeight() { return screenHeight; }
-u32 getLogLevel() { return logLevel; }
+bool isNeoMode() {
+    return isNeo;
+}
+u32 getScreenWidth() {
+    return screenWidth;
+}
+u32 getScreenHeight() {
+    return screenHeight;
+}
+u32 getLogLevel() {
+    return logLevel;
+}
 
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
@@ -67,7 +77,8 @@ void save(const std::filesystem::path& path) {
         }
     } else {
         if (error) {
-            fmt::print("Filesystem error accessing {} (error: {})\n", path.string(), error.message().c_str());
+            fmt::print("Filesystem error accessing {} (error: {})\n", path.string(),
+                       error.message().c_str());
         }
         fmt::print("Saving new configuration file {}\n", path.string());
     }
@@ -81,4 +92,4 @@ void save(const std::filesystem::path& path) {
     file << data;
     file.close();
 }
-}  // namespace Config
+} // namespace Config

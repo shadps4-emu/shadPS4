@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 #include <cstdint>
 #include <filesystem>
@@ -5,7 +8,8 @@
 
 class IOFile {
     FILE* handle = nullptr;
-    static inline std::filesystem::path appData =""; // Directory for holding app data. AppData on Windows
+    static inline std::filesystem::path appData =
+        ""; // Directory for holding app data. AppData on Windows
 
 public:
     IOFile() : handle(nullptr) {}

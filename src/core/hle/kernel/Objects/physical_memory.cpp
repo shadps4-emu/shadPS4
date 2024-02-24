@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "core/hle/kernel/Objects/physical_memory.h"
 
 namespace Core::Kernel {
@@ -6,8 +9,8 @@ static u64 AlignUp(u64 pos, u64 align) {
     return (align != 0 ? (pos + (align - 1)) & ~(align - 1) : pos);
 }
 
-bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment,
-                           u64* physAddrOut, int memoryType) {
+bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment, u64* physAddrOut,
+                           int memoryType) {
     std::scoped_lock lock{m_mutex};
     u64 find_free_pos = 0;
 

@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
-#include <core/PS4/HLE/Graphics/graphics_ctx.h>
 #include <SDL.h>
+#include <core/PS4/HLE/Graphics/graphics_ctx.h>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 #include <vector>
 
 namespace Emu {
@@ -85,4 +88,4 @@ void checkAndWaitForGraphicsInit();
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx();
 void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image);
 void keyboardEvent(SDL_Event* event);
-}  // namespace Emulator
+} // namespace Emu

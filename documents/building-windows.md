@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+
 # How to build shadps4 in windows 
 
 ## Download VStudio Community 2022 17.7.4

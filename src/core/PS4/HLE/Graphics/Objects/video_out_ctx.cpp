@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/debug.h"
 #include "core/PS4/HLE/Graphics/Objects/video_out_ctx.h"
 #include "core/hle/libraries/libkernel/time_management.h"
@@ -17,7 +20,7 @@ int VideoOutCtx::Open() {
     int handle = -1;
 
     if (!m_video_out_ctx.isOpened) {
-        handle = 1;  // positive return , should be more than 1 ?
+        handle = 1; // positive return , should be more than 1 ?
     }
 
     m_video_out_ctx.isOpened = true;
@@ -35,7 +38,7 @@ void VideoOutCtx::Close(s32 handle) {
     m_video_out_ctx.isOpened = false;
 
     if (m_video_out_ctx.m_flip_evtEq.size() > 0) {
-        BREAKPOINT();  // we need to clear all events if they have been created
+        BREAKPOINT(); // we need to clear all events if they have been created
     }
 
     m_video_out_ctx.m_flip_rate = 0;
@@ -57,7 +60,7 @@ VideoConfigInternal* VideoOutCtx::getCtx(int handle) {
     if (handle != 1) [[unlikely]] {
         return nullptr;
     }
-    return &m_video_out_ctx;  // assuming that it's the only ctx TODO check if we need more
+    return &m_video_out_ctx; // assuming that it's the only ctx TODO check if we need more
 }
 
 void FlipQueue::getFlipStatus(VideoConfigInternal* cfg, SceVideoOutFlipStatus* out) {
@@ -91,11 +94,12 @@ bool FlipQueue::submitFlip(VideoConfigInternal* cfg, s32 index, s64 flip_arg) {
 bool FlipQueue::flip(u32 micros) {
     const auto request = [&]() -> Request* {
         std::unique_lock lock{m_mutex};
-        m_submit_cond.wait_for(lock, std::chrono::microseconds(micros), [&] { return !m_requests.empty(); });
+        m_submit_cond.wait_for(lock, std::chrono::microseconds(micros),
+                               [&] { return !m_requests.empty(); });
         if (m_requests.empty()) {
             return nullptr;
         }
-        return &m_requests.at(0);  // Process first request
+        return &m_requests.at(0); // Process first request
     }();
 
     if (!request) {
@@ -111,7 +115,8 @@ bool FlipQueue::flip(u32 micros) {
         std::scoped_lock cfg_lock{request->cfg->m_mutex};
         for (auto& flip_eq : request->cfg->m_flip_evtEq) {
             if (flip_eq != nullptr) {
-                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Core::Kernel::EVFILT_VIDEO_OUT, reinterpret_cast<void*>(request->flip_arg));
+                flip_eq->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Core::Kernel::EVFILT_VIDEO_OUT,
+                                      reinterpret_cast<void*>(request->flip_arg));
             }
         }
     }

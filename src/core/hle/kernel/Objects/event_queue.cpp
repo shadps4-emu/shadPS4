@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/debug.h"
 #include "core/hle/kernel/Objects/event_queue.h"
 
@@ -15,7 +18,7 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
     m_events.push_back(event);
 
     if (event.isTriggered) {
-        BREAKPOINT();  // we don't support that either yet
+        BREAKPOINT(); // we don't support that either yet
     }
 
     return 0;
@@ -42,7 +45,7 @@ bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
     std::scoped_lock lock{m_mutex};
 
     if (m_events.size() > 1) {
-        BREAKPOINT();  // we currently support one event
+        BREAKPOINT(); // we currently support one event
     }
     auto& event = m_events[0];
 
@@ -61,7 +64,7 @@ int EqueueInternal::getTriggeredEvents(SceKernelEvent* ev, int num) {
     int ret = 0;
 
     if (m_events.size() > 1) {
-        BREAKPOINT();  // we currently support one event
+        BREAKPOINT(); // we currently support one event
     }
     auto& event = m_events[0];
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/fs_file.h"
 
 namespace Common::FS {
@@ -24,15 +27,15 @@ bool File::open(const std::string& path, OpenMode mode) {
 
 bool File::close() {
     if (!isOpen() || std::fclose(m_file) != 0) [[unlikely]] {
-            m_file = nullptr;
-            return false;
+        m_file = nullptr;
+        return false;
     }
 
     m_file = nullptr;
     return true;
 }
 
-bool File::write(std::span<const u08> data) {
+bool File::write(std::span<const u8> data) {
     return isOpen() && std::fwrite(data.data(), 1, data.size(), m_file) == data.size();
 }
 
@@ -56,9 +59,9 @@ bool File::seek(s64 offset, SeekMode mode) {
 u64 File::tell() const {
     if (isOpen()) [[likely]] {
 #ifdef _WIN64
-            return _ftelli64(m_file);
+        return _ftelli64(m_file);
 #else
-            return ftello64(m_file);
+        return ftello64(m_file);
 #endif
     }
 
@@ -69,22 +72,22 @@ u64 File::getFileSize() {
 #ifdef _WIN64
     const u64 pos = _ftelli64(m_file);
     if (_fseeki64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = _ftelli64(m_file);
     if (_fseeki64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #else
     const u64 pos = ftello64(m_file);
     if (fseeko64(m_file, 0, SEEK_END) != 0) {
-            return 0;
+        return 0;
     }
 
     const u64 size = ftello64(m_file);
     if (fseeko64(m_file, pos, SEEK_SET) != 0) {
-            return 0;
+        return 0;
     }
 #endif
     return size;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <cinttypes>
@@ -12,43 +15,45 @@ struct self_header {
     static const u32 signature = 0x1D3D154Fu;
 
     u32 magic;
-    u08 version;
-    u08 mode;
-    u08 endian;  // 1 is little endian
-    u08 attributes;
-    u08 category;
-    u08 program_type;
+    u8 version;
+    u8 mode;
+    u8 endian; // 1 is little endian
+    u8 attributes;
+    u8 category;
+    u8 program_type;
     u16 padding1;
     u16 header_size;
     u16 meta_size;
     u32 file_size;
     u32 padding2;
     u16 segment_count;
-    u16 unknown1A;  // always 0x22
+    u16 unknown1A; // always 0x22
     u32 padding3;
 };
 
 struct self_segment_header {
     bool IsBlocked() const {
-        return (flags & 0x800) != 0;  // 0 or 0x800
+        return (flags & 0x800) != 0; // 0 or 0x800
     }
 
-    u32 GetId() const { return (flags >> 20u) & 0xFFFu; }
+    u32 GetId() const {
+        return (flags >> 20u) & 0xFFFu;
+    }
 
     bool IsOrdered() const {
-        return (flags & 1) != 0;  // 0 or 1
+        return (flags & 1) != 0; // 0 or 1
     }
 
     bool IsEncrypted() const {
-        return (flags & 2) != 0;  // 0 or 2
+        return (flags & 2) != 0; // 0 or 2
     }
 
     bool IsSigned() const {
-        return (flags & 4) != 0;  // 0 or 4
+        return (flags & 4) != 0; // 0 or 4
     }
 
     bool IsCompressed() const {
-        return (flags & 8) != 0;  // 0 or 8
+        return (flags & 8) != 0; // 0 or 8
     }
 
     u64 flags;
@@ -57,21 +62,21 @@ struct self_segment_header {
     u64 memory_size;
 };
 
-constexpr u08 EI_MAG0 = 0; /* e_ident[] indexes */
-constexpr u08 EI_MAG1 = 1;
-constexpr u08 EI_MAG2 = 2;
-constexpr u08 EI_MAG3 = 3;
-constexpr u08 EI_CLASS = 4;
-constexpr u08 EI_DATA = 5;
-constexpr u08 EI_VERSION = 6;
-constexpr u08 EI_OSABI = 7;
-constexpr u08 EI_ABIVERSION = 8;
+constexpr u8 EI_MAG0 = 0; /* e_ident[] indexes */
+constexpr u8 EI_MAG1 = 1;
+constexpr u8 EI_MAG2 = 2;
+constexpr u8 EI_MAG3 = 3;
+constexpr u8 EI_CLASS = 4;
+constexpr u8 EI_DATA = 5;
+constexpr u8 EI_VERSION = 6;
+constexpr u8 EI_OSABI = 7;
+constexpr u8 EI_ABIVERSION = 8;
 
 // Magic number
-constexpr u08 ELFMAG0 = 0x7F;
-constexpr u08 ELFMAG1 = 'E';
-constexpr u08 ELFMAG2 = 'L';
-constexpr u08 ELFMAG3 = 'F';
+constexpr u8 ELFMAG0 = 0x7F;
+constexpr u8 ELFMAG1 = 'E';
+constexpr u8 ELFMAG2 = 'L';
+constexpr u8 ELFMAG3 = 'F';
 
 typedef enum : u16 {
     ET_NONE = 0x0,
@@ -181,13 +186,27 @@ typedef enum : u16 {
 
 typedef enum : u32 { EV_NONE = 0x0, EV_CURRENT = 0x1 } e_version_es;
 
-typedef enum : u08 { ELF_CLASS_NONE = 0x0, ELF_CLASS_32 = 0x1, ELF_CLASS_64 = 0x2, ELF_CLASS_NUM = 0x3 } ident_class_es;
+typedef enum : u8 {
+    ELF_CLASS_NONE = 0x0,
+    ELF_CLASS_32 = 0x1,
+    ELF_CLASS_64 = 0x2,
+    ELF_CLASS_NUM = 0x3
+} ident_class_es;
 
-typedef enum : u08 { ELF_DATA_NONE = 0x0, ELF_DATA_2LSB = 0x1, ELF_DATA_2MSB = 0x2, ELF_DATA_NUM = 0x3 } ident_endian_es;
+typedef enum : u8 {
+    ELF_DATA_NONE = 0x0,
+    ELF_DATA_2LSB = 0x1,
+    ELF_DATA_2MSB = 0x2,
+    ELF_DATA_NUM = 0x3
+} ident_endian_es;
 
-typedef enum : u08 { ELF_VERSION_NONE = 0x0, ELF_VERSION_CURRENT = 0x1, ELF_VERSION_NUM = 0x2 } ident_version_es;
+typedef enum : u8 {
+    ELF_VERSION_NONE = 0x0,
+    ELF_VERSION_CURRENT = 0x1,
+    ELF_VERSION_NUM = 0x2
+} ident_version_es;
 
-typedef enum : u08 {
+typedef enum : u8 {
     ELF_OSABI_NONE = 0x0,       /* No extensions or unspecified */
     ELF_OSABI_HPUX = 0x1,       /* Hewlett-Packard HP-UX */
     ELF_OSABI_NETBSD = 0x2,     /* NetBSD */
@@ -207,7 +226,7 @@ typedef enum : u08 {
     ELF_OSABI_STANDALONE = 0xFF /* Standalone (embedded applications) */
 } ident_osabi_es;
 
-typedef enum : u08 {
+typedef enum : u8 {
     ELF_ABI_VERSION_AMDGPU_HSA_V2 = 0x0,
     ELF_ABI_VERSION_AMDGPU_HSA_V3 = 0x1,
     ELF_ABI_VERSION_AMDGPU_HSA_V4 = 0x2,
@@ -215,13 +234,13 @@ typedef enum : u08 {
 } ident_abiversion_es;
 
 struct elf_ident {
-    u08 magic[4];
+    u8 magic[4];
     ident_class_es ei_class;
     ident_endian_es ei_data;
     ident_version_es ei_version;
     ident_osabi_es ei_osabi;
     ident_abiversion_es ei_abiversion;
-    u08 pad[6];
+    u8 pad[6];
 };
 
 struct elf_header {
@@ -323,7 +342,7 @@ struct elf_program_id_header {
     program_type_es program_type;
     u64 appver;
     u64 firmver;
-    u08 digest[32];
+    u8 digest[32];
 };
 
 constexpr s64 DT_NULL = 0;
@@ -371,60 +390,70 @@ struct elf_dynamic {
     } d_un;
 };
 
-constexpr u08 STB_LOCAL = 0;
-constexpr u08 STB_GLOBAL = 1;
-constexpr u08 STB_WEAK = 2;
+constexpr u8 STB_LOCAL = 0;
+constexpr u8 STB_GLOBAL = 1;
+constexpr u8 STB_WEAK = 2;
 
-constexpr u08 STT_NOTYPE = 0;
-constexpr u08 STT_OBJECT = 1;
-constexpr u08 STT_FUN = 2;
-constexpr u08 STT_SECTION = 3;
-constexpr u08 STT_FILE = 4;
-constexpr u08 STT_COMMON = 5;
-constexpr u08 STT_TLS = 6;
-constexpr u08 STT_LOOS = 10;
-constexpr u08 STT_SCE = 11;  // module_start/module_stop
-constexpr u08 STT_HIOS = 12;
-constexpr u08 STT_LOPRO = 13;
-constexpr u08 STT_SPARC_REGISTER = 13;
-constexpr u08 STT_HIPROC = 15;
+constexpr u8 STT_NOTYPE = 0;
+constexpr u8 STT_OBJECT = 1;
+constexpr u8 STT_FUN = 2;
+constexpr u8 STT_SECTION = 3;
+constexpr u8 STT_FILE = 4;
+constexpr u8 STT_COMMON = 5;
+constexpr u8 STT_TLS = 6;
+constexpr u8 STT_LOOS = 10;
+constexpr u8 STT_SCE = 11; // module_start/module_stop
+constexpr u8 STT_HIOS = 12;
+constexpr u8 STT_LOPRO = 13;
+constexpr u8 STT_SPARC_REGISTER = 13;
+constexpr u8 STT_HIPROC = 15;
 
-constexpr u08 STV_DEFAULT = 0;
-constexpr u08 STV_INTERNAL = 1;
-constexpr u08 STV_HIDDEN = 2;
-constexpr u08 STV_PROTECTED = 3;
+constexpr u8 STV_DEFAULT = 0;
+constexpr u8 STV_INTERNAL = 1;
+constexpr u8 STV_HIDDEN = 2;
+constexpr u8 STV_PROTECTED = 3;
 
 struct elf_symbol {
-    u08 GetBind() const { return st_info >> 4u; }
-    u08 GetType() const { return st_info & 0xfu; }
-    u08 GetVisibility() const { return st_other & 3u; }
+    u8 GetBind() const {
+        return st_info >> 4u;
+    }
+    u8 GetType() const {
+        return st_info & 0xfu;
+    }
+    u8 GetVisibility() const {
+        return st_other & 3u;
+    }
 
     u32 st_name;
-    u08 st_info;
-    u08 st_other;
+    u8 st_info;
+    u8 st_other;
     u16 st_shndx;
     u64 st_value;
     u64 st_size;
 };
 
 struct elf_relocation {
-    u32 GetSymbol() const { return static_cast<u32>(rel_info >> 32u); }
-    u32 GetType() const { return static_cast<u32>(rel_info & 0xffffffff); }
+    u32 GetSymbol() const {
+        return static_cast<u32>(rel_info >> 32u);
+    }
+    u32 GetType() const {
+        return static_cast<u32>(rel_info & 0xffffffff);
+    }
 
     u64 rel_offset;
     u64 rel_info;
     s64 rel_addend;
 };
-constexpr u32 R_X86_64_64 = 1;  // Direct 64 bit
+constexpr u32 R_X86_64_64 = 1; // Direct 64 bit
 constexpr u32 R_X86_64_GLOB_DAT = 6;
-constexpr u32 R_X86_64_JUMP_SLOT = 7;  // Create PLT entry
-constexpr u32 R_X86_64_RELATIVE = 8;   // Adjust by program base
+constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
+constexpr u32 R_X86_64_RELATIVE = 8;  // Adjust by program base
 constexpr u32 R_X86_64_DTPMOD64 = 16;
 
 namespace Core::Loader {
 
 class Elf {
-  public:
+public:
     Elf() = default;
     virtual ~Elf();
 
@@ -433,15 +462,25 @@ class Elf {
     bool isElfFile() const;
     void DebugDump();
 
-    [[nodiscard]] self_header GetSElfHeader() const { return m_self; }
+    [[nodiscard]] self_header GetSElfHeader() const {
+        return m_self;
+    }
 
-    [[nodiscard]] elf_header GetElfHeader() const { return m_elf_header; }
+    [[nodiscard]] elf_header GetElfHeader() const {
+        return m_elf_header;
+    }
 
-    [[nodiscard]] std::span<const elf_program_header> GetProgramHeader() const { return m_elf_phdr; }
+    [[nodiscard]] std::span<const elf_program_header> GetProgramHeader() const {
+        return m_elf_phdr;
+    }
 
-    [[nodiscard]] std::span<const self_segment_header> GetSegmentHeader() const { return m_self_segments; }
+    [[nodiscard]] std::span<const self_segment_header> GetSegmentHeader() const {
+        return m_self_segments;
+    }
 
-    [[nodiscard]] u64 GetElfEntry() const { return m_elf_header.e_entry; }
+    [[nodiscard]] u64 GetElfEntry() const {
+        return m_elf_header.e_entry;
+    }
 
     std::string SElfHeaderStr();
     std::string SELFSegHeader(u16 no);
@@ -452,10 +491,10 @@ class Elf {
 
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
 
-  private:
+private:
     void Reset();
 
-  private:
+private:
     Common::FS::File m_f{};
     bool is_self{};
     self_header m_self{};
@@ -466,4 +505,4 @@ class Elf {
     elf_program_id_header m_self_id_header{};
 };
 
-}  // namespace Core::Loader
+} // namespace Core::Loader
