@@ -84,6 +84,11 @@ endif()
 add_subdirectory(third-party)
 include_directories(src)
 
+set(LIBRARIES src/core/libraries/library_common.h
+              src/core/libraries/error_codes.h
+              src/core/libraries/libscegnmdriver.cpp
+              src/core/libraries/libscegnmdriver.h
+)
 set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
                  src/core/hle/libraries/libc/libc.h
                  src/core/hle/libraries/libc/printf.h
@@ -147,6 +152,7 @@ add_executable(shadps4
     ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
+    ${LIBRARIES}
     src/main.cpp
     src/core/loader/elf.cpp
     src/core/loader/elf.h
