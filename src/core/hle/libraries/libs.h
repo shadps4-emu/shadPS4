@@ -8,7 +8,7 @@
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
     {                                                                                              \
-        Core::Loader::SymbolRes sr{};                                                                    \
+        Core::Loader::SymbolRes sr{};                                                              \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
@@ -22,7 +22,7 @@
 
 #define LIB_OBJ(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)       \
     {                                                                                              \
-        Core::Loader::SymbolRes sr{};                                                                    \
+        Core::Loader::SymbolRes sr{};                                                              \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
