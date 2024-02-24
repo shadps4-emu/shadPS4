@@ -530,31 +530,31 @@ int PS4_SYSV_ABI scePadVirtualDeviceInsertData()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_KLmYx9ij2h0()
+int PS4_SYSV_ABI Func_28B998C7D8A3DA1D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_KY0hSB+Uyfo()
+int PS4_SYSV_ABI Func_298D21481F94C9FA()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_UeUUvNOgXKU()
+int PS4_SYSV_ABI Func_51E514BCD3A05CA5()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_ickjfjk9okM()
+int PS4_SYSV_ABI Func_89C9237E393DA243()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_7xA+hFtvBCA()
+int PS4_SYSV_ABI Func_EF103E845B6F0420()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -648,11 +648,11 @@ void RegisterlibScePad(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("pjPCronWdxI, libScePad , 1 , libScePad, 1, 1 , scePadVirtualDeviceDisableButtonRemapping ),
  LIB_FUNCTION("LKXfw7VJYqg, libScePad , 1 , libScePad, 1, 1 , scePadVirtualDeviceGetRemoteSetting ),
  LIB_FUNCTION("IWOyO5jKuZg, libScePad , 1 , libScePad, 1, 1 , scePadVirtualDeviceInsertData ),
- LIB_FUNCTION("KLmYx9ij2h0, libScePad , 1 , libScePad, 1, 1 , Func_KLmYx9ij2h0 ),
- LIB_FUNCTION("KY0hSB+Uyfo, libScePad , 1 , libScePad, 1, 1 , Func_KY0hSB+Uyfo ),
- LIB_FUNCTION("UeUUvNOgXKU, libScePad , 1 , libScePad, 1, 1 , Func_UeUUvNOgXKU ),
- LIB_FUNCTION("ickjfjk9okM, libScePad , 1 , libScePad, 1, 1 , Func_ickjfjk9okM ),
- LIB_FUNCTION("7xA+hFtvBCA, libScePad , 1 , libScePad, 1, 1 , Func_7xA+hFtvBCA ),
+ LIB_FUNCTION("KLmYx9ij2h0, libScePad , 1 , libScePad, 1, 1 , Func_28B998C7D8A3DA1D ),
+ LIB_FUNCTION("KY0hSB+Uyfo, libScePad , 1 , libScePad, 1, 1 , Func_298D21481F94C9FA ),
+ LIB_FUNCTION("UeUUvNOgXKU, libScePad , 1 , libScePad, 1, 1 , Func_51E514BCD3A05CA5 ),
+ LIB_FUNCTION("ickjfjk9okM, libScePad , 1 , libScePad, 1, 1 , Func_89C9237E393DA243 ),
+ LIB_FUNCTION("7xA+hFtvBCA, libScePad , 1 , libScePad, 1, 1 , Func_EF103E845B6F0420 ),
 };
 
 }

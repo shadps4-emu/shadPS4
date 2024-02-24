@@ -2522,25 +2522,25 @@ int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_isbcQWjV-qU()
+int PS4_SYSV_ABI Func_8AC6DC4168D5FEA5()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_pr3J39r9ArQ()
+int PS4_SYSV_ABI Func_A6BDC9DFDAFD02B4()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_u5SR3+a0lTw()
+int PS4_SYSV_ABI Func_BB9491DFE6B4953C()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_0rgUYD57RHc()
+int PS4_SYSV_ABI Func_D2B814603E7B4477()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2966,10 +2966,10 @@ void RegisterlibSceUserService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("WQ-l-i2gJko, libSceUserService , 1 , libSceUserService, 1, 1 , sceUserServiceSetVolumeForSidetone ),
  LIB_FUNCTION("bwFjS+bX9mA, libSceUserService , 1 , libSceUserService, 1, 1 , sceUserServiceTerminate ),
  LIB_FUNCTION("spW--yoLQ9o, libSceUserService , 1 , libSceUserService, 1, 1 , sceUserServiceUnregisterEventCallback ),
- LIB_FUNCTION("isbcQWjV-qU, libSceUserService , 1 , libSceUserService, 1, 1 , Func_isbcQWjV-qU ),
- LIB_FUNCTION("pr3J39r9ArQ, libSceUserService , 1 , libSceUserService, 1, 1 , Func_pr3J39r9ArQ ),
- LIB_FUNCTION("u5SR3+a0lTw, libSceUserService , 1 , libSceUserService, 1, 1 , Func_u5SR3+a0lTw ),
- LIB_FUNCTION("0rgUYD57RHc, libSceUserService , 1 , libSceUserService, 1, 1 , Func_0rgUYD57RHc ),
+ LIB_FUNCTION("isbcQWjV-qU, libSceUserService , 1 , libSceUserService, 1, 1 , Func_8AC6DC4168D5FEA5 ),
+ LIB_FUNCTION("pr3J39r9ArQ, libSceUserService , 1 , libSceUserService, 1, 1 , Func_A6BDC9DFDAFD02B4 ),
+ LIB_FUNCTION("u5SR3+a0lTw, libSceUserService , 1 , libSceUserService, 1, 1 , Func_BB9491DFE6B4953C ),
+ LIB_FUNCTION("0rgUYD57RHc, libSceUserService , 1 , libSceUserService, 1, 1 , Func_D2B814603E7B4477 ),
  LIB_FUNCTION("wuI7c7UNk0A, libSceUserServiceForNpToolkit , 1 , libSceUserService, 1, 1 , sceUserServiceRegisterEventCallback ),
  LIB_FUNCTION("spW--yoLQ9o, libSceUserServiceForNpToolkit , 1 , libSceUserService, 1, 1 , sceUserServiceUnregisterEventCallback ),
  LIB_FUNCTION("5EiQCnL2G1Y, libSceUserServiceRegisteredUserIdList , 1 , libSceUserService, 1, 1 , sceUserServiceGetRegisteredUserIdList ),

@@ -426,10 +426,10 @@ int PS4_SYSV_ABI sceUserServiceSetVolumeForMorpheusSidetone();
 int PS4_SYSV_ABI sceUserServiceSetVolumeForSidetone();
 int PS4_SYSV_ABI sceUserServiceTerminate();
 int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback();
-int PS4_SYSV_ABI Func_isbcQWjV-qU();
-int PS4_SYSV_ABI Func_pr3J39r9ArQ();
-int PS4_SYSV_ABI Func_u5SR3+a0lTw();
-int PS4_SYSV_ABI Func_0rgUYD57RHc();
+int PS4_SYSV_ABI Func_8AC6DC4168D5FEA5();
+int PS4_SYSV_ABI Func_A6BDC9DFDAFD02B4();
+int PS4_SYSV_ABI Func_BB9491DFE6B4953C();
+int PS4_SYSV_ABI Func_D2B814603E7B4477();
 
 void RegisterlibSceUserService(Loader::SymbolsResolver * sym);
 }

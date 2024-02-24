@@ -32,7 +32,7 @@ int PS4_SYSV_ABI sceVideoOutAddBufferAnisoPrivilege()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_h94Po2hoDZg()
+int PS4_SYSV_ABI Func_87DE0FA368680D98()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -824,61 +824,61 @@ int PS4_SYSV_ABI sceVideoOutWaitVblank()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_Ek7XQBAkFYA()
+int PS4_SYSV_ABI Func_124ED74010241580()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_JDjWoYVTvdk()
+int PS4_SYSV_ABI Func_2438D6A18553BDD9()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_M4lTPTxoeN0()
+int PS4_SYSV_ABI Func_3389533D3C6878DD()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_P5a32OulZQk()
+int PS4_SYSV_ABI Func_3F96B7D8EBA56509()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_lMkkEv4aaHY()
+int PS4_SYSV_ABI Func_94C92412FE1A6876()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_oXrnSxFki+c()
+int PS4_SYSV_ABI Func_A17AE74B11648BE7()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_vXMpe7Murfc()
+int PS4_SYSV_ABI Func_BD73297BB32EADF7()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_wKJpFhCTrX0()
+int PS4_SYSV_ABI Func_C0A269161093AD7D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_wZI4fmUJMlw()
+int PS4_SYSV_ABI Func_C192387E6509325C()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_-5AIEU9+11g()
+int PS4_SYSV_ABI Func_FF9008114F7ED758()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -902,7 +902,7 @@ int PS4_SYSV_ABI sceVideoOutAddBufferHdrPrivilege()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_3xrSV8U0Hsg()
+int PS4_SYSV_ABI Func_DF1AD257C5341EC8()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -913,7 +913,7 @@ void RegisterlibSceVideoOut(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("0eZpG16I-Ps, libSceDbgVideoOut , 1 , libSceVideoOut, 0, 0 , sceDbgVideoOutAddProcessAttribute ),
  LIB_FUNCTION("gI9jbGyrJZo, libSceDbgVideoOut , 1 , libSceVideoOut, 0, 0 , sceDbgVideoOutRemoveProcessAttribute ),
  LIB_FUNCTION("lm+1oyWKwy0, libSceVideoOutAniso , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBufferAnisoPrivilege ),
- LIB_FUNCTION("h94Po2hoDZg, libSceDbgVideoOutSub4k , 1 , libSceVideoOut, 0, 0 , Func_h94Po2hoDZg ),
+ LIB_FUNCTION("h94Po2hoDZg, libSceDbgVideoOutSub4k , 1 , libSceVideoOut, 0, 0 , Func_87DE0FA368680D98 ),
  LIB_FUNCTION("4iy9hG9Du1s, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBuffer ),
  LIB_FUNCTION("twrSaoZ9cJs, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBuffer4k2kPrivilege ),
  LIB_FUNCTION("D3s8DoEnuR4, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBufferYccPrivilege ),
@@ -1045,21 +1045,21 @@ void RegisterlibSceVideoOut(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("SRQSpP4QK5U, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutUnregisterBufferAttribute ),
  LIB_FUNCTION("N5KDtkIjjJ4, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutUnregisterBuffers ),
  LIB_FUNCTION("j6RaAUlaLv0, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , sceVideoOutWaitVblank ),
- LIB_FUNCTION("Ek7XQBAkFYA, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_Ek7XQBAkFYA ),
- LIB_FUNCTION("JDjWoYVTvdk, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_JDjWoYVTvdk ),
- LIB_FUNCTION("M4lTPTxoeN0, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_M4lTPTxoeN0 ),
- LIB_FUNCTION("P5a32OulZQk, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_P5a32OulZQk ),
- LIB_FUNCTION("lMkkEv4aaHY, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_lMkkEv4aaHY ),
- LIB_FUNCTION("oXrnSxFki+c, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_oXrnSxFki+c ),
- LIB_FUNCTION("vXMpe7Murfc, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_vXMpe7Murfc ),
- LIB_FUNCTION("wKJpFhCTrX0, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_wKJpFhCTrX0 ),
- LIB_FUNCTION("wZI4fmUJMlw, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_wZI4fmUJMlw ),
- LIB_FUNCTION("-5AIEU9+11g, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_-5AIEU9+11g ),
+ LIB_FUNCTION("Ek7XQBAkFYA, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_124ED74010241580 ),
+ LIB_FUNCTION("JDjWoYVTvdk, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_2438D6A18553BDD9 ),
+ LIB_FUNCTION("M4lTPTxoeN0, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_3389533D3C6878DD ),
+ LIB_FUNCTION("P5a32OulZQk, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_3F96B7D8EBA56509 ),
+ LIB_FUNCTION("lMkkEv4aaHY, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_94C92412FE1A6876 ),
+ LIB_FUNCTION("oXrnSxFki+c, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_A17AE74B11648BE7 ),
+ LIB_FUNCTION("vXMpe7Murfc, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_BD73297BB32EADF7 ),
+ LIB_FUNCTION("wKJpFhCTrX0, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_C0A269161093AD7D ),
+ LIB_FUNCTION("wZI4fmUJMlw, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_C192387E6509325C ),
+ LIB_FUNCTION("-5AIEU9+11g, libSceVideoOut , 1 , libSceVideoOut, 0, 0 , Func_FF9008114F7ED758 ),
  LIB_FUNCTION("twrSaoZ9cJs, libSceVideoOutBaseMode4k , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBuffer4k2kPrivilege ),
  LIB_FUNCTION("8Lf4Fp1TxA0, libSceVideoOutExtra , 1 , libSceVideoOut, 0, 0 , sceVideoOutAdjustColor2_ ),
  LIB_FUNCTION("+sXvR1JH9Aw, libSceVideoOutRawEdid , 1 , libSceVideoOut, 0, 0 , sceVideoOutGetHdmiRawEdid_ ),
  LIB_FUNCTION("VAlir52gpQI, libSceVideoOutHdr , 1 , libSceVideoOut, 0, 0 , sceVideoOutAddBufferHdrPrivilege ),
- LIB_FUNCTION("3xrSV8U0Hsg, libSceVideoOutWindow2Pre400 , 1 , libSceVideoOut, 0, 0 , Func_3xrSV8U0Hsg ),
+ LIB_FUNCTION("3xrSV8U0Hsg, libSceVideoOutWindow2Pre400 , 1 , libSceVideoOut, 0, 0 , Func_DF1AD257C5341EC8 ),
 };
 
 }

@@ -56,13 +56,13 @@ int PS4_SYSV_ABI sceAppMessagingTryReceiveMsg()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_yOiZq+9-ZMQ()
+int PS4_SYSV_ABI Func_C8E899ABEF7F64C4()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_90unWbnI0qE()
+int PS4_SYSV_ABI Func_F74BA759B9C8D2A1()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -1862,25 +1862,25 @@ int PS4_SYSV_ABI sceShellCoreUtilWriteSmrHddDummyData()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_Hlylpx+n8Cg()
+int PS4_SYSV_ABI Func_1E5CA5A71FA7F028()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_bUNkT3XDg0Y()
+int PS4_SYSV_ABI Func_6D43644F75C38346()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_c5+4Scso9EU()
+int PS4_SYSV_ABI Func_739FB849CB28F445()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_sgYo-zXHQRE()
+int PS4_SYSV_ABI Func_B20628FF35C74111()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2372,13 +2372,13 @@ int PS4_SYSV_ABI sceSystemServiceTurnOffScreenSaver()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_kDGjRMtUDxo()
+int PS4_SYSV_ABI Func_9031A344CB540F1A()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_qdTPJWjquDc()
+int PS4_SYSV_ABI Func_A9D4CF2568EAB837()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2390,7 +2390,7 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebApp()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_uElcdmhh-c8()
+int PS4_SYSV_ABI Func_B8495C766861FDCF()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2630,13 +2630,13 @@ int PS4_SYSV_ABI sceSystemStateMgrWakeUp()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_ifJiF5witJ4()
+int PS4_SYSV_ABI Func_89F262179C22B49E()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_rIqPq0oWlrg()
+int PS4_SYSV_ABI Func_AC8A8FAB4A1696B8()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2672,7 +2672,7 @@ int PS4_SYSV_ABI sceSystemServiceInitializeForShellCore()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_fBGD-HNimSk()
+int PS4_SYSV_ABI Func_7C1183FC73629929()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2780,7 +2780,7 @@ int PS4_SYSV_ABI sceSystemServiceTelemetrySetData()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_xn-HgPW29x4()
+int PS4_SYSV_ABI Func_C67FC780F5B6F71E()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2810,13 +2810,13 @@ int PS4_SYSV_ABI sceSystemServiceReenableVoiceRecognition()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_axzblV8OvWU()
+int PS4_SYSV_ABI Func_6B1CDB955F0EBD65()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_y16IXiJfafA()
+int PS4_SYSV_ABI Func_CB5E885E225F69F0()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -2831,8 +2831,8 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("hdoMbMFIDdE, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , sceAppMessagingSetEventFlag ),
  LIB_FUNCTION("iKNXKsUtOjY, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , sceAppMessagingTryGetEventFlag ),
  LIB_FUNCTION("ZVRXXqj1n80, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , sceAppMessagingTryReceiveMsg ),
- LIB_FUNCTION("yOiZq+9-ZMQ, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , Func_yOiZq+9-ZMQ ),
- LIB_FUNCTION("90unWbnI0qE, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , Func_90unWbnI0qE ),
+ LIB_FUNCTION("yOiZq+9-ZMQ, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , Func_C8E899ABEF7F64C4 ),
+ LIB_FUNCTION("90unWbnI0qE, libSceAppMessaging , 1 , libSceSystemService, 1, 1 , Func_F74BA759B9C8D2A1 ),
  LIB_FUNCTION("V350H0h35IU, libSceLncUtil , 1 , libSceSystemService, 1, 1 , sceLncUtilAcquireCpuBudgetOfExtraAudioDevices ),
  LIB_FUNCTION("GmKMHwvxLlo, libSceLncUtil , 1 , libSceSystemService, 1, 1 , sceLncUtilAcquireCpuBudgetOfImeForBigApp ),
  LIB_FUNCTION("mC3BKJFlbNI, libSceLncUtil , 1 , libSceSystemService, 1, 1 , sceLncUtilAcquireCpuBudgetOfInGameStore ),
@@ -3132,10 +3132,10 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("YvCj4cb1-jU, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , sceShellCoreUtilUnmountHddForBackup ),
  LIB_FUNCTION("oeyHRt5PP+Q, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , sceShellCoreUtilUnmountHddForRestore ),
  LIB_FUNCTION("JTctYix8NXU, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , sceShellCoreUtilWriteSmrHddDummyData ),
- LIB_FUNCTION("Hlylpx+n8Cg, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_Hlylpx+n8Cg ),
- LIB_FUNCTION("bUNkT3XDg0Y, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_bUNkT3XDg0Y ),
- LIB_FUNCTION("c5+4Scso9EU, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_c5+4Scso9EU ),
- LIB_FUNCTION("sgYo-zXHQRE, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_sgYo-zXHQRE ),
+ LIB_FUNCTION("Hlylpx+n8Cg, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_1E5CA5A71FA7F028 ),
+ LIB_FUNCTION("bUNkT3XDg0Y, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_6D43644F75C38346 ),
+ LIB_FUNCTION("c5+4Scso9EU, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_739FB849CB28F445 ),
+ LIB_FUNCTION("sgYo-zXHQRE, libSceShellCoreUtil , 1 , libSceSystemService, 1, 1 , Func_B20628FF35C74111 ),
  LIB_FUNCTION("jPKapVQLX70, libSceSystemService_jvm , 1 , libSceSystemService, 1, 1 , sceSystemServiceAddLocalProcessForJvm ),
  LIB_FUNCTION("zqjkZ5VKFSg, libSceSystemService_jvm , 1 , libSceSystemService, 1, 1 , sceSystemServiceGetParentSocketForJvm ),
  LIB_FUNCTION("2TJ5KzC73gY, libSceSystemService_jvm , 1 , libSceSystemService, 1, 1 , sceSystemServiceKillLocalProcessForJvm ),
@@ -3217,10 +3217,10 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("kTiAx7e2zU4, libSceSystemService , 1 , libSceSystemService, 1, 1 , sceSystemServiceSuspendLocalProcess ),
  LIB_FUNCTION("zlXqkzPY-ds, libSceSystemService , 1 , libSceSystemService, 1, 1 , sceSystemServiceTickVideoPlayback ),
  LIB_FUNCTION("vOhqz-IMiW4, libSceSystemService , 1 , libSceSystemService, 1, 1 , sceSystemServiceTurnOffScreenSaver ),
- LIB_FUNCTION("kDGjRMtUDxo, libSceSystemService , 1 , libSceSystemService, 1, 1 , Func_kDGjRMtUDxo ),
- LIB_FUNCTION("qdTPJWjquDc, libSceSystemService , 1 , libSceSystemService, 1, 1 , Func_qdTPJWjquDc ),
+ LIB_FUNCTION("kDGjRMtUDxo, libSceSystemService , 1 , libSceSystemService, 1, 1 , Func_9031A344CB540F1A ),
+ LIB_FUNCTION("qdTPJWjquDc, libSceSystemService , 1 , libSceSystemService, 1, 1 , Func_A9D4CF2568EAB837 ),
  LIB_FUNCTION("f34qn7XA3QE, libSceSystemServiceWebApp , 1 , libSceSystemService, 1, 1 , sceSystemServiceLaunchWebApp ),
- LIB_FUNCTION("uElcdmhh-c8, libSceSystemServiceWebApp , 1 , libSceSystemService, 1, 1 , Func_uElcdmhh-c8 ),
+ LIB_FUNCTION("uElcdmhh-c8, libSceSystemServiceWebApp , 1 , libSceSystemService, 1, 1 , Func_B8495C766861FDCF ),
  LIB_FUNCTION("0TDfP7R4fiQ, libSceSystemServiceDbg , 1 , libSceSystemService, 1, 1 , sceSystemServiceGetDbgExecutablePath ),
  LIB_FUNCTION("+2uXfrrQCyk, libSceSystemServiceActivateHevc , 1 , libSceSystemService, 1, 1 , sceSystemServiceActivateHevc ),
  LIB_FUNCTION("VXA8STT529w, libSceSystemServiceActivateHevc , 1 , libSceSystemService, 1, 1 , sceSystemServiceActivateHevcAbort ),
@@ -3260,8 +3260,8 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("U1dZXAjkBVo, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , sceSystemStateMgrVshAutoUpdate ),
  LIB_FUNCTION("geg26leOsvw, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , sceSystemStateMgrWaitVshAutoUpdateVerifyDone ),
  LIB_FUNCTION("6gtqLPVTdJY, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , sceSystemStateMgrWakeUp ),
- LIB_FUNCTION("ifJiF5witJ4, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , Func_ifJiF5witJ4 ),
- LIB_FUNCTION("rIqPq0oWlrg, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , Func_rIqPq0oWlrg ),
+ LIB_FUNCTION("ifJiF5witJ4, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , Func_89F262179C22B49E ),
+ LIB_FUNCTION("rIqPq0oWlrg, libSceSystemStateMgr , 1 , libSceSystemService, 1, 1 , Func_AC8A8FAB4A1696B8 ),
  LIB_FUNCTION("rTa0Vp-4nKA, libSceSystemServiceAppLaunchLink , 1 , libSceSystemService, 1, 1 , sceSystemServiceInvokeAppLaunchLink ),
  LIB_FUNCTION("uhD7g7zXIQo, libSceSystemServiceClosedCaption , 1 , libSceSystemService, 1, 1 , sceSystemServiceShowClosedCaptionAdvancedSettings ),
  LIB_FUNCTION("5W6LurzMZaY, libSceSystemServiceClosedCaption , 1 , libSceSystemService, 1, 1 , sceSystemServiceShowClosedCaptionSettings ),
@@ -3269,7 +3269,7 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("O3irWUQ2s-g, libSceSystemServiceEyeToEyeDistance , 1 , libSceSystemService, 1, 1 , sceSystemServiceEnablePersonalEyeToEyeDistanceSetting ),
  LIB_FUNCTION("nT-7-iG55M8, libSceSystemServicePowerSaveLevel , 1 , libSceSystemService, 1, 1 , sceSystemServiceSetPowerSaveLevel ),
  LIB_FUNCTION("gD4wh2+nuuU, libSceSystemServiceForShellCoreOnly , 1 , libSceSystemService, 1, 1 , sceSystemServiceInitializeForShellCore ),
- LIB_FUNCTION("fBGD-HNimSk, libSceSystemServicePadspkRouting , 1 , libSceSystemService, 1, 1 , Func_fBGD-HNimSk ),
+ LIB_FUNCTION("fBGD-HNimSk, libSceSystemServicePadspkRouting , 1 , libSceSystemService, 1, 1 , Func_7C1183FC73629929 ),
  LIB_FUNCTION("45QrFvUkrjg, libSceSystemServicePartyVoice , 1 , libSceSystemService, 1, 1 , sceSystemServiceDisablePartyVoice ),
  LIB_FUNCTION("hU3bSlF2OKs, libSceSystemServicePartyVoice , 1 , libSceSystemService, 1, 1 , sceSystemServiceReenablePartyVoice ),
  LIB_FUNCTION("5u2WeL-PR2w, libSceSystemServicePlatformPrivacy , 1 , libSceSystemService, 1, 1 , sceSystemServiceGetPlatformPrivacyDefinitionData ),
@@ -3291,14 +3291,14 @@ void RegisterlibSceSystemService(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("Zj5FGJQPFxs, libSceSystemServiceStore , 1 , libSceSystemService, 1, 1 , sceSystemServiceLaunchStore ),
  LIB_FUNCTION("3nn7rnOdt1g, libSceSystemServiceTelemetry , 1 , libSceSystemService, 1, 1 , sceSystemServiceTelemetrySetData ),
  LIB_FUNCTION("G5AwzWnHxks, libSceSystemServiceTournamentMlg , 1 , libSceSystemService, 1, 1 , sceSystemServiceLaunchTournamentList ),
- LIB_FUNCTION("xn-HgPW29x4, libSceSystemServiceTournamentMlg , 1 , libSceSystemService, 1, 1 , Func_xn-HgPW29x4 ),
+ LIB_FUNCTION("xn-HgPW29x4, libSceSystemServiceTournamentMlg , 1 , libSceSystemService, 1, 1 , Func_C67FC780F5B6F71E ),
  LIB_FUNCTION("YNoDjc1BPJI, libSceSystemServiceUdsApp , 1 , libSceSystemService, 1, 1 , sceSystemServiceLaunchUdsApp ),
  LIB_FUNCTION("AmTvo3RT5ss, libSceSystemServiceVideoServiceWebApp , 1 , libSceSystemService, 1, 1 , sceSystemServiceLoadExecVideoServiceWebApp ),
  LIB_FUNCTION("d3OnoKtNjGg, libSceSystemServiceVoiceRecognition , 1 , libSceSystemService, 1, 1 , sceSystemServiceDisableVoiceRecognition ),
  LIB_FUNCTION("c-aFKhn74h0, libSceSystemServiceVoiceRecognition , 1 , libSceSystemService, 1, 1 , sceSystemServiceReenableVoiceRecognition ),
  LIB_FUNCTION("-+3hY+y8bNo, libSceSystemServiceWebBrowser , 1 , libSceSystemService, 1, 1 , sceSystemServiceLaunchWebBrowser ),
- LIB_FUNCTION("axzblV8OvWU, libSceSystemServiceYouTubeAccountLinkStatus , 1 , libSceSystemService, 1, 1 , Func_axzblV8OvWU ),
- LIB_FUNCTION("y16IXiJfafA, libSceSystemServiceYouTubeAccountLinkStatus , 1 , libSceSystemService, 1, 1 , Func_y16IXiJfafA ),
+ LIB_FUNCTION("axzblV8OvWU, libSceSystemServiceYouTubeAccountLinkStatus , 1 , libSceSystemService, 1, 1 , Func_6B1CDB955F0EBD65 ),
+ LIB_FUNCTION("y16IXiJfafA, libSceSystemServiceYouTubeAccountLinkStatus , 1 , libSceSystemService, 1, 1 , Func_CB5E885E225F69F0 ),
 };
 
 }

@@ -94,11 +94,11 @@ int PS4_SYSV_ABI scePadVirtualDeviceDeleteDevice();
 int PS4_SYSV_ABI scePadVirtualDeviceDisableButtonRemapping();
 int PS4_SYSV_ABI scePadVirtualDeviceGetRemoteSetting();
 int PS4_SYSV_ABI scePadVirtualDeviceInsertData();
-int PS4_SYSV_ABI Func_KLmYx9ij2h0();
-int PS4_SYSV_ABI Func_KY0hSB+Uyfo();
-int PS4_SYSV_ABI Func_UeUUvNOgXKU();
-int PS4_SYSV_ABI Func_ickjfjk9okM();
-int PS4_SYSV_ABI Func_7xA+hFtvBCA();
+int PS4_SYSV_ABI Func_28B998C7D8A3DA1D();
+int PS4_SYSV_ABI Func_298D21481F94C9FA();
+int PS4_SYSV_ABI Func_51E514BCD3A05CA5();
+int PS4_SYSV_ABI Func_89C9237E393DA243();
+int PS4_SYSV_ABI Func_EF103E845B6F0420();
 
 void RegisterlibScePad(Loader::SymbolsResolver * sym);
 }

@@ -1238,199 +1238,199 @@ int PS4_SYSV_ABI sceRazorIsLoaded()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_Bj0GWi1jWcM()
+int PS4_SYSV_ABI Func_063D065A2D6359C3()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_DKusr7JYQp0()
+int PS4_SYSV_ABI Func_0CABACAFB258429D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_FQzzNvwumaM()
+int PS4_SYSV_ABI Func_150CF336FC2E99A3()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_F8pof57lLUk()
+int PS4_SYSV_ABI Func_17CA687F9EE52D49()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_GHC4n3Wca0U()
+int PS4_SYSV_ABI Func_1870B89F759C6B45()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_JvkCnvaKlV4()
+int PS4_SYSV_ABI Func_26F9029EF68A955E()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_MB49u6sJLbA()
+int PS4_SYSV_ABI Func_301E3DBBAB092DB0()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_MLr+Fyrxf+8()
+int PS4_SYSV_ABI Func_30BAFE172AF17FEF()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_Pmo+ggPZUxc()
+int PS4_SYSV_ABI Func_3E6A3E8203D95317()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_QP7vDGU0xDQ()
+int PS4_SYSV_ABI Func_40FEEF0C6534C434()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_QWuQed5Mus4()
+int PS4_SYSV_ABI Func_416B9079DE4CBACE()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_R3TYO7Tdv5o()
+int PS4_SYSV_ABI Func_4774D83BB4DDBF9A()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_UGePHM7rmgA()
+int PS4_SYSV_ABI Func_50678F1CCEEB9A00()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_VKLsX6TGJBM()
+int PS4_SYSV_ABI Func_54A2EC5FA4C62413()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_WpxSyDE4rms()
+int PS4_SYSV_ABI Func_5A9C52C83138AE6B()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_XSIZOjHqEUI()
+int PS4_SYSV_ABI Func_5D22193A31EA1142()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_clo23rtglI0()
+int PS4_SYSV_ABI Func_725A36DEBB60948D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_gCGlAvphubs()
+int PS4_SYSV_ABI Func_8021A502FA61B9BB()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_nQAv4PpA8OY()
+int PS4_SYSV_ABI Func_9D002FE0FA40F0E6()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_nSl-NqcCi3E()
+int PS4_SYSV_ABI Func_9D297F36A7028B71()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_otfsenvPebM()
+int PS4_SYSV_ABI Func_A2D7EC7A7BCF79B3()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_qhKjy4mQhUo()
+int PS4_SYSV_ABI Func_AA12A3CB8990854A()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_rcjdwAUCC8Y()
+int PS4_SYSV_ABI Func_ADC8DDC005020BC6()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_sKhoi2ectC0()
+int PS4_SYSV_ABI Func_B0A8688B679CB42D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_tIkCC1FXpf8()
+int PS4_SYSV_ABI Func_B489020B5157A5FF()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_ut57TBmRQN0()
+int PS4_SYSV_ABI Func_BADE7B4C199140DD()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_0VEbnc-7Pdk()
+int PS4_SYSV_ABI Func_D1511B9DCFFB3DD9()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_1TRGZJsC5Y4()
+int PS4_SYSV_ABI Func_D53446649B02E58E()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_2Lbo4o4e8KM()
+int PS4_SYSV_ABI Func_D8B6E8E28E1EF0A3()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_2T1zOhnddFQ()
+int PS4_SYSV_ABI Func_D93D733A19DD7454()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_3plUQ7wqgxc()
+int PS4_SYSV_ABI Func_DE995443BC2A8317()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_326VKBUMI-8()
+int PS4_SYSV_ABI Func_DF6E9528150C23FF()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_7LTGukH+M1A()
+int PS4_SYSV_ABI Func_ECB4C6BA41FE3350()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -1448,7 +1448,7 @@ int PS4_SYSV_ABI sceGnmDebugReset()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_xMMot887QXE()
+int PS4_SYSV_ABI Func_C4C328B7CF3B4171()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -1484,31 +1484,31 @@ int PS4_SYSV_ABI sceGnmRegisterOwnerForSystem()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_HEOIaxbuVTA()
+int PS4_SYSV_ABI Func_1C43886B16EE5530()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_gQNwGezNDgE()
+int PS4_SYSV_ABI Func_81037019ECCD0E01()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_v7QcBXR48L8()
+int PS4_SYSV_ABI Func_BFB41C057478F0BF()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_5R1E24FRI4w()
+int PS4_SYSV_ABI Func_E51D44DB8151238C()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_+RaJBCVJZVM()
+int PS4_SYSV_ABI Func_F916890425496553()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -1720,55 +1720,55 @@ void RegisterlibSceGnmDriver(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("u9YKpRRHe-M, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , sceRazorCaptureImmediate ),
  LIB_FUNCTION("4UFagYlfuAM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , sceRazorCaptureSinceLastFlip ),
  LIB_FUNCTION("f33OrruQYbM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , sceRazorIsLoaded ),
- LIB_FUNCTION("Bj0GWi1jWcM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_Bj0GWi1jWcM ),
- LIB_FUNCTION("DKusr7JYQp0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_DKusr7JYQp0 ),
- LIB_FUNCTION("FQzzNvwumaM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_FQzzNvwumaM ),
- LIB_FUNCTION("F8pof57lLUk, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_F8pof57lLUk ),
- LIB_FUNCTION("GHC4n3Wca0U, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_GHC4n3Wca0U ),
- LIB_FUNCTION("JvkCnvaKlV4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_JvkCnvaKlV4 ),
- LIB_FUNCTION("MB49u6sJLbA, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_MB49u6sJLbA ),
- LIB_FUNCTION("MLr+Fyrxf+8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_MLr+Fyrxf+8 ),
- LIB_FUNCTION("Pmo+ggPZUxc, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_Pmo+ggPZUxc ),
- LIB_FUNCTION("QP7vDGU0xDQ, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_QP7vDGU0xDQ ),
- LIB_FUNCTION("QWuQed5Mus4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_QWuQed5Mus4 ),
- LIB_FUNCTION("R3TYO7Tdv5o, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_R3TYO7Tdv5o ),
- LIB_FUNCTION("UGePHM7rmgA, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_UGePHM7rmgA ),
- LIB_FUNCTION("VKLsX6TGJBM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_VKLsX6TGJBM ),
- LIB_FUNCTION("WpxSyDE4rms, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_WpxSyDE4rms ),
- LIB_FUNCTION("XSIZOjHqEUI, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_XSIZOjHqEUI ),
- LIB_FUNCTION("clo23rtglI0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_clo23rtglI0 ),
- LIB_FUNCTION("gCGlAvphubs, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_gCGlAvphubs ),
- LIB_FUNCTION("nQAv4PpA8OY, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_nQAv4PpA8OY ),
- LIB_FUNCTION("nSl-NqcCi3E, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_nSl-NqcCi3E ),
- LIB_FUNCTION("otfsenvPebM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_otfsenvPebM ),
- LIB_FUNCTION("qhKjy4mQhUo, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_qhKjy4mQhUo ),
- LIB_FUNCTION("rcjdwAUCC8Y, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_rcjdwAUCC8Y ),
- LIB_FUNCTION("sKhoi2ectC0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_sKhoi2ectC0 ),
- LIB_FUNCTION("tIkCC1FXpf8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_tIkCC1FXpf8 ),
- LIB_FUNCTION("ut57TBmRQN0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_ut57TBmRQN0 ),
- LIB_FUNCTION("0VEbnc-7Pdk, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_0VEbnc-7Pdk ),
- LIB_FUNCTION("1TRGZJsC5Y4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_1TRGZJsC5Y4 ),
- LIB_FUNCTION("2Lbo4o4e8KM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_2Lbo4o4e8KM ),
- LIB_FUNCTION("2T1zOhnddFQ, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_2T1zOhnddFQ ),
- LIB_FUNCTION("3plUQ7wqgxc, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_3plUQ7wqgxc ),
- LIB_FUNCTION("326VKBUMI-8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_326VKBUMI-8 ),
- LIB_FUNCTION("7LTGukH+M1A, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_7LTGukH+M1A ),
+ LIB_FUNCTION("Bj0GWi1jWcM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_063D065A2D6359C3 ),
+ LIB_FUNCTION("DKusr7JYQp0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_0CABACAFB258429D ),
+ LIB_FUNCTION("FQzzNvwumaM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_150CF336FC2E99A3 ),
+ LIB_FUNCTION("F8pof57lLUk, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_17CA687F9EE52D49 ),
+ LIB_FUNCTION("GHC4n3Wca0U, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_1870B89F759C6B45 ),
+ LIB_FUNCTION("JvkCnvaKlV4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_26F9029EF68A955E ),
+ LIB_FUNCTION("MB49u6sJLbA, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_301E3DBBAB092DB0 ),
+ LIB_FUNCTION("MLr+Fyrxf+8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_30BAFE172AF17FEF ),
+ LIB_FUNCTION("Pmo+ggPZUxc, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_3E6A3E8203D95317 ),
+ LIB_FUNCTION("QP7vDGU0xDQ, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_40FEEF0C6534C434 ),
+ LIB_FUNCTION("QWuQed5Mus4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_416B9079DE4CBACE ),
+ LIB_FUNCTION("R3TYO7Tdv5o, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_4774D83BB4DDBF9A ),
+ LIB_FUNCTION("UGePHM7rmgA, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_50678F1CCEEB9A00 ),
+ LIB_FUNCTION("VKLsX6TGJBM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_54A2EC5FA4C62413 ),
+ LIB_FUNCTION("WpxSyDE4rms, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_5A9C52C83138AE6B ),
+ LIB_FUNCTION("XSIZOjHqEUI, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_5D22193A31EA1142 ),
+ LIB_FUNCTION("clo23rtglI0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_725A36DEBB60948D ),
+ LIB_FUNCTION("gCGlAvphubs, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_8021A502FA61B9BB ),
+ LIB_FUNCTION("nQAv4PpA8OY, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_9D002FE0FA40F0E6 ),
+ LIB_FUNCTION("nSl-NqcCi3E, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_9D297F36A7028B71 ),
+ LIB_FUNCTION("otfsenvPebM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_A2D7EC7A7BCF79B3 ),
+ LIB_FUNCTION("qhKjy4mQhUo, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_AA12A3CB8990854A ),
+ LIB_FUNCTION("rcjdwAUCC8Y, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_ADC8DDC005020BC6 ),
+ LIB_FUNCTION("sKhoi2ectC0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_B0A8688B679CB42D ),
+ LIB_FUNCTION("tIkCC1FXpf8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_B489020B5157A5FF ),
+ LIB_FUNCTION("ut57TBmRQN0, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_BADE7B4C199140DD ),
+ LIB_FUNCTION("0VEbnc-7Pdk, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_D1511B9DCFFB3DD9 ),
+ LIB_FUNCTION("1TRGZJsC5Y4, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_D53446649B02E58E ),
+ LIB_FUNCTION("2Lbo4o4e8KM, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_D8B6E8E28E1EF0A3 ),
+ LIB_FUNCTION("2T1zOhnddFQ, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_D93D733A19DD7454 ),
+ LIB_FUNCTION("3plUQ7wqgxc, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_DE995443BC2A8317 ),
+ LIB_FUNCTION("326VKBUMI-8, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_DF6E9528150C23FF ),
+ LIB_FUNCTION("7LTGukH+M1A, libSceGnmDriver , 1 , libSceGnmDriver, 1, 1 , Func_ECB4C6BA41FE3350 ),
  LIB_FUNCTION("dqPBvjFVpTA, libSceGnmDebugModuleReset , 1 , libSceGnmDriver, 1, 1 , sceGnmDebugModuleReset ),
  LIB_FUNCTION("RNPAItiMLIg, libSceGnmDebugReset , 1 , libSceGnmDriver, 1, 1 , sceGnmDebugReset ),
- LIB_FUNCTION("xMMot887QXE, libSceGnmDebugReset , 1 , libSceGnmDriver, 1, 1 , Func_xMMot887QXE ),
+ LIB_FUNCTION("xMMot887QXE, libSceGnmDebugReset , 1 , libSceGnmDriver, 1, 1 , Func_C4C328B7CF3B4171 ),
  LIB_FUNCTION("pF1HQjbmQJ0, libSceGnmDriverCompat , 1 , libSceGnmDriver, 1, 1 , sceGnmDrawInitToDefaultContextStateInternalCommand ),
  LIB_FUNCTION("jajhf-Gi3AI, libSceGnmDriverCompat , 1 , libSceGnmDriver, 1, 1 , sceGnmDrawInitToDefaultContextStateInternalSize ),
  LIB_FUNCTION("vbcR4Ken6AA, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , sceGnmFindResources ),
  LIB_FUNCTION("eLQbNsKeTkU, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , sceGnmGetResourceRegistrationBuffers ),
  LIB_FUNCTION("j6mSQs3UgaY, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , sceGnmRegisterOwnerForSystem ),
- LIB_FUNCTION("HEOIaxbuVTA, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_HEOIaxbuVTA ),
- LIB_FUNCTION("gQNwGezNDgE, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_gQNwGezNDgE ),
- LIB_FUNCTION("v7QcBXR48L8, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_v7QcBXR48L8 ),
- LIB_FUNCTION("5R1E24FRI4w, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_5R1E24FRI4w ),
- LIB_FUNCTION("+RaJBCVJZVM, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_+RaJBCVJZVM ),
+ LIB_FUNCTION("HEOIaxbuVTA, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_1C43886B16EE5530 ),
+ LIB_FUNCTION("gQNwGezNDgE, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_81037019ECCD0E01 ),
+ LIB_FUNCTION("v7QcBXR48L8, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_BFB41C057478F0BF ),
+ LIB_FUNCTION("5R1E24FRI4w, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_E51D44DB8151238C ),
+ LIB_FUNCTION("+RaJBCVJZVM, libSceGnmDriverResourceRegistration , 1 , libSceGnmDriver, 1, 1 , Func_F916890425496553 ),
  LIB_FUNCTION("Fwvh++m9IQI, libSceGnmGetGpuCoreClockFrequency , 1 , libSceGnmDriver, 1, 1 , sceGnmGetGpuCoreClockFrequency ),
- LIB_FUNCTION("R3TYO7Tdv5o, libSceGnmWaitFreeSubmit , 1 , libSceGnmDriver, 1, 1 , Func_R3TYO7Tdv5o ),
- LIB_FUNCTION("ut57TBmRQN0, libSceGnmWaitFreeSubmit , 1 , libSceGnmDriver, 1, 1 , Func_ut57TBmRQN0 ),
+ LIB_FUNCTION("R3TYO7Tdv5o, libSceGnmWaitFreeSubmit , 1 , libSceGnmDriver, 1, 1 , Func_4774D83BB4DDBF9A ),
+ LIB_FUNCTION("ut57TBmRQN0, libSceGnmWaitFreeSubmit , 1 , libSceGnmDriver, 1, 1 , Func_BADE7B4C199140DD ),
 };
 
 }

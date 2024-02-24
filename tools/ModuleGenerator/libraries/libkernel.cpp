@@ -6062,91 +6062,91 @@ int PS4_SYSV_ABI writev()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_N94a0T4F4+U()
+int PS4_SYSV_ABI Func_37DE1AD13E05E3E5()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_cafDxa64sO4()
+int PS4_SYSV_ABI Func_71A7C3C5AEB8B0EE()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_gpgi-GwE2Is()
+int PS4_SYSV_ABI Func_829822FC6C04D88B()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_hmqw8GlN+tI()
+int PS4_SYSV_ABI Func_866AB0F0694DFAD2()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_jMuNoBRCPUg()
+int PS4_SYSV_ABI Func_8CCB8DA014423D48()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_qtHOLtFWq7Y()
+int PS4_SYSV_ABI Func_AAD1CE2ED156ABB6()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_uV+YilcHqAs()
+int PS4_SYSV_ABI Func_B95F988A5707A80B()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_vfYaxkxnJXQ()
+int PS4_SYSV_ABI Func_BDF61AC64C672574()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_v+qTlNjF6kE()
+int PS4_SYSV_ABI Func_BFEA9394D8C5EA41()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_x0DQK0TXDk0()
+int PS4_SYSV_ABI Func_C740D02B44D70E4D()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_1v23w7Rnkic()
+int PS4_SYSV_ABI Func_D6FDB7C3B4679227()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_2wKjID0iGVM()
+int PS4_SYSV_ABI Func_DB02A3203D221953()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_2xg4JXvaJ6k()
+int PS4_SYSV_ABI Func_DB1838257BDA27A9()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_-PNB3tfnD8c()
+int PS4_SYSV_ABI Func_FCF341DED7E70FC7()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_-uPq82VbRMI()
+int PS4_SYSV_ABI Func_FEE3EAF3655B44C2()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -6164,7 +6164,7 @@ int PS4_SYSV_ABI sceKernelGetOpenPsId()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_ClMdHuu+R1A()
+int PS4_SYSV_ABI Func_0A531D1EEBBE4750()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -6284,7 +6284,7 @@ int PS4_SYSV_ABI sceCoredumpWriteUserData()
 	return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI Func_mIkJUpP5vKo()
+int PS4_SYSV_ABI Func_9889095293F9BCAA()
 {
 	PRINT_UNIMPLEMENTED_FUNCTION_NAME();
 	return ORBIS_OK;
@@ -7312,21 +7312,21 @@ void Registerlibkernel(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("dTnYqqLIQ6c, libkernel , 1 , libkernel, 1, 1 , waitpid ),
  LIB_FUNCTION("FN4gaPmuFV8, libkernel , 1 , libkernel, 1, 1 , write ),
  LIB_FUNCTION("Z2aKdxzS4KE, libkernel , 1 , libkernel, 1, 1 , writev ),
- LIB_FUNCTION("N94a0T4F4+U, libkernel , 1 , libkernel, 1, 1 , Func_N94a0T4F4+U ),
- LIB_FUNCTION("cafDxa64sO4, libkernel , 1 , libkernel, 1, 1 , Func_cafDxa64sO4 ),
- LIB_FUNCTION("gpgi-GwE2Is, libkernel , 1 , libkernel, 1, 1 , Func_gpgi-GwE2Is ),
- LIB_FUNCTION("hmqw8GlN+tI, libkernel , 1 , libkernel, 1, 1 , Func_hmqw8GlN+tI ),
- LIB_FUNCTION("jMuNoBRCPUg, libkernel , 1 , libkernel, 1, 1 , Func_jMuNoBRCPUg ),
- LIB_FUNCTION("qtHOLtFWq7Y, libkernel , 1 , libkernel, 1, 1 , Func_qtHOLtFWq7Y ),
- LIB_FUNCTION("uV+YilcHqAs, libkernel , 1 , libkernel, 1, 1 , Func_uV+YilcHqAs ),
- LIB_FUNCTION("vfYaxkxnJXQ, libkernel , 1 , libkernel, 1, 1 , Func_vfYaxkxnJXQ ),
- LIB_FUNCTION("v+qTlNjF6kE, libkernel , 1 , libkernel, 1, 1 , Func_v+qTlNjF6kE ),
- LIB_FUNCTION("x0DQK0TXDk0, libkernel , 1 , libkernel, 1, 1 , Func_x0DQK0TXDk0 ),
- LIB_FUNCTION("1v23w7Rnkic, libkernel , 1 , libkernel, 1, 1 , Func_1v23w7Rnkic ),
- LIB_FUNCTION("2wKjID0iGVM, libkernel , 1 , libkernel, 1, 1 , Func_2wKjID0iGVM ),
- LIB_FUNCTION("2xg4JXvaJ6k, libkernel , 1 , libkernel, 1, 1 , Func_2xg4JXvaJ6k ),
- LIB_FUNCTION("-PNB3tfnD8c, libkernel , 1 , libkernel, 1, 1 , Func_-PNB3tfnD8c ),
- LIB_FUNCTION("-uPq82VbRMI, libkernel , 1 , libkernel, 1, 1 , Func_-uPq82VbRMI ),
+ LIB_FUNCTION("N94a0T4F4+U, libkernel , 1 , libkernel, 1, 1 , Func_37DE1AD13E05E3E5 ),
+ LIB_FUNCTION("cafDxa64sO4, libkernel , 1 , libkernel, 1, 1 , Func_71A7C3C5AEB8B0EE ),
+ LIB_FUNCTION("gpgi-GwE2Is, libkernel , 1 , libkernel, 1, 1 , Func_829822FC6C04D88B ),
+ LIB_FUNCTION("hmqw8GlN+tI, libkernel , 1 , libkernel, 1, 1 , Func_866AB0F0694DFAD2 ),
+ LIB_FUNCTION("jMuNoBRCPUg, libkernel , 1 , libkernel, 1, 1 , Func_8CCB8DA014423D48 ),
+ LIB_FUNCTION("qtHOLtFWq7Y, libkernel , 1 , libkernel, 1, 1 , Func_AAD1CE2ED156ABB6 ),
+ LIB_FUNCTION("uV+YilcHqAs, libkernel , 1 , libkernel, 1, 1 , Func_B95F988A5707A80B ),
+ LIB_FUNCTION("vfYaxkxnJXQ, libkernel , 1 , libkernel, 1, 1 , Func_BDF61AC64C672574 ),
+ LIB_FUNCTION("v+qTlNjF6kE, libkernel , 1 , libkernel, 1, 1 , Func_BFEA9394D8C5EA41 ),
+ LIB_FUNCTION("x0DQK0TXDk0, libkernel , 1 , libkernel, 1, 1 , Func_C740D02B44D70E4D ),
+ LIB_FUNCTION("1v23w7Rnkic, libkernel , 1 , libkernel, 1, 1 , Func_D6FDB7C3B4679227 ),
+ LIB_FUNCTION("2wKjID0iGVM, libkernel , 1 , libkernel, 1, 1 , Func_DB02A3203D221953 ),
+ LIB_FUNCTION("2xg4JXvaJ6k, libkernel , 1 , libkernel, 1, 1 , Func_DB1838257BDA27A9 ),
+ LIB_FUNCTION("-PNB3tfnD8c, libkernel , 1 , libkernel, 1, 1 , Func_FCF341DED7E70FC7 ),
+ LIB_FUNCTION("-uPq82VbRMI, libkernel , 1 , libkernel, 1, 1 , Func_FEE3EAF3655B44C2 ),
  LIB_FUNCTION("usHTMoFoBTM, libkernel_dmem_aliasing , 1 , libkernel, 1, 1 , sceKernelEnableDmemAliasing ),
  LIB_FUNCTION("MR221Mwo0Pc, libkernel_ps2emu , 1 , libkernel, 1, 1 , sceKernelJitCreateAliasOfSharedMemory ),
  LIB_FUNCTION("avvJ3J0H0EY, libkernel_ps2emu , 1 , libkernel, 1, 1 , sceKernelJitCreateSharedMemory ),
@@ -7371,7 +7371,7 @@ void Registerlibkernel(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("MZb0GKT3mo8, libkernel_jvm , 1 , libkernel, 1, 1 , socketpair ),
  LIB_FUNCTION("mkawd0NA9ts, libkernel_jvm , 1 , libkernel, 1, 1 , sysconf ),
  LIB_FUNCTION("DFmMT80xcNI, libkernel_jvm , 1 , libkernel, 1, 1 , sysctl ),
- LIB_FUNCTION("ClMdHuu+R1A, libkernel_module_extension , 1 , libkernel, 1, 1 , Func_ClMdHuu+R1A ),
+ LIB_FUNCTION("ClMdHuu+R1A, libkernel_module_extension , 1 , libkernel, 1, 1 , Func_0A531D1EEBBE4750 ),
  LIB_FUNCTION("WkwEd3N7w0Y, libkernel_unity , 1 , libkernel, 1, 1 , sceKernelInstallExceptionHandler ),
  LIB_FUNCTION("il03nluKfMk, libkernel_unity , 1 , libkernel, 1, 1 , sceKernelRaiseException ),
  LIB_FUNCTION("Qhv5ARAoOEc, libkernel_unity , 1 , libkernel, 1, 1 , sceKernelRemoveExceptionHandler ),
@@ -7424,8 +7424,8 @@ void Registerlibkernel(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("8TqMzIggthc, libkernel_qadisc , 1 , libkernel, 1, 1 , sceKernelIccGetErrLog ),
  LIB_FUNCTION("C+i9gJY4A1I, libkernel_qadisc , 1 , libkernel, 1, 1 , sceKernelIccGetHwInfo ),
  LIB_FUNCTION("L21PBFwqIiM, libkernel_qadisc , 1 , libkernel, 1, 1 , sceKernelIccGetSysEventLog ),
- LIB_FUNCTION("gpgi-GwE2Is, libkernel_qadisc , 1 , libkernel, 1, 1 , Func_gpgi-GwE2Is ),
- LIB_FUNCTION("uV+YilcHqAs, libkernel_qadisc , 1 , libkernel, 1, 1 , Func_uV+YilcHqAs ),
+ LIB_FUNCTION("gpgi-GwE2Is, libkernel_qadisc , 1 , libkernel, 1, 1 , Func_829822FC6C04D88B ),
+ LIB_FUNCTION("uV+YilcHqAs, libkernel_qadisc , 1 , libkernel, 1, 1 , Func_B95F988A5707A80B ),
  LIB_FUNCTION("nSSPVGJLMjE, libkernel_sysc_se , 1 , libkernel, 1, 1 , __freeze ),
  LIB_FUNCTION("eaiyhIBmf34, libkernel_sysc_se , 1 , libkernel, 1, 1 , sysc_e00 ),
  LIB_FUNCTION("XPlTYt2TOg0, libkernel_sysc_se , 1 , libkernel, 1, 1 , sysc_s00 ),
@@ -7443,7 +7443,7 @@ void Registerlibkernel(Loader::SymbolsResolver * sym) {
  LIB_FUNCTION("Uxqkdta7wEg, libSceCoredump , 1 , libkernel, 1, 1 , sceCoredumpSetUserDataType ),
  LIB_FUNCTION("fFkhOgztiCA, libSceCoredump , 1 , libkernel, 1, 1 , sceCoredumpUnregisterCoredumpHandler ),
  LIB_FUNCTION("Dbbkj6YHWdo, libSceCoredump , 1 , libkernel, 1, 1 , sceCoredumpWriteUserData ),
- LIB_FUNCTION("mIkJUpP5vKo, libSceCoredump , 1 , libkernel, 1, 1 , Func_mIkJUpP5vKo ),
+ LIB_FUNCTION("mIkJUpP5vKo, libSceCoredump , 1 , libkernel, 1, 1 , Func_9889095293F9BCAA ),
  LIB_FUNCTION("1Pw5n31Ayxc, libSceCoredump_debug , 1 , libkernel, 1, 1 , sceCoredumpDebugForceCoredumpOnAppClose ),
  LIB_FUNCTION("G420P25pN5Y, libSceCoredump_debug , 1 , libkernel, 1, 1 , sceCoredumpDebugTriggerCoredump ),
  LIB_FUNCTION("3e+4Iv7IJ8U, libScePosix , 1 , libkernel, 1, 1 , accept ),

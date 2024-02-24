@@ -12,14 +12,16 @@
 #include "json.hpp"
 
 struct NidFuncTable {
-    std::string m_id;
+    std::string m_encoded_id;
+    std::string m_hex_id;
     std::string m_funcName;
     int m_libversion;
     int m_version_major;
     int m_version_minor;
 };
 
-constexpr std::string_view SpdxHeader = R"(// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+constexpr std::string_view SpdxHeader =
+    R"(// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 )";
 
@@ -86,7 +88,7 @@ void GenerateCodeFiles(
     sourceCode += "void Register" + moduleName + "(Loader::SymbolsResolver * sym) {\n";
     for (const auto& lib : libName2FuncTableMap) {
         for (const auto& func : lib.second) {
-            sourceCode += " LIB_FUNCTION(\"" + func.m_id + ", " + lib.first + " , " +
+            sourceCode += " LIB_FUNCTION(\"" + func.m_encoded_id + ", " + lib.first + " , " +
                           std::to_string(func.m_libversion) + " , " + moduleName + ", " +
                           std::to_string(func.m_version_major) + ", " +
                           std::to_string(func.m_version_minor) + " , " + func.m_funcName + " ),\n";
@@ -126,15 +128,17 @@ void GetSymbolsFromLibDoc(std::vector<std::string>& importModules) {
                         int libVersion = libraries["version"].get<int>();
                         for (auto& symbols : libraries["symbols"]) {
                             std::string encoded_id = symbols["encoded_id"].get<std::string>();
+                            std::string hex_id = symbols["hex_id"].get<std::string>();
                             std::string symName;
                             if (symbols["name"] != nullptr) {
                                 symName = symbols["name"].get<std::string>();
                             } else {
-                                symName = "Func_" + encoded_id;
+                                symName = "Func_" + hex_id;
                             }
 
-                            libName2FuncTableMap[libName].push_back(NidFuncTable{
-                                encoded_id, symName, libVersion, m_version_major, m_version_minor});
+                            libName2FuncTableMap[libName].push_back(
+                                NidFuncTable{encoded_id, hex_id, symName, libVersion,
+                                             m_version_major, m_version_minor});
                         }
                     }
 
