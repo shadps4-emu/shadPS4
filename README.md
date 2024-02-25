@@ -14,12 +14,6 @@ by shadow , skmp , wheremyfoodat , GPUCode
 
 Early progress , a small amount of ps4 sdk demos and homebrew games working
 
-![](https://geps.dev/progress/60) Elf Loader
-
-![](https://geps.dev/progress/80) Logging system
-
-![](https://geps.dev/progress/10) Everything else
-
 # Why?
 
 The project started as a fun project. Due to short free time, it will probably take a while since it will be able to run something decent, but I am trying to do regular small commits.
@@ -38,7 +32,8 @@ Check building instructions in [linux build](https://github.com/georgemoralis/sh
 
 |Platform|Build status|
 |--------|------------|
-|Windows build|[![Windows](https://github.com/georgemoralis/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/georgemoralis/shadPS4/actions/workflows/windows.yml)
+|Windows SDL build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
+|Linux SDL build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
 
 To discuss the development of this emulator, please join our Discord server: [![Discord](https://img.shields.io/discord/1080089157554155590)](https://discord.gg/MyZRaBngxA)
 
