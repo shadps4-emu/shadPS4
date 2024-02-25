@@ -6,5 +6,7 @@ Files: CMakeSettings.json
        scripts/ps4_names.txt
        documents/changelog.txt
        documents/readme.txt
+       .github/shadps4.desktop
+       .github/shadps4.png
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later
