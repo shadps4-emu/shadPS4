@@ -82,6 +82,7 @@ if (CLANG_FORMAT)
 endif()
 
 add_subdirectory(third-party)
+add_subdirectory(externals)
 include_directories(src)
 
 set(LIBRARIES src/core/libraries/library_common.h
