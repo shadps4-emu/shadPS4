@@ -1,0 +1,63 @@
+// SPDX-FileCopyrightText: Copyright 2023 Citra Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#include "common/types.h"
+
+namespace Common::Log {
+
+/// Specifies the severity or level of detail of the log message.
+enum class Level : u8 {
+    Trace, ///< Extremely detailed and repetitive debugging information that is likely to
+    ///< pollute logs.
+    Debug,   ///< Less detailed debugging information.
+    Info,    ///< Status information from important points during execution.
+    Warning, ///< Minor or potential problems found during execution of a task.
+    Error,   ///< Major problems found during execution of a task that prevent it from being
+    ///< completed.
+    Critical, ///< Major problems during execution that threaten the stability of the entire
+    ///< application.
+
+    Count, ///< Total number of logging levels
+};
+
+/**
+ * Specifies the sub-system that generated the log message.
+ *
+ * @note If you add a new entry here, also add a corresponding one to `ALL_LOG_CLASSES` in
+ * backend.cpp.
+ */
+enum class Class : u8 {
+    Log,               ///< Messages about the log system itself
+    Common,            ///< Library routines
+    Common_Filesystem, ///< Filesystem interface library
+    Common_Memory,     ///< Memory mapping and management functions
+    Core,              ///< LLE emulation core
+    Core_Linker,       ///< The module linker
+    Config,            ///< Emulator configuration (including commandline)
+    Debug,             ///< Debugging tools
+    Kernel,            ///< The HLE implementation of the PS4 kernel.
+    Kernel_Pthread,    ///< The pthread implementation of the kernel.
+    Kernel_Fs,         ///< The filesystem implementation of the kernel.
+    Kernel_Vmm,        ///< The virtual memory implementation of the kernel.
+    Kernel_Event,      ///< The event management implementation of the kernel.
+    Kernel_Sce,        ///< The sony specific interfaces provided by the kernel.
+    Lib,               ///< HLE implementation of system library. Each major library
+                       ///< should have its own subclass.
+    Lib_LibC,          ///< The LibC implementation.
+    Lib_Kernel,        ///< The LibKernel implementation.
+    Lib_Pad,           ///< The LibScePad implementation.
+    Lib_GnmDriver,     ///< The LibSceGnmDriver implementation.
+    Lib_SystemService, ///< The LibSceSystemService implementation.
+    Lib_UserService,   ///< The LibSceUserService implementation.
+    Lib_VideoOut,      ///< The LibSceVideoOut implementation.
+    Frontend,          ///< Emulator UI
+    Render,            ///< Video Core
+    Render_Vulkan,     ///< Vulkan backend
+    Loader,            ///< ROM loader
+    Input,             ///< Input emulation
+    Count              ///< Total number of logging classes
+};
+
+} // namespace Common::Log

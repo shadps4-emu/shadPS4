@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "core/loader/symbols_resolver.h"
 
@@ -27,7 +27,7 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolRes& s) const {
         }
     }
 
-    LOG_INFO("Unresolved! {}\n", name);
+    LOG_INFO(Core_Linker, "Unresolved! {}", name);
     return nullptr;
 }
 

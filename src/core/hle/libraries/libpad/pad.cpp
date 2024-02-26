@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "Emulator/Host/controller.h"
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libpad/pad.h"
@@ -10,15 +10,14 @@
 
 namespace Core::Libraries::LibPad {
 
-constexpr bool log_file_pad = true; // disable it to disable logging
-
 int PS4_SYSV_ABI scePadInit() {
+    LOG_WARNING(Lib_Pad, "(STUBBED) called");
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId userId, s32 type,
+int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId user_id, s32 type,
                             s32 index, const ScePadOpenParam* pParam) {
-    LOG_INFO_IF(log_file_pad, "scePadOpen userid = {} type = {} index = {}\n", userId, type, index);
+    LOG_INFO(Lib_Pad, "(STUBBED) called user_id = {} type = {} index = {}", user_id, type, index);
     return 1; // dummy
 }
 

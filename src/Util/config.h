@@ -16,4 +16,6 @@ u32 getLogLevel();
 u32 getScreenWidth();
 u32 getScreenHeight();
 
+std::string getLogFilter();
+
 }; // namespace Config

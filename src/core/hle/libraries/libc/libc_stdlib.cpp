@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
-#include "common/debug.h"
-#include "common/log.h"
+#include "common/assert.h"
 #include "core/hle/libraries/libc/libc_stdlib.h"
 
 namespace Core::Libraries::LibC {
-
-constexpr bool log_file_libc = true; // disable it to disable logging
 
 void PS4_SYSV_ABI ps4_exit(int code) {
     std::exit(code);
@@ -16,10 +13,7 @@ void PS4_SYSV_ABI ps4_exit(int code) {
 
 int PS4_SYSV_ABI ps4_atexit(void (*func)()) {
     int rt = std::atexit(func);
-    if (rt != 0) {
-        LOG_ERROR_IF(log_file_libc, "atexit returned {}\n", rt);
-        BREAKPOINT();
-    }
+    ASSERT_MSG(rt == 0, "atexit returned {}", rt);
     return rt;
 }
 

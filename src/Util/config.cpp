@@ -13,6 +13,7 @@ bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
 u32 logLevel = 0; // TRACE = 0 , DEBUG = 1 , INFO = 2 , WARN = 3 , ERROR = 4 , CRITICAL = 5, OFF = 6
+std::string logFilter;
 
 bool isNeoMode() {
     return isNeo;
@@ -25,6 +26,10 @@ u32 getScreenHeight() {
 }
 u32 getLogLevel() {
     return logLevel;
+}
+
+std::string getLogFilter() {
+    return logFilter;
 }
 
 void load(const std::filesystem::path& path) {
@@ -51,6 +56,7 @@ void load(const std::filesystem::path& path) {
 
             isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
             logLevel = toml::find_or<toml::integer>(general, "logLevel", false);
+            logFilter = toml::find_or<toml::string>(general, "logFilter", "");
         }
     }
     if (data.contains("GPU")) {
@@ -62,7 +68,6 @@ void load(const std::filesystem::path& path) {
             screenHeight = toml::find_or<toml::integer>(general, "screenHeight", false);
         }
     }
-    int k = 0;
 }
 void save(const std::filesystem::path& path) {
     toml::basic_value<toml::preserve_comments> data;
@@ -85,6 +90,7 @@ void save(const std::filesystem::path& path) {
 
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["logLevel"] = logLevel;
+    data["General"]["logFilter"] = logFilter;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
 

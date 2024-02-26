@@ -34,15 +34,6 @@
         sym->AddSymbol(sr, func);                                                                  \
     }
 
-#define PRINT_FUNCTION_NAME()                                                                      \
-    { LOG_INFO_IF(true, "{}()\n", __func__); }
-
-#define PRINT_DUMMY_FUNCTION_NAME()                                                                \
-    { LOG_WARN_IF(true, "dummy {}()\n", __func__); }
-
-#define PRINT_UNIMPLEMENTED_FUNCTION_NAME()                                                        \
-    { LOG_ERROR_IF(true, "{}()\n", __func__); }
-
 namespace Core::Libraries {
 
 void InitHLELibs(Loader::SymbolsResolver* sym);

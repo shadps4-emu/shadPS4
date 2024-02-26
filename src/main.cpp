@@ -12,7 +12,8 @@
 #include <core/hle/libraries/libkernel/thread_management.h>
 #include "Util/config.h"
 #include "common/discord.h"
-#include "common/log.h"
+#include "common/logging/backend.h"
+#include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
@@ -26,8 +27,9 @@ int main(int argc, char* argv[]) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
     }
-    Config::load("config.toml");
-    Common::Log::Init(true);
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(config_dir / "config.toml");
+    Common::Log::Initialize();
     Core::Libraries::LibKernel::init_pthreads();
     auto width = Config::getScreenWidth();
     auto height = Config::getScreenHeight();
@@ -39,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
-    mnt->mount(p.parent_path().string(), "/app0");
+    mnt->Mount(p.parent_path().string(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
@@ -51,6 +53,7 @@ int main(int argc, char* argv[]) {
     discordRPC.update(Discord::RPCStatus::Idling, "");
     Emu::emuRun();
 
+    Common::Log::Stop();
     discordRPC.stop();
     return 0;
 }
