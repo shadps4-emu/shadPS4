@@ -1,141 +1,335 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/io_file.h"
+#include <vector>
 
-// #include "helpers.hpp"
+#include "common/io_file.h"
+#include "common/logging/log.h"
+#include "common/path_util.h"
+
+#ifdef _WIN32
+#include <io.h>
+#include <share.h>
+#else
+#include <unistd.h>
+#endif
 
 #ifdef _MSC_VER
-// 64 bit offsets for MSVC
+#define fileno _fileno
 #define fseeko _fseeki64
 #define ftello _ftelli64
-#define fileno _fileno
-
-#pragma warning(disable : 4996)
 #endif
 
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
+namespace Common::FS {
 
-#ifdef WIN32
-#include <io.h> // For _chsize_s
+namespace fs = std::filesystem;
+
+namespace {
+
+#ifdef _WIN32
+
+[[nodiscard]] constexpr const wchar_t* AccessModeToWStr(FileAccessMode mode, FileType type) {
+    switch (type) {
+    case FileType::BinaryFile:
+        switch (mode) {
+        case FileAccessMode::Read:
+            return L"rb";
+        case FileAccessMode::Write:
+            return L"wb";
+        case FileAccessMode::Append:
+            return L"ab";
+        case FileAccessMode::ReadWrite:
+            return L"r+b";
+        case FileAccessMode::ReadAppend:
+            return L"a+b";
+        }
+        break;
+    case FileType::TextFile:
+        switch (mode) {
+        case FileAccessMode::Read:
+            return L"r";
+        case FileAccessMode::Write:
+            return L"w";
+        case FileAccessMode::Append:
+            return L"a";
+        case FileAccessMode::ReadWrite:
+            return L"r+";
+        case FileAccessMode::ReadAppend:
+            return L"a+";
+        }
+        break;
+    }
+
+    return L"";
+}
+
+[[nodiscard]] constexpr int ToWindowsFileShareFlag(FileShareFlag flag) {
+    switch (flag) {
+    case FileShareFlag::ShareNone:
+    default:
+        return _SH_DENYRW;
+    case FileShareFlag::ShareReadOnly:
+        return _SH_DENYWR;
+    case FileShareFlag::ShareWriteOnly:
+        return _SH_DENYRD;
+    case FileShareFlag::ShareReadWrite:
+        return _SH_DENYNO;
+    }
+}
+
 #else
-#include <unistd.h> // For ftruncate
+
+[[nodiscard]] constexpr const char* AccessModeToStr(FileAccessMode mode, FileType type) {
+    switch (type) {
+    case FileType::BinaryFile:
+        switch (mode) {
+        case FileAccessMode::Read:
+            return "rb";
+        case FileAccessMode::Write:
+            return "wb";
+        case FileAccessMode::Append:
+            return "ab";
+        case FileAccessMode::ReadWrite:
+            return "r+b";
+        case FileAccessMode::ReadAppend:
+            return "a+b";
+        }
+        break;
+    case FileType::TextFile:
+        switch (mode) {
+        case FileAccessMode::Read:
+            return "r";
+        case FileAccessMode::Write:
+            return "w";
+        case FileAccessMode::Append:
+            return "a";
+        case FileAccessMode::ReadWrite:
+            return "r+";
+        case FileAccessMode::ReadAppend:
+            return "a+";
+        }
+        break;
+    }
+
+    return "";
+}
+
 #endif
 
-IOFile::IOFile(const std::filesystem::path& path, const char* permissions) : handle(nullptr) {
-    open(path, permissions);
-}
-
-bool IOFile::open(const std::filesystem::path& path, const char* permissions) {
-    const auto str =
-        path.string(); // For some reason converting paths directly with c_str() doesn't work
-    return open(str.c_str(), permissions);
-}
-
-bool IOFile::open(const char* filename, const char* permissions) {
-    // If this IOFile is already bound to an open file descriptor, release the file descriptor
-    // To avoid leaking it and/or erroneously locking the file
-    if (isOpen()) {
-        close();
-    }
-
-    handle = std::fopen(filename, permissions);
-    return isOpen();
-}
-
-void IOFile::close() {
-    if (isOpen()) {
-        fclose(handle);
-        handle = nullptr;
+[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
+    switch (origin) {
+    case SeekOrigin::SetOrigin:
+    default:
+        return SEEK_SET;
+    case SeekOrigin::CurrentPosition:
+        return SEEK_CUR;
+    case SeekOrigin::End:
+        return SEEK_END;
     }
 }
 
-std::pair<bool, std::size_t> IOFile::read(void* data, std::size_t length, std::size_t dataSize) {
-    if (!isOpen()) {
-        return {false, std::numeric_limits<std::size_t>::max()};
-    }
+} // Anonymous namespace
 
-    if (length == 0)
-        return {true, 0};
-    return {true, std::fread(data, dataSize, length, handle)};
+IOFile::IOFile() = default;
+
+IOFile::IOFile(const std::string& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+    Open(path, mode, type, flag);
 }
 
-std::pair<bool, std::size_t> IOFile::write(const void* data, std::size_t length,
-                                           std::size_t dataSize) {
-    if (!isOpen()) {
-        return {false, std::numeric_limits<std::size_t>::max()};
-    }
+IOFile::IOFile(std::string_view path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+    Open(path, mode, type, flag);
+}
 
-    if (length == 0) {
-        return {true, 0};
+IOFile::IOFile(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+    Open(path, mode, type, flag);
+}
+
+IOFile::~IOFile() {
+    Close();
+}
+
+IOFile::IOFile(IOFile&& other) noexcept {
+    std::swap(file_path, other.file_path);
+    std::swap(file_access_mode, other.file_access_mode);
+    std::swap(file_type, other.file_type);
+    std::swap(file, other.file);
+}
+
+IOFile& IOFile::operator=(IOFile&& other) noexcept {
+    std::swap(file_path, other.file_path);
+    std::swap(file_access_mode, other.file_access_mode);
+    std::swap(file_type, other.file_type);
+    std::swap(file, other.file);
+    return *this;
+}
+
+void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+    Close();
+
+    file_path = path;
+    file_access_mode = mode;
+    file_type = type;
+
+    errno = 0;
+
+#ifdef _WIN32
+    if (flag != FileShareFlag::ShareNone) {
+        file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
     } else {
-        return {true, std::fwrite(data, dataSize, length, handle)};
+        _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
     }
-}
-
-std::pair<bool, std::size_t> IOFile::readBytes(void* data, std::size_t count) {
-    return read(data, count, sizeof(std::uint8_t));
-}
-std::pair<bool, std::size_t> IOFile::writeBytes(const void* data, std::size_t count) {
-    return write(data, count, sizeof(std::uint8_t));
-}
-
-std::optional<std::uint64_t> IOFile::size() {
-    if (!isOpen())
-        return {};
-
-    std::uint64_t pos = ftello(handle);
-    if (fseeko(handle, 0, SEEK_END) != 0) {
-        return {};
-    }
-
-    std::uint64_t size = ftello(handle);
-    if ((size != pos) && (fseeko(handle, pos, SEEK_SET) != 0)) {
-        return {};
-    }
-
-    return size;
-}
-
-bool IOFile::seek(std::int64_t offset, int origin) {
-    if (!isOpen() || fseeko(handle, offset, origin) != 0)
-        return false;
-
-    return true;
-}
-
-bool IOFile::flush() {
-    if (!isOpen() || fflush(handle))
-        return false;
-
-    return true;
-}
-
-bool IOFile::rewind() {
-    return seek(0, SEEK_SET);
-}
-FILE* IOFile::getHandle() {
-    return handle;
-}
-
-void IOFile::setAppDataDir(const std::filesystem::path& dir) {
-    // if (dir == "")
-    //     Helpers::panic("Failed to set app data directory");
-    appData = dir;
-}
-
-bool IOFile::setSize(std::uint64_t size) {
-    if (!isOpen())
-        return false;
-    bool success;
-
-#ifdef WIN32
-    success = _chsize_s(_fileno(handle), size) == 0;
 #else
-    success = ftruncate(fileno(handle), size) == 0;
+    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
 #endif
-    fflush(handle);
-    return success;
+
+    if (!IsOpen()) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, ec_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
 }
+
+void IOFile::Close() {
+    if (!IsOpen()) {
+        return;
+    }
+
+    errno = 0;
+
+    const auto close_result = std::fclose(file) == 0;
+
+    if (!close_result) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
+
+    file = nullptr;
+}
+
+std::string IOFile::ReadString(size_t length) const {
+    std::vector<char> string_buffer(length);
+
+    const auto chars_read = ReadSpan<char>(string_buffer);
+    const auto string_size = chars_read != length ? chars_read : length;
+
+    return std::string{string_buffer.data(), string_size};
+}
+
+bool IOFile::Flush() const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    errno = 0;
+
+#ifdef _WIN32
+    const auto flush_result = std::fflush(file) == 0;
+#else
+    const auto flush_result = std::fflush(file) == 0;
+#endif
+
+    if (!flush_result) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
+
+    return flush_result;
+}
+
+bool IOFile::Commit() const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    errno = 0;
+
+#ifdef _WIN32
+    const auto commit_result = std::fflush(file) == 0 && _commit(fileno(file)) == 0;
+#else
+    const auto commit_result = std::fflush(file) == 0 && fsync(fileno(file)) == 0;
+#endif
+
+    if (!commit_result) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
+
+    return commit_result;
+}
+
+bool IOFile::SetSize(u64 size) const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    errno = 0;
+
+#ifdef _WIN32
+    const auto set_size_result = _chsize_s(fileno(file), static_cast<s64>(size)) == 0;
+#else
+    const auto set_size_result = ftruncate(fileno(file), static_cast<s64>(size)) == 0;
+#endif
+
+    if (!set_size_result) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
+                  PathToUTF8String(file_path), size, ec.message());
+    }
+
+    return set_size_result;
+}
+
+u64 IOFile::GetSize() const {
+    if (!IsOpen()) {
+        return 0;
+    }
+
+    // Flush any unwritten buffered data into the file prior to retrieving the file size.
+    std::fflush(file);
+
+    std::error_code ec;
+
+    const auto file_size = fs::file_size(file_path, ec);
+
+    if (ec) {
+        LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}",
+                  PathToUTF8String(file_path), ec.message());
+        return 0;
+    }
+
+    return file_size;
+}
+
+bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    errno = 0;
+
+    const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
+
+    if (!seek_result) {
+        const auto ec = std::error_code{errno, std::generic_category()};
+        LOG_ERROR(Common_Filesystem,
+                  "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
+                  PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
+    }
+
+    return seek_result;
+}
+
+s64 IOFile::Tell() const {
+    if (!IsOpen()) {
+        return 0;
+    }
+
+    errno = 0;
+
+    return ftello(file);
+}
+
+} // namespace Common::FS

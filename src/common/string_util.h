@@ -11,4 +11,9 @@ namespace Common {
 
 std::vector<std::string> SplitString(const std::string& str, char delimiter);
 
+#ifdef _WIN32
+[[nodiscard]] std::string UTF16ToUTF8(std::wstring_view input);
+[[nodiscard]] std::wstring UTF8ToUTF16W(std::string_view str);
+#endif
+
 } // namespace Common

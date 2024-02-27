@@ -3,11 +3,10 @@
 
 #include <cstdio>
 #include <string>
-#include <magic_enum.hpp>
 #include "Objects/video_out_ctx.h"
 #include "Util/config.h"
 #include "common/debug.h"
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/PS4/GPU/gpu_memory.h"
 #include "core/PS4/GPU/video_out_buffer.h"
@@ -58,17 +57,11 @@ std::string getPixelFormatString(s32 format) {
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute,
                                                 u32 pixelFormat, u32 tilingMode, u32 aspectRatio,
                                                 u32 width, u32 height, u32 pitchInPixel) {
-    PRINT_FUNCTION_NAME();
-
-    auto tileMode = magic_enum::enum_cast<SceVideoOutTilingMode>(tilingMode);
-    auto aspectR = magic_enum::enum_cast<AspectRatioMode>(aspectRatio);
-
-    LOG_INFO_IF(log_file_videoout, "pixelFormat  = {}\n", getPixelFormatString(pixelFormat));
-    LOG_INFO_IF(log_file_videoout, "tilingMode   = {}\n", magic_enum::enum_name(tileMode.value()));
-    LOG_INFO_IF(log_file_videoout, "aspectRatio  = {}\n", magic_enum::enum_name(aspectR.value()));
-    LOG_INFO_IF(log_file_videoout, "width        = {}\n", width);
-    LOG_INFO_IF(log_file_videoout, "height       = {}\n", height);
-    LOG_INFO_IF(log_file_videoout, "pitchInPixel = {}\n", pitchInPixel);
+    LOG_INFO(Lib_VideoOut,
+             "pixelFormat = {}, tilingMode = {}, aspectRatio = {}, width = {}, height = {}, "
+             "pitchInPixel = {}",
+             getPixelFormatString(pixelFormat), tilingMode, aspectRatio, width, height,
+             pitchInPixel);
 
     std::memset(attribute, 0, sizeof(SceVideoOutBufferAttribute));
 
@@ -100,7 +93,8 @@ static void flip_delete_event_func(Core::Kernel::SceKernelEqueue eq,
 
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 handle,
                                          void* udata) {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Lib_VideoOut, "handle = {}", handle);
+
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
 
     auto* ctx = videoOut->getCtx(handle);
@@ -136,46 +130,43 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 h
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
                                             s32 bufferNum,
                                             const SceVideoOutBufferAttribute* attribute) {
-    PRINT_FUNCTION_NAME();
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     auto* ctx = videoOut->getCtx(handle);
 
     if (handle == 1) { // main port
         if (startIndex < 0 || startIndex > 15) {
-            LOG_TRACE_IF(log_file_videoout, "invalid startIndex = {}\n", startIndex);
+            LOG_ERROR(Lib_VideoOut, "Invalid startIndex = {}", startIndex);
             return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
         }
         if (bufferNum < 1 || bufferNum > 16) {
-            LOG_TRACE_IF(log_file_videoout, "invalid bufferNum = {}\n", bufferNum);
+            LOG_ERROR(Lib_VideoOut, "Invalid bufferNum = {}", bufferNum);
             return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
         }
     }
     if (addresses == nullptr) {
-        LOG_TRACE_IF(log_file_videoout, "addresses are null\n");
+        LOG_ERROR(Lib_VideoOut, "Addresses are null");
         return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
     if (attribute == nullptr) {
-        LOG_TRACE_IF(log_file_videoout, "attribute is null\n");
+        LOG_ERROR(Lib_VideoOut, "Attribute is null");
         return SCE_VIDEO_OUT_ERROR_INVALID_OPTION;
     }
     if (attribute->aspectRatio != 0) {
-        LOG_TRACE_IF(log_file_videoout, "invalid aspect ratio = {}\n", attribute->aspectRatio);
+        LOG_ERROR(Lib_VideoOut, "Invalid aspect ratio = {}", attribute->aspectRatio);
         return SCE_VIDEO_OUT_ERROR_INVALID_ASPECT_RATIO;
     }
     if (attribute->tilingMode < 0 || attribute->tilingMode > 1) {
-        LOG_TRACE_IF(log_file_videoout, "invalid tilingMode = {}\n", attribute->tilingMode);
+        LOG_ERROR(Lib_VideoOut, "Invalid tilingMode = {}", attribute->tilingMode);
         return SCE_VIDEO_OUT_ERROR_INVALID_TILING_MODE;
     }
-    LOG_INFO_IF(log_file_videoout, "startIndex    = {}\n", startIndex);
-    LOG_INFO_IF(log_file_videoout, "bufferNum     = {}\n", bufferNum);
-    LOG_INFO_IF(log_file_videoout, "pixelFormat   = {:#x}\n", attribute->pixelFormat);
-    LOG_INFO_IF(log_file_videoout, "tilingMode    = {}\n", attribute->tilingMode);
-    LOG_INFO_IF(log_file_videoout, "aspectRatio   = {}\n", attribute->aspectRatio);
-    LOG_INFO_IF(log_file_videoout, "width         = {}\n", attribute->width);
-    LOG_INFO_IF(log_file_videoout, "height        = {}\n", attribute->height);
-    LOG_INFO_IF(log_file_videoout, "pitchInPixel  = {}\n", attribute->pitchInPixel);
-    LOG_INFO_IF(log_file_videoout, "option        = {}\n", attribute->option);
+
+    LOG_INFO(Lib_VideoOut,
+             "handle = {}, startIndex = {}, bufferNum = {}, pixelFormat = {:#x}, aspectRatio = {}, "
+             "tilingMode = {}, width = {}, height = {}, pitchInPixel = {}, option = {:#x}",
+             handle, startIndex, bufferNum, attribute->pixelFormat, attribute->aspectRatio,
+             attribute->tilingMode, attribute->width, attribute->height, attribute->pitchInPixel,
+             attribute->option);
 
     int registration_index = ctx->buffers_registration_index++;
 
@@ -214,7 +205,7 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
 
     for (int i = 0; i < bufferNum; i++) {
         if (ctx->buffers[i + startIndex].buffer != nullptr) {
-            LOG_TRACE_IF(log_file_videoout, "buffer slot {} is occupied!\n", i + startIndex);
+            LOG_ERROR(Lib_VideoOut, "Buffer slot {} is occupied!", i + startIndex);
             return SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED;
         }
 
@@ -227,51 +218,49 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
                 0, videoOut->getGraphicCtx(), nullptr, reinterpret_cast<uint64_t>(addresses[i]),
                 buffer_size, buffer_info));
 
-        LOG_INFO_IF(log_file_videoout, "buffers[{}] = {:#x}\n", i + startIndex,
-                    reinterpret_cast<u64>(addresses[i]));
+        LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex,
+                 reinterpret_cast<u64>(addresses[i]));
     }
 
     return registration_index;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Lib_VideoOut, "called");
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     videoOut->getCtx(handle)->m_flip_rate = rate;
     return SCE_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Lib_VideoOut, "called");
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     s32 pending = videoOut->getCtx(handle)->m_flip_status.flipPendingNum;
     return pending;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
-    PRINT_FUNCTION_NAME();
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     auto* ctx = videoOut->getCtx(handle);
 
     if (flipMode != 1) {
         // BREAKPOINT();  // only flipmode==1 is supported
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flipmode {}\n",
-                     bufferIndex); // openBOR needs 2 but seems to work
+        LOG_WARNING(Lib_VideoOut, "flipmode = {}",
+                    flipMode); // openBOR needs 2 but seems to work
     }
     if (bufferIndex == -1) {
         BREAKPOINT(); // blank output not supported
     }
     if (bufferIndex < -1 || bufferIndex > 15) {
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip invalid bufferIndex {}\n",
-                     bufferIndex);
+        LOG_ERROR(Lib_VideoOut, "Invalid bufferIndex = {}", bufferIndex);
         return SCE_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
-    LOG_INFO_IF(log_file_videoout, "bufferIndex = {}\n", bufferIndex);
-    LOG_INFO_IF(log_file_videoout, "flipMode = {}\n", flipMode);
-    LOG_INFO_IF(log_file_videoout, "flipArg = {}\n", flipArg);
+
+    LOG_INFO(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
+             flipArg);
 
     if (!videoOut->getFlipQueue().submitFlip(ctx, bufferIndex, flipArg)) {
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutSubmitFlip flip queue is full\n");
+        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
     Core::Libraries::LibSceGnmDriver::sceGnmFlushGarlic(); // hackish should be done that neccesary
@@ -280,24 +269,20 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
 }
 
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, SceVideoOutFlipStatus* status) {
-    PRINT_FUNCTION_NAME();
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     auto* ctx = videoOut->getCtx(handle);
     videoOut->getFlipQueue().getFlipStatus(ctx, status);
 
-    LOG_INFO_IF(log_file_videoout, "count = {}\n", status->count);
-    LOG_INFO_IF(log_file_videoout, "processTime = {}\n", status->processTime);
-    LOG_INFO_IF(log_file_videoout, "tsc = {}\n", status->tsc);
-    LOG_INFO_IF(log_file_videoout, "submitTsc = {}\n", status->submitTsc);
-    LOG_INFO_IF(log_file_videoout, "flipArg = {}\n", status->flipArg);
-    LOG_INFO_IF(log_file_videoout, "gcQueueNum = {}\n", status->gcQueueNum);
-    LOG_INFO_IF(log_file_videoout, "flipPendingNum = {}\n", status->flipPendingNum);
-    LOG_INFO_IF(log_file_videoout, "currentBuffer = {}\n", status->currentBuffer);
+    LOG_INFO(Lib_VideoOut,
+             "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
+             "{}, flipPendingNum = {}, currentBuffer = {}",
+             status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
+             status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
     return 0;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status) {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Lib_VideoOut, "called");
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     *status = videoOut->getCtx(handle)->m_resolution;
     return SCE_OK;
@@ -305,7 +290,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
                                  const void* param) {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Lib_VideoOut, "called");
     if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM && userId != 0) {
         BREAKPOINT();
     }
@@ -313,7 +298,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
         BREAKPOINT();
     }
     if (index != 0) {
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutOpen index!=0\n");
+        LOG_ERROR(Lib_VideoOut, "Index != 0");
         return SCE_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
     if (param != nullptr) {
@@ -323,7 +308,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
     int handle = videoOut->Open();
 
     if (handle < 0) {
-        LOG_TRACE_IF(log_file_videoout, "sceVideoOutOpen all available handles are open\n");
+        LOG_ERROR(Lib_VideoOut, "All available handles are open");
         return SCE_VIDEO_OUT_ERROR_RESOURCE_BUSY; // it is alreadyOpened
     }
 
@@ -342,7 +327,6 @@ s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
 }
 
 void videoOutRegisterLib(Core::Loader::SymbolsResolver* sym) {
-    using namespace Core;
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetFlipStatus);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutSubmitFlip);

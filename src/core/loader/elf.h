@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "common/fs_file.h"
+#include "common/io_file.h"
 #include "common/types.h"
 
 struct self_header {
-    static const u32 signature = 0x1D3D154Fu;
+    static constexpr u32 signature = 0x1D3D154Fu;
 
     u32 magic;
     u8 version;
@@ -455,11 +455,11 @@ namespace Core::Loader {
 class Elf {
 public:
     Elf() = default;
-    virtual ~Elf();
+    ~Elf();
 
-    void Open(const std::string& file_name);
-    bool isSelfFile() const;
-    bool isElfFile() const;
+    void Open(const std::filesystem::path& file_name);
+    bool IsSelfFile() const;
+    bool IsElfFile() const;
     void DebugDump();
 
     [[nodiscard]] self_header GetSElfHeader() const {
@@ -492,10 +492,7 @@ public:
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
 
 private:
-    void Reset();
-
-private:
-    Common::FS::File m_f{};
+    Common::FS::IOFile m_f{};
     bool is_self{};
     self_header m_self{};
     std::vector<self_segment_header> m_self_segments;

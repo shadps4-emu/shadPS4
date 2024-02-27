@@ -11,7 +11,7 @@ void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 
 bool isNeoMode();
-u32 getLogLevel();
+std::string getLogFilter();
 
 u32 getScreenWidth();
 u32 getScreenHeight();

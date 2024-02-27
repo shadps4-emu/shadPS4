@@ -7,7 +7,6 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "common/fs_file.h"
 #include "common/io_file.h"
 
 namespace Core::FileSys {
@@ -21,11 +20,12 @@ public:
 
     MntPoints() = default;
     virtual ~MntPoints() = default;
-    void mount(const std::string& host_folder, const std::string& guest_folder);
-    void unmount(const std::string& path);
-    void unmountAll();
-    std::string getHostDirectory(const std::string& guest_directory);
-    std::string getHostFile(const std::string& guest_file);
+
+    void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Unmount(const std::string& path);
+    void UnmountAll();
+    std::string GetHostDirectory(const std::string& guest_directory);
+    std::string GetHostFile(const std::string& guest_file);
 
 private:
     std::vector<MntPair> m_mnt_pairs;
@@ -33,22 +33,24 @@ private:
 };
 
 struct File {
-    std::atomic_bool isOpened;
-    std::atomic_bool isDirectory;
+    std::atomic_bool is_opened{};
+    std::atomic_bool is_directory{};
     std::string m_host_name;
     std::string m_guest_name;
-    IOFile f;
+    Common::FS::IOFile f;
     // std::vector<Common::FS::DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;
 };
+
 class HandleTable {
 public:
-    HandleTable() {}
-    virtual ~HandleTable() {}
-    int createHandle();
-    void deleteHandle(int d);
-    File* getFile(int d);
+    HandleTable() = default;
+    virtual ~HandleTable() = default;
+
+    int CreateHandle();
+    void DeleteHandle(int d);
+    File* GetFile(int d);
     File* getFile(const std::string& host_name);
 
 private:

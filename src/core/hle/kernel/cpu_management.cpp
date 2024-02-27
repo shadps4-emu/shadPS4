@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "Util/config.h"
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "core/hle/kernel/cpu_management.h"
-#include "core/hle/libraries/libs.h"
 
 namespace Core::Kernel {
 
 int PS4_SYSV_ABI sceKernelIsNeoMode() {
-    PRINT_FUNCTION_NAME();
+    LOG_INFO(Kernel_Sce, "called");
     return Config::isNeoMode();
 }
 

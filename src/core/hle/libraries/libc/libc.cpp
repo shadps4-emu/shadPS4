@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 #include "common/debug.h"
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libc/libc_cxa.h"
@@ -49,15 +49,15 @@ void PS4_SYSV_ABI ps4___cxa_pure_virtual() {
 }
 
 static PS4_SYSV_ABI void ps4_init_env() {
-    PRINT_DUMMY_FUNCTION_NAME();
+    LOG_INFO(Lib_LibC, "called");
 }
 
 static PS4_SYSV_ABI void ps4_catchReturnFromMain(int status) {
-    LOG_INFO_IF(log_file_libc, "catchReturnFromMain returned ={}\n", status);
+    LOG_INFO(Lib_LibC, "returned = {}", status);
 }
 
 static PS4_SYSV_ABI void ps4__Assert() {
-    PRINT_DUMMY_FUNCTION_NAME();
+    LOG_INFO(Lib_LibC, "called");
     BREAKPOINT();
 }
 
@@ -66,18 +66,18 @@ PS4_SYSV_ABI void ps4__ZdlPv(void* ptr) {
 }
 
 PS4_SYSV_ABI void ps4__ZSt11_Xbad_allocv() {
-    PRINT_DUMMY_FUNCTION_NAME();
+    LOG_INFO(Lib_LibC, "called");
     BREAKPOINT();
 }
 
 PS4_SYSV_ABI void ps4__ZSt14_Xlength_errorPKc() {
-    PRINT_DUMMY_FUNCTION_NAME();
+    LOG_INFO(Lib_LibC, "called");
     BREAKPOINT();
 }
 
 PS4_SYSV_ABI void* ps4__Znwm(u64 count) {
     if (count == 0) {
-        LOG_ERROR_IF(log_file_libc, "_Znwm count ={}\n", count);
+        LOG_INFO(Lib_LibC, "_Znwm count ={}", count);
         BREAKPOINT();
     }
     void* ptr = std::malloc(count);
@@ -457,6 +457,7 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8zTFvBIAIN8", "libc", 1, "libc", 1, 1, ps4_memset);
 
     // stdio functions
+    LIB_FUNCTION("xeYO4u7uyJ0", "libc", 1, "libc", 1, 1, ps4_fopen);
     LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, ps4_printf);
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, ps4_vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, ps4_puts);

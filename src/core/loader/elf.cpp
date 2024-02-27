@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/core.h>
-#include "common/debug.h"
-#include "common/log.h"
+#include "common/assert.h"
+#include "common/logging/log.h"
 #include "core/loader/elf.h"
 
 namespace Core::Loader {
 
-constexpr bool log_file_loader = false; // disable it to disable logging
+using namespace Common::FS;
 
-static std::string_view getProgramTypeName(program_type_es type) {
+static std::string_view GetProgramTypeName(program_type_es type) {
     switch (type) {
     case PT_FAKE:
         return "PT_FAKE";
@@ -33,7 +33,7 @@ static std::string_view getProgramTypeName(program_type_es type) {
     }
 }
 
-static std::string_view getIdentClassName(ident_class_es elf_class) {
+static std::string_view GetIdentClassName(ident_class_es elf_class) {
     switch (elf_class) {
     case ELF_CLASS_NONE:
         return "ELF_CLASS_NONE";
@@ -48,7 +48,7 @@ static std::string_view getIdentClassName(ident_class_es elf_class) {
     }
 }
 
-static std::string_view getIdentEndianName(ident_endian_es endian) {
+static std::string_view GetIdentEndianName(ident_endian_es endian) {
     switch (endian) {
     case ELF_DATA_NONE:
         return "ELF_DATA_NONE";
@@ -63,7 +63,7 @@ static std::string_view getIdentEndianName(ident_endian_es endian) {
     }
 }
 
-static std::string_view getIdentVersionName(ident_version_es version) {
+static std::string_view GetIdentVersionName(ident_version_es version) {
     switch (version) {
     case ELF_VERSION_NONE:
         return "ELF_VERSION_NONE";
@@ -76,7 +76,7 @@ static std::string_view getIdentVersionName(ident_version_es version) {
     }
 }
 
-static std::string_view getIdentOsabiName(ident_osabi_es osabi) {
+static std::string_view GetIdentOsabiName(ident_osabi_es osabi) {
     switch (osabi) {
     case ELF_OSABI_NONE:
         return "ELF_OSABI_NONE";
@@ -117,7 +117,7 @@ static std::string_view getIdentOsabiName(ident_osabi_es osabi) {
     }
 }
 
-static std::string_view getIdentAbiversionName(ident_abiversion_es version) {
+static std::string_view GetIdentAbiversionName(ident_abiversion_es version) {
     switch (version) {
     case ELF_ABI_VERSION_AMDGPU_HSA_V2:
         return "ELF_ABI_VERSION_AMDGPU_HSA_V2";
@@ -131,7 +131,7 @@ static std::string_view getIdentAbiversionName(ident_abiversion_es version) {
         return "INVALID";
     }
 }
-static std::string_view getVersion(e_version_es version) {
+static std::string_view GetVersion(e_version_es version) {
     switch (version) {
     case EV_NONE:
         return "EV_NONE";
@@ -142,7 +142,7 @@ static std::string_view getVersion(e_version_es version) {
     }
 }
 
-static std::string_view getType(e_type_s type) {
+static std::string_view GetType(e_type_s type) {
     switch (type) {
     case ET_NONE:
         return "ET_NONE";
@@ -167,7 +167,7 @@ static std::string_view getType(e_type_s type) {
     }
 }
 
-static std::string_view getMachine(e_machine_es machine) {
+static std::string_view GetMachine(e_machine_es machine) {
     switch (machine) {
     case EM_X86_64:
         return "EM_X86_64";
@@ -176,30 +176,25 @@ static std::string_view getMachine(e_machine_es machine) {
     }
 }
 
-Elf::~Elf() {
-    Reset();
-}
+Elf::~Elf() = default;
 
-void Elf::Reset() {
-    m_f.close();
-}
-
-void Elf::Open(const std::string& file_name) {
-    Reset();
-
-    m_f.open(file_name, Common::FS::OpenMode::Read);
-    m_f.read(m_self);
-
-    if (is_self = isSelfFile(); !is_self) {
-        m_f.seek(0, Common::FS::SeekMode::Set);
-    } else {
-        m_self_segments.resize(m_self.segment_count);
-        m_f.read(m_self_segments);
+void Elf::Open(const std::filesystem::path& file_name) {
+    m_f.Open(file_name, FileAccessMode::Read);
+    if (!m_f.ReadObject(m_self)) {
+        LOG_ERROR(Loader, "Unable to read self header!");
+        return;
     }
 
-    const u64 elf_header_pos = m_f.tell();
-    m_f.read(m_elf_header);
-    if (!isElfFile()) {
+    if (is_self = IsSelfFile(); !is_self) {
+        m_f.Seek(0, SeekOrigin::SetOrigin);
+    } else {
+        m_self_segments.resize(m_self.segment_count);
+        m_f.Read(m_self_segments);
+    }
+
+    const u64 elf_header_pos = m_f.Tell();
+    m_f.Read(m_elf_header);
+    if (!IsElfFile()) {
         return;
     }
 
@@ -209,8 +204,8 @@ void Elf::Open(const std::string& file_name) {
         }
 
         out.resize(num);
-        m_f.seek(offset, Common::FS::SeekMode::Set);
-        m_f.read(out);
+        m_f.Seek(offset, SeekOrigin::SetOrigin);
+        m_f.Read(out);
     };
 
     load_headers(m_elf_phdr, elf_header_pos + m_elf_header.e_phoff, m_elf_header.e_phnum);
@@ -227,96 +222,95 @@ void Elf::Open(const std::string& file_name) {
         header_size &= ~15; // Align
 
         if (m_elf_header.e_ehsize - header_size >= sizeof(elf_program_id_header)) {
-            m_f.seek(header_size, Common::FS::SeekMode::Set);
-            m_f.read(m_self_id_header);
+            m_f.Seek(header_size, SeekOrigin::SetOrigin);
+            m_f.ReadObject(m_self_id_header);
         }
     }
 
     DebugDump();
 }
 
-bool Elf::isSelfFile() const {
+bool Elf::IsSelfFile() const {
     if (m_self.magic != self_header::signature) [[unlikely]] {
-        LOG_ERROR_IF(log_file_loader,
-                     "Not a SELF file.Magic file mismatched !current = {:#x} required = {:#x}\n ",
-                     m_self.magic, self_header::signature);
+        LOG_INFO(Loader, "Not a SELF file. Magic mismatch current = {:#x} expected = {:#x}",
+                 m_self.magic, self_header::signature);
         return false;
     }
 
     if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.endian != 0x01 ||
         m_self.attributes != 0x12) [[unlikely]] {
-        LOG_ERROR_IF(log_file_loader, "Unknown SELF file\n");
+        LOG_INFO(Loader, "Unknown SELF file");
         return false;
     }
 
     if (m_self.category != 0x01 || m_self.program_type != 0x01) [[unlikely]] {
-        LOG_ERROR_IF(log_file_loader, "Unknown SELF file\n");
+        LOG_INFO(Loader, "Unknown SELF file");
         return false;
     }
 
     return true;
 }
 
-bool Elf::isElfFile() const {
+bool Elf::IsElfFile() const {
     if (m_elf_header.e_ident.magic[EI_MAG0] != ELFMAG0 ||
         m_elf_header.e_ident.magic[EI_MAG1] != ELFMAG1 ||
         m_elf_header.e_ident.magic[EI_MAG2] != ELFMAG2 ||
         m_elf_header.e_ident.magic[EI_MAG3] != ELFMAG3) {
-        LOG_ERROR_IF(log_file_loader, "Not an ELF file magic is wrong!\n");
+        LOG_INFO(Loader, "Not an ELF file magic is wrong!");
         return false;
     }
     if (m_elf_header.e_ident.ei_class != ELF_CLASS_64) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_CLASS] expected 0x02 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_class));
+        LOG_INFO(Loader, "e_ident[EI_CLASS] expected 0x02 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_ident.ei_class));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_data != ELF_DATA_2LSB) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_DATA] expected 0x01 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_data));
+        LOG_INFO(Loader, "e_ident[EI_DATA] expected 0x01 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_ident.ei_data));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_version != ELF_VERSION_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_VERSION] expected 0x01 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_version));
+        LOG_INFO(Loader, "e_ident[EI_VERSION] expected 0x01 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_ident.ei_version));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_osabi));
+        LOG_INFO(Loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_ident.ei_osabi));
         return false;
     }
 
     if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
-        LOG_ERROR_IF(log_file_loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
+        LOG_INFO(Loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
         return false;
     }
 
     if (m_elf_header.e_type != ET_SCE_DYNEXEC && m_elf_header.e_type != ET_SCE_DYNAMIC &&
         m_elf_header.e_type != ET_SCE_EXEC) {
-        LOG_ERROR_IF(log_file_loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_type));
+        LOG_INFO(Loader, "e_type expected 0xFE10 OR 0xFE18 OR 0xfe00 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_type));
         return false;
     }
 
     if (m_elf_header.e_machine != EM_X86_64) {
-        LOG_ERROR_IF(log_file_loader, "e_machine expected 0x3E is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_machine));
+        LOG_INFO(Loader, "e_machine expected 0x3E is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_machine));
         return false;
     }
 
     if (m_elf_header.e_version != EV_CURRENT) {
-        LOG_ERROR_IF(log_file_loader, "m_elf_header.e_version expected 0x01 is ({:#x})\n",
-                     static_cast<u32>(m_elf_header.e_version));
+        LOG_INFO(Loader, "m_elf_header.e_version expected 0x01 is ({:#x})",
+                 static_cast<u32>(m_elf_header.e_version));
         return false;
     }
 
     if (m_elf_header.e_phentsize != sizeof(elf_program_header)) {
-        LOG_ERROR_IF(log_file_loader, "e_phentsize ({}) != sizeof(elf_program_header)\n",
-                     static_cast<u32>(m_elf_header.e_phentsize));
+        LOG_INFO(Loader, "e_phentsize ({}) != sizeof(elf_program_header)",
+                 m_elf_header.e_phentsize);
         return false;
     }
 
@@ -324,8 +318,8 @@ bool Elf::isElfFile() const {
         m_elf_header.e_shentsize !=
             sizeof(elf_section_header)) // Commercial games doesn't appear to have section headers
     {
-        LOG_ERROR_IF(log_file_loader, "e_shentsize ({}) != sizeof(elf_section_header)\n",
-                     m_elf_header.e_shentsize);
+        LOG_INFO(Loader, "e_shentsize ({}) != sizeof(elf_section_header)",
+                 m_elf_header.e_shentsize);
         return false;
     }
 
@@ -334,50 +328,49 @@ bool Elf::isElfFile() const {
 
 void Elf::DebugDump() {
     if (is_self) { // If we load elf instead
-        LOG_INFO_IF(log_file_loader, (SElfHeaderStr()));
+        LOG_INFO(Loader, "{}", SElfHeaderStr());
         for (u16 i = 0; i < m_self.segment_count; i++) {
-            LOG_INFO_IF(log_file_loader, SELFSegHeader(i));
+            LOG_INFO(Loader, "{}", SELFSegHeader(i));
         }
     }
 
-    LOG_INFO_IF(log_file_loader, ElfHeaderStr());
+    LOG_INFO(Loader, "{}", ElfHeaderStr());
 
     if (m_elf_header.e_phentsize > 0) {
-        LOG_INFO_IF(log_file_loader, "Program headers:\n");
+        LOG_INFO(Loader, "Program headers:");
         for (u16 i = 0; i < m_elf_header.e_phnum; i++) {
-            LOG_INFO_IF(log_file_loader, ElfPHeaderStr(i));
+            LOG_INFO(Loader, "{}", ElfPHeaderStr(i));
         }
     }
     if (m_elf_header.e_shentsize > 0) {
-        LOG_INFO_IF(log_file_loader, "Section headers:\n");
+        LOG_INFO(Loader, "Section headers:");
         for (u16 i = 0; i < m_elf_header.e_shnum; i++) {
-            LOG_INFO_IF(log_file_loader, "--- shdr {} --\n", i);
-            LOG_INFO_IF(log_file_loader, "sh_name ........: {}\n", m_elf_shdr[i].sh_name);
-            LOG_INFO_IF(log_file_loader, "sh_type ........: {:#010x}\n", m_elf_shdr[i].sh_type);
-            LOG_INFO_IF(log_file_loader, "sh_flags .......: {:#018x}\n", m_elf_shdr[i].sh_flags);
-            LOG_INFO_IF(log_file_loader, "sh_addr ........: {:#018x}\n", m_elf_shdr[i].sh_addr);
-            LOG_INFO_IF(log_file_loader, "sh_offset ......: {:#018x}\n", m_elf_shdr[i].sh_offset);
-            LOG_INFO_IF(log_file_loader, "sh_size ........: {:#018x}\n", m_elf_shdr[i].sh_size);
-            LOG_INFO_IF(log_file_loader, "sh_link ........: {:#010x}\n", m_elf_shdr[i].sh_link);
-            LOG_INFO_IF(log_file_loader, "sh_info ........: {:#010x}\n", m_elf_shdr[i].sh_info);
-            LOG_INFO_IF(log_file_loader, "sh_addralign ...: {:#018x}\n",
-                        m_elf_shdr[i].sh_addralign);
-            LOG_INFO_IF(log_file_loader, "sh_entsize .....: {:#018x}\n", m_elf_shdr[i].sh_entsize);
+            LOG_INFO(Loader, "--- shdr {} --", i);
+            LOG_INFO(Loader, "sh_name ........: {}", m_elf_shdr[i].sh_name);
+            LOG_INFO(Loader, "sh_type ........: {:#010x}", m_elf_shdr[i].sh_type);
+            LOG_INFO(Loader, "sh_flags .......: {:#018x}", m_elf_shdr[i].sh_flags);
+            LOG_INFO(Loader, "sh_addr ........: {:#018x}", m_elf_shdr[i].sh_addr);
+            LOG_INFO(Loader, "sh_offset ......: {:#018x}", m_elf_shdr[i].sh_offset);
+            LOG_INFO(Loader, "sh_size ........: {:#018x}", m_elf_shdr[i].sh_size);
+            LOG_INFO(Loader, "sh_link ........: {:#010x}", m_elf_shdr[i].sh_link);
+            LOG_INFO(Loader, "sh_info ........: {:#010x}", m_elf_shdr[i].sh_info);
+            LOG_INFO(Loader, "sh_addralign ...: {:#018x}", m_elf_shdr[i].sh_addralign);
+            LOG_INFO(Loader, "sh_entsize .....: {:#018x}", m_elf_shdr[i].sh_entsize);
         }
     }
 
     if (is_self) {
-        LOG_INFO_IF(log_file_loader, "SELF info:\n");
-        LOG_INFO_IF(log_file_loader, "auth id ............: {:#018x}\n", m_self_id_header.authid);
-        LOG_INFO_IF(log_file_loader, "program type .......: {}\n",
-                    getProgramTypeName(m_self_id_header.program_type));
-        LOG_INFO_IF(log_file_loader, "app version ........: {:#018x}\n", m_self_id_header.appver);
-        LOG_INFO_IF(log_file_loader, "fw version .........: {:#018x}\n", m_self_id_header.firmver);
+        LOG_INFO(Loader, "SELF info:");
+        LOG_INFO(Loader, "auth id ............: {:#018x}", m_self_id_header.authid);
+        LOG_INFO(Loader, "program type .......: {}",
+                 GetProgramTypeName(m_self_id_header.program_type));
+        LOG_INFO(Loader, "app version ........: {:#018x}", m_self_id_header.appver);
+        LOG_INFO(Loader, "fw version .........: {:#018x}", m_self_id_header.firmver);
         std::string digest;
         for (int i = 0; i < 32; i++) {
             digest += fmt::format("{:02X}", m_self_id_header.digest[i]);
         }
-        LOG_INFO_IF(log_file_loader, "digest..............: 0x{}\n", digest);
+        LOG_INFO(Loader, "digest..............: 0x{}", digest);
     }
 }
 
@@ -420,15 +413,15 @@ std::string Elf::ElfHeaderStr() {
     header += fmt::format("\n");
 
     header +=
-        fmt::format("ident class.......: {}\n", getIdentClassName(m_elf_header.e_ident.ei_class));
+        fmt::format("ident class.......: {}\n", GetIdentClassName(m_elf_header.e_ident.ei_class));
     header +=
-        fmt::format("ident data .......: {}\n", getIdentEndianName(m_elf_header.e_ident.ei_data));
+        fmt::format("ident data .......: {}\n", GetIdentEndianName(m_elf_header.e_ident.ei_data));
     header += fmt::format("ident version.....: {}\n",
-                          getIdentVersionName(m_elf_header.e_ident.ei_version));
+                          GetIdentVersionName(m_elf_header.e_ident.ei_version));
     header +=
-        fmt::format("ident osabi  .....: {}\n", getIdentOsabiName(m_elf_header.e_ident.ei_osabi));
+        fmt::format("ident osabi  .....: {}\n", GetIdentOsabiName(m_elf_header.e_ident.ei_osabi));
     header += fmt::format("ident abiversion..: {}\n",
-                          getIdentAbiversionName(m_elf_header.e_ident.ei_abiversion));
+                          GetIdentAbiversionName(m_elf_header.e_ident.ei_abiversion));
 
     header += fmt::format("ident UNK ........: 0x");
     for (auto i : m_elf_header.e_ident.pad) {
@@ -436,9 +429,9 @@ std::string Elf::ElfHeaderStr() {
     }
     header += fmt::format("\n");
 
-    header += fmt::format("type  ............: {}\n", getType(m_elf_header.e_type));
-    header += fmt::format("machine ..........: {}\n", getMachine(m_elf_header.e_machine));
-    header += fmt::format("version ..........: {}\n", getVersion(m_elf_header.e_version));
+    header += fmt::format("type  ............: {}\n", GetType(m_elf_header.e_type));
+    header += fmt::format("machine ..........: {}\n", GetMachine(m_elf_header.e_machine));
+    header += fmt::format("version ..........: {}\n", GetVersion(m_elf_header.e_version));
     header += fmt::format("entry ............: {:#018x}\n", m_elf_header.e_entry);
     header += fmt::format("phoff ............: {:#018x}\n", m_elf_header.e_phoff);
     header += fmt::format("shoff ............: {:#018x}\n", m_elf_header.e_shoff);
@@ -522,8 +515,8 @@ std::string Elf::ElfPHeaderStr(u16 no) {
 void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     if (!is_self) {
         // It's elf file
-        m_f.seek(file_offset, Common::FS::SeekMode::Set);
-        m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+        m_f.Seek(file_offset, SeekOrigin::SetOrigin);
+        m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
         return;
     }
 
@@ -536,13 +529,13 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
 
             if (file_offset >= phdr.p_offset && file_offset < phdr.p_offset + phdr.p_filesz) {
                 auto offset = file_offset - phdr.p_offset;
-                m_f.seek(offset + seg.file_offset, Common::FS::SeekMode::Set);
-                m_f.read(reinterpret_cast<void*>(static_cast<uintptr_t>(virtual_addr)), size);
+                m_f.Seek(offset + seg.file_offset, SeekOrigin::SetOrigin);
+                m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
                 return;
             }
         }
     }
-    BREAKPOINT(); // Hmm we didn't return something...
+    UNREACHABLE();
 }
 
 } // namespace Core::Loader

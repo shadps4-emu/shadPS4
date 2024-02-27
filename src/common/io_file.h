@@ -1,45 +1,207 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-#include <cstdint>
+
+#include <cstdio>
 #include <filesystem>
-#include <optional>
+#include <span>
+#include <type_traits>
 
-class IOFile {
-    FILE* handle = nullptr;
-    static inline std::filesystem::path appData =
-        ""; // Directory for holding app data. AppData on Windows
+#include "common/concepts.h"
+#include "common/types.h"
 
-public:
-    IOFile() : handle(nullptr) {}
-    IOFile(FILE* handle) : handle(handle) {}
-    IOFile(const std::filesystem::path& path, const char* permissions = "rb");
+namespace Common::FS {
 
-    bool isOpen() {
-        return handle != nullptr;
-    }
-    bool open(const std::filesystem::path& path, const char* permissions = "rb");
-    bool open(const char* filename, const char* permissions = "rb");
-    void close();
-
-    std::pair<bool, std::size_t> read(void* data, std::size_t length, std::size_t dataSize);
-    std::pair<bool, std::size_t> readBytes(void* data, std::size_t count);
-
-    std::pair<bool, std::size_t> write(const void* data, std::size_t length, std::size_t dataSize);
-    std::pair<bool, std::size_t> writeBytes(const void* data, std::size_t count);
-
-    std::optional<std::uint64_t> size();
-
-    bool seek(std::int64_t offset, int origin = SEEK_SET);
-    bool rewind();
-    bool flush();
-    FILE* getHandle();
-    static void setAppDataDir(const std::filesystem::path& dir);
-    static std::filesystem::path getAppData() {
-        return appData;
-    }
-
-    // Sets the size of the file to "size" and returns whether it succeeded or not
-    bool setSize(std::uint64_t size);
+enum class FileAccessMode {
+    /**
+     * If the file at path exists, it opens the file for reading.
+     * If the file at path does not exist, it fails to open the file.
+     */
+    Read = 1 << 0,
+    /**
+     * If the file at path exists, the existing contents of the file are erased.
+     * The empty file is then opened for writing.
+     * If the file at path does not exist, it creates and opens a new empty file for writing.
+     */
+    Write = 1 << 1,
+    /**
+     * If the file at path exists, it opens the file for reading and writing.
+     * If the file at path does not exist, it fails to open the file.
+     */
+    ReadWrite = Read | Write,
+    /**
+     * If the file at path exists, it opens the file for appending.
+     * If the file at path does not exist, it creates and opens a new empty file for appending.
+     */
+    Append = 1 << 2,
+    /**
+     * If the file at path exists, it opens the file for both reading and appending.
+     * If the file at path does not exist, it creates and opens a new empty file for both
+     * reading and appending.
+     */
+    ReadAppend = Read | Append,
 };
+
+enum class FileType {
+    BinaryFile,
+    TextFile,
+};
+
+enum class FileShareFlag {
+    ShareNone,      // Provides exclusive access to the file.
+    ShareReadOnly,  // Provides read only shared access to the file.
+    ShareWriteOnly, // Provides write only shared access to the file.
+    ShareReadWrite, // Provides read and write shared access to the file.
+};
+
+enum class SeekOrigin : u32 {
+    SetOrigin,       // Seeks from the start of the file.
+    CurrentPosition, // Seeks from the current file pointer position.
+    End,             // Seeks from the end of the file.
+};
+
+class IOFile final {
+public:
+    IOFile();
+
+    explicit IOFile(const std::string& path, FileAccessMode mode,
+                    FileType type = FileType::BinaryFile,
+                    FileShareFlag flag = FileShareFlag::ShareReadOnly);
+
+    explicit IOFile(std::string_view path, FileAccessMode mode,
+                    FileType type = FileType::BinaryFile,
+                    FileShareFlag flag = FileShareFlag::ShareReadOnly);
+    explicit IOFile(const std::filesystem::path& path, FileAccessMode mode,
+                    FileType type = FileType::BinaryFile,
+                    FileShareFlag flag = FileShareFlag::ShareReadOnly);
+
+    ~IOFile();
+
+    IOFile(const IOFile&) = delete;
+    IOFile& operator=(const IOFile&) = delete;
+
+    IOFile(IOFile&& other) noexcept;
+    IOFile& operator=(IOFile&& other) noexcept;
+
+    std::filesystem::path GetPath() const {
+        return file_path;
+    }
+
+    FileAccessMode GetAccessMode() const {
+        return file_access_mode;
+    }
+
+    FileType GetType() const {
+        return file_type;
+    }
+
+    bool IsOpen() const {
+        return file != nullptr;
+    }
+
+    void Open(const std::filesystem::path& path, FileAccessMode mode,
+              FileType type = FileType::BinaryFile,
+              FileShareFlag flag = FileShareFlag::ShareReadOnly);
+    void Close();
+
+    bool Flush() const;
+    bool Commit() const;
+
+    bool SetSize(u64 size) const;
+    u64 GetSize() const;
+
+    bool Seek(s64 offset, SeekOrigin origin = SeekOrigin::SetOrigin) const;
+    s64 Tell() const;
+
+    template <typename T>
+    size_t Read(T& data) const {
+        if constexpr (IsContiguousContainer<T>) {
+            using ContiguousType = typename T::value_type;
+            static_assert(std::is_trivially_copyable_v<ContiguousType>,
+                          "Data type must be trivially copyable.");
+            return ReadSpan<ContiguousType>(data);
+        } else {
+            return ReadObject(data) ? 1 : 0;
+        }
+    }
+
+    template <typename T>
+    size_t Write(const T& data) const {
+        if constexpr (IsContiguousContainer<T>) {
+            using ContiguousType = typename T::value_type;
+            static_assert(std::is_trivially_copyable_v<ContiguousType>,
+                          "Data type must be trivially copyable.");
+            return WriteSpan<ContiguousType>(data);
+        } else {
+            static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
+            return WriteObject(data) ? 1 : 0;
+        }
+    }
+
+    template <typename T>
+    size_t ReadSpan(std::span<T> data) const {
+        static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
+
+        if (!IsOpen()) {
+            return 0;
+        }
+
+        return ReadRaw<T>(data.data(), data.size());
+    }
+
+    template <typename T>
+    size_t ReadRaw(void* data, size_t size) const {
+        return std::fread(data, sizeof(T), size, file);
+    }
+
+    template <typename T>
+    size_t WriteSpan(std::span<const T> data) const {
+        static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
+
+        if (!IsOpen()) {
+            return 0;
+        }
+
+        return std::fwrite(data.data(), sizeof(T), data.size(), file);
+    }
+
+    template <typename T>
+    bool ReadObject(T& object) const {
+        static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
+        static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
+
+        if (!IsOpen()) {
+            return false;
+        }
+
+        return std::fread(&object, sizeof(T), 1, file) == 1;
+    }
+
+    template <typename T>
+    bool WriteObject(const T& object) const {
+        static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
+        static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
+
+        if (!IsOpen()) {
+            return false;
+        }
+
+        return std::fwrite(&object, sizeof(T), 1, file) == 1;
+    }
+
+    std::string ReadString(size_t length) const;
+
+    size_t WriteString(std::span<const char> string) const {
+        return WriteSpan(string);
+    }
+
+private:
+    std::filesystem::path file_path;
+    FileAccessMode file_access_mode{};
+    FileType file_type{};
+
+    std::FILE* file = nullptr;
+};
+
+} // namespace Common::FS

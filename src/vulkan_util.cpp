@@ -6,14 +6,13 @@
 #include <fmt/core.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
+#include "common/assert.h"
 #include "common/debug.h"
-#include "common/log.h"
+#include "common/logging/log.h"
 #include "common/singleton.h"
 #include "vulkan_util.h"
 
 #include <algorithm>
-
-constexpr bool log_file_vulkanutil = true; // disable it to disable logging
 
 void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     Emu::VulkanExt ext;
@@ -38,19 +37,12 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     inst_info.enabledLayerCount = 0;
     inst_info.ppEnabledLayerNames = nullptr;
 
-    VkResult result = vkCreateInstance(&inst_info, nullptr, &ctx->m_graphic_ctx.m_instance);
-    if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't find an compatiblie vulkan driver\n");
-        std::exit(0);
-    } else if (result != VK_SUCCESS) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan instance\n");
-        std::exit(0);
-    }
+    const VkResult result = vkCreateInstance(&inst_info, nullptr, &ctx->m_graphic_ctx.m_instance);
+    ASSERT_MSG(result == VK_SUCCESS, "Can't create an vulkan instance");
 
     if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, &ctx->m_surface) ==
         SDL_FALSE) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create an vulkan surface\n");
-        std::exit(0);
+        UNREACHABLE_MSG("Can't create an vulkan surface");
     }
 
     // TODO i am not sure if it's that it is neccesary or if it needs more
@@ -64,22 +56,16 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
                                        device_extensions, &ctx->m_surface_capabilities,
                                        &ctx->m_graphic_ctx.m_physical_device, &queues);
 
-    if (ctx->m_graphic_ctx.m_physical_device == nullptr) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't find compatible vulkan device\n");
-        std::exit(0);
-    }
+    ASSERT_MSG(ctx->m_graphic_ctx.m_physical_device, "Can't find compatible vulkan device");
 
     VkPhysicalDeviceProperties device_properties{};
     vkGetPhysicalDeviceProperties(ctx->m_graphic_ctx.m_physical_device, &device_properties);
 
-    LOG_INFO_IF(log_file_vulkanutil, "GFX device to be used : {}\n", device_properties.deviceName);
+    LOG_INFO(Render_Vulkan, "GFX device to be used : {}", device_properties.deviceName);
 
     ctx->m_graphic_ctx.m_device = vulkanCreateDevice(
         ctx->m_graphic_ctx.m_physical_device, ctx->m_surface, &ext, queues, device_extensions);
-    if (ctx->m_graphic_ctx.m_device == nullptr) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan device\n");
-        std::exit(0);
-    }
+    ASSERT_MSG(ctx->m_graphic_ctx.m_device, "Can't create vulkan device");
 
     vulkanCreateQueues(&ctx->m_graphic_ctx, queues);
     ctx->swapchain = vulkanCreateSwapchain(&ctx->m_graphic_ctx, 2);
@@ -160,11 +146,8 @@ Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics
 
         vkCreateImageView(ctx->m_device, &create_info, nullptr, &s.swapchain_image_views[i]);
     }
-    if (s.swapchain == nullptr) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Could not create swapchain\n");
-        std::exit(0);
-    }
 
+    ASSERT_MSG(s.swapchain, "Could not create swapchain");
     s.current_index = static_cast<uint32_t>(-1);
 
     VkSemaphoreCreateInfo present_complete_info{};
@@ -181,10 +164,7 @@ Emu::VulkanSwapchain Graphics::Vulkan::vulkanCreateSwapchain(HLE::Libs::Graphics
     fence_info.flags = 0;
 
     result = vkCreateFence(ctx->m_device, &fence_info, nullptr, &s.present_complete_fence);
-    if (result != VK_SUCCESS) {
-        LOG_CRITICAL_IF(log_file_vulkanutil, "Can't create vulkan fence\n");
-        std::exit(0);
-    }
+    ASSERT_MSG(result == VK_SUCCESS, "Can't create vulkan fence");
 
     return s;
 }
@@ -282,18 +262,18 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
     vkEnumerateInstanceLayerProperties(&available_layers_count, ext->available_layers.data());
 
     for (const char* ext : ext->required_extensions) {
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan required extension  = {}\n", ext);
+        LOG_INFO(Render_Vulkan, "Vulkan required extension = {}", ext);
     }
 
     for (const auto& ext : ext->available_extensions) {
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan available extension: {}, version = {}\n",
-                    ext.extensionName, ext.specVersion);
+        LOG_INFO(Render_Vulkan, "Vulkan available extension: {}, version = {}", ext.extensionName,
+                 ext.specVersion);
     }
 
     for (const auto& l : ext->available_layers) {
-        LOG_INFO_IF(log_file_vulkanutil,
-                    "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}\n",
-                    l.layerName, l.specVersion, l.implementationVersion, l.description);
+        LOG_INFO(Render_Vulkan,
+                 "Vulkan available layer: {}, specVersion = {}, implVersion = {}, {}", l.layerName,
+                 l.specVersion, l.implementationVersion, l.description);
     }
 }
 
@@ -320,7 +300,7 @@ void Graphics::Vulkan::vulkanFindCompatiblePhysicalDevice(
             continue; // we don't want integrated gpu for now .Later we will check the requirements
                       // and see what we can support (TODO fix me)
         }
-        LOG_INFO_IF(log_file_vulkanutil, "Vulkan device: {}\n", device_properties.deviceName);
+        LOG_INFO(Render_Vulkan, "Vulkan device: {}", device_properties.deviceName);
 
         auto qs = vulkanFindQueues(device, surface);
 
@@ -349,9 +329,9 @@ Emu::VulkanQueues Graphics::Vulkan::vulkanFindQueues(VkPhysicalDevice device,
         VkBool32 presentation_supported = VK_FALSE;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, family, surface, &presentation_supported);
 
-        LOG_INFO_IF(log_file_vulkanutil, "queue family: {}, count = {}, present = {}\n",
-                    string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
-                    (presentation_supported == VK_TRUE ? "true" : "false"));
+        LOG_INFO(Render_Vulkan, "queue family: {}, count = {}, present = {}",
+                 string_VkQueueFlags(f.queueFlags).c_str(), f.queueCount,
+                 (presentation_supported == VK_TRUE ? "true" : "false"));
         for (uint32_t i = 0; i < f.queueCount; i++) {
             Emu::VulkanQueueInfo info;
             info.family = family;
