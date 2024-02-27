@@ -178,7 +178,7 @@ static std::string_view GetMachine(e_machine_es machine) {
 
 Elf::~Elf() = default;
 
-void Elf::Open(const std::string& file_name) {
+void Elf::Open(const std::filesystem::path& file_name) {
     m_f.Open(file_name, FileAccessMode::Read);
     if (!m_f.ReadObject(m_self)) {
         LOG_ERROR(Loader, "Unable to read self header!");

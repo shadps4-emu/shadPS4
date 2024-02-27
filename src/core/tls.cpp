@@ -5,6 +5,10 @@
 #include "common/types.h"
 #include "core/tls.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace Core {
 
 thread_local u8 TLS[1024];
@@ -124,7 +128,6 @@ static LONG WINAPI ExceptionHandler(PEXCEPTION_POINTERS pExp) noexcept {
     default:
         return EXCEPTION_CONTINUE_SEARCH;
     }
-    Flush();
     return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif

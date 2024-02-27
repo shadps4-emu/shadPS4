@@ -8,11 +8,11 @@ namespace Core::FileSys {
 
 constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
-void MntPoints::Mount(const std::string& host_folder, const std::string& guest_folder) {
+void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
 
     MntPair pair;
-    pair.host_path = host_folder;
+    pair.host_path = host_folder.string();
     pair.guest_path = guest_folder;
 
     m_mnt_pairs.push_back(pair);

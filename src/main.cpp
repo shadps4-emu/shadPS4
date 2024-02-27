@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
-    mnt->Mount(config_dir / "app0", "/app0");
+    mnt->Mount(p.parent_path(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
