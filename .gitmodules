@@ -1,10 +1,3 @@
-# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
-# SPDX-License-Identifier: GPL-2.0-or-later
-
-[submodule "third-party/imgui"]
-	path = third-party/imgui
-	url = https://github.com/ocornut/imgui
-	shallow = true
 [submodule "third-party/SDL"]
 	path = third-party/SDL
 	url = https://github.com/libsdl-org/SDL
@@ -29,9 +22,6 @@
 	path = third-party/winpthread
 	url = https://github.com/shadps4/winpthread.git
 	branch = main
-[submodule "third-party/discord-rpc"]
-	path = third-party/discord-rpc
-	url = https://github.com/discord/discord-rpc
 [submodule "third-party/toml11"]
 	path = third-party/toml11
 	url = https://github.com/ToruNiina/toml11
@@ -47,3 +37,7 @@
 [submodule "third-party/vulkan"]
 	path = third-party/vulkan
 	url = https://github.com/GPUCode/vulkan
+[submodule "externals/discord-rpc"]
+	path = externals/discord-rpc
+	url = https://github.com/shadps4-emu/ext-discord-rpc.git
+	branch = master
