@@ -22,12 +22,12 @@ namespace Core::AeroLib {
 constexpr u32 MAX_STUBS = 128;
 
 u64 UnresolvedStub() {
-    LOG_ERROR(Core, "Returning zero to {}\n", __builtin_return_address(0));
+    LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
     return 0;
 }
 
 static u64 UnknownStub() {
-    LOG_ERROR(Core, "Returning zero to {}\n", __builtin_return_address(0));
+    LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
     return 0;
 }
 
@@ -38,10 +38,10 @@ template <int stub_index>
 static u64 CommonStub() {
     auto entry = stub_nids[stub_index];
     if (entry) {
-        LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}\n", entry->name,
+        LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", entry->name,
                   entry->nid, __builtin_return_address(0));
     } else {
-        LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}\n",
+        LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}",
                   stub_nids_unknown[stub_index], __builtin_return_address(0));
     }
     return 0;

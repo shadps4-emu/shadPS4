@@ -12,14 +12,6 @@ add_subdirectory(fmt EXCLUDE_FROM_ALL)
 # MagicEnum
 add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
 
-# Spdlog
-set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
-set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
-set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
-add_subdirectory(spdlog EXCLUDE_FROM_ALL)
-add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ./stb)
-
 # SDL3
 add_subdirectory(SDL EXCLUDE_FROM_ALL)
 

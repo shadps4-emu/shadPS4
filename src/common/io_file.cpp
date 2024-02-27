@@ -28,14 +28,6 @@ namespace {
 
 #ifdef _WIN32
 
-/**
- * Converts the file access mode and file type enums to a file access mode wide string.
- *
- * @param mode File access mode
- * @param type File type
- *
- * @returns A pointer to a wide string representing the file access mode.
- */
 [[nodiscard]] constexpr const wchar_t* AccessModeToWStr(FileAccessMode mode, FileType type) {
     switch (type) {
     case FileType::BinaryFile:
@@ -71,13 +63,6 @@ namespace {
     return L"";
 }
 
-/**
- * Converts the file-share access flag enum to a Windows defined file-share access flag.
- *
- * @param flag File-share access flag
- *
- * @returns Windows defined file-share access flag.
- */
 [[nodiscard]] constexpr int ToWindowsFileShareFlag(FileShareFlag flag) {
     switch (flag) {
     case FileShareFlag::ShareNone:
@@ -94,14 +79,6 @@ namespace {
 
 #else
 
-/**
- * Converts the file access mode and file type enums to a file access mode string.
- *
- * @param mode File access mode
- * @param type File type
- *
- * @returns A pointer to a string representing the file access mode.
- */
 [[nodiscard]] constexpr const char* AccessModeToStr(FileAccessMode mode, FileType type) {
     switch (type) {
     case FileType::BinaryFile:
@@ -139,13 +116,6 @@ namespace {
 
 #endif
 
-/**
- * Converts the seek origin enum to a seek origin integer.
- *
- * @param origin Seek origin
- *
- * @returns Seek origin integer.
- */
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:

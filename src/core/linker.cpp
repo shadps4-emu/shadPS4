@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
@@ -56,8 +57,13 @@ Linker::Linker() = default;
 
 Linker::~Linker() = default;
 
-Module* Linker::LoadModule(const std::string& elf_name) {
+Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
     std::scoped_lock lock{m_mutex};
+
+    if (!std::filesystem::exists(elf_name)) {
+        LOG_ERROR(Core_Linker, "Provided module {} does not exist", elf_name.string());
+        return nullptr;
+    }
 
     auto& m = m_modules.emplace_back();
     m = std::make_unique<Module>();

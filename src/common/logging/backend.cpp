@@ -60,18 +60,8 @@ private:
  */
 class FileBackend {
 public:
-    explicit FileBackend(const std::filesystem::path& filename) {
-        auto old_filename = filename;
-        old_filename += ".old.txt";
-
-        std::filesystem::remove(old_filename);
-        std::filesystem::rename(filename, old_filename);
-
-        // _SH_DENYWR allows read only access to the file for other programs.
-        // It is #defined to 0 on other platforms
-        file = std::make_unique<FS::IOFile>(filename, FS::FileAccessMode::Write,
-                                            FS::FileType::TextFile);
-    }
+    explicit FileBackend(const std::filesystem::path& filename) : file{filename, FS::FileAccessMode::Write,
+               FS::FileType::TextFile} {}
 
     ~FileBackend() = default;
 
@@ -80,7 +70,7 @@ public:
             return;
         }
 
-        bytes_written += file->WriteString(FormatLogMessage(entry).append(1, '\n'));
+        bytes_written += file.WriteString(FormatLogMessage(entry).append(1, '\n'));
 
         // Prevent logs from exceeding a set maximum size in the event that log entries are spammed.
         const auto write_limit = 100_MB;
@@ -91,16 +81,16 @@ public:
                 // Don't close the file so we can print a stacktrace if necessary
                 enabled = false;
             }
-            file->Flush();
+            file.Flush();
         }
     }
 
     void Flush() {
-        file->Flush();
+        file.Flush();
     }
 
 private:
-    std::unique_ptr<Common::FS::IOFile> file;
+    Common::FS::IOFile file;
     bool enabled = true;
     std::size_t bytes_written = 0;
 };
@@ -258,7 +248,6 @@ private:
 
 void Initialize(std::string_view log_file) {
     Impl::Initialize(log_file.empty() ? LOG_FILE : log_file);
-    Impl::Start();
 }
 
 void Start() {
@@ -280,7 +269,7 @@ void SetColorConsoleBackendEnabled(bool enabled) {
 void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
                        unsigned int line_num, const char* function, const char* format,
                        const fmt::format_args& args) {
-    if (!initialization_in_progress_suppress_logging) {
+    if (!initialization_in_progress_suppress_logging) [[likely]] {
         Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function,
                                    fmt::vformat(format, args));
     }

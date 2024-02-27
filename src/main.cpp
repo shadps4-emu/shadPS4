@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(config_dir / "config.toml");
     Common::Log::Initialize();
+    Common::Log::Start();
     Core::Libraries::LibKernel::init_pthreads();
     auto width = Config::getScreenWidth();
     auto height = Config::getScreenHeight();
@@ -41,7 +42,7 @@ int main(int argc, char* argv[]) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
-    mnt->Mount(p.parent_path().string(), "/app0");
+    mnt->Mount(config_dir / "app0", "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
@@ -53,7 +54,6 @@ int main(int argc, char* argv[]) {
     discordRPC.update(Discord::RPCStatus::Idling, "");
     Emu::emuRun();
 
-    Common::Log::Stop();
     discordRPC.stop();
     return 0;
 }

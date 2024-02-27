@@ -4,13 +4,7 @@
 #include "common/assert.h"
 #include "common/logging/backend.h"
 
-#if defined(ARCHITECTURE_x86_64)
 #define Crash() __asm__ __volatile__("int $3")
-#elif defined(ARCHITECTURE_arm64)
-#define Crash() __asm__ __volatile__("brk #0")
-#else
-#define Crash() exit(1)
-#endif
 
 void assert_fail_impl() {
     Common::Log::Stop();
@@ -18,7 +12,7 @@ void assert_fail_impl() {
 }
 
 [[noreturn]] void unreachable_impl() {
-    Common::Log::Stop();
+    /*Common::Log::Stop();
     Crash();
-    throw std::runtime_error("Unreachable code");
+    throw std::runtime_error("Unreachable code");*/
 }
