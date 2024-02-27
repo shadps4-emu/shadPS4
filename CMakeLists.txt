@@ -81,6 +81,7 @@ if (CLANG_FORMAT)
     unset(CCOMMENT)
 endif()
 
+add_subdirectory(externals)
 add_subdirectory(third-party)
 include_directories(src)
 
