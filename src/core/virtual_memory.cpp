@@ -125,7 +125,7 @@ bool memory_flush(u64 address, u64 size) {
 }
 bool memory_patch(u64 vaddr, u64 value) {
     MemoryMode old_mode{};
-    //memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
+    // memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
 
     auto* ptr = reinterpret_cast<uint64_t*>(vaddr);
 
@@ -133,7 +133,7 @@ bool memory_patch(u64 vaddr, u64 value) {
 
     *ptr = value;
 
-    //memory_protect(vaddr, 8, old_mode, nullptr);
+    // memory_protect(vaddr, 8, old_mode, nullptr);
 
     // if mode is executable flush it so insure that cpu finds it
     if (containsExecuteMode(old_mode)) {

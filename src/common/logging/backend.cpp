@@ -60,8 +60,8 @@ private:
  */
 class FileBackend {
 public:
-    explicit FileBackend(const std::filesystem::path& filename) : file{filename, FS::FileAccessMode::Write,
-               FS::FileType::TextFile} {}
+    explicit FileBackend(const std::filesystem::path& filename)
+        : file{filename, FS::FileAccessMode::Write, FS::FileType::TextFile} {}
 
     ~FileBackend() = default;
 

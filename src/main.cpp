@@ -20,6 +20,7 @@
 #include "core/file_sys/fs.h"
 #include "core/hle/libraries/libs.h"
 #include "core/linker.h"
+#include "core/tls.h"
 #include "emulator.h"
 
 int main(int argc, char* argv[]) {
@@ -46,6 +47,7 @@ int main(int argc, char* argv[]) {
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
+    Core::InstallTlsHandler();
     linker->LoadModule(path);
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
                             nullptr);

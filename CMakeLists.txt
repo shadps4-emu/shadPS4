@@ -224,7 +224,10 @@ add_executable(shadps4
     src/core/PS4/GPU/tile_manager.cpp
     src/core/PS4/GPU/tile_manager.h
     src/core/hle/libraries/libkernel/time_management.cpp
-    src/core/hle/libraries/libkernel/time_management.h)
+    src/core/hle/libraries/libkernel/time_management.h
+    src/core/tls.cpp
+    src/core/tls.h
+)
 
 create_target_directory_groups(shadps4)
 
