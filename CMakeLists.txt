@@ -157,8 +157,6 @@ add_executable(shadps4
     src/main.cpp
     src/core/loader/elf.cpp
     src/core/loader/elf.h
-    src/GUI/ElfViewer.cpp
-    src/GUI/ElfViewer.h 
     src/Util/config.cpp
     src/Util/config.h
     src/core/virtual_memory.cpp
@@ -214,7 +212,7 @@ add_executable(shadps4
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt spdlog::spdlog toml11::toml11)
-target_link_libraries(shadps4 PRIVATE discord-rpc imgui SDL3-shared vulkan-1 xxhash Zydis)
+target_link_libraries(shadps4 PRIVATE discord-rpc SDL3-shared vulkan-1 xxhash Zydis)
 if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
 endif()
