@@ -2,31 +2,29 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
-#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/linker.h"
+#include "core/tls.h"
 #include "core/virtual_memory.h"
 
 namespace Core {
 
-constexpr bool debug_loader = true;
+static constexpr u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
 
-static u64 g_load_addr = SYSTEM_RESERVED + CODE_BASE_OFFSET;
-
-static u64 get_aligned_size(const elf_program_header& phdr) {
+static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
                               : phdr.p_memsz);
 }
 
-static u64 calculate_base_size(const elf_header& ehdr, std::span<const elf_program_header> phdr) {
+static u64 CalculateBaseSize(const elf_header& ehdr, std::span<const elf_program_header> phdr) {
     u64 base_size = 0;
     for (u16 i = 0; i < ehdr.e_phnum; i++) {
         if (phdr[i].p_memsz != 0 && (phdr[i].p_type == PT_LOAD || phdr[i].p_type == PT_SCE_RELRO)) {
-            u64 last_addr = phdr[i].p_vaddr + get_aligned_size(phdr[i]);
+            u64 last_addr = phdr[i].p_vaddr + GetAlignedSize(phdr[i]);
             if (last_addr > base_size) {
                 base_size = last_addr;
             }
@@ -35,7 +33,7 @@ static u64 calculate_base_size(const elf_header& ehdr, std::span<const elf_progr
     return base_size;
 }
 
-static std::string encodeId(u64 nVal) {
+static std::string EncodeId(u64 nVal) {
     std::string enc;
     const char pCodes[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
     if (nVal < 0x40u) {
@@ -67,7 +65,6 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
 
     auto& m = m_modules.emplace_back();
     m = std::make_unique<Module>();
-    m->linker = this;
     m->elf.Open(elf_name);
 
     if (m->elf.IsElfFile()) {
@@ -83,7 +80,7 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
     return m.get();
 }
 
-Module* Linker::FindModule(/*u32 id*/) {
+Module* Linker::FindModule(u32 id) {
     // TODO atm we only have 1 module so we don't need to iterate on vector
     if (m_modules.empty()) [[unlikely]] {
         return nullptr;
@@ -91,85 +88,17 @@ Module* Linker::FindModule(/*u32 id*/) {
     return m_modules[0].get();
 }
 
-struct TLSPattern {
-    uint8_t pattern[5];
-    uint8_t pattern_size;
-    uint8_t imm_size;
-    uint8_t target_reg;
-};
-
-constexpr static TLSPattern TlsPatterns[] = {
-    {{0x64, 0x48, 0xA1},
-     3,
-     8,
-     0}, // 64 48 A1 | 00 00 00 00 00 00 00 00 # mov rax, qword ptr fs:[64b imm]
-
-    {{0x64, 0x48, 0x8B, 0x4, 0x25},
-     5,
-     4,
-     0}, // 64 48 8B 04 25 | 00 00 00 00 # mov rax,qword ptr fs:[0]
-    {{0x64, 0x48, 0x8B, 0xC, 0x25}, 5, 4, 1},   // rcx
-    {{0x64, 0x48, 0x8B, 0x14, 0x25}, 5, 4, 2},  // rdx
-    {{0x64, 0x48, 0x8B, 0x1C, 0x25}, 5, 4, 3},  // rbx
-    {{0x64, 0x48, 0x8B, 0x24, 0x25}, 5, 4, 4},  // rsp
-    {{0x64, 0x48, 0x8B, 0x2C, 0x25}, 5, 4, 5},  // rbp
-    {{0x64, 0x48, 0x8B, 0x34, 0x25}, 5, 4, 6},  // rsi
-    {{0x64, 0x48, 0x8B, 0x3C, 0x25}, 5, 4, 7},  // rdi
-    {{0x64, 0x4C, 0x8B, 0x4, 0x25}, 5, 4, 8},   // r8
-    {{0x64, 0x4C, 0x8B, 0xC, 0x25}, 5, 4, 9},   // r9
-    {{0x64, 0x4C, 0x8B, 0x14, 0x25}, 5, 4, 10}, // r10
-    {{0x64, 0x4C, 0x8B, 0x1C, 0x25}, 5, 4, 11}, // r11
-    {{0x64, 0x4C, 0x8B, 0x24, 0x25}, 5, 4, 12}, // r12
-    {{0x64, 0x4C, 0x8B, 0x2C, 0x25}, 5, 4, 13}, // r13
-    {{0x64, 0x4C, 0x8B, 0x34, 0x25}, 5, 4, 14}, // r14
-    {{0x64, 0x4C, 0x8B, 0x3C, 0x25}, 5, 4, 15}, // r15
-};
-
-void PatchTLS(u64 segment_addr, u64 segment_size) {
-    u8* code = reinterpret_cast<u8*>(segment_addr);
-    auto remaining_size = segment_size;
-
-    while (remaining_size) {
-        for (const auto& tls_pattern : TlsPatterns) {
-            const auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
-            if (remaining_size < total_size) {
-                continue;
-            }
-            if (std::memcmp(code, tls_pattern.pattern, tls_pattern.pattern_size) != 0) {
-                continue;
-            }
-            if (tls_pattern.imm_size == 4) {
-                LOG_INFO(Core_Linker, "PATTERN32 FOUND at {}, reg: {} offset: {:#x}\n",
-                         fmt::ptr(code), tls_pattern.target_reg,
-                         *(u32*)(code + tls_pattern.pattern_size));
-            } else {
-                LOG_INFO(Core_Linker, "PATTERN64 FOUND at {}, reg: {} offset: {:#x}\n",
-                         fmt::ptr(code), tls_pattern.target_reg,
-                         *(u32*)(code + tls_pattern.pattern_size));
-            }
-            code[0] = 0xcd;
-            code[1] = 0x80 + tls_pattern.target_reg;
-            code[2] = tls_pattern.pattern_size | (tls_pattern.imm_size << 4);
-            code += total_size - 1;
-            remaining_size -= total_size - 1;
-            break;
-        }
-        code++;
-        remaining_size--;
-    }
-}
-
 void Linker::LoadModuleToMemory(Module* m) {
     // get elf header, program header
     const auto elf_header = m->elf.GetElfHeader();
     const auto elf_pheader = m->elf.GetProgramHeader();
 
-    u64 base_size = calculate_base_size(elf_header, elf_pheader);
+    u64 base_size = CalculateBaseSize(elf_header, elf_pheader);
     m->aligned_base_size = (base_size & ~(static_cast<u64>(0x1000) - 1)) +
                            0x1000; // align base size to 0x1000 block size (TODO is that the default
                                    // block size or it can be changed?
 
-    m->base_virtual_addr = VirtualMemory::memory_alloc(g_load_addr, m->aligned_base_size,
+    m->base_virtual_addr = VirtualMemory::memory_alloc(LoadAddress, m->aligned_base_size,
                                                        VirtualMemory::MemoryMode::ExecuteReadWrite);
 
     LOG_INFO(Core_Linker, "====Load Module to Memory ========");
@@ -184,7 +113,7 @@ void Linker::LoadModuleToMemory(Module* m) {
             if (elf_pheader[i].p_memsz != 0) {
                 u64 segment_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
                 u64 segment_file_size = elf_pheader[i].p_filesz;
-                u64 segment_memory_size = get_aligned_size(elf_pheader[i]);
+                u64 segment_memory_size = GetAlignedSize(elf_pheader[i]);
                 auto segment_mode = m->elf.ElfPheaderFlagsStr(elf_pheader[i].p_flags);
                 LOG_INFO(Core_Linker, "program header = [{}] type = {}", i,
                          m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
@@ -225,7 +154,7 @@ void Linker::LoadModuleToMemory(Module* m) {
             break;
         case PT_TLS:
             m->tls.image_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
-            m->tls.image_size = get_aligned_size(elf_pheader[i]);
+            m->tls.image_size = GetAlignedSize(elf_pheader[i]);
             LOG_INFO(Core_Linker, "tls virtual address ={:#x}", m->tls.image_virtual_addr);
             LOG_INFO(Core_Linker, "tls image size      ={}", m->tls.image_size);
             break;
@@ -352,14 +281,14 @@ void Linker::LoadDynamicInfo(Module* m) {
             ModuleInfo info{};
             info.value = dyn->d_un.d_val;
             info.name = m->dynamic_info.str_table + info.name_offset;
-            info.enc_id = encodeId(info.id);
+            info.enc_id = EncodeId(info.id);
             m->dynamic_info.import_modules.push_back(info);
         } break;
         case DT_SCE_IMPORT_LIB: {
             LibraryInfo info{};
             info.value = dyn->d_un.d_val;
             info.name = m->dynamic_info.str_table + info.name_offset;
-            info.enc_id = encodeId(info.id);
+            info.enc_id = EncodeId(info.id);
             m->dynamic_info.import_libs.push_back(info);
         } break;
         case DT_SCE_FINGERPRINT:
@@ -384,7 +313,7 @@ void Linker::LoadDynamicInfo(Module* m) {
             ModuleInfo info{};
             info.value = dyn->d_un.d_val;
             info.name = m->dynamic_info.str_table + info.name_offset;
-            info.enc_id = encodeId(info.id);
+            info.enc_id = EncodeId(info.id);
             m->dynamic_info.export_modules.push_back(info);
         } break;
         case DT_SCE_MODULE_ATTR:
@@ -396,7 +325,7 @@ void Linker::LoadDynamicInfo(Module* m) {
             LibraryInfo info{};
             info.value = dyn->d_un.d_val;
             info.name = m->dynamic_info.str_table + info.name_offset;
-            info.enc_id = encodeId(info.id);
+            info.enc_id = EncodeId(info.id);
             m->dynamic_info.export_libs.push_back(info);
         } break;
         default:
@@ -529,89 +458,90 @@ void Linker::LoadSymbols(Module* m) {
         }
     }
 }
-static void relocate(u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
-    auto type = rel->GetType();
-    auto symbol = rel->GetSymbol();
-    auto addend = rel->rel_addend;
-    auto* symbolsTlb = m->dynamic_info.symbol_table;
-    auto* namesTlb = m->dynamic_info.str_table;
-
-    u64 rel_value = 0;
-    u64 rel_base_virtual_addr = m->base_virtual_addr;
-    u64 rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
-    bool rel_isResolved = false;
-    u8 rel_sym_type = 0;
-    std::string rel_name;
-
-    switch (type) {
-    case R_X86_64_RELATIVE:
-        if (symbol != 0) // should be always zero
-        {
-            // LOG_INFO(Core_Linker, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type,
-            // symbol);//found it openorbis but i am not sure it worth logging
-        }
-        rel_value = rel_base_virtual_addr + addend;
-        rel_isResolved = true;
-        break;
-    case R_X86_64_64:
-    case R_X86_64_JUMP_SLOT: // similar but addend is not take into account
-    {
-        auto sym = symbolsTlb[symbol];
-        auto sym_bind = sym.GetBind();
-        auto sym_type = sym.GetType();
-        auto sym_visibility = sym.GetVisibility();
-        u64 symbol_vitrual_addr = 0;
-        Loader::SymbolRecord symrec{};
-        switch (sym_type) {
-        case STT_FUN:
-            rel_sym_type = 2;
-            break;
-        case STT_OBJECT:
-            rel_sym_type = 1;
-            break;
-        default:
-            LOG_INFO(Core_Linker, "unknown symbol type {}", sym_type);
-        }
-        if (sym_visibility != 0) // should be zero log if else
-        {
-            LOG_INFO(Core_Linker, "symbol visilibity !=0");
-        }
-        switch (sym_bind) {
-        case STB_GLOBAL:
-            rel_name = namesTlb + sym.st_name;
-            m->linker->Resolve(rel_name, rel_sym_type, m, &symrec);
-            symbol_vitrual_addr = symrec.virtual_address;
-            rel_isResolved = (symbol_vitrual_addr != 0);
-
-            rel_name = symrec.name;
-            if (type == R_X86_64_JUMP_SLOT) {
-                addend = 0;
-            }
-            rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
-            if (!rel_isResolved) {
-                LOG_INFO(Core_Linker,
-                         "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : "
-                         "{:#010x}",
-                         sym_type, symbol);
-            }
-            break;
-        default:
-            LOG_INFO(Core_Linker, "UNK bind {}", sym_bind);
-        }
-
-    } break;
-    default:
-        LOG_INFO(Core_Linker, "UNK type {:#010x} rel symbol : {:#010x}", type, symbol);
-    }
-
-    if (rel_isResolved) {
-        VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
-    } else {
-        LOG_INFO(Core_Linker, "function not patched! {}", rel_name);
-    }
-}
 
 void Linker::Relocate(Module* m) {
+    const auto relocate = [this](u32 idx, elf_relocation* rel, Module* m, bool isJmpRel) {
+        auto type = rel->GetType();
+        auto symbol = rel->GetSymbol();
+        auto addend = rel->rel_addend;
+        auto* symbolsTlb = m->dynamic_info.symbol_table;
+        auto* namesTlb = m->dynamic_info.str_table;
+
+        u64 rel_value = 0;
+        u64 rel_base_virtual_addr = m->base_virtual_addr;
+        u64 rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
+        bool rel_isResolved = false;
+        u8 rel_sym_type = 0;
+        std::string rel_name;
+
+        switch (type) {
+        case R_X86_64_RELATIVE:
+            if (symbol != 0) // should be always zero
+            {
+                // LOG_INFO(Core_Linker, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type,
+                // symbol);//found it openorbis but i am not sure it worth logging
+            }
+            rel_value = rel_base_virtual_addr + addend;
+            rel_isResolved = true;
+            break;
+        case R_X86_64_64:
+        case R_X86_64_JUMP_SLOT: // similar but addend is not take into account
+        {
+            auto sym = symbolsTlb[symbol];
+            auto sym_bind = sym.GetBind();
+            auto sym_type = sym.GetType();
+            auto sym_visibility = sym.GetVisibility();
+            u64 symbol_vitrual_addr = 0;
+            Loader::SymbolRecord symrec{};
+            switch (sym_type) {
+            case STT_FUN:
+                rel_sym_type = 2;
+                break;
+            case STT_OBJECT:
+                rel_sym_type = 1;
+                break;
+            default:
+                LOG_INFO(Core_Linker, "unknown symbol type {}", sym_type);
+            }
+            if (sym_visibility != 0) // should be zero log if else
+            {
+                LOG_INFO(Core_Linker, "symbol visilibity !=0");
+            }
+            switch (sym_bind) {
+            case STB_GLOBAL:
+                rel_name = namesTlb + sym.st_name;
+                Resolve(rel_name, rel_sym_type, m, &symrec);
+                symbol_vitrual_addr = symrec.virtual_address;
+                rel_isResolved = (symbol_vitrual_addr != 0);
+
+                rel_name = symrec.name;
+                if (type == R_X86_64_JUMP_SLOT) {
+                    addend = 0;
+                }
+                rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
+                if (!rel_isResolved) {
+                    LOG_INFO(Core_Linker,
+                             "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : "
+                             "{:#010x}",
+                             sym_type, symbol);
+                }
+                break;
+            default:
+                LOG_INFO(Core_Linker, "UNK bind {}", sym_bind);
+            }
+
+        } break;
+        default:
+            LOG_INFO(Core_Linker, "UNK type {:#010x} rel symbol : {:#010x}", type, symbol);
+        }
+
+        if (rel_isResolved) {
+            VirtualMemory::memory_patch(rel_virtual_addr, rel_value);
+        } else {
+            LOG_INFO(Core_Linker, "function not patched! {}", rel_name);
+        }
+    };
+
     u32 idx = 0;
     for (auto* rel = m->dynamic_info.relocation_table;
          reinterpret_cast<u8*>(rel) < reinterpret_cast<u8*>(m->dynamic_info.relocation_table) +
@@ -678,7 +608,7 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
 }
 
-static void run_main_entry(u64 addr, EntryParams* params, exit_func_t exit_func) {
+static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
     // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
     // a specific layout
 
@@ -708,7 +638,7 @@ void Linker::Execute() {
     p.argv[0] = "eboot.bin"; // hmm should be ok?
 
     const auto& module = m_modules.at(0);
-    run_main_entry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
+    RunMainEntry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
 }
 
 } // namespace Core

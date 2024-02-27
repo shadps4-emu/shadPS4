@@ -12,7 +12,7 @@ void assert_fail_impl() {
 }
 
 [[noreturn]] void unreachable_impl() {
-    /*Common::Log::Stop();
+    Common::Log::Stop();
     Crash();
-    throw std::runtime_error("Unreachable code");*/
+    throw std::runtime_error("Unreachable code");
 }
