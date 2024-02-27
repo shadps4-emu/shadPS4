@@ -52,7 +52,7 @@ public:
     }
 
 private:
-    std::atomic_bool enabled{false};
+    std::atomic_bool enabled{true};
 };
 
 /**
