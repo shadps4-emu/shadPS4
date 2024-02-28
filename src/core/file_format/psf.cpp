@@ -13,7 +13,7 @@ PSF::PSF() = default;
 PSF::~PSF() = default;
 
 bool PSF::open(const std::string& filepath) {
-    Common::FS::IOFile file(filepath,Common::FS::FileAccessMode::Read);
+    Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
         return false;
     }
