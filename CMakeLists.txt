@@ -134,6 +134,10 @@ set(COMMON src/common/types.h
            src/common/io_file.h
 )
 
+set(CRYPTO src/core/crypto/crypto.cpp
+           src/core/crypto/crypto.h 
+           src/core/crypto/keys.h
+)
 set(FILE_FORMAT src/core/file_format/psf.cpp
                 src/core/file_format/psf.h
 )
@@ -235,6 +239,7 @@ add_executable(shadps4
     src/core/tls.cpp
     src/core/tls.h
     ${COMMON}
+    ${CRYPTO}
     ${FILE_FORMAT}
 )
 
@@ -242,6 +247,13 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11)
 target_link_libraries(shadps4 PRIVATE discord-rpc SDL3-shared vulkan-1 xxhash Zydis)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
+    target_link_libraries(shadps4 PRIVATE cryptoppwin zlib)
+else()
+    target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib)
+endif()
+
 if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
