@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.16.3)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -127,11 +127,21 @@ set(HOST_SOURCES src/Emulator/Host/controller.cpp
                  src/Emulator/Host/controller.h
 )
 
+set(COMMON src/common/types.h
+           src/common/endian.h
+           src/common/concepts.h
+           src/common/io_file.cpp
+           src/common/io_file.h
+)
+
+set(FILE_FORMAT src/core/file_format/psf.cpp
+                src/core/file_format/psf.h
+)
+
 add_executable(shadps4
     src/common/assert.cpp
     src/common/assert.h
     src/common/bounded_threadsafe_queue.h
-    src/common/concepts.h
     src/common/debug.h
     src/common/disassembler.cpp
     src/common/disassembler.h
@@ -139,8 +149,6 @@ add_executable(shadps4
     src/common/discord.h
     src/common/error.cpp
     src/common/error.h
-    src/common/io_file.cpp
-    src/common/io_file.h
     src/common/path_util.cpp
     src/common/path_util.h
     src/common/logging/backend.cpp
@@ -162,7 +170,6 @@ add_executable(shadps4
     src/common/string_util.h
     src/common/thread.cpp
     src/common/thread.h
-    src/common/types.h
     src/common/uint128.h
     src/common/version.h
     ${LIBC_SOURCES}
@@ -227,6 +234,8 @@ add_executable(shadps4
     src/core/hle/libraries/libkernel/time_management.h
     src/core/tls.cpp
     src/core/tls.h
+    ${COMMON}
+    ${FILE_FORMAT}
 )
 
 create_target_directory_groups(shadps4)
