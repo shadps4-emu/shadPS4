@@ -37,3 +37,21 @@
 	path = externals/discord-rpc
 	url = https://github.com/shadps4-emu/ext-discord-rpc.git
 	branch = master
+[submodule "externals/cryptopp-cmake"]
+	path = externals/cryptopp-cmake
+	url = https://github.com/shadps4-emu/ext-cryptopp-cmake.git
+	branch = master
+[submodule "externals/cryptopp"]
+	path = externals/cryptopp
+	url = https://github.com/shadps4-emu/ext-cryptopp.git
+	branch = master
+[submodule "externals/cryptoppwin"]
+	path = externals/cryptoppwin
+	url = https://github.com/shadps4-emu/ext-cryptoppwin.git
+	branch = main
+[submodule "externals/zlib-ng"]
+	path = externals/zlib-ng
+	url = https://github.com/shadps4-emu/ext-zlib-ng.git
+[submodule "externals/zlib-ng-win"]
+	path = externals/zlib-ng-win
+	url = https://github.com/shadps4-emu/ext-zlib-ng-win.git
