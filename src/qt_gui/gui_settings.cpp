@@ -4,7 +4,7 @@
 #include "gui_settings.h"
 
 GuiSettings::GuiSettings(QObject* parent) {
-    m_settings.reset(new QSettings("shadps4.ini", QSettings::Format::IniFormat,
+    m_settings.reset(new QSettings("shadps4qt.ini", QSettings::Format::IniFormat,
                                    parent)); // TODO make the path configurable
 }
 
