@@ -138,7 +138,12 @@ set(CRYPTO src/core/crypto/crypto.cpp
            src/core/crypto/crypto.h 
            src/core/crypto/keys.h
 )
-set(FILE_FORMAT src/core/file_format/psf.cpp
+set(FILE_FORMAT src/core/file_format/pfs.h
+                src/core/file_format/pkg.cpp
+                src/core/file_format/pkg.h
+                src/core/file_format/pkg_type.cpp
+                src/core/file_format/pkg_type.h
+                src/core/file_format/psf.cpp
                 src/core/file_format/psf.h
 )
 
@@ -258,6 +263,18 @@ if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+endif()
+
+target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+add_custom_command(TARGET shadps4 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ngd2.dll" $<TARGET_FILE_DIR:shadps4>)
+else()
+add_custom_command(TARGET shadps4 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ng2.dll" $<TARGET_FILE_DIR:shadps4>)
 endif()
 
 add_custom_command(TARGET shadps4 POST_BUILD

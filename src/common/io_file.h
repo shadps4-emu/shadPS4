@@ -179,6 +179,11 @@ public:
     }
 
     template <typename T>
+    size_t WriteRaw(void* data, size_t size) const {
+        return std::fwrite(data, sizeof(T), size, file);
+    }
+
+    template <typename T>
     bool WriteObject(const T& object) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
