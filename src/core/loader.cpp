@@ -6,8 +6,8 @@
 #include "loader.h"
 
 FileTypes DetectFileType(const std::string& filepath) {
-    if (filepath.size() == 0) // no file loaded
-    {
+    // No file loaded
+    if (filepath.empty()) {
         return FileTypes::Unknown;
     }
     Common::FS::IOFile file;
