@@ -64,7 +64,7 @@ bool PKG::Open(const std::string& filepath) {
     pkgSize = file.GetSize();
 
     PKGHeader pkgheader;
-    file.ReadRaw<u8>(&pkgheader, sizeof(PKGHeader));
+    file.Read(pkgheader);
 
     // Find title id it is part of pkg_content_id starting at offset 0x40
     file.Seek(0x47); // skip first 7 characters of content_id
