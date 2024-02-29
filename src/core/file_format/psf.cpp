@@ -21,7 +21,7 @@ bool PSF::open(const std::string& filepath) {
     const u64 psfSize = file.GetSize();
     psf.resize(psfSize);
     file.Seek(0);
-    file.ReadRaw<u8>(&psf[0], psfSize);
+    file.Read(psf);
 
     // Parse file contents
     PSFHeader header;
