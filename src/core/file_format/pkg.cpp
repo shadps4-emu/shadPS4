@@ -128,7 +128,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
                                        // file.Seek(entry.offset, fsSeekSet);
         } else if (entry.id == 0x10) { // ENTRY_KEYS, seek;
             file.Seek(entry.offset);
-            file.ReadRaw<u8>(seed_digest.data(), seed_digest.size());
+            file.Read(seed_digest);
 
             for (int i = 0; i < 7; i++) {
                 file.ReadRaw<u8>(digest1[i].data(), digest1[i].size());
