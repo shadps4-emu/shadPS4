@@ -6,8 +6,8 @@
 #include <string>
 
 enum class FileTypes {
-     Unknown,
-     Pkg,
+    Unknown,
+    Pkg,
 };
 
 FileTypes DetectFileType(const std::string& filepath);
