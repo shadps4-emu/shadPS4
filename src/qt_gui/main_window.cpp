@@ -280,7 +280,7 @@ void MainWindow::InstallPkg() {
 
 void MainWindow::InstallDragDropPkg(std::string file, int pkgNum, int nPkg) {
 
-    if (detectFileType(file) == FILETYPE_PKG) {
+    if (DetectFileType(file) == FILETYPE_PKG) {
         PKG pkg;
         pkg.Open(file);
         std::string failreason;
