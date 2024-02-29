@@ -5,7 +5,7 @@
 #include "common/types.h"
 #include "loader.h"
 
-FileTypes detectFileType(const std::string& filepath) {
+FileTypes DetectFileType(const std::string& filepath) {
     if (filepath.size() == 0) // no file loaded
     {
         return FILETYPE_UNKNOWN;
