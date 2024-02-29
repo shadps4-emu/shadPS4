@@ -135,7 +135,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
             }
 
             for (int i = 0; i < 7; i++) {
-                file.ReadRaw<u8>(key1[i].data(), key1[i].size());
+                file.Read(key1);
             }
 
             PKG::crypto.RSA2048Decrypt(dk3_, key1[3], true); // decrypt DK3
