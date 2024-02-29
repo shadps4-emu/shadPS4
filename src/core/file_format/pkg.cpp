@@ -141,7 +141,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
             PKG::crypto.RSA2048Decrypt(dk3_, key1[3], true); // decrypt DK3
         } else if (entry.id == 0x20) {                       // IMAGE_KEY, seek; IV_KEY
             file.Seek(entry.offset);
-            file.ReadRaw<u8>(imgkeydata.data(), imgkeydata.size());
+            file.Read(imgkeydata);
 
             // The Concatenated iv + dk3 imagekey for HASH256
             std::array<CryptoPP::byte, 64> concatenated_ivkey_dk3;
