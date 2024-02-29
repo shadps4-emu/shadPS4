@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+name: Windows-Qt
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+          submodules: recursive
+
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        arch: win64_msvc2019_64
+        version: 6.6.1
+        
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
+      
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Deploy
+      run: |
+        mkdir upload
+        move build/Release/shadps4.exe upload
+        move build/Release/zlib-ng2.dll upload
+        windeployqt --dir upload upload/shadps4.exe
+
+    - name: Upload executable
+      uses: actions/upload-artifact@v2
+      with:
+        name: shadps4-win64-qt
+        path: upload
