@@ -45,6 +45,7 @@ jobs:
         mkdir upload
         move build/Release/shadps4.exe upload
         move build/Release/zlib-ng2.dll upload
+        move build/Release/libwinpthread-1.dll upload
         windeployqt --dir upload upload/shadps4.exe
 
     - name: Upload executable
