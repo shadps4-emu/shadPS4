@@ -175,7 +175,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     // Read encrypted pfs_image
     std::vector<u8> pfs_encrypted(length);
     file.Seek(pkgheader.pfs_image_offset);
-    file.ReadRaw<u8>(pfs_encrypted.data(), length);
+    file.Read(pfs_encrypted);
 
     // Decrypt the pfs_image.
     std::vector<u8> pfs_decrypted(length);
