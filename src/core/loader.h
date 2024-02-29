@@ -7,6 +7,8 @@
 
 namespace Loader {
 
+constexpr static u32 PkgMagic = 0x544e437f;
+
 enum class FileTypes {
     Unknown,
     Pkg,

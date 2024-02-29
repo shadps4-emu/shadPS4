@@ -19,7 +19,7 @@ FileTypes DetectFileType(const std::string& filepath) {
     file.Read(magic);
     file.Close();
     switch (magic) {
-    case 0x544e437f: // PS4 PKG
+    case PkgMagic:
         return FileTypes::Pkg;
     }
     return FileTypes::Unknown;
