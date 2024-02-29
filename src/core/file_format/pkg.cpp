@@ -96,7 +96,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     }
     file.Seek(0);
     pkg.resize(pkgheader.pkg_promote_size);
-    file.ReadRaw<u8>(pkg.data(), pkgheader.pkg_promote_size);
+    file.Read(pkg);
 
     u32 offset = pkgheader.pkg_table_entry_offset;
     u32 n_files = pkgheader.pkg_table_entry_count;
