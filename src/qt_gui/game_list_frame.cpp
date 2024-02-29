@@ -8,8 +8,8 @@
 #include <QPainter>
 #include <QScrollBar>
 
-#include "custom_table_widget_item.h"
 #include "core/file_format/psf.h"
+#include "custom_table_widget_item.h"
 #include "game_list_frame.h"
 #include "gui_settings.h"
 #include "qt_utils.h"
