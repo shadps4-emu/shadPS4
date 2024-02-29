@@ -166,7 +166,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     // Read the seed
     std::array<CryptoPP::byte, 16> seed;
     file.Seek(pkgheader.pfs_image_offset + 0x370);
-    file.ReadRaw<u8>(seed.data(), seed.size());
+    file.Read(seed);
 
     // Get data and tweak keys.
     PKG::crypto.PfsGenCryptoKey(ekpfsKey, seed, dataKey, tweakKey);
@@ -347,7 +347,7 @@ void PKG::ExtractFiles(const int& index) {
             int previousData = (sectorOffset + pfsc_offset) - sectorOffsetMask;
 
             pkgFile.Seek(fileOffset - previousData);
-            pkgFile.ReadRaw<u8>(pfsc.data(), pfsc.size());
+            pkgFile.Read(pfsc);
 
             PKG::crypto.decryptPFS(dataKey, tweakKey, pfsc, pfs_decrypted, currentSector1);
 

@@ -8,7 +8,7 @@
 FileTypes DetectFileType(const std::string& filepath) {
     if (filepath.size() == 0) // no file loaded
     {
-        return FILETYPE_UNKNOWN;
+        return FileTypes::Unknown;
     }
     Common::FS::IOFile file;
     file.Open(filepath, Common::FS::FileAccessMode::Read);
@@ -18,7 +18,7 @@ FileTypes DetectFileType(const std::string& filepath) {
     file.Close();
     switch (magic) {
     case 0x544e437f: // PS4 PKG
-        return FILETYPE_PKG;
+        return FileTypes::Pkg;
     }
-    return FILETYPE_UNKNOWN;
+    return FileTypes::Unknown;
 }
