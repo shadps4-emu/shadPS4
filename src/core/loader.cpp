@@ -5,6 +5,8 @@
 #include "common/types.h"
 #include "loader.h"
 
+namespace Loader {
+
 FileTypes DetectFileType(const std::string& filepath) {
     // No file loaded
     if (filepath.empty()) {
@@ -22,3 +24,5 @@ FileTypes DetectFileType(const std::string& filepath) {
     }
     return FileTypes::Unknown;
 }
+
+} // namespace Loader

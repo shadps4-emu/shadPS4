@@ -5,9 +5,12 @@
 
 #include <string>
 
+namespace Loader {
+
 enum class FileTypes {
     Unknown,
     Pkg,
 };
 
 FileTypes DetectFileType(const std::string& filepath);
+} // namespace Loader
