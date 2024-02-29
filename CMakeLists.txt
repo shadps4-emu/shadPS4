@@ -12,6 +12,13 @@ endif()
 
 project(shadps4)
 
+option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
+
+if(ENABLE_QT_GUI)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+    qt_standard_project_setup()
+endif()
+
 # This function should be passed a list of all files in a target. It will automatically generate
 # file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
 # one in the filesystem.
@@ -128,11 +135,78 @@ set(HOST_SOURCES src/Emulator/Host/controller.cpp
 )
 
 # the above is shared in sdl and qt version (TODO share them all)
-set(COMMON src/common/types.h
-           src/common/endian.h
+
+if(ENABLE_QT_GUI)
+    set(QT_GUI 
+    src/qt_gui/main_window_ui.h
+    src/qt_gui/main_window.cpp
+    src/qt_gui/main_window.h
+    src/qt_gui/gui_settings.cpp
+    src/qt_gui/gui_settings.h
+    src/qt_gui/settings.cpp
+    src/qt_gui/settings.h
+    src/qt_gui/gui_save.h
+    src/qt_gui/custom_dock_widget.h
+    src/qt_gui/custom_table_widget_item.cpp
+    src/qt_gui/custom_table_widget_item.h
+    src/qt_gui/game_list_item.h
+    src/qt_gui/game_list_table.cpp
+    src/qt_gui/game_list_table.h
+    src/qt_gui/game_list_utils.h
+    src/qt_gui/game_info.h
+    src/qt_gui/game_list_grid.cpp
+    src/qt_gui/game_list_grid.h
+    src/qt_gui/game_list_grid_delegate.cpp
+    src/qt_gui/game_list_grid_delegate.h
+    src/qt_gui/game_list_frame.cpp
+    src/qt_gui/game_list_frame.h
+    src/qt_gui/qt_utils.h
+    src/qt_gui/game_install_dialog.cpp
+    src/qt_gui/game_install_dialog.h
+    src/qt_gui/main_window_themes.cpp
+    src/qt_gui/main_window_themes.h
+    src/qt_gui/main.cpp
+    )
+endif()
+
+set(COMMON src/common/logging/backend.cpp
+           src/common/logging/backend.h
+           src/common/logging/filter.cpp
+           src/common/logging/filter.h
+           src/common/logging/formatter.h
+           src/common/logging/log_entry.h
+           src/common/logging/log.h
+           src/common/logging/text_formatter.cpp
+           src/common/logging/text_formatter.h
+           src/common/logging/types.h
+           src/common/assert.cpp
+           src/common/assert.h
+           src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
+           src/common/debug.h
+           src/common/disassembler.cpp
+           src/common/disassembler.h
+           src/common/discord.cpp
+           src/common/discord.h
+           src/common/endian.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/error.cpp
+           src/common/error.h
+           src/common/native_clock.cpp
+           src/common/native_clock.h
+           src/common/path_util.cpp
+           src/common/path_util.h
+           src/common/rdtsc.cpp
+           src/common/rdtsc.h
+           src/common/singleton.h
+           src/common/string_util.cpp
+           src/common/string_util.h
+           src/common/thread.cpp
+           src/common/thread.h
+           src/common/types.h
+           src/common/uint128.h
+           src/common/version.h
 )
 
 set(CORE src/core/loader.cpp
@@ -152,40 +226,21 @@ set(FILE_FORMAT src/core/file_format/pfs.h
                 src/core/file_format/psf.h
 )
 
+set(UTILITIES   src/Util/config.cpp
+                src/Util/config.h
+)
+
+if(ENABLE_QT_GUI)
+qt_add_executable(shadps4
+    ${QT_GUI}
+    ${COMMON}
+    ${CORE}
+    ${CRYPTO}
+    ${FILE_FORMAT}
+    ${UTILITIES}
+)
+else()
 add_executable(shadps4
-    src/common/assert.cpp
-    src/common/assert.h
-    src/common/bounded_threadsafe_queue.h
-    src/common/debug.h
-    src/common/disassembler.cpp
-    src/common/disassembler.h
-    src/common/discord.cpp
-    src/common/discord.h
-    src/common/error.cpp
-    src/common/error.h
-    src/common/path_util.cpp
-    src/common/path_util.h
-    src/common/logging/backend.cpp
-    src/common/logging/backend.h
-    src/common/logging/filter.cpp
-    src/common/logging/filter.h
-    src/common/logging/formatter.h
-    src/common/logging/log_entry.h
-    src/common/logging/log.h
-    src/common/logging/text_formatter.cpp
-    src/common/logging/text_formatter.h
-    src/common/logging/types.h
-    src/common/native_clock.cpp
-    src/common/native_clock.h
-    src/common/rdtsc.cpp
-    src/common/rdtsc.h
-    src/common/singleton.h
-    src/common/string_util.cpp
-    src/common/string_util.h
-    src/common/thread.cpp
-    src/common/thread.h
-    src/common/uint128.h
-    src/common/version.h
     ${LIBC_SOURCES}
     ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
@@ -196,8 +251,6 @@ add_executable(shadps4
     src/main.cpp
     src/core/loader/elf.cpp
     src/core/loader/elf.h
-    src/Util/config.cpp
-    src/Util/config.h
     src/core/virtual_memory.cpp
     src/core/virtual_memory.h
     src/core/linker.cpp
@@ -252,17 +305,27 @@ add_executable(shadps4
     ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
+    ${UTILITIES}
 )
+endif()
 
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11)
-target_link_libraries(shadps4 PRIVATE discord-rpc SDL3-shared vulkan-1 xxhash Zydis)
+target_link_libraries(shadps4 PRIVATE discord-rpc vulkan-1 xxhash Zydis)
+
+if(NOT ENABLE_QT_GUI)
+  target_link_libraries(shadps4 PRIVATE SDL3-shared)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     target_link_libraries(shadps4 PRIVATE cryptoppwin zlib)
 else()
     target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib)
+endif()
+
+if(ENABLE_QT_GUI)
+   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent)
 endif()
 
 if (WIN32)
@@ -277,6 +340,13 @@ endif()
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(ENABLE_QT_GUI)
+set_target_properties(shadps4 PROPERTIES
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
+)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -287,10 +357,13 @@ add_custom_command(TARGET shadps4 POST_BUILD
      "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ng2.dll" $<TARGET_FILE_DIR:shadps4>)
 endif()
 
+if(NOT ENABLE_QT_GUI)
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:SDL3-shared>
      $<TARGET_FILE_DIR:shadps4>)
+endif()
+
 if (WIN32)
  add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different

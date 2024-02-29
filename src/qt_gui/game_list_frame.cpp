@@ -9,7 +9,7 @@
 #include <QScrollBar>
 
 #include "custom_table_widget_item.h"
-#include "emulator/file_format/psf.h"
+#include "core/file_format/psf.h"
 #include "game_list_frame.h"
 #include "gui_settings.h"
 #include "qt_utils.h"

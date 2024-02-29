@@ -7,8 +7,8 @@
 #include <QProgressDialog>
 
 #include "common/io_file.h"
-#include "emulator/file_format/pkg.h"
-#include "emulator/loader.h"
+#include "core/file_format/pkg.h"
+#include "core/loader.h"
 #include "game_install_dialog.h"
 #include "game_list_frame.h"
 #include "gui_settings.h"
