@@ -16,7 +16,7 @@ FileTypes DetectFileType(const std::string& filepath) {
     file.Open(filepath, Common::FS::FileAccessMode::Read);
     file.Seek(0);
     u32 magic;
-    file.ReadRaw<u8>(&magic, sizeof(magic));
+    file.Read(magic);
     file.Close();
     switch (magic) {
     case 0x544e437f: // PS4 PKG
