@@ -4,6 +4,6 @@ Exec=shadps4
 Terminal=false
 Type=Application
 Icon=shadps4
-Comment=gui for shadps4
+Comment=shadps4 emulator
 Categories=Game;
 StartupWMClass=shadps4;
