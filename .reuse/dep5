@@ -9,5 +9,7 @@ Files: CMakeSettings.json
        .github/shadps4.desktop
        .github/shadps4.png
 	   .gitmodules
+	   src/images/shadps4.ico
+	   src/shadps4.rc
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later

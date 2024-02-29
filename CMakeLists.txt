@@ -127,11 +127,16 @@ set(HOST_SOURCES src/Emulator/Host/controller.cpp
                  src/Emulator/Host/controller.h
 )
 
+# the above is shared in sdl and qt version (TODO share them all)
 set(COMMON src/common/types.h
            src/common/endian.h
            src/common/concepts.h
            src/common/io_file.cpp
            src/common/io_file.h
+)
+
+set(CORE src/core/loader.cpp
+         src/core/loader.h
 )
 
 set(CRYPTO src/core/crypto/crypto.cpp
@@ -244,6 +249,7 @@ add_executable(shadps4
     src/core/tls.cpp
     src/core/tls.h
     ${COMMON}
+    ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
 )
@@ -263,6 +269,10 @@ if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+endif()
+
+if(WIN32)
+    target_sources(shadps4 PRIVATE src/shadps4.rc)
 endif()
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
