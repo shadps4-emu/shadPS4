@@ -131,7 +131,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
             file.Read(seed_digest);
 
             for (int i = 0; i < 7; i++) {
-                file.ReadRaw<u8>(digest1[i].data(), digest1[i].size());
+                file.Read(digest1[i]);
             }
 
             for (int i = 0; i < 7; i++) {
