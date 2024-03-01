@@ -24,6 +24,7 @@ GameInstallDialog::GameInstallDialog(std::shared_ptr<GuiSettings> gui_settings)
     layout->addWidget(SetupDialogActions());
 
     setWindowTitle("Shadps4 - Choose directory");
+    setWindowIcon(QIcon(":/images/shadps4.ico"));
 }
 
 GameInstallDialog::~GameInstallDialog() {}

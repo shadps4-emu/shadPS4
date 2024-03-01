@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/images">
+    	<file alias="shadps4.ico">images/shadps4.ico</file>
+    </qresource>
+</RCC>

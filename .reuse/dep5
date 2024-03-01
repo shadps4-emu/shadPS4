@@ -26,6 +26,6 @@ Files: CMakeSettings.json
        src/images/stop_icon.png
        src/images/themes_icon.png
 	   src/shadps4.rc
-	   src/shadps4.qrc
+	   src/resources.qrc
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later
