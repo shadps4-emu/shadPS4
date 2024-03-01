@@ -37,10 +37,15 @@ private Q_SLOTS:
     void SaveWindowState() const;
 
 private:
+    void AddUiWidgets();
     void CreateActions();
     void CreateDockWindows();
     void CreateConnects();
     void SetLastUsedTheme();
+    void SetUiIcons(bool isWhite);
+    QIcon recolorIcon(const QIcon& icon, bool isWhite);
+
+    bool isIconBlack = false;
 
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
