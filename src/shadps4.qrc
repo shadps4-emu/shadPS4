@@ -1,0 +1,18 @@
+<RCC>
+	<qresource prefix="/">
+		<file>images/play_icon.png</file>
+		<file>images/pause_icon.png</file>
+		<file>images/stop_icon.png</file>
+		<file>images/file_icon.png</file>
+		<file>images/folder_icon.png</file>
+		<file>images/themes_icon.png</file>
+		<file>images/iconsize_icon.png</file>
+		<file>images/list_icon.png</file>
+		<file>images/grid_icon.png</file>
+		<file>images/exit_icon.png</file>
+		<file>images/settings_icon.png</file>
+		<file>images/controller_icon.png</file>
+		<file>images/refresh_icon.png</file>
+		<file>images/list_mode_icon.png</file>
+	</qresource>
+</RCC>

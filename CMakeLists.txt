@@ -138,6 +138,7 @@ set(HOST_SOURCES src/Emulator/Host/controller.cpp
 # the above is shared in sdl and qt version (TODO share them all)
 
 if(ENABLE_QT_GUI)
+qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
     set(QT_GUI 
     src/qt_gui/main_window_ui.h
     src/qt_gui/main_window.cpp
@@ -167,7 +168,7 @@ if(ENABLE_QT_GUI)
     src/qt_gui/main_window_themes.cpp
     src/qt_gui/main_window_themes.h
     src/qt_gui/main.cpp
-    src/resources.qrc
+    ${RESOURCE_FILES}
     )
 endif()
 
