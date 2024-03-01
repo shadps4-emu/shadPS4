@@ -27,20 +27,14 @@ MainWindow::~MainWindow() {
 }
 
 bool MainWindow::Init() {
-    // add toolbar widgets
-    QApplication::setStyle("Fusion");
-    ui->toolBar->setObjectName("mw_toolbar");
-    ui->sizeSlider->setRange(0, gui::game_list_max_slider_pos);
-    ui->toolBar->addWidget(ui->sizeSliderContainer);
-    ui->toolBar->addWidget(ui->mw_searchbar);
-
+    AddUiWidgets();
     CreateActions();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
 
     setMinimumSize(350, minimumSizeHint().height());
-    setWindowTitle(QString::fromStdString("ShadPS4 v0.0.2"));
+    setWindowTitle(QString::fromStdString("ShadPS4 v0.0.3"));
 
     ConfigureGuiFromSettings();
 
@@ -73,6 +67,25 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeGreen);
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
+}
+
+void MainWindow::AddUiWidgets() {
+    // add toolbar widgets
+    QApplication::setStyle("Fusion");
+    ui->toolBar->setObjectName("mw_toolbar");
+    ui->sizeSlider->setRange(0, gui::game_list_max_slider_pos);
+    ui->toolBar->addWidget(ui->playButton);
+    ui->toolBar->addWidget(ui->pauseButton);
+    ui->toolBar->addWidget(ui->stopButton);
+    ui->toolBar->addWidget(ui->settingsButton);
+    ui->toolBar->addWidget(ui->controllerButton);
+    QFrame* line = new QFrame(this);
+    line->setFrameShape(QFrame::StyledPanel);
+    line->setFrameShadow(QFrame::Sunken);
+    ui->toolBar->addWidget(line);
+    // ui->toolBar->addWidget(ui->emuRunWidget);
+    ui->toolBar->addWidget(ui->sizeSliderContainer);
+    ui->toolBar->addWidget(ui->mw_searchbar);
 }
 
 void MainWindow::CreateDockWindows() {
@@ -167,22 +180,42 @@ void MainWindow::CreateConnects() {
     connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
         m_gui_settings->SetValue(gui::mw_themes, static_cast<int>(Theme::Light));
+        if (!isIconBlack) {
+            SetUiIcons(true);
+            isIconBlack = true;
+        }
     });
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
         m_gui_settings->SetValue(gui::mw_themes, static_cast<int>(Theme::Dark));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
     });
     connect(ui->setThemeGreen, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Green, ui->mw_searchbar);
         m_gui_settings->SetValue(gui::mw_themes, static_cast<int>(Theme::Green));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
     });
     connect(ui->setThemeBlue, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Blue, ui->mw_searchbar);
         m_gui_settings->SetValue(gui::mw_themes, static_cast<int>(Theme::Blue));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
     });
     connect(ui->setThemeViolet, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Violet, ui->mw_searchbar);
         m_gui_settings->SetValue(gui::mw_themes, static_cast<int>(Theme::Violet));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
     });
 }
 
@@ -347,18 +380,69 @@ void MainWindow::SetLastUsedTheme() {
     switch (lastTheme) {
     case Theme::Light:
         ui->setThemeLight->setChecked(true);
+        isIconBlack = true;
         break;
     case Theme::Dark:
         ui->setThemeDark->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
         break;
     case Theme::Green:
         ui->setThemeGreen->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
         break;
     case Theme::Blue:
         ui->setThemeBlue->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
         break;
     case Theme::Violet:
         ui->setThemeViolet->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
         break;
     }
+}
+
+QIcon MainWindow::recolorIcon(const QIcon& icon, bool isWhite) {
+    QPixmap pixmap(icon.pixmap(icon.actualSize(QSize(120, 120)), QIcon::Normal));
+    QColor clr(isWhite ? Qt::white : Qt::black);
+    QBitmap mask = pixmap.createMaskFromColor(clr, Qt::MaskOutColor);
+    pixmap.fill(QColor(isWhite ? Qt::black : Qt::white));
+    pixmap.setMask(mask);
+    QIcon newIcon(pixmap);
+    return newIcon;
+}
+
+void MainWindow::SetUiIcons(bool isWhite) {
+    QIcon icon;
+    icon = recolorIcon(ui->bootInstallPkgAct->icon(), isWhite);
+    ui->bootInstallPkgAct->setIcon(icon);
+    icon = recolorIcon(ui->exitAct->icon(), isWhite);
+    ui->exitAct->setIcon(icon);
+    icon = recolorIcon(ui->setlistModeListAct->icon(), isWhite);
+    ui->setlistModeListAct->setIcon(icon);
+    icon = recolorIcon(ui->setlistModeGridAct->icon(), isWhite);
+    ui->setlistModeGridAct->setIcon(icon);
+    icon = recolorIcon(ui->gameInstallPathAct->icon(), isWhite);
+    ui->gameInstallPathAct->setIcon(icon);
+    icon = recolorIcon(ui->menuThemes->icon(), isWhite);
+    ui->menuThemes->setIcon(icon);
+    icon = recolorIcon(ui->menuGame_List_Icons->icon(), isWhite);
+    ui->menuGame_List_Icons->setIcon(icon);
+    icon = recolorIcon(ui->playButton->icon(), isWhite);
+    ui->playButton->setIcon(icon);
+    icon = recolorIcon(ui->pauseButton->icon(), isWhite);
+    ui->pauseButton->setIcon(icon);
+    icon = recolorIcon(ui->stopButton->icon(), isWhite);
+    ui->stopButton->setIcon(icon);
+    icon = recolorIcon(ui->settingsButton->icon(), isWhite);
+    ui->settingsButton->setIcon(icon);
+    icon = recolorIcon(ui->controllerButton->icon(), isWhite);
+    ui->controllerButton->setIcon(icon);
+    icon = recolorIcon(ui->refreshGameListAct->icon(), isWhite);
+    ui->refreshGameListAct->setIcon(icon);
+    icon = recolorIcon(ui->menuGame_List_Mode->icon(), isWhite);
+    ui->menuGame_List_Mode->setIcon(icon);
 }
