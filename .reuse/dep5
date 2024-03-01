@@ -11,5 +11,6 @@ Files: CMakeSettings.json
 	   .gitmodules
 	   src/images/shadps4.ico
 	   src/shadps4.rc
+	   src/shadps4.qrc
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later
