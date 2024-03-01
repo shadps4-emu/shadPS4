@@ -24,8 +24,10 @@ jobs:
       run: git submodule update --init --recursive
 
     - name: Install misc packages
-      run: |
-       sudo apt-get update && sudo apt install libx11-dev libgl1-mesa-glx mesa-common-dev libfuse2 libwayland-dev libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-icccm4 libxcb-image0-dev libxcb-cursor-dev libxxhash-dev libvulkan-dev
+      run: >
+       sudo apt-get update && sudo apt install libx11-dev libgl1-mesa-glx mesa-common-dev libfuse2
+       libwayland-dev libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-icccm4 libxcb-image0-dev
+       libxcb-cursor-dev libxxhash-dev libvulkan-dev
 
     - name: Install newer Clang
       run: |
@@ -57,4 +59,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-linux-qt
-        path: Shadps4-x86_64.AppImage 
+        path: Shadps4-qt.AppImage 
