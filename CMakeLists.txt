@@ -17,6 +17,7 @@ option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
     qt_standard_project_setup()
+    set(CMAKE_AUTORCC ON)
 endif()
 
 # This function should be passed a list of all files in a target. It will automatically generate
