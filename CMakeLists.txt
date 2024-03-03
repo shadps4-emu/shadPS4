@@ -229,6 +229,9 @@ set(FILE_FORMAT src/core/file_format/pfs.h
                 src/core/file_format/psf.h
 )
 
+set(FILESYSTEM src/core/file_sys/file_system.cpp
+               src/core/file_sys/file_system.h)
+
 set(UTILITIES   src/Util/config.cpp
                 src/Util/config.h
 )
@@ -240,6 +243,7 @@ qt_add_executable(shadps4
     ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
+    ${FILESYSTEM}
     ${UTILITIES}
 )
 else()
@@ -308,6 +312,7 @@ add_executable(shadps4
     ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
+    ${FILESYSTEM}
     ${UTILITIES}
 )
 endif()
