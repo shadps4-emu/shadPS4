@@ -16,7 +16,6 @@
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
-#include "core/hle/libraries/libuserservice/usr_mng_codes.h"
 #include "core/loader/symbols_resolver.h"
 #include "emulator.h"
 
@@ -306,7 +305,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
                                  const void* param) {
     PRINT_FUNCTION_NAME();
-    if (userId != SCE_USER_SERVICE_USER_ID_SYSTEM && userId != 0) {
+    if (userId != 255 && userId != 0) {
         BREAKPOINT();
     }
     if (busType != SCE_VIDEO_OUT_BUS_TYPE_MAIN) {

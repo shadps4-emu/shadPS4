@@ -43,8 +43,8 @@
 #define PRINT_UNIMPLEMENTED_FUNCTION_NAME()                                                        \
     { LOG_ERROR_IF(true, "{}()\n", __func__); }
 
-namespace Core::Libraries {
+namespace OldLibraries {
 
-void InitHLELibs(Loader::SymbolsResolver* sym);
+void InitHLELibs(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Core::Libraries

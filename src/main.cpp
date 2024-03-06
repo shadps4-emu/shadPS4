@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     mnt->mount(p.parent_path().string(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
-    Core::Libraries::InitHLELibs(&linker->getHLESymbols());
+    OldLibraries::InitHLELibs(&linker->getHLESymbols());
     linker->LoadModule(path);
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
                             nullptr);

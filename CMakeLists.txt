@@ -97,6 +97,10 @@ set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
               src/core/libraries/libscegnmdriver.cpp
               src/core/libraries/libscegnmdriver.h
+              src/core/libraries/libscesystemservice.cpp
+              src/core/libraries/libscesystemservice.h
+              src/core/libraries/libsceuserservice.cpp
+              src/core/libraries/libsceuserservice.h
 )
 set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
                  src/core/hle/libraries/libc/libc.h
@@ -113,16 +117,9 @@ set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
                  src/core/hle/libraries/libc/libc_stdlib.cpp
                  src/core/hle/libraries/libc/libc_stdlib.h
 )
-set(USERSERVICE_SOURCES src/core/hle/libraries/libuserservice/libuserservice.cpp
-                        src/core/hle/libraries/libuserservice/libuserservice.h
-)
 
 set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
                 src/core/hle/libraries/libpad/pad.h
-)
-
-set(SYSTEMSERVICE_SOURCES src/core/hle/libraries/libsystemservice/system_service.cpp
-                          src/core/hle/libraries/libsystemservice/system_service.h
 )
 
 set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
@@ -231,9 +228,7 @@ qt_add_executable(shadps4
 else()
 add_executable(shadps4
     ${LIBC_SOURCES}
-    ${USERSERVICE_SOURCES}
     ${PAD_SOURCES}
-    ${SYSTEMSERVICE_SOURCES}
     ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
     ${LIBRARIES}

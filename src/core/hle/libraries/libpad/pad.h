@@ -4,7 +4,10 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/hle/libraries/libuserservice/libuserservice.h"
+
+namespace Core::Loader {
+class SymbolsResolver;
+}
 
 namespace Core::Libraries::LibPad {
 
@@ -92,8 +95,7 @@ struct ScePadData {
 };
 
 int PS4_SYSV_ABI scePadInit();
-int PS4_SYSV_ABI scePadOpen(LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
-                            const ScePadOpenParam* pParam);
+int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const ScePadOpenParam* pParam);
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
 void padSymbolsRegister(Loader::SymbolsResolver* sym);

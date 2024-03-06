@@ -16,8 +16,7 @@ int PS4_SYSV_ABI scePadInit() {
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId userId, s32 type,
-                            s32 index, const ScePadOpenParam* pParam) {
+int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const ScePadOpenParam* pParam) {
     LOG_INFO_IF(log_file_pad, "scePadOpen userid = {} type = {} index = {}\n", userId, type, index);
     return 1; // dummy
 }
