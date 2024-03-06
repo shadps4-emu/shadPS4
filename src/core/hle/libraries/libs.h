@@ -47,4 +47,4 @@ namespace OldLibraries {
 
 void InitHLELibs(Core::Loader::SymbolsResolver* sym);
 
-} // namespace Core::Libraries
+} // namespace OldLibraries
