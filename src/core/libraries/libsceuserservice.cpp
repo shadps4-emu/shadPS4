@@ -1020,10 +1020,10 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id,int *color) {
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color) {
     // TODO fix me better
     PRINT_DUMMY_FUNCTION_NAME();
-    *color=0; // blue
+    *color = 0; // blue
     return ORBIS_OK;
 }
 
