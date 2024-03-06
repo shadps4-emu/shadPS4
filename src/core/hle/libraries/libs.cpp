@@ -15,7 +15,7 @@ namespace OldLibraries {
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Core::Libraries::LibKernel::LibKernel_Register(sym);
     HLE::Libs::Graphics::VideoOut::videoOutRegisterLib(sym);
-    Core::Libraries::LibSceGnmDriver::LibSceGnmDriver_Register(sym);    
+    Core::Libraries::LibSceGnmDriver::LibSceGnmDriver_Register(sym);
     Core::Libraries::LibPad::padSymbolsRegister(sym);
     Core::Libraries::LibC::libcSymbolsRegister(sym);
 
@@ -23,4 +23,4 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SystemService::RegisterlibSceSystemService(sym);
 }
 
-} // namespace Core::Libraries
+} // namespace OldLibraries
