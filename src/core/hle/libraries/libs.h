@@ -41,7 +41,7 @@
     { LOG_WARN_IF(true, "dummy {}()\n", __func__); }
 
 #define PRINT_UNIMPLEMENTED_FUNCTION_NAME()                                                        \
-    { LOG_ERROR_IF(true, "{}()\n", __func__); }
+    { LOG_ERROR_IF(true, "Unimplemented {}()\n", __func__); }
 
 namespace OldLibraries {
 

@@ -1020,8 +1020,10 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceGetUserColor() {
-    PRINT_UNIMPLEMENTED_FUNCTION_NAME();
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id,int *color) {
+    // TODO fix me better
+    PRINT_DUMMY_FUNCTION_NAME();
+    *color=0; // blue
     return ORBIS_OK;
 }
 
@@ -1040,8 +1042,9 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceGetUserName() {
-    PRINT_UNIMPLEMENTED_FUNCTION_NAME();
+s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
+    // TODO error checking and configurable username
+    snprintf(user_name, size, "%s", "shadps4");
     return ORBIS_OK;
 }
 

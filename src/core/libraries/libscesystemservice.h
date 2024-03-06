@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "library_common.h" 
+#include "library_common.h"
 
-namespace Libraries::SystemService{
+namespace Libraries::SystemService {
 
 struct SceSystemServiceStatus {
     s32 eventNum;
@@ -15,6 +15,11 @@ struct SceSystemServiceStatus {
     bool isGameLiveStreamingOnAir;
     bool isOutOfVrPlayArea;
     u8 reserved[];
+};
+
+struct SystemServiceDisplaySafeAreaInfo {
+    float ratio;
+    uint8_t reserved[128];
 };
 
 int PS4_SYSV_ABI sceAppMessagingClearEventFlag();
@@ -357,7 +362,7 @@ int PS4_SYSV_ABI sceSystemServiceGetAppIdOfBigApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppIdOfMiniApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppStatus();
 int PS4_SYSV_ABI sceSystemServiceGetAppType();
-int PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo();
+s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(SystemServiceDisplaySafeAreaInfo* info);
 int PS4_SYSV_ABI sceSystemServiceGetEventForDaemon();
 int PS4_SYSV_ABI sceSystemServiceGetGpuLoadEmulationMode();
 int PS4_SYSV_ABI sceSystemServiceGetHdrToneMapLuminance();
@@ -487,5 +492,5 @@ int PS4_SYSV_ABI sceSystemServiceReenableVoiceRecognition();
 int PS4_SYSV_ABI Func_6B1CDB955F0EBD65();
 int PS4_SYSV_ABI Func_CB5E885E225F69F0();
 
-void RegisterlibSceSystemService(Core::Loader::SymbolsResolver * sym);
-}
+void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym);
+} // namespace Libraries::SystemService

@@ -1708,8 +1708,10 @@ int PS4_SYSV_ABI sceSystemServiceGetAppType() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo() {
-    PRINT_UNIMPLEMENTED_FUNCTION_NAME();
+s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(SystemServiceDisplaySafeAreaInfo* info) {
+    // TODO error handling
+    PRINT_FUNCTION_NAME();
+    info->ratio = 1.0f;
     return ORBIS_OK;
 }
 
