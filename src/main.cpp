@@ -22,10 +22,10 @@
 #include "emulator.h"
 
 int main(int argc, char* argv[]) {
-    /* if (argc == 1) {
+    if (argc == 1) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
-    }*/
+    }
     Config::load("config.toml");
     Common::Log::Init(true);
     Core::Libraries::LibKernel::init_pthreads();
@@ -35,8 +35,7 @@ int main(int argc, char* argv[]) {
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
 
     // Argument 1 is the path of self file to boot
-    // const char* const path = argv[1];
-    const char* const path = "C://ps4//games//CUSA11712//eboot.bin";
+    const char* const path = argv[1];
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
