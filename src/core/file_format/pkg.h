@@ -114,8 +114,7 @@ private:
     char pkgTitleID[9];
     PKGHeader pkgheader;
 
-    std::unordered_map<int, std::string> folderMap;
-    std::unordered_map<int, std::string> extractMap;
+    std::unordered_map<int, std::filesystem::path> extractPaths;
     std::vector<pfs_fs_table> fsTable;
     std::vector<Inode> iNodeBuf;
     std::vector<u64> sectorMap;
@@ -130,8 +129,5 @@ private:
 
     std::filesystem::path pkgpath;
     std::filesystem::path current_dir;
-    std::filesystem::path parent_dir;
     std::filesystem::path extract_path;
-    std::filesystem::path game_dir;
-    std::filesystem::path title_dir;
 };

@@ -41,17 +41,6 @@ u32 GetPFSCOffset(std::span<const u8> pfs_image) {
     return -1;
 }
 
-std::filesystem::path findDirectory(const std::filesystem::path& rootFolder,
-                                    const std::filesystem::path& targetDirectory) {
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(rootFolder)) {
-        if (std::filesystem::is_directory(entry) &&
-            entry.path().filename() == targetDirectory.filename()) {
-            return entry.path();
-        }
-    }
-    return std::filesystem::path(); // Return an empty path if not found
-}
-
 PKG::PKG() = default;
 
 PKG::~PKG() = default;
@@ -198,11 +187,13 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
 
     u32 ent_size = 0;
     u32 ndinode = 0;
-
+    int ndinode_counter = 0;
+    bool dinode_reached = false;
     std::vector<char> compressedData;
     std::vector<char> decompressedData(0x10000);
-    bool dinode_reached = false;
-    // Get iNdoes.
+    extractPaths[2] = extract_path.parent_path() / GetTitleID();
+
+    // Get iNdoes and Dirents.
     for (int i = 0; i < num_blocks; i++) {
         const u64 sectorOffset = sectorMap[i];
         const u64 sectorSize = sectorMap[i + 1] - sectorOffset;
@@ -253,58 +244,31 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
                     break;
                 }
 
-                if (dot != '.' && dotdot != "..") {
-                    end_reached = true;
-                }
-
                 ent_size = dirent.entsize;
                 auto& table = fsTable.emplace_back();
                 table.name = std::string(dirent.name, dirent.namelen);
                 table.inode = dirent.ino;
                 table.type = dirent.type;
 
-                if (table.type == PFS_DIR) {
-                    folderMap[table.inode] = table.name;
+                if (table.type == PFS_CURRENT_DIR) {
+                    current_dir = extractPaths[table.inode];
+                }
+                extractPaths[table.inode] =
+                    current_dir.string() / std::filesystem::path(table.name);
+
+                if (table.type == PFS_FILE || table.type == PFS_DIR) {
+                    if (table.type == PFS_DIR) { // Create dirs.
+                        std::filesystem::create_directory(extractPaths[table.inode]);
+                    }
+                    ndinode_counter++;
+                    if ((ndinode_counter + 3) == ndinode) // 3 for root, uroot and flat_path_table.
+                        end_reached = true;
                 }
             }
-
-            // Seems to be the last entry, at least for the games I tested. To check as we go.
-            const std::string_view rightsprx(&decompressedData[0x40], 10);
-            if (rightsprx == "right.sprx" || end_reached) {
+            if (end_reached) {
                 break;
             }
         }
-    }
-
-    // Create Folders.
-    folderMap[2] = GetTitleID(); // Set up game path instead of calling it uroot
-    game_dir = extract_path.parent_path();
-    title_dir = game_dir / GetTitleID();
-
-    for (int i = 0; i < fsTable.size(); i++) {
-        const u32 inode_number = fsTable[i].inode;
-        const u32 inode_type = fsTable[i].type;
-        const auto inode_name = fsTable[i].name;
-
-        if (inode_type == PFS_CURRENT_DIR) {
-            current_dir = folderMap[inode_number];
-        } else if (inode_type == PFS_PARENT_DIR) {
-            parent_dir = folderMap[inode_number];
-            // Skip uroot folder. we create our own game uid folder
-            if (i > 1) {
-                const auto par_dir = inode_number == 2 ? findDirectory(game_dir, parent_dir)
-                                                       : findDirectory(title_dir, parent_dir);
-                const auto cur_dir = findDirectory(par_dir, current_dir);
-
-                if (cur_dir == "") {
-                    extract_path = par_dir / current_dir;
-                    std::filesystem::create_directories(extract_path);
-                } else {
-                    extract_path = cur_dir;
-                }
-            }
-        }
-        extractMap[inode_number] = extract_path.string();
     }
     return true;
 }
@@ -318,10 +282,9 @@ void PKG::ExtractFiles(const int& index) {
         int sector_loc = iNodeBuf[inode_number].loc;
         int nblocks = iNodeBuf[inode_number].Blocks;
         int bsize = iNodeBuf[inode_number].Size;
-        std::string file_extracted = extractMap[inode_number] + "/" + inode_name;
 
         Common::FS::IOFile inflated;
-        inflated.Open(file_extracted, Common::FS::FileAccessMode::Write);
+        inflated.Open(extractPaths[inode_number].string(), Common::FS::FileAccessMode::Write);
 
         Common::FS::IOFile pkgFile; // Open the file for each iteration to avoid conflict.
         pkgFile.Open(pkgpath, Common::FS::FileAccessMode::Read);
