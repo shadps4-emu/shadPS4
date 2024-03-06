@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/logging/log.h"
+#include "common/debug.h"
+#include "common/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/hle/error_codes.h"
@@ -11,37 +11,41 @@
 
 namespace Core::Libraries::LibKernel {
 
+constexpr bool log_file_fs = true; // disable it to disable logging
+
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#x}", path, flags, mode);
+    LOG_INFO_IF(log_file_fs, "sceKernelOpen path = {} flags = {:#x} mode = {:#x}\n", path, flags,
+                mode);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     // only open files support!
-    u32 handle = h->CreateHandle();
-    auto* file = h->GetFile(handle);
+    u32 handle = h->createHandle();
+    auto* file = h->getFile(handle);
     file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostFile(file->m_guest_name);
+    file->m_host_name = mnt->getHostFile(file->m_guest_name);
 
     file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
     if (!file->f.IsOpen()) {
-        h->DeleteHandle(handle);
+        h->deleteHandle(handle);
         return SCE_KERNEL_ERROR_EACCES;
     }
-    file->is_opened = true;
+    file->isOpened = true;
     return handle;
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
-    LOG_INFO(Kernel_Fs, "posix open redirect to sceKernelOpen\n");
+    LOG_INFO_IF(log_file_fs, "posix open redirect to sceKernelOpen\n");
     int result = sceKernelOpen(path, flags, mode);
-    // Posix calls different only for their return values
-    ASSERT(result >= 0);
+    if (result < 0) {
+        BREAKPOINT(); // posix calls different only for their return values
+    }
     return result;
 }
 
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->getFile(d);
     size_t total_read = 0;
     file->m_mutex.lock();
     for (int i = 0; i < iovcnt; i++) {

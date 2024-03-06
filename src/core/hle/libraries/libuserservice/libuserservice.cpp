@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/logging/log.h"
+#include "common/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libuserservice/libuserservice.h"
@@ -9,12 +9,12 @@
 namespace Core::Libraries::LibUserService {
 
 s32 PS4_SYSV_ABI sceUserServiceInitialize(const SceUserServiceInitializeParams* initParams) {
-    LOG_WARNING(Lib_UserService, "(STUBBED) called");
+    PRINT_DUMMY_FUNCTION_NAME();
     return SCE_OK;
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList) {
-    LOG_WARNING(Lib_UserService, "(STUBBED) called");
+    PRINT_DUMMY_FUNCTION_NAME();
     userIdList->user_id[0] = 1;
     userIdList->user_id[1] = -1;
     userIdList->user_id[2] = -1;

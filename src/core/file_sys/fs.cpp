@@ -8,24 +8,21 @@ namespace Core::FileSys {
 
 constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
-void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
+void MntPoints::mount(const std::string& host_folder, const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
 
     MntPair pair;
-    pair.host_path = host_folder.string();
+    pair.host_path = host_folder;
     pair.guest_path = guest_folder;
 
     m_mnt_pairs.push_back(pair);
 }
-
-void MntPoints::Unmount(const std::string& path) {} // TODO!
-
-void MntPoints::UnmountAll() {
+void MntPoints::unmount(const std::string& path) {} // TODO!
+void MntPoints::unmountAll() {
     std::scoped_lock lock{m_mutex};
     m_mnt_pairs.clear();
 }
-
-std::string MntPoints::GetHostDirectory(const std::string& guest_directory) {
+std::string MntPoints::getHostDirectory(const std::string& guest_directory) {
     std::scoped_lock lock{m_mutex};
     for (auto& pair : m_mnt_pairs) {
         if (pair.guest_path.starts_with(guest_directory)) {
@@ -41,8 +38,7 @@ std::string MntPoints::GetHostDirectory(const std::string& guest_directory) {
     }
     return "";
 }
-
-std::string MntPoints::GetHostFile(const std::string& guest_file) {
+std::string MntPoints::getHostFile(const std::string& guest_file) {
     std::scoped_lock lock{m_mutex};
 
     for (auto& pair : m_mnt_pairs) {
@@ -56,13 +52,11 @@ std::string MntPoints::GetHostFile(const std::string& guest_file) {
     }
     return "";
 }
-
-int HandleTable::CreateHandle() {
+int HandleTable::createHandle() {
     std::scoped_lock lock{m_mutex};
-
     auto* file = new File{};
-    file->is_directory = false;
-    file->is_opened = false;
+    file->isDirectory = false;
+    file->isOpened = false;
 
     int existingFilesNum = m_files.size();
 
@@ -74,20 +68,19 @@ int HandleTable::CreateHandle() {
     }
 
     m_files.push_back(file);
+
     return m_files.size() + RESERVED_HANDLES - 1;
 }
-
-void HandleTable::DeleteHandle(int d) {
+void HandleTable::deleteHandle(int d) {
     std::scoped_lock lock{m_mutex};
     delete m_files.at(d - RESERVED_HANDLES);
     m_files[d - RESERVED_HANDLES] = nullptr;
 }
 
-File* HandleTable::GetFile(int d) {
+File* HandleTable::getFile(int d) {
     std::scoped_lock lock{m_mutex};
     return m_files.at(d - RESERVED_HANDLES);
 }
-
 File* HandleTable::getFile(const std::string& host_name) {
     std::scoped_lock lock{m_mutex};
     for (auto* file : m_files) {

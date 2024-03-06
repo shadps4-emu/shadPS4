@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/logging/log.h"
+#include "common/debug.h"
+#include "common/log.h"
+#include "common/singleton.h"
+#include "core/hle/kernel/Objects/physical_memory.h"
 #include "core/hle/kernel/cpu_management.h"
 #include "core/hle/kernel/event_queues.h"
 #include "core/hle/kernel/memory_management.h"
@@ -22,19 +24,21 @@
 
 namespace Core::Libraries::LibKernel {
 
+constexpr bool log_libkernel_file = true; // disable it to disable logging
+
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 
 int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
-    UNREACHABLE();
+    BREAKPOINT();
     return 0;
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() {
-    UNREACHABLE();
+    BREAKPOINT();
 }
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
-    UNREACHABLE();
+    BREAKPOINT();
 }
 
 void PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {
@@ -67,9 +71,10 @@ int* PS4_SYSV_ABI __Error() {
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, off_t offset,
                                void** res) {
 #ifdef _WIN64
-    LOG_INFO(Kernel_Vmm, "called");
-    if (prot > 3) {
-        LOG_ERROR(Kernel_Vmm, "prot = {} not supported", prot);
+    PRINT_FUNCTION_NAME();
+    if (prot > 3) // READ,WRITE or bitwise READ | WRITE supported
+    {
+        LOG_ERROR_IF(log_libkernel_file, "sceKernelMmap prot ={} not supported\n", prot);
     }
     DWORD flProtect;
     if (prot & PROT_WRITE) {
@@ -109,11 +114,13 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
 
 PS4_SYSV_ABI void* posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
     void* ptr;
-    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap\n");
+    LOG_INFO_IF(log_libkernel_file, "posix mmap redirect to sceKernelMmap\n");
     // posix call the difference is that there is a different behaviour when it doesn't return 0 or
     // SCE_OK
     int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
-    ASSERT(result == 0);
+    if (result != 0) {
+        BREAKPOINT();
+    }
     return ptr;
 }
 

@@ -12,26 +12,22 @@
 #include <core/hle/libraries/libkernel/thread_management.h>
 #include "Util/config.h"
 #include "common/discord.h"
-#include "common/logging/backend.h"
-#include "common/path_util.h"
+#include "common/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/file_sys/fs.h"
 #include "core/hle/libraries/libs.h"
 #include "core/linker.h"
-#include "core/tls.h"
 #include "emulator.h"
 
 int main(int argc, char* argv[]) {
-    if (argc == 1) {
+    /* if (argc == 1) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
-    }
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(config_dir / "config.toml");
-    Common::Log::Initialize();
-    Common::Log::Start();
+    }*/
+    Config::load("config.toml");
+    Common::Log::Init(true);
     Core::Libraries::LibKernel::init_pthreads();
     auto width = Config::getScreenWidth();
     auto height = Config::getScreenHeight();
@@ -39,15 +35,15 @@ int main(int argc, char* argv[]) {
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
 
     // Argument 1 is the path of self file to boot
-    const char* const path = argv[1];
+    // const char* const path = argv[1];
+    const char* const path = "C://ps4//games//CUSA11712//eboot.bin";
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
-    mnt->Mount(p.parent_path(), "/app0");
+    mnt->mount(p.parent_path().string(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Core::Libraries::InitHLELibs(&linker->getHLESymbols());
-    Core::InstallTlsHandler();
     linker->LoadModule(path);
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
                             nullptr);

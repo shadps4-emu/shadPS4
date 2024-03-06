@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/logging/log.h"
+#include "common/debug.h"
+#include "common/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/hle/libraries/libs.h"
@@ -11,6 +11,8 @@ namespace Core::Libraries::LibKernel {
 
 thread_local ScePthread g_pthread_self{};
 PThreadCxt* g_pthread_cxt = nullptr;
+
+constexpr bool log_pthread_file = true; // disable it to disable logging
 
 void init_pthreads() {
     g_pthread_cxt = new PThreadCxt{};
@@ -71,7 +73,9 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
         pstate = PTHREAD_CREATE_DETACHED;
         break;
     default:
-        UNREACHABLE_MSG("Invalid detachstate: {}", detachstate);
+        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetdetachstate invalid detachstate: {}\n",
+                     detachstate);
+        std::exit(0);
     }
 
     // int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate); doesn't seem to work
@@ -97,7 +101,9 @@ int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inherit
         pinherit_sched = PTHREAD_INHERIT_SCHED;
         break;
     default:
-        UNREACHABLE_MSG("Invalid inheritSched: {}", inheritSched);
+        LOG_TRACE_IF(log_pthread_file, "scePthreadAttrSetinheritsched invalid inheritSched: {}\n",
+                     inheritSched);
+        std::exit(0);
     }
 
     int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
@@ -132,7 +138,9 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
 
     int ppolicy = SCHED_OTHER; // winpthreads only supports SCHED_OTHER
     if (policy != SCHED_OTHER) {
-        LOG_ERROR(Kernel_Pthread, "policy={} not supported by winpthreads\n", policy);
+        LOG_TRACE_IF(log_pthread_file,
+                     "scePthreadAttrSetschedpolicy policy={} not supported by winpthreads\n",
+                     policy);
     }
     (*attr)->policy = policy;
 
@@ -146,7 +154,7 @@ ScePthread PS4_SYSV_ABI scePthreadSelf() {
 
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
 
     if (pattr == nullptr || *pattr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -158,7 +166,7 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
 }
 
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
 
     if (thread == nullptr) {
         return SCE_KERNEL_ERROR_ESRCH;
@@ -170,10 +178,12 @@ int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpuma
 }
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   pthreadEntryFunc start_routine, void* arg, const char* name) {
-    LOG_INFO(Kernel_Pthread, "(STUBBED) called");
+    PRINT_DUMMY_FUNCTION_NAME();
     return 0;
 }
-
+/****
+ * Mutex calls
+ */
 void* createMutex(void* addr) {
     if (addr == nullptr || *static_cast<ScePthreadMutex*>(addr) != nullptr) {
         return addr;
@@ -187,7 +197,7 @@ void* createMutex(void* addr) {
 
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
                                      const char* name) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -205,7 +215,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
 
     if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", name, result);
+        LOG_INFO_IF(log_pthread_file, "mutex_init name={},result={}\n", name, result);
     }
 
     switch (result) {
@@ -254,7 +264,8 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
         ptype = PTHREAD_MUTEX_NORMAL;
         break;
     default:
-        UNREACHABLE_MSG("Invalid type: {}", type);
+        LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSettype invalid type: {}\n", type);
+        std::exit(0);
     }
 
     int result = pthread_mutexattr_settype(&(*attr)->pth_mutex_attr, ptype);
@@ -275,7 +286,9 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
         pprotocol = PTHREAD_PRIO_PROTECT;
         break;
     default:
-        UNREACHABLE_MSG("Invalid protocol: {}", protocol);
+        LOG_TRACE_IF(log_pthread_file, "scePthreadMutexattrSetprotocol invalid protocol: {}\n",
+                     protocol);
+        std::exit(0);
     }
 
     int result = 0; // pthread_mutexattr_setprotocol(&(*attr)->p, pprotocol); //it appears that
@@ -285,7 +298,7 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
     mutex = static_cast<ScePthreadMutex*>(createMutex(mutex));
 
     if (mutex == nullptr) {
@@ -293,7 +306,8 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     }
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexLock name={} result={}\n", (*mutex)->name,
+                result);
     switch (result) {
     case 0:
         return SCE_OK;
@@ -308,14 +322,15 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     }
 }
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
     mutex = static_cast<ScePthreadMutex*>(createMutex(mutex));
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+    LOG_INFO_IF(log_pthread_file, "scePthreadMutexUnlock name={} result={}\n", (*mutex)->name,
+                result);
     switch (result) {
     case 0:
         return SCE_OK;
@@ -329,6 +344,9 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     }
 }
 
+/****
+ * Cond calls
+ */
 void* createCond(void* addr) {
     if (addr == nullptr || *static_cast<ScePthreadCond*>(addr) != nullptr) {
         return addr;
@@ -361,7 +379,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
 
     if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+        LOG_INFO_IF(log_pthread_file, "cond init name={},result={}\n", (*cond)->name, result);
     }
 
     switch (result) {
@@ -394,7 +412,7 @@ int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
 }
 
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread, "called");
+    PRINT_FUNCTION_NAME();
     cond = static_cast<ScePthreadCond*>(createCond(cond));
 
     if (cond == nullptr) {
@@ -403,13 +421,15 @@ int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
 
     int result = pthread_cond_broadcast(&(*cond)->cond);
 
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+    LOG_INFO_IF(log_pthread_file, "cond broadcast name={},result={}\n", (*cond)->name, result);
 
     return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
 }
-
+/****
+ * Posix calls
+ */
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr) {
-    LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
+    LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_init redirect to scePthreadMutexInit\n");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -421,7 +441,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthre
 }
 
 int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
-    LOG_INFO(Kernel_Pthread, "posix pthread_mutex_lock redirect to scePthreadMutexLock");
+    LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_lock redirect to scePthreadMutexLock\n");
     int result = scePthreadMutexLock(mutex);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -433,7 +453,7 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
-    LOG_INFO(Kernel_Pthread, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock");
+    LOG_INFO_IF(log_pthread_file, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock\n");
     int result = scePthreadMutexUnlock(mutex);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -445,8 +465,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast");
+    LOG_INFO_IF(log_pthread_file,
+                "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast\n");
     int result = scePthreadCondBroadcast(cond);
     if (result != 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP

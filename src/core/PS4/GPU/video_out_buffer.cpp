@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/logging/log.h"
+#include "common/debug.h"
+#include "common/log.h"
 #include "core/PS4/GPU/tile_manager.h"
 #include "core/PS4/GPU/video_out_buffer.h"
 #include "vulkan_util.h"
+
+constexpr bool log_file_videoOutBuffer = true; // disable it to disable logging
 
 static void update_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params, void* obj,
                         const u64* virtual_addr, const u64* size, int virtual_addr_num) {
@@ -53,7 +55,8 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
         vk_format = VK_FORMAT_B8G8R8A8_SRGB;
         break;
     default:
-        UNREACHABLE_MSG("Unknown pixelFormat  = {}", pixel_format);
+        LOG_CRITICAL_IF(log_file_videoOutBuffer, "unknown pixelFormat  = {}\n", pixel_format);
+        std::exit(0);
     }
 
     vk_obj->extent.width = width;
@@ -88,7 +91,8 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     vkCreateImage(ctx->m_device, &image_info, nullptr, &vk_obj->image);
 
     if (vk_obj->image == nullptr) {
-        UNREACHABLE_MSG("vk_obj->image is null");
+        LOG_CRITICAL_IF(log_file_videoOutBuffer, "vk_obj->image is null\n");
+        std::exit(0);
     }
 
     vkGetImageMemoryRequirements(ctx->m_device, vk_obj->image, &mem->requirements);
@@ -98,15 +102,19 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
     bool allocated = GPU::vulkanAllocateMemory(ctx, mem);
 
     if (!allocated) {
-        UNREACHABLE_MSG("Can't allocate vulkan memory");
+        LOG_CRITICAL_IF(log_file_videoOutBuffer, "can't allocate vulkan memory\n");
+        std::exit(0);
     }
 
     vkBindImageMemory(ctx->m_device, vk_obj->image, mem->memory, mem->offset);
 
     vk_obj->memory = *mem;
 
-    LOG_INFO(Lib_VideoOut, "videoOutBuffer create object width = {}, height = {}, size = {}", width,
-             height, *size);
+    LOG_INFO_IF(log_file_videoOutBuffer, "videoOutBuffer create object\n");
+    LOG_INFO_IF(log_file_videoOutBuffer, "mem  requirements.size = {}\n", mem->requirements.size);
+    LOG_INFO_IF(log_file_videoOutBuffer, "width                  = {}\n", width);
+    LOG_INFO_IF(log_file_videoOutBuffer, "height                 = {}\n", height);
+    LOG_INFO_IF(log_file_videoOutBuffer, "size                   = {}\n", *size);
 
     update_func(ctx, params, vk_obj, virtual_addr, size, virtual_addr_num);
 
@@ -131,7 +139,8 @@ static void* create_func(HLE::Libs::Graphics::GraphicCtx* ctx, const u64* params
                       &vk_obj->image_view[HLE::Libs::Graphics::VulkanImage::VIEW_DEFAULT]);
 
     if (vk_obj->image_view[HLE::Libs::Graphics::VulkanImage::VIEW_DEFAULT] == nullptr) {
-        UNREACHABLE_MSG("vk_obj->image_view is null");
+        LOG_CRITICAL_IF(log_file_videoOutBuffer, "vk_obj->image_view is null\n");
+        std::exit(0);
     }
 
     return vk_obj;

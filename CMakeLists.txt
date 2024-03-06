@@ -172,21 +172,7 @@ qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
     )
 endif()
 
-set(COMMON src/common/logging/backend.cpp
-           src/common/logging/backend.h
-           src/common/logging/filter.cpp
-           src/common/logging/filter.h
-           src/common/logging/formatter.h
-           src/common/logging/log_entry.h
-           src/common/logging/log.h
-           src/common/logging/text_formatter.cpp
-           src/common/logging/text_formatter.h
-           src/common/logging/types.h
-           src/common/assert.cpp
-           src/common/assert.h
-           src/common/bounded_threadsafe_queue.h
-           src/common/concepts.h
-           src/common/debug.h
+set(COMMON src/common/debug.h
            src/common/disassembler.cpp
            src/common/disassembler.h
            src/common/discord.cpp
@@ -194,22 +180,22 @@ set(COMMON src/common/logging/backend.cpp
            src/common/endian.h
            src/common/io_file.cpp
            src/common/io_file.h
-           src/common/error.cpp
-           src/common/error.h
            src/common/native_clock.cpp
            src/common/native_clock.h
-           src/common/path_util.cpp
-           src/common/path_util.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/singleton.h
            src/common/string_util.cpp
            src/common/string_util.h
-           src/common/thread.cpp
-           src/common/thread.h
            src/common/types.h
            src/common/uint128.h
            src/common/version.h
+           src/common/fs_file.cpp
+           src/common/fs_file.h
+           src/common/log.cpp
+           src/common/log.h
+           src/common/io_file.cpp
+           src/common/io_file.h
 )
 
 set(CORE src/core/loader.cpp
@@ -302,8 +288,6 @@ add_executable(shadps4
     src/core/PS4/GPU/tile_manager.h
     src/core/hle/libraries/libkernel/time_management.cpp
     src/core/hle/libraries/libkernel/time_management.h
-    src/core/tls.cpp
-    src/core/tls.h
     ${COMMON}
     ${CORE}
     ${CRYPTO}
@@ -314,7 +298,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE discord-rpc vulkan-1 xxhash Zydis)
 
 if(NOT ENABLE_QT_GUI)

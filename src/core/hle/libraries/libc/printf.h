@@ -59,7 +59,6 @@
 #include <cstdbool>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <string>
 
 #include "va_ctx.h"

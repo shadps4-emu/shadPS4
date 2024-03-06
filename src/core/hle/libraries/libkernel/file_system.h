@@ -13,7 +13,7 @@ namespace Core::Libraries::LibKernel {
 
 struct SceKernelIovec {
     void* iov_base;
-    std::size_t iov_len;
+    size_t iov_len;
 };
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, /* SceKernelMode*/ u16 mode);

@@ -1,44 +1,51 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/logging/log.h"
+#include "common/debug.h"
+#include "common/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/kernel/event_queues.h"
+#include "core/hle/libraries/libs.h"
 
 namespace Core::Kernel {
 
+constexpr bool log_file_equeues = true; // disable it to disable logging
+
 int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
+    PRINT_FUNCTION_NAME();
+
     if (eq == nullptr) {
-        LOG_ERROR(Kernel_Event, "Event queue is null!");
+        LOG_TRACE_IF(log_file_equeues,
+                     "sceKernelCreateEqueue returned SCE_KERNEL_ERROR_EINVAL eq invalid\n");
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (name == nullptr) {
-        LOG_ERROR(Kernel_Event, "Event queue name is invalid!");
+        LOG_TRACE_IF(log_file_equeues,
+                     "sceKernelCreateEqueue returned SCE_KERNEL_ERROR_EFAULT name invalid\n");
         return SCE_KERNEL_ERROR_EFAULT;
     }
     if (name == NULL) {
-        LOG_ERROR(Kernel_Event, "Event queue name is null!");
+        LOG_TRACE_IF(log_file_equeues,
+                     "sceKernelCreateEqueue returned SCE_KERNEL_ERROR_EINVAL name is null\n");
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    // Maximum is 32 including null terminator
-    static constexpr size_t MaxEventQueueNameSize = 32;
-    if (std::strlen(name) > MaxEventQueueNameSize) {
-        LOG_ERROR(Kernel_Event, "Event queue name exceeds 32 bytes!");
+    if (strlen(name) > 31) { // max is 32 including null terminator
+        LOG_TRACE_IF(log_file_equeues,
+                     "sceKernelCreateEqueue returned SCE_KERNEL_ERROR_ENAMETOOLONG name size "
+                     "exceeds 32 bytes\n");
         return SCE_KERNEL_ERROR_ENAMETOOLONG;
     }
-
-    LOG_INFO(Kernel_Event, "name = {}", name);
-
     *eq = new EqueueInternal;
     (*eq)->setName(std::string(name));
+
+    LOG_INFO_IF(log_file_equeues, "sceKernelCreateEqueue created with name \"{}\"\n", name);
     return SCE_OK;
 }
 
 int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int num, int* out,
                                      SceKernelUseconds* timo) {
-    LOG_INFO(Kernel_Event, "num = {}", num);
+    PRINT_FUNCTION_NAME();
 
     if (eq == nullptr) {
         return SCE_KERNEL_ERROR_EBADF;
@@ -59,10 +66,10 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     if (timo != nullptr) {
         // Only events that have already arrived at the time of this function call can be received
         if (*timo == 0) {
-            UNREACHABLE();
+            BREAKPOINT();
         } else {
             // Wait until an event arrives with timing out
-            UNREACHABLE();
+            BREAKPOINT();
         }
     }
 

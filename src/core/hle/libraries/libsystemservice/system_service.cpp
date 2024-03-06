@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/logging/log.h"
+#include "common/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libsystemservice/system_service.h"
@@ -9,7 +9,7 @@
 namespace Core::Libraries::LibSystemService {
 
 s32 PS4_SYSV_ABI sceSystemServiceHideSplashScreen() {
-    LOG_WARNING(Lib_SystemService, "(STUBBED) called");
+    PRINT_DUMMY_FUNCTION_NAME();
     return SCE_OK;
 }
 

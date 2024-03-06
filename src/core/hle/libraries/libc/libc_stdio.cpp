@@ -1,17 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/singleton.h"
-#include "core/file_sys/fs.h"
+#include "common/debug.h"
+#include "common/log.h"
 #include "core/hle/libraries/libc/libc_stdio.h"
 
 namespace Core::Libraries::LibC {
 
-std::FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    return std::fopen(mnt->GetHostFile(filename).c_str(), mode);
-}
+constexpr bool log_file_libc = true; // disable it to disable logging
 
 int PS4_SYSV_ABI ps4_printf(VA_ARGS) {
     VA_CTX(ctx);
@@ -24,8 +20,8 @@ int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
         VA_CTX(ctx);
         return printf_ctx(&ctx);
     }
-
-    UNREACHABLE_MSG("Unimplemented fprintf case");
+    LOG_ERROR_IF(log_file_libc, "libc:Unimplemented fprintf case\n");
+    BREAKPOINT();
     return 0;
 }
 

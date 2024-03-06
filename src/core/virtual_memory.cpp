@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "common/error.h"
-#include "common/logging/log.h"
 #include "core/virtual_memory.h"
+
+#include "common/log.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -73,7 +72,7 @@ u64 memory_alloc(u64 address, u64 size, MemoryMode mode) {
 
     if (ptr == 0) {
         auto err = static_cast<u32>(GetLastError());
-        LOG_ERROR(Common_Memory, "VirtualAlloc() failed: 0x{:X}", err);
+        LOG_ERROR_IF(true, "VirtualAlloc() failed: 0x{:X}\n", err);
     }
 #else
     auto ptr = reinterpret_cast<uintptr_t>(
@@ -81,7 +80,7 @@ u64 memory_alloc(u64 address, u64 size, MemoryMode mode) {
              PROT_EXEC | PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
     if (ptr == reinterpret_cast<uintptr_t> MAP_FAILED) {
-        LOG_ERROR(Common_Memory, "mmap() failed: {}", std::strerror(errno));
+        LOG_ERROR_IF(true, "mmap() failed: {}\n", std::strerror(errno));
     }
 #endif
     return ptr;
@@ -92,7 +91,7 @@ bool memory_protect(u64 address, u64 size, MemoryMode mode, MemoryMode* old_mode
     if (VirtualProtect(reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)), size,
                        convertMemoryMode(mode), &old_protect) == 0) {
         auto err = static_cast<u32>(GetLastError());
-        LOG_ERROR(Common_Memory, "VirtualProtect() failed: 0x{:X}", err);
+        LOG_ERROR_IF(true, "VirtualProtect() failed: 0x{:X}\n", err);
         return false;
     }
     if (old_mode != nullptr) {
@@ -101,10 +100,6 @@ bool memory_protect(u64 address, u64 size, MemoryMode mode, MemoryMode* old_mode
     return true;
 #else
     int ret = mprotect(reinterpret_cast<void*>(address), size, convertMemoryMode(mode));
-    if (ret != 0) {
-        const auto error = Common::GetLastErrorMsg();
-        ASSERT(false);
-    }
     return true;
 #endif
 }
@@ -115,7 +110,7 @@ bool memory_flush(u64 address, u64 size) {
                                 reinterpret_cast<LPVOID>(static_cast<uintptr_t>(address)),
                                 size) == 0) {
         auto err = static_cast<u32>(GetLastError());
-        LOG_ERROR(Common_Memory, "FlushInstructionCache() failed: 0x{:X}", err);
+        LOG_ERROR_IF(true, "FlushInstructionCache() failed: 0x{:X}\n", err);
         return false;
     }
     return true;
@@ -125,7 +120,7 @@ bool memory_flush(u64 address, u64 size) {
 }
 bool memory_patch(u64 vaddr, u64 value) {
     MemoryMode old_mode{};
-    // memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
+    memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
 
     auto* ptr = reinterpret_cast<uint64_t*>(vaddr);
 
@@ -133,7 +128,7 @@ bool memory_patch(u64 vaddr, u64 value) {
 
     *ptr = value;
 
-    // memory_protect(vaddr, 8, old_mode, nullptr);
+    memory_protect(vaddr, 8, old_mode, nullptr);
 
     // if mode is executable flush it so insure that cpu finds it
     if (containsExecuteMode(old_mode)) {
@@ -166,13 +161,15 @@ u64 memory_alloc_aligned(u64 address, u64 size, MemoryMode mode, u64 alignment) 
 
     if (ptr == 0) {
         auto err = static_cast<u32>(GetLastError());
-        LOG_ERROR(Common_Memory, "VirtualAlloc2() failed: 0x{:X}", err);
+        LOG_ERROR_IF(true, "VirtualAlloc2() failed: 0x{:X}\n", err);
     }
     return ptr;
 #else
     void* hint_address = reinterpret_cast<void*>(AlignUp(address, alignment));
     void* ptr = mmap(hint_address, size, convertMemoryMode(mode), MAP_ANON | MAP_PRIVATE, -1, 0);
-    ASSERT(ptr != MAP_FAILED);
+    if (ptr == MAP_FAILED) {
+        std::abort();
+    }
     return reinterpret_cast<u64>(ptr);
 #endif
 }

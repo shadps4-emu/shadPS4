@@ -197,6 +197,7 @@ void emuRun() {
             }
         }
     }
+    std::exit(0);
 }
 
 HLE::Libs::Graphics::GraphicCtx* getGraphicCtx() {

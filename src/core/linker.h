@@ -51,7 +51,6 @@ struct PS4ThreadLocal {
     u64 image_size = 0;
     u64 handler_virtual_addr = 0;
 };
-
 struct DynamicModuleInfo {
     void* hash_table = nullptr;
     u64 hash_table_size = 0;
@@ -98,7 +97,9 @@ struct DynamicModuleInfo {
 struct Module {
     Loader::Elf elf;
     u64 aligned_base_size = 0;
-    u64 base_virtual_addr = 0;
+    u64 base_virtual_addr = 0; // Base virtual address
+
+    Linker* linker = nullptr;
 
     std::vector<u8> m_dynamic;
     std::vector<u8> m_dynamic_data;
@@ -115,8 +116,8 @@ public:
     Linker();
     virtual ~Linker();
 
-    Module* LoadModule(const std::filesystem::path& elf_name);
-    Module* FindModule(u32 id = 0);
+    Module* LoadModule(const std::string& elf_name);
+    Module* FindModule(/*u32 id*/);
     void LoadModuleToMemory(Module* m);
     void LoadDynamicInfo(Module* m);
     void LoadSymbols(Module* m);
@@ -132,7 +133,7 @@ private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);
     const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
 
-    std::vector<std::unique_ptr<Module>> m_modules;
+    std::vector<Module> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
     std::mutex m_mutex;
 };
