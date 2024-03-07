@@ -1,13 +1,89 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+// reference
+// https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/blob/master/include/orbis/_types/sys_service.h
 #pragma once
 
 #include "library_common.h"
 
 namespace Libraries::SystemService {
 
-struct SceSystemServiceStatus {
+enum OrbisSystemServiceParamId : s32 {
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG = 1,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT = 2,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT = 3,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_ZONE = 4,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_SUMMERTIME = 5,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_SYSTEM_NAME = 6,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_GAME_PARENTAL_LEVEL = 7,
+    ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN = 1000
+};
+
+enum OrbisSystemParamDateFormat : s32 {
+    ORBIS_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD = 0,
+    ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY = 1,
+    ORBIS_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY = 2
+};
+
+enum OrbisSystemParamTimeFormat : s32 {
+    ORBIS_SYSTEM_PARAM_TIME_FORMAT_12HOUR = 0,
+    ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR = 1
+};
+
+enum OrbisSystemParamGameParentalLevel : s32 {
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF = 0,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL01 = 1,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL02 = 2,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL03 = 3,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL04 = 4,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL05 = 5,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL06 = 6,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL07 = 7,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL08 = 8,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL09 = 9,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL10 = 10,
+    ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL11 = 11
+};
+
+enum OrbisSystemParamEnterButtonAssign : s32 {
+    ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CIRCLE = 0,
+    ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS = 1
+};
+
+enum OrbisSystemParamLanguage : s32 {
+    ORBIS_SYSTEM_PARAM_LANG_JAPANESE = 0,
+    ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US = 1,
+    ORBIS_SYSTEM_PARAM_LANG_FRENCH = 2,
+    ORBIS_SYSTEM_PARAM_LANG_SPANISH = 3,
+    ORBIS_SYSTEM_PARAM_LANG_GERMAN = 4,
+    ORBIS_SYSTEM_PARAM_LANG_ITALIAN = 5,
+    ORBIS_SYSTEM_PARAM_LANG_DUTCH = 6,
+    ORBIS_SYSTEM_PARAM_LANG_PORTUGUESE_PT = 7,
+    ORBIS_SYSTEM_PARAM_LANG_RUSSIAN = 8,
+    ORBIS_SYSTEM_PARAM_LANG_KOREAN = 9,
+    ORBIS_SYSTEM_PARAM_LANG_CHINESE_T = 10,
+    ORBIS_SYSTEM_PARAM_LANG_CHINESE_S = 11,
+    ORBIS_SYSTEM_PARAM_LANG_FINNISH = 12,
+    ORBIS_SYSTEM_PARAM_LANG_SWEDISH = 13,
+    ORBIS_SYSTEM_PARAM_LANG_DANISH = 14,
+    ORBIS_SYSTEM_PARAM_LANG_NORWEGIAN = 15,
+    ORBIS_SYSTEM_PARAM_LANG_POLISH = 16,
+    ORBIS_SYSTEM_PARAM_LANG_PORTUGUESE_BR = 17,
+    ORBIS_SYSTEM_PARAM_LANG_ENGLISH_GB = 18,
+    ORBIS_SYSTEM_PARAM_LANG_TURKISH = 19,
+    ORBIS_SYSTEM_PARAM_LANG_SPANISH_LA = 20,
+    ORBIS_SYSTEM_PARAM_LANG_ARABIC = 21,
+    ORBIS_SYSTEM_PARAM_LANG_FRENCH_CA = 22,
+    ORBIS_SYSTEM_PARAM_LANG_CZECH = 23,
+    ORBIS_SYSTEM_PARAM_LANG_HUNGARIAN = 24,
+    ORBIS_SYSTEM_PARAM_LANG_GREEK = 25,
+    ORBIS_SYSTEM_PARAM_LANG_ROMANIAN = 26,
+    ORBIS_SYSTEM_PARAM_LANG_THAI = 27,
+    ORBIS_SYSTEM_PARAM_LANG_VIETNAMESE = 28,
+    ORBIS_SYSTEM_PARAM_LANG_INDONESIAN = 29
+};
+
+struct OrbisSystemServiceStatus {
     s32 eventNum;
     bool isSystemUiOverlaid;
     bool isInBackgroundExecution;
@@ -17,7 +93,7 @@ struct SceSystemServiceStatus {
     u8 reserved[];
 };
 
-struct SystemServiceDisplaySafeAreaInfo {
+struct OrbisSystemServiceDisplaySafeAreaInfo {
     float ratio;
     uint8_t reserved[128];
 };
@@ -362,7 +438,7 @@ int PS4_SYSV_ABI sceSystemServiceGetAppIdOfBigApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppIdOfMiniApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppStatus();
 int PS4_SYSV_ABI sceSystemServiceGetAppType();
-s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(SystemServiceDisplaySafeAreaInfo* info);
+s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info);
 int PS4_SYSV_ABI sceSystemServiceGetEventForDaemon();
 int PS4_SYSV_ABI sceSystemServiceGetGpuLoadEmulationMode();
 int PS4_SYSV_ABI sceSystemServiceGetHdrToneMapLuminance();
@@ -371,7 +447,7 @@ int PS4_SYSV_ABI sceSystemServiceGetParentSocket();
 int PS4_SYSV_ABI sceSystemServiceGetParentSocketForPsmKit();
 int PS4_SYSV_ABI sceSystemServiceGetPSButtonEvent();
 int PS4_SYSV_ABI sceSystemServiceGetRenderingMode();
-s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status);
+s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status);
 int PS4_SYSV_ABI sceSystemServiceGetTitleWorkaroundInfo();
 int PS4_SYSV_ABI sceSystemServiceGetVersionNumberOfCameraCalibrationData();
 s32 PS4_SYSV_ABI sceSystemServiceHideSplashScreen();
@@ -393,7 +469,7 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToAnotherApp();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBack();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBackWithValue();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome();
-int PS4_SYSV_ABI sceSystemServiceParamGetInt();
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value);
 int PS4_SYSV_ABI sceSystemServiceParamGetString();
 int PS4_SYSV_ABI sceSystemServicePowerTick();
 int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess();

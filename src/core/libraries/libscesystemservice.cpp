@@ -1708,7 +1708,8 @@ int PS4_SYSV_ABI sceSystemServiceGetAppType() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(SystemServiceDisplaySafeAreaInfo* info) {
+s32 PS4_SYSV_ABI
+sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info) {
     // TODO error handling
     PRINT_FUNCTION_NAME();
     info->ratio = 1.0f;
@@ -1755,8 +1756,8 @@ int PS4_SYSV_ABI sceSystemServiceGetRenderingMode() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSystemServiceGetStatus(SceSystemServiceStatus* status) {
-    SceSystemServiceStatus st = {};
+s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
+    OrbisSystemServiceStatus st = {};
     st.eventNum = 0;
     st.isSystemUiOverlaid = false;
     st.isInBackgroundExecution = false;
@@ -1872,8 +1873,34 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceParamGetInt() {
-    PRINT_UNIMPLEMENTED_FUNCTION_NAME();
+s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
+    PRINT_FUNCTION_NAME();
+    int v = 0;
+
+    switch (param_id) {
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG:
+        *value = ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT:
+        *value = ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT:
+        *value = ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_ZONE:
+        *value = +120;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_SUMMERTIME:
+        *value = 1;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_GAME_PARENTAL_LEVEL:
+        *value = ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF;
+        break;
+    case ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN:
+        *value = ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS;
+        break;
+    }
+
     return ORBIS_OK;
 }
 
