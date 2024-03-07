@@ -95,8 +95,12 @@ include_directories(src)
 
 set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
+              src/core/libraries/libscecommondialog.cpp
+              src/core/libraries/libscecommondialog.h
               src/core/libraries/libscegnmdriver.cpp
               src/core/libraries/libscegnmdriver.h
+              src/core/libraries/libscemsgdialog.cpp
+              src/core/libraries/libscemsgdialog.h
               src/core/libraries/libscesystemservice.cpp
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp

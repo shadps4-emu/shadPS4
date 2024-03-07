@@ -7,6 +7,8 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
+#include "src/core/libraries/libscecommondialog.h"
+#include "src/core/libraries/libscemsgdialog.h"
 #include "src/core/libraries/libscesystemservice.h"
 #include "src/core/libraries/libsceuserservice.h"
 
@@ -21,6 +23,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
 
     Libraries::UserService::RegisterlibSceUserService(sym);
     Libraries::SystemService::RegisterlibSceSystemService(sym);
+    Libraries::CommonDialog::RegisterlibSceCommonDialog(sym);
+    Libraries::MsgDialog::RegisterlibSceMsgDialog(sym);
 }
 
 } // namespace OldLibraries
