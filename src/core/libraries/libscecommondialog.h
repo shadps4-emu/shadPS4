@@ -7,6 +7,12 @@
 
 namespace Libraries::CommonDialog {
 
+struct OrbisCommonDialogBaseParam {
+    std::size_t size;
+    u8 reserved[36];
+    u32 magic;
+};
+
 int PS4_SYSV_ABI _ZN3sce16CommonDialogUtil12getSelfAppIdEv();
 int PS4_SYSV_ABI _ZN3sce16CommonDialogUtil6Client11closeModuleEv();
 int PS4_SYSV_ABI _ZN3sce16CommonDialogUtil6Client11updateStateEv();

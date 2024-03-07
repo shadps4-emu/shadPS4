@@ -28,8 +28,11 @@ int PS4_SYSV_ABI sceMsgDialogInitialize() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogOpen() {
-    PRINT_UNIMPLEMENTED_FUNCTION_NAME();
+s32 PS4_SYSV_ABI sceMsgDialogOpen(const OrbisMsgDialogParam* param) {
+    PRINT_DUMMY_FUNCTION_NAME();
+    OrbisMsgDialogUserMessageParam* userMsgParam = param->userMsgParam;
+    const char* msg = userMsgParam->msg;
+    printf("sceMsgDialogOpen msg : %s", msg);
     return ORBIS_OK;
 }
 

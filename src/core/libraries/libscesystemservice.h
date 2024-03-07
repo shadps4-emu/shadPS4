@@ -8,7 +8,7 @@
 
 namespace Libraries::SystemService {
 
-enum OrbisSystemServiceParamId : s32 {
+enum OrbisSystemServiceParamId {
     ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG = 1,
     ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT = 2,
     ORBIS_SYSTEM_SERVICE_PARAM_ID_TIME_FORMAT = 3,
@@ -19,18 +19,18 @@ enum OrbisSystemServiceParamId : s32 {
     ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN = 1000
 };
 
-enum OrbisSystemParamDateFormat : s32 {
+enum OrbisSystemParamDateFormat {
     ORBIS_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD = 0,
     ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY = 1,
     ORBIS_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY = 2
 };
 
-enum OrbisSystemParamTimeFormat : s32 {
+enum OrbisSystemParamTimeFormat {
     ORBIS_SYSTEM_PARAM_TIME_FORMAT_12HOUR = 0,
     ORBIS_SYSTEM_PARAM_TIME_FORMAT_24HOUR = 1
 };
 
-enum OrbisSystemParamGameParentalLevel : s32 {
+enum OrbisSystemParamGameParentalLevel {
     ORBIS_SYSTEM_PARAM_GAME_PARENTAL_OFF = 0,
     ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL01 = 1,
     ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL02 = 2,
@@ -45,12 +45,12 @@ enum OrbisSystemParamGameParentalLevel : s32 {
     ORBIS_SYSTEM_PARAM_GAME_PARENTAL_LEVEL11 = 11
 };
 
-enum OrbisSystemParamEnterButtonAssign : s32 {
+enum OrbisSystemParamEnterButtonAssign {
     ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CIRCLE = 0,
     ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS = 1
 };
 
-enum OrbisSystemParamLanguage : s32 {
+enum OrbisSystemParamLanguage {
     ORBIS_SYSTEM_PARAM_LANG_JAPANESE = 0,
     ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US = 1,
     ORBIS_SYSTEM_PARAM_LANG_FRENCH = 2,
@@ -438,7 +438,8 @@ int PS4_SYSV_ABI sceSystemServiceGetAppIdOfBigApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppIdOfMiniApp();
 int PS4_SYSV_ABI sceSystemServiceGetAppStatus();
 int PS4_SYSV_ABI sceSystemServiceGetAppType();
-s32 PS4_SYSV_ABI sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info);
+s32 PS4_SYSV_ABI
+sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info);
 int PS4_SYSV_ABI sceSystemServiceGetEventForDaemon();
 int PS4_SYSV_ABI sceSystemServiceGetGpuLoadEmulationMode();
 int PS4_SYSV_ABI sceSystemServiceGetHdrToneMapLuminance();

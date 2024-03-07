@@ -36,14 +36,14 @@ struct OrbisUserServiceRegisteredUserIdList {
     OrbisUserServiceUserId userId[ORBIS_USER_SERVICE_MAX_REGISTER_USERS];
 };
 
-enum OrbisUserServiceUserColor : s32 {
+enum OrbisUserServiceUserColor {
     ORBIS_USER_SERVICE_USER_COLOR_BLUE = 0,
     ORBIS_USER_SERVICE_USER_COLOR_RED = 1,
     ORBIS_USER_SERVICE_USER_COLOR_GREEN = 2,
     ORBIS_USER_SERVICE_USER_COLOR_PINK = 3,
 };
 
-enum OrbisUserServiceEventType : s32 {
+enum OrbisUserServiceEventType {
     SCE_USER_SERVICE_EVENT_TYPE_LOGIN = 0,  // Login event
     SCE_USER_SERVICE_EVENT_TYPE_LOGOUT = 1, // Logout event
 };
