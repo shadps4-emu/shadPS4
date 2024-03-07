@@ -1,18 +1,56 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+// reference :
+// https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/blob/master/include/orbis/_types/user.h
 #pragma once
 
 #include "library_common.h"
 
 namespace Libraries::UserService {
 
-struct SceUserServiceInitializeParams {
+// Maximum number of users that can be logged in at once
+constexpr int ORBIS_USER_SERVICE_MAX_LOGIN_USERS = 4;
+// Maximum number of users that can be registered in the system
+constexpr int ORBIS_USER_SERVICE_MAX_REGISTER_USERS = 16;
+// Maximum user name length
+constexpr int ORBIS_USER_SERVICE_MAX_USER_NAME_LENGTH = 16;
+
+constexpr int ORBIS_USER_SERVICE_USER_ID_SYSTEM = 0xFF;
+constexpr int ORBIS_USER_SERVICE_USER_ID_INVALID = -1;
+
+using OrbisUserServiceUserId = s32;
+
+constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 0x2FF;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_NORMAL = 0x2BC;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 0x100;
+
+struct OrbisUserServiceInitializeParams {
     s32 priority;
 };
 
-struct SceUserServiceLoginUserIdList {
-    int user_id[4];
+struct OrbisUserServiceLoginUserIdList {
+    int user_id[ORBIS_USER_SERVICE_MAX_LOGIN_USERS];
+};
+
+struct OrbisUserServiceRegisteredUserIdList {
+    OrbisUserServiceUserId userId[ORBIS_USER_SERVICE_MAX_REGISTER_USERS];
+};
+
+enum OrbisUserServiceUserColor : s32 {
+    ORBIS_USER_SERVICE_USER_COLOR_BLUE = 0,
+    ORBIS_USER_SERVICE_USER_COLOR_RED = 1,
+    ORBIS_USER_SERVICE_USER_COLOR_GREEN = 2,
+    ORBIS_USER_SERVICE_USER_COLOR_PINK = 3,
+};
+
+enum OrbisUserServiceEventType : s32 {
+    SCE_USER_SERVICE_EVENT_TYPE_LOGIN = 0,  // Login event
+    SCE_USER_SERVICE_EVENT_TYPE_LOGOUT = 1, // Logout event
+};
+
+struct OrbisUserServiceEvent {
+    OrbisUserServiceEventType event;
+    OrbisUserServiceUserId userId;
 };
 
 int PS4_SYSV_ABI sceUserServiceInitializeForShellCore();
@@ -123,7 +161,7 @@ int PS4_SYSV_ABI sceUserServiceGetKratosPrimaryUser();
 int PS4_SYSV_ABI sceUserServiceGetLastLoginOrder();
 int PS4_SYSV_ABI sceUserServiceGetLightBarBaseBrightness();
 int PS4_SYSV_ABI sceUserServiceGetLoginFlag();
-s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList);
+s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList);
 int PS4_SYSV_ABI sceUserServiceGetMicLevel();
 int PS4_SYSV_ABI sceUserServiceGetMouseHandType();
 int PS4_SYSV_ABI sceUserServiceGetMousePointerSpeed();
@@ -229,7 +267,7 @@ int PS4_SYSV_ABI sceUserServiceGetVolumeForController();
 int PS4_SYSV_ABI sceUserServiceGetVolumeForGenericUSB();
 int PS4_SYSV_ABI sceUserServiceGetVolumeForMorpheusSidetone();
 int PS4_SYSV_ABI sceUserServiceGetVolumeForSidetone();
-s32 PS4_SYSV_ABI sceUserServiceInitialize(const SceUserServiceInitializeParams* initParams);
+s32 PS4_SYSV_ABI sceUserServiceInitialize(const OrbisUserServiceInitializeParams* initParams);
 int PS4_SYSV_ABI sceUserServiceInitialize2();
 int PS4_SYSV_ABI sceUserServiceIsGuestUser();
 int PS4_SYSV_ABI sceUserServiceIsKratosPrimaryUser();

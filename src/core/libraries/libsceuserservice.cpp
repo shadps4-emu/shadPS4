@@ -550,12 +550,12 @@ int PS4_SYSV_ABI sceUserServiceGetLoginFlag() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(SceUserServiceLoginUserIdList* userIdList) {
+s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList) {
     PRINT_DUMMY_FUNCTION_NAME();
     userIdList->user_id[0] = 1;
-    userIdList->user_id[1] = -1;
-    userIdList->user_id[2] = -1;
-    userIdList->user_id[3] = -1;
+    userIdList->user_id[1] = ORBIS_USER_SERVICE_USER_ID_INVALID;
+    userIdList->user_id[2] = ORBIS_USER_SERVICE_USER_ID_INVALID;
+    userIdList->user_id[3] = ORBIS_USER_SERVICE_USER_ID_INVALID;
 
     return ORBIS_OK;
 }
@@ -1023,7 +1023,7 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color) {
     // TODO fix me better
     PRINT_DUMMY_FUNCTION_NAME();
-    *color = 0; // blue
+    *color = ORBIS_USER_SERVICE_USER_COLOR_BLUE;
     return ORBIS_OK;
 }
 
@@ -1088,7 +1088,7 @@ int PS4_SYSV_ABI sceUserServiceGetVolumeForSidetone() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceInitialize(const SceUserServiceInitializeParams* initParams) {
+s32 PS4_SYSV_ABI sceUserServiceInitialize(const OrbisUserServiceInitializeParams* initParams) {
     PRINT_DUMMY_FUNCTION_NAME();
     return ORBIS_OK;
 }
