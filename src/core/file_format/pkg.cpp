@@ -189,9 +189,9 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     u32 ndinode = 0;
     int ndinode_counter = 0;
     bool dinode_reached = false;
+    bool uroot_reached = false;
     std::vector<char> compressedData;
     std::vector<char> decompressedData(0x10000);
-    extractPaths[2] = extract_path.parent_path() / GetTitleID();
 
     // Get iNdoes and Dirents.
     for (int i = 0; i < num_blocks; i++) {
@@ -223,6 +223,30 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
                     break;
                 }
                 iNodeBuf.push_back(node);
+            }
+        }
+
+        // let's deal with the root/uroot enteries here.
+        // Sometimes it's more than 2 enteries (Tomb Raider Remastered)
+        const std::string_view flat_path_table(&decompressedData[0x10], 15);
+        if (flat_path_table == "flat_path_table") {
+            uroot_reached = true;
+        }
+
+        if (uroot_reached) {
+            for (int i = 0; i < 0x10000; i += ent_size) {
+                Dirent dirent;
+                std::memcpy(&dirent, &decompressedData[i], sizeof(dirent));
+                ent_size = dirent.entsize;
+                if (dirent.ino != 0) {
+                    ndinode_counter++;
+                } else {
+                    // Set the the folder according to the current inode.
+                    // Can be 2 or more (rarely)
+                    extractPaths[ndinode_counter] = extract_path.parent_path() / GetTitleID();
+                    uroot_reached = false;
+                    break;
+                }
             }
         }
 
@@ -261,7 +285,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
                         std::filesystem::create_directory(extractPaths[table.inode]);
                     }
                     ndinode_counter++;
-                    if ((ndinode_counter + 3) == ndinode) // 3 for root, uroot and flat_path_table.
+                    if ((ndinode_counter + 1) == ndinode) // 1 for the image itself (root).
                         end_reached = true;
                 }
             }

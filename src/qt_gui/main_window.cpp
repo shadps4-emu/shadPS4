@@ -116,7 +116,7 @@ void MainWindow::CreateConnects() {
         m_gui_settings->SetValue(gui::main_window_gamelist_visible, checked);
     });
     connect(ui->refreshGameListAct, &QAction::triggered, this,
-            [this] { m_game_list_frame->Refresh(true); });
+            [this] { m_game_list_frame->Refresh(false); });
 
     connect(m_icon_size_act_group, &QActionGroup::triggered, this, [this](QAction* act) {
         static const int index_small = gui::get_Index(gui::game_list_icon_size_small);

@@ -255,7 +255,8 @@ void GameListFrame::RequestGameMenu(const QPoint& pos) {
             for (const auto& pair : psf.map_integers) {
                 QTableWidgetItem* keyItem =
                     new QTableWidgetItem(QString::fromStdString(pair.first));
-                QTableWidgetItem* valueItem = new QTableWidgetItem(QString::number(pair.second));
+                QTableWidgetItem* valueItem =
+                    new QTableWidgetItem(QString("0x").append(QString::number(pair.second, 16)));
 
                 tableWidget->setItem(row, 0, keyItem);
                 tableWidget->setItem(row, 1, valueItem);
@@ -483,10 +484,9 @@ void GameListFrame::Refresh(const bool from_drive, const bool scroll_after) {
                 game.pic_path = picpath.toStdString();
                 game.name = psf.GetString("TITLE");
                 game.serial = psf.GetString("TITLE_ID");
-                game.fw = (QString("%1").arg(psf.GetInteger("SYSTEM_VER"), 8, 16, QLatin1Char('0')))
-                              .mid(1, 3)
-                              .insert(1, '.')
-                              .toStdString();
+                u32 fw_int = psf.GetInteger("SYSTEM_VER");
+                QString fw = QString::number(fw_int, 16).toUpper().left(3).insert(1, '.');
+                game.fw = (fw_int == 0) ? "0.00" : fw.toStdString();
                 game.version = psf.GetString("APP_VER");
                 game.category = psf.GetString("CATEGORY");
 
@@ -812,7 +812,7 @@ void GameListFrame::SetListMode(const bool& is_list) {
 
     m_gui_settings->SetValue(gui::game_list_listMode, is_list);
 
-    Refresh(true);
+    Refresh(false);
 
     m_central_widget->setCurrentWidget(m_is_list_layout ? m_game_list : m_game_grid);
 }
