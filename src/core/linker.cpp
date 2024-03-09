@@ -456,7 +456,7 @@ void Linker::LoadSymbols(Module* m) {
                     sym_r.type = Loader::SymbolType::Unknown;
                     break;
                 }
-                
+
                 if (is_sym_export) {
                     m->export_sym.AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
                 } else {
