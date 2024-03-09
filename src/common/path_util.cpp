@@ -35,7 +35,6 @@ static auto UserPaths = [] {
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
     create_path(PathType::ShaderDir, user_dir / SHADER_DIR);
-    create_path(PathType::App0, user_dir / APP0_DIR);
 
     return paths;
 }();
