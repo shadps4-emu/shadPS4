@@ -124,7 +124,7 @@ public:
         return m_hle_symbols;
     }
     void Relocate(Module* m);
-    void Resolve(const std::string& name, int Symtype, Module* m,
+    void Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
                  Loader::SymbolRecord* return_info);
     void Execute();
 
