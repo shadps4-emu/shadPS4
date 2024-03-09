@@ -44,6 +44,21 @@ public:
 
     static std::string GenerateName(const SymbolResolver& s);
 
+    static std::string SymbolTypeToS(SymbolType symType) {
+        switch (symType) {
+        case SymbolType::Unknown:
+            return "Unknown";
+        case SymbolType::Function:
+            return "Function";
+        case SymbolType::Object:
+            return "Object";
+        case SymbolType::Tls:
+            return "Tls";
+        case SymbolType::NoType:
+            return "NoType";
+        }
+    }
+
 private:
     std::vector<SymbolRecord> m_symbols;
 };

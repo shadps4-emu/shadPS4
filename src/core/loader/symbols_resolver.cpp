@@ -15,8 +15,9 @@ void SymbolsResolver::AddSymbol(const SymbolResolver& s, u64 virtual_addr) {
 }
 
 std::string SymbolsResolver::GenerateName(const SymbolResolver& s) {
-    return fmt::format("{} lib[{}_v{}]mod[{}_v{}.{}]", s.name, s.library, s.library_version,
-                       s.module, s.module_version_major, s.module_version_minor);
+    return fmt::format("{} lib[{}_v{}]mod[{}_v{}.{}][{}]", s.name, s.library, s.library_version,
+                       s.module, s.module_version_major, s.module_version_minor,
+                       SymbolTypeToS(s.type));
 }
 
 const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
