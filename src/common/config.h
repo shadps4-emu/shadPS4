@@ -4,7 +4,7 @@
 #pragma once
 
 #include <filesystem>
-#include "common/types.h"
+#include "types.h"
 
 namespace Config {
 void load(const std::filesystem::path& path);

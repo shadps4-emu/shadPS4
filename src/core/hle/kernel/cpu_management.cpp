@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Util/config.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/hle/kernel/cpu_management.h"
 

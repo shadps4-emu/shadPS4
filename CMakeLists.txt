@@ -186,6 +186,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/assert.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
+           src/common/config.cpp
+           src/common/config.h
            src/common/debug.h
            src/common/disassembler.cpp
            src/common/disassembler.h
@@ -229,10 +231,6 @@ set(FILE_FORMAT src/core/file_format/pfs.h
                 src/core/file_format/psf.h
 )
 
-set(UTILITIES   src/Util/config.cpp
-                src/Util/config.h
-)
-
 if(ENABLE_QT_GUI)
 qt_add_executable(shadps4
     ${QT_GUI}
@@ -240,7 +238,6 @@ qt_add_executable(shadps4
     ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
-    ${UTILITIES}
 )
 else()
 add_executable(shadps4
@@ -308,7 +305,6 @@ add_executable(shadps4
     ${CORE}
     ${CRYPTO}
     ${FILE_FORMAT}
-    ${UTILITIES}
 )
 endif()
 

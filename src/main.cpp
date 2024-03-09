@@ -10,7 +10,7 @@
 #include <thread>
 
 #include <core/hle/libraries/libkernel/thread_management.h>
-#include "Util/config.h"
+#include "common/config.h"
 #include "common/discord.h"
 #include "common/logging/backend.h"
 #include "common/path_util.h"
