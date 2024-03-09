@@ -8,28 +8,28 @@
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
     {                                                                                              \
-        Core::Loader::SymbolRes sr{};                                                              \
+        Core::Loader::SymbolResolver sr{};                                                         \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
         sr.module = mod;                                                                           \
         sr.module_version_major = moduleVersionMajor;                                              \
         sr.module_version_minor = moduleVersionMinor;                                              \
-        sr.type = STT_FUN;                                                                         \
+        sr.type = Core::Loader::SymbolType::Function;                                              \
         auto func = reinterpret_cast<u64>(function);                                               \
         sym->AddSymbol(sr, func);                                                                  \
     }
 
 #define LIB_OBJ(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)       \
     {                                                                                              \
-        Core::Loader::SymbolRes sr{};                                                              \
+        Core::Loader::SymbolResolver sr{};                                                         \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
         sr.module = mod;                                                                           \
         sr.module_version_major = moduleVersionMajor;                                              \
         sr.module_version_minor = moduleVersionMinor;                                              \
-        sr.type = STT_OBJECT;                                                                      \
+        sr.type = Core::Loader::SymbolType::Object;                                                \
         auto func = reinterpret_cast<u64>(function);                                               \
         sym->AddSymbol(sr, func);                                                                  \
     }
