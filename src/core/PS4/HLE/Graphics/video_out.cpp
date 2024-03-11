@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <string>
 #include "Objects/video_out_ctx.h"
-#include "Util/config.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include "common/config.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
@@ -66,6 +68,7 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
     auto& m = m_modules.emplace_back();
     m = std::make_unique<Module>();
     m->elf.Open(elf_name);
+    m->file_name = std::filesystem::path(elf_name).filename().string();
 
     if (m->elf.IsElfFile()) {
         LoadModuleToMemory(m.get());
@@ -434,7 +437,7 @@ void Linker::LoadSymbols(Module* m) {
                     nidName = "UNK";
                 }
 
-                Loader::SymbolRes sym_r{};
+                Loader::SymbolResolver sym_r{};
                 sym_r.name = ids.at(0);
                 sym_r.nidName = nidName;
                 sym_r.library = library->name;
@@ -442,7 +445,20 @@ void Linker::LoadSymbols(Module* m) {
                 sym_r.module = module->name;
                 sym_r.module_version_major = module->version_major;
                 sym_r.module_version_minor = module->version_minor;
-                sym_r.type = type;
+                switch (type) {
+                case STT_NOTYPE:
+                    sym_r.type = Loader::SymbolType::NoType;
+                    break;
+                case STT_FUN:
+                    sym_r.type = Loader::SymbolType::Function;
+                    break;
+                case STT_OBJECT:
+                    sym_r.type = Loader::SymbolType::Object;
+                    break;
+                default:
+                    sym_r.type = Loader::SymbolType::Unknown;
+                    break;
+                }
 
                 if (is_sym_export) {
                     m->export_sym.AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
@@ -471,7 +487,7 @@ void Linker::Relocate(Module* m) {
         u64 rel_base_virtual_addr = m->base_virtual_addr;
         u64 rel_virtual_addr = m->base_virtual_addr + rel->rel_offset;
         bool rel_isResolved = false;
-        u8 rel_sym_type = 0;
+        Loader::SymbolType rel_sym_type = Loader::SymbolType::Unknown;
         std::string rel_name;
 
         switch (type) {
@@ -495,10 +511,10 @@ void Linker::Relocate(Module* m) {
             Loader::SymbolRecord symrec{};
             switch (sym_type) {
             case STT_FUN:
-                rel_sym_type = 2;
+                rel_sym_type = Loader::SymbolType::Function;
                 break;
             case STT_OBJECT:
-                rel_sym_type = 1;
+                rel_sym_type = Loader::SymbolType::Object;
                 break;
             default:
                 LOG_INFO(Core_Linker, "unknown symbol type {}", sym_type);
@@ -558,7 +574,7 @@ void Linker::Relocate(Module* m) {
     }
 }
 
-void Linker::Resolve(const std::string& name, int Symtype, Module* m,
+void Linker::Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
     if (ids.size() == 3) // symbols are 3 parts name , library , module
@@ -567,7 +583,7 @@ void Linker::Resolve(const std::string& name, int Symtype, Module* m,
         const auto* module = FindModule(*m, ids.at(2));
 
         if (library != nullptr && module != nullptr) {
-            Loader::SymbolRes sr{};
+            Loader::SymbolResolver sr{};
             sr.name = ids.at(0);
             sr.library = library->name;
             sr.library_version = library->version;
@@ -632,6 +648,10 @@ static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
 }
 
 void Linker::Execute() {
+    if (Config::debugDump()) {
+        DebugDump();
+    }
+
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
     EntryParams p{};
     p.argc = 1;
@@ -639,6 +659,20 @@ void Linker::Execute() {
 
     const auto& module = m_modules.at(0);
     RunMainEntry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
+}
+
+void Linker::DebugDump() {
+    std::scoped_lock lock{m_mutex};
+    const auto& log_dir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
+    const std::filesystem::path debug(log_dir / "debugdump");
+    std::filesystem::create_directory(debug);
+    for (const auto& m : m_modules) {
+        // TODO make a folder with game id for being more unique?
+        const std::filesystem::path filepath(debug / m.get()->file_name);
+        std::filesystem::create_directory(filepath);
+        m.get()->import_sym.DebugDump(filepath / "imports.txt");
+        m.get()->export_sym.DebugDump(filepath / "exports.txt");
+    }
 }
 
 } // namespace Core

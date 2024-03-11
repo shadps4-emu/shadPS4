@@ -4,7 +4,7 @@
 #pragma once
 
 #include <filesystem>
-#include "common/types.h"
+#include "types.h"
 
 namespace Config {
 void load(const std::filesystem::path& path);
@@ -15,5 +15,7 @@ std::string getLogFilter();
 
 u32 getScreenWidth();
 u32 getScreenHeight();
+
+bool debugDump();
 
 }; // namespace Config

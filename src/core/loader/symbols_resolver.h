@@ -10,12 +10,20 @@
 
 namespace Core::Loader {
 
+enum class SymbolType {
+    Unknown,
+    Function,
+    Object,
+    Tls,
+    NoType,
+};
+
 struct SymbolRecord {
     std::string name;
     u64 virtual_address;
 };
 
-struct SymbolRes {
+struct SymbolResolver {
     std::string name;
     std::string nidName;
     std::string library;
@@ -23,7 +31,7 @@ struct SymbolRes {
     std::string module;
     u8 module_version_major;
     u8 module_version_minor;
-    u32 type;
+    SymbolType type;
 };
 
 class SymbolsResolver {
@@ -31,10 +39,27 @@ public:
     SymbolsResolver() = default;
     virtual ~SymbolsResolver() = default;
 
-    void AddSymbol(const SymbolRes& s, u64 virtual_addr);
-    const SymbolRecord* FindSymbol(const SymbolRes& s) const;
+    void AddSymbol(const SymbolResolver& s, u64 virtual_addr);
+    const SymbolRecord* FindSymbol(const SymbolResolver& s) const;
 
-    static std::string GenerateName(const SymbolRes& s);
+    static std::string GenerateName(const SymbolResolver& s);
+
+    static std::string_view SymbolTypeToS(SymbolType sym_type) {
+        switch (sym_type) {
+        case SymbolType::Unknown:
+            return "Unknown";
+        case SymbolType::Function:
+            return "Function";
+        case SymbolType::Object:
+            return "Object";
+        case SymbolType::Tls:
+            return "Tls";
+        case SymbolType::NoType:
+            return "NoType";
+        }
+    }
+
+    void DebugDump(const std::filesystem::path& file_name);
 
 private:
     std::vector<SymbolRecord> m_symbols;

@@ -100,6 +100,8 @@ struct Module {
     u64 aligned_base_size = 0;
     u64 base_virtual_addr = 0;
 
+    std::string file_name;
+
     std::vector<u8> m_dynamic;
     std::vector<u8> m_dynamic_data;
     DynamicModuleInfo dynamic_info{};
@@ -124,9 +126,10 @@ public:
         return m_hle_symbols;
     }
     void Relocate(Module* m);
-    void Resolve(const std::string& name, int Symtype, Module* m,
+    void Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
                  Loader::SymbolRecord* return_info);
     void Execute();
+    void DebugDump();
 
 private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);

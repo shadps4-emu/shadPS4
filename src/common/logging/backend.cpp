@@ -6,13 +6,13 @@
 #include <thread>
 
 #include <fmt/format.h>
-#include "Util/config.h"
 
 #ifdef _WIN32
 #include <windows.h> // For OutputDebugStringW
 #endif
 
 #include "common/bounded_threadsafe_queue.h"
+#include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
