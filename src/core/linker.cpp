@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
-#include <common/config.h>
-#include <common/path_util.h>
+#include "common/config.h"
+#include "common/path_util.h"
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"

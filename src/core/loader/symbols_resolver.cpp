@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/string_util.h>
+#include "common/string_util.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/types.h"
@@ -35,8 +35,7 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
 }
 
 void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f;
-    f.Open(file_name, Common::FS::FileAccessMode::Write, Common::FS::FileType::TextFile);
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write, Common::FS::FileType::TextFile};
     for (const auto& symbol : m_symbols) {
         const auto ids = Common::SplitString(symbol.name, '#');
         std::string nidName = "";
@@ -50,7 +49,6 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
                                   symbol.virtual_address, ids.at(0), nidName, ids.at(1), ids.at(2),
                                   ids.at(3), ids.at(4), ids.at(5), ids.at(6)));
     }
-    f.Close();
 }
 
 } // namespace Core::Loader

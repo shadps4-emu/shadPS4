@@ -44,7 +44,7 @@ public:
 
     static std::string GenerateName(const SymbolResolver& s);
 
-    static std::string SymbolTypeToS(SymbolType sym_type) {
+    static std::string_view SymbolTypeToS(SymbolType sym_type) {
         switch (sym_type) {
         case SymbolType::Unknown:
             return "Unknown";
