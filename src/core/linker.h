@@ -100,6 +100,8 @@ struct Module {
     u64 aligned_base_size = 0;
     u64 base_virtual_addr = 0;
 
+    std::string file_name;
+
     std::vector<u8> m_dynamic;
     std::vector<u8> m_dynamic_data;
     DynamicModuleInfo dynamic_info{};

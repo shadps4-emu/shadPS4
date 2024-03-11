@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include <common/config.h>
 #include <common/path_util.h>
 #include "common/logging/log.h"
 #include "common/string_util.h"
@@ -67,6 +68,7 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
     auto& m = m_modules.emplace_back();
     m = std::make_unique<Module>();
     m->elf.Open(elf_name);
+    m->file_name = std::filesystem::path(elf_name).filename().string();
 
     if (m->elf.IsElfFile()) {
         LoadModuleToMemory(m.get());
@@ -646,7 +648,10 @@ static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
 }
 
 void Linker::Execute() {
-    DebugDump();
+    if (Config::debugDump()) {
+        DebugDump();
+    }
+
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
     EntryParams p{};
     p.argc = 1;
@@ -662,7 +667,10 @@ void Linker::DebugDump() {
     const std::filesystem::path debug(log_dir / "debugdump");
     std::filesystem::create_directory(debug);
     for (const auto& m : m_modules) {
-        m.get()->import_sym.DebugDump(debug / "imports.txt");
+        const std::filesystem::path filepath(debug / m.get()->file_name);
+        std::filesystem::create_directory(filepath);
+        m.get()->import_sym.DebugDump(filepath / "imports.txt");
+        m.get()->export_sym.DebugDump(filepath / "exports.txt");
     }
 }
 

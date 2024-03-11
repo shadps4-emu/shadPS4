@@ -13,6 +13,7 @@ bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
 std::string logFilter;
+bool isDebugDump = false;
 
 bool isNeoMode() {
     return isNeo;
@@ -28,6 +29,10 @@ u32 getScreenHeight() {
 
 std::string getLogFilter() {
     return logFilter;
+}
+
+bool debugDump() {
+    return isDebugDump;
 }
 
 void load(const std::filesystem::path& path) {
@@ -65,6 +70,14 @@ void load(const std::filesystem::path& path) {
             screenHeight = toml::find_or<toml::integer>(general, "screenHeight", false);
         }
     }
+    if (data.contains("Debug")) {
+        auto debugResult = toml::expect<toml::value>(data.at("Debug"));
+        if (debugResult.is_ok()) {
+            auto debug = debugResult.unwrap();
+
+            isDebugDump = toml::find_or<toml::boolean>(debug, "DebugDump", false);
+        }
+    }
 }
 void save(const std::filesystem::path& path) {
     toml::basic_value<toml::preserve_comments> data;
@@ -89,6 +102,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
+    data["Debug"]["DebugDump"] = isDebugDump;
 
     std::ofstream file(path, std::ios::out);
     file << data;

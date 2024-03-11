@@ -16,4 +16,6 @@ std::string getLogFilter();
 u32 getScreenWidth();
 u32 getScreenHeight();
 
+bool debugDump();
+
 }; // namespace Config
