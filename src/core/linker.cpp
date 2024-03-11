@@ -3,8 +3,8 @@
 
 #include <Zydis/Zydis.h>
 #include "common/config.h"
-#include "common/path_util.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
@@ -667,6 +667,7 @@ void Linker::DebugDump() {
     const std::filesystem::path debug(log_dir / "debugdump");
     std::filesystem::create_directory(debug);
     for (const auto& m : m_modules) {
+        // TODO make a folder with game id for being more unique?
         const std::filesystem::path filepath(debug / m.get()->file_name);
         std::filesystem::create_directory(filepath);
         m.get()->import_sym.DebugDump(filepath / "imports.txt");
