@@ -13,6 +13,7 @@ bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
 std::string logFilter;
+std::string logType = "sync";
 bool isDebugDump = false;
 
 bool isNeoMode() {
@@ -29,6 +30,10 @@ u32 getScreenHeight() {
 
 std::string getLogFilter() {
     return logFilter;
+}
+
+std::string getLogType() {
+    return logType;
 }
 
 bool debugDump() {
@@ -59,6 +64,7 @@ void load(const std::filesystem::path& path) {
 
             isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
             logFilter = toml::find_or<toml::string>(general, "logFilter", "");
+            logType = toml::find_or<toml::string>(general, "logType", "sync");
         }
     }
     if (data.contains("GPU")) {
@@ -100,6 +106,7 @@ void save(const std::filesystem::path& path) {
 
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["logFilter"] = logFilter;
+    data["General"]["logType"] = logType;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["Debug"]["DebugDump"] = isDebugDump;
