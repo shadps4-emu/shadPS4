@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <common/string_util.h>
+#include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/types.h"
+#include "core/aerolib/aerolib.h"
 #include "core/loader/symbols_resolver.h"
 
 namespace Core::Loader {
@@ -15,9 +18,8 @@ void SymbolsResolver::AddSymbol(const SymbolResolver& s, u64 virtual_addr) {
 }
 
 std::string SymbolsResolver::GenerateName(const SymbolResolver& s) {
-    return fmt::format("{} lib[{}_v{}]mod[{}_v{}.{}][{}]", s.name, s.library, s.library_version,
-                       s.module, s.module_version_major, s.module_version_minor,
-                       SymbolTypeToS(s.type));
+    return fmt::format("{}#{}#{}#{}#{}#{}#{}", s.name, s.library, s.library_version, s.module,
+                       s.module_version_major, s.module_version_minor, SymbolTypeToS(s.type));
 }
 
 const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
@@ -30,6 +32,25 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
 
     LOG_INFO(Core_Linker, "Unresolved! {}", name);
     return nullptr;
+}
+
+void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
+    Common::FS::IOFile f;
+    f.Open(file_name, Common::FS::FileAccessMode::Write, Common::FS::FileType::TextFile);
+    for (const auto& symbol : m_symbols) {
+        const auto ids = Common::SplitString(symbol.name, '#');
+        std::string nidName = "";
+        auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
+        if (aeronid != nullptr) {
+            nidName = aeronid->name;
+        } else {
+            nidName = "UNK";
+        }
+        f.WriteString(fmt::format("{} {} {} {} {} {} {} {} {}\n", symbol.virtual_address, ids.at(0),
+                                  nidName, ids.at(1), ids.at(2), ids.at(3), ids.at(4), ids.at(5),
+                                  ids.at(6)));
+    }
+    f.Close();
 }
 
 } // namespace Core::Loader

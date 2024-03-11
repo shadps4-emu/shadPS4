@@ -44,8 +44,8 @@ public:
 
     static std::string GenerateName(const SymbolResolver& s);
 
-    static std::string SymbolTypeToS(SymbolType symType) {
-        switch (symType) {
+    static std::string SymbolTypeToS(SymbolType sym_type) {
+        switch (sym_type) {
         case SymbolType::Unknown:
             return "Unknown";
         case SymbolType::Function:
@@ -58,6 +58,8 @@ public:
             return "NoType";
         }
     }
+
+    void DebugDump(const std::filesystem::path& file_name);
 
 private:
     std::vector<SymbolRecord> m_symbols;

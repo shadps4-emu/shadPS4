@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include <common/path_util.h>
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
@@ -645,6 +646,7 @@ static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
 }
 
 void Linker::Execute() {
+    DebugDump();
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
     EntryParams p{};
     p.argc = 1;
@@ -652,6 +654,16 @@ void Linker::Execute() {
 
     const auto& module = m_modules.at(0);
     RunMainEntry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
+}
+
+void Linker::DebugDump() {
+    std::scoped_lock lock{m_mutex};
+    const auto& log_dir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
+    const std::filesystem::path debug(log_dir / "debugdump");
+    std::filesystem::create_directory(debug);
+    for (const auto& m : m_modules) {
+        m.get()->import_sym.DebugDump(debug / "imports.txt");
+    }
 }
 
 } // namespace Core

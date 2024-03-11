@@ -127,6 +127,7 @@ public:
     void Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
                  Loader::SymbolRecord* return_info);
     void Execute();
+    void DebugDump();
 
 private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);
