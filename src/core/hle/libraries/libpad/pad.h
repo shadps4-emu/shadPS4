@@ -4,9 +4,13 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/hle/libraries/libuserservice/libuserservice.h"
+#include "src/core/libraries/libsceuserservice.h"
 
-namespace Core::Libraries::LibPad {
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
+namespace OldLibraries::LibPad {
 
 enum ScePadButton : u32 {
     L3 = 0x00000002,
@@ -92,10 +96,10 @@ struct ScePadData {
 };
 
 int PS4_SYSV_ABI scePadInit();
-int PS4_SYSV_ABI scePadOpen(LibUserService::SceUserServiceUserId userId, s32 type, s32 index,
-                            const ScePadOpenParam* pParam);
+int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                            s32 index, const ScePadOpenParam* pParam);
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData);
 
-void padSymbolsRegister(Loader::SymbolsResolver* sym);
+void padSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 
-}; // namespace Core::Libraries::LibPad
+}; // namespace OldLibraries::LibPad

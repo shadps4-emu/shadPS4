@@ -299,7 +299,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 }
 
 void keyboardEvent(SDL_Event* event) {
-    using Core::Libraries::LibPad::ScePadButton;
+    using OldLibraries::LibPad::ScePadButton;
 
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;
