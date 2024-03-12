@@ -28,4 +28,4 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::MsgDialog::RegisterlibSceMsgDialog(sym);
 }
 
-} // namespace Core::Libraries
+} // namespace OldLibraries
