@@ -15,9 +15,9 @@
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
-#include "src/core/libraries/libsceuserservice.h"
 #include "core/loader/symbols_resolver.h"
 #include "emulator.h"
+#include "src/core/libraries/libsceuserservice.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 
