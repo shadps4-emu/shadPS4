@@ -42,4 +42,19 @@ size_t PS4_SYSV_ABI ps4_strlen(const char* str) {
     return std::strlen(str);
 }
 
+char* PS4_SYSV_ABI ps4_strrchr(const char* s, int c) {
+    return (char*)strrchr(s, c);
+}
+
+int PS4_SYSV_ABI ps4_strncmp(const char* s1, const char* s2, size_t n) {
+    return strncmp(s1, s2, n);
+}
+
+char* PS4_SYSV_ABI ps4_strdup(const char* str1) {
+    char* dup = (char*)std::malloc(std::strlen(str1) + 1);
+    if (dup != NULL)
+        strcpy(dup, str1);
+    return dup;
+}
+
 } // namespace Core::Libraries::LibC
