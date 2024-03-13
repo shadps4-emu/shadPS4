@@ -1710,8 +1710,11 @@ int PS4_SYSV_ABI sceSystemServiceGetAppType() {
 
 s32 PS4_SYSV_ABI
 sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info) {
-    // TODO error handling
     LOG_INFO(Lib_SystemService, "called");
+    if (info == nullptr) {
+        LOG_ERROR(Lib_SystemService, "OrbisSystemServiceDisplaySafeAreaInfo is null");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
     info->ratio = 1.0f;
     return ORBIS_OK;
 }
@@ -1757,6 +1760,11 @@ int PS4_SYSV_ABI sceSystemServiceGetRenderingMode() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
+    LOG_TRACE(Lib_SystemService, "called");
+    if (status == nullptr) {
+        LOG_ERROR(Lib_SystemService, "OrbisSystemServiceStatus is null");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
     OrbisSystemServiceStatus st = {};
     st.eventNum = 0;
     st.isSystemUiOverlaid = false;
@@ -1874,9 +1882,12 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
+    // TODO this probably should be stored in config for UI configuration
     LOG_INFO(Lib_SystemService, "called");
-    int v = 0;
-
+    if (value == nullptr) {
+        LOG_ERROR(Lib_SystemService, "value is null");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
     switch (param_id) {
     case ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG:
         *value = ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US;
@@ -1899,6 +1910,10 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
     case ORBIS_SYSTEM_SERVICE_PARAM_ID_ENTER_BUTTON_ASSIGN:
         *value = ORBIS_SYSTEM_PARAM_ENTER_BUTTON_ASSIGN_CROSS;
         break;
+    default:
+        LOG_ERROR(Lib_SystemService, "param_id {} unsupported!",
+                  param_id); // shouldn't go there but log it
+        *value = 0;          // return a dummy value
     }
 
     return ORBIS_OK;
