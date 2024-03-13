@@ -57,8 +57,8 @@ int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
     } else {
         VA_CTX(ctx);
         char buf[256];
-        fprintf_ctx(&ctx,buf);
-        return fprintf(file,"%s", buf);
+        fprintf_ctx(&ctx, buf);
+        return fprintf(file, "%s", buf);
     }
 }
 
