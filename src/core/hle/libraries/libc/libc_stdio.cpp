@@ -54,10 +54,12 @@ int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS) {
     if (fd == 1 || fd == 2) { // output stdout and stderr to console
         VA_CTX(ctx);
         return printf_ctx(&ctx);
+    } else {
+        VA_CTX(ctx);
+        char buf[256];
+        fprintf_ctx(&ctx,buf);
+        return fprintf(file,"%s", buf);
     }
-
-    UNREACHABLE_MSG("Unimplemented fprintf case");
-    return 0;
 }
 
 int PS4_SYSV_ABI ps4_vsnprintf(char* s, size_t n, const char* format, VaList* arg) {
