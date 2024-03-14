@@ -87,6 +87,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, VideoOut)                                                                             \
     SUB(Lib, CommonDlg)                                                                            \
     SUB(Lib, MsgDlg)                                                                               \
+    SUB(Lib, AudioOut)                                                                             \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

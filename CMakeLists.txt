@@ -93,7 +93,7 @@ add_subdirectory(externals)
 add_subdirectory(third-party)
 include_directories(src)
 
-set(LIBRARIES  src/core/libraries/library_common.h
+set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
               src/core/libraries/libscecommondialog.cpp
               src/core/libraries/libscecommondialog.h
@@ -105,6 +105,8 @@ set(LIBRARIES  src/core/libraries/library_common.h
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp
               src/core/libraries/libsceuserservice.h
+              src/core/libraries/libsceaudioout.cpp
+              src/core/libraries/libsceaudioout.h
 )
 
 set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
