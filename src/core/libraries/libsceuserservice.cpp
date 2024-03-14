@@ -480,6 +480,10 @@ int PS4_SYSV_ABI sceUserServiceGetImeRunCount() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
     LOG_INFO(Lib_UserService, "called");
+    if (user_id == nullptr) {
+        LOG_ERROR(Lib_UserService, "user_id is null");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
     // select first user (TODO add more)
     *user_id = 1;
     return ORBIS_OK;
@@ -552,6 +556,11 @@ int PS4_SYSV_ABI sceUserServiceGetLoginFlag() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList) {
     LOG_INFO(Lib_UserService, "called");
+    if (userIdList == nullptr) {
+        LOG_ERROR(Lib_UserService, "user_id is null");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+    // TODO only first user, do the others as well
     userIdList->user_id[0] = 1;
     userIdList->user_id[1] = ORBIS_USER_SERVICE_USER_ID_INVALID;
     userIdList->user_id[2] = ORBIS_USER_SERVICE_USER_ID_INVALID;
@@ -1023,6 +1032,10 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color) {
     // TODO fix me better
     LOG_INFO(Lib_UserService, "called");
+    if (color == nullptr) {
+        LOG_ERROR(Lib_UserService, "color is null");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
     *color = ORBIS_USER_SERVICE_USER_COLOR_BLUE;
     return ORBIS_OK;
 }
@@ -1043,8 +1056,16 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
-    // TODO error checking and configurable username
-    snprintf(user_name, size, "%s", "shadps4");
+    if (user_name == nullptr) {
+        LOG_ERROR(Lib_UserService, "user_name is null");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+    std::string name = "shadps4"; // TODO onfigurable username
+    if (size < name.length()) {
+        LOG_ERROR(Lib_UserService, "buffer is too short");
+        return ORBIS_USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
+    }
+    snprintf(user_name, size, "%s", name.c_str());
     return ORBIS_OK;
 }
 
