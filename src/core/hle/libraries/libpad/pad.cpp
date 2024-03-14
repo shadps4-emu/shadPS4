@@ -8,14 +8,14 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libs.h"
 
-namespace Core::Libraries::LibPad {
+namespace OldLibraries::LibPad {
 
 int PS4_SYSV_ABI scePadInit() {
     LOG_WARNING(Lib_Pad, "(STUBBED) called");
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI scePadOpen(Core::Libraries::LibUserService::SceUserServiceUserId user_id, s32 type,
+int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                             s32 index, const ScePadOpenParam* pParam) {
     LOG_INFO(Lib_Pad, "(STUBBED) called user_id = {} type = {} index = {}", user_id, type, index);
     return 1; // dummy
@@ -48,10 +48,10 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
     return SCE_OK;
 }
 
-void padSymbolsRegister(Loader::SymbolsResolver* sym) {
+void padSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hv1luiJrqQM", "libScePad", 1, "libScePad", 1, 1, scePadInit);
     LIB_FUNCTION("xk0AcarP3V4", "libScePad", 1, "libScePad", 1, 1, scePadOpen);
     LIB_FUNCTION("YndgXqQVV7c", "libScePad", 1, "libScePad", 1, 1, scePadReadState);
 }
 
-} // namespace Core::Libraries::LibPad
+} // namespace OldLibraries::LibPad

@@ -7,19 +7,25 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
-#include "core/hle/libraries/libsystemservice/system_service.h"
-#include "core/hle/libraries/libuserservice/libuserservice.h"
+#include "src/core/libraries/libscecommondialog.h"
+#include "src/core/libraries/libscemsgdialog.h"
+#include "src/core/libraries/libscesystemservice.h"
+#include "src/core/libraries/libsceuserservice.h"
 
-namespace Core::Libraries {
+namespace OldLibraries {
 
-void InitHLELibs(Loader::SymbolsResolver* sym) {
-    LibKernel::LibKernel_Register(sym);
+void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
+    Core::Libraries::LibKernel::LibKernel_Register(sym);
     HLE::Libs::Graphics::VideoOut::videoOutRegisterLib(sym);
-    LibSceGnmDriver::LibSceGnmDriver_Register(sym);
-    LibUserService::userServiceSymbolsRegister(sym);
-    LibPad::padSymbolsRegister(sym);
-    LibSystemService::systemServiceSymbolsRegister(sym);
-    LibC::libcSymbolsRegister(sym);
+    Core::Libraries::LibSceGnmDriver::LibSceGnmDriver_Register(sym);
+    OldLibraries::LibPad::padSymbolsRegister(sym);
+    Core::Libraries::LibC::libcSymbolsRegister(sym);
+
+    // new libraries folder from autogen
+    Libraries::UserService::RegisterlibSceUserService(sym);
+    Libraries::SystemService::RegisterlibSceSystemService(sym);
+    Libraries::CommonDialog::RegisterlibSceCommonDialog(sym);
+    Libraries::MsgDialog::RegisterlibSceMsgDialog(sym);
 }
 
-} // namespace Core::Libraries
+} // namespace OldLibraries

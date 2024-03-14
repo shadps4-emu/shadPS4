@@ -85,6 +85,8 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, SystemService)                                                                        \
     SUB(Lib, UserService)                                                                          \
     SUB(Lib, VideoOut)                                                                             \
+    SUB(Lib, CommonDlg)                                                                            \
+    SUB(Lib, MsgDlg)                                                                               \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

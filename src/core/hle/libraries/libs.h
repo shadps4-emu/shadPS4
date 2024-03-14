@@ -34,8 +34,8 @@
         sym->AddSymbol(sr, func);                                                                  \
     }
 
-namespace Core::Libraries {
+namespace OldLibraries {
 
-void InitHLELibs(Loader::SymbolsResolver* sym);
+void InitHLELibs(Core::Loader::SymbolsResolver* sym);
 
-} // namespace Core::Libraries
+} // namespace OldLibraries

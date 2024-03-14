@@ -736,6 +736,14 @@ static int printf_ctx(VaCtx* ctx) {
     return result;
 }
 
+static int fprintf_ctx(VaCtx* ctx, char* buf) {
+    const char* format = vaArgPtr<const char>(&ctx->va_list);
+    char buffer[256];
+    int result = _vsnprintf(_out_buffer, buffer, format, &ctx->va_list);
+    std::strcpy(buf, buffer);
+    return result;
+}
+
 static int vsnprintf_ctx(char* s, size_t n, const char* format, VaList* arg) {
     char buffer[n];
     int result = _vsnprintf(_out_buffer, buffer, format, arg);

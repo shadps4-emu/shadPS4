@@ -13,5 +13,10 @@ int PS4_SYSV_ABI ps4_printf(VA_ARGS);
 int PS4_SYSV_ABI ps4_vsnprintf(char* s, size_t n, const char* format, VaList* arg);
 int PS4_SYSV_ABI ps4_puts(const char* s);
 int PS4_SYSV_ABI ps4_fprintf(FILE* file, VA_ARGS);
+int PS4_SYSV_ABI ps4_setvbuf(FILE* stream, char* buf, int mode, size_t size);
+int PS4_SYSV_ABI ps4_fclose(FILE* stream);
+int PS4_SYSV_ABI ps4_fseek(FILE* stream, long offset, int whence);
+int PS4_SYSV_ABI ps4_fgetpos(FILE* stream, fpos_t* pos);
+std::size_t PS4_SYSV_ABI ps4_fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
 
 } // namespace Core::Libraries::LibC

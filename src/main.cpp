@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     mnt->Mount(p.parent_path(), "/app0");
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
-    Core::Libraries::InitHLELibs(&linker->getHLESymbols());
+    OldLibraries::InitHLELibs(&linker->getHLESymbols());
     Core::InstallTlsHandler();
     linker->LoadModule(path);
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },

@@ -17,5 +17,8 @@ void* PS4_SYSV_ABI ps4_memmove(void* dest, const void* src, std::size_t count);
 char* PS4_SYSV_ABI ps4_strcpy(char* destination, const char* source);
 char* PS4_SYSV_ABI ps4_strcat(char* dest, const char* src);
 size_t PS4_SYSV_ABI ps4_strlen(const char* str);
+char* PS4_SYSV_ABI ps4_strrchr(const char* s, int c);
+int PS4_SYSV_ABI ps4_strncmp(const char* s1, const char* s2, size_t n);
+char* PS4_SYSV_ABI ps4_strdup(const char* str1);
 
 } // namespace Core::Libraries::LibC

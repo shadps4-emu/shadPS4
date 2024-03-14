@@ -26,7 +26,7 @@ enum class Level : u8 {
  * Specifies the sub-system that generated the log message.
  *
  * @note If you add a new entry here, also add a corresponding one to `ALL_LOG_CLASSES` in
- * backend.cpp.
+ * filter.cpp.
  */
 enum class Class : u8 {
     Log,               ///< Messages about the log system itself
@@ -52,6 +52,8 @@ enum class Class : u8 {
     Lib_SystemService, ///< The LibSceSystemService implementation.
     Lib_UserService,   ///< The LibSceUserService implementation.
     Lib_VideoOut,      ///< The LibSceVideoOut implementation.
+    Lib_CommonDlg,     ///< The LibSceCommonDialog implementation.
+    Lib_MsgDlg,        ///< The LibSceMsgDialog implementation.
     Frontend,          ///< Emulator UI
     Render,            ///< Video Core
     Render_Vulkan,     ///< Vulkan backend
