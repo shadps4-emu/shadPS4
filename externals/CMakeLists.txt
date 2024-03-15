@@ -36,5 +36,5 @@ endif()
 
 if(NOT ENABLE_QT_GUI)
 # SDL3
-add_subdirectory(SDL3 EXCLUDE_FROM_ALL)
+add_subdirectory(sdl3 EXCLUDE_FROM_ALL)
 endif()
