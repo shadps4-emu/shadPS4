@@ -49,9 +49,17 @@ static void CreateSdlWindow(WindowCtx* ctx) {
         std::exit(0);
     }
     std::string title = "shadps4 v" + std::string(Common::VERSION);
-    ctx->m_window = SDL_CreateWindowWithPosition(
-        title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+    SDL_SetNumberProperty(
+        props, "flags",
         (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN)));
+    ctx->m_window = SDL_CreateWindowWithProperties(props);
+    SDL_DestroyProperties(props);
 
     ctx->is_window_hidden =
         true; // hide window until we need to show something (should draw something in buffers)
