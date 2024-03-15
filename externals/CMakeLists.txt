@@ -34,4 +34,7 @@ else()
     add_subdirectory(zlib-ng)
 endif()
 
-
+if(NOT ENABLE_QT_GUI)
+# SDL3
+add_subdirectory(SDL3 EXCLUDE_FROM_ALL)
+endif()
