@@ -12,11 +12,6 @@ add_subdirectory(fmt EXCLUDE_FROM_ALL)
 # MagicEnum
 add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
 
-if(NOT ENABLE_QT_GUI)
-# SDL3
-add_subdirectory(SDL EXCLUDE_FROM_ALL)
-endif()
-
 # Toml11
 add_subdirectory(toml11 EXCLUDE_FROM_ALL)
 
