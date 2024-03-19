@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "src/common/types.h"
+#include <core/libraries/libsceaudioout.h>
 
 namespace Audio {
 
@@ -15,7 +16,7 @@ public:
     virtual ~SDLAudio() = default;
 
     int AudioInit();
-    int AudioOutOpen(int type, u32 samples_num, u32 freq, u32 format);
+    int AudioOutOpen(int type, u32 samples_num, u32 freq, Libraries::AudioOut::OrbisAudioOutParam format);
 
 private:
     struct PortOut {
