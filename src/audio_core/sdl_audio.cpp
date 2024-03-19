@@ -3,13 +3,14 @@
 
 #include <SDL.h>
 #include "sdl_audio.h"
+namespace Audio {
 
 int SDLAudio::AudioInit() {
     return SDL_InitSubSystem(SDL_INIT_AUDIO);
 }
 
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq, u32 format) {
-    std::scoped_lock{m_mutex};
+    std::scoped_lock lock{m_mutex};
     for (int id = 0; id < portsOut.size(); id++) {
         auto& port = portsOut[id];
         if (!port.isOpen) {
@@ -24,3 +25,5 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq, u32 format) {
 
     return -1; // all ports are used
 }
+
+} // namespace Audio

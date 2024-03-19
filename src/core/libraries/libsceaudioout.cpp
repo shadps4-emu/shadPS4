@@ -11,6 +11,8 @@
 
 namespace Libraries::AudioOut {
 
+static std::unique_ptr<Audio::SDLAudio> audio;
+
 static std::string_view GetAudioOutPort(u32 port) {
     switch (port) {
     case ORBIS_AUDIO_OUT_PORT_TYPE_MAIN:
@@ -189,7 +191,7 @@ int PS4_SYSV_ABI sceAudioOutGetSystemState() {
 }
 
 int PS4_SYSV_ABI sceAudioOutInit() {
-    auto* audio = Common::Singleton<SDLAudio>::Instance();
+    audio = std::make_unique<Audio::SDLAudio>();
     u32 result = audio->AudioInit() == 0 ? ORBIS_OK : ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     LOG_INFO(Lib_AudioOut, "AudioInit returned {}", result);
     return result;
@@ -231,7 +233,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     LOG_INFO(
         Lib_AudioOut,
         "AudioOutOpen id = {} port_type = {} index= {} lenght= {} sample_rate= {} param_type= {}",
-        user_id, GetAudioOutPort(port_type), index, length, sample_rate, GetAudioOutParam(param_type));
+        user_id, GetAudioOutPort(port_type), index, length, sample_rate,
+        GetAudioOutParam(param_type));
     return ORBIS_OK;
 }
 

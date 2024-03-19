@@ -7,6 +7,8 @@
 
 #include "src/common/types.h"
 
+namespace Audio {
+
 class SDLAudio {
 public:
     SDLAudio() = default;
@@ -28,3 +30,5 @@ private:
     std::mutex m_mutex;
     std::array<PortOut, 8> portsOut; // main support up to 8 ports
 };
+
+} // namespace Audio
