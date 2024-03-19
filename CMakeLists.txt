@@ -93,6 +93,9 @@ add_subdirectory(externals)
 add_subdirectory(third-party)
 include_directories(src)
 
+set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
+               src/audio_core/sdl_audio.h
+)
 set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
               src/core/libraries/libscecommondialog.cpp
@@ -245,6 +248,7 @@ qt_add_executable(shadps4
 )
 else()
 add_executable(shadps4
+    ${AUDIO_CORE}
     ${LIBC_SOURCES}
     ${PAD_SOURCES}
     ${FILESYSTEM_SOURCES}

@@ -4,8 +4,31 @@
 #pragma once
 
 #include "library_common.h"
+#include "libsceuserservice.h"
 
 namespace Libraries::AudioOut {
+
+constexpr int SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
+
+enum OrbisAudioOutPort {
+    ORBIS_AUDIO_OUT_PORT_TYPE_MAIN = 0,
+    ORBIS_AUDIO_OUT_PORT_TYPE_BGM = 1,
+    ORBIS_AUDIO_OUT_PORT_TYPE_VOICE = 2,
+    ORBIS_AUDIO_OUT_PORT_TYPE_PERSONAL = 3,
+    ORBIS_AUDIO_OUT_PORT_TYPE_PADSPK = 4,
+    ORBIS_AUDIO_OUT_PORT_TYPE_AUX = 127
+};
+
+enum OrbisAudioOutParam {
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO = 0,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO = 1,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH = 2,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO = 3,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO = 4,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH = 5,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD = 6,
+    ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD = 7
+};
 
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
 int PS4_SYSV_ABI sceAudioDeviceControlGet();
@@ -41,9 +64,11 @@ int PS4_SYSV_ABI sceAudioOutMasteringInit();
 int PS4_SYSV_ABI sceAudioOutMasteringSetParam();
 int PS4_SYSV_ABI sceAudioOutMasteringTerm();
 int PS4_SYSV_ABI sceAudioOutMbusInit();
-int PS4_SYSV_ABI sceAudioOutOpen();
+s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
+                                 OrbisAudioOutPort port_type, s32 index, u32 length,
+                                 u32 sample_rate, OrbisAudioOutParam param_type);
 int PS4_SYSV_ABI sceAudioOutOpenEx();
-int PS4_SYSV_ABI sceAudioOutOutput();
+s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr);
 int PS4_SYSV_ABI sceAudioOutOutputs();
 int PS4_SYSV_ABI sceAudioOutPtClose();
 int PS4_SYSV_ABI sceAudioOutPtGetLastOutputTime();
