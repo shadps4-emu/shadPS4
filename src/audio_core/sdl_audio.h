@@ -4,9 +4,10 @@
 #pragma once
 
 #include <mutex>
+#include <SDL.h>
+#include <core/libraries/libsceaudioout.h>
 
 #include "src/common/types.h"
-#include <core/libraries/libsceaudioout.h>
 
 namespace Audio {
 
@@ -16,17 +17,21 @@ public:
     virtual ~SDLAudio() = default;
 
     int AudioInit();
-    int AudioOutOpen(int type, u32 samples_num, u32 freq, Libraries::AudioOut::OrbisAudioOutParam format);
+    int AudioOutOpen(int type, u32 samples_num, u32 freq,
+                     Libraries::AudioOut::OrbisAudioOutParam format);
+    s32 AudioOutOutput(s32 handle, const void* ptr);
 
 private:
     struct PortOut {
         bool isOpen = false;
         int type = 0;
         u32 samples_num = 0;
+        u8 sample_size = 0;
         u32 freq = 0;
         u32 format = -1;
         int channels_num = 0;
         int volume[8] = {};
+        SDL_AudioStream* stream = nullptr;
     };
     std::mutex m_mutex;
     std::array<PortOut, 8> portsOut; // main support up to 8 ports

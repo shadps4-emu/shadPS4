@@ -235,7 +235,12 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         "AudioOutOpen id = {} port_type = {} index= {} lenght= {} sample_rate= {} param_type= {}",
         user_id, GetAudioOutPort(port_type), index, length, sample_rate,
         GetAudioOutParam(param_type));
-    return ORBIS_OK;
+    int result = audio->AudioOutOpen(port_type, length, sample_rate, param_type);
+    if (result == -1) {
+        LOG_ERROR(Lib_AudioOut, "Audio ports are full");
+        return ORBIS_AUDIO_OUT_ERROR_PORT_FULL;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceAudioOutOpenEx() {
@@ -243,9 +248,8 @@ int PS4_SYSV_ABI sceAudioOutOpenEx() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
+    return audio->AudioOutOutput(handle, ptr);
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs() {

@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL.h>
-#include "sdl_audio.h"
 #include <common/assert.h>
+#include "sdl_audio.h"
 
 namespace Audio {
 
@@ -23,21 +22,47 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             port.samples_num = samples_num;
             port.freq = freq;
             port.format = format;
-
+            SDL_AudioFormat sampleFormat;
             switch (format) {
             case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
+                sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 1;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 1;
+                port.sample_size = 4;
                 break;
             case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
+                sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 2;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 2;
+                port.sample_size = 4;
                 break;
             case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
+                sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 8;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 8;
+                port.sample_size = 4;
+                break;
+            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
+                sampleFormat = SDL_AUDIO_S16;
+                port.channels_num = 8;
+                port.sample_size = 2;
+                break;
+            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
+                sampleFormat = SDL_AUDIO_F32;
+                port.channels_num = 8;
+                port.sample_size = 4;
                 break;
             default:
                 UNREACHABLE_MSG("Unknown format");
@@ -46,12 +71,30 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             for (int i = 0; i < port.channels_num; i++) {
                 port.volume[i] = Libraries::AudioOut::SCE_AUDIO_OUT_VOLUME_0DB;
             }
+
+            SDL_AudioSpec fmt;
+            SDL_zero(fmt);
+            fmt.format = sampleFormat;
+            fmt.channels = port.channels_num;
+            fmt.freq = 48000;
+            port.stream =
+                SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &fmt, NULL, NULL);
+            SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
             return id + 1;
         }
-       
     }
 
     return -1; // all ports are used
+}
+
+s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
+    std::scoped_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    if (!port.isOpen || ptr == nullptr)
+        return 0;
+
+    return SDL_PutAudioStreamData(port.stream, ptr,
+                                  port.samples_num * port.sample_size * port.channels_num);
 }
 
 } // namespace Audio
