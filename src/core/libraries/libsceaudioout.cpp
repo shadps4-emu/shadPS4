@@ -230,11 +230,11 @@ int PS4_SYSV_ABI sceAudioOutMbusInit() {
 s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
                                  u32 sample_rate, OrbisAudioOutParam param_type) {
-    LOG_INFO(
-        Lib_AudioOut,
-        "AudioOutOpen id = {} port_type = {} index= {} lenght= {} sample_rate= {} param_type= {}",
-        user_id, GetAudioOutPort(port_type), index, length, sample_rate,
-        GetAudioOutParam(param_type));
+    LOG_INFO(Lib_AudioOut,
+             "AudioOutOpen id = {} port_type = {} index = {} lengh t= {} sample_rate = {} "
+             "param_type = {}",
+             user_id, GetAudioOutPort(port_type), index, length, sample_rate,
+             GetAudioOutParam(param_type));
     int result = audio->AudioOutOpen(port_type, length, sample_rate, param_type);
     if (result == -1) {
         LOG_ERROR(Lib_AudioOut, "Audio ports are full");
