@@ -352,15 +352,11 @@ set_target_properties(shadps4 PROPERTIES
 )
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ngd2.dll" $<TARGET_FILE_DIR:shadps4>)
-else()
-add_custom_command(TARGET shadps4 POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ng2.dll" $<TARGET_FILE_DIR:shadps4>)
-endif()
+     $<TARGET_FILE:zlib>
+     $<TARGET_FILE_DIR:shadps4>
+)
 
 if(NOT ENABLE_QT_GUI)
 add_custom_command(TARGET shadps4 POST_BUILD
