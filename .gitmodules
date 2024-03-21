@@ -48,9 +48,6 @@
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
-[submodule "externals/zlib-ng-win"]
-	path = externals/zlib-ng-win
-	url = https://github.com/shadps4-emu/ext-zlib-ng-win.git
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadps4-emu/ext-SDL.git
