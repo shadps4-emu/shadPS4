@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/assert.h>
+#include <core/libraries/error_codes.h>
 #include "sdl_audio.h"
 
 namespace Audio {
@@ -90,9 +91,13 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     std::scoped_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
-    if (!port.isOpen || ptr == nullptr)
+    if (!port.isOpen) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+    if (ptr == nullptr) {
         return 0;
-
+    }
+    // TODO mixing channels
     int result = SDL_PutAudioStreamData(port.stream, ptr,
                                         port.samples_num * port.sample_size * port.channels_num);
     // TODO find a correct value 8192 is estimated

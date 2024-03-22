@@ -34,7 +34,8 @@ private:
         SDL_AudioStream* stream = nullptr;
     };
     std::mutex m_mutex;
-    std::array<PortOut, 8> portsOut; // main support up to 8 ports
+    std::array<PortOut, 22> portsOut; // main up to 8 ports , BGM 1 port , voice up to 4 ports ,
+                                      // personal up to 4 ports , padspk up to 5 ports , aux 1 port
 };
 
 } // namespace Audio

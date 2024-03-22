@@ -231,10 +231,30 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
                                  u32 sample_rate, OrbisAudioOutParam param_type) {
     LOG_INFO(Lib_AudioOut,
-             "AudioOutOpen id = {} port_type = {} index = {} lengh t= {} sample_rate = {} "
+             "AudioOutOpen id = {} port_type = {} index = {} lenght= {} sample_rate = {} "
              "param_type = {}",
              user_id, GetAudioOutPort(port_type), index, length, sample_rate,
              GetAudioOutParam(param_type));
+    if ((port_type < 0 || port_type > 4) && (port_type != 127)) {
+        LOG_ERROR(Lib_AudioOut, "Invalid port type");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+    }
+    if (sample_rate != 48000) {
+        LOG_ERROR(Lib_AudioOut, "Invalid sample rate");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ;
+    }
+    if (param_type < 0 || param_type > 7) {
+        LOG_ERROR(Lib_AudioOut, "Invalid format");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
+    }
+    if (length != 256 && length != 512 && length != 768 && length != 1024 && length != 1280 &&
+        length != 1536 && length != 1792 && length != 2048) {
+        LOG_ERROR(Lib_AudioOut, "Invalid length");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_SIZE;
+    }
+    if (index != 0) {
+        LOG_ERROR(Lib_AudioOut, "index is not valid !=0 {}", index);
+    }
     int result = audio->AudioOutOpen(port_type, length, sample_rate, param_type);
     if (result == -1) {
         LOG_ERROR(Lib_AudioOut, "Audio ports are full");
