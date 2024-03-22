@@ -167,6 +167,9 @@ int main(int argc, char* argv[]) {
     modules_to_generate.push_back(std::string("libkernel"));
     modules_to_generate.push_back(std::string("libSceSystemService"));
     modules_to_generate.push_back(std::string("libSceUserService"));
+    modules_to_generate.push_back(std::string("libSceCommonDialog"));
+    modules_to_generate.push_back(std::string("libSceMsgDialog"));
+    modules_to_generate.push_back(std::string("libSceAudioOut"));
     GetSymbolsFromLibDoc(modules_to_generate);
 
     return 0;

@@ -51,10 +51,34 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     return total_read;
 }
 
+s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(d);
+
+    file->m_mutex.lock();
+
+    if (whence == 1) {
+        offset = static_cast<int64_t>(file->f.Tell()) + offset;
+        whence = 0;
+    }
+
+    if (whence == 2) {
+        offset = static_cast<int64_t>(file->f.GetSize()) + offset;
+        whence = 0;
+    }
+
+    file->f.Seek(offset);
+    auto pos = static_cast<int64_t>(file->f.Tell());
+
+    file->m_mutex.unlock();
+    return pos;
+}
+
 void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
+    LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,

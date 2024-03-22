@@ -54,6 +54,7 @@ enum class Class : u8 {
     Lib_VideoOut,      ///< The LibSceVideoOut implementation.
     Lib_CommonDlg,     ///< The LibSceCommonDialog implementation.
     Lib_MsgDlg,        ///< The LibSceMsgDialog implementation.
+    Lib_AudioOut,      ///< The LibSceAudioOut implementation.
     Frontend,          ///< Emulator UI
     Render,            ///< Video Core
     Render_Vulkan,     ///< Vulkan backend

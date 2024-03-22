@@ -15,7 +15,8 @@ namespace Emu {
 struct VulkanExt {
     bool enable_validation_layers = false;
 
-    std::vector<const char*> required_extensions;
+    char const* const* required_extensions;
+    u32 required_extensions_count;
     std::vector<VkExtensionProperties> available_extensions;
     std::vector<const char*> required_layers;
     std::vector<VkLayerProperties> available_layers;

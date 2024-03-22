@@ -93,7 +93,10 @@ add_subdirectory(externals)
 add_subdirectory(third-party)
 include_directories(src)
 
-set(LIBRARIES  src/core/libraries/library_common.h
+set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
+               src/audio_core/sdl_audio.h
+)
+set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
               src/core/libraries/libscecommondialog.cpp
               src/core/libraries/libscecommondialog.h
@@ -105,6 +108,8 @@ set(LIBRARIES  src/core/libraries/library_common.h
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp
               src/core/libraries/libsceuserservice.h
+              src/core/libraries/libsceaudioout.cpp
+              src/core/libraries/libsceaudioout.h
 )
 
 set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
@@ -243,6 +248,7 @@ qt_add_executable(shadps4
 )
 else()
 add_executable(shadps4
+    ${AUDIO_CORE}
     ${LIBC_SOURCES}
     ${PAD_SOURCES}
     ${FILESYSTEM_SOURCES}
@@ -346,15 +352,11 @@ set_target_properties(shadps4 PROPERTIES
 )
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ngd2.dll" $<TARGET_FILE_DIR:shadps4>)
-else()
-add_custom_command(TARGET shadps4 POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     "${PROJECT_SOURCE_DIR}/externals/zlib-ng-win/bin/zlib-ng2.dll" $<TARGET_FILE_DIR:shadps4>)
-endif()
+     $<TARGET_FILE:zlib>
+     $<TARGET_FILE_DIR:shadps4>
+)
 
 if(NOT ENABLE_QT_GUI)
 add_custom_command(TARGET shadps4 POST_BUILD

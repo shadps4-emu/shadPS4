@@ -32,16 +32,16 @@ void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     inst_info.pNext = nullptr;
     inst_info.flags = 0;
     inst_info.pApplicationInfo = &app_info;
-    inst_info.enabledExtensionCount = ext.required_extensions.size();
-    inst_info.ppEnabledExtensionNames = ext.required_extensions.data();
+    inst_info.enabledExtensionCount = ext.required_extensions_count;
+    inst_info.ppEnabledExtensionNames = ext.required_extensions;
     inst_info.enabledLayerCount = 0;
     inst_info.ppEnabledLayerNames = nullptr;
 
     const VkResult result = vkCreateInstance(&inst_info, nullptr, &ctx->m_graphic_ctx.m_instance);
     ASSERT_MSG(result == VK_SUCCESS, "Can't create an vulkan instance");
 
-    if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, &ctx->m_surface) ==
-        SDL_FALSE) {
+    if (SDL_Vulkan_CreateSurface(ctx->m_window, ctx->m_graphic_ctx.m_instance, NULL,
+                                 &ctx->m_surface) == SDL_FALSE) {
         UNREACHABLE_MSG("Can't create an vulkan surface");
     }
 
@@ -243,12 +243,8 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
     u32 required_extensions_count = 0;
     u32 available_extensions_count = 0;
     u32 available_layers_count = 0;
-    auto result = SDL_Vulkan_GetInstanceExtensions(&required_extensions_count, nullptr);
-
-    ext->required_extensions = std::vector<const char*>(required_extensions_count);
-
-    result = SDL_Vulkan_GetInstanceExtensions(&required_extensions_count,
-                                              ext->required_extensions.data());
+    ext->required_extensions = SDL_Vulkan_GetInstanceExtensions(&required_extensions_count);
+    ext->required_extensions_count = required_extensions_count;
 
     vkEnumerateInstanceExtensionProperties(nullptr, &available_extensions_count, nullptr);
 
@@ -261,9 +257,9 @@ void Graphics::Vulkan::vulkanGetInstanceExtensions(Emu::VulkanExt* ext) {
     ext->available_layers = std::vector<VkLayerProperties>(available_layers_count);
     vkEnumerateInstanceLayerProperties(&available_layers_count, ext->available_layers.data());
 
-    for (const char* ext : ext->required_extensions) {
-        LOG_INFO(Render_Vulkan, "Vulkan required extension = {}", ext);
-    }
+    // for (const char* ext : ext->required_extensions) {
+    //    LOG_INFO(Render_Vulkan, "Vulkan required extension = {}", ext);
+    //}
 
     for (const auto& ext : ext->available_extensions) {
         LOG_INFO(Render_Vulkan, "Vulkan available extension: {}, version = {}", ext.extensionName,
