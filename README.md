@@ -37,29 +37,17 @@ Check building instructions in [linux build](https://github.com/georgemoralis/sh
 
 To discuss the development of this emulator, please join our Discord server: [![Discord](https://img.shields.io/discord/1080089157554155590)](https://discord.gg/MyZRaBngxA)
 
-# Who are you?
+# Main team
 
-Old emulator fans and devs can recognize me as "shadow". I was the founder and coder for a lot of emulation projects:
-* PCSX
-* PCSX2
-* PCSP
-* JPCSP
-* arcadeflex
-* rpcs3 contributor
+- gmoralis (a.k.a. shadow)
+- gpucode (a.k.a. emufan4568)
+- skmp (a.k.a. drk||Raziel)
+- wheremyfoodat (a.k.a. rodakinos)
 
 # Contribution
 
-I currently accept any contribution, here is a list of some items that may be useful:
+We currently accept any contribution, just open a pr and we will check it :)
 
-* PKG extractor (there was initial work on this, search project history commits).
-* Initial GUI with imgui, SDL3 and Vulkan.
-* to be filled...
-
-# Documentation
-
-Wiki has some documentation for PS4 PKG format
-
-[PKG PS4 File Format](https://github.com/georgemoralis/shadPS4/wiki/PKG-Information "PKG PS4 File Format")
 
 # Sister Projects
 - [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): An multiplatform 3DS emulator from our co-author wheremyfoodat
