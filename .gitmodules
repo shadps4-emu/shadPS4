@@ -47,3 +47,4 @@
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadps4-emu/ext-SDL.git
+
