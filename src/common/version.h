@@ -8,6 +8,6 @@
 
 namespace Common {
 
-constexpr char VERSION[] = "0.0.3 WIP";
+constexpr char VERSION[] = "0.0.3";
 
 } // namespace Common

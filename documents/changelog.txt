@@ -1,3 +1,19 @@
+v0.0.3 23/03/2024 - codename salad
+=================
+-Switching to std::thread
+-Use unique_ptr where possible
+-Replace printf/scanf with type safe fmt
+-Implemented sceKernelGetProcessTime
+-Implemented sceKernelGetProcessTimeCounter , sceKernelGetProcessTimeCounterFrequency
+-Pause emu with P button
+-Timers rewrote with std::chrono
+-Added sceSystemServiceGetStatus
+-Initial FileSystem implementation
+-Initial TLS work
+-New logging implementation
+-Some functions implemented for userService,systemService
+-Added sceAudioOut module and output using sdl audio
+
 v0.0.2 21/10/2023
 =================
 -using cstdint header in variable types
