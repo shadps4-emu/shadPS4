@@ -58,8 +58,9 @@ int main(int argc, char* argv[]) {
         if (std::filesystem::exists(sce_module_folder)) {
             for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
                 if (entry.path().filename() == "libc.prx") {
-                    // found = true;
+                    found = true;
                     printf("%s\n", entry.path().string().c_str());
+                    linker->LoadModule(entry.path().string().c_str());
                 }
             }
         }

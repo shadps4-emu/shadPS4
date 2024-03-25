@@ -11,10 +11,9 @@
 namespace Core::Loader {
 
 void SymbolsResolver::AddSymbol(const SymbolResolver& s, u64 virtual_addr) {
-    SymbolRecord r{};
+    SymbolRecord& r = m_symbols.emplace_back();
     r.name = GenerateName(s);
     r.virtual_address = virtual_addr;
-    m_symbols.push_back(r);
 }
 
 std::string SymbolsResolver::GenerateName(const SymbolResolver& s) {
@@ -25,7 +24,7 @@ std::string SymbolsResolver::GenerateName(const SymbolResolver& s) {
 const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
     const std::string name = GenerateName(s);
     for (u32 i = 0; i < m_symbols.size(); i++) {
-        if (m_symbols[i].name.compare(name) == 0) {
+        if (m_symbols[i].name == name) {
             return &m_symbols[i];
         }
     }
@@ -46,7 +45,7 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
         } else {
             nidName = "UNK";
         }
-        f.WriteString(fmt::format("{:<20} {:<16} {:<60} {:<30} {:<2} {:<30} {:<2} {:<2} {:<10}\n",
+        f.WriteString(fmt::format("0x{:<20x} {:<16} {:<60} {:<30} {:<2} {:<30} {:<2} {:<2} {:<10}\n",
                                   symbol.virtual_address, ids.at(0), nidName, ids.at(1), ids.at(2),
                                   ids.at(3), ids.at(4), ids.at(5), ids.at(6)));
     }
