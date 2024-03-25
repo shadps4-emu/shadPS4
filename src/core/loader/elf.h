@@ -490,6 +490,7 @@ public:
     std::string ElfPheaderFlagsStr(u32 flags);
 
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
+    bool IsSharedLib();
 
 private:
     Common::FS::IOFile m_f{};

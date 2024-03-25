@@ -20,6 +20,10 @@ struct EntryParams {
 };
 
 struct ModuleInfo {
+    bool operator==(const ModuleInfo& other) const {
+        return version_major == other.version_major && version_minor == other.version_minor &&
+               name == other.name;
+    }
     std::string name;
     union {
         u64 value;
@@ -34,6 +38,9 @@ struct ModuleInfo {
 };
 
 struct LibraryInfo {
+    bool operator==(const LibraryInfo& other) const {
+        return version == other.version && name == other.name;
+    }
     std::string name;
     union {
         u64 value;
