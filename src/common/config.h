@@ -18,5 +18,6 @@ u32 getScreenWidth();
 u32 getScreenHeight();
 
 bool debugDump();
+bool isLleLibc();
 
 }; // namespace Config

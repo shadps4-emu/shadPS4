@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <common/config.h>
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/hle/libraries/libc/libc.h"
 #include "core/hle/libraries/libkernel/libkernel.h"
@@ -20,7 +21,9 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     HLE::Libs::Graphics::VideoOut::videoOutRegisterLib(sym);
     Core::Libraries::LibSceGnmDriver::LibSceGnmDriver_Register(sym);
     OldLibraries::LibPad::padSymbolsRegister(sym);
-    Core::Libraries::LibC::libcSymbolsRegister(sym);
+    if (!Config::isLleLibc()) {
+        Core::Libraries::LibC::libcSymbolsRegister(sym);
+    }
 
     // new libraries folder from autogen
     Libraries::UserService::RegisterlibSceUserService(sym);

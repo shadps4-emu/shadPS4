@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <thread>
 
+#include <core/hle/libraries/libc/libc.h>
 #include <core/hle/libraries/libkernel/thread_management.h>
 #include "common/config.h"
 #include "common/discord.h"
@@ -49,6 +50,24 @@ int main(int argc, char* argv[]) {
     OldLibraries::InitHLELibs(&linker->getHLESymbols());
     Core::InstallTlsHandler();
     linker->LoadModule(path);
+    // check if there is a libc.prx in sce_module folder
+    bool found = false;
+    if (Config::isLleLibc()) {
+        std::filesystem::path sce_module_folder =
+            std::string(p.parent_path().string() + "\\sce_module");
+        if (std::filesystem::exists(sce_module_folder)) {
+            for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
+                if (entry.path().filename() == "libc.prx") {
+                    // found = true;
+                    printf("%s\n", entry.path().string().c_str());
+                }
+            }
+        }
+    }
+    if (!found) // load HLE libc
+    {
+        Core::Libraries::LibC::libcSymbolsRegister(&linker->getHLESymbols());
+    }
     std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
                             nullptr);
     Discord::RPC discordRPC;
