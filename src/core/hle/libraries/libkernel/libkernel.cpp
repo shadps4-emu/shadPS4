@@ -126,6 +126,23 @@ PS4_SYSV_ABI void* posix_mmap(void* addr, u64 len, int prot, int flags, int fd, 
     return ptr;
 }
 
+static uint64_t g_mspace_atomic_id_mask = 0;
+static uint64_t g_mstate_table[64] = {0};
+
+struct HeapInfoInfo {
+    uint64_t size = sizeof(HeapInfoInfo);
+    uint32_t flag;
+    uint32_t getSegmentInfo;
+    uint64_t* mspace_atomic_id_mask;
+    uint64_t* mstate_table;
+};
+
+void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
+    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
+    info->mstate_table = g_mstate_table;
+    info->getSegmentInfo = 0;
+}
+
 void LibKernel_Register(Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -153,6 +170,10 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
     Core::Libraries::LibKernel::pthreadSymbolsRegister(sym);
+
+    // temp
+    LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
+                 sceLibcHeapGetTraceInfo);
 }
 
 } // namespace Core::Libraries::LibKernel
