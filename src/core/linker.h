@@ -9,7 +9,7 @@
 #include "core/loader/symbols_resolver.h"
 
 namespace Core {
-
+using module_func_t = int (*)(size_t args, const void* argp);
 struct DynamicModuleInfo;
 class Linker;
 
@@ -142,6 +142,8 @@ private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);
     const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
     Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
+    int StartModule(Module* m, size_t args, const void* argp, module_func_t func);
+    void StartAllModules();
 
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

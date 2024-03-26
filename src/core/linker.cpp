@@ -604,6 +604,27 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 
 using exit_func_t = PS4_SYSV_ABI void (*)();
 using entry_func_t = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
+using module_ini_func_t = PS4_SYSV_ABI int (*)(size_t args, const void* argp, module_func_t func);
+
+static PS4_SYSV_ABI int run_module(uint64_t addr, size_t args, const void* argp,
+                                   module_func_t func) {
+    return reinterpret_cast<module_ini_func_t>(addr)(args, argp, func);
+}
+
+int Linker::StartModule(Module* m, size_t args, const void* argp, module_func_t func) {
+    LOG_INFO(Core_Linker, "Module started : {}\n", m->file_name);
+    return run_module(m->dynamic_info.init_virtual_addr + m->base_virtual_addr, args, argp, func);
+}
+
+void Linker::StartAllModules() {
+    std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (m->elf.IsSharedLib()) {
+            StartModule(m.get(), 0, nullptr, nullptr);
+        }
+    }
+}
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
@@ -638,15 +659,20 @@ void Linker::Execute() {
     }
 
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
+    //relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
     }
+    StartAllModules();
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin"; // hmm should be ok?
 
-    const auto& module = m_modules.at(0);
-    RunMainEntry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
+    for (auto& m : m_modules) {
+        if (!m->elf.IsSharedLib()) {
+            RunMainEntry(m->elf.GetElfEntry() + m->base_virtual_addr, &p, ProgramExitFunc);
+        }
+    }
 }
 
 void Linker::DebugDump() {
