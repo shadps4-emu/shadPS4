@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include <common/assert.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -577,43 +578,37 @@ void Linker::Relocate(Module* m) {
 void Linker::Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
-    if (ids.size() == 3) // symbols are 3 parts name , library , module
-    {
-        const auto* library = FindLibrary(*m, ids.at(1));
-        const auto* module = FindModule(*m, ids.at(2));
+    ASSERT_MSG(ids.size() == 3, "Symbols must be 3 parts name, library, module");
 
-        if (library != nullptr && module != nullptr) {
-            Loader::SymbolResolver sr{};
-            sr.name = ids.at(0);
-            sr.library = library->name;
-            sr.library_version = library->version;
-            sr.module = module->name;
-            sr.module_version_major = module->version_major;
-            sr.module_version_minor = module->version_minor;
-            sr.type = Symtype;
+    const auto* library = FindLibrary(*m, ids.at(1));
+    const auto* module = FindModule(*m, ids.at(2));
+    ASSERT_MSG(library && module, "Unable to find library and module");
 
-            const Loader::SymbolRecord* rec = nullptr;
-            rec = m_hle_symbols.FindSymbol(sr);
+    Loader::SymbolResolver sr{};
+    sr.name = ids.at(0);
+    sr.library = library->name;
+    sr.library_version = library->version;
+    sr.module = module->name;
+    sr.module_version_major = module->version_major;
+    sr.module_version_minor = module->version_minor;
+    sr.type = Symtype;
 
-            if (rec != nullptr) {
-                *return_info = *rec;
-            } else {
-                auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-                if (aeronid) {
-                    return_info->name = aeronid->name;
-                    return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
-                } else {
-                    return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
-                    return_info->name = "Unknown !!!";
-                }
-                LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-                          return_info->name, library->name, module->name);
-            }
-        } else {
-            //__debugbreak();//den tha prepei na ftasoume edo
-        }
+    const Loader::SymbolRecord* rec = nullptr;
+    rec = m_hle_symbols.FindSymbol(sr);
+
+    if (rec != nullptr) {
+        *return_info = *rec;
     } else {
-        //__debugbreak();//oute edo mallon
+        auto aeronid = AeroLib::FindByNid(sr.name.c_str());
+        if (aeronid) {
+            return_info->name = aeronid->name;
+            return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
+        } else {
+            return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
+            return_info->name = "Unknown !!!";
+        }
+        LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
+                  return_info->name, library->name, module->name);
     }
 }
 
