@@ -164,6 +164,9 @@ void Linker::LoadModuleToMemory(Module* m) {
             LOG_INFO(Core_Linker, "tls virtual address ={:#x}", m->tls.image_virtual_addr);
             LOG_INFO(Core_Linker, "tls image size      ={}", m->tls.image_size);
             break;
+        case PT_SCE_PROCPARAM:
+            m->proc_param_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
+            break;
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}",
                       m->elf.ElfPheaderTypeStr(elf_pheader[i].p_type));
@@ -605,6 +608,16 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
 }
 
+u64 Linker::GetProcParam() {
+    // std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (!m->elf.IsSharedLib()) {
+            return m->proc_param_virtual_addr;
+        }
+    }
+    return 0;
+}
 using exit_func_t = PS4_SYSV_ABI void (*)();
 using entry_func_t = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
 using module_ini_func_t = PS4_SYSV_ABI int (*)(size_t args, const void* argp, module_func_t func);
@@ -662,7 +675,7 @@ void Linker::Execute() {
     }
 
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
-    //relocate all modules
+    // relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
     }

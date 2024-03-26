@@ -106,6 +106,7 @@ struct Module {
     Loader::Elf elf;
     u64 aligned_base_size = 0;
     u64 base_virtual_addr = 0;
+    u64 proc_param_virtual_addr = 0;
 
     std::string file_name;
 
@@ -137,6 +138,7 @@ public:
                  Loader::SymbolRecord* return_info);
     void Execute();
     void DebugDump();
+    u64 GetProcParam();
 
 private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);

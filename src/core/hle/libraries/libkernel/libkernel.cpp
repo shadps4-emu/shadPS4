@@ -19,10 +19,19 @@
 #else
 #include <sys/mman.h>
 #endif
+#include <common/singleton.h>
+#include <core/linker.h>
 
 namespace Core::Libraries::LibKernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
+
+static void* PS4_SYSV_ABI sceKernelGetProcParam() {
+
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+
+    return reinterpret_cast<void*>(linker->GetProcParam());
+}
 
 int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
     UNREACHABLE();
@@ -139,6 +148,7 @@ void LibKernel_Register(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
+    LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
 
     Core::Libraries::LibKernel::fileSystemSymbolsRegister(sym);
     Core::Libraries::LibKernel::timeSymbolsRegister(sym);
