@@ -379,101 +379,67 @@ const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id) {
 }
 
 void Linker::LoadSymbols(Module* m) {
-    if (m->dynamic_info.symbol_table == nullptr || m->dynamic_info.str_table == nullptr ||
-        m->dynamic_info.symbol_table_total_size == 0) {
-        LOG_INFO(Core_Linker, "Symbol table not found!");
-        return;
-    }
 
-    for (auto* sym = m->dynamic_info.symbol_table;
-         reinterpret_cast<uint8_t*>(sym) <
-         reinterpret_cast<uint8_t*>(m->dynamic_info.symbol_table) +
-             m->dynamic_info.symbol_table_total_size;
-         sym++) {
-        std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
-        const auto ids = Common::SplitString(id, '#');
-        if (ids.size() == 3) // symbols are 3 parts name , library , module
-        {
-            const auto* library = FindLibrary(*m, ids.at(1));
-            const auto* module = FindModule(*m, ids.at(2));
+    const auto symbol_database = [this](Module* m, Loader::SymbolsResolver* symbol,
+                                        bool export_func) {
+        if (m->dynamic_info.symbol_table == nullptr || m->dynamic_info.str_table == nullptr ||
+            m->dynamic_info.symbol_table_total_size == 0) {
+            LOG_INFO(Core_Linker, "Symbol table not found!");
+            return;
+        }
+        for (auto* sym = m->dynamic_info.symbol_table;
+             reinterpret_cast<u8*>(sym) < reinterpret_cast<u8*>(m->dynamic_info.symbol_table) +
+                                              m->dynamic_info.symbol_table_total_size;
+             sym++) {
+            std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
             auto bind = sym->GetBind();
             auto type = sym->GetType();
             auto visibility = sym->GetVisibility();
-            if (library != nullptr || module != nullptr) {
-                switch (bind) {
-                case STB_GLOBAL:
-                case STB_WEAK:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported bind {} for name symbol {}", bind,
-                             ids.at(0));
-                    continue;
+            const auto ids = Common::SplitString(id, '#');
+            if (ids.size() == 3) {
+                const auto* library = FindLibrary(*m, ids.at(1));
+                const auto* module = FindModule(*m, ids.at(2));
+                ASSERT_MSG(library && module, "Unable to find library and module");
+                if ((bind == STB_GLOBAL || bind == STB_WEAK) &&
+                    (type == STT_FUN || type == STT_OBJECT) &&
+                    export_func == (sym->st_value != 0)) {
+                    std::string nidName = "";
+                    auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
+                    if (aeronid != nullptr) {
+                        nidName = aeronid->name;
+                    } else {
+                        nidName = "UNK";
+                    }
+                    Loader::SymbolResolver sym_r{};
+                    sym_r.name = ids.at(0);
+                    sym_r.nidName = nidName;
+                    sym_r.library = library->name;
+                    sym_r.library_version = library->version;
+                    sym_r.module = module->name;
+                    sym_r.module_version_major = module->version_major;
+                    sym_r.module_version_minor = module->version_minor;
+                    switch (type) {
+                    case STT_NOTYPE:
+                        sym_r.type = Loader::SymbolType::NoType;
+                        break;
+                    case STT_FUN:
+                        sym_r.type = Loader::SymbolType::Function;
+                        break;
+                    case STT_OBJECT:
+                        sym_r.type = Loader::SymbolType::Object;
+                        break;
+                    default:
+                        sym_r.type = Loader::SymbolType::Unknown;
+                        break;
+                    }
+                    symbol->AddSymbol(sym_r,
+                                     (export_func ? sym->st_value + m->base_virtual_addr : 0));
                 }
-                switch (type) {
-                case STT_OBJECT:
-                case STT_FUN:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported type {} for name symbol {}", type,
-                             ids.at(0));
-                    continue;
-                }
-                switch (visibility) {
-                case STV_DEFAULT:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported visibility {} for name symbol {}",
-                             visibility, ids.at(0));
-                    continue;
-                }
-                // if st_value!=0 then it's export symbol
-                bool is_sym_export = sym->st_value != 0;
-                std::string nidName = "";
-
-                auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
-
-                if (aeronid != nullptr) {
-                    nidName = aeronid->name;
-                } else {
-                    nidName = "UNK";
-                }
-
-                Loader::SymbolResolver sym_r{};
-                sym_r.name = ids.at(0);
-                sym_r.nidName = nidName;
-                sym_r.library = library->name;
-                sym_r.library_version = library->version;
-                sym_r.module = module->name;
-                sym_r.module_version_major = module->version_major;
-                sym_r.module_version_minor = module->version_minor;
-                switch (type) {
-                case STT_NOTYPE:
-                    sym_r.type = Loader::SymbolType::NoType;
-                    break;
-                case STT_FUN:
-                    sym_r.type = Loader::SymbolType::Function;
-                    break;
-                case STT_OBJECT:
-                    sym_r.type = Loader::SymbolType::Object;
-                    break;
-                default:
-                    sym_r.type = Loader::SymbolType::Unknown;
-                    break;
-                }
-
-                if (is_sym_export) {
-                    m->export_sym.AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
-                } else {
-                    m->import_sym.AddSymbol(sym_r, 0);
-                }
-
-                LOG_INFO(Core_Linker,
-                         "name = {}, function = {}, library = {}, module = {}, bind = {}, type = "
-                         "{}, visibility = {}",
-                         ids.at(0), nidName, library->name, module->name, bind, type, visibility);
             }
         }
-    }
+    };
+    symbol_database(m, &m->export_sym, true);
+    symbol_database(m, &m->import_sym, false);
 }
 
 void Linker::Relocate(Module* m) {
