@@ -75,7 +75,6 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
         LoadModuleToMemory(m.get());
         LoadDynamicInfo(m.get());
         LoadSymbols(m.get());
-        Relocate(m.get());
     } else {
         m_modules.pop_back();
         return nullptr; // It is not a valid elf file //TODO check it why!
@@ -639,6 +638,9 @@ void Linker::Execute() {
     }
 
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
+    for (const auto& m : m_modules) {
+        Relocate(m.get());
+    }
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin"; // hmm should be ok?
