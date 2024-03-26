@@ -45,9 +45,10 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
         } else {
             nidName = "UNK";
         }
-        f.WriteString(fmt::format("0x{:<20x} {:<16} {:<60} {:<30} {:<2} {:<30} {:<2} {:<2} {:<10}\n",
-                                  symbol.virtual_address, ids.at(0), nidName, ids.at(1), ids.at(2),
-                                  ids.at(3), ids.at(4), ids.at(5), ids.at(6)));
+        f.WriteString(
+            fmt::format("0x{:<20x} {:<16} {:<60} {:<30} {:<2} {:<30} {:<2} {:<2} {:<10}\n",
+                        symbol.virtual_address, ids.at(0), nidName, ids.at(1), ids.at(2), ids.at(3),
+                        ids.at(4), ids.at(5), ids.at(6)));
     }
 }
 
