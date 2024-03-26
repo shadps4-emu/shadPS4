@@ -52,4 +52,8 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
     }
 }
 
+int SymbolsResolver::GetSize() {
+    return m_symbols.size();
+}
+
 } // namespace Core::Loader

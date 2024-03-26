@@ -141,6 +141,7 @@ public:
 private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);
     const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
+    Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

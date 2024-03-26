@@ -575,8 +575,29 @@ void Linker::Relocate(Module* m) {
     }
 }
 
-void Linker::Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
+template <typename T>
+bool contains(const std::vector<T>& vecObj, const T& element) {
+    auto it = std::find(vecObj.begin(), vecObj.end(), element);
+    return it != vecObj.end();
+}
+
+Module* Linker::FindExportedModule(const ModuleInfo& module, const LibraryInfo& library) {
+    // std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        const auto& export_libs = m->dynamic_info.export_libs;
+        const auto& export_modules = m->dynamic_info.export_modules;
+
+        if (contains(export_libs, library) && contains(export_modules, module)) {
+            return m.get();
+        }
+    }
+    return nullptr;
+}
+
+void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
+    // std::scoped_lock lock{m_mutex};
     const auto ids = Common::SplitString(name, '#');
     ASSERT_MSG(ids.size() == 3, "Symbols must be 3 parts name, library, module");
 
@@ -591,11 +612,18 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType Symtype, Module
     sr.module = module->name;
     sr.module_version_major = module->version_major;
     sr.module_version_minor = module->version_minor;
-    sr.type = Symtype;
+    sr.type = sym_type;
 
     const Loader::SymbolRecord* rec = nullptr;
-    rec = m_hle_symbols.FindSymbol(sr);
 
+    rec = m_hle_symbols.FindSymbol(sr);
+    if (rec == nullptr) {
+        // check if it an export function
+        if (auto* p = FindExportedModule(*module, *library);
+            p != nullptr && p->export_sym.GetSize() > 0) {
+            rec = p->export_sym.FindSymbol(sr);
+        }
+    }
     if (rec != nullptr) {
         *return_info = *rec;
     } else {
