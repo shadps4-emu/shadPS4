@@ -16,7 +16,8 @@
 
 namespace Core {
 
-static constexpr u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
+static u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
+static constexpr u64 CODE_BASE_INCR = 0x010000000u;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -103,6 +104,8 @@ void Linker::LoadModuleToMemory(Module* m) {
 
     m->base_virtual_addr = VirtualMemory::memory_alloc(LoadAddress, m->aligned_base_size,
                                                        VirtualMemory::MemoryMode::ExecuteReadWrite);
+
+    LoadAddress += CODE_BASE_INCR * (1 + m->aligned_base_size / CODE_BASE_INCR);
 
     LOG_INFO(Core_Linker, "====Load Module to Memory ========");
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", m->base_virtual_addr);
