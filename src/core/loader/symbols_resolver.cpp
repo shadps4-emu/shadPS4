@@ -29,7 +29,7 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
         }
     }
 
-    LOG_INFO(Core_Linker, "Unresolved! {}", name);
+    //LOG_INFO(Core_Linker, "Unresolved! {}", name);
     return nullptr;
 }
 

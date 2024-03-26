@@ -433,7 +433,7 @@ void Linker::LoadSymbols(Module* m) {
                         break;
                     }
                     symbol->AddSymbol(sym_r,
-                                     (export_func ? sym->st_value + m->base_virtual_addr : 0));
+                                      (export_func ? sym->st_value + m->base_virtual_addr : 0));
                 }
             }
         }
@@ -459,17 +459,18 @@ void Linker::Relocate(Module* m) {
 
         switch (type) {
         case R_X86_64_RELATIVE:
-            if (symbol != 0) // should be always zero
-            {
-                // LOG_INFO(Core_Linker, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type,
-                // symbol);//found it openorbis but i am not sure it worth logging
-            }
             rel_value = rel_base_virtual_addr + addend;
             rel_isResolved = true;
             break;
-        case R_X86_64_64:
-        case R_X86_64_JUMP_SLOT: // similar but addend is not take into account
-        {
+        case R_X86_64_DTPMOD64:
+            rel_value = reinterpret_cast<uint64_t>(m);
+            rel_isResolved = true;
+            rel_sym_type = Loader::SymbolType::Tls;
+            break;
+        case R_X86_64_GLOB_DAT:
+        case R_X86_64_JUMP_SLOT:
+            addend = 0;
+        case R_X86_64_64: {
             auto sym = symbolsTlb[symbol];
             auto sym_bind = sym.GetBind();
             auto sym_type = sym.GetType();
@@ -483,36 +484,32 @@ void Linker::Relocate(Module* m) {
             case STT_OBJECT:
                 rel_sym_type = Loader::SymbolType::Object;
                 break;
+            case STT_NOTYPE:
+                rel_sym_type = Loader::SymbolType::NoType;
+                break;
             default:
-                LOG_INFO(Core_Linker, "unknown symbol type {}", sym_type);
+                ASSERT_MSG(0, "unknown symbol type {}", sym_type);
             }
             if (sym_visibility != 0) // should be zero log if else
             {
                 LOG_INFO(Core_Linker, "symbol visilibity !=0");
             }
             switch (sym_bind) {
+            case STB_LOCAL:
+                symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                break;
             case STB_GLOBAL:
+            case STB_WEAK: {
                 rel_name = namesTlb + sym.st_name;
                 Resolve(rel_name, rel_sym_type, m, &symrec);
                 symbol_vitrual_addr = symrec.virtual_address;
-                rel_isResolved = (symbol_vitrual_addr != 0);
-
-                rel_name = symrec.name;
-                if (type == R_X86_64_JUMP_SLOT) {
-                    addend = 0;
-                }
-                rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
-                if (!rel_isResolved) {
-                    LOG_INFO(Core_Linker,
-                             "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : "
-                             "{:#010x}",
-                             sym_type, symbol);
-                }
-                break;
+            } break;
             default:
-                LOG_INFO(Core_Linker, "UNK bind {}", sym_bind);
+                ASSERT_MSG(0, "unknown bind type {}", sym_bind);
             }
-
+            rel_isResolved = (symbol_vitrual_addr != 0);
+            rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
+            rel_name = symrec.name;
         } break;
         default:
             LOG_INFO(Core_Linker, "UNK type {:#010x} rel symbol : {:#010x}", type, symbol);
