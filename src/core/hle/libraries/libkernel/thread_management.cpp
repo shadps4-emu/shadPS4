@@ -187,7 +187,6 @@ void* createMutex(void* addr) {
 
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
                                      const char* name) {
-    LOG_INFO(Kernel_Pthread, "called");
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -324,6 +323,23 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
         return SCE_KERNEL_ERROR_EINVAL;
     case EPERM:
         return SCE_KERNEL_ERROR_EPERM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadMutexattrDestroy(ScePthreadMutexattr* attr) {
+
+    int result = pthread_mutexattr_destroy(&(*attr)->pth_mutex_attr);
+
+    delete *attr;
+    *attr = nullptr;
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
     default:
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -470,6 +486,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     // mutex calls
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
     LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
+    LIB_FUNCTION("smWEktiyyG0", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrDestroy);
     LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSettype);
     LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
