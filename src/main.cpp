@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <thread>
 
+#include <common/logging/log.h>
 #include <core/hle/libraries/libc/libc.h>
 #include <core/hle/libraries/libkernel/thread_management.h>
 #include "common/config.h"
@@ -53,13 +54,12 @@ int main(int argc, char* argv[]) {
     // check if there is a libc.prx in sce_module folder
     bool found = false;
     if (Config::isLleLibc()) {
-        std::filesystem::path sce_module_folder =
-            std::string(p.parent_path().string() + "\\sce_module");
-        if (std::filesystem::exists(sce_module_folder)) {
+        std::filesystem::path sce_module_folder = p.parent_path() / "sce_module";
+        if (std::filesystem::is_directory(sce_module_folder)) {
             for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
                 if (entry.path().filename() == "libc.prx") {
                     found = true;
-                    printf("%s\n", entry.path().string().c_str());
+                    LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
                     linker->LoadModule(entry.path().string().c_str());
                 }
             }

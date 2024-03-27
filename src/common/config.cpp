@@ -89,11 +89,11 @@ void load(const std::filesystem::path& path) {
         }
     }
     if (data.contains("LLE")) {
-        auto generalResult = toml::expect<toml::value>(data.at("LLE"));
-        if (generalResult.is_ok()) {
-            auto general = generalResult.unwrap();
+        auto lleResult = toml::expect<toml::value>(data.at("LLE"));
+        if (lleResult.is_ok()) {
+            auto lle = lleResult.unwrap();
 
-            isLibc = toml::find_or<toml::boolean>(general, "libc", true);
+            isLibc = toml::find_or<toml::boolean>(lle, "libc", true);
         }
     }
 }

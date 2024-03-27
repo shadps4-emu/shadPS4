@@ -84,14 +84,6 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
     return m.get();
 }
 
-Module* Linker::FindModule(u32 id) {
-    // TODO atm we only have 1 module so we don't need to iterate on vector
-    if (m_modules.empty()) [[unlikely]] {
-        return nullptr;
-    }
-    return m_modules[0].get();
-}
-
 void Linker::LoadModuleToMemory(Module* m) {
     // get elf header, program header
     const auto elf_header = m->elf.GetElfHeader();
@@ -628,7 +620,7 @@ static PS4_SYSV_ABI int run_module(uint64_t addr, size_t args, const void* argp,
 }
 
 int Linker::StartModule(Module* m, size_t args, const void* argp, module_func_t func) {
-    LOG_INFO(Core_Linker, "Module started : {}\n", m->file_name);
+    LOG_INFO(Core_Linker, "Module started : {}", m->file_name);
     return run_module(m->dynamic_info.init_virtual_addr + m->base_virtual_addr, args, argp, func);
 }
 

@@ -126,7 +126,6 @@ public:
     virtual ~Linker();
 
     Module* LoadModule(const std::filesystem::path& elf_name);
-    Module* FindModule(u32 id = 0);
     void LoadModuleToMemory(Module* m);
     void LoadDynamicInfo(Module* m);
     void LoadSymbols(Module* m);

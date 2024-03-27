@@ -27,9 +27,7 @@ namespace Core::Libraries::LibKernel {
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 
 static void* PS4_SYSV_ABI sceKernelGetProcParam() {
-
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-
     return reinterpret_cast<void*>(linker->GetProcParam());
 }
 
