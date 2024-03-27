@@ -1031,7 +1031,7 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, int* color) {
     // TODO fix me better
-    LOG_INFO(Lib_UserService, "called user_id = {}",user_id);
+    LOG_INFO(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
