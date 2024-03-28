@@ -1883,7 +1883,7 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
 
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
     // TODO this probably should be stored in config for UI configuration
-    LOG_INFO(Lib_SystemService, "called");
+    LOG_INFO(Lib_SystemService, "called param_id {}", param_id);
     if (value == nullptr) {
         LOG_ERROR(Lib_SystemService, "value is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;

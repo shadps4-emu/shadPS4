@@ -60,6 +60,7 @@ public:
     }
 
     void DebugDump(const std::filesystem::path& file_name);
+    int GetSize();
 
 private:
     std::vector<SymbolRecord> m_symbols;

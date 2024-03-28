@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <Zydis/Zydis.h>
+#include <common/assert.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -15,7 +16,8 @@
 
 namespace Core {
 
-static constexpr u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
+static u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
+static constexpr u64 CODE_BASE_INCR = 0x010000000u;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -74,21 +76,12 @@ Module* Linker::LoadModule(const std::filesystem::path& elf_name) {
         LoadModuleToMemory(m.get());
         LoadDynamicInfo(m.get());
         LoadSymbols(m.get());
-        Relocate(m.get());
     } else {
         m_modules.pop_back();
         return nullptr; // It is not a valid elf file //TODO check it why!
     }
 
     return m.get();
-}
-
-Module* Linker::FindModule(u32 id) {
-    // TODO atm we only have 1 module so we don't need to iterate on vector
-    if (m_modules.empty()) [[unlikely]] {
-        return nullptr;
-    }
-    return m_modules[0].get();
 }
 
 void Linker::LoadModuleToMemory(Module* m) {
@@ -103,6 +96,8 @@ void Linker::LoadModuleToMemory(Module* m) {
 
     m->base_virtual_addr = VirtualMemory::memory_alloc(LoadAddress, m->aligned_base_size,
                                                        VirtualMemory::MemoryMode::ExecuteReadWrite);
+
+    LoadAddress += CODE_BASE_INCR * (1 + m->aligned_base_size / CODE_BASE_INCR);
 
     LOG_INFO(Core_Linker, "====Load Module to Memory ========");
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", m->base_virtual_addr);
@@ -160,6 +155,9 @@ void Linker::LoadModuleToMemory(Module* m) {
             m->tls.image_size = GetAlignedSize(elf_pheader[i]);
             LOG_INFO(Core_Linker, "tls virtual address ={:#x}", m->tls.image_virtual_addr);
             LOG_INFO(Core_Linker, "tls image size      ={}", m->tls.image_size);
+            break;
+        case PT_SCE_PROCPARAM:
+            m->proc_param_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
             break;
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}",
@@ -378,101 +376,67 @@ const LibraryInfo* Linker::FindLibrary(const Module& m, const std::string& id) {
 }
 
 void Linker::LoadSymbols(Module* m) {
-    if (m->dynamic_info.symbol_table == nullptr || m->dynamic_info.str_table == nullptr ||
-        m->dynamic_info.symbol_table_total_size == 0) {
-        LOG_INFO(Core_Linker, "Symbol table not found!");
-        return;
-    }
 
-    for (auto* sym = m->dynamic_info.symbol_table;
-         reinterpret_cast<uint8_t*>(sym) <
-         reinterpret_cast<uint8_t*>(m->dynamic_info.symbol_table) +
-             m->dynamic_info.symbol_table_total_size;
-         sym++) {
-        std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
-        const auto ids = Common::SplitString(id, '#');
-        if (ids.size() == 3) // symbols are 3 parts name , library , module
-        {
-            const auto* library = FindLibrary(*m, ids.at(1));
-            const auto* module = FindModule(*m, ids.at(2));
+    const auto symbol_database = [this](Module* m, Loader::SymbolsResolver* symbol,
+                                        bool export_func) {
+        if (m->dynamic_info.symbol_table == nullptr || m->dynamic_info.str_table == nullptr ||
+            m->dynamic_info.symbol_table_total_size == 0) {
+            LOG_INFO(Core_Linker, "Symbol table not found!");
+            return;
+        }
+        for (auto* sym = m->dynamic_info.symbol_table;
+             reinterpret_cast<u8*>(sym) < reinterpret_cast<u8*>(m->dynamic_info.symbol_table) +
+                                              m->dynamic_info.symbol_table_total_size;
+             sym++) {
+            std::string id = std::string(m->dynamic_info.str_table + sym->st_name);
             auto bind = sym->GetBind();
             auto type = sym->GetType();
             auto visibility = sym->GetVisibility();
-            if (library != nullptr || module != nullptr) {
-                switch (bind) {
-                case STB_GLOBAL:
-                case STB_WEAK:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported bind {} for name symbol {}", bind,
-                             ids.at(0));
-                    continue;
+            const auto ids = Common::SplitString(id, '#');
+            if (ids.size() == 3) {
+                const auto* library = FindLibrary(*m, ids.at(1));
+                const auto* module = FindModule(*m, ids.at(2));
+                ASSERT_MSG(library && module, "Unable to find library and module");
+                if ((bind == STB_GLOBAL || bind == STB_WEAK) &&
+                    (type == STT_FUN || type == STT_OBJECT) &&
+                    export_func == (sym->st_value != 0)) {
+                    std::string nidName = "";
+                    auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
+                    if (aeronid != nullptr) {
+                        nidName = aeronid->name;
+                    } else {
+                        nidName = "UNK";
+                    }
+                    Loader::SymbolResolver sym_r{};
+                    sym_r.name = ids.at(0);
+                    sym_r.nidName = nidName;
+                    sym_r.library = library->name;
+                    sym_r.library_version = library->version;
+                    sym_r.module = module->name;
+                    sym_r.module_version_major = module->version_major;
+                    sym_r.module_version_minor = module->version_minor;
+                    switch (type) {
+                    case STT_NOTYPE:
+                        sym_r.type = Loader::SymbolType::NoType;
+                        break;
+                    case STT_FUN:
+                        sym_r.type = Loader::SymbolType::Function;
+                        break;
+                    case STT_OBJECT:
+                        sym_r.type = Loader::SymbolType::Object;
+                        break;
+                    default:
+                        sym_r.type = Loader::SymbolType::Unknown;
+                        break;
+                    }
+                    symbol->AddSymbol(sym_r,
+                                      (export_func ? sym->st_value + m->base_virtual_addr : 0));
                 }
-                switch (type) {
-                case STT_OBJECT:
-                case STT_FUN:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported type {} for name symbol {}", type,
-                             ids.at(0));
-                    continue;
-                }
-                switch (visibility) {
-                case STV_DEFAULT:
-                    break;
-                default:
-                    LOG_INFO(Core_Linker, "Unsupported visibility {} for name symbol {}",
-                             visibility, ids.at(0));
-                    continue;
-                }
-                // if st_value!=0 then it's export symbol
-                bool is_sym_export = sym->st_value != 0;
-                std::string nidName = "";
-
-                auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
-
-                if (aeronid != nullptr) {
-                    nidName = aeronid->name;
-                } else {
-                    nidName = "UNK";
-                }
-
-                Loader::SymbolResolver sym_r{};
-                sym_r.name = ids.at(0);
-                sym_r.nidName = nidName;
-                sym_r.library = library->name;
-                sym_r.library_version = library->version;
-                sym_r.module = module->name;
-                sym_r.module_version_major = module->version_major;
-                sym_r.module_version_minor = module->version_minor;
-                switch (type) {
-                case STT_NOTYPE:
-                    sym_r.type = Loader::SymbolType::NoType;
-                    break;
-                case STT_FUN:
-                    sym_r.type = Loader::SymbolType::Function;
-                    break;
-                case STT_OBJECT:
-                    sym_r.type = Loader::SymbolType::Object;
-                    break;
-                default:
-                    sym_r.type = Loader::SymbolType::Unknown;
-                    break;
-                }
-
-                if (is_sym_export) {
-                    m->export_sym.AddSymbol(sym_r, sym->st_value + m->base_virtual_addr);
-                } else {
-                    m->import_sym.AddSymbol(sym_r, 0);
-                }
-
-                LOG_INFO(Core_Linker,
-                         "name = {}, function = {}, library = {}, module = {}, bind = {}, type = "
-                         "{}, visibility = {}",
-                         ids.at(0), nidName, library->name, module->name, bind, type, visibility);
             }
         }
-    }
+    };
+    symbol_database(m, &m->export_sym, true);
+    symbol_database(m, &m->import_sym, false);
 }
 
 void Linker::Relocate(Module* m) {
@@ -492,17 +456,18 @@ void Linker::Relocate(Module* m) {
 
         switch (type) {
         case R_X86_64_RELATIVE:
-            if (symbol != 0) // should be always zero
-            {
-                // LOG_INFO(Core_Linker, "R_X86_64_RELATIVE symbol not zero = {:#010x}\n", type,
-                // symbol);//found it openorbis but i am not sure it worth logging
-            }
             rel_value = rel_base_virtual_addr + addend;
             rel_isResolved = true;
             break;
-        case R_X86_64_64:
-        case R_X86_64_JUMP_SLOT: // similar but addend is not take into account
-        {
+        case R_X86_64_DTPMOD64:
+            rel_value = reinterpret_cast<uint64_t>(m);
+            rel_isResolved = true;
+            rel_sym_type = Loader::SymbolType::Tls;
+            break;
+        case R_X86_64_GLOB_DAT:
+        case R_X86_64_JUMP_SLOT:
+            addend = 0;
+        case R_X86_64_64: {
             auto sym = symbolsTlb[symbol];
             auto sym_bind = sym.GetBind();
             auto sym_type = sym.GetType();
@@ -516,36 +481,32 @@ void Linker::Relocate(Module* m) {
             case STT_OBJECT:
                 rel_sym_type = Loader::SymbolType::Object;
                 break;
+            case STT_NOTYPE:
+                rel_sym_type = Loader::SymbolType::NoType;
+                break;
             default:
-                LOG_INFO(Core_Linker, "unknown symbol type {}", sym_type);
+                ASSERT_MSG(0, "unknown symbol type {}", sym_type);
             }
             if (sym_visibility != 0) // should be zero log if else
             {
                 LOG_INFO(Core_Linker, "symbol visilibity !=0");
             }
             switch (sym_bind) {
+            case STB_LOCAL:
+                symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                break;
             case STB_GLOBAL:
+            case STB_WEAK: {
                 rel_name = namesTlb + sym.st_name;
                 Resolve(rel_name, rel_sym_type, m, &symrec);
                 symbol_vitrual_addr = symrec.virtual_address;
-                rel_isResolved = (symbol_vitrual_addr != 0);
-
-                rel_name = symrec.name;
-                if (type == R_X86_64_JUMP_SLOT) {
-                    addend = 0;
-                }
-                rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
-                if (!rel_isResolved) {
-                    LOG_INFO(Core_Linker,
-                             "R_X86_64_64-R_X86_64_JUMP_SLOT sym_type {} bind STB_GLOBAL symbol : "
-                             "{:#010x}",
-                             sym_type, symbol);
-                }
-                break;
+            } break;
             default:
-                LOG_INFO(Core_Linker, "UNK bind {}", sym_bind);
+                ASSERT_MSG(0, "unknown bind type {}", sym_bind);
             }
-
+            rel_isResolved = (symbol_vitrual_addr != 0);
+            rel_value = (rel_isResolved ? symbol_vitrual_addr + addend : 0);
+            rel_name = symrec.name;
         } break;
         default:
             LOG_INFO(Core_Linker, "UNK type {:#010x} rel symbol : {:#010x}", type, symbol);
@@ -574,51 +535,104 @@ void Linker::Relocate(Module* m) {
     }
 }
 
-void Linker::Resolve(const std::string& name, Loader::SymbolType Symtype, Module* m,
-                     Loader::SymbolRecord* return_info) {
-    const auto ids = Common::SplitString(name, '#');
-    if (ids.size() == 3) // symbols are 3 parts name , library , module
-    {
-        const auto* library = FindLibrary(*m, ids.at(1));
-        const auto* module = FindModule(*m, ids.at(2));
+template <typename T>
+bool contains(const std::vector<T>& vecObj, const T& element) {
+    auto it = std::find(vecObj.begin(), vecObj.end(), element);
+    return it != vecObj.end();
+}
 
-        if (library != nullptr && module != nullptr) {
-            Loader::SymbolResolver sr{};
-            sr.name = ids.at(0);
-            sr.library = library->name;
-            sr.library_version = library->version;
-            sr.module = module->name;
-            sr.module_version_major = module->version_major;
-            sr.module_version_minor = module->version_minor;
-            sr.type = Symtype;
+Module* Linker::FindExportedModule(const ModuleInfo& module, const LibraryInfo& library) {
+    // std::scoped_lock lock{m_mutex};
 
-            const Loader::SymbolRecord* rec = nullptr;
-            rec = m_hle_symbols.FindSymbol(sr);
+    for (auto& m : m_modules) {
+        const auto& export_libs = m->dynamic_info.export_libs;
+        const auto& export_modules = m->dynamic_info.export_modules;
 
-            if (rec != nullptr) {
-                *return_info = *rec;
-            } else {
-                auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-                if (aeronid) {
-                    return_info->name = aeronid->name;
-                    return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
-                } else {
-                    return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
-                    return_info->name = "Unknown !!!";
-                }
-                LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-                          return_info->name, library->name, module->name);
-            }
-        } else {
-            //__debugbreak();//den tha prepei na ftasoume edo
+        if (contains(export_libs, library) && contains(export_modules, module)) {
+            return m.get();
         }
+    }
+    return nullptr;
+}
+
+void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
+                     Loader::SymbolRecord* return_info) {
+    // std::scoped_lock lock{m_mutex};
+    const auto ids = Common::SplitString(name, '#');
+    ASSERT_MSG(ids.size() == 3, "Symbols must be 3 parts name, library, module");
+
+    const auto* library = FindLibrary(*m, ids.at(1));
+    const auto* module = FindModule(*m, ids.at(2));
+    ASSERT_MSG(library && module, "Unable to find library and module");
+
+    Loader::SymbolResolver sr{};
+    sr.name = ids.at(0);
+    sr.library = library->name;
+    sr.library_version = library->version;
+    sr.module = module->name;
+    sr.module_version_major = module->version_major;
+    sr.module_version_minor = module->version_minor;
+    sr.type = sym_type;
+
+    const Loader::SymbolRecord* rec = nullptr;
+
+    rec = m_hle_symbols.FindSymbol(sr);
+    if (rec == nullptr) {
+        // check if it an export function
+        if (auto* p = FindExportedModule(*module, *library);
+            p != nullptr && p->export_sym.GetSize() > 0) {
+            rec = p->export_sym.FindSymbol(sr);
+        }
+    }
+    if (rec != nullptr) {
+        *return_info = *rec;
     } else {
-        //__debugbreak();//oute edo mallon
+        auto aeronid = AeroLib::FindByNid(sr.name.c_str());
+        if (aeronid) {
+            return_info->name = aeronid->name;
+            return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
+        } else {
+            return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
+            return_info->name = "Unknown !!!";
+        }
+        LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
+                  return_info->name, library->name, module->name);
     }
 }
 
+u64 Linker::GetProcParam() {
+    // std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (!m->elf.IsSharedLib()) {
+            return m->proc_param_virtual_addr;
+        }
+    }
+    return 0;
+}
 using exit_func_t = PS4_SYSV_ABI void (*)();
 using entry_func_t = PS4_SYSV_ABI void (*)(EntryParams* params, exit_func_t atexit_func);
+using module_ini_func_t = PS4_SYSV_ABI int (*)(size_t args, const void* argp, module_func_t func);
+
+static PS4_SYSV_ABI int run_module(uint64_t addr, size_t args, const void* argp,
+                                   module_func_t func) {
+    return reinterpret_cast<module_ini_func_t>(addr)(args, argp, func);
+}
+
+int Linker::StartModule(Module* m, size_t args, const void* argp, module_func_t func) {
+    LOG_INFO(Core_Linker, "Module started : {}", m->file_name);
+    return run_module(m->dynamic_info.init_virtual_addr + m->base_virtual_addr, args, argp, func);
+}
+
+void Linker::StartAllModules() {
+    std::scoped_lock lock{m_mutex};
+
+    for (auto& m : m_modules) {
+        if (m->elf.IsSharedLib()) {
+            StartModule(m.get(), 0, nullptr, nullptr);
+        }
+    }
+}
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
@@ -653,12 +667,20 @@ void Linker::Execute() {
     }
 
     Core::Libraries::LibKernel::pthreadInitSelfMainThread();
+    // relocate all modules
+    for (const auto& m : m_modules) {
+        Relocate(m.get());
+    }
+    StartAllModules();
     EntryParams p{};
     p.argc = 1;
     p.argv[0] = "eboot.bin"; // hmm should be ok?
 
-    const auto& module = m_modules.at(0);
-    RunMainEntry(module->elf.GetElfEntry() + module->base_virtual_addr, &p, ProgramExitFunc);
+    for (auto& m : m_modules) {
+        if (!m->elf.IsSharedLib()) {
+            RunMainEntry(m->elf.GetElfEntry() + m->base_virtual_addr, &p, ProgramExitFunc);
+        }
+    }
 }
 
 void Linker::DebugDump() {

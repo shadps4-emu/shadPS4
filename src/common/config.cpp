@@ -15,7 +15,11 @@ u32 screenHeight = 720;
 std::string logFilter;
 std::string logType = "sync";
 bool isDebugDump = false;
+bool isLibc = true;
 
+bool isLleLibc() {
+    return isLibc;
+}
 bool isNeoMode() {
     return isNeo;
 }
@@ -84,6 +88,14 @@ void load(const std::filesystem::path& path) {
             isDebugDump = toml::find_or<toml::boolean>(debug, "DebugDump", false);
         }
     }
+    if (data.contains("LLE")) {
+        auto lleResult = toml::expect<toml::value>(data.at("LLE"));
+        if (lleResult.is_ok()) {
+            auto lle = lleResult.unwrap();
+
+            isLibc = toml::find_or<toml::boolean>(lle, "libc", true);
+        }
+    }
 }
 void save(const std::filesystem::path& path) {
     toml::basic_value<toml::preserve_comments> data;
@@ -110,6 +122,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["Debug"]["DebugDump"] = isDebugDump;
+    data["LLE"]["libc"] = isLibc;
 
     std::ofstream file(path, std::ios::out);
     file << data;

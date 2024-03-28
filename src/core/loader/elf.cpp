@@ -538,4 +538,8 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     UNREACHABLE();
 }
 
+bool Elf::IsSharedLib() {
+    return m_elf_header.e_type == ET_SCE_DYNAMIC;
+}
+
 } // namespace Core::Loader

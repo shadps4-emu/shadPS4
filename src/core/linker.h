@@ -9,7 +9,7 @@
 #include "core/loader/symbols_resolver.h"
 
 namespace Core {
-
+using module_func_t = int (*)(size_t args, const void* argp);
 struct DynamicModuleInfo;
 class Linker;
 
@@ -20,6 +20,10 @@ struct EntryParams {
 };
 
 struct ModuleInfo {
+    bool operator==(const ModuleInfo& other) const {
+        return version_major == other.version_major && version_minor == other.version_minor &&
+               name == other.name;
+    }
     std::string name;
     union {
         u64 value;
@@ -34,6 +38,9 @@ struct ModuleInfo {
 };
 
 struct LibraryInfo {
+    bool operator==(const LibraryInfo& other) const {
+        return version == other.version && name == other.name;
+    }
     std::string name;
     union {
         u64 value;
@@ -99,6 +106,7 @@ struct Module {
     Loader::Elf elf;
     u64 aligned_base_size = 0;
     u64 base_virtual_addr = 0;
+    u64 proc_param_virtual_addr = 0;
 
     std::string file_name;
 
@@ -118,7 +126,6 @@ public:
     virtual ~Linker();
 
     Module* LoadModule(const std::filesystem::path& elf_name);
-    Module* FindModule(u32 id = 0);
     void LoadModuleToMemory(Module* m);
     void LoadDynamicInfo(Module* m);
     void LoadSymbols(Module* m);
@@ -130,10 +137,14 @@ public:
                  Loader::SymbolRecord* return_info);
     void Execute();
     void DebugDump();
+    u64 GetProcParam();
 
 private:
     const ModuleInfo* FindModule(const Module& m, const std::string& id);
     const LibraryInfo* FindLibrary(const Module& program, const std::string& id);
+    Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
+    int StartModule(Module* m, size_t args, const void* argp, module_func_t func);
+    void StartAllModules();
 
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

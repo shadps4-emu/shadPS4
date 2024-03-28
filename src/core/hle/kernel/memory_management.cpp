@@ -85,6 +85,9 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
 
     switch (prot) {
+    case 0x03:
+        cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
+        break;
     case 0x32:
     case 0x33: // SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
         cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
