@@ -43,6 +43,9 @@ To discuss the development of this emulator, please join our Discord server: [![
 - gpucode (a.k.a. emufan4568)
 - skmp (a.k.a. drk||Raziel)
 - wheremyfoodat (a.k.a. rodakinos)
+- raziel1000
+
+Logo is done by Xphalnos
 
 # Contribution
 
