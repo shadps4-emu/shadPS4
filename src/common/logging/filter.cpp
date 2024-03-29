@@ -88,6 +88,11 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, CommonDlg)                                                                            \
     SUB(Lib, MsgDlg)                                                                               \
     SUB(Lib, AudioOut)                                                                             \
+    SUB(Lib, Net)                                                                                  \
+    SUB(Lib, NetCtl)                                                                               \
+    SUB(Lib, SaveData)                                                                             \
+    SUB(Lib, Http)                                                                                 \
+    SUB(Lib, Ssl)                                                                                  \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
