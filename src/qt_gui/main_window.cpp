@@ -145,6 +145,8 @@ void MainWindow::CreateConnects() {
 
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
 
+    connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
             m_game_list_frame->icon_size =
@@ -217,8 +219,10 @@ void MainWindow::CreateConnects() {
         m_dock_widget->setWidget(m_game_list_frame);
         m_game_list_frame->show();
         m_game_grid_frame->hide();
-        m_game_list_frame->clearContents();
-        m_game_list_frame->PopulateGameList();
+        if (m_game_list_frame->item(0, 0) == nullptr) {
+            m_game_list_frame->clearContents();
+            m_game_list_frame->PopulateGameList();
+        }
         isTableList = true;
         m_gui_settings->SetValue(gui::m_table_mode, 0); // save table mode
         int slider_pos = m_gui_settings->GetValue(gui::m_slide_pos).toInt();
@@ -229,6 +233,10 @@ void MainWindow::CreateConnects() {
         m_dock_widget->setWidget(m_game_grid_frame);
         m_game_grid_frame->show();
         m_game_list_frame->hide();
+        if (m_game_grid_frame->item(0, 0) == nullptr) {
+            m_game_grid_frame->clearContents();
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+        }
         isTableList = false;
         m_gui_settings->SetValue(gui::m_table_mode, 1); // save table mode
         int slider_pos_grid = m_gui_settings->GetValue(gui::m_slide_pos_grid).toInt();
