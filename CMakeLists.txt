@@ -152,26 +152,21 @@ qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
     src/qt_gui/main_window.h
     src/qt_gui/gui_settings.cpp
     src/qt_gui/gui_settings.h
-    src/qt_gui/settings.cpp
-    src/qt_gui/settings.h
     src/qt_gui/gui_save.h
-    src/qt_gui/custom_dock_widget.h
-    src/qt_gui/custom_table_widget_item.cpp
-    src/qt_gui/custom_table_widget_item.h
-    src/qt_gui/game_list_item.h
-    src/qt_gui/game_list_table.cpp
-    src/qt_gui/game_list_table.h
+    src/qt_gui/gui_context_menus.h
     src/qt_gui/game_list_utils.h
+    src/qt_gui/game_info.cpp
     src/qt_gui/game_info.h
-    src/qt_gui/game_list_grid.cpp
-    src/qt_gui/game_list_grid.h
-    src/qt_gui/game_list_grid_delegate.cpp
-    src/qt_gui/game_list_grid_delegate.h
     src/qt_gui/game_list_frame.cpp
     src/qt_gui/game_list_frame.h
-    src/qt_gui/qt_utils.h
+    src/qt_gui/game_grid_frame.cpp
+    src/qt_gui/game_grid_frame.h
     src/qt_gui/game_install_dialog.cpp
     src/qt_gui/game_install_dialog.h
+    src/qt_gui/pkg_viewer.cpp
+    src/qt_gui/pkg_viewer.h
+    src/qt_gui/settings.cpp
+    src/qt_gui/settings.h
     src/qt_gui/main_window_themes.cpp
     src/qt_gui/main_window_themes.h
     src/qt_gui/main.cpp

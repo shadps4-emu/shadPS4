@@ -40,6 +40,8 @@ public:
     QAction* setlistModeListAct;
     QAction* setlistModeGridAct;
     QAction* gameInstallPathAct;
+    QAction* dumpGameListAct;
+    QAction* pkgViewerAct;
     QAction* setThemeLight;
     QAction* setThemeDark;
     QAction* setThemeGreen;
@@ -64,13 +66,14 @@ public:
     QMenu* menuGame_List_Icons;
     QMenu* menuGame_List_Mode;
     QMenu* menuSettings;
+    QMenu* menuUtils;
     QMenu* menuThemes;
     QToolBar* toolBar;
 
     void setupUi(QMainWindow* MainWindow) {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName("MainWindow");
-        MainWindow->resize(1058, 580);
+        // MainWindow->resize(1280, 720);
         QIcon icon;
         icon.addFile(QString::fromUtf8(":/images/shadps4.ico"), QSize(), QIcon::Normal, QIcon::Off);
         MainWindow->setWindowIcon(icon);
@@ -103,7 +106,6 @@ public:
         setIconSizeSmallAct = new QAction(MainWindow);
         setIconSizeSmallAct->setObjectName("setIconSizeSmallAct");
         setIconSizeSmallAct->setCheckable(true);
-        setIconSizeSmallAct->setChecked(true);
         setIconSizeMediumAct = new QAction(MainWindow);
         setIconSizeMediumAct->setObjectName("setIconSizeMediumAct");
         setIconSizeMediumAct->setCheckable(true);
@@ -122,6 +124,12 @@ public:
         gameInstallPathAct = new QAction(MainWindow);
         gameInstallPathAct->setObjectName("gameInstallPathAct");
         gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
+        dumpGameListAct = new QAction(MainWindow);
+        dumpGameListAct->setObjectName("dumpGameList");
+        pkgViewerAct = new QAction(MainWindow);
+        pkgViewerAct->setObjectName("pkgViewer");
+        pkgViewerAct->setObjectName("pkgViewer");
+        pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         setThemeLight = new QAction(MainWindow);
         setThemeLight->setObjectName("setThemeLight");
         setThemeLight->setCheckable(true);
@@ -199,6 +207,8 @@ public:
         sizeSlider->setAutoFillBackground(false);
         sizeSlider->setOrientation(Qt::Horizontal);
         sizeSlider->setTickPosition(QSlider::NoTicks);
+        sizeSlider->setMinimum(0);
+        sizeSlider->setMaximum(220);
 
         sizeSliderContainer_layout->addWidget(sizeSlider);
 
@@ -219,6 +229,8 @@ public:
         menuGame_List_Mode->setIcon(QIcon(":images/list_mode_icon.png"));
         menuSettings = new QMenu(menuBar);
         menuSettings->setObjectName("menuSettings");
+        menuUtils = new QMenu(menuSettings);
+        menuUtils->setObjectName("menuUtils");
         menuThemes = new QMenu(menuView);
         menuThemes->setObjectName("menuThemes");
         menuThemes->setIcon(QIcon(":images/themes_icon.png"));
@@ -251,6 +263,9 @@ public:
         menuGame_List_Mode->addAction(setlistModeListAct);
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuSettings->addAction(gameInstallPathAct);
+        menuSettings->addAction(menuUtils->menuAction());
+        menuUtils->addAction(dumpGameListAct);
+        menuUtils->addAction(pkgViewerAct);
 
         retranslateUi(MainWindow);
 
@@ -287,6 +302,9 @@ public:
             QCoreApplication::translate("MainWindow", "Grid View", nullptr));
         gameInstallPathAct->setText(
             QCoreApplication::translate("MainWindow", "Game Install Directory", nullptr));
+        dumpGameListAct->setText(
+            QCoreApplication::translate("MainWindow", "Dump Game List", nullptr));
+        pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
         mw_searchbar->setPlaceholderText(
             QCoreApplication::translate("MainWindow", "Search...", nullptr));
         // darkModeSwitch->setText(
@@ -298,6 +316,7 @@ public:
         menuGame_List_Mode->setTitle(
             QCoreApplication::translate("MainWindow", "Game List Mode", nullptr));
         menuSettings->setTitle(QCoreApplication::translate("MainWindow", "Settings", nullptr));
+        menuUtils->setTitle(QCoreApplication::translate("MainWindow", "Utils", nullptr));
         menuThemes->setTitle(QCoreApplication::translate("MainWindow", "Themes", nullptr));
         setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
