@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # How to build shadps4 in windows 
 
-## Download VStudio Community 2022 17.7.4
+## Download VStudio Community 2022 17.9.5
 
 [VStudio 2022](https://visualstudio.microsoft.com/vs/)
 
@@ -17,7 +17,7 @@ Install the following
 
 ### From Individual components tab install
 
-- C++ Clang Compiler for Windows (16.0.5)
+- C++ Clang Compiler for Windows (17.0.3)
 - MSBuild support for LLVM (clang-cl) toolset
 
 - ## Compiling

@@ -22,11 +22,11 @@ The project started as a fun project. Due to short free time, it will probably t
 
 ## Windows
 
-Check building instructions in [windows build](https://github.com/georgemoralis/shadPS4/blob/main/documents/building-windows.md)
+Check building instructions in [windows build](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md)
 
 ## Linux
 
-Check building instructions in [linux build](https://github.com/georgemoralis/shadPS4/blob/main/documents/linux_building.md)
+Check building instructions in [linux build](https://github.com/shadps4-emu/shadPS4/blob/main/documents/linux_building.md)
 
 ## Build status
 
