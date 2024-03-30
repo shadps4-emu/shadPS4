@@ -114,6 +114,8 @@ set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/libscesavedata.h
               src/core/libraries/libscessl.cpp
               src/core/libraries/libscessl.h
+              src/core/libraries/libscesysmodule.cpp
+              src/core/libraries/libscesysmodule.h
               src/core/libraries/libscesystemservice.cpp
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp

@@ -18,6 +18,7 @@
 #include "src/core/libraries/libscessl.h"
 #include "src/core/libraries/libscesystemservice.h"
 #include "src/core/libraries/libsceuserservice.h"
+#include "src/core/libraries/libscesysmodule.h"
 
 namespace OldLibraries {
 
@@ -41,6 +42,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NetCtl::RegisterlibSceNetCtl(sym);
     Libraries::SaveData::RegisterlibSceSaveData(sym);
     Libraries::Ssl::RegisterlibSceSsl(sym);
+    Libraries::SysModule::RegisterlibSceSysmodule(sym);
 }
 
 } // namespace OldLibraries
