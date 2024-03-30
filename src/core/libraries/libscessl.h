@@ -144,7 +144,7 @@ int PS4_SYSV_ABI sceSslGetNotBefore();
 int PS4_SYSV_ABI sceSslGetSerialNumber();
 int PS4_SYSV_ABI sceSslGetSslError();
 int PS4_SYSV_ABI sceSslGetSubjectName();
-int PS4_SYSV_ABI sceSslInit();
+int PS4_SYSV_ABI sceSslInit(std::size_t poolSize);
 int PS4_SYSV_ABI sceSslLoadCert();
 int PS4_SYSV_ABI sceSslLoadRootCACert();
 int PS4_SYSV_ABI sceSslRecv();

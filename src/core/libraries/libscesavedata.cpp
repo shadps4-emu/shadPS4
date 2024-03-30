@@ -299,7 +299,7 @@ int PS4_SYSV_ABI sceSaveDataInitialize2() {
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize3() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
+    LOG_ERROR(Lib_SaveData, "(DUMMY) called");
     return ORBIS_OK;
 }
 

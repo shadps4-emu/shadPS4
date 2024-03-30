@@ -258,9 +258,11 @@ int PS4_SYSV_ABI sceHttpGetStatusCode() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpInit() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, std::size_t poolSize) {
+    LOG_ERROR(Lib_Http, "(DUMMY) called libnetMemId = {} libsslCtxId = {} poolSize = {}",libnetMemId,libsslCtxId,poolSize);
+    // return a value >1
+    static int id = 0;
+    return ++id;
 }
 
 int PS4_SYSV_ABI sceHttpParseResponseHeader() {

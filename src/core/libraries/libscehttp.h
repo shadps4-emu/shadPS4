@@ -57,7 +57,7 @@ int PS4_SYSV_ABI sceHttpGetNonblock();
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
 int PS4_SYSV_ABI sceHttpGetResponseContentLength();
 int PS4_SYSV_ABI sceHttpGetStatusCode();
-int PS4_SYSV_ABI sceHttpInit();
+int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, std::size_t poolSize);
 int PS4_SYSV_ABI sceHttpParseResponseHeader();
 int PS4_SYSV_ABI sceHttpParseStatusLine();
 int PS4_SYSV_ABI sceHttpReadData();

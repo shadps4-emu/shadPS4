@@ -693,9 +693,11 @@ int PS4_SYSV_ABI sceSslGetSubjectName() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSslInit() {
-    LOG_ERROR(Lib_Ssl, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceSslInit(std::size_t poolSize) {
+    LOG_ERROR(Lib_Ssl, "(DUMMY) called poolSize = {}",poolSize);
+    //return a value >1
+    static int id = 0;
+    return ++id;
 }
 
 int PS4_SYSV_ABI sceSslLoadCert() {

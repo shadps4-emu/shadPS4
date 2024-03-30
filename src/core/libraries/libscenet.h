@@ -163,7 +163,7 @@ int PS4_SYSV_ABI sceNetMemoryFree();
 int PS4_SYSV_ABI sceNetNtohl();
 int PS4_SYSV_ABI sceNetNtohll();
 int PS4_SYSV_ABI sceNetNtohs();
-int PS4_SYSV_ABI sceNetPoolCreate();
+int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags);
 int PS4_SYSV_ABI sceNetPoolDestroy();
 int PS4_SYSV_ABI sceNetPppoeStart();
 int PS4_SYSV_ABI sceNetPppoeStop();

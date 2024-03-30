@@ -744,7 +744,7 @@ int PS4_SYSV_ABI sceNetInfoDumpStop() {
 }
 
 int PS4_SYSV_ABI sceNetInit() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    LOG_ERROR(Lib_Net, "(DUMMY) called");
     return ORBIS_OK;
 }
 
@@ -788,8 +788,8 @@ int PS4_SYSV_ABI sceNetNtohs() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetPoolCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags) {
+    LOG_ERROR(Lib_Net, "(DUMMY) name = {} size = {} flags = {} ", std::string(name), size, flags);
     return ORBIS_OK;
 }
 
