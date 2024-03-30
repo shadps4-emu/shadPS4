@@ -16,9 +16,9 @@
 #include "src/core/libraries/libscenetctl.h"
 #include "src/core/libraries/libscesavedata.h"
 #include "src/core/libraries/libscessl.h"
+#include "src/core/libraries/libscesysmodule.h"
 #include "src/core/libraries/libscesystemservice.h"
 #include "src/core/libraries/libsceuserservice.h"
-#include "src/core/libraries/libscesysmodule.h"
 
 namespace OldLibraries {
 

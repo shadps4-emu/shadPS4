@@ -60,7 +60,7 @@ enum class Class : u8 {
     Lib_SaveData,      ///< The LibSceSaveData implementation.
     Lib_Ssl,           ///< The LibSceSsl implementation.
     Lib_Http,          ///< The LibSceHttp implementation.
-    Lib_SysModule,      ///< The LibSceSysModule implementation
+    Lib_SysModule,     ///< The LibSceSysModule implementation
     Frontend,          ///< Emulator UI
     Render,            ///< Video Core
     Render_Vulkan,     ///< Vulkan backend
