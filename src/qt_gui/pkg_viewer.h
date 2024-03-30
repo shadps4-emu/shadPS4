@@ -11,6 +11,7 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QMenuBar>
+#include <QStatusBar>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QtConcurrent/QtConcurrent>
@@ -54,6 +55,8 @@ private:
     u32_be pkg_content_flag;
     std::shared_ptr<GameInfoClass> m_game_info;
     GameListUtils game_list_util;
+    // Status bar
+    QStatusBar* statusBar;
 
     std::vector<std::pair<PKGContentFlag, std::string>> flagNames = {
         {PKGContentFlag::FIRST_PATCH, "FIRST_PATCH"},

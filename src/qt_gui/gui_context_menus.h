@@ -130,7 +130,7 @@ public:
         }
 
         if (selected == &installPackage) {
-            QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";");
+            QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
             std::string pkg_to_install = pkg_app_[9].toStdString();
             InstallDragDropPkg(pkg_to_install, 1, 1);
 

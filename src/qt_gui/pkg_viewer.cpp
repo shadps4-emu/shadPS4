@@ -13,7 +13,8 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get,
     m_gui_settings_ = m_gui_settings;
     m_game_info = game_info_get;
     dir_list = m_gui_settings->GetValue(gui::m_pkg_viewer).toStringList();
-
+    statusBar = new QStatusBar(treeWidget);
+    this->setStatusBar(statusBar);
     treeWidget = new QTreeWidget(this);
     treeWidget->setColumnCount(9);
     QStringList headers;
@@ -40,13 +41,7 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get,
     fileMenu->addAction(openFolderAct);
     this->setMenuBar(menuBar);
     CheckPKGFolders(); // Check for new PKG files in existing folders.
-    if (!m_pkg_list.isEmpty())
-        ProcessPKGInfo();
-
-    for (int column = 0; column < treeWidget->columnCount() - 2; ++column) {
-        // Resize the column to fit its contents
-        treeWidget->resizeColumnToContents(column);
-    }
+    ProcessPKGInfo();
 
     connect(openFolderAct, &QAction::triggered, this, &PKGViewer::OpenPKGFolder);
 
@@ -63,19 +58,18 @@ void PKGViewer::OpenPKGFolder() {
     QString folderPath =
         QFileDialog::getExistingDirectory(this, tr("Open Folder"), QDir::homePath());
     if (!dir_list.contains(folderPath)) {
-
         dir_list.append(folderPath);
         if (!folderPath.isEmpty()) {
-            QDir directory(folderPath);
             for (const auto& dir : std::filesystem::directory_iterator(folderPath.toStdString())) {
-                if (std::filesystem::is_regular_file(dir.path())) {
+                QString file_ext =
+                    QString::fromStdString(dir.path().extension().string()).toLower();
+                if (std::filesystem::is_regular_file(dir.path()) && file_ext == ".pkg") {
                     m_pkg_list.append(QString::fromStdString(dir.path().string()));
                 }
             }
             std::sort(m_pkg_list.begin(), m_pkg_list.end());
             ProcessPKGInfo();
             m_gui_settings_->SetValue(gui::m_pkg_viewer, dir_list);
-            m_gui_settings_->SetValue(gui::m_pkg_viewer_pkg_list, m_pkg_list);
         }
     } else {
         // qDebug() << "Folder selection canceled.";
@@ -86,7 +80,8 @@ void PKGViewer::CheckPKGFolders() { // Check for new PKG file additions.
     m_pkg_list.clear();
     for (const QString& paths : dir_list) {
         for (const auto& dir : std::filesystem::directory_iterator(paths.toStdString())) {
-            if (std::filesystem::is_regular_file(dir.path())) {
+            QString file_ext = QString::fromStdString(dir.path().extension().string()).toLower();
+            if (std::filesystem::is_regular_file(dir.path()) && file_ext == ".pkg") {
                 m_pkg_list.append(QString::fromStdString(dir.path().string()));
             }
         }
@@ -97,6 +92,10 @@ void PKGViewer::CheckPKGFolders() { // Check for new PKG file additions.
 void PKGViewer::ProcessPKGInfo() {
     treeWidget->clear();
     map_strings.clear();
+    map_integers.clear();
+    m_pkg_app_list.clear();
+    m_pkg_patch_list.clear();
+    m_full_pkg_list.clear();
     for (int i = 0; i < m_pkg_list.size(); i++) {
         Common::FS::IOFile file(m_pkg_list[i].toStdString(), Common::FS::FileAccessMode::Read);
         if (!file.IsOpen()) {
@@ -170,22 +169,22 @@ void PKGViewer::ProcessPKGInfo() {
         QString pkg_info = "";
         if (title_category == "gd") {
             title_category = "App";
-            pkg_info = title_name + ";" + title_id + ";" + pkg_size + ";" + title_category + ";" +
-                       app_type + ";" + app_version + ";" + fw_ + ";" + GetRegion(region) + ";" +
-                       flagss + ";" + m_pkg_list[i];
+            pkg_info = title_name + ";;" + title_id + ";;" + pkg_size + ";;" + title_category +
+                       ";;" + app_type + ";;" + app_version + ";;" + fw_ + ";;" +
+                       GetRegion(region) + ";;" + flagss + ";;" + m_pkg_list[i];
             m_pkg_app_list.append(pkg_info);
         } else {
             title_category = "Patch";
-            pkg_info = title_name + ";" + title_id + ";" + pkg_size + ";" + title_category + ";" +
-                       app_type + ";" + app_version + ";" + fw_ + ";" + GetRegion(region) + ";" +
-                       flagss + ";" + m_pkg_list[i];
+            pkg_info = title_name + ";;" + title_id + ";;" + pkg_size + ";;" + title_category +
+                       ";;" + app_type + ";;" + app_version + ";;" + fw_ + ";;" +
+                       GetRegion(region) + ";;" + flagss + ";;" + m_pkg_list[i];
             m_pkg_patch_list.append(pkg_info);
         }
     }
     std::sort(m_pkg_app_list.begin(), m_pkg_app_list.end());
     for (int i = 0; i < m_pkg_app_list.size(); i++) {
         QTreeWidgetItem* treeItem = new QTreeWidgetItem(treeWidget);
-        QStringList pkg_app_ = m_pkg_app_list[i].split(";");
+        QStringList pkg_app_ = m_pkg_app_list[i].split(";;");
         m_full_pkg_list.append(m_pkg_app_list[i]);
         treeItem->setExpanded(true);
         treeItem->setText(0, pkg_app_[0]);
@@ -211,8 +210,8 @@ void PKGViewer::ProcessPKGInfo() {
             }
         }
         for (const QString& item : m_pkg_patch_list) {
-            QStringList pkg_patch_ = item.split(";");
-            if (pkg_patch_[0] == pkg_app_[0]) { // check patches.
+            QStringList pkg_patch_ = item.split(";;");
+            if (pkg_patch_[1] == pkg_app_[1]) { // check patches with serial.
                 m_full_pkg_list.append(item);
                 QTreeWidgetItem* childItem = new QTreeWidgetItem(treeItem);
                 childItem->setText(0, pkg_patch_[0]);
@@ -235,6 +234,16 @@ void PKGViewer::ProcessPKGInfo() {
         }
     }
     std::sort(m_full_pkg_list.begin(), m_full_pkg_list.end());
+
+    for (int column = 0; column < treeWidget->columnCount() - 2; ++column) {
+        // Resize the column to fit its contents
+        treeWidget->resizeColumnToContents(column);
+    }
+    // Update status bar.
+    statusBar->clearMessage();
+    int numPkgs = m_pkg_list.size();
+    QString statusMessage = QString::number(numPkgs) + " Package.";
+    statusBar->showMessage(statusMessage);
 }
 
 QString PKGViewer::GetString(const std::string& key) {
