@@ -13,6 +13,8 @@ namespace Core::Libraries::LibKernel {
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#x}", path, flags, mode);
+    ASSERT_MSG(flags == 0, "flags!=0 not supported yet");
+    ASSERT_MSG(mode == 0, "mode!=0 not supported yet");
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -39,6 +41,21 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelClose(int d) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(d);
+    if (file == nullptr) {
+        return SCE_KERNEL_ERROR_EBADF;
+    }
+    if (!file->is_directory) {
+        file->f.Close();
+    }
+    file->is_opened = false;
+    LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
+    h->DeleteHandle(d);
+    return SCE_OK;
+}
+
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -51,7 +68,7 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     return total_read;
 }
 
-s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
+s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
 
@@ -74,11 +91,35 @@ s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
     return pos;
 }
 
+s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
+    return sceKernelLseek(d, offset, whence);
+}
+
+s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
+    if (buf == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(d);
+    if (file == nullptr) {
+        return SCE_KERNEL_ERROR_EBADF;
+    }
+    file->m_mutex.lock();
+    u32 bytes_read = file->f.ReadRaw<u8>(buf, static_cast<u32>(nbytes));
+    file->m_mutex.unlock();
+    return bytes_read;
+}
+
 void fileSystemSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
+    LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
+
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
+    LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
+    LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
