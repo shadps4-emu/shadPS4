@@ -54,22 +54,7 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     if (m_games_.size() % gamesPerRow != 0) {
         rowCount += 1; // Add an extra row for the remainder
     }
-    std::vector<int> indices;
-    for (int i = 0; i < m_games_.size(); i++) {
-        indices.push_back(i);
-    }
-    std::vector<std::future<QPixmap>> futures;
-    for (int index : indices) {
-        futures.push_back(std::async(std::launch::async, [=, this]() {
-            return m_games_[index].icon.scaled(QSize(icon_size, icon_size), Qt::IgnoreAspectRatio,
-                                               Qt::SmoothTransformation);
-        }));
-    }
 
-    std::vector<QPixmap> scaledPixmaps;
-    for (auto& future : futures) {
-        scaledPixmaps.push_back(future.get());
-    }
     int column = 0;
     this->setColumnCount(gamesPerRow);
     this->setRowCount(rowCount);
@@ -77,9 +62,10 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
         QWidget* widget = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout();
         QLabel* image_label = new QLabel();
-        image_label->setFixedSize(scaledPixmaps[gameCounter].width(),
-                                  scaledPixmaps[gameCounter].height());
-        image_label->setPixmap(scaledPixmaps[gameCounter]);
+        QPixmap icon = m_games_[gameCounter].icon.scaled(
+            QSize(icon_size, icon_size), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        image_label->setFixedSize(icon.width(), icon.height());
+        image_label->setPixmap(icon);
         QLabel* name_label = new QLabel(QString::fromStdString(m_games_[gameCounter].serial));
         name_label->setAlignment(Qt::AlignHCenter);
         layout->addWidget(image_label);
