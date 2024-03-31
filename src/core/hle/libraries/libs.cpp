@@ -8,12 +8,14 @@
 #include "core/hle/libraries/libpad/pad.h"
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
+#include "src/core/libraries/libkernel.h"
 #include "src/core/libraries/libsceaudioout.h"
 #include "src/core/libraries/libscecommondialog.h"
 #include "src/core/libraries/libscehttp.h"
 #include "src/core/libraries/libscemsgdialog.h"
 #include "src/core/libraries/libscenet.h"
 #include "src/core/libraries/libscenetctl.h"
+#include "src/core/libraries/libsceposix.h"
 #include "src/core/libraries/libscesavedata.h"
 #include "src/core/libraries/libscessl.h"
 #include "src/core/libraries/libscesysmodule.h"
@@ -43,6 +45,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SaveData::RegisterlibSceSaveData(sym);
     Libraries::Ssl::RegisterlibSceSsl(sym);
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
+    Libraries::Kernel::Registerlibkernel(sym);
+    Libraries::Posix::Registerlibsceposix(sym);
 }
 
 } // namespace OldLibraries

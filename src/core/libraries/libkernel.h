@@ -97,7 +97,7 @@ int PS4_SYSV_ABI _sigprocmask();
 int PS4_SYSV_ABI _sigsuspend();
 int PS4_SYSV_ABI _umtx_op();
 int PS4_SYSV_ABI _wait4();
-int PS4_SYSV_ABI _write();
+s64 PS4_SYSV_ABI _write(int d, const void* buf, std::size_t nbytes);
 int PS4_SYSV_ABI _writev();
 int PS4_SYSV_ABI accept();
 int PS4_SYSV_ABI access();

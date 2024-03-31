@@ -112,6 +112,8 @@ set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/libscenet.h
               src/core/libraries/libscenetctl.cpp
               src/core/libraries/libscenetctl.h
+              src/core/libraries/libsceposix.cpp
+              src/core/libraries/libsceposix.h
               src/core/libraries/libscesavedata.cpp
               src/core/libraries/libscesavedata.h
               src/core/libraries/libscessl.cpp
