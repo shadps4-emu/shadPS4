@@ -6,7 +6,7 @@
 #include "library_common.h"
 
 namespace Libraries::Kernel {
-
+/*
 int PS4_SYSV_ABI __elf_phdr_match_addr();
 int PS4_SYSV_ABI __error();
 int PS4_SYSV_ABI __freeze();
@@ -96,9 +96,9 @@ int PS4_SYSV_ABI _sigintr();
 int PS4_SYSV_ABI _sigprocmask();
 int PS4_SYSV_ABI _sigsuspend();
 int PS4_SYSV_ABI _umtx_op();
-int PS4_SYSV_ABI _wait4();
-s64 PS4_SYSV_ABI _write(int d, const void* buf, std::size_t nbytes);
-int PS4_SYSV_ABI _writev();
+int PS4_SYSV_ABI _wait4();*/
+s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes);
+/* int PS4_SYSV_ABI _writev();
 int PS4_SYSV_ABI accept();
 int PS4_SYSV_ABI access();
 int PS4_SYSV_ABI amd64_set_fsbase();
@@ -1055,7 +1055,7 @@ int PS4_SYSV_ABI sceCoredumpUnregisterCoredumpHandler();
 int PS4_SYSV_ABI sceCoredumpWriteUserData();
 int PS4_SYSV_ABI Func_9889095293F9BCAA();
 int PS4_SYSV_ABI sceCoredumpDebugForceCoredumpOnAppClose();
-int PS4_SYSV_ABI sceCoredumpDebugTriggerCoredump();
+int PS4_SYSV_ABI sceCoredumpDebugTriggerCoredump();*/
 
 void Registerlibkernel(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Kernel

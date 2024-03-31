@@ -9,6 +9,7 @@
 
 namespace Libraries::Kernel {
 
+/*
 int PS4_SYSV_ABI __elf_phdr_match_addr() {
     LOG_ERROR(Kernel, "(STUBBED) called");
     return ORBIS_OK;
@@ -458,8 +459,8 @@ int PS4_SYSV_ABI _wait4() {
     LOG_ERROR(Kernel, "(STUBBED) called");
     return ORBIS_OK;
 }
-
-s64 PS4_SYSV_ABI _write(int d, const void* buf, std::size_t nbytes) {
+*/
+s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes) {
     if (d <= 2) { // stdin,stdout,stderr
         LOG_INFO(Kernel, "{}", (const char*)buf);
         return nbytes;
@@ -468,7 +469,7 @@ s64 PS4_SYSV_ABI _write(int d, const void* buf, std::size_t nbytes) {
     UNREACHABLE(); // normal write , is it a posix call??
     return ORBIS_OK;
 }
-
+/*
 int PS4_SYSV_ABI _writev() {
     LOG_ERROR(Kernel, "(STUBBED) called");
     return ORBIS_OK;
@@ -5258,7 +5259,7 @@ int PS4_SYSV_ABI sceCoredumpDebugTriggerCoredump() {
     LOG_ERROR(Kernel, "(STUBBED) called");
     return ORBIS_OK;
 }
-
+*/
 void Registerlibkernel(Core::Loader::SymbolsResolver* sym) {
     /* LIB_FUNCTION("Fjc4-n1+y2g", "libkernel", 1, "libkernel", 1, 1, __elf_phdr_match_addr);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __error);
@@ -5355,7 +5356,7 @@ void Registerlibkernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9zpLsLESzTs", "libkernel", 1, "libkernel", 1, 1, _sigsuspend);
     LIB_FUNCTION("04AjkP0jO9U", "libkernel", 1, "libkernel", 1, 1, _umtx_op);
     LIB_FUNCTION("RFlsu7nfopM", "libkernel", 1, "libkernel", 1, 1, _wait4);*/
-    LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, _write);
+    LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
     /* LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("3e+4Iv7IJ8U", "libkernel", 1, "libkernel", 1, 1, accept);
     LIB_FUNCTION("8vE6Z6VEYyk", "libkernel", 1, "libkernel", 1, 1, access);
