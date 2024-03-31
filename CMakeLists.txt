@@ -98,6 +98,8 @@ set(AUDIO_CORE src/audio_core/sdl_audio.cpp
 )
 set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
+              src/core/libraries/libkernel.cpp
+              src/core/libraries/libkernel.h
               src/core/libraries/libscecommondialog.cpp
               src/core/libraries/libscecommondialog.h
               src/core/libraries/libscegnmdriver.cpp
