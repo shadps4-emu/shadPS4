@@ -98,12 +98,28 @@ set(AUDIO_CORE src/audio_core/sdl_audio.cpp
 )
 set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
+              src/core/libraries/libkernel.cpp
+              src/core/libraries/libkernel.h
               src/core/libraries/libscecommondialog.cpp
               src/core/libraries/libscecommondialog.h
               src/core/libraries/libscegnmdriver.cpp
               src/core/libraries/libscegnmdriver.h
+              src/core/libraries/libscehttp.cpp
+              src/core/libraries/libscehttp.h
               src/core/libraries/libscemsgdialog.cpp
               src/core/libraries/libscemsgdialog.h
+              src/core/libraries/libscenet.cpp
+              src/core/libraries/libscenet.h
+              src/core/libraries/libscenetctl.cpp
+              src/core/libraries/libscenetctl.h
+              src/core/libraries/libsceposix.cpp
+              src/core/libraries/libsceposix.h
+              src/core/libraries/libscesavedata.cpp
+              src/core/libraries/libscesavedata.h
+              src/core/libraries/libscessl.cpp
+              src/core/libraries/libscessl.h
+              src/core/libraries/libscesysmodule.cpp
+              src/core/libraries/libscesysmodule.h
               src/core/libraries/libscesystemservice.cpp
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp

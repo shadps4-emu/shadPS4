@@ -55,11 +55,18 @@ enum class Class : u8 {
     Lib_CommonDlg,     ///< The LibSceCommonDialog implementation.
     Lib_MsgDlg,        ///< The LibSceMsgDialog implementation.
     Lib_AudioOut,      ///< The LibSceAudioOut implementation.
+    Lib_Net,           ///< The LibSceNet implementation.
+    Lib_NetCtl,        ///< The LibSecNetCtl implementation.
+    Lib_SaveData,      ///< The LibSceSaveData implementation.
+    Lib_Ssl,           ///< The LibSceSsl implementation.
+    Lib_Http,          ///< The LibSceHttp implementation.
+    Lib_SysModule,     ///< The LibSceSysModule implementation
     Frontend,          ///< Emulator UI
     Render,            ///< Video Core
     Render_Vulkan,     ///< Vulkan backend
     Loader,            ///< ROM loader
     Input,             ///< Input emulation
+    Tty,               ///< Debug output from emu
     Count              ///< Total number of logging classes
 };
 

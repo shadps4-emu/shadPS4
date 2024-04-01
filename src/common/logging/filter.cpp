@@ -88,10 +88,17 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, CommonDlg)                                                                            \
     SUB(Lib, MsgDlg)                                                                               \
     SUB(Lib, AudioOut)                                                                             \
+    SUB(Lib, Net)                                                                                  \
+    SUB(Lib, NetCtl)                                                                               \
+    SUB(Lib, SaveData)                                                                             \
+    SUB(Lib, Http)                                                                                 \
+    SUB(Lib, Ssl)                                                                                  \
+    SUB(Lib, SysModule)                                                                            \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
     CLS(Input)                                                                                     \
+    CLS(Tty)                                                                                       \
     CLS(Loader)
 
 // GetClassName is a macro defined by Windows.h, grrr...
