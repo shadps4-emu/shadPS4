@@ -84,7 +84,7 @@ int PS4_SYSV_ABI _ZTVN3sce16CommonDialogUtil6ClientE() {
 }
 
 int PS4_SYSV_ABI sceCommonDialogInitialize() {
-    LOG_ERROR(Lib_CommonDlg, "(STUBBED) called");
+    LOG_ERROR(Lib_CommonDlg, "(DUMMY) called");
     return ORBIS_OK;
 }
 
