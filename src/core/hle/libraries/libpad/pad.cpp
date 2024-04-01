@@ -11,13 +11,13 @@
 namespace OldLibraries::LibPad {
 
 int PS4_SYSV_ABI scePadInit() {
-    LOG_WARNING(Lib_Pad, "(STUBBED) called");
+    LOG_WARNING(Lib_Pad, "(DUMMY) called");
     return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                             s32 index, const ScePadOpenParam* pParam) {
-    LOG_INFO(Lib_Pad, "(STUBBED) called user_id = {} type = {} index = {}", user_id, type, index);
+    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", user_id, type, index);
     return 1; // dummy
 }
 
@@ -48,10 +48,32 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
     return SCE_OK;
 }
 
+s32 PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadInformation* info) {
+    LOG_INFO(Lib_Pad, "called handle = {}", handle);
+    info->touchpadDensity = 1;
+    info->touchResolutionX = 1920;
+    info->touchResolutionY = 950;
+    info->stickDeadzoneL = 2;
+    info->stickDeadzoneR = 2;
+    info->connectionType = ORBIS_PAD_CONNECTION_TYPE_STANDARD;
+    info->count = 1;
+    info->connected = 1;
+    info->deviceClass = ORBIS_PAD_PORT_TYPE_STANDARD;
+    return SCE_OK;
+}
+
+s32 PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool enable) {
+    LOG_INFO(Lib_Pad, "(DUMMY) called handle = {} enabled = {}", handle,
+             (enable ? "true" : "false"));
+    return SCE_OK;
+}
+
 void padSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hv1luiJrqQM", "libScePad", 1, "libScePad", 1, 1, scePadInit);
     LIB_FUNCTION("xk0AcarP3V4", "libScePad", 1, "libScePad", 1, 1, scePadOpen);
     LIB_FUNCTION("YndgXqQVV7c", "libScePad", 1, "libScePad", 1, 1, scePadReadState);
+    LIB_FUNCTION("gjP9-KQzoUk", "libScePad", 1, "libScePad", 1, 1, scePadGetControllerInformation);
+    LIB_FUNCTION("clVvL4ZDntw", "libScePad", 1, "libScePad", 1, 1, scePadSetMotionSensorState);
 }
 
 } // namespace OldLibraries::LibPad
