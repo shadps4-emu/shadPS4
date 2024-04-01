@@ -98,6 +98,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
     CLS(Input)                                                                                     \
+    CLS(Tty)                                                                                       \
     CLS(Loader)
 
 // GetClassName is a macro defined by Windows.h, grrr...

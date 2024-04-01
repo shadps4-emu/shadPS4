@@ -466,7 +466,7 @@ s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes) {
         char* str = strdup((const char*)buf);
         if (str[nbytes - 1] == '\n')
             str[nbytes - 1] = 0;
-        LOG_INFO(Kernel, "{}", str);
+        LOG_INFO(Tty, "{}", str);
         free(str);
         return nbytes;
     }

@@ -66,6 +66,7 @@ enum class Class : u8 {
     Render_Vulkan,     ///< Vulkan backend
     Loader,            ///< ROM loader
     Input,             ///< Input emulation
+    Tty,               ///< Debug output from emu
     Count              ///< Total number of logging classes
 };
 
