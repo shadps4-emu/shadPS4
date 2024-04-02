@@ -519,6 +519,33 @@ int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, SceKernelTimespec* tp) {
+    if (tp == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+    clockid_t pclock_id = CLOCK_REALTIME;
+    switch (clock_id) {
+    case 0:
+        pclock_id = CLOCK_REALTIME;
+        break;
+    case 13:
+    case 4:
+        pclock_id = CLOCK_MONOTONIC;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    timespec t{};
+    int result = clock_gettime(pclock_id, &t);
+    tp->tv_sec = t.tv_sec;
+    tp->tv_nsec = t.tv_nsec;
+    if (result == 0) {
+        return SCE_OK;
+    }
+    return SCE_KERNEL_ERROR_EINVAL;
+}
+
 void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -551,6 +578,8 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
+
+    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
