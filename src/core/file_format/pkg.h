@@ -73,6 +73,19 @@ struct PKGHeader {
     u8 pkg_digest[0x20];
 };
 
+enum class PKGContentFlag {
+    FIRST_PATCH = 0x100000,
+    PATCHGO = 0x200000,
+    REMASTER = 0x400000,
+    PS_CLOUD = 0x800000,
+    GD_AC = 0x2000000,
+    NON_GAME = 0x4000000,
+    UNKNOWN_0x8000000 = 0x8000000,
+    SUBSEQUENT_PATCH = 0x40000000,
+    DELTA_PATCH = 0x41000000,
+    CUMULATIVE_PATCH = 0x60000000
+};
+
 struct PKGEntry {
     u32_be id;              // File ID, useful for files without a filename entry
     u32_be filename_offset; // Offset into the filenames table (ID 0x200) where this file's name is

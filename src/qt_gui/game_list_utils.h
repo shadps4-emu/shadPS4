@@ -14,12 +14,23 @@ public:
         static const QStringList suffixes = {"B", "KB", "MB", "GB", "TB"};
         int suffixIndex = 0;
 
-        while (size >= 1024 && suffixIndex < suffixes.size() - 1) {
-            size /= 1024;
+        double gameSize = static_cast<double>(size);
+        while (gameSize >= 1024 && suffixIndex < suffixes.size() - 1) {
+            gameSize /= 1024;
             ++suffixIndex;
         }
 
-        return QString("%1 %2").arg(size).arg(suffixes[suffixIndex]);
+        // Format the size with a specified precision
+        QString sizeString;
+        if (gameSize < 10.0) {
+            sizeString = QString::number(gameSize, 'f', 2);
+        } else if (gameSize < 100.0) {
+            sizeString = QString::number(gameSize, 'f', 1);
+        } else {
+            sizeString = QString::number(gameSize, 'f', 0);
+        }
+
+        return sizeString + " " + suffixes[suffixIndex];
     }
 
     static QString GetFolderSize(const QDir& dir) {
@@ -32,7 +43,7 @@ public:
             if (it.fileInfo().isFile()) {
                 total += it.fileInfo().size();
             }
-            it.next();
+            it.next(); // this is heavy.
         }
 
         // if there is a file left "at the end" get it's size
