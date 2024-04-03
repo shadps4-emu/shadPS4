@@ -4,7 +4,7 @@
 #pragma once
 
 #include <SDL.h>
-#include <core/PS4/HLE/Graphics/graphics_ctx.h>
+#include "core/PS4/HLE/Graphics/graphics_ctx.h"
 
 #include <condition_variable>
 #include <mutex>

@@ -32,6 +32,3 @@ target_include_directories(xxhash INTERFACE xxhash)
 option(ZYDIS_BUILD_TOOLS "" OFF)
 option(ZYDIS_BUILD_EXAMPLES "" OFF)
 add_subdirectory(zydis EXCLUDE_FROM_ALL)
-
-
-

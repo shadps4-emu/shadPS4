@@ -5,14 +5,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # shadPS4
 
-An early PS4 emulator for Windows and Linux written in C++
-by shadow , skmp , wheremyfoodat , GPUCode
+shadPS4 is an early PS4 emulator for Windows and Linux written in C++
 
 [Check us on twitter](https://twitter.com/shadps4 "Check us on twitter")
 
 # Status
 
-Early progress , a small amount of ps4 sdk demos and homebrew games working
+Early progress, a small amount of ps4 sdk demos and homebrew games working.
 
 # Why?
 
@@ -22,7 +21,7 @@ The project started as a fun project. Due to short free time, it will probably t
 
 ## Windows
 
-Check building instructions in [windows build](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md)
+Check building instructions in [windows build](https://github.com/shadps4-emu/shadPS4/blob/main/documents/windows_building.md)
 
 ## Linux
 
@@ -50,7 +49,6 @@ Logo is done by Xphalnos
 # Contribution
 
 We currently accept any contribution, just open a pr and we will check it :)
-
 
 # Sister Projects
 - [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): An multiplatform 3DS emulator from our co-author wheremyfoodat

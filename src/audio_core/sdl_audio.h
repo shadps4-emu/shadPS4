@@ -5,8 +5,8 @@
 
 #include <mutex>
 #include <SDL.h>
-#include <core/libraries/libsceaudioout.h>
 
+#include "src/core/libraries/libsceaudioout.h"
 #include "src/common/types.h"
 
 namespace Audio {

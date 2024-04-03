@@ -55,9 +55,8 @@ private:
     std::atomic_bool enabled{true};
 };
 
-/**
- * Backend that writes to a file passed into the constructor
- */
+// Backend that writes to a file passed into the constructor
+
 class FileBackend {
 public:
     explicit FileBackend(const std::filesystem::path& filename)
@@ -117,9 +116,8 @@ public:
 
 bool initialization_in_progress_suppress_logging = true;
 
-/**
- * Static state as a singleton.
- */
+// Static state as a singleton.
+
 class Impl {
 public:
     static Impl& Instance() {

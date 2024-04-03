@@ -15,9 +15,8 @@
 
 namespace Common {
 
-/**
- * Native endianness
- */
+// Native endianness
+
 template <typename T>
 using NativeEndian = T;
 

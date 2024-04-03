@@ -16,9 +16,8 @@ namespace Common::Log {
  */
 const char* GetLogClassName(Class log_class);
 
-/**
- * Returns the name of the passed log level as a C-string.
- */
+// Returns the name of the passed log level as a C-string.
+
 const char* GetLevelName(Level log_level);
 
 /**

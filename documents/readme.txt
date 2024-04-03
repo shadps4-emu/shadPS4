@@ -31,7 +31,6 @@ I would like to thank the following people for helping me so far , with coding o
 - skmp - or kornilios for being good old friend
 - PandaBad - our beloved stalker
 - emufan4568 - for advices
-- velocity - for talking 1-2 times per year on discord server . We miss you velocity 
+- velocity - for talking 1-2 times per year on discord server. We miss you velocity 
 
 - probably more , will include in the next readme :D
-

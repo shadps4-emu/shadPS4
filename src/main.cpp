@@ -9,9 +9,9 @@
 #include <cstdio>
 #include <thread>
 
-#include <common/logging/log.h>
-#include <core/hle/libraries/libc/libc.h>
-#include <core/hle/libraries/libkernel/thread_management.h>
+#include "common/logging/log.h"
+#include "core/hle/libraries/libc/libc.h"
+#include "core/hle/libraries/libkernel/thread_management.h"
 #include "common/config.h"
 #include "common/discord.h"
 #include "common/logging/backend.h"

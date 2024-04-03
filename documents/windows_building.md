@@ -5,9 +5,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # How to build shadps4 in windows 
 
-## Download VStudio Community 2022 17.9.5
+## Download Visual Studio Community 2022 17.9.5
 
-[VStudio 2022](https://visualstudio.microsoft.com/vs/)
+[Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 
 ## Requirements
 
@@ -22,4 +22,4 @@ Install the following
 
 - ## Compiling
 
-- Open vstudio and select the clang debug or clang release . It should compile just fine
+- Open Visual Studio and select the clang debug or clang release. It should compile just fine.

@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <SDL_vulkan.h>
-#include <core/PS4/GPU/gpu_memory.h>
 #include <fmt/core.h>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
+
+#include "core/PS4/GPU/gpu_memory.h"
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "vulkan_util.h"
-
-#include <algorithm>
 
 void Graphics::Vulkan::vulkanCreate(Emu::WindowCtx* ctx) {
     Emu::VulkanExt ext;
