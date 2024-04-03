@@ -2,23 +2,22 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QDir>
+#include <QDockWidget>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressDialog>
-
+#include <QStatusBar>
+#include <QtConcurrent>
 #include "common/io_file.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
-#include "game_list_frame.h"
 #include "gui_settings.h"
 #include "main_window.h"
 
 MainWindow::MainWindow(std::shared_ptr<GuiSettings> gui_settings, QWidget* parent)
     : QMainWindow(parent), ui(new Ui::MainWindow), m_gui_settings(std::move(gui_settings)) {
-
     ui->setupUi(this);
-
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
@@ -27,23 +26,29 @@ MainWindow::~MainWindow() {
 }
 
 bool MainWindow::Init() {
+    auto start = std::chrono::steady_clock::now();
     AddUiWidgets();
     CreateActions();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
+    SetLastIconSizeBullet();
+    ConfigureGuiFromSettings();
+    LoadGameLists();
 
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("ShadPS4 v0.0.3"));
-
-    ConfigureGuiFromSettings();
-
     show();
 
-    // Fix possible hidden game list columns. The game list has to be visible already. Use this
-    // after show()
-    m_game_list_frame->FixNarrowColumns();
-
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    statusBar = new QStatusBar(this);
+    m_main_window->setStatusBar(statusBar);
+    // Update status bar
+    int numGames = m_game_info->m_games.size();
+    QString statusMessage = "Games: " + QString::number(numGames) + " (" +
+                            QString::number(duration.count()) + "ms). Ready.";
+    statusBar->showMessage(statusMessage);
     return true;
 }
 
@@ -73,7 +78,6 @@ void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
-    ui->sizeSlider->setRange(0, gui::game_list_max_slider_pos);
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
     ui->toolBar->addWidget(ui->stopButton);
@@ -83,7 +87,6 @@ void MainWindow::AddUiWidgets() {
     line->setFrameShape(QFrame::StyledPanel);
     line->setFrameShadow(QFrame::Sunken);
     ui->toolBar->addWidget(line);
-    // ui->toolBar->addWidget(ui->emuRunWidget);
     ui->toolBar->addWidget(ui->sizeSliderContainer);
     ui->toolBar->addWidget(ui->mw_searchbar);
 }
@@ -92,89 +95,190 @@ void MainWindow::CreateDockWindows() {
     m_main_window = new QMainWindow();
     m_main_window->setContextMenuPolicy(Qt::PreventContextMenu);
 
-    m_game_list_frame = new GameListFrame(m_gui_settings, m_main_window);
+    // resize window to last W and H
+    QSize window_size = m_gui_settings->GetValue(gui::m_window_size).toSize();
+    m_main_window->resize(window_size.width(), window_size.height());
+
+    // Add the game table.
+    m_dock_widget = new QDockWidget("Game List", m_main_window);
+    m_game_list_frame = new GameListFrame(m_game_info, m_gui_settings, m_main_window);
     m_game_list_frame->setObjectName("gamelist");
+    m_game_grid_frame = new GameGridFrame(m_game_info, m_gui_settings, m_main_window);
+    m_game_grid_frame->setObjectName("gamegridlist");
 
-    m_main_window->addDockWidget(Qt::LeftDockWidgetArea, m_game_list_frame);
+    int table_mode = m_gui_settings->GetValue(gui::m_table_mode).toInt();
+    int slider_pos = 0;
+    if (table_mode == 0) { // List
+        m_game_grid_frame->hide();
+        m_dock_widget->setWidget(m_game_list_frame);
+        slider_pos = m_gui_settings->GetValue(gui::m_slide_pos).toInt();
+        ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
+        isTableList = true;
+    } else { // Grid
+        m_game_list_frame->hide();
+        m_dock_widget->setWidget(m_game_grid_frame);
+        slider_pos = m_gui_settings->GetValue(gui::m_slide_pos_grid).toInt();
+        ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
+        isTableList = false;
+    }
 
+    m_main_window->addDockWidget(Qt::LeftDockWidgetArea, m_dock_widget);
     m_main_window->setDockNestingEnabled(true);
 
     setCentralWidget(m_main_window);
-
-    connect(m_game_list_frame, &GameListFrame::GameListFrameClosed, this, [this]() {
-        if (ui->showGameListAct->isChecked()) {
-            ui->showGameListAct->setChecked(false);
-            m_gui_settings->SetValue(gui::main_window_gamelist_visible, false);
-        }
-    });
 }
+
+void MainWindow::LoadGameLists() {
+    // Get game info from game folders.
+    m_game_info->GetGameInfo();
+    if (isTableList) {
+        m_game_list_frame->PopulateGameList();
+    } else {
+        m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+    }
+}
+
 void MainWindow::CreateConnects() {
+    connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
+
+    connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
+
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
 
-    connect(ui->showGameListAct, &QAction::triggered, this, [this](bool checked) {
-        checked ? m_game_list_frame->show() : m_game_list_frame->hide();
-        m_gui_settings->SetValue(gui::main_window_gamelist_visible, checked);
-    });
-    connect(ui->refreshGameListAct, &QAction::triggered, this,
-            [this] { m_game_list_frame->Refresh(false); });
+    connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
 
-    connect(m_icon_size_act_group, &QActionGroup::triggered, this, [this](QAction* act) {
-        static const int index_small = gui::get_Index(gui::game_list_icon_size_small);
-        static const int index_medium = gui::get_Index(gui::game_list_icon_size_medium);
-
-        int index;
-
-        if (act == ui->setIconSizeTinyAct)
-            index = 0;
-        else if (act == ui->setIconSizeSmallAct)
-            index = index_small;
-        else if (act == ui->setIconSizeMediumAct)
-            index = index_medium;
-        else
-            index = gui::game_list_max_slider_pos;
-
-        m_save_slider_pos = true;
-        ResizeIcons(index);
-    });
-    connect(m_game_list_frame, &GameListFrame::RequestIconSizeChange, this, [this](const int& val) {
-        const int idx = ui->sizeSlider->value() + val;
-        m_save_slider_pos = true;
-        ResizeIcons(idx);
-    });
-
-    connect(m_list_mode_act_group, &QActionGroup::triggered, this, [this](QAction* act) {
-        const bool is_list_act = act == ui->setlistModeListAct;
-        if (is_list_act == m_is_list_mode)
-            return;
-
-        const int slider_pos = ui->sizeSlider->sliderPosition();
-        ui->sizeSlider->setSliderPosition(m_other_slider_pos);
-        SetIconSizeActions(m_other_slider_pos);
-        m_other_slider_pos = slider_pos;
-
-        m_is_list_mode = is_list_act;
-        m_game_list_frame->SetListMode(m_is_list_mode);
-    });
-    connect(ui->sizeSlider, &QSlider::valueChanged, this, &MainWindow::ResizeIcons);
-    connect(ui->sizeSlider, &QSlider::sliderReleased, this, [this] {
-        const int index = ui->sizeSlider->value();
-        m_gui_settings->SetValue(
-            m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid, index);
-        SetIconSizeActions(index);
-    });
-    connect(ui->sizeSlider, &QSlider::actionTriggered, this, [this](int action) {
-        if (action != QAbstractSlider::SliderNoAction &&
-            action !=
-                QAbstractSlider::SliderMove) { // we only want to save on mouseclicks or slider
-                                               // release (the other connect handles this)
-            m_save_slider_pos = true; // actionTriggered happens before the value was changed
+    connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
+        if (isTableList) {
+            m_game_list_frame->icon_size =
+                36 + value; // 36 is the minimum icon size to use due to text disappearing.
+            m_game_list_frame->ResizeIcons(36 + value);
+            m_gui_settings->SetValue(gui::m_icon_size, 36 + value);
+            m_gui_settings->SetValue(gui::m_slide_pos, value);
+        } else {
+            m_game_grid_frame->icon_size = 69 + value;
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+            m_gui_settings->SetValue(gui::m_icon_size_grid, 69 + value);
+            m_gui_settings->SetValue(gui::m_slide_pos_grid, value);
         }
     });
 
-    connect(ui->mw_searchbar, &QLineEdit::textChanged, m_game_list_frame,
-            &GameListFrame::SetSearchText);
+    connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this](int value) {
+        if (isTableList) {
+            m_game_list_frame->icon_size =
+                36; // 36 is the minimum icon size to use due to text disappearing.
+            m_gui_settings->SetValue(gui::m_icon_size, 36);
+            ui->sizeSlider->setValue(0); // icone_size - 36
+            m_gui_settings->SetValue(gui::m_slide_pos, 0);
+        } else {
+            m_gui_settings->SetValue(gui::m_icon_size_grid, 69); // nice :3
+            ui->sizeSlider->setValue(0);                         // icone_size - 36
+            m_gui_settings->SetValue(gui::m_slide_pos_grid, 0);
+        }
+    });
+
+    connect(ui->setIconSizeSmallAct, &QAction::triggered, this, [this](int value) {
+        if (isTableList) {
+            m_game_list_frame->icon_size = 64;
+            m_gui_settings->SetValue(gui::m_icon_size, 64);
+            ui->sizeSlider->setValue(28);
+            m_gui_settings->SetValue(gui::m_slide_pos, 28);
+        } else {
+            m_gui_settings->SetValue(gui::m_icon_size_grid, 97);
+            ui->sizeSlider->setValue(28);
+            m_gui_settings->SetValue(gui::m_slide_pos_grid, 28);
+        }
+    });
+
+    connect(ui->setIconSizeMediumAct, &QAction::triggered, this, [this](int value) {
+        if (isTableList) {
+            m_game_list_frame->icon_size = 128;
+            m_gui_settings->SetValue(gui::m_icon_size, 128);
+            ui->sizeSlider->setValue(92);
+            m_gui_settings->SetValue(gui::m_slide_pos, 92);
+        } else {
+            m_gui_settings->SetValue(gui::m_icon_size_grid, 160);
+            ui->sizeSlider->setValue(92);
+            m_gui_settings->SetValue(gui::m_slide_pos_grid, 92);
+        }
+    });
+
+    connect(ui->setIconSizeLargeAct, &QAction::triggered, this, [this](int value) {
+        if (isTableList) {
+            m_game_list_frame->icon_size = 256;
+            m_gui_settings->SetValue(gui::m_icon_size, 256);
+            ui->sizeSlider->setValue(220);
+            m_gui_settings->SetValue(gui::m_slide_pos, 220);
+        } else {
+            m_gui_settings->SetValue(gui::m_icon_size_grid, 256);
+            ui->sizeSlider->setValue(220);
+            m_gui_settings->SetValue(gui::m_slide_pos_grid, 220);
+        }
+    });
+
+    connect(ui->setlistModeListAct, &QAction::triggered, m_dock_widget, [this]() {
+        m_dock_widget->setWidget(m_game_list_frame);
+        m_game_list_frame->show();
+        m_game_grid_frame->hide();
+        if (m_game_list_frame->item(0, 0) == nullptr) {
+            m_game_list_frame->clearContents();
+            m_game_list_frame->PopulateGameList();
+        }
+        isTableList = true;
+        m_gui_settings->SetValue(gui::m_table_mode, 0); // save table mode
+        int slider_pos = m_gui_settings->GetValue(gui::m_slide_pos).toInt();
+        ui->sizeSlider->setSliderPosition(slider_pos);
+    });
+
+    connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget, [this]() {
+        m_dock_widget->setWidget(m_game_grid_frame);
+        m_game_grid_frame->show();
+        m_game_list_frame->hide();
+        if (m_game_grid_frame->item(0, 0) == nullptr) {
+            m_game_grid_frame->clearContents();
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+        }
+        isTableList = false;
+        m_gui_settings->SetValue(gui::m_table_mode, 1); // save table mode
+        int slider_pos_grid = m_gui_settings->GetValue(gui::m_slide_pos_grid).toInt();
+        ui->sizeSlider->setSliderPosition(slider_pos_grid);
+    });
+
+    // Dump game list.
+    connect(ui->dumpGameListAct, &QAction::triggered, this, [this] {
+        QString filePath = qApp->applicationDirPath().append("/GameList.txt");
+        QFile file(filePath);
+        QTextStream out(&file);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qDebug() << "Failed to open file for writing:" << file.errorString();
+            return;
+        }
+        out << QString("%1 %2 %3 %4 %5\n")
+                   .arg("          NAME", -50)
+                   .arg("    ID", -10)
+                   .arg("FW", -4)
+                   .arg(" APP VERSION", -11)
+                   .arg("                Path");
+        for (const GameInfo& game : m_game_info->m_games) {
+            out << QString("%1 %2 %3     %4 %5\n")
+                       .arg(QString::fromStdString(game.name), -50)
+                       .arg(QString::fromStdString(game.serial), -10)
+                       .arg(QString::fromStdString(game.fw), -4)
+                       .arg(QString::fromStdString(game.version), -11)
+                       .arg(QString::fromStdString(game.path));
+        }
+    });
+
+    // Package install.
     connect(ui->bootInstallPkgAct, &QAction::triggered, this, [this] { InstallPkg(); });
     connect(ui->gameInstallPathAct, &QAction::triggered, this, [this] { InstallDirectory(); });
+    // Package Viewer.
+    connect(ui->pkgViewerAct, &QAction::triggered, this, [this]() {
+        PKGViewer* pkgViewer = new PKGViewer(m_game_info, m_gui_settings,
+                                             [this](std::string file, int pkgNum, int nPkg) {
+                                                 this->InstallDragDropPkg(file, pkgNum, nPkg);
+                                             });
+        pkgViewer->show();
+    });
 
     // Themes
     connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
@@ -219,85 +323,64 @@ void MainWindow::CreateConnects() {
     });
 }
 
-void MainWindow::SetIconSizeActions(int idx) const {
-    static const int threshold_tiny =
-        gui::get_Index((gui::game_list_icon_size_small + gui::game_list_icon_size_min) / 2);
-    static const int threshold_small =
-        gui::get_Index((gui::game_list_icon_size_medium + gui::game_list_icon_size_small) / 2);
-    static const int threshold_medium =
-        gui::get_Index((gui::game_list_icon_size_max + gui::game_list_icon_size_medium) / 2);
-
-    if (idx < threshold_tiny)
-        ui->setIconSizeTinyAct->setChecked(true);
-    else if (idx < threshold_small)
-        ui->setIconSizeSmallAct->setChecked(true);
-    else if (idx < threshold_medium)
-        ui->setIconSizeMediumAct->setChecked(true);
-    else
-        ui->setIconSizeLargeAct->setChecked(true);
-}
-void MainWindow::ResizeIcons(int index) {
-    if (ui->sizeSlider->value() != index) {
-        ui->sizeSlider->setSliderPosition(index);
-        return; // ResizeIcons will be triggered again by setSliderPosition, so return here
+void MainWindow::SearchGameTable(const QString& text) {
+    if (isTableList) {
+        for (int row = 0; row < m_game_list_frame->rowCount(); row++) {
+            QString game_name = QString::fromStdString(m_game_info->m_games[row].name);
+            bool match = (game_name.contains(text, Qt::CaseInsensitive)); // Check only in column 1
+            m_game_list_frame->setRowHidden(row, !match);
+        }
+    } else {
+        QVector<GameInfo> filteredGames;
+        for (const auto& gameInfo : m_game_info->m_games) {
+            QString game_name = QString::fromStdString(gameInfo.name);
+            if (game_name.contains(text, Qt::CaseInsensitive)) {
+                filteredGames.push_back(gameInfo);
+            }
+        }
+        std::sort(filteredGames.begin(), filteredGames.end(), m_game_info->CompareStrings);
+        m_game_grid_frame->PopulateGameGrid(filteredGames, true);
     }
-
-    if (m_save_slider_pos) {
-        m_save_slider_pos = false;
-        m_gui_settings->SetValue(
-            m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid, index);
-
-        // this will also fire when we used the actions, but i didn't want to add another boolean
-        // member
-        SetIconSizeActions(index);
-    }
-
-    m_game_list_frame->ResizeIcons(index);
 }
+
+void MainWindow::RefreshGameTable() {
+    m_game_info->m_games.clear();
+    m_game_info->GetGameInfo();
+    m_game_list_frame->clearContents();
+    m_game_list_frame->PopulateGameList();
+    m_game_grid_frame->clearContents();
+    m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+    statusBar->clearMessage();
+    int numGames = m_game_info->m_games.size();
+    QString statusMessage = "Games: " + QString::number(numGames) + ". Ready.";
+    statusBar->showMessage(statusMessage);
+}
+
 void MainWindow::ConfigureGuiFromSettings() {
     // Restore GUI state if needed. We need to if they exist.
     if (!restoreGeometry(m_gui_settings->GetValue(gui::main_window_geometry).toByteArray())) {
         resize(QGuiApplication::primaryScreen()->availableSize() * 0.7);
     }
 
-    restoreState(m_gui_settings->GetValue(gui::main_window_windowState).toByteArray());
     m_main_window->restoreState(m_gui_settings->GetValue(gui::main_window_mwState).toByteArray());
 
     ui->showGameListAct->setChecked(
         m_gui_settings->GetValue(gui::main_window_gamelist_visible).toBool());
 
-    m_game_list_frame->setVisible(ui->showGameListAct->isChecked());
-
-    // handle icon size options
-    m_is_list_mode = m_gui_settings->GetValue(gui::game_list_listMode).toBool();
-    if (m_is_list_mode)
+    if (isTableList) {
         ui->setlistModeListAct->setChecked(true);
-    else
+    } else {
         ui->setlistModeGridAct->setChecked(true);
-
-    const int icon_size_index =
-        m_gui_settings
-            ->GetValue(m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid)
-            .toInt();
-    m_other_slider_pos =
-        m_gui_settings
-            ->GetValue(!m_is_list_mode ? gui::game_list_iconSize : gui::game_list_iconSizeGrid)
-            .toInt();
-    ui->sizeSlider->setSliderPosition(icon_size_index);
-    SetIconSizeActions(icon_size_index);
-
-    // Gamelist
-    m_game_list_frame->LoadSettings();
+    }
 }
 
 void MainWindow::SaveWindowState() const {
     // Save gui settings
     m_gui_settings->SetValue(gui::main_window_geometry, saveGeometry());
     m_gui_settings->SetValue(gui::main_window_windowState, saveState());
+    m_gui_settings->SetValue(gui::m_window_size,
+                             QSize(m_main_window->width(), m_main_window->height()));
     m_gui_settings->SetValue(gui::main_window_mwState, m_main_window->saveState());
-
-    // Save column settings
-    m_game_list_frame->SaveSettings();
 }
 
 void MainWindow::InstallPkg() {
@@ -312,7 +395,6 @@ void MainWindow::InstallPkg() {
 }
 
 void MainWindow::InstallDragDropPkg(std::string file, int pkgNum, int nPkg) {
-
     if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
         PKG pkg;
         pkg.Open(file);
@@ -323,7 +405,7 @@ void MainWindow::InstallDragDropPkg(std::string file, int pkgNum, int nPkg) {
             pkg.GetTitleID();
         if (!pkg.Extract(file, extract_path, failreason)) {
             QMessageBox::critical(this, "PKG ERROR", QString::fromStdString(failreason),
-                                  QMessageBox::Ok, 0);
+                                  QMessageBox::Ok);
         } else {
             int nfiles = pkg.GetNumberOfFiles();
 
@@ -356,14 +438,14 @@ void MainWindow::InstallDragDropPkg(std::string file, int pkgNum, int nPkg) {
             auto path = m_gui_settings->GetValue(gui::settings_install_dir).toString();
             if (pkgNum == nPkg) {
                 QMessageBox::information(this, "Extraction Finished",
-                                         "Game successfully installed at " + path, QMessageBox::Ok,
-                                         0);
-                m_game_list_frame->Refresh(true);
+                                         "Game successfully installed at " + path, QMessageBox::Ok);
+                // Refresh game table after extraction.
+                RefreshGameTable();
             }
         }
     } else {
         QMessageBox::critical(this, "PKG ERROR", "File doesn't appear to be a valid PKG file",
-                              QMessageBox::Ok, 0);
+                              QMessageBox::Ok);
     }
 }
 
@@ -373,7 +455,6 @@ void MainWindow::InstallDirectory() {
 }
 
 void MainWindow::SetLastUsedTheme() {
-
     Theme lastTheme = static_cast<Theme>(m_gui_settings->GetValue(gui::mw_themes).toInt());
     m_window_themes.SetWindowTheme(lastTheme, ui->mw_searchbar);
 
@@ -405,7 +486,26 @@ void MainWindow::SetLastUsedTheme() {
     }
 }
 
-QIcon MainWindow::recolorIcon(const QIcon& icon, bool isWhite) {
+void MainWindow::SetLastIconSizeBullet() {
+    // set QAction bullet point if applicable
+    int lastSize = m_gui_settings->GetValue(gui::m_icon_size).toInt();
+    switch (lastSize) {
+    case 36:
+        ui->setIconSizeTinyAct->setChecked(true);
+        break;
+    case 64:
+        ui->setIconSizeSmallAct->setChecked(true);
+        break;
+    case 128:
+        ui->setIconSizeMediumAct->setChecked(true);
+        break;
+    case 256:
+        ui->setIconSizeLargeAct->setChecked(true);
+        break;
+    }
+}
+
+QIcon MainWindow::RecolorIcon(const QIcon& icon, bool isWhite) {
     QPixmap pixmap(icon.pixmap(icon.actualSize(QSize(120, 120)), QIcon::Normal));
     QColor clr(isWhite ? Qt::white : Qt::black);
     QBitmap mask = pixmap.createMaskFromColor(clr, Qt::MaskOutColor);
@@ -417,32 +517,49 @@ QIcon MainWindow::recolorIcon(const QIcon& icon, bool isWhite) {
 
 void MainWindow::SetUiIcons(bool isWhite) {
     QIcon icon;
-    icon = recolorIcon(ui->bootInstallPkgAct->icon(), isWhite);
+    icon = RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite);
     ui->bootInstallPkgAct->setIcon(icon);
-    icon = recolorIcon(ui->exitAct->icon(), isWhite);
+    icon = RecolorIcon(ui->exitAct->icon(), isWhite);
     ui->exitAct->setIcon(icon);
-    icon = recolorIcon(ui->setlistModeListAct->icon(), isWhite);
+    icon = RecolorIcon(ui->setlistModeListAct->icon(), isWhite);
     ui->setlistModeListAct->setIcon(icon);
-    icon = recolorIcon(ui->setlistModeGridAct->icon(), isWhite);
+    icon = RecolorIcon(ui->setlistModeGridAct->icon(), isWhite);
     ui->setlistModeGridAct->setIcon(icon);
-    icon = recolorIcon(ui->gameInstallPathAct->icon(), isWhite);
+    icon = RecolorIcon(ui->gameInstallPathAct->icon(), isWhite);
     ui->gameInstallPathAct->setIcon(icon);
-    icon = recolorIcon(ui->menuThemes->icon(), isWhite);
+    icon = RecolorIcon(ui->menuThemes->icon(), isWhite);
     ui->menuThemes->setIcon(icon);
-    icon = recolorIcon(ui->menuGame_List_Icons->icon(), isWhite);
+    icon = RecolorIcon(ui->menuGame_List_Icons->icon(), isWhite);
     ui->menuGame_List_Icons->setIcon(icon);
-    icon = recolorIcon(ui->playButton->icon(), isWhite);
+    icon = RecolorIcon(ui->playButton->icon(), isWhite);
     ui->playButton->setIcon(icon);
-    icon = recolorIcon(ui->pauseButton->icon(), isWhite);
+    icon = RecolorIcon(ui->pauseButton->icon(), isWhite);
     ui->pauseButton->setIcon(icon);
-    icon = recolorIcon(ui->stopButton->icon(), isWhite);
+    icon = RecolorIcon(ui->stopButton->icon(), isWhite);
     ui->stopButton->setIcon(icon);
-    icon = recolorIcon(ui->settingsButton->icon(), isWhite);
+    icon = RecolorIcon(ui->settingsButton->icon(), isWhite);
     ui->settingsButton->setIcon(icon);
-    icon = recolorIcon(ui->controllerButton->icon(), isWhite);
+    icon = RecolorIcon(ui->controllerButton->icon(), isWhite);
     ui->controllerButton->setIcon(icon);
-    icon = recolorIcon(ui->refreshGameListAct->icon(), isWhite);
+    icon = RecolorIcon(ui->refreshGameListAct->icon(), isWhite);
     ui->refreshGameListAct->setIcon(icon);
-    icon = recolorIcon(ui->menuGame_List_Mode->icon(), isWhite);
+    icon = RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite);
     ui->menuGame_List_Mode->setIcon(icon);
+    icon = RecolorIcon(ui->pkgViewerAct->icon(), isWhite);
+    ui->pkgViewerAct->setIcon(icon);
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event) {
+    emit WindowResized(event);
+    QMainWindow::resizeEvent(event);
+}
+
+void MainWindow::HandleResize(QResizeEvent* event) {
+    if (isTableList) {
+        m_game_list_frame->RefreshListBackgroundImage();
+    } else {
+        m_game_grid_frame->windowWidth = this->width();
+        m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+        m_game_grid_frame->RefreshGridBackgroundImage();
+    }
 }
