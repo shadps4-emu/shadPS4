@@ -88,6 +88,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, CommonDlg)                                                                            \
     SUB(Lib, MsgDlg)                                                                               \
     SUB(Lib, AudioOut)                                                                             \
+    SUB(Lib, AudioIn)                                                                              \
     SUB(Lib, Net)                                                                                  \
     SUB(Lib, NetCtl)                                                                               \
     SUB(Lib, SaveData)                                                                             \

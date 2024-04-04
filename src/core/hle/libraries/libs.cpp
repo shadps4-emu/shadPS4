@@ -9,6 +9,7 @@
 #include "core/hle/libraries/libs.h"
 #include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
 #include "src/core/libraries/libkernel.h"
+#include "src/core/libraries/libsceaudioin.h"
 #include "src/core/libraries/libsceaudioout.h"
 #include "src/core/libraries/libscecommondialog.h"
 #include "src/core/libraries/libscehttp.h"
@@ -47,6 +48,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
     Libraries::Kernel::Registerlibkernel(sym);
     Libraries::Posix::Registerlibsceposix(sym);
+    Libraries::AudioIn::RegisterlibSceAudioIn(sym);
 }
 
 } // namespace OldLibraries
