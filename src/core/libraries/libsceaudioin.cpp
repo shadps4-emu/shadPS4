@@ -124,8 +124,8 @@ int PS4_SYSV_ABI sceAudioInIsSharedDevice() {
 }
 
 int PS4_SYSV_ABI sceAudioInOpen() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_AudioIn, "(DUMMY) called");
+    return 0x80260005; // ports are full return
 }
 
 int PS4_SYSV_ABI sceAudioInOpenEx() {
