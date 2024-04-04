@@ -6,6 +6,7 @@
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/hle/libraries/libs.h"
+#include <mutex>
 
 namespace Core::Libraries::LibKernel {
 
@@ -22,6 +23,12 @@ void init_pthreads() {
     ScePthreadCondattr default_condattr = nullptr;
     scePthreadCondattrInit(&default_condattr);
     g_pthread_cxt->setDefaultCondattr(default_condattr);
+    // default attr init
+    ScePthreadAttr default_attr = nullptr;
+    scePthreadAttrInit(&default_attr);
+    g_pthread_cxt->SetDefaultAttr(default_attr);
+
+    g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
 
 void pthreadInitSelfMainThread() {
@@ -346,12 +353,6 @@ int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpuma
     auto result = scePthreadAttrSetaffinity(&thread->attr, mask);
 
     return result;
-}
-
-int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
-                                  pthreadEntryFunc start_routine, void* arg, const char* name) {
-    LOG_INFO(Kernel_Pthread, "(STUBBED) called");
-    return 0;
 }
 
 void* createMutex(void* addr) {
@@ -752,6 +753,100 @@ int PS4_SYSV_ABI scePthreadAttrGet(ScePthread thread, ScePthreadAttr* attr) {
     }
 
     return pthread_copy_attributes(attr, &thread->attr);
+}
+
+static void cleanup_thread(void* arg) {
+    auto* thread = static_cast<ScePthread>(arg);
+    thread->is_almost_done = true;
+}
+
+static void* run_thread(void* arg) {
+    auto* thread = static_cast<ScePthread>(arg);
+    void* ret = nullptr;
+    g_pthread_self = thread;
+    pthread_cleanup_push(cleanup_thread, thread);
+    thread->is_started = true;
+    ret = thread->entry(thread->arg);
+    pthread_cleanup_pop(1);
+    return ret;
+}
+
+int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
+                                  pthreadEntryFunc start_routine, void* arg, const char* name) {
+    if (thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
+
+    if (attr == nullptr) {
+        attr = g_pthread_cxt->GetDefaultAttr();
+    }
+
+    *thread = pthread_pool->Create();
+
+    if ((*thread)->attr != nullptr) {
+        scePthreadAttrDestroy(&(*thread)->attr);
+    }
+
+    scePthreadAttrInit(&(*thread)->attr);
+
+    int result = pthread_copy_attributes(&(*thread)->attr, attr);
+
+    if (result == 0) {
+        (*thread)->name = name;
+        (*thread)->entry = start_routine;
+        (*thread)->arg = arg;
+        (*thread)->is_almost_done = false;
+        (*thread)->is_detached = (*attr)->detached;
+        (*thread)->is_started = false;
+
+        result = pthread_create(&(*thread)->pth, &(*attr)->pth_attr, run_thread, *thread);
+    }
+
+    if (result == 0) {
+        while (!(*thread)->is_started) {
+            std::this_thread::sleep_for(std::chrono::microseconds(1000));
+        }
+    }
+    LOG_INFO(Kernel_Pthread, "thread create name = {}",(*thread)->name);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EDEADLK:
+        return SCE_KERNEL_ERROR_EDEADLK;
+    case EPERM:
+        return SCE_KERNEL_ERROR_EPERM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+ScePthread PThreadPool::Create() {
+    std::scoped_lock lock{m_mutex};
+
+    for (auto* p : m_threads) {
+        if (p->is_free) {
+            p->is_free = false;
+            return p;
+        }
+    }
+
+    auto* ret = new PthreadInternal{};
+
+    ret->is_free = false;
+    ret->is_detached = false;
+    ret->is_almost_done = false;
+    ret->attr = nullptr;
+
+    m_threads.push_back(ret);
+
+    return ret;
 }
 
 void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {

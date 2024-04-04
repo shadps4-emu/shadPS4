@@ -7,6 +7,8 @@
 #include <string>
 #include <pthread.h>
 #include <sched.h>
+#include <vector>
+#include <mutex>
 
 #include "common/types.h"
 
@@ -43,6 +45,12 @@ struct PthreadInternal {
     std::string name;
     pthread_t pth;
     ScePthreadAttr attr;
+    pthreadEntryFunc entry;
+    void* arg;
+    std::atomic_bool is_started;
+    std::atomic_bool is_detached;
+    std::atomic_bool is_almost_done;
+    std::atomic_bool is_free;
 };
 
 struct PthreadAttrInternal {
@@ -77,6 +85,17 @@ struct PthreadCondAttrInternal {
     pthread_condattr_t cond_attr;
 };
 
+class PThreadPool {
+public:
+    ScePthread Create();
+
+    void FreeDetachedThreads();
+
+private:
+    std::vector<ScePthread> m_threads;
+    std::mutex m_mutex;
+};
+
 class PThreadCxt {
 public:
     ScePthreadMutexattr* getDefaultMutexattr() {
@@ -91,10 +110,24 @@ public:
     void setDefaultCondattr(ScePthreadCondattr attr) {
         m_default_condattr = attr;
     }
+    ScePthreadAttr* GetDefaultAttr() {
+        return &m_default_attr;
+    }
+    void SetDefaultAttr(ScePthreadAttr attr) {
+        m_default_attr = attr;
+    }
+    PThreadPool* GetPthreadPool() {
+        return m_pthread_pool;
+    }
+    void SetPthreadPool(PThreadPool* pool) {
+        m_pthread_pool = pool;
+    }
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
     ScePthreadCondattr m_default_condattr = nullptr;
+    ScePthreadAttr m_default_attr = nullptr;
+    PThreadPool* m_pthread_pool = nullptr;
 };
 
 void init_pthreads();
