@@ -714,6 +714,30 @@ int PS4_SYSV_ABI clock_gettime(s32 clock_id, SceKernelTimespec* time) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelNanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
+
+    if (rqtp == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+
+    if (rqtp->tv_sec < 0 || rqtp->tv_nsec < 0) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    u64 nanos = rqtp->tv_sec * 1000000000 + rqtp->tv_nsec;
+    std::this_thread::sleep_for(std::chrono::nanoseconds(nanos));
+    if (rmtp != nullptr) {
+        UNREACHABLE(); // not supported yet
+    }
+    return SCE_OK;
+}
+int PS4_SYSV_ABI nanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
+    int result = sceKernelNanosleep(rqtp, rmtp);
+    if (result < 0) {
+        UNREACHABLE(); // TODO return posix error code
+    }
+    return result;
+}
 static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* src) {
     if (dst == nullptr || *dst == nullptr || src == nullptr || *src == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -893,6 +917,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
+    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
