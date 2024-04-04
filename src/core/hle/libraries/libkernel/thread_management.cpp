@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/hle/error_codes.h"
 #include "core/hle/libraries/libkernel/thread_management.h"
 #include "core/hle/libraries/libs.h"
-#include <mutex>
 
 namespace Core::Libraries::LibKernel {
 
@@ -706,6 +706,14 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, SceKernelTimespec* tp) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI clock_gettime(s32 clock_id, SceKernelTimespec* time) {
+    int result = sceKernelClockGettime(clock_id, time);
+    if (result < 0) {
+        UNREACHABLE(); // TODO return posix error code
+    }
+    return result;
+}
+
 static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* src) {
     if (dst == nullptr || *dst == nullptr || src == nullptr || *src == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -809,7 +817,7 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
             std::this_thread::sleep_for(std::chrono::microseconds(1000));
         }
     }
-    LOG_INFO(Kernel_Pthread, "thread create name = {}",(*thread)->name);
+    LOG_INFO(Kernel_Pthread, "thread create name = {}", (*thread)->name);
 
     switch (result) {
     case 0:
@@ -884,6 +892,7 @@ void pthreadSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
 
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);

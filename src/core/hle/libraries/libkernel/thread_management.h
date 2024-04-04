@@ -88,9 +88,6 @@ struct PthreadCondAttrInternal {
 class PThreadPool {
 public:
     ScePthread Create();
-
-    void FreeDetachedThreads();
-
 private:
     std::vector<ScePthread> m_threads;
     std::mutex m_mutex;
