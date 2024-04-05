@@ -48,6 +48,51 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
     return SCE_OK;
 }
 
+int PS4_SYSV_ABI scePadRead(int handle, ScePadData* pData, int num) {
+    int connected_count = 0;
+    bool connected = false;
+    Emulator::Host::Controller::State states[64];
+    auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
+    int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
+
+    if (!connected) {
+        ret_num = 1;
+    }
+
+    for (int i = 0; i < ret_num; i++) {
+        pData[i].buttons = states[i].buttonsState;
+        pData[i].leftStick.x = 128;    // dummy
+        pData[i].leftStick.y = 128;    // dummy
+        pData[i].rightStick.x = 0;     // dummy
+        pData[i].rightStick.y = 0;     // dummy
+        pData[i].analogButtons.l2 = 0; // dummy
+        pData[i].analogButtons.r2 = 0; // dummy
+        pData[i].orientation.x = 0.0f;
+        pData[i].orientation.y = 0.0f;
+        pData[i].orientation.z = 0.0f;
+        pData[i].orientation.w = 1.0f;
+        pData[i].acceleration.x = 0.0f;
+        pData[i].acceleration.y = 0.0f;
+        pData[i].acceleration.z = 0.0f;
+        pData[i].angularVelocity.x = 0.0f;
+        pData[i].angularVelocity.y = 0.0f;
+        pData[i].angularVelocity.z = 0.0f;
+        pData[i].touchData.touchNum = 0;
+        pData[i].touchData.touch[0].x = 0;
+        pData[i].touchData.touch[0].y = 0;
+        pData[i].touchData.touch[0].id = 1;
+        pData[i].touchData.touch[1].x = 0;
+        pData[i].touchData.touch[1].y = 0;
+        pData[i].touchData.touch[1].id = 2;
+        pData[i].connected = connected;
+        pData[i].timestamp = states[i].time;
+        pData[i].connectedCount = connected_count;
+        pData[i].deviceUniqueDataLen = 0;
+    }
+
+    return ret_num;
+}
+
 s32 PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadInformation* info) {
     LOG_INFO(Lib_Pad, "called handle = {}", handle);
     info->touchpadDensity = 1;
@@ -72,6 +117,8 @@ void padSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hv1luiJrqQM", "libScePad", 1, "libScePad", 1, 1, scePadInit);
     LIB_FUNCTION("xk0AcarP3V4", "libScePad", 1, "libScePad", 1, 1, scePadOpen);
     LIB_FUNCTION("YndgXqQVV7c", "libScePad", 1, "libScePad", 1, 1, scePadReadState);
+    LIB_FUNCTION("q1cHNfGycLI", "libScePad", 1, "libScePad", 1, 1, scePadRead);
+
     LIB_FUNCTION("gjP9-KQzoUk", "libScePad", 1, "libScePad", 1, 1, scePadGetControllerInformation);
     LIB_FUNCTION("clVvL4ZDntw", "libScePad", 1, "libScePad", 1, 1, scePadSetMotionSensorState);
 }

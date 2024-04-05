@@ -4,11 +4,11 @@
 #pragma once
 #define _TIMESPEC_DEFINED
 
+#include <mutex>
 #include <string>
+#include <vector>
 #include <pthread.h>
 #include <sched.h>
-#include <vector>
-#include <mutex>
 
 #include "common/types.h"
 
@@ -88,6 +88,7 @@ struct PthreadCondAttrInternal {
 class PThreadPool {
 public:
     ScePthread Create();
+
 private:
     std::vector<ScePthread> m_threads;
     std::mutex m_mutex;
