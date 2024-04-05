@@ -30,6 +30,11 @@ enum OrbisAudioOutParam {
     ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD = 7
 };
 
+struct OrbisAudioOutOutputParam {
+    s32 handle;
+    const void* ptr;
+};
+
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
 int PS4_SYSV_ABI sceAudioDeviceControlGet();
 int PS4_SYSV_ABI sceAudioDeviceControlSet();
@@ -69,7 +74,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  u32 sample_rate, OrbisAudioOutParam param_type);
 int PS4_SYSV_ABI sceAudioOutOpenEx();
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr);
-int PS4_SYSV_ABI sceAudioOutOutputs();
+s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num);
 int PS4_SYSV_ABI sceAudioOutPtClose();
 int PS4_SYSV_ABI sceAudioOutPtGetLastOutputTime();
 int PS4_SYSV_ABI sceAudioOutPtOpen();
@@ -88,7 +93,7 @@ int PS4_SYSV_ABI sceAudioOutSetPortStatuses();
 int PS4_SYSV_ABI sceAudioOutSetRecMode();
 int PS4_SYSV_ABI sceAudioOutSetSparkParam();
 int PS4_SYSV_ABI sceAudioOutSetUsbVolume();
-int PS4_SYSV_ABI sceAudioOutSetVolume();
+s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol);
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown();
 int PS4_SYSV_ABI sceAudioOutStartAuxBroadcast();
 int PS4_SYSV_ABI sceAudioOutStartSharePlay();
