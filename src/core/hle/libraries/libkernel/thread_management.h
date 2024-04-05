@@ -7,6 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 #include <pthread.h>
 #include <sched.h>
