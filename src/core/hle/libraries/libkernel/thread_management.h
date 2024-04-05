@@ -4,12 +4,12 @@
 #pragma once
 #define _TIMESPEC_DEFINED
 
+#include <atomic>
 #include <mutex>
 #include <string>
 #include <vector>
 #include <pthread.h>
 #include <sched.h>
-
 #include "common/types.h"
 
 namespace Core::Loader {
