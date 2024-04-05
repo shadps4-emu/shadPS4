@@ -12,6 +12,16 @@ class SymbolsResolver;
 
 namespace OldLibraries::LibPad {
 
+#define ORBIS_PAD_PORT_TYPE_STANDARD 0
+#define ORBIS_PAD_PORT_TYPE_SPECIAL 2
+
+#define ORBIS_PAD_DEVICE_CLASS_PAD 0
+#define ORBIS_PAD_DEVICE_CLASS_GUITAR 1
+#define ORBIS_PAD_DEVICE_CLASS_DRUMS 2
+
+#define ORBIS_PAD_CONNECTION_TYPE_STANDARD 0
+#define ORBIS_PAD_CONNECTION_TYPE_REMOTE 2
+
 enum ScePadButton : u32 {
     L3 = 0x00000002,
     R3 = 0x00000004,
@@ -93,6 +103,19 @@ struct ScePadData {
     uint8_t reserve[2];
     uint8_t deviceUniqueDataLen;
     uint8_t deviceUniqueData[12];
+};
+
+struct OrbisPadInformation {
+    float touchpadDensity;
+    u16 touchResolutionX;
+    u16 touchResolutionY;
+    u8 stickDeadzoneL;
+    u8 stickDeadzoneR;
+    u8 connectionType;
+    u8 count;
+    s8 connected;
+    s8 deviceClass;
+    u8 unknown[8];
 };
 
 int PS4_SYSV_ABI scePadInit();

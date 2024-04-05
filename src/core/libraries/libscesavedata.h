@@ -7,6 +7,37 @@
 
 namespace Libraries::SaveData {
 
+constexpr int ORBIS_SAVE_DATA_DIRNAME_DATA_MAXSIZE =
+    32; // Maximum size for a save data directory name
+constexpr int ORBIS_SAVE_DATA_MOUNT_POINT_DATA_MAXSIZE = 16; // Maximum size for a mount point name
+
+struct OrbisSaveDataDirName {
+    char data[ORBIS_SAVE_DATA_DIRNAME_DATA_MAXSIZE];
+};
+
+struct OrbisSaveDataMount2 {
+    s32 user_id;
+    s32 unk1;
+    const OrbisSaveDataDirName* dir_name;
+    u64 blocks;
+    u32 mount_mode;
+    u8 reserved[32];
+    s32 unk2;
+};
+
+struct OrbisSaveDataMountPoint {
+    char data[ORBIS_SAVE_DATA_MOUNT_POINT_DATA_MAXSIZE];
+};
+
+struct OrbisSaveDataMountResult {
+    OrbisSaveDataMountPoint mount_point;
+    u64 required_blocks;
+    u32 unused;
+    u32 mount_status;
+    u8 reserved[28];
+    s32 unk1;
+};
+
 int PS4_SYSV_ABI sceSaveDataAbort();
 int PS4_SYSV_ABI sceSaveDataBackup();
 int PS4_SYSV_ABI sceSaveDataBindPsnAccount();
@@ -71,7 +102,8 @@ int PS4_SYSV_ABI sceSaveDataIsDeletingUsbDb();
 int PS4_SYSV_ABI sceSaveDataIsMounted();
 int PS4_SYSV_ABI sceSaveDataLoadIcon();
 int PS4_SYSV_ABI sceSaveDataMount();
-int PS4_SYSV_ABI sceSaveDataMount2();
+s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
+                                   OrbisSaveDataMountResult* mount_result);
 int PS4_SYSV_ABI sceSaveDataMount5();
 int PS4_SYSV_ABI sceSaveDataMountInternal();
 int PS4_SYSV_ABI sceSaveDataMountSys();

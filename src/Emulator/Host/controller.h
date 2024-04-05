@@ -20,11 +20,16 @@ public:
     virtual ~GameController() = default;
 
     void readState(State* state, bool* isConnected, int* connectedCount);
+    int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
     State getLastState() const;
     void checKButton(int id, u32 button, bool isPressed);
     void addState(const State& state);
 
 private:
+    struct StateInternal {
+        bool obtained = false;
+    };
+
     std::mutex m_mutex;
     bool m_connected = false;
     State m_last_state;
@@ -32,6 +37,7 @@ private:
     u32 m_states_num = 0;
     u32 m_first_state = 0;
     State m_states[MAX_STATES];
+    StateInternal m_private[MAX_STATES];
 };
 
 } // namespace Emulator::Host::Controller

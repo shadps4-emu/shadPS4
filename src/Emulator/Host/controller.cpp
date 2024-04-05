@@ -19,6 +19,37 @@ void GameController::readState(State* state, bool* isConnected, int* connectedCo
     *state = getLastState();
 }
 
+int GameController::ReadStates(State* states, int states_num, bool* isConnected,
+                               int* connectedCount) {
+    std::scoped_lock lock{m_mutex};
+
+    *isConnected = m_connected;
+    *connectedCount = m_connected_count;
+
+    int ret_num = 0;
+
+    if (m_connected) {
+        if (m_states_num == 0) {
+            ret_num = 1;
+            states[0] = m_last_state;
+        } else {
+            for (uint32_t i = 0; i < m_states_num; i++) {
+                if (ret_num >= states_num) {
+                    break;
+                }
+                auto index = (m_first_state + i) % MAX_STATES;
+                if (!m_private[index].obtained) {
+                    m_private[index].obtained = true;
+
+                    states[ret_num++] = m_states[index];
+                }
+            }
+        }
+    }
+
+    return ret_num;
+}
+
 State GameController::getLastState() const {
     if (m_states_num == 0) {
         return m_last_state;
@@ -39,7 +70,7 @@ void GameController::addState(const State& state) {
 
     m_states[index] = state;
     m_last_state = state;
-
+    m_private[index].obtained = false;
     m_states_num++;
 }
 

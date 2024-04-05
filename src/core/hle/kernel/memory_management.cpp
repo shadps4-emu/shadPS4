@@ -18,7 +18,7 @@ bool is16KBAligned(u64 n) {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
-    LOG_WARNING(Kernel_Vmm, "(STUBBED) called");
+    LOG_WARNING(Kernel_Vmm, "called");
     return SCE_KERNEL_MAIN_DMEM_SIZE;
 }
 

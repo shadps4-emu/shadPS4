@@ -272,8 +272,11 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr) {
     return audio->AudioOutOutput(handle, ptr);
 }
 
-int PS4_SYSV_ABI sceAudioOutOutputs() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
+    for (u32 i = 0; i < num; i++) {
+        if (auto err = audio->AudioOutOutput(param[i].handle, param[i].ptr); err != 0)
+            return err;
+    }
     return ORBIS_OK;
 }
 
@@ -367,8 +370,10 @@ int PS4_SYSV_ABI sceAudioOutSetUsbVolume() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioOutSetVolume() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
+    if (!audio->AudioOutSetVolume(handle, flag, vol)) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
     return ORBIS_OK;
 }
 

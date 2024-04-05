@@ -108,4 +108,42 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     return result;
 }
 
+bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
+    using Libraries::AudioOut::OrbisAudioOutParam;
+    std::scoped_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    if (!port.isOpen) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+    for (int i = 0; i < port.channels_num; i++, bitflag >>= 1u) {
+        auto bit = bitflag & 0x1u;
+
+        if (bit == 1) {
+            int src_index = i;
+            if (port.format == OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD ||
+                port.format == OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD) {
+                switch (i) {
+                case 4:
+                    src_index = 6;
+                    break;
+                case 5:
+                    src_index = 7;
+                    break;
+                case 6:
+                    src_index = 4;
+                    break;
+                case 7:
+                    src_index = 5;
+                    break;
+                default:
+                    break;
+                }
+            }
+            port.volume[i] = volume[src_index];
+        }
+    }
+
+    return true;
+}
+
 } // namespace Audio

@@ -98,6 +98,10 @@ set(AUDIO_CORE src/audio_core/sdl_audio.cpp
 )
 set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/error_codes.h
+              src/core/libraries/libsceaudioin.cpp
+              src/core/libraries/libsceaudioin.h
+              src/core/libraries/libsceaudioout.cpp
+              src/core/libraries/libsceaudioout.h
               src/core/libraries/libkernel.cpp
               src/core/libraries/libkernel.h
               src/core/libraries/libscecommondialog.cpp
@@ -124,8 +128,6 @@ set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/libscesystemservice.h
               src/core/libraries/libsceuserservice.cpp
               src/core/libraries/libsceuserservice.h
-              src/core/libraries/libsceaudioout.cpp
-              src/core/libraries/libsceaudioout.h
 )
 
 set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp

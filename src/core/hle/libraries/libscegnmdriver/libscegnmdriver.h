@@ -11,8 +11,8 @@ class SymbolsResolver;
 
 namespace Core::Libraries::LibSceGnmDriver {
 
-int32_t sceGnmSubmitDone();
-void sceGnmFlushGarlic();
+int32_t PS4_SYSV_ABI sceGnmSubmitDone();
+void PS4_SYSV_ABI sceGnmFlushGarlic();
 
 void LibSceGnmDriver_Register(Loader::SymbolsResolver* sym);
 
