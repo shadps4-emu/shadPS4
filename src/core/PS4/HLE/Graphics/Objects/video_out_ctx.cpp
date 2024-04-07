@@ -56,6 +56,18 @@ void VideoOutCtx::Close(s32 handle) {
     m_video_out_ctx.buffers_registration_index = 0;
 }
 
+void VideoOutCtx::Vblank() {
+    std::scoped_lock lock{m_mutex};
+
+    if (m_video_out_ctx.isOpened) {
+        m_video_out_ctx.m_mutex.lock();
+        m_video_out_ctx.m_vblank_status.count++;
+        m_video_out_ctx.m_vblank_status.processTime =
+            Core::Libraries::LibKernel::sceKernelGetProcessTime();
+        m_video_out_ctx.m_vblank_status.tsc = Core::Libraries::LibKernel::sceKernelReadTsc();
+        m_video_out_ctx.m_mutex.unlock();
+    }
+}
 VideoConfigInternal* VideoOutCtx::getCtx(int handle) {
     if (handle != 1) [[unlikely]] {
         return nullptr;

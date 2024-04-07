@@ -78,6 +78,7 @@ public:
 
         return m_graphic_ctx;
     }
+    void Vblank();
 
 private:
     std::mutex m_mutex;
