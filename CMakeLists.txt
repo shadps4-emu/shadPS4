@@ -120,6 +120,8 @@ set(LIBRARIES src/core/libraries/library_common.h
               src/core/libraries/libsceposix.h
               src/core/libraries/libscesavedata.cpp
               src/core/libraries/libscesavedata.h
+              src/core/libraries/libscesavedatadialog.cpp
+              src/core/libraries/libscesavedatadialog.h
               src/core/libraries/libscessl.cpp
               src/core/libraries/libscessl.h
               src/core/libraries/libscesysmodule.cpp
