@@ -597,9 +597,7 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
             LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
                       return_info->name, library->name, module->name);
         }
-    }
-    else
-    {
+    } else {
         return_info->virtual_address = 0;
         return_info->name = name;
         LOG_ERROR(Core_Linker, "Not Resolved {}", name);
