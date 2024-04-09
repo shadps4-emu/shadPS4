@@ -559,44 +559,50 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
                      Loader::SymbolRecord* return_info) {
     // std::scoped_lock lock{m_mutex};
     const auto ids = Common::SplitString(name, '#');
-    ASSERT_MSG(ids.size() == 3, "Symbols must be 3 parts name, library, module");
+    if (ids.size() == 3) {
+        const auto* library = FindLibrary(*m, ids.at(1));
+        const auto* module = FindModule(*m, ids.at(2));
+        ASSERT_MSG(library && module, "Unable to find library and module");
 
-    const auto* library = FindLibrary(*m, ids.at(1));
-    const auto* module = FindModule(*m, ids.at(2));
-    ASSERT_MSG(library && module, "Unable to find library and module");
+        Loader::SymbolResolver sr{};
+        sr.name = ids.at(0);
+        sr.library = library->name;
+        sr.library_version = library->version;
+        sr.module = module->name;
+        sr.module_version_major = module->version_major;
+        sr.module_version_minor = module->version_minor;
+        sr.type = sym_type;
 
-    Loader::SymbolResolver sr{};
-    sr.name = ids.at(0);
-    sr.library = library->name;
-    sr.library_version = library->version;
-    sr.module = module->name;
-    sr.module_version_major = module->version_major;
-    sr.module_version_minor = module->version_minor;
-    sr.type = sym_type;
+        const Loader::SymbolRecord* rec = nullptr;
 
-    const Loader::SymbolRecord* rec = nullptr;
-
-    rec = m_hle_symbols.FindSymbol(sr);
-    if (rec == nullptr) {
-        // check if it an export function
-        if (auto* p = FindExportedModule(*module, *library);
-            p != nullptr && p->export_sym.GetSize() > 0) {
-            rec = p->export_sym.FindSymbol(sr);
+        rec = m_hle_symbols.FindSymbol(sr);
+        if (rec == nullptr) {
+            // check if it an export function
+            if (auto* p = FindExportedModule(*module, *library);
+                p != nullptr && p->export_sym.GetSize() > 0) {
+                rec = p->export_sym.FindSymbol(sr);
+            }
+        }
+        if (rec != nullptr) {
+            *return_info = *rec;
+        } else {
+            auto aeronid = AeroLib::FindByNid(sr.name.c_str());
+            if (aeronid) {
+                return_info->name = aeronid->name;
+                return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
+            } else {
+                return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
+                return_info->name = "Unknown !!!";
+            }
+            LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
+                      return_info->name, library->name, module->name);
         }
     }
-    if (rec != nullptr) {
-        *return_info = *rec;
-    } else {
-        auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-        if (aeronid) {
-            return_info->name = aeronid->name;
-            return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
-        } else {
-            return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
-            return_info->name = "Unknown !!!";
-        }
-        LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-                  return_info->name, library->name, module->name);
+    else
+    {
+        return_info->virtual_address = 0;
+        return_info->name = name;
+        LOG_ERROR(Core_Linker, "Not Resolved {}", name);
     }
 }
 
