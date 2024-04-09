@@ -110,6 +110,7 @@ void videoOutInit(u32 width, u32 height);
 std::string getPixelFormatString(s32 format);
 void videoOutRegisterLib(Core::Loader::SymbolsResolver* sym);
 bool videoOutFlip(u32 micros);
+void VideoOutVblank();
 
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute,
                                                 u32 pixelFormat, u32 tilingMode, u32 aspectRatio,

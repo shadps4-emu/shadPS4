@@ -203,6 +203,7 @@ void emuRun() {
                     calculateFps(0);                                       // TODO: Proper fps
                 }
             }
+            HLE::Libs::Graphics::VideoOut::VideoOutVblank();
         }
     }
 }

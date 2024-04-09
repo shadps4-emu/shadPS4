@@ -18,6 +18,7 @@
 #include "src/core/libraries/libscenetctl.h"
 #include "src/core/libraries/libsceposix.h"
 #include "src/core/libraries/libscesavedata.h"
+#include "src/core/libraries/libscesavedatadialog.h"
 #include "src/core/libraries/libscessl.h"
 #include "src/core/libraries/libscesysmodule.h"
 #include "src/core/libraries/libscesystemservice.h"
@@ -49,6 +50,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::Registerlibkernel(sym);
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
+    Libraries::SaveDataDialog::RegisterlibSceSaveDataDialog(sym);
 }
 
 } // namespace OldLibraries

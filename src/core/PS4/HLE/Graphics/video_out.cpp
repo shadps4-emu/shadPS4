@@ -32,6 +32,10 @@ bool videoOutFlip(u32 micros) {
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     return videoOut->getFlipQueue().flip(micros);
 }
+void VideoOutVblank() {
+    auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    return videoOut->Vblank();
+}
 
 std::string getPixelFormatString(s32 format) {
     switch (format) {
@@ -127,9 +131,22 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 h
     return result;
 }
 
-s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
-                                            s32 bufferNum,
-                                            const SceVideoOutBufferAttribute* attribute) {
+s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus* status) {
+    if (status == nullptr) {
+        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+
+    auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
+    auto* ctx = videoOut->getCtx(handle);
+
+    ctx->m_mutex.lock();
+    *status = ctx->m_vblank_status;
+    ctx->m_mutex.unlock();
+    return SCE_OK;
+}
+
+s32 sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses, s32 bufferNum,
+                               const SceVideoOutBufferAttribute* attribute) {
     auto* videoOut = Common::Singleton<HLE::Graphics::Objects::VideoOutCtx>::Instance();
     auto* ctx = videoOut->getCtx(handle);
 
@@ -346,6 +363,8 @@ void videoOutRegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutUnregisterBuffers);
     LIB_FUNCTION("uquVH4-Du78", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutClose);
+    LIB_FUNCTION("1FZBKy8HeNU", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutGetVblankStatus);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);
