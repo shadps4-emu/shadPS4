@@ -1,7 +1,3 @@
-[submodule "third-party/fmt"]
-	path = third-party/fmt
-	url = https://github.com/fmtlib/fmt.git
-	shallow = true
 [submodule "third-party/magic_enum"]
 	path = third-party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
@@ -47,4 +43,6 @@
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadps4-emu/ext-SDL.git
-
+[submodule "externals/fmt"]
+	path = externals/fmt
+	url = https://github.com/shadps4-emu/ext-fmt.git
