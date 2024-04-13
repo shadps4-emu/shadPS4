@@ -170,7 +170,8 @@ u64 memory_alloc_aligned(u64 address, u64 size, MemoryMode mode, u64 alignment) 
     }
     return ptr;
 #else
-    void* hint_address = reinterpret_cast<void*>(AlignUp(address, alignment));
+    void* hint_address = address == 0 ? reinterpret_cast<void*>(USER_MIN)
+                                      : reinterpret_cast<void*>(AlignUp(address, alignment));
     void* ptr = mmap(hint_address, size, convertMemoryMode(mode), MAP_ANON | MAP_PRIVATE, -1, 0);
     ASSERT(ptr != MAP_FAILED);
     return reinterpret_cast<u64>(ptr);

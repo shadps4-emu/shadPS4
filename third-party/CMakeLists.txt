@@ -6,9 +6,6 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
-# fmtlib
-add_subdirectory(fmt EXCLUDE_FROM_ALL)
-
 # MagicEnum
 add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
 

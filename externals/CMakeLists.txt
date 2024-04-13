@@ -6,6 +6,9 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
+# fmtlib
+add_subdirectory(fmt EXCLUDE_FROM_ALL)
+
 # Discord-RPC
 set(BUILD_EXAMPLES OFF CACHE BOOL "")
 add_subdirectory(discord-rpc EXCLUDE_FROM_ALL)
@@ -30,7 +33,5 @@ set(WITH_NEW_STRATEGIES ON)
 set(WITH_NATIVE_INSTRUCTIONS ON)
 add_subdirectory(zlib-ng)
 
-if(NOT ENABLE_QT_GUI)
 # SDL3
 add_subdirectory(sdl3 EXCLUDE_FROM_ALL)
-endif()

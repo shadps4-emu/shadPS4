@@ -14,12 +14,6 @@ project(shadps4)
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
-if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
-    qt_standard_project_setup()
-    set(CMAKE_AUTORCC ON)
-endif()
-
 # This function should be passed a list of all files in a target. It will automatically generate
 # file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
 # one in the filesystem.
@@ -92,6 +86,12 @@ endif()
 add_subdirectory(externals)
 add_subdirectory(third-party)
 include_directories(src)
+
+if(ENABLE_QT_GUI)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+    qt_standard_project_setup()
+    set(CMAKE_AUTORCC ON)
+endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
                src/audio_core/sdl_audio.h
@@ -331,7 +331,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 SDL3-shared)
 target_link_libraries(shadps4 PRIVATE discord-rpc vulkan-1 xxhash Zydis)
 
 if(NOT ENABLE_QT_GUI)
@@ -352,6 +352,7 @@ if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+    add_definitions(-D_TIMESPEC_DEFINED) #needed for conflicts with time.h of windows.h
 endif()
 
 if(WIN32)
@@ -373,12 +374,10 @@ add_custom_command(TARGET shadps4 POST_BUILD
      $<TARGET_FILE_DIR:shadps4>
 )
 
-if(NOT ENABLE_QT_GUI)
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:SDL3-shared>
      $<TARGET_FILE_DIR:shadps4>)
-endif()
 
 if (WIN32)
  add_custom_command(TARGET shadps4 POST_BUILD
