@@ -33,7 +33,5 @@ set(WITH_NEW_STRATEGIES ON)
 set(WITH_NATIVE_INSTRUCTIONS ON)
 add_subdirectory(zlib-ng)
 
-if(NOT ENABLE_QT_GUI)
 # SDL3
 add_subdirectory(sdl3 EXCLUDE_FROM_ALL)
-endif()
