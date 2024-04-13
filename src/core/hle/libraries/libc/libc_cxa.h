@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-#define _TIMESPEC_DEFINED
 
 #include <pthread.h>
 #include "common/types.h"
