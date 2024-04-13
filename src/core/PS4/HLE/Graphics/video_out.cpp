@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstdio>
 #include <string>
 #include "Objects/video_out_ctx.h"
 #include "common/config.h"
@@ -12,12 +11,12 @@
 #include "core/PS4/GPU/video_out_buffer.h"
 #include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
-#include "core/hle/error_codes.h"
-#include "core/hle/libraries/libs.h"
-#include "core/hle/libraries/libscegnmdriver/libscegnmdriver.h"
+#include "core/libraries/error_codes.h"
+#include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/libs.h"
 #include "core/loader/symbols_resolver.h"
 #include "emulator.h"
-#include "src/core/libraries/libsceuserservice.h"
+#include "src/core/libraries/system/userservice.h"
 
 namespace HLE::Libs::Graphics::VideoOut {
 
@@ -78,24 +77,24 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attr
     attribute->option = SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE;
 }
 
-static void flip_reset_event_func(Core::Kernel::EqueueEvent* event) {
+static void flip_reset_event_func(Libraries::Kernel::EqueueEvent* event) {
     event->isTriggered = false;
     event->event.fflags = 0;
     event->event.data = 0;
 }
 
-static void flip_trigger_event_func(Core::Kernel::EqueueEvent* event, void* trigger_data) {
+static void flip_trigger_event_func(Libraries::Kernel::EqueueEvent* event, void* trigger_data) {
     event->isTriggered = true;
     event->event.fflags++;
     event->event.data = reinterpret_cast<intptr_t>(trigger_data);
 }
 
-static void flip_delete_event_func(Core::Kernel::SceKernelEqueue eq,
-                                   Core::Kernel::EqueueEvent* event) {
+static void flip_delete_event_func(Libraries::Kernel::SceKernelEqueue eq,
+                                   Libraries::Kernel::EqueueEvent* event) {
     BREAKPOINT(); // TODO
 }
 
-s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 handle,
+s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Libraries::Kernel::SceKernelEqueue eq, s32 handle,
                                          void* udata) {
     LOG_INFO(Lib_VideoOut, "handle = {}", handle);
 
@@ -112,10 +111,10 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 h
         return SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
 
-    Core::Kernel::EqueueEvent event{};
+    Libraries::Kernel::EqueueEvent event{};
     event.isTriggered = false;
     event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
-    event.event.filter = Core::Kernel::EVFILT_VIDEO_OUT;
+    event.event.filter = Libraries::Kernel::EVFILT_VIDEO_OUT;
     event.event.udata = udata;
     event.event.fflags = 0;
     event.event.data = 0;
@@ -280,8 +279,8 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_ERROR(Lib_VideoOut, "Flip queue is full");
         return SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
-    Core::Libraries::LibSceGnmDriver::sceGnmFlushGarlic(); // hackish should be done that neccesary
-                                                           // for niko's homebrew
+    Libraries::GnmDriver::sceGnmFlushGarlic(); // hackish should be done that neccesary
+                                               // for niko's homebrew
     return SCE_OK;
 }
 

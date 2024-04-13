@@ -96,103 +96,84 @@ endif()
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
                src/audio_core/sdl_audio.h
 )
-set(LIBRARIES src/core/libraries/library_common.h
-              src/core/libraries/error_codes.h
-              src/core/libraries/libsceaudioin.cpp
-              src/core/libraries/libsceaudioin.h
-              src/core/libraries/libsceaudioout.cpp
-              src/core/libraries/libsceaudioout.h
-              src/core/libraries/libkernel.cpp
-              src/core/libraries/libkernel.h
-              src/core/libraries/libscecommondialog.cpp
-              src/core/libraries/libscecommondialog.h
-              src/core/libraries/libscegnmdriver.cpp
-              src/core/libraries/libscegnmdriver.h
-              src/core/libraries/libscehttp.cpp
-              src/core/libraries/libscehttp.h
-              src/core/libraries/libscemsgdialog.cpp
-              src/core/libraries/libscemsgdialog.h
-              src/core/libraries/libscenet.cpp
-              src/core/libraries/libscenet.h
-              src/core/libraries/libscenetctl.cpp
-              src/core/libraries/libscenetctl.h
-              src/core/libraries/libsceposix.cpp
-              src/core/libraries/libsceposix.h
-              src/core/libraries/libscesavedata.cpp
-              src/core/libraries/libscesavedata.h
-              src/core/libraries/libscesavedatadialog.cpp
-              src/core/libraries/libscesavedatadialog.h
-              src/core/libraries/libscessl.cpp
-              src/core/libraries/libscessl.h
-              src/core/libraries/libscesysmodule.cpp
-              src/core/libraries/libscesysmodule.h
-              src/core/libraries/libscesystemservice.cpp
-              src/core/libraries/libscesystemservice.h
-              src/core/libraries/libsceuserservice.cpp
-              src/core/libraries/libsceuserservice.h
+
+set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
+              src/core/libraries/audio/audioin.h
+              src/core/libraries/audio/audioout.cpp
+              src/core/libraries/audio/audioout.h
 )
 
-set(LIBC_SOURCES src/core/hle/libraries/libc/libc.cpp
-                 src/core/hle/libraries/libc/libc.h
-                 src/core/hle/libraries/libc/printf.h
-                 src/core/hle/libraries/libc/va_ctx.h
-                 src/core/hle/libraries/libc/libc_cxa.cpp
-                 src/core/hle/libraries/libc/libc_cxa.h
-                 src/core/hle/libraries/libc/libc_stdio.cpp
-                 src/core/hle/libraries/libc/libc_stdio.h
-                 src/core/hle/libraries/libc/libc_math.cpp
-                 src/core/hle/libraries/libc/libc_math.h
-                 src/core/hle/libraries/libc/libc_string.cpp
-                 src/core/hle/libraries/libc/libc_string.h
-                 src/core/hle/libraries/libc/libc_stdlib.cpp
-                 src/core/hle/libraries/libc/libc_stdlib.h
+set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
+            src/core/libraries/gnmdriver/gnmdriver.h
 )
 
-set(PAD_SOURCES src/core/hle/libraries/libpad/pad.cpp
-                src/core/hle/libraries/libpad/pad.h
+set(KERNEL_LIB src/core/libraries/kernel/cpu_management.cpp
+               src/core/libraries/kernel/cpu_management.h
+               src/core/libraries/kernel/event_queue.cpp
+               src/core/libraries/kernel/event_queue.h
+               src/core/libraries/kernel/event_queues.cpp
+               src/core/libraries/kernel/event_queues.h
+               src/core/libraries/kernel/file_system.cpp
+               src/core/libraries/kernel/file_system.h
+               src/core/libraries/kernel/libkernel.cpp
+               src/core/libraries/kernel/libkernel.h
+               src/core/libraries/kernel/memory_management.cpp
+               src/core/libraries/kernel/memory_management.h
+               src/core/libraries/kernel/physical_memory.cpp
+               src/core/libraries/kernel/physical_memory.h
+               src/core/libraries/kernel/thread_management.cpp
+               src/core/libraries/kernel/thread_management.h
+               src/core/libraries/kernel/time_management.cpp
+               src/core/libraries/kernel/time_management.h
 )
 
-set(FILESYSTEM_SOURCES src/core/hle/libraries/libkernel/file_system.cpp
-                       src/core/hle/libraries/libkernel/file_system.h
-                       src/core/file_sys/fs.cpp
-                       src/core/file_sys/fs.h
+set(NETWORK_LIBS src/core/libraries/network/http.cpp
+                 src/core/libraries/network/http.h
+                 src/core/libraries/network/net.cpp
+                 src/core/libraries/network/netctl.cpp
+                 src/core/libraries/network/netctl.h
+                 src/core/libraries/network/net.h
+                 src/core/libraries/network/ssl.cpp
+                 src/core/libraries/network/ssl.h
 )
 
-set(HOST_SOURCES src/Emulator/Host/controller.cpp
-                 src/Emulator/Host/controller.h
+set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
+                src/core/libraries/system/commondialog.h
+                src/core/libraries/system/msgdialog.cpp
+                src/core/libraries/system/msgdialog.h
+                src/core/libraries/system/posix.cpp
+                src/core/libraries/system/posix.h
+                src/core/libraries/system/savedata.cpp
+                src/core/libraries/system/savedatadialog.cpp
+                src/core/libraries/system/savedatadialog.h
+                src/core/libraries/system/savedata.h
+                src/core/libraries/system/sysmodule.cpp
+                src/core/libraries/system/sysmodule.h
+                src/core/libraries/system/systemservice.cpp
+                src/core/libraries/system/systemservice.h
+                src/core/libraries/system/userservice.cpp
+                src/core/libraries/system/userservice.h
 )
 
-# the above is shared in sdl and qt version (TODO share them all)
+set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
+                 src/core/libraries/libc/libc.h
+                 src/core/libraries/libc/printf.h
+                 src/core/libraries/libc/va_ctx.h
+                 src/core/libraries/libc/libc_cxa.cpp
+                 src/core/libraries/libc/libc_cxa.h
+                 src/core/libraries/libc/libc_stdio.cpp
+                 src/core/libraries/libc/libc_stdio.h
+                 src/core/libraries/libc/libc_math.cpp
+                 src/core/libraries/libc/libc_math.h
+                 src/core/libraries/libc/libc_string.cpp
+                 src/core/libraries/libc/libc_string.h
+                 src/core/libraries/libc/libc_stdlib.cpp
+                 src/core/libraries/libc/libc_stdlib.h
+)
 
-if(ENABLE_QT_GUI)
-qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
-    set(QT_GUI 
-    src/qt_gui/main_window_ui.h
-    src/qt_gui/main_window.cpp
-    src/qt_gui/main_window.h
-    src/qt_gui/gui_settings.cpp
-    src/qt_gui/gui_settings.h
-    src/qt_gui/gui_save.h
-    src/qt_gui/gui_context_menus.h
-    src/qt_gui/game_list_utils.h
-    src/qt_gui/game_info.cpp
-    src/qt_gui/game_info.h
-    src/qt_gui/game_list_frame.cpp
-    src/qt_gui/game_list_frame.h
-    src/qt_gui/game_grid_frame.cpp
-    src/qt_gui/game_grid_frame.h
-    src/qt_gui/game_install_dialog.cpp
-    src/qt_gui/game_install_dialog.h
-    src/qt_gui/pkg_viewer.cpp
-    src/qt_gui/pkg_viewer.h
-    src/qt_gui/settings.cpp
-    src/qt_gui/settings.h
-    src/qt_gui/main_window_themes.cpp
-    src/qt_gui/main_window_themes.h
-    src/qt_gui/main.cpp
-    ${RESOURCE_FILES}
-    )
-endif()
+set(PAD_LIB src/core/libraries/pad/pad.cpp
+            src/core/libraries/pad/pad.h
+)
 
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h
@@ -236,96 +217,115 @@ set(COMMON src/common/logging/backend.cpp
            src/common/version.h
 )
 
-set(CORE src/core/loader.cpp
+set(CORE src/core/aerolib/stubs.cpp
+         src/core/aerolib/stubs.h
+         src/core/aerolib/aerolib.cpp
+         src/core/aerolib/aerolib.h
+         src/core/crypto/crypto.cpp
+         src/core/crypto/crypto.h 
+         src/core/crypto/keys.h
+         src/core/file_format/pfs.h
+         src/core/file_format/pkg.cpp
+         src/core/file_format/pkg.h
+         src/core/file_format/pkg_type.cpp
+         src/core/file_format/pkg_type.h
+         src/core/file_format/psf.cpp
+         src/core/file_format/psf.h
+         src/core/file_sys/fs.cpp
+         src/core/file_sys/fs.h  
+         src/core/loader.cpp
          src/core/loader.h
+         src/core/loader/elf.cpp
+         src/core/loader/elf.h
+         src/core/loader/symbols_resolver.h
+         src/core/loader/symbols_resolver.cpp
+         src/core/libraries/error_codes.h  
+         src/core/libraries/libs.h
+         src/core/libraries/libs.cpp
+         ${AUDIO_LIB}
+         ${GNM_LIB}
+         ${KERNEL_LIB}
+         ${NETWORK_LIBS}
+         ${SYSTEM_LIBS}
+         ${LIBC_SOURCES}
+         ${PAD_LIB}
+         src/core/linker.cpp
+         src/core/linker.h
+         src/core/tls.cpp
+         src/core/tls.h     
+         src/core/virtual_memory.cpp
+         src/core/virtual_memory.h
 )
 
-set(CRYPTO src/core/crypto/crypto.cpp
-           src/core/crypto/crypto.h 
-           src/core/crypto/keys.h
+set(VIDEO_CORE src/core/PS4/HLE/Graphics/video_out.cpp
+               src/core/PS4/HLE/Graphics/video_out.h
+               src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
+               src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
+               src/core/PS4/HLE/Graphics/graphics_ctx.h
+               src/core/PS4/GPU/gpu_memory.cpp
+               src/core/PS4/GPU/gpu_memory.h
+               src/core/PS4/GPU/video_out_buffer.cpp
+               src/core/PS4/GPU/video_out_buffer.h
+               src/core/PS4/HLE/Graphics/graphics_render.cpp
+               src/core/PS4/HLE/Graphics/graphics_render.h
+               src/core/PS4/GPU/tile_manager.cpp
+               src/core/PS4/GPU/tile_manager.h
+               src/vulkan_util.cpp
+               src/vulkan_util.h
 )
-set(FILE_FORMAT src/core/file_format/pfs.h
-                src/core/file_format/pkg.cpp
-                src/core/file_format/pkg.h
-                src/core/file_format/pkg_type.cpp
-                src/core/file_format/pkg_type.h
-                src/core/file_format/psf.cpp
-                src/core/file_format/psf.h
+
+set(HOST_SOURCES src/Emulator/Host/controller.cpp
+                 src/Emulator/Host/controller.h
 )
+
+# the above is shared in sdl and qt version (TODO share them all)
+
+if(ENABLE_QT_GUI)
+qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
+    set(QT_GUI 
+    src/qt_gui/main_window_ui.h
+    src/qt_gui/main_window.cpp
+    src/qt_gui/main_window.h
+    src/qt_gui/gui_settings.cpp
+    src/qt_gui/gui_settings.h
+    src/qt_gui/gui_save.h
+    src/qt_gui/gui_context_menus.h
+    src/qt_gui/game_list_utils.h
+    src/qt_gui/game_info.cpp
+    src/qt_gui/game_info.h
+    src/qt_gui/game_list_frame.cpp
+    src/qt_gui/game_list_frame.h
+    src/qt_gui/game_grid_frame.cpp
+    src/qt_gui/game_grid_frame.h
+    src/qt_gui/game_install_dialog.cpp
+    src/qt_gui/game_install_dialog.h
+    src/qt_gui/pkg_viewer.cpp
+    src/qt_gui/pkg_viewer.h
+    src/qt_gui/settings.cpp
+    src/qt_gui/settings.h
+    src/qt_gui/main_window_themes.cpp
+    src/qt_gui/main_window_themes.h
+    src/qt_gui/main.cpp
+    ${RESOURCE_FILES}
+    )
+endif()
 
 if(ENABLE_QT_GUI)
 qt_add_executable(shadps4
     ${QT_GUI}
     ${COMMON}
     ${CORE}
-    ${CRYPTO}
-    ${FILE_FORMAT}
 )
 else()
 add_executable(shadps4
     ${AUDIO_CORE}
-    ${LIBC_SOURCES}
-    ${PAD_SOURCES}
-    ${FILESYSTEM_SOURCES}
     ${HOST_SOURCES}
-    ${LIBRARIES}
-    src/main.cpp
-    src/core/loader/elf.cpp
-    src/core/loader/elf.h
-    src/core/virtual_memory.cpp
-    src/core/virtual_memory.h
-    src/core/linker.cpp
-    src/core/linker.h
-    src/core/aerolib/stubs.cpp
-    src/core/aerolib/stubs.h
-    src/core/aerolib/aerolib.cpp
-    src/core/aerolib/aerolib.h
-    src/core/hle/kernel/Objects/physical_memory.h
-    src/core/hle/kernel/Objects/physical_memory.cpp
-    src/core/PS4/HLE/Graphics/video_out.cpp
-    src/core/PS4/HLE/Graphics/video_out.h
-    src/core/hle/kernel/event_queues.cpp
-    src/core/hle/kernel/event_queues.h
-    src/core/hle/kernel/cpu_management.cpp
-    src/core/hle/kernel/cpu_management.h
-    src/core/loader/symbols_resolver.h
-    src/core/loader/symbols_resolver.cpp
-    src/core/hle/libraries/libs.cpp
-    src/core/hle/libraries/libs.h
-    src/core/hle/libraries/libkernel/libkernel.cpp
-    src/core/hle/libraries/libkernel/libkernel.h
-    src/core/hle/libraries/libscegnmdriver/libscegnmdriver.cpp
-    src/core/hle/libraries/libscegnmdriver/libscegnmdriver.h
-    src/core/hle/libraries/libkernel/thread_management.cpp
-    src/core/hle/libraries/libkernel/thread_management.h
-    src/core/hle/kernel/memory_management.cpp
-    src/core/hle/kernel/memory_management.h
-    src/core/hle/error_codes.h
-    src/core/PS4/GPU/gpu_memory.cpp
-    src/core/PS4/GPU/gpu_memory.h
-    src/emulator.cpp
-    src/emulator.h
-    src/core/hle/kernel/Objects/event_queue.h
-    src/core/hle/kernel/Objects/event_queue.cpp
-    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
-    src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
-    src/core/PS4/HLE/Graphics/graphics_ctx.h
-    src/vulkan_util.cpp
-    src/vulkan_util.h
-    src/core/PS4/GPU/video_out_buffer.cpp
-    src/core/PS4/GPU/video_out_buffer.h
-    src/core/PS4/HLE/Graphics/graphics_render.cpp
-    src/core/PS4/HLE/Graphics/graphics_render.h
-    src/core/PS4/GPU/tile_manager.cpp
-    src/core/PS4/GPU/tile_manager.h
-    src/core/hle/libraries/libkernel/time_management.cpp
-    src/core/hle/libraries/libkernel/time_management.h
-    src/core/tls.cpp
-    src/core/tls.h
     ${COMMON}
     ${CORE}
-    ${CRYPTO}
-    ${FILE_FORMAT}
+    ${VIDEO_CORE}
+    src/main.cpp
+    src/emulator.cpp
+    src/emulator.h
 )
 endif()
 

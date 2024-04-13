@@ -8,7 +8,7 @@
 #include "common/version.h"
 #include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
-#include "core/hle/libraries/libpad/pad.h"
+#include "core/libraries/pad/pad.h"
 #include "emulator.h"
 
 namespace Emu {
@@ -308,7 +308,7 @@ void DrawBuffer(HLE::Libs::Graphics::VideoOutVulkanImage* image) {
 }
 
 void keyboardEvent(SDL_Event* event) {
-    using OldLibraries::LibPad::ScePadButton;
+    using Libraries::LibPad::ScePadButton;
 
     if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
         u32 button = 0;

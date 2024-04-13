@@ -4,7 +4,7 @@
 #pragma once
 
 #include <string>
-#include "core/hle/kernel/event_queues.h"
+#include "core/libraries/kernel/event_queues.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -115,7 +115,8 @@ void VideoOutVblank();
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(SceVideoOutBufferAttribute* attribute,
                                                 u32 pixelFormat, u32 tilingMode, u32 aspectRatio,
                                                 u32 width, u32 height, u32 pitchInPixel);
-s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Core::Kernel::SceKernelEqueue eq, s32 handle, void* udata);
+s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Libraries::Kernel::SceKernelEqueue eq, s32 handle,
+                                         void* udata);
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
                                             s32 bufferNum,
                                             const SceVideoOutBufferAttribute* attribute);

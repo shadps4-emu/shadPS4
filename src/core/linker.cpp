@@ -9,7 +9,7 @@
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
-#include "core/hle/libraries/libkernel/thread_management.h"
+#include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
@@ -662,7 +662,7 @@ static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
                              // there's no coming back
                  :
                  : "r"(addr), "r"(params), "r"(exit_func)
-                 : "rax", "rsi", "rdi", "rsp", "rbp");
+                 : "rax", "rsi", "rdi", "rsp");
 }
 
 void Linker::Execute() {
@@ -670,8 +670,8 @@ void Linker::Execute() {
         DebugDump();
     }
 
-    Core::Libraries::LibKernel::pthreadInitSelfMainThread();
-    // relocate all modules
+    Libraries::Kernel::pthreadInitSelfMainThread();
+    // Relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
     }

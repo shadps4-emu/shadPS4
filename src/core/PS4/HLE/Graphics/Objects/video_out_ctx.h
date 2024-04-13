@@ -27,7 +27,7 @@ struct VideoConfigInternal {
     bool isOpened = false;
     SceVideoOutFlipStatus m_flip_status;
     SceVideoOutVblankStatus m_vblank_status;
-    std::vector<Core::Kernel::SceKernelEqueue> m_flip_evtEq;
+    std::vector<Libraries::Kernel::SceKernelEqueue> m_flip_evtEq;
     int m_flip_rate = 0;
     VideoOutBufferInfo buffers[16];
     std::vector<VideoOutBufferSetInternal> buffers_sets;

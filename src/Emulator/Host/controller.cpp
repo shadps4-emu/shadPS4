@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "Emulator/Host/controller.h"
-#include "core/hle/libraries/libkernel/time_management.h"
+#include "core/libraries/kernel/time_management.h"
 
 namespace Emulator::Host::Controller {
 
@@ -77,7 +77,7 @@ void GameController::addState(const State& state) {
 void GameController::checKButton(int id, u32 button, bool isPressed) {
     std::scoped_lock lock{m_mutex};
     auto state = getLastState();
-    state.time = Core::Libraries::LibKernel::sceKernelGetProcessTime();
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
     if (isPressed) {
         state.buttonsState |= button;
     } else {
