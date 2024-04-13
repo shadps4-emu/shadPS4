@@ -274,8 +274,8 @@ set(VIDEO_CORE src/core/PS4/HLE/Graphics/video_out.cpp
                src/vulkan_util.h
 )
 
-set(HOST_SOURCES src/Emulator/Host/controller.cpp
-                 src/Emulator/Host/controller.h
+set(INPUT src/input/controller.cpp
+          src/input/controller.h
 )
 
 # the above is shared in sdl and qt version (TODO share them all)
@@ -312,14 +312,19 @@ endif()
 
 if(ENABLE_QT_GUI)
 qt_add_executable(shadps4
+    ${AUDIO_CORE}
+    ${INPUT}
     ${QT_GUI}
     ${COMMON}
     ${CORE}
+    ${VIDEO_CORE}
+    src/emulator.cpp
+    src/emulator.h
 )
 else()
 add_executable(shadps4
     ${AUDIO_CORE}
-    ${HOST_SOURCES}
+    ${INPUT}
     ${COMMON}
     ${CORE}
     ${VIDEO_CORE}

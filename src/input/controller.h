@@ -6,7 +6,8 @@
 #include <mutex>
 #include "common/types.h"
 
-namespace Emulator::Host::Controller {
+namespace Input {
+
 struct State {
     u32 buttonsState = 0;
     u64 time = 0;
@@ -36,8 +37,8 @@ private:
     int m_connected_count = 0;
     u32 m_states_num = 0;
     u32 m_first_state = 0;
-    State m_states[MAX_STATES];
-    StateInternal m_private[MAX_STATES];
+    std::array<State, MAX_STATES> m_states;
+    std::array<StateInternal, MAX_STATES> m_private;
 };
 
-} // namespace Emulator::Host::Controller
+} // namespace Input

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Emulator/Host/controller.h"
 #include "core/libraries/kernel/time_management.h"
+#include "input/controller.h"
 
-namespace Emulator::Host::Controller {
+namespace Input {
 
 GameController::GameController() {
     m_states_num = 0;
@@ -87,4 +87,4 @@ void GameController::checKButton(int id, u32 button, bool isPressed) {
     addState(state);
 }
 
-} // namespace Emulator::Host::Controller
+} // namespace Input

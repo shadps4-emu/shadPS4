@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Emulator/Host/controller.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/pad/pad.h"
+#include "input/controller.h"
 
 namespace Libraries::LibPad {
 
@@ -22,11 +22,11 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId user_
 }
 
 int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
-    auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
+    auto* controller = Common::Singleton<Input::GameController>::Instance();
 
     int connectedCount = 0;
     bool isConnected = false;
-    Emulator::Host::Controller::State state;
+    Input::State state;
 
     controller->readState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
@@ -51,8 +51,8 @@ int PS4_SYSV_ABI scePadReadState(int32_t handle, ScePadData* pData) {
 int PS4_SYSV_ABI scePadRead(int handle, ScePadData* pData, int num) {
     int connected_count = 0;
     bool connected = false;
-    Emulator::Host::Controller::State states[64];
-    auto* controller = Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
+    Input::State states[64];
+    auto* controller = Common::Singleton<Input::GameController>::Instance();
     int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
 
     if (!connected) {

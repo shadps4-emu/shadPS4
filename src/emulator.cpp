@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/core.h>
-#include <vulkan_util.h>
-#include "Emulator/Host/controller.h"
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/PS4/HLE/Graphics/graphics_render.h"
 #include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/libraries/pad/pad.h"
 #include "emulator.h"
+#include "input/controller.h"
+#include "vulkan_util.h"
 
 namespace Emu {
 
@@ -344,8 +344,7 @@ void keyboardEvent(SDL_Event* event) {
             break;
         }
         if (button != 0) {
-            auto* controller =
-                Common::Singleton<Emulator::Host::Controller::GameController>::Instance();
+            auto* controller = Common::Singleton<Input::GameController>::Instance();
             controller->checKButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
         }
     }
