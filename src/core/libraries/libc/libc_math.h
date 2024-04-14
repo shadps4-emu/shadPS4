@@ -5,7 +5,7 @@
 
 #include "common/types.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 float PS4_SYSV_ABI ps4_atan2f(float y, float x);
 float PS4_SYSV_ABI ps4_acosf(float num);
@@ -16,4 +16,4 @@ double PS4_SYSV_ABI ps4__Sin(double x);
 float PS4_SYSV_ABI ps4__Fsin(float arg);
 double PS4_SYSV_ABI ps4_exp2(double arg);
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

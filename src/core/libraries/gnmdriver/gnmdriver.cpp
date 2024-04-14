@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "core/PS4/GPU/gpu_memory.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
-#include "emulator.h"
 
 namespace Libraries::GnmDriver {
 
@@ -293,7 +291,6 @@ int PS4_SYSV_ABI sceGnmFindResourcesPublic() {
 
 void PS4_SYSV_ABI sceGnmFlushGarlic() {
     LOG_WARNING(Lib_GnmDriver, "(STUBBED) called");
-    GPU::flushGarlic(Emu::getGraphicCtx());
 }
 
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress() {

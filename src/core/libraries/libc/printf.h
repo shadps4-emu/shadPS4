@@ -64,7 +64,7 @@
 
 #include "va_ctx.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 // ntoa conversion buffer size, this must be big enough to hold
 // one converted numeric number including padded zeros (dynamically created on stack)
 // 32 byte is a good default
@@ -750,4 +750,4 @@ static int vsnprintf_ctx(char* s, size_t n, const char* format, VaList* arg) {
     std::strcpy(s, buffer);
     return result;
 }
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

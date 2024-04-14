@@ -46,3 +46,18 @@
 [submodule "externals/fmt"]
 	path = externals/fmt
 	url = https://github.com/shadps4-emu/ext-fmt.git
+[submodule "externals/vulkan-headers"]
+	path = externals/vulkan-headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers
+[submodule "externals/vma"]
+	path = externals/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "externals/glslang"]
+	path = externals/glslang
+	url = https://github.com/KhronosGroup/glslang
+[submodule "externals/robin-map"]
+	path = externals/robin-map
+	url = https://github.com/Tessil/robin-map
+[submodule "externals/ext-boost"]
+	path = externals/ext-boost
+	url = https://github.com/raphaelthegreat/ext-boost

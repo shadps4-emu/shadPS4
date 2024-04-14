@@ -6,7 +6,6 @@
 #include <mutex>
 #include <vector>
 #include "common/types.h"
-#include "core/PS4/GPU/gpu_memory.h"
 #include "core/virtual_memory.h"
 
 namespace Libraries::Kernel {
@@ -21,7 +20,6 @@ public:
         u64 map_size;
         int prot;
         VirtualMemory::MemoryMode cpu_mode;
-        GPU::MemoryMode gpu_mode;
     };
     PhysicalMemory() {}
     virtual ~PhysicalMemory() {}
@@ -29,8 +27,8 @@ public:
 public:
     bool Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignment, u64* physAddrOut,
                int memoryType);
-    bool Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot, VirtualMemory::MemoryMode cpu_mode,
-             GPU::MemoryMode gpu_mode);
+    bool Map(u64 virtual_addr, u64 phys_addr, u64 len, int prot,
+             VirtualMemory::MemoryMode cpu_mode);
 
 private:
     std::vector<AllocatedBlock> m_allocatedBlocks;

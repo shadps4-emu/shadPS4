@@ -6,7 +6,7 @@
 #include "common/types.h"
 #include "core/libraries/libc/printf.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 std::FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode);
 int PS4_SYSV_ABI ps4_printf(VA_ARGS);
@@ -19,4 +19,4 @@ int PS4_SYSV_ABI ps4_fseek(FILE* stream, long offset, int whence);
 int PS4_SYSV_ABI ps4_fgetpos(FILE* stream, fpos_t* pos);
 std::size_t PS4_SYSV_ABI ps4_fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

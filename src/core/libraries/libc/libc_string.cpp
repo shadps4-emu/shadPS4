@@ -5,7 +5,7 @@
 #include <cstring>
 #include "core/libraries/libc/libc_string.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 int PS4_SYSV_ABI ps4_memcmp(const void* s1, const void* s2, size_t n) {
     return std::memcmp(s1, s2, n);
@@ -58,4 +58,4 @@ char* PS4_SYSV_ABI ps4_strdup(const char* str1) {
     return dup;
 }
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

@@ -6,10 +6,10 @@
 #include <pthread.h>
 #include "common/types.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 int PS4_SYSV_ABI ps4___cxa_guard_acquire(u64* guard_object);
 void PS4_SYSV_ABI ps4___cxa_guard_release(u64* guard_object);
 void PS4_SYSV_ABI ps4___cxa_guard_abort(u64* guard_object);
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

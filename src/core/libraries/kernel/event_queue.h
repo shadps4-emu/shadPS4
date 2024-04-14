@@ -52,15 +52,24 @@ struct SceKernelEvent {
 
 struct Filter {
     void* data = nullptr;
-    TriggerFunc trigger_event_func = nullptr;
-    ResetFunc reset_event_func = nullptr;
-    DeleteFunc delete_event_func = nullptr;
 };
 
 struct EqueueEvent {
     bool isTriggered = false;
     SceKernelEvent event;
     Filter filter;
+
+    void reset() {
+        isTriggered = false;
+        event.fflags = 0;
+        event.data = 0;
+    }
+
+    void trigger(void* data) {
+        isTriggered = true;
+        event.fflags++;
+        event.data = reinterpret_cast<uintptr_t>(data);
+    }
 };
 
 class EqueueInternal {

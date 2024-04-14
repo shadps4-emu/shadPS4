@@ -7,8 +7,8 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
-void libcSymbolsRegister(Loader::SymbolsResolver* sym);
+void libcSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC
