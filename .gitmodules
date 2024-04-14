@@ -58,6 +58,6 @@
 [submodule "externals/robin-map"]
 	path = externals/robin-map
 	url = https://github.com/Tessil/robin-map
-[submodule "externals/ext-boost"]
-	path = externals/ext-boost
+[submodule "externals/boost"]
+	path = externals/boost
 	url = https://github.com/raphaelthegreat/ext-boost
