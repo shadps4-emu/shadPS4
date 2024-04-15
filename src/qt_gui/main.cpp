@@ -6,6 +6,9 @@
 #include "qt_gui/game_install_dialog.h"
 #include "qt_gui/gui_settings.h"
 #include "qt_gui/main_window.h"
+#include "src/sdl_window.h"
+
+Frontend::WindowSDL* g_window;
 
 int main(int argc, char* argv[]) {
     QApplication a(argc, argv);
