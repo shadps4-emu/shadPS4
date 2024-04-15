@@ -310,7 +310,8 @@ set(INPUT src/input/controller.cpp
 
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
-    set(QT_GUI 
+
+set(QT_GUI 
     src/qt_gui/main_window_ui.h
     src/qt_gui/main_window.cpp
     src/qt_gui/main_window.h
@@ -346,6 +347,8 @@ qt_add_executable(shadps4
     ${COMMON}
     ${CORE}
     ${VIDEO_CORE}
+    src/sdl_window.h
+    src/sdl_window.cpp
 )
 else()
 add_executable(shadps4
