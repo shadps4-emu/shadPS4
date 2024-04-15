@@ -346,8 +346,6 @@ qt_add_executable(shadps4
     ${COMMON}
     ${CORE}
     ${VIDEO_CORE}
-    src/emulator.cpp
-    src/emulator.h
 )
 else()
 add_executable(shadps4
