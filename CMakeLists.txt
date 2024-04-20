@@ -107,7 +107,9 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/memory/kernel_memory.cpp
+set(KERNEL_LIB src/core/libraries/kernel/memory/flexible_memory.cpp
+               src/core/libraries/kernel/memory/flexible_memory.h     
+               src/core/libraries/kernel/memory/kernel_memory.cpp
                src/core/libraries/kernel/memory/kernel_memory.h
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
