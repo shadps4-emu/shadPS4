@@ -73,18 +73,19 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     auto* file = h->GetFile(d);
 
     file->m_mutex.lock();
+    Common::FS::SeekOrigin origin;
+    if (whence == 0) {
+        origin = Common::FS::SeekOrigin::SetOrigin;
+    }
 
     if (whence == 1) {
-        offset = static_cast<int64_t>(file->f.Tell()) + offset;
-        whence = 0;
+        origin = Common::FS::SeekOrigin::CurrentPosition;
     }
-
     if (whence == 2) {
-        offset = static_cast<int64_t>(file->f.GetSize()) + offset;
-        whence = 0;
+        origin = Common::FS::SeekOrigin::End;
     }
 
-    file->f.Seek(offset);
+    file->f.Seek(offset, origin);
     auto pos = static_cast<int64_t>(file->f.Tell());
 
     file->m_mutex.unlock();
