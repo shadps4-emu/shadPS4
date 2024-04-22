@@ -13,6 +13,7 @@
 #include "core/libraries/network/net.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
+#include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
@@ -49,6 +50,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
     Libraries::SaveDataDialog::RegisterlibSceSaveDataDialog(sym);
+    Libraries::NpManager::RegisterlibSceNpManager(sym);
 }
 
 } // namespace Libraries

@@ -159,6 +159,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/userservice.h
 )
 
+set(NP_LIBS     src/core/libraries/np_manager/np_manager.cpp
+                src/core/libraries/np_manager/np_manager.h
+)
+
 set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc/libc.h
                  src/core/libraries/libc/printf.h
@@ -253,6 +257,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${LIBC_SOURCES}
          ${PAD_LIB}
+         ${NP_LIBS}
          src/core/linker.cpp
          src/core/linker.h
          src/core/tls.cpp
