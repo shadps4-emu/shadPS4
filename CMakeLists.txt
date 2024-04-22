@@ -161,6 +161,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
 
 set(NP_LIBS     src/core/libraries/np_manager/np_manager.cpp
                 src/core/libraries/np_manager/np_manager.h
+                src/core/libraries/np_score/np_score.cpp
+                src/core/libraries/np_score/np_score.h
+                src/core/libraries/np_trophy/np_trophy.cpp
+                src/core/libraries/np_trophy/np_trophy.h
 )
 
 set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
@@ -177,6 +181,10 @@ set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc/libc_string.h
                  src/core/libraries/libc/libc_stdlib.cpp
                  src/core/libraries/libc/libc_stdlib.h
+)
+
+set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
+               src/core/libraries/screenshot/screenshot.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
@@ -258,6 +266,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${LIBC_SOURCES}
          ${PAD_LIB}
          ${NP_LIBS}
+         ${MISC_LIBS}
          src/core/linker.cpp
          src/core/linker.h
          src/core/tls.cpp
