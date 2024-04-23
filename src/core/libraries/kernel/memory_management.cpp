@@ -102,9 +102,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
 
     if (flags == 0) {
         out_addr = VirtualMemory::memory_alloc_aligned(in_addr, len, cpu_mode, alignment);
-    }
-    else
-    {
+    } else {
         UNREACHABLE();
     }
     LOG_INFO(Kernel_Vmm, "in_addr = {:#x}, out_addr = {:#x}", in_addr, out_addr);
