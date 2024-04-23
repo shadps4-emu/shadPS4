@@ -12,6 +12,7 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addrInOut, std::size_t len, int prot,
                                                  int flags, const char* name);
-
+s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
+                                            int flags);
 void RegisterKernelMemory(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Kernel

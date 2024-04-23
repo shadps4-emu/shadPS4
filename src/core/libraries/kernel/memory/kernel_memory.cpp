@@ -65,8 +65,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
+                                            int flags) {
+    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "");
+}
+
 void RegisterKernelMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
+    LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
 }
 
 } // namespace Libraries::Kernel
