@@ -12,7 +12,7 @@
 namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#x}", path, flags, mode);
+    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", path, flags, mode);
     ASSERT_MSG(flags == 0, "flags!=0 not supported yet");
     ASSERT_MSG(mode == 0, "mode!=0 not supported yet");
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
@@ -73,18 +73,19 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     auto* file = h->GetFile(d);
 
     file->m_mutex.lock();
+    Common::FS::SeekOrigin origin;
+    if (whence == 0) {
+        origin = Common::FS::SeekOrigin::SetOrigin;
+    }
 
     if (whence == 1) {
-        offset = static_cast<int64_t>(file->f.Tell()) + offset;
-        whence = 0;
+        origin = Common::FS::SeekOrigin::CurrentPosition;
     }
-
     if (whence == 2) {
-        offset = static_cast<int64_t>(file->f.GetSize()) + offset;
-        whence = 0;
+        origin = Common::FS::SeekOrigin::End;
     }
 
-    file->f.Seek(offset);
+    file->f.Seek(offset, origin);
     auto pos = static_cast<int64_t>(file->f.Tell());
 
     file->m_mutex.unlock();
@@ -112,7 +113,23 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
 }
 
 int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} mode = {:#x}", path, mode);
+    LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
+    if (path == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    std::string dir_name = mnt->GetHostFile(path);
+    if (std::filesystem::is_directory(dir_name)) {
+        return SCE_KERNEL_ERROR_EEXIST;
+    }
+
+    if (!std::filesystem::create_directory(dir_name)) {
+        return SCE_KERNEL_ERROR_EIO;
+    }
+
+    if (!std::filesystem::is_directory(dir_name)) {
+        return SCE_KERNEL_ERROR_ENOENT;
+    }
     return ORBIS_OK;
 }
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {

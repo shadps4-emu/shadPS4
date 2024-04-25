@@ -3,6 +3,7 @@
 
 #include <common/singleton.h>
 #include <core/file_sys/fs.h>
+#include <string.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
