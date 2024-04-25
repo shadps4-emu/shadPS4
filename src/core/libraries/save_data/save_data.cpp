@@ -359,7 +359,7 @@ s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
         mnt->Mount(mount_dir, g_mount_point);
 
         mount_result->mount_status = 0;
-        strcpy_s(mount_result->mount_point.data, 16, g_mount_point.c_str());
+        strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
     }
     if (create) {
         if (std::filesystem::is_directory(mount_dir)) {
@@ -371,7 +371,7 @@ s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
         mnt->Mount(mount_dir, g_mount_point);
 
         mount_result->mount_status = 1;
-        strcpy_s(mount_result->mount_point.data, 16, g_mount_point.c_str());
+        strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
     }
     mount_result->required_blocks = 0;
 
