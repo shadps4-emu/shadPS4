@@ -22,10 +22,10 @@
 #include "emulator.h"
 
 int main(int argc, char* argv[]) {
-    /* if (argc == 1) {
+    if (argc == 1) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
-    }*/
+    }
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(config_dir / "config.toml");
     Common::Log::Initialize();
@@ -37,20 +37,7 @@ int main(int argc, char* argv[]) {
     HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
 
     // Argument 1 is the path of self file to boot
-    // const char* const path = argv[1];
-
-    //const char* const path = "C://ps4//games//CUSA09415-Undertale//eboot.bin";
-    // const char* const path = "C://ps4//games//CUSA30991//eboot.bin"; //teenage shredder
-    // const char* const path = "C://ps4//games//CUSA01997//eboot.bin"; // teenage muntant
-    // const char* const path = "C://ps4//games//CUSA07010-SonicMania//eboot.bin";
-    const char* const path = "C://ps4//games//CUSA05694//eboot.bin";//momodora
-    // const char* const path = "C:\\ps4\\games\\CUSA02394\\eboot.bin"; //we are doomed
-    // const char* const path = "C:\\ps4\\games\\CUSA05362\\eboot.bin";//ronin
-
-    // open orbis samples
-    //  const char* const path = "C://ps4//games//OpenOrbisDlg//eboot.bin";
-    // ps4 sdk samples
-    // const char* const path = "C:\\ps4\\ps4sdksamples\\simplet-simple-fs.elf";
+    const char* const path = argv[1];
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::filesystem::path p = std::string(path);
