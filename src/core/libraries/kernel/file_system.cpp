@@ -111,6 +111,10 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     return bytes_read;
 }
 
+int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
+    LOG_INFO(Kernel_Fs, "path = {} mode = {:#x}", path, mode);
+    return ORBIS_OK;
+}
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -120,6 +124,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
     LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
     LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
+    LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
