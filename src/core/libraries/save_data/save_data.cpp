@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <common/singleton.h>
+#include <core/file_sys/fs.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/save_data.h"
+#include "error_codes.h"
 
 namespace Libraries::SaveData {
+
+static std::string g_mount_point = "/savedata0"; // temp mount point (todo)
 
 int PS4_SYSV_ABI sceSaveDataAbort() {
     LOG_ERROR(Lib_SaveData, "(STUBBED) called");
@@ -290,17 +296,17 @@ int PS4_SYSV_ABI sceSaveDataGetUpdatedDataCount() {
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
+    LOG_WARNING(Lib_SaveData, "(DUMMY) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize2() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
+    LOG_WARNING(Lib_SaveData, "(DUMMY) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize3() {
-    LOG_ERROR(Lib_SaveData, "(DUMMY) called");
+    LOG_WARNING(Lib_SaveData, "(DUMMY) called");
     return ORBIS_OK;
 }
 
@@ -331,13 +337,30 @@ int PS4_SYSV_ABI sceSaveDataMount() {
 
 s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
                                    OrbisSaveDataMountResult* mount_result) {
-    // will return save data not found , breakpoint for others
     LOG_ERROR(Lib_SaveData, "(DUMMY) called user_id = {} dir_name = {} blocks = {} mount_mode = {}",
               mount->user_id, mount->dir_name->data, mount->blocks, mount->mount_mode);
-    if (mount->mount_mode == 1) { // open
-        return 0x809F0008;        // save data not found
+
+    bool rdonly = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY) != 0;
+    bool rdwr = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_RDWR) != 0;
+    bool create = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_CREATE) != 0;
+    bool destruct_off = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF) != 0;
+    bool copy_icon = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON) != 0;
+    bool create2 = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2) != 0;
+
+    const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
+                            std::string(mount->dir_name->data);
+
+    if (rdonly) {
+        if (!std::filesystem::is_directory(mount_dir)) {
+            return ORBIS_SAVE_DATA_ERROR_NOT_FOUND;
+        }
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        mnt->Mount(mount_dir, g_mount_point);
+
+        mount_result->mount_status = 0;
+        strcpy_s(mount_result->mount_point.data, 16, g_mount_point.c_str());
     }
-    UNREACHABLE();
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataMount5() {
