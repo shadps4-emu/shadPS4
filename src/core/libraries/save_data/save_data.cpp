@@ -337,8 +337,8 @@ int PS4_SYSV_ABI sceSaveDataMount() {
 
 s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
                                    OrbisSaveDataMountResult* mount_result) {
-    LOG_ERROR(Lib_SaveData, "(DUMMY) called user_id = {} dir_name = {} blocks = {} mount_mode = {}",
-              mount->user_id, mount->dir_name->data, mount->blocks, mount->mount_mode);
+    LOG_INFO(Lib_SaveData, "called user_id = {} dir_name = {} blocks = {} mount_mode = {}",
+             mount->user_id, mount->dir_name->data, mount->blocks, mount->mount_mode);
 
     bool rdonly = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY) != 0;
     bool rdwr = (mount->mount_mode & ORBIS_SAVE_DATA_MOUNT_MODE_RDWR) != 0;
@@ -360,6 +360,20 @@ s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
         mount_result->mount_status = 0;
         strcpy_s(mount_result->mount_point.data, 16, g_mount_point.c_str());
     }
+    if (create) {
+        if (std::filesystem::is_directory(mount_dir)) {
+            return ORBIS_SAVE_DATA_ERROR_EXISTS;
+        }
+        std::filesystem::create_directories(mount_dir);
+
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        mnt->Mount(mount_dir, g_mount_point);
+
+        mount_result->mount_status = 1;
+        strcpy_s(mount_result->mount_point.data, 16, g_mount_point.c_str());
+    }
+    mount_result->required_blocks = 0;
+
     return ORBIS_OK;
 }
 
