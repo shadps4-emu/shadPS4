@@ -132,6 +132,32 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     }
     return ORBIS_OK;
 }
+
+int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    std::string path_name = mnt->GetHostFile(path);
+    memset(sb, 0, sizeof(OrbisKernelStat));
+    if (std::filesystem::is_directory(path_name)) {
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_size = 0;
+        sb->st_blksize = 512;
+        sb->st_blocks = 0;
+        // TODO incomplete
+    } else {
+        UNREACHABLE();
+    }
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
+    int result = sceKernelStat(path, sb);
+    if (result < 0) {
+        UNREACHABLE(); // TODO
+    }
+    return ORBIS_OK;
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -142,6 +168,8 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
     LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
+    LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
+    LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
