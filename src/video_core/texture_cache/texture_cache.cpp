@@ -12,13 +12,10 @@
 #include <signal.h>
 #include <sys/mman.h>
 
-#define PROT_READ_WRITE
-    (PROT_READ | PROT_WRITE) // There is no option to combine bitflags like this on Windows
+#define PAGE_NOACCESS PROT_NONE
+#define PAGE_READWRITE (PROT_READ | PROT_WRITE)
 #else
 #include <Windows.h>
-
-#define PROT_NONE PAGE_NOACCESS
-#define PROT_READ_WRITE PAGE_READWRITE
 
 void mprotect(void* addr, size_t len, int prot) {
     DWORD old_prot{};
@@ -228,9 +225,9 @@ void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const u32 interval_size = interval_end_addr - interval_start_addr;
         void* addr = reinterpret_cast<void*>(interval_start_addr);
         if (delta > 0 && count == delta) {
-            mprotect(addr, interval_size, PROT_NONE);
+            mprotect(addr, interval_size, PAGE_NOACCESS);
         } else if (delta < 0 && count == -delta) {
-            mprotect(addr, interval_size, PROT_READ_WRITE);
+            mprotect(addr, interval_size, PAGE_READWRITE);
         } else {
             ASSERT(count >= 0);
         }
