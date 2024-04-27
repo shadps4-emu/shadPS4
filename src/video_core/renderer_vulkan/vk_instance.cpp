@@ -129,6 +129,7 @@ bool Instance::CreateDevice() {
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
+    add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -185,7 +186,6 @@ bool Instance::CreateDevice() {
             .extendedDynamicState2 = true,
             .extendedDynamicState2LogicOp = true,
         },
-        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{},
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
             .customBorderColorWithoutFormat = true,

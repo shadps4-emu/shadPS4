@@ -182,9 +182,9 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
     const auto extensions = GetInstanceExtensions(window_type, enable_validation);
 
     const vk::ApplicationInfo application_info = {
-        .pApplicationName = "Citra",
+        .pApplicationName = "shadPS4",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-        .pEngineName = "Citra Vulkan",
+        .pEngineName = "shadPS4 Vulkan",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion = available_version,
     };
@@ -222,7 +222,6 @@ vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
                            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose,
         .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
                        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                       vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding |
                        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
         .pfnUserCallback = DebugUtilsCallback,
     };
