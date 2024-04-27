@@ -12,6 +12,7 @@ namespace Config {
 bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
+u32 gpuId = 0; // Vulkan physical device no
 std::string logFilter;
 std::string logType = "sync";
 bool isDebugDump = false;
@@ -30,6 +31,10 @@ u32 getScreenWidth() {
 
 u32 getScreenHeight() {
     return screenHeight;
+}
+
+u32 getGpuId() {
+    return gpuId;
 }
 
 std::string getLogFilter() {
@@ -76,8 +81,9 @@ void load(const std::filesystem::path& path) {
         if (generalResult.is_ok()) {
             auto general = generalResult.unwrap();
 
-            screenWidth = toml::find_or<toml::integer>(general, "screenWidth", false);
-            screenHeight = toml::find_or<toml::integer>(general, "screenHeight", false);
+            screenWidth = toml::find_or<toml::integer>(general, "screenWidth", screenWidth);
+            screenHeight = toml::find_or<toml::integer>(general, "screenHeight", screenHeight);
+            gpuId = toml::find_or<toml::integer>(general, "gpuId", 0);
         }
     }
     if (data.contains("Debug")) {
@@ -119,6 +125,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
+    data["GPU"]["gpuId"] = gpuId;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["Debug"]["DebugDump"] = isDebugDump;

@@ -16,6 +16,7 @@ std::string getLogType();
 
 u32 getScreenWidth();
 u32 getScreenHeight();
+u32 getGpuId();
 
 bool debugDump();
 bool isLleLibc();
