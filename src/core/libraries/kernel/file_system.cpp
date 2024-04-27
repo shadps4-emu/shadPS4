@@ -13,24 +13,47 @@ namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", path, flags, mode);
-    ASSERT_MSG(flags == 0, "flags!=0 not supported yet");
-    ASSERT_MSG(mode == 0, "mode!=0 not supported yet");
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    // only open files support!
-    u32 handle = h->CreateHandle();
-    auto* file = h->GetFile(handle);
-    file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostFile(file->m_guest_name);
+    bool read = (flags & 0x3) == ORBIS_KERNEL_O_RDONLY;
+    bool write = (flags & 0x3) == ORBIS_KERNEL_O_WRONLY;
+    bool rdwr = (flags & 0x3) == ORBIS_KERNEL_O_RDWR;
 
-    file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-    if (!file->f.IsOpen()) {
-        h->DeleteHandle(handle);
-        return SCE_KERNEL_ERROR_EACCES;
+    bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
+    bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
+    bool fsync = (flags & ORBIS_KERNEL_O_FSYNC) != 0;
+    bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0;
+    bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
+    bool truncate = (flags & ORBIS_KERNEL_O_TRUNC) != 0;
+    bool excl = (flags & ORBIS_KERNEL_O_EXCL) != 0;
+    bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
+    bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
+    bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
+
+    if (directory) {
+        UNREACHABLE(); // not supported yet
+    } else {
+        // only open files support!
+        u32 handle = h->CreateHandle();
+        auto* file = h->GetFile(handle);
+        file->m_guest_name = path;
+        file->m_host_name = mnt->GetHostFile(file->m_guest_name);
+        if (read) {
+            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (write && create && truncate) {
+            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+        } else {
+            UNREACHABLE();
+        }
+        if (!file->f.IsOpen()) {
+            h->DeleteHandle(handle);
+            return SCE_KERNEL_ERROR_EACCES;
+        }
+        file->is_opened = true;
+        return handle;
     }
-    file->is_opened = true;
-    return handle;
+    return -1; // dummy
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
@@ -56,6 +79,20 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
     return SCE_OK;
 }
 
+size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
+    if (buf == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(d);
+    if (file == nullptr) {
+        return SCE_KERNEL_ERROR_EBADF;
+    }
+    file->m_mutex.lock();
+    u32 bytes_write = file->f.WriteRaw<u8>(buf, static_cast<u32>(nbytes));
+    file->m_mutex.unlock();
+    return bytes_write;
+}
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -162,6 +199,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
+    LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);

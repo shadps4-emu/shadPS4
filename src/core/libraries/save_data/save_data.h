@@ -140,7 +140,7 @@ int PS4_SYSV_ABI sceSaveDataSyncCloudList();
 int PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory();
 int PS4_SYSV_ABI sceSaveDataTerminate();
 int PS4_SYSV_ABI sceSaveDataTransferringMount();
-int PS4_SYSV_ABI sceSaveDataUmount();
+int PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint);
 int PS4_SYSV_ABI sceSaveDataUmountSys();
 int PS4_SYSV_ABI sceSaveDataUmountWithBackup();
 int PS4_SYSV_ABI sceSaveDataUnregisterEventCallback();

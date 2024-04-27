@@ -39,6 +39,22 @@ struct OrbisKernelStat {
     unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(SceKernelTimespec)));
 };
 
+// flags for Open
+constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
+constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
+constexpr int ORBIS_KERNEL_O_RDWR = 0x0002;
+
+constexpr int ORBIS_KERNEL_O_NONBLOCK = 0x0004;
+constexpr int ORBIS_KERNEL_O_APPEND = 0x0008;
+constexpr int ORBIS_KERNEL_O_FSYNC = 0x0080;
+constexpr int ORBIS_KERNEL_O_SYNC = 0x0080;
+constexpr int ORBIS_KERNEL_O_CREAT = 0x0200;
+constexpr int ORBIS_KERNEL_O_TRUNC = 0x0400;
+constexpr int ORBIS_KERNEL_O_EXCL = 0x0800;
+constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
+constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
+constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
+
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, /* SceKernelMode*/ u16 mode);
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode);

@@ -498,8 +498,10 @@ int PS4_SYSV_ABI sceSaveDataTransferringMount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataUmount() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
+int PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint) {
+    LOG_ERROR(Lib_SaveData, "mountPoint {}",std::string(mountPoint->data));
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(std::string(mountPoint->data));
     return ORBIS_OK;
 }
 
