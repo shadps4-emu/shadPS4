@@ -115,6 +115,9 @@ private:
     SlotVector<Image> slot_images;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
+#ifdef _WIN64
+    void* veh_handle{};
+#endif
 };
 
 } // namespace VideoCore

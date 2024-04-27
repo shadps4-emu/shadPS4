@@ -11,6 +11,20 @@
 #ifndef _WIN64
 #include <signal.h>
 #include <sys/mman.h>
+
+#define PROT_READ_WRITE (PROT_READ | PROT_WRITE) // There is no option to combine bitflags like this on Windows
+#else
+#include <Windows.h>
+
+#define PROT_NONE       PAGE_NOACCESS
+#define PROT_READ_WRITE PAGE_READWRITE
+
+void mprotect(void *addr, size_t len, int prot) {
+    DWORD old_prot{};
+    BOOL result = VirtualProtect(addr, len, prot, &old_prot);
+    ASSERT_MSG(result != 0, "Region protection failed");
+}
+
 #endif
 
 namespace VideoCore {
@@ -27,6 +41,21 @@ void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
         // Read not supported!
         UNREACHABLE();
     }
+}
+#else
+LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS *pExp) noexcept {
+    const u32 ec = pExp->ExceptionRecord->ExceptionCode;
+    if (ec == EXCEPTION_ACCESS_VIOLATION) {
+        const auto info = pExp->ExceptionRecord->ExceptionInformation;
+        if (info[0] == 1) { // Write violation
+            g_texture_cache->OnCpuWrite(info[1]);
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+        else {
+            UNREACHABLE();
+        }
+    }
+    return EXCEPTION_CONTINUE_SEARCH; // pass further
 }
 #endif
 
@@ -50,11 +79,18 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     guest_access_fault.sa_sigaction = &GuestFaultSignalHandler;
     guest_access_fault.sa_mask = signal_mask;
     sigaction(SIGSEGV, &guest_access_fault, nullptr);
+#else
+    veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
+    ASSERT_MSG(veh_handle, "Failed to register an exception handler");
 #endif
     g_texture_cache = this;
 }
 
-TextureCache::~TextureCache() = default;
+TextureCache::~TextureCache() {
+#if _WIN64
+    RemoveVectoredExceptionHandler(veh_handle);
+#endif
+}
 
 void TextureCache::OnCpuWrite(VAddr address) {
     const VAddr address_aligned = address & ~((1 << PageBits) - 1);
@@ -190,16 +226,14 @@ void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const VAddr interval_start_addr = boost::icl::first(interval) << PageBits;
         const VAddr interval_end_addr = boost::icl::last_next(interval) << PageBits;
         const u32 interval_size = interval_end_addr - interval_start_addr;
-#ifndef _WIN64
         void* addr = reinterpret_cast<void*>(interval_start_addr);
         if (delta > 0 && count == delta) {
             mprotect(addr, interval_size, PROT_NONE);
         } else if (delta < 0 && count == -delta) {
-            mprotect(addr, interval_size, PROT_READ | PROT_WRITE);
+            mprotect(addr, interval_size, PROT_READ_WRITE);
         } else {
             ASSERT(count >= 0);
         }
-#endif
     }
 
     if (delta < 0) {
