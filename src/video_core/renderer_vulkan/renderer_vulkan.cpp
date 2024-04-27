@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "sdl_window.h"
 #include "common/config.h"
+#include "sdl_window.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include <vk_mem_alloc.h>
@@ -58,8 +58,8 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
 }
 
 RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_)
-    : window{window_}, instance{window, Config::getGpuId()}, scheduler{instance}, swapchain{instance, window},
-      texture_cache{instance, scheduler} {
+    : window{window_}, instance{window, Config::getGpuId()}, scheduler{instance},
+      swapchain{instance, window}, texture_cache{instance, scheduler} {
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 
