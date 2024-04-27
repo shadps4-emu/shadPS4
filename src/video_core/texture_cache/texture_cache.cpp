@@ -12,14 +12,15 @@
 #include <signal.h>
 #include <sys/mman.h>
 
-#define PROT_READ_WRITE (PROT_READ | PROT_WRITE) // There is no option to combine bitflags like this on Windows
+#define PROT_READ_WRITE
+    (PROT_READ | PROT_WRITE) // There is no option to combine bitflags like this on Windows
 #else
 #include <Windows.h>
 
-#define PROT_NONE       PAGE_NOACCESS
+#define PROT_NONE PAGE_NOACCESS
 #define PROT_READ_WRITE PAGE_READWRITE
 
-void mprotect(void *addr, size_t len, int prot) {
+void mprotect(void* addr, size_t len, int prot) {
     DWORD old_prot{};
     BOOL result = VirtualProtect(addr, len, prot, &old_prot);
     ASSERT_MSG(result != 0, "Region protection failed");
@@ -43,15 +44,14 @@ void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
     }
 }
 #else
-LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS *pExp) noexcept {
+LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const u32 ec = pExp->ExceptionRecord->ExceptionCode;
     if (ec == EXCEPTION_ACCESS_VIOLATION) {
         const auto info = pExp->ExceptionRecord->ExceptionInformation;
         if (info[0] == 1) { // Write violation
             g_texture_cache->OnCpuWrite(info[1]);
             return EXCEPTION_CONTINUE_EXECUTION;
-        }
-        else {
+        } else {
             UNREACHABLE();
         }
     }
