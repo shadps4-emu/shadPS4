@@ -77,13 +77,13 @@ void load(const std::filesystem::path& path) {
         }
     }
     if (data.contains("GPU")) {
-        auto generalResult = toml::expect<toml::value>(data.at("GPU"));
-        if (generalResult.is_ok()) {
-            auto general = generalResult.unwrap();
+        auto gpuResult = toml::expect<toml::value>(data.at("GPU"));
+        if (gpuResult.is_ok()) {
+            auto gpu = gpuResult.unwrap();
 
-            screenWidth = toml::find_or<toml::integer>(general, "screenWidth", screenWidth);
-            screenHeight = toml::find_or<toml::integer>(general, "screenHeight", screenHeight);
-            gpuId = toml::find_or<toml::integer>(general, "gpuId", 0);
+            screenWidth = toml::find_or<toml::integer>(gpu, "screenWidth", screenWidth);
+            screenHeight = toml::find_or<toml::integer>(gpu, "screenHeight", screenHeight);
+            gpuId = toml::find_or<toml::integer>(gpu, "gpuId", 0);
         }
     }
     if (data.contains("Debug")) {
