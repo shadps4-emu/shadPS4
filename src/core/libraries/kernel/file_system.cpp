@@ -156,7 +156,7 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::string dir_name = mnt->GetHostFile(path);
-    if (std::filesystem::is_directory(dir_name)) {
+    if (std::filesystem::exists(dir_name)) {
         return SCE_KERNEL_ERROR_EEXIST;
     }
 
@@ -164,7 +164,7 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
         return SCE_KERNEL_ERROR_EIO;
     }
 
-    if (!std::filesystem::is_directory(dir_name)) {
+    if (!std::filesystem::exists(dir_name)) {
         return SCE_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
