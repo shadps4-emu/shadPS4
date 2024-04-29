@@ -13,8 +13,8 @@
 namespace Common {
 
 NativeClock::NativeClock()
-    : rdtsc_frequency{EstimateRDTSCFrequency()}, ns_rdtsc_factor{GetFixedPoint64Factor(
-                                                     std::nano::den, rdtsc_frequency)},
+    : rdtsc_frequency{EstimateRDTSCFrequency()},
+      ns_rdtsc_factor{GetFixedPoint64Factor(std::nano::den, rdtsc_frequency)},
       us_rdtsc_factor{GetFixedPoint64Factor(std::micro::den, rdtsc_frequency)},
       ms_rdtsc_factor{GetFixedPoint64Factor(std::milli::den, rdtsc_frequency)} {}
 

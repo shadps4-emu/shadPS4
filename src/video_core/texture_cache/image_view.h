@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "video_core/pixel_format.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
 
@@ -25,29 +24,25 @@ enum class ImageViewType : u32 {
     Buffer,
 };
 
-enum class SwizzleSource : u32 {
-    Zero = 0,
-    One = 1,
-    R = 2,
-    G = 3,
-    B = 4,
-    A = 5,
-};
-
 struct ImageViewInfo {
-    ImageViewType type{};
-    PixelFormat format{};
+    vk::ImageViewType type{};
+    vk::Format format{};
     SubresourceRange range;
-    u8 x_source = static_cast<u8>(SwizzleSource::R);
-    u8 y_source = static_cast<u8>(SwizzleSource::G);
-    u8 z_source = static_cast<u8>(SwizzleSource::B);
-    u8 w_source = static_cast<u8>(SwizzleSource::A);
+    vk::ComponentMapping mapping{};
+
+    auto operator<=>(const ImageViewInfo&) const = default;
 };
 
-class ImageView {
+struct ImageView {
     explicit ImageView(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                        const ImageViewInfo& info, vk::Image image);
     ~ImageView();
+
+    ImageView(const ImageView&) = delete;
+    ImageView& operator=(const ImageView&) = delete;
+
+    ImageView(ImageView&&) = default;
+    ImageView& operator=(ImageView&&) = default;
 
     ImageId image_id{};
     Extent3D size{0, 0, 0};

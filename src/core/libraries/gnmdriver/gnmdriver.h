@@ -36,9 +36,9 @@ int PS4_SYSV_ABI sceGnmDispatchDirect();
 int PS4_SYSV_ABI sceGnmDispatchIndirect();
 int PS4_SYSV_ABI sceGnmDispatchIndirectOnMec();
 int PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState();
-s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmd, u64 size, u32 index_count, const void* index_addr,
+s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmd, u64 size, u32 index_count, uintptr_t index_addr,
                                  u32 flags, u32 type);
-int PS4_SYSV_ABI sceGnmDrawIndexAuto();
+int PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndexIndirect();
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti();
@@ -140,7 +140,7 @@ int PS4_SYSV_ABI sceGnmSetGsShader();
 int PS4_SYSV_ABI sceGnmSetHsShader();
 int PS4_SYSV_ABI sceGnmSetLsShader();
 int PS4_SYSV_ABI sceGnmSetPsShader();
-int PS4_SYSV_ABI sceGnmSetPsShader350();
+int PS4_SYSV_ABI sceGnmSetPsShader350(u32* cmdBuffer, u32 numDwords, const u32* psRegs);
 int PS4_SYSV_ABI sceGnmSetResourceRegistrationUserMemory();
 int PS4_SYSV_ABI sceGnmSetResourceUserData();
 int PS4_SYSV_ABI sceGnmSetSpiEnableSqCounters();
@@ -189,7 +189,8 @@ int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer2();
 int PS4_SYSV_ABI sceGnmSqttWaitForEvent();
 int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers();
 int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload();
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffers();
+int PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcbGpuAddrs[], u32* dcbSizesInBytes,
+                                            void* ccbGpuAddrs[], u32* ccbSizesInBytes);
 int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload();
 int PS4_SYSV_ABI sceGnmSubmitDone();
 int PS4_SYSV_ABI sceGnmUnmapComputeQueue();
