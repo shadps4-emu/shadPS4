@@ -48,12 +48,11 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index)
     ASSERT_MSG(num_physical_devices > 0, "No physical devices found");
 
     if (physical_device_index < 0) {
-        std::vector<vk::PhysicalDeviceProperties2> properties2{};
+        std::vector<std::pair<size_t, vk::PhysicalDeviceProperties2>> properties2{};
         for (auto const& physical : physical_devices) {
-            properties2.emplace_back(physical.getProperties2());
+            properties2.emplace_back(properties2.size(), physical.getProperties2());
         }
-        auto dev_prop2_pairs = std::views::zip(physical_devices, properties2);
-        std::sort(dev_prop2_pairs.begin(), dev_prop2_pairs.end(),
+        std::sort(properties2.begin(), properties2.end(),
                   [](const auto& left, const auto& right) {
                       if (std::get<1>(left).properties.deviceType ==
                           std::get<1>(right).properties.deviceType) {
@@ -62,7 +61,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index)
                       return std::get<1>(left).properties.deviceType ==
                              vk::PhysicalDeviceType::eDiscreteGpu;
                   });
-        physical_device = std::get<0>(dev_prop2_pairs[0]);
+        physical_device = physical_devices[std::get<0>(properties2[0])];
     } else {
         ASSERT_MSG(physical_device_index < num_physical_devices,
                    "Invalid physical device index {} provided when only {} devices exist",
