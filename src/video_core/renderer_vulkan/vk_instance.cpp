@@ -52,15 +52,13 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index)
         for (auto const& physical : physical_devices) {
             properties2.emplace_back(properties2.size(), physical.getProperties2());
         }
-        std::sort(properties2.begin(), properties2.end(),
-                  [](const auto& left, const auto& right) {
-                      if (std::get<1>(left).properties.deviceType ==
-                          std::get<1>(right).properties.deviceType) {
-                          return true;
-                      }
-                      return std::get<1>(left).properties.deviceType ==
-                             vk::PhysicalDeviceType::eDiscreteGpu;
-                  });
+        std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
+            if (std::get<1>(left).properties.deviceType ==
+                std::get<1>(right).properties.deviceType) {
+                return true;
+            }
+            return std::get<1>(left).properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+        });
         physical_device = physical_devices[std::get<0>(properties2[0])];
     } else {
         ASSERT_MSG(physical_device_index < num_physical_devices,
