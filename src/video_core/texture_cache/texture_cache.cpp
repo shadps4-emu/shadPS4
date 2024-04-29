@@ -48,9 +48,9 @@ LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         if (info[0] == 1) { // Write violation
             g_texture_cache->OnCpuWrite(info[1]);
             return EXCEPTION_CONTINUE_EXECUTION;
-        } else {
+        } /* else {
             UNREACHABLE();
-        }
+        }*/
     }
     return EXCEPTION_CONTINUE_SEARCH; // pass further
 }
@@ -59,10 +59,9 @@ LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 static constexpr u64 StreamBufferSize = 128_MB;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
-    : instance{instance_}, scheduler{scheduler_}, staging{instance, scheduler,
-                                                          vk::BufferUsageFlagBits::eTransferSrc,
-                                                          StreamBufferSize,
-                                                          Vulkan::BufferType::Upload} {
+    : instance{instance_}, scheduler{scheduler_},
+      staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
+              Vulkan::BufferType::Upload} {
 
 #ifndef _WIN64
     sigset_t signal_mask;
@@ -77,7 +76,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     guest_access_fault.sa_mask = signal_mask;
     sigaction(SIGSEGV, &guest_access_fault, nullptr);
 #else
-    veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
+    veh_handle = AddVectoredExceptionHandler(1, GuestFaultSignalHandler);
     ASSERT_MSG(veh_handle, "Failed to register an exception handler");
 #endif
     g_texture_cache = this;
