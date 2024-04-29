@@ -189,6 +189,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/alignment.h
            src/common/assert.cpp
            src/common/assert.h
+           src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
            src/common/config.cpp
@@ -262,7 +263,13 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/virtual_memory.h
 )
 
-set(VIDEO_CORE src/video_core/pixel_format.h
+set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
+               src/video_core/amdgpu/liverpool.h
+               src/video_core/amdgpu/pixel_format.cpp
+               src/video_core/amdgpu/pixel_format.h
+               src/video_core/amdgpu/pm4_cmds.h
+               src/video_core/amdgpu/pm4_opcodes.h
+               src/video_core/amdgpu/resource.h
                src/video_core/renderer_vulkan/renderer_vulkan.cpp
                src/video_core/renderer_vulkan/renderer_vulkan.h
                src/video_core/renderer_vulkan/vk_common.cpp

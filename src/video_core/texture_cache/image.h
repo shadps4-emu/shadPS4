@@ -6,7 +6,6 @@
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/videoout/buffer.h"
-#include "video_core/pixel_format.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
 
