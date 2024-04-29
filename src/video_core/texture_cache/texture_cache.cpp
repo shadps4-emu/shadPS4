@@ -132,10 +132,15 @@ void TextureCache::RefreshImage(Image& image) {
     image.flags &= ~ImageFlagBits::CpuModified;
 
     // Upload data to the staging buffer.
-    const auto [data, offset, _] = staging.Map(image.guest_size_bytes, 0);
-    ConvertTileToLinear(data, reinterpret_cast<const u8*>(image.cpu_addr), image.info.size.width,
-                        image.info.size.height, Config::isNeoMode());
-    staging.Commit(image.guest_size_bytes);
+    const auto [data, offset, _] = staging.Map(image.info.guest_size_bytes, 0);
+    const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
+    if (image.info.is_tiled) {
+        ConvertTileToLinear(data, image_data, image.info.size.width, image.info.size.height,
+                            Config::isNeoMode());
+    } else {
+        std::memcpy(data, image_data, image.info.guest_size_bytes);
+    }
+    staging.Commit(image.info.guest_size_bytes);
 
     // Copy to the image.
     const vk::BufferImageCopy image_copy = {
@@ -152,11 +157,43 @@ void TextureCache::RefreshImage(Image& image) {
         .imageExtent = {image.info.size.width, image.info.size.height, 1},
     };
 
-    const vk::Buffer src_buffer = staging.Handle();
-    const vk::Image dst_image = image.image;
-    scheduler.Record([src_buffer, dst_image, image_copy](vk::CommandBuffer cmdbuf) {
-        cmdbuf.copyBufferToImage(src_buffer, dst_image, vk::ImageLayout::eGeneral, image_copy);
-    });
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const vk::ImageSubresourceRange range = {
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+    const vk::ImageMemoryBarrier read_barrier = {
+        .srcAccessMask = vk::AccessFlagBits::eShaderRead,
+        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .oldLayout = vk::ImageLayout::eGeneral,
+        .newLayout = vk::ImageLayout::eTransferDstOptimal,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image.image,
+        .subresourceRange = range,
+    };
+    const vk::ImageMemoryBarrier write_barrier = {
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead,
+        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+        .newLayout = vk::ImageLayout::eGeneral,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image.image,
+        .subresourceRange = range,
+    };
+
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllGraphics,
+                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
+                           {}, {}, read_barrier);
+    cmdbuf.copyBufferToImage(staging.Handle(), image.image, vk::ImageLayout::eTransferDstOptimal,
+                             image_copy);
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                           vk::PipelineStageFlagBits::eAllGraphics,
+                           vk::DependencyFlagBits::eByRegion, {}, {}, write_barrier);
 }
 
 void TextureCache::RegisterImage(ImageId image_id) {
@@ -164,7 +201,7 @@ void TextureCache::RegisterImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
-    ForEachPage(image.cpu_addr, image.guest_size_bytes,
+    ForEachPage(image.cpu_addr, image.info.guest_size_bytes,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
 }
 
@@ -173,7 +210,7 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already registered image");
     image.flags &= ~ImageFlagBits::Registered;
-    ForEachPage(image.cpu_addr, image.guest_size_bytes, [this, image_id](u64 page) {
+    ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
         if (page_it == page_table.end()) {
             ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageBits);
@@ -195,7 +232,7 @@ void TextureCache::TrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags |= ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.guest_size_bytes, 1);
+    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
 }
 
 void TextureCache::UntrackImage(Image& image, ImageId image_id) {
@@ -203,7 +240,7 @@ void TextureCache::UntrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags &= ~ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.guest_size_bytes, -1);
+    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
 }
 
 void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {

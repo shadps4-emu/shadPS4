@@ -71,8 +71,7 @@ int main(int argc, char* argv[]) {
     if (!found) {
         Libraries::LibC::libcSymbolsRegister(&linker->getHLESymbols());
     }
-    std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
-                            nullptr);
+    std::thread mainthread([linker]() { linker->Execute(); });
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");

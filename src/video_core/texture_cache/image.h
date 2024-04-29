@@ -38,7 +38,8 @@ struct ImageInfo {
     vk::ImageType type = vk::ImageType::e1D;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
-    u32 pitch;
+    u32 pitch = 0;
+    u32 guest_size_bytes = 0;
 };
 
 struct Handle {
@@ -105,12 +106,9 @@ struct Image {
     ImageInfo info;
     UniqueImage image;
     vk::ImageAspectFlags aspect_mask;
-    u32 guest_size_bytes = 0;
-    size_t channel = 0;
     ImageFlagBits flags = ImageFlagBits::CpuModified;
     VAddr cpu_addr = 0;
     VAddr cpu_addr_end = 0;
-    u64 modification_tick = 0;
 };
 
 } // namespace VideoCore

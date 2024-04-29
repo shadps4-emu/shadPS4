@@ -65,15 +65,9 @@ if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
     set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
     if (WIN32)
-        if(MINGW)
-            add_custom_target(clang-format
-                COMMAND find `cygpath -u ${SRCS}` -iname *.h -o -iname *.cpp -o -iname *.mm | xargs `cygpath -u ${CLANG_FORMAT}` -i
-                COMMENT ${CCOMMENT})
-        else()
-            add_custom_target(clang-format
-                COMMAND powershell.exe -Command "Get-ChildItem '${SRCS}/*' -Include *.cpp,*.h,*.mm -Recurse | Foreach {&'${CLANG_FORMAT}' -i $_.fullname}"
-                COMMENT ${CCOMMENT})
-        endif()
+        add_custom_target(clang-format
+            COMMAND powershell.exe -Command "Get-ChildItem '${SRCS}/*' -Include *.cpp,*.h,*.mm -Recurse | Foreach {&'${CLANG_FORMAT}' -i $_.fullname}"
+            COMMENT ${CCOMMENT})
     else()
         add_custom_target(clang-format
             COMMAND find ${SRCS} -iname *.h -o -iname *.cpp -o -iname *.mm | xargs ${CLANG_FORMAT} -i
@@ -214,6 +208,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/native_clock.h
            src/common/path_util.cpp
            src/common/path_util.h
+           src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/singleton.h
@@ -387,6 +382,8 @@ if (WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
     add_definitions(-D_TIMESPEC_DEFINED) #needed for conflicts with time.h of windows.h
+    # Target Windows 10 RS5
+    add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
 endif()
 
 if(WIN32)

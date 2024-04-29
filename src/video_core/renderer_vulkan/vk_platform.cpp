@@ -4,7 +4,7 @@
 // Include the vulkan platform specific header
 #if defined(ANDROID)
 #define VK_USE_PLATFORM_ANDROID_KHR
-#elif defined(WIN32)
+#elif defined(_WIN64)
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif defined(__APPLE__)
 #define VK_USE_PLATFORM_METAL_EXT

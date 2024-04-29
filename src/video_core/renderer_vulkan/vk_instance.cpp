@@ -129,7 +129,8 @@ bool Instance::CreateDevice() {
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+    custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+    index_type_uint8 = add_extension(VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -176,15 +177,8 @@ bool Instance::CreateDevice() {
                 .shaderClipDistance = features.shaderClipDistance,
             },
         },
-        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR{
+        vk::PhysicalDeviceVulkan12Features{
             .timelineSemaphore = true,
-        },
-        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{
-            .extendedDynamicState = true,
-        },
-        vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT{
-            .extendedDynamicState2 = true,
-            .extendedDynamicState2LogicOp = true,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
@@ -194,6 +188,10 @@ bool Instance::CreateDevice() {
             .indexTypeUint8 = true,
         },
     };
+
+    if (!index_type_uint8) {
+        device_chain.unlink<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>();
+    }
 
     try {
         device = physical_device.createDeviceUnique(device_chain.get());
