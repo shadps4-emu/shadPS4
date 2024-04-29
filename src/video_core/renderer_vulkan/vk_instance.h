@@ -18,7 +18,7 @@ namespace Vulkan {
 class Instance {
 public:
     explicit Instance(bool validation = false, bool dump_command_buffers = false);
-    explicit Instance(Frontend::WindowSDL& window, u32 physical_device_index);
+    explicit Instance(Frontend::WindowSDL& window, s32 physical_device_index);
     ~Instance();
 
     /// Returns a formatted string for the driver version
