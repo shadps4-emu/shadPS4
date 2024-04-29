@@ -6,7 +6,7 @@
 #include <cstddef>
 #include "common/types.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 int PS4_SYSV_ABI ps4_memcmp(const void* s1, const void* s2, size_t n);
 void* PS4_SYSV_ABI ps4_memcpy(void* dest, const void* src, size_t n);
@@ -21,4 +21,4 @@ char* PS4_SYSV_ABI ps4_strrchr(const char* s, int c);
 int PS4_SYSV_ABI ps4_strncmp(const char* s1, const char* s2, size_t n);
 char* PS4_SYSV_ABI ps4_strdup(const char* str1);
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

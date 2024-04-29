@@ -4,7 +4,7 @@
 #include <cmath>
 #include "core/libraries/libc/libc_math.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 float PS4_SYSV_ABI ps4_atan2f(float y, float x) {
     return atan2f(y, x);
@@ -38,4 +38,4 @@ double PS4_SYSV_ABI ps4_exp2(double arg) {
     return exp2(arg);
 }
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

@@ -74,7 +74,7 @@ void GameController::addState(const State& state) {
     m_states_num++;
 }
 
-void GameController::checKButton(int id, u32 button, bool isPressed) {
+void GameController::checkButton(int id, u32 button, bool isPressed) {
     std::scoped_lock lock{m_mutex};
     auto state = getLastState();
     state.time = Libraries::Kernel::sceKernelGetProcessTime();

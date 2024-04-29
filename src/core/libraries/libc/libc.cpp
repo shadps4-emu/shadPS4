@@ -13,7 +13,7 @@
 #include "core/libraries/libc/libc_string.h"
 #include "core/libraries/libs.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 constexpr bool log_file_libc = true; // disable it to disable logging
 static u32 g_need_sceLibc = 1;
@@ -421,7 +421,7 @@ const PS4_SYSV_ABI u16* ps4__Getpctype() {
     return &characterTypeTable[0];
 }
 
-void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
+void libcSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     // cxa functions
     LIB_FUNCTION("3GPpjQdAMTw", "libc", 1, "libc", 1, 1, ps4___cxa_guard_acquire);
     LIB_FUNCTION("9rAeANT2tyE", "libc", 1, "libc", 1, 1, ps4___cxa_guard_release);
@@ -490,4 +490,4 @@ void libcSymbolsRegister(Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sUP1hBaouOw", "libc", 1, "libc", 1, 1, ps4__Getpctype);
 }
 
-}; // namespace Core::Libraries::LibC
+}; // namespace Libraries::LibC

@@ -7,7 +7,7 @@
 // adapted from
 // https://opensource.apple.com/source/libcppabi/libcppabi-14/src/cxa_guard.cxx.auto.html
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 // This file implements the __cxa_guard_* functions as defined at:
 //     http://www.codesourcery.com/public/cxx-abi/abi.html
@@ -158,4 +158,4 @@ void PS4_SYSV_ABI ps4___cxa_guard_abort(u64* guard_object) {
     setNotInUse(guard_object);
 }
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

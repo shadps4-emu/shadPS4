@@ -5,7 +5,7 @@
 #include "common/assert.h"
 #include "core/libraries/libc/libc_stdlib.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 void PS4_SYSV_ABI ps4_exit(int code) {
     std::exit(code);
@@ -42,4 +42,4 @@ int PS4_SYSV_ABI ps4_rand() {
     return std::rand();
 }
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

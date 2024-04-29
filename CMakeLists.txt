@@ -65,15 +65,9 @@ if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
     set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
     if (WIN32)
-        if(MINGW)
-            add_custom_target(clang-format
-                COMMAND find `cygpath -u ${SRCS}` -iname *.h -o -iname *.cpp -o -iname *.mm | xargs `cygpath -u ${CLANG_FORMAT}` -i
-                COMMENT ${CCOMMENT})
-        else()
-            add_custom_target(clang-format
-                COMMAND powershell.exe -Command "Get-ChildItem '${SRCS}/*' -Include *.cpp,*.h,*.mm -Recurse | Foreach {&'${CLANG_FORMAT}' -i $_.fullname}"
-                COMMENT ${CCOMMENT})
-        endif()
+        add_custom_target(clang-format
+            COMMAND powershell.exe -Command "Get-ChildItem '${SRCS}/*' -Include *.cpp,*.h,*.mm -Recurse | Foreach {&'${CLANG_FORMAT}' -i $_.fullname}"
+            COMMENT ${CCOMMENT})
     else()
         add_custom_target(clang-format
             COMMAND find ${SRCS} -iname *.h -o -iname *.cpp -o -iname *.mm | xargs ${CLANG_FORMAT} -i
@@ -155,6 +149,13 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/userservice.h
 )
 
+set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
+                 src/core/libraries/videoout/driver.cpp
+                 src/core/libraries/videoout/driver.h
+                 src/core/libraries/videoout/video_out.cpp
+                 src/core/libraries/videoout/video_out.h
+)
+
 set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc/libc.h
                  src/core/libraries/libc/printf.h
@@ -185,6 +186,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/logging/text_formatter.cpp
            src/common/logging/text_formatter.h
            src/common/logging/types.h
+           src/common/alignment.h
            src/common/assert.cpp
            src/common/assert.h
            src/common/bounded_threadsafe_queue.h
@@ -197,6 +199,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/discord.cpp
            src/common/discord.h
            src/common/endian.h
+           src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/error.cpp
@@ -205,6 +208,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/native_clock.h
            src/common/path_util.cpp
            src/common/path_util.h
+           src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/singleton.h
@@ -249,6 +253,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${LIBC_SOURCES}
          ${PAD_LIB}
+         ${VIDEOOUT_LIB}
          src/core/linker.cpp
          src/core/linker.h
          src/core/tls.cpp
@@ -257,21 +262,39 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/virtual_memory.h
 )
 
-set(VIDEO_CORE src/core/PS4/HLE/Graphics/video_out.cpp
-               src/core/PS4/HLE/Graphics/video_out.h
-               src/core/PS4/HLE/Graphics/Objects/video_out_ctx.cpp
-               src/core/PS4/HLE/Graphics/Objects/video_out_ctx.h
-               src/core/PS4/HLE/Graphics/graphics_ctx.h
-               src/core/PS4/GPU/gpu_memory.cpp
-               src/core/PS4/GPU/gpu_memory.h
-               src/core/PS4/GPU/video_out_buffer.cpp
-               src/core/PS4/GPU/video_out_buffer.h
-               src/core/PS4/HLE/Graphics/graphics_render.cpp
-               src/core/PS4/HLE/Graphics/graphics_render.h
-               src/core/PS4/GPU/tile_manager.cpp
-               src/core/PS4/GPU/tile_manager.h
-               src/vulkan_util.cpp
-               src/vulkan_util.h
+set(VIDEO_CORE src/video_core/pixel_format.h
+               src/video_core/renderer_vulkan/renderer_vulkan.cpp
+               src/video_core/renderer_vulkan/renderer_vulkan.h
+               src/video_core/renderer_vulkan/vk_common.cpp
+               src/video_core/renderer_vulkan/vk_common.h
+               src/video_core/renderer_vulkan/vk_descriptor_update_queue.cpp
+               src/video_core/renderer_vulkan/vk_descriptor_update_queue.h
+               src/video_core/renderer_vulkan/vk_instance.cpp
+               src/video_core/renderer_vulkan/vk_instance.h
+               src/video_core/renderer_vulkan/vk_master_semaphore.cpp
+               src/video_core/renderer_vulkan/vk_master_semaphore.h
+               src/video_core/renderer_vulkan/vk_platform.cpp
+               src/video_core/renderer_vulkan/vk_platform.h
+               src/video_core/renderer_vulkan/vk_resource_pool.cpp
+               src/video_core/renderer_vulkan/vk_resource_pool.h
+               src/video_core/renderer_vulkan/vk_scheduler.cpp
+               src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_shader_util.cpp
+               src/video_core/renderer_vulkan/vk_shader_util.h
+               src/video_core/renderer_vulkan/vk_stream_buffer.cpp
+               src/video_core/renderer_vulkan/vk_stream_buffer.h
+               src/video_core/renderer_vulkan/vk_swapchain.cpp
+               src/video_core/renderer_vulkan/vk_swapchain.h
+               src/video_core/texture_cache/image.cpp
+               src/video_core/texture_cache/image.h
+               src/video_core/texture_cache/image_view.cpp
+               src/video_core/texture_cache/image_view.h
+               src/video_core/texture_cache/slot_vector.h
+               src/video_core/texture_cache/texture_cache.cpp
+               src/video_core/texture_cache/texture_cache.h
+               src/video_core/texture_cache/tile_manager.cpp
+               src/video_core/texture_cache/tile_manager.h
+               src/video_core/texture_cache/types.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -282,7 +305,8 @@ set(INPUT src/input/controller.cpp
 
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
-    set(QT_GUI 
+
+set(QT_GUI 
     src/qt_gui/main_window_ui.h
     src/qt_gui/main_window.cpp
     src/qt_gui/main_window.h
@@ -318,8 +342,8 @@ qt_add_executable(shadps4
     ${COMMON}
     ${CORE}
     ${VIDEO_CORE}
-    src/emulator.cpp
-    src/emulator.h
+    src/sdl_window.h
+    src/sdl_window.cpp
 )
 else()
 add_executable(shadps4
@@ -329,15 +353,15 @@ add_executable(shadps4
     ${CORE}
     ${VIDEO_CORE}
     src/main.cpp
-    src/emulator.cpp
-    src/emulator.h
+    src/sdl_window.h
+    src/sdl_window.cpp
 )
 endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 SDL3-shared)
-target_link_libraries(shadps4 PRIVATE discord-rpc vulkan-1 xxhash Zydis)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map)
+target_link_libraries(shadps4 PRIVATE discord-rpc boost vma vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
 if(NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3-shared)
@@ -358,6 +382,8 @@ if (WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
     add_definitions(-D_TIMESPEC_DEFINED) #needed for conflicts with time.h of windows.h
+    # Target Windows 10 RS5
+    add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
 endif()
 
 if(WIN32)

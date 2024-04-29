@@ -12,14 +12,17 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
-#include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libc/libc.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
 #include "core/tls.h"
-#include "emulator.h"
+#include "input/controller.h"
+#include "sdl_window.h"
+
+Frontend::WindowSDL* g_window;
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
@@ -31,10 +34,12 @@ int main(int argc, char* argv[]) {
     Common::Log::Initialize();
     Common::Log::Start();
     Libraries::Kernel::init_pthreads();
-    auto width = Config::getScreenWidth();
-    auto height = Config::getScreenHeight();
-    Emu::emuInit(width, height);
-    HLE::Libs::Graphics::VideoOut::videoOutInit(width, height);
+    s32 width = Config::getScreenWidth();
+    s32 height = Config::getScreenHeight();
+
+    auto* controller = Common::Singleton<Input::GameController>::Instance();
+    Frontend::WindowSDL window{width, height, controller};
+    g_window = &window;
 
     // Argument 1 is the path of self file to boot
     const char* const path = argv[1];
@@ -47,7 +52,8 @@ int main(int argc, char* argv[]) {
     Libraries::InitHLELibs(&linker->getHLESymbols());
     Core::InstallTlsHandler();
     linker->LoadModule(path);
-    // check if there is a libc.prx in sce_module folder
+
+    // Check if there is a libc.prx in sce_module folder
     bool found = false;
     if (Config::isLleLibc()) {
         std::filesystem::path sce_module_folder = p.parent_path() / "sce_module";
@@ -62,16 +68,21 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    if (!found) // load HLE libc
-    {
-        Core::Libraries::LibC::libcSymbolsRegister(&linker->getHLESymbols());
+    if (!found) {
+        Libraries::LibC::libcSymbolsRegister(&linker->getHLESymbols());
     }
-    std::jthread mainthread([linker](std::stop_token stop_token, void*) { linker->Execute(); },
-                            nullptr);
+    std::thread mainthread([linker]() { linker->Execute(); });
     Discord::RPC discordRPC;
     discordRPC.init();
     discordRPC.update(Discord::RPCStatus::Idling, "");
-    Emu::emuRun();
+
+    static constexpr std::chrono::microseconds FlipPeriod{100000};
+
+    while (window.isOpen()) {
+        window.waitEvent();
+        Libraries::VideoOut::Flip(FlipPeriod);
+        Libraries::VideoOut::Vblank();
+    }
 
     discordRPC.stop();
     return 0;

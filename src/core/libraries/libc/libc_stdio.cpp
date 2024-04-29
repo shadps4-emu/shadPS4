@@ -6,7 +6,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/libc/libc_stdio.h"
 
-namespace Core::Libraries::LibC {
+namespace Libraries::LibC {
 
 std::FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -70,4 +70,4 @@ int PS4_SYSV_ABI ps4_puts(const char* s) {
     return std::puts(s);
 }
 
-} // namespace Core::Libraries::LibC
+} // namespace Libraries::LibC

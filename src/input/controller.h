@@ -23,7 +23,7 @@ public:
     void readState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
     State getLastState() const;
-    void checKButton(int id, u32 button, bool isPressed);
+    void checkButton(int id, u32 button, bool isPressed);
     void addState(const State& state);
 
 private:

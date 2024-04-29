@@ -1,22 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <mutex>
-#include "common/singleton.h"
-#include "core/PS4/GPU/tile_manager.h"
+#include <cstring>
+#include "video_core/texture_cache/tile_manager.h"
 
-namespace GPU {
+namespace VideoCore {
 
 static u32 IntLog2(u32 i) {
     return 31 - __builtin_clz(i | 1u);
 }
-
-class TileManager {
-public:
-    TileManager() {}
-    virtual ~TileManager() {}
-    std::mutex m_mutex;
-};
 
 class TileManager32 {
 public:
@@ -148,13 +140,9 @@ public:
     }
 };
 
-void convertTileToLinear(void* dst, const void* src, u32 width, u32 height, bool is_neo) {
+void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool is_neo) {
     TileManager32 t;
     t.Init(width, height, is_neo);
-
-    auto* g_TileManager = Common::Singleton<TileManager>::Instance();
-
-    std::scoped_lock lock{g_TileManager->m_mutex};
 
     for (u32 y = 0; y < height; y++) {
         u32 x = 0;
@@ -163,16 +151,14 @@ void convertTileToLinear(void* dst, const void* src, u32 width, u32 height, bool
         for (; x + 1 < width; x += 2) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
 
-            *reinterpret_cast<u64*>(static_cast<u8*>(dst) + linear_offset) =
-                *reinterpret_cast<const u64*>(static_cast<const u8*>(src) + tiled_offset);
+            std::memcpy(dst + linear_offset, src + tiled_offset, sizeof(u64));
             linear_offset += 8;
         }
         if (x < width) {
             auto tiled_offset = t.getTiledOffs(x, y, is_neo);
-
-            *reinterpret_cast<u32*>(static_cast<u8*>(dst) + linear_offset) =
-                *reinterpret_cast<const u32*>(static_cast<const u8*>(src) + tiled_offset);
+            std::memcpy(dst + linear_offset, src + tiled_offset, sizeof(u32));
         }
     }
 }
-} // namespace GPU
+
+} // namespace VideoCore

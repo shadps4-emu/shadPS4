@@ -2,20 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
-#include "core/PS4/GPU/gpu_memory.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/physical_memory.h"
 #include "core/virtual_memory.h"
 
 namespace Libraries::Kernel {
-
-bool is16KBAligned(u64 n) {
-    return ((n % (16ull * 1024) == 0));
-}
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_WARNING(Kernel_Vmm, "called");
@@ -34,11 +30,11 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         return SCE_KERNEL_ERROR_EINVAL;
     }
     const bool is_in_range = (searchStart < len && searchEnd > len);
-    if (len <= 0 || !is16KBAligned(len) || !is_in_range) {
+    if (len <= 0 || !Common::is16KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if ((alignment != 0 || is16KBAligned(alignment)) && !std::has_single_bit(alignment)) {
+    if ((alignment != 0 || Common::is16KBAligned(alignment)) && !std::has_single_bit(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -66,23 +62,22 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         "len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, alignment = {:#x}",
         len, prot, flags, directMemoryStart, alignment);
 
-    if (len == 0 || !is16KBAligned(len)) {
+    if (len == 0 || !Common::is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (!is16KBAligned(directMemoryStart)) {
+    if (!Common::is16KBAligned(directMemoryStart)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
-        if ((!std::has_single_bit(alignment) && !is16KBAligned(alignment))) {
+        if ((!std::has_single_bit(alignment) && !Common::is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
             return SCE_KERNEL_ERROR_EINVAL;
         }
     }
 
     VirtualMemory::MemoryMode cpu_mode = VirtualMemory::MemoryMode::NoAccess;
-    GPU::MemoryMode gpu_mode = GPU::MemoryMode::NoAccess;
 
     switch (prot) {
     case 0x03:
@@ -91,7 +86,6 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     case 0x32:
     case 0x33: // SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
         cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
-        gpu_mode = GPU::MemoryMode::ReadWrite;
         break;
     default:
         UNREACHABLE();
@@ -112,13 +106,10 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     }
 
     auto* physical_memory = Common::Singleton<PhysicalMemory>::Instance();
-    if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode, gpu_mode)) {
+    if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode)) {
         UNREACHABLE();
     }
 
-    if (gpu_mode != GPU::MemoryMode::NoAccess) {
-        GPU::memorySetAllocArea(out_addr, len);
-    }
     return SCE_OK;
 }
 

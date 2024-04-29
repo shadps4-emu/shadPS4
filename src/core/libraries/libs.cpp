@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
-#include "core/PS4/HLE/Graphics/video_out.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
@@ -22,16 +21,17 @@
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
+#include "core/libraries/videoout/video_out.h"
 
 namespace Libraries {
 
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::LibKernel_Register(sym);
-    HLE::Libs::Graphics::VideoOut::videoOutRegisterLib(sym);
+    Libraries::VideoOut::RegisterLib(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
     Libraries::LibPad::padSymbolsRegister(sym);
     if (!Config::isLleLibc()) {
-        Core::Libraries::LibC::libcSymbolsRegister(sym);
+        Libraries::LibC::libcSymbolsRegister(sym);
     }
 
     // New libraries folder from autogen
