@@ -37,7 +37,7 @@ endfunction()
 # against all the src files. This should be used before making a pull request.
 # =======================================================================
 
-set(CLANG_FORMAT_POSTFIX "-15")
+set(CLANG_FORMAT_POSTFIX "-17")
 find_program(CLANG_FORMAT
     NAMES clang-format${CLANG_FORMAT_POSTFIX}
           clang-format

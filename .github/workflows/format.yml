@@ -17,7 +17,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install
-        run: sudo apt-get install clang-format-15
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main'
+          sudo apt update
+          sudo apt install clang-format-17
       - name: Build
         env:
           COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
