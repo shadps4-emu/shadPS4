@@ -12,7 +12,7 @@ namespace Config {
 bool isNeo = false;
 u32 screenWidth = 1280;
 u32 screenHeight = 720;
-u32 gpuId = 0; // Vulkan physical device no
+s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 std::string logFilter;
 std::string logType = "sync";
 bool isDebugDump = false;
@@ -33,7 +33,7 @@ u32 getScreenHeight() {
     return screenHeight;
 }
 
-u32 getGpuId() {
+s32 getGpuId() {
     return gpuId;
 }
 

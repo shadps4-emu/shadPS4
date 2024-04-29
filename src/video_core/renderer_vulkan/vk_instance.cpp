@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <ranges>
 #include <span>
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -39,16 +40,34 @@ Instance::Instance(bool enable_validation, bool dump_command_buffers)
                               dump_command_buffers)},
       physical_devices{instance->enumeratePhysicalDevices()} {}
 
-Instance::Instance(Frontend::WindowSDL& window, u32 physical_device_index)
+Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index)
     : instance{CreateInstance(dl, window.getWindowInfo().type, true, false)},
-      debug_callback{CreateDebugCallback(*instance)}, physical_devices{
-                                                          instance->enumeratePhysicalDevices()} {
+      debug_callback{CreateDebugCallback(*instance)},
+      physical_devices{instance->enumeratePhysicalDevices()} {
     const std::size_t num_physical_devices = static_cast<u16>(physical_devices.size());
-    ASSERT_MSG(physical_device_index < num_physical_devices,
-               "Invalid physical device index {} provided when only {} devices exist",
-               physical_device_index, num_physical_devices);
+    ASSERT_MSG(num_physical_devices > 0, "No physical devices found");
 
-    physical_device = physical_devices[physical_device_index];
+    if (physical_device_index < 0) {
+        std::vector<std::pair<size_t, vk::PhysicalDeviceProperties2>> properties2{};
+        for (auto const& physical : physical_devices) {
+            properties2.emplace_back(properties2.size(), physical.getProperties2());
+        }
+        std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
+            if (std::get<1>(left).properties.deviceType ==
+                std::get<1>(right).properties.deviceType) {
+                return true;
+            }
+            return std::get<1>(left).properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+        });
+        physical_device = physical_devices[std::get<0>(properties2[0])];
+    } else {
+        ASSERT_MSG(physical_device_index < num_physical_devices,
+                   "Invalid physical device index {} provided when only {} devices exist",
+                   physical_device_index, num_physical_devices);
+
+        physical_device = physical_devices[physical_device_index];
+    }
+
     available_extensions = GetSupportedExtensions(physical_device);
     properties = physical_device.getProperties();
     if (properties.apiVersion < TargetVulkanApiVersion) {
