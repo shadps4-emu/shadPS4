@@ -175,28 +175,18 @@ public:
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
 
+        const Entry entry = {
+            .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
+            .log_class = log_class,
+            .log_level = log_level,
+            .filename = filename,
+            .line_num = line_num,
+            .function = function,
+            .message = std::move(message),
+        };
         if (Config::getLogType() == "async") {
-
-            message_queue.EmplaceWait(Entry{
-                .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
-                .log_class = log_class,
-                .log_level = log_level,
-                .filename = filename,
-                .line_num = line_num,
-                .function = function,
-                .message = std::move(message),
-            });
+            message_queue.EmplaceWait(entry);
         } else {
-
-            const Entry entry = {
-                .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
-                .log_class = log_class,
-                .log_level = log_level,
-                .filename = filename,
-                .line_num = line_num,
-                .function = function,
-                .message = std::move(message),
-            };
             ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
         }
     }
@@ -239,7 +229,7 @@ private:
     }
 
     void ForEachBackend(auto lambda) {
-        lambda(debugger_backend);
+        // lambda(debugger_backend);
         lambda(color_console_backend);
         lambda(file_backend);
     }

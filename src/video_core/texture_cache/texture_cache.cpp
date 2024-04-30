@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
 #include "common/assert.h"
 #include "common/config.h"
 #include "core/libraries/videoout/buffer.h"
+#include "core/virtual_memory.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
@@ -15,7 +17,7 @@
 #define PAGE_NOACCESS PROT_NONE
 #define PAGE_READWRITE (PROT_READ | PROT_WRITE)
 #else
-#include <Windows.h>
+#include <windows.h>
 
 void mprotect(void* addr, size_t len, int prot) {
     DWORD old_prot{};
@@ -57,6 +59,7 @@ LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 #endif
 
 static constexpr u64 StreamBufferSize = 128_MB;
+static constexpr u64 PageShift = 12;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
     : instance{instance_}, scheduler{scheduler_},
@@ -76,7 +79,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     guest_access_fault.sa_mask = signal_mask;
     sigaction(SIGSEGV, &guest_access_fault, nullptr);
 #else
-    veh_handle = AddVectoredExceptionHandler(1, GuestFaultSignalHandler);
+    veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
     ASSERT_MSG(veh_handle, "Failed to register an exception handler");
 #endif
     g_texture_cache = this;
@@ -243,8 +246,8 @@ void TextureCache::UntrackImage(Image& image, ImageId image_id) {
 }
 
 void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
-    const u64 num_pages = ((addr + size - 1) >> PageBits) - (addr >> PageBits) + 1;
-    const u64 page_start = addr >> PageBits;
+    const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
+    const u64 page_start = addr >> PageShift;
     const u64 page_end = page_start + num_pages;
 
     const auto pages_interval =
@@ -256,8 +259,8 @@ void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
     const auto& range = cached_pages.equal_range(pages_interval);
     for (const auto& [range, count] : boost::make_iterator_range(range)) {
         const auto interval = range & pages_interval;
-        const VAddr interval_start_addr = boost::icl::first(interval) << PageBits;
-        const VAddr interval_end_addr = boost::icl::last_next(interval) << PageBits;
+        const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
+        const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
         const u32 interval_size = interval_end_addr - interval_start_addr;
         void* addr = reinterpret_cast<void*>(interval_start_addr);
         if (delta > 0 && count == delta) {

@@ -341,46 +341,46 @@ set(QT_GUI
     )
 endif()
 
-if(ENABLE_QT_GUI)
-qt_add_executable(shadps4
-    ${AUDIO_CORE}
-    ${INPUT}
-    ${QT_GUI}
-    ${COMMON}
-    ${CORE}
-    ${VIDEO_CORE}
-    src/sdl_window.h
-    src/sdl_window.cpp
-)
+if (ENABLE_QT_GUI)
+    qt_add_executable(shadps4
+        ${AUDIO_CORE}
+        ${INPUT}
+        ${QT_GUI}
+        ${COMMON}
+        ${CORE}
+        ${VIDEO_CORE}
+        src/sdl_window.h
+        src/sdl_window.cpp
+    )
 else()
-add_executable(shadps4
-    ${AUDIO_CORE}
-    ${INPUT}
-    ${COMMON}
-    ${CORE}
-    ${VIDEO_CORE}
-    src/main.cpp
-    src/sdl_window.h
-    src/sdl_window.cpp
-)
+    add_executable(shadps4
+        ${AUDIO_CORE}
+        ${INPUT}
+        ${COMMON}
+        ${CORE}
+        ${VIDEO_CORE}
+        src/main.cpp
+        src/sdl_window.h
+        src/sdl_window.cpp
+    )
 endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak)
 target_link_libraries(shadps4 PRIVATE discord-rpc boost vma vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
-if(NOT ENABLE_QT_GUI)
+if (NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3-shared)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     target_link_libraries(shadps4 PRIVATE cryptoppwin zlib)
 else()
     target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib)
 endif()
 
-if(ENABLE_QT_GUI)
+if (ENABLE_QT_GUI)
    target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent)
 endif()
 
@@ -388,22 +388,24 @@ if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
-    add_definitions(-D_TIMESPEC_DEFINED) #needed for conflicts with time.h of windows.h
+    if (MSVC)
+        # Needed for conflicts with time.h of windows.h
+        add_definitions(-D_TIMESPEC_DEFINED)
+    endif()
     # Target Windows 10 RS5
     add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
 endif()
 
-if(WIN32)
+if (WIN32)
     target_sources(shadps4 PRIVATE src/shadps4.rc)
 endif()
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(ENABLE_QT_GUI)
-set_target_properties(shadps4 PROPERTIES
-    WIN32_EXECUTABLE ON
-    MACOSX_BUNDLE ON
-)
+if (ENABLE_QT_GUI)
+    set_target_properties(shadps4 PROPERTIES
+        WIN32_EXECUTABLE ON
+        MACOSX_BUNDLE ON)
 endif()
 
 add_custom_command(TARGET shadps4 POST_BUILD
