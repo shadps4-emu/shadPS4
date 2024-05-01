@@ -3,6 +3,7 @@
 
 #include <Zydis/Zydis.h>
 #include <common/assert.h>
+#include <xbyak/xbyak.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -94,12 +95,17 @@ void Linker::LoadModuleToMemory(Module* m) {
                            0x1000; // align base size to 0x1000 block size (TODO is that the default
                                    // block size or it can be changed?
 
-    m->base_virtual_addr = VirtualMemory::memory_alloc(LoadAddress, m->aligned_base_size,
-                                                       VirtualMemory::MemoryMode::ExecuteReadWrite);
+    static constexpr u64 TrampolineSize = 8_MB;
+    m->base_virtual_addr =
+        VirtualMemory::memory_alloc(LoadAddress, m->aligned_base_size + TrampolineSize,
+                                    VirtualMemory::MemoryMode::ExecuteReadWrite);
 
     LoadAddress += CODE_BASE_INCR * (1 + m->aligned_base_size / CODE_BASE_INCR);
 
-    LOG_INFO(Core_Linker, "====Load Module to Memory ========");
+    void* trampoline_addr = reinterpret_cast<void*>(m->base_virtual_addr + m->aligned_base_size);
+    Xbyak::CodeGenerator c(TrampolineSize, trampoline_addr);
+
+    LOG_INFO(Core_Linker, "======== Load Module to Memory ========");
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", m->base_virtual_addr);
     LOG_INFO(Core_Linker, "base_size ..............: {:#018x}", base_size);
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", m->aligned_base_size);
@@ -123,7 +129,7 @@ void Linker::LoadModuleToMemory(Module* m) {
                 m->elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
 
                 if (elf_pheader[i].p_flags & PF_EXEC) {
-                    PatchTLS(segment_addr, segment_file_size);
+                    PatchTLS(segment_addr, segment_file_size, c);
                 }
             } else {
                 LOG_ERROR(Core_Linker, "p_memsz==0 in type {}",
@@ -153,8 +159,8 @@ void Linker::LoadModuleToMemory(Module* m) {
         case PT_TLS:
             m->tls.image_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
             m->tls.image_size = GetAlignedSize(elf_pheader[i]);
-            LOG_INFO(Core_Linker, "tls virtual address ={:#x}", m->tls.image_virtual_addr);
-            LOG_INFO(Core_Linker, "tls image size      ={}", m->tls.image_size);
+            LOG_INFO(Core_Linker, "TLS virtual address = {:#x}", m->tls.image_virtual_addr);
+            LOG_INFO(Core_Linker, "TLS image size      = {}", m->tls.image_size);
             break;
         case PT_SCE_PROCPARAM:
             m->proc_param_virtual_addr = elf_pheader[i].p_vaddr + m->base_virtual_addr;
@@ -662,7 +668,7 @@ static void RunMainEntry(u64 addr, EntryParams* params, exit_func_t exit_func) {
                              // there's no coming back
                  :
                  : "r"(addr), "r"(params), "r"(exit_func)
-                 : "rax", "rsi", "rdi", "rsp");
+                 : "rax", "rsi", "rdi");
 }
 
 void Linker::Execute() {
@@ -681,9 +687,13 @@ void Linker::Execute() {
     p.argv[0] = "eboot.bin"; // hmm should be ok?
 
     for (auto& m : m_modules) {
-        if (!m->elf.IsSharedLib()) {
-            RunMainEntry(m->elf.GetElfEntry() + m->base_virtual_addr, &p, ProgramExitFunc);
+        if (m->elf.IsSharedLib()) {
+            continue;
         }
+        if (m->tls.image_virtual_addr != 0) {
+            SetTLSStorage(m->tls.image_virtual_addr);
+        }
+        RunMainEntry(m->elf.GetElfEntry() + m->base_virtual_addr, &p, ProgramExitFunc);
     }
 }
 

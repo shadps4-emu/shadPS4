@@ -62,4 +62,7 @@ set(ENABLE_OPT OFF CACHE BOOL "")
 add_subdirectory(glslang)
 
 # Robin-map
-add_subdirectory(robin-map)
+add_subdirectory(robin-map EXCLUDE_FROM_ALL)
+
+# Xbyak
+add_subdirectory(xbyak EXCLUDE_FROM_ALL)

@@ -50,7 +50,6 @@ int main(int argc, char* argv[]) {
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
     Libraries::InitHLELibs(&linker->getHLESymbols());
-    Core::InstallTlsHandler();
     linker->LoadModule(path);
 
     // Check if there is a libc.prx in sce_module folder

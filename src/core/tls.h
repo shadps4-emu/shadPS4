@@ -5,12 +5,16 @@
 
 #include "common/types.h"
 
+namespace Xbyak {
+class CodeGenerator;
+}
+
 namespace Core {
 
-/// Installs a host exception handler to handle guest TLS access.
-void InstallTlsHandler();
+/// Sets the data pointer that contains the TLS image.
+void SetTLSStorage(u64 image_address);
 
-/// Patches any instructions that access TLS to trigger the exception handler.
-void PatchTLS(u64 segment_addr, u64 segment_size);
+/// Patches any instructions that access guest TLS to use provided storage.
+void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c);
 
 } // namespace Core

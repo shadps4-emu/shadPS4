@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <forward_list>
 #include <boost/container/small_vector.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
@@ -19,7 +18,12 @@ struct BufferAttributeGroup;
 namespace VideoCore {
 
 class TextureCache {
-    static constexpr u64 PageBits = 14;
+    // This is the page shift for adding images into the hash map. It isn't related to
+    // the page size of the guest or the host and is chosen for convenience. A number too
+    // small will increase the number of hash map lookups per image, while too large will
+    // increase the number of images per page.
+    static constexpr u64 PageBits = 20;
+    static constexpr u64 PageMask = (1ULL << PageBits) - 1;
 
 public:
     explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
