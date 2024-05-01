@@ -17,7 +17,7 @@ Early progress, a small amount of PS4 SDK demos and homebrew games working.
 
 # Why?
 
-The project started as a fun project.  Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
+The project started as a fun project. Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
 
 # Build
 
@@ -46,4 +46,4 @@ We currently accept any contribution, just open a PR and we will check it :)
 # Sister Projects
 
 - [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): An multiplatform 3DS emulator from our co-author wheremyfoodat
-- [hydra](https://github.com/hydra-emu/hydra): An multisystem, multiplatform 00pemulator (chip-8,GB,NES,N64) from Paris
+- [hydra](https://github.com/hydra-emu/hydra): An multisystem, multiplatform emulator (chip-8,GB,NES,N64) from Paris
