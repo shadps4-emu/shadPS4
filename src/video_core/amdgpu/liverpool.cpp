@@ -26,20 +26,20 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
                 break;
             case PM4ItOpcode::SetContextReg: {
                 auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[ContextRegWordOffset + set_data->regOffset], header + 2,
-                            (count - 1) * sizeof(u32));
+                std::memcpy(&regs.reg_array[ContextRegWordOffset + set_data->reg_offset],
+                            header + 2, (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::SetShReg: {
                 auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->regOffset], header + 2,
+                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
                             (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::SetUconfigReg: {
                 auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[UconfigRegWordOffset + set_data->regOffset], header + 2,
-                            (count - 1) * sizeof(u32));
+                std::memcpy(&regs.reg_array[UconfigRegWordOffset + set_data->reg_offset],
+                            header + 2, (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::IndexType: {
@@ -49,11 +49,11 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             }
             case PM4ItOpcode::DrawIndex2: {
                 auto* draw_index = reinterpret_cast<PM4CmdDrawIndex2*>(header);
-                regs.max_index_size = draw_index->maxSize;
-                regs.index_base_address.base_addr_lo = draw_index->indexBaseLo;
-                regs.index_base_address.base_addr_hi.Assign(draw_index->indexBaseHi);
-                regs.num_indices = draw_index->indexCount;
-                regs.draw_initiator = draw_index->drawInitiator;
+                regs.max_index_size = draw_index->max_size;
+                regs.index_base_address.base_addr_lo = draw_index->index_base_lo;
+                regs.index_base_address.base_addr_hi.Assign(draw_index->index_base_hi);
+                regs.num_indices = draw_index->index_count;
+                regs.draw_initiator = draw_index->draw_initiator;
                 // rasterizer->DrawIndex();
                 break;
             }
@@ -66,8 +66,8 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             }
             case PM4ItOpcode::EventWriteEop: {
                 auto* event_write = reinterpret_cast<PM4CmdEventWriteEop*>(header);
-                const InterruptSelect irq_sel = event_write->intSel;
-                const DataSelect data_sel = event_write->dataSel;
+                const InterruptSelect irq_sel = event_write->int_sel;
+                const DataSelect data_sel = event_write->data_sel;
                 ASSERT(irq_sel == InterruptSelect::None && data_sel == DataSelect::Data64);
                 *event_write->Address() = event_write->DataQWord();
                 break;
