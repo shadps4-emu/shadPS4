@@ -3,23 +3,23 @@ SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
-# How to build shadps4 in windows 
+# Build shadps4 for Windows 
 
-## Download VStudio Community 2022 17.9.5
+## Download Visual Studio Community 2022 17.9.6
 
-[VStudio 2022](https://visualstudio.microsoft.com/vs/)
+Download link: [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 
 ## Requirements
 
-Install the following
+### From Visual Studio Community
 
-- Desktop development with c++
+- Desktop development with C++
 
-### From Individual components tab install
+### From individual components tab install
 
 - C++ Clang Compiler for Windows (17.0.3)
-- MSBuild support for LLVM (clang-cl) toolset
+- MSBuild support for LLVM (Clang-cl) toolset
 
 - ## Compiling
 
-- Open vstudio and select the clang debug or clang release . It should compile just fine
+- Open Visual Studio and select the Clang-debug or Clang-release. It should compile just fine.
