@@ -395,7 +395,7 @@ if (WIN32)
     # Target Windows 10 RS5
     add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
     # Increase stack,commit
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x200000,0x200000")
+    target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
 endif()
 
 if (WIN32)
