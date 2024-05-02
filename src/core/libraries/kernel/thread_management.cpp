@@ -827,7 +827,11 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     int result = pthread_copy_attributes(&(*thread)->attr, attr);
 
     if (result == 0) {
-        (*thread)->name = name;
+        if (name != NULL) {
+            (*thread)->name = name;
+        } else {
+            (*thread)->name = "no-name";
+        }
         (*thread)->entry = start_routine;
         (*thread)->arg = arg;
         (*thread)->is_almost_done = false;

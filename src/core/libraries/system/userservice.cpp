@@ -103,9 +103,19 @@ int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceGetEvent() {
-    LOG_ERROR(Lib_UserService, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
+    LOG_INFO(Lib_UserService, "(DUMMY) called");
+    // fake a loggin event
+    static bool logged_in = false;
+
+    if (!logged_in) {
+        logged_in = true;
+        event->event = SCE_USER_SERVICE_EVENT_TYPE_LOGIN;
+        event->userId = 1;
+        return ORBIS_OK;
+    }
+
+    return ORBIS_USER_SERVICE_ERROR_NO_EVENT;
 }
 
 int PS4_SYSV_ABI sceUserServiceGetEventCalendarType() {

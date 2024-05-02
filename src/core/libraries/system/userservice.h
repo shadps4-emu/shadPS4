@@ -76,7 +76,7 @@ int PS4_SYSV_ABI sceUserServiceGetCurrentUserGroupIndex();
 int PS4_SYSV_ABI sceUserServiceGetDefaultNewUserGroupName();
 int PS4_SYSV_ABI sceUserServiceGetDeletedUserInfo();
 int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag();
-int PS4_SYSV_ABI sceUserServiceGetEvent();
+int PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event);
 int PS4_SYSV_ABI sceUserServiceGetEventCalendarType();
 int PS4_SYSV_ABI sceUserServiceGetEventFilterTeamEvent();
 int PS4_SYSV_ABI sceUserServiceGetEventSortEvent();
