@@ -180,6 +180,17 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad.h
 )
 
+set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
+            src/core/libraries/np_manager/np_manager.h
+            src/core/libraries/np_score/np_score.cpp
+            src/core/libraries/np_score/np_score.h
+            src/core/libraries/np_trophy/np_trophy.cpp
+            src/core/libraries/np_trophy/np_trophy.h
+)
+set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
+               src/core/libraries/screenshot/screenshot.h
+)
+
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h
            src/common/logging/filter.cpp
@@ -259,6 +270,8 @@ set(CORE src/core/aerolib/stubs.cpp
          ${LIBC_SOURCES}
          ${PAD_LIB}
          ${VIDEOOUT_LIB}
+         ${NP_LIBS}
+         ${MISC_LIBS}
          src/core/linker.cpp
          src/core/linker.h
          src/core/tls.cpp
