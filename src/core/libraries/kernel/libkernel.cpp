@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/event_queues.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/memory/kernel_memory.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/time_management.h"
@@ -180,6 +181,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);
     Libraries::Kernel::pthreadSymbolsRegister(sym);
+    Libraries::Kernel::RegisterKernelMemory(sym);
 
     // temp
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
