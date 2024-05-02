@@ -29,6 +29,13 @@ Check building instructions in [Windows build](https://github.com/shadps4-emu/sh
 
 Check building instructions in [Linux build](https://github.com/shadps4-emu/shadPS4/blob/main/documents/linux_building.md)
 
+## Build status
+
+|Platform|Build status|
+|--------|------------|
+|Windows SDL build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
+|Linux SDL build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
+
 # Main team
 
 - [georgemoralis](https://github.com/georgemoralis)
