@@ -40,6 +40,7 @@ Check building instructions in [Linux build](https://github.com/shadps4-emu/shad
 
 - [georgemoralis](https://github.com/georgemoralis)
 - [raphaelthegreat](https://github.com/raphaelthegreat)
+- [psucien](https://github.com/psucien)
 - [skmp](https://github.com/skmp)
 - [wheremyfoodat](https://github.com/wheremyfoodat)
 - [raziel1000](https://github.com/raziel1000)
