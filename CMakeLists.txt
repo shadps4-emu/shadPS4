@@ -141,10 +141,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog.h
                 src/core/libraries/system/posix.cpp
                 src/core/libraries/system/posix.h
-                src/core/libraries/system/savedata.cpp
+                src/core/libraries/save_data/savedata.cpp
+                src/core/libraries/save_data/savedata.h
                 src/core/libraries/system/savedatadialog.cpp
                 src/core/libraries/system/savedatadialog.h
-                src/core/libraries/system/savedata.h
                 src/core/libraries/system/sysmodule.cpp
                 src/core/libraries/system/sysmodule.h
                 src/core/libraries/system/systemservice.cpp
