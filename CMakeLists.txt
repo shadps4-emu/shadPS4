@@ -141,6 +141,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog.h
                 src/core/libraries/system/posix.cpp
                 src/core/libraries/system/posix.h
+                src/core/libraries/save_data/error_codes.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
                 src/core/libraries/system/savedatadialog.cpp

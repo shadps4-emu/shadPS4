@@ -14,6 +14,13 @@ namespace Libraries::MsgDialog {
 
 using OrbisUserServiceUserId = s32;
 
+enum OrbisCommonDialogStatus {
+    ORBIS_COMMON_DIALOG_STATUS_NONE = 0,
+    ORBIS_COMMON_DIALOG_STATUS_INITIALIZED = 1,
+    ORBIS_COMMON_DIALOG_STATUS_RUNNING = 2,
+    ORBIS_COMMON_DIALOG_STATUS_FINISHED = 3
+};
+
 enum OrbisMsgDialogMode {
     ORBIS_MSG_DIALOG_MODE_USER_MSG = 1,
     ORBIS_MSG_DIALOG_MODE_PROGRESS_BAR = 2,

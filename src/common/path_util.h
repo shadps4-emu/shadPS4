@@ -13,7 +13,7 @@ enum class PathType {
     LogDir,         // Where log files are stored.
     ScreenshotsDir, // Where screenshots are stored.
     ShaderDir,      // Where shaders are stored.
-    App0,           // Where guest application data is stored.
+    SaveDataDir,    // Where guest save data is stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -22,7 +22,7 @@ constexpr auto PORTABLE_DIR = "user";
 constexpr auto LOG_DIR = "log";
 constexpr auto SCREENSHOTS_DIR = "screenshots";
 constexpr auto SHADER_DIR = "shader";
-constexpr auto APP0_DIR = "app0";
+constexpr auto SAVEDATA_DIR = "savedata";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
