@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "thread_management.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -15,6 +16,44 @@ struct SceKernelIovec {
     void* iov_base;
     std::size_t iov_len;
 };
+
+struct OrbisKernelStat {
+    u32 st_dev;
+    u32 st_ino;
+    u16 st_mode;
+    u16 st_nlink;
+    u32 st_uid;
+    u32 st_gid;
+    u32 st_rdev;
+    SceKernelTimespec st_atim;
+    SceKernelTimespec st_mtim;
+    SceKernelTimespec st_ctim;
+    s64 st_size;
+    s64 st_blocks;
+    u32 st_blksize;
+    u32 st_flags;
+    u32 st_gen;
+    s32 st_lspare;
+    SceKernelTimespec st_birthtim;
+    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(SceKernelTimespec)));
+    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(SceKernelTimespec)));
+};
+
+// flags for Open
+constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
+constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
+constexpr int ORBIS_KERNEL_O_RDWR = 0x0002;
+
+constexpr int ORBIS_KERNEL_O_NONBLOCK = 0x0004;
+constexpr int ORBIS_KERNEL_O_APPEND = 0x0008;
+constexpr int ORBIS_KERNEL_O_FSYNC = 0x0080;
+constexpr int ORBIS_KERNEL_O_SYNC = 0x0080;
+constexpr int ORBIS_KERNEL_O_CREAT = 0x0200;
+constexpr int ORBIS_KERNEL_O_TRUNC = 0x0400;
+constexpr int ORBIS_KERNEL_O_EXCL = 0x0800;
+constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
+constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
+constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, /* SceKernelMode*/ u16 mode);
 
