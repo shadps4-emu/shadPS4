@@ -30,8 +30,26 @@ static inline u32* WriteTrailingNop(u32* cmdbuf) {
     return cmdbuf + data_block_size + 1 /* header */;
 }
 
-int PS4_SYSV_ABI sceGnmAddEqEvent() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
+
+    if (!eq) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    EqueueEvent kernel_event{};
+    kernel_event.event.ident = id;
+    kernel_event.event.filter = EVFILT_GRAPHICS_CORE;
+    kernel_event.event.flags = 1;
+    kernel_event.event.fflags = 0;
+    kernel_event.event.data = id;
+    kernel_event.event.udata = udata;
+    eq->addEvent(kernel_event);
+
+    liverpool->eop_callback = [=]() {
+        eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
+    };
     return ORBIS_OK;
 }
 
@@ -131,8 +149,15 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDeleteEqEvent() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
+
+    if (!eq) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    eq->removeEvent(id);
     return ORBIS_OK;
 }
 

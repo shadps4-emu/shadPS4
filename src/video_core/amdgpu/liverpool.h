@@ -3,9 +3,11 @@
 
 #pragma once
 
-#include <array>
 #include "common/bit_field.h"
 #include "common/types.h"
+
+#include <array>
+#include <functional>
 
 namespace AmdGpu {
 
@@ -611,6 +613,8 @@ public:
     Liverpool();
 
     void ProcessCmdList(u32* cmdbuf, u32 size_in_bytes);
+
+    std::function<void(void)> eop_callback{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

@@ -20,6 +20,14 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
     return 0;
 }
 
+int EqueueInternal::removeEvent(u64 id) {
+    const auto& event_q = std::find_if(m_events.cbegin(), m_events.cend(),
+                                    [id](auto& ev) { return ev.event.ident == id; });
+    ASSERT(event_q != m_events.cend());
+    m_events.erase(event_q);
+    return 0;
+}
+
 int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     std::unique_lock lock{m_mutex};
     int ret = 0;

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/kernel/event_queues.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,7 +12,9 @@ class SymbolsResolver;
 
 namespace Libraries::GnmDriver {
 
-int PS4_SYSV_ABI sceGnmAddEqEvent();
+using namespace Kernel;
+
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
 int PS4_SYSV_ABI sceGnmBeginWorkload();
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
@@ -28,7 +31,7 @@ int PS4_SYSV_ABI sceGnmDebuggerSetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerWriteGds();
 int PS4_SYSV_ABI sceGnmDebuggerWriteSqIndirectRegister();
 int PS4_SYSV_ABI sceGnmDebugHardwareStatus();
-int PS4_SYSV_ABI sceGnmDeleteEqEvent();
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id);
 int PS4_SYSV_ABI sceGnmDestroyWorkloadStream();
 int PS4_SYSV_ABI sceGnmDingDong();
 int PS4_SYSV_ABI sceGnmDingDongForWorkload();
