@@ -43,7 +43,8 @@ static PS4_SYSV_ABI void stack_chk_fail() {
 }
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
-    UNREACHABLE();
+    LOG_ERROR(Kernel_Vmm, "(DUMMY) called");
+    return SCE_OK;
 }
 
 void PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {

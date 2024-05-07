@@ -42,6 +42,14 @@ struct OrbisSaveDataMountResult {
     s32 unk1;
 };
 
+// savedataMount2 mountModes (ORed values)
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY = 1;
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_RDWR = 2;
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_CREATE = 4;
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF = 8;
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON = 16;
+constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 = 32;
+
 int PS4_SYSV_ABI sceSaveDataAbort();
 int PS4_SYSV_ABI sceSaveDataBackup();
 int PS4_SYSV_ABI sceSaveDataBindPsnAccount();
@@ -132,7 +140,7 @@ int PS4_SYSV_ABI sceSaveDataSyncCloudList();
 int PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory();
 int PS4_SYSV_ABI sceSaveDataTerminate();
 int PS4_SYSV_ABI sceSaveDataTransferringMount();
-int PS4_SYSV_ABI sceSaveDataUmount();
+int PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint);
 int PS4_SYSV_ABI sceSaveDataUmountSys();
 int PS4_SYSV_ABI sceSaveDataUmountWithBackup();
 int PS4_SYSV_ABI sceSaveDataUnregisterEventCallback();

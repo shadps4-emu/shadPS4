@@ -15,5 +15,7 @@ double PS4_SYSV_ABI ps4_pow(double base, double exponent);
 double PS4_SYSV_ABI ps4__Sin(double x);
 float PS4_SYSV_ABI ps4__Fsin(float arg);
 double PS4_SYSV_ABI ps4_exp2(double arg);
+float PS4_SYSV_ABI ps4_powf(float x, float y);
+float PS4_SYSV_ABI ps4_roundf(float arg);
 
 } // namespace Libraries::LibC

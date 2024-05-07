@@ -70,4 +70,8 @@ int PS4_SYSV_ABI ps4_puts(const char* s) {
     return std::puts(s);
 }
 
+long PS4_SYSV_ABI ps4_ftell(FILE* stream) {
+    return ftell(stream);
+}
+
 } // namespace Libraries::LibC
