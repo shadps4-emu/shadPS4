@@ -26,6 +26,14 @@ double PS4_SYSV_ABI ps4_pow(double base, double exponent) {
     return pow(base, exponent);
 }
 
+float PS4_SYSV_ABI ps4_powf(float x, float y) {
+    return powf(x, y);
+}
+
+float PS4_SYSV_ABI ps4_roundf(float arg) {
+    return roundf(arg);
+}
+
 double PS4_SYSV_ABI ps4__Sin(double x) {
     return sin(x);
 }

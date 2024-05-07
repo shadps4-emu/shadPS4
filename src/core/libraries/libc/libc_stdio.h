@@ -18,5 +18,6 @@ int PS4_SYSV_ABI ps4_fclose(FILE* stream);
 int PS4_SYSV_ABI ps4_fseek(FILE* stream, long offset, int whence);
 int PS4_SYSV_ABI ps4_fgetpos(FILE* stream, fpos_t* pos);
 std::size_t PS4_SYSV_ABI ps4_fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
+long PS4_SYSV_ABI ps4_ftell(FILE* stream);
 
 } // namespace Libraries::LibC

@@ -444,6 +444,8 @@ void libcSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("cCXjU72Z0Ow", "libc", 1, "libc", 1, 1, ps4__Sin);
     LIB_FUNCTION("ZtjspkJQ+vw", "libc", 1, "libc", 1, 1, ps4__Fsin);
     LIB_FUNCTION("dnaeGXbjP6E", "libc", 1, "libc", 1, 1, ps4_exp2);
+    LIB_FUNCTION("1D0H2KNjshE", "libc", 1, "libc", 1, 1, ps4_powf);
+    LIB_FUNCTION("DDHG1a6+3q0", "libc", 1, "libc", 1, 1, ps4_roundf);
 
     // string functions
     LIB_FUNCTION("Ovb2dSJOAuE", "libc", 1, "libc", 1, 1, ps4_strcmp);
@@ -470,6 +472,7 @@ void libcSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("rQFVBXp-Cxg", "libc", 1, "libc", 1, 1, ps4_fseek);
     LIB_FUNCTION("SHlt7EhOtqA", "libc", 1, "libc", 1, 1, ps4_fgetpos);
     LIB_FUNCTION("lbB+UlZqVG0", "libc", 1, "libc", 1, 1, ps4_fread);
+    LIB_FUNCTION("Qazy8LmXTvw", "libc", 1, "libc", 1, 1, ps4_ftell);
 
     // misc
     LIB_OBJ("P330P3dFF68", "libc", 1, "libc", 1, 1, &g_need_sceLibc);
