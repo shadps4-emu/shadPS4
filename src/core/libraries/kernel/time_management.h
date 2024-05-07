@@ -11,6 +11,7 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+u64 PS4_SYSV_ABI sceKernelGetTscFrequency();
 u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency();

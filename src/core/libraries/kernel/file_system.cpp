@@ -34,7 +34,6 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     if (directory) {
         UNREACHABLE(); // not supported yet
     } else {
-        // only open files support!
         u32 handle = h->CreateHandle();
         auto* file = h->GetFile(handle);
         file->m_guest_name = path;

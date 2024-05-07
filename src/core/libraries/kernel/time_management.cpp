@@ -10,6 +10,10 @@ namespace Libraries::Kernel {
 static u64 initial_ptc;
 static std::unique_ptr<Common::NativeClock> clock;
 
+u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
+    return clock->GetTscFrequency();
+}
+
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
     return clock->GetProcessTimeUS();
 }
@@ -34,6 +38,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelGetProcessTimeCounterFrequency);
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
+    LIB_FUNCTION("1j3S3n-tTW4", "libkernel", 1, "libkernel", 1, 1, sceKernelGetTscFrequency);
 }
 
 } // namespace Libraries::Kernel
