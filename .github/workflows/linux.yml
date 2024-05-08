@@ -13,7 +13,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  CLANG_VER: 17
+  CLANG_VER: 18
 
 jobs:
   build:
@@ -55,4 +55,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-sdl-appimage
-        path: Shadps4-sdl.AppImage 
+        path: Shadps4-sdl.AppImage
