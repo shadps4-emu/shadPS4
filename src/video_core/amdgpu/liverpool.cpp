@@ -25,30 +25,30 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             case PM4ItOpcode::Nop:
                 break;
             case PM4ItOpcode::SetContextReg: {
-                auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
+                const auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
                 std::memcpy(&regs.reg_array[ContextRegWordOffset + set_data->reg_offset],
                             header + 2, (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::SetShReg: {
-                auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
+                const auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
                 std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
                             (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::SetUconfigReg: {
-                auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
+                const auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
                 std::memcpy(&regs.reg_array[UconfigRegWordOffset + set_data->reg_offset],
                             header + 2, (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::IndexType: {
-                auto* index_type = reinterpret_cast<PM4CmdDrawIndexType*>(header);
+                const auto* index_type = reinterpret_cast<PM4CmdDrawIndexType*>(header);
                 regs.index_buffer_type.raw = index_type->raw;
                 break;
             }
             case PM4ItOpcode::DrawIndex2: {
-                auto* draw_index = reinterpret_cast<PM4CmdDrawIndex2*>(header);
+                const auto* draw_index = reinterpret_cast<PM4CmdDrawIndex2*>(header);
                 regs.max_index_size = draw_index->max_size;
                 regs.index_base_address.base_addr_lo = draw_index->index_base_lo;
                 regs.index_base_address.base_addr_hi.Assign(draw_index->index_base_hi);
@@ -58,22 +58,73 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
                 break;
             }
             case PM4ItOpcode::DrawIndexAuto: {
-                auto* draw_index = reinterpret_cast<PM4CmdDrawIndexAuto*>(header);
+                const auto* draw_index = reinterpret_cast<PM4CmdDrawIndexAuto*>(header);
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 // rasterizer->DrawIndex();
                 break;
             }
+            case PM4ItOpcode::DispatchDirect: {
+                // const auto* dispatch_direct = reinterpret_cast<PM4CmdDispatchDirect*>(header);
+                break;
+            }
+            case PM4ItOpcode::EventWriteEos: {
+                // const auto* event_eos = reinterpret_cast<PM4CmdEventWriteEos*>(header);
+                break;
+            }
             case PM4ItOpcode::EventWriteEop: {
-                auto* event_write = reinterpret_cast<PM4CmdEventWriteEop*>(header);
-                const InterruptSelect irq_sel = event_write->int_sel;
-                const DataSelect data_sel = event_write->data_sel;
-                ASSERT(irq_sel == InterruptSelect::None && data_sel == DataSelect::Data64);
-                *event_write->Address() = event_write->DataQWord();
+                const auto* event_eop = reinterpret_cast<PM4CmdEventWriteEop*>(header);
+                const InterruptSelect irq_sel = event_eop->int_sel;
+                const DataSelect data_sel = event_eop->data_sel;
+
+                // Write back data if required
+                switch (data_sel) {
+                case DataSelect::Data32Low: {
+                    *reinterpret_cast<u32*>(event_eop->Address()) = event_eop->DataDWord();
+                    break;
+                }
+                case DataSelect::Data64: {
+                    *event_eop->Address() = event_eop->DataQWord();
+                    break;
+                }
+                default: {
+                    UNREACHABLE();
+                }
+                }
+
+                switch (irq_sel) {
+                case InterruptSelect::None: {
+                    // No interrupt
+                    break;
+                }
+                case InterruptSelect::IrqWhenWriteConfirm: {
+                    if (eop_callback) {
+                        eop_callback();
+                    } else {
+                        UNREACHABLE_MSG("EOP callback is not registered");
+                    }
+                    break;
+                }
+                default: {
+                    UNREACHABLE();
+                }
+                }
                 break;
             }
             case PM4ItOpcode::DmaData: {
-                auto* dma_data = reinterpret_cast<PM4DmaData*>(header);
+                const auto* dma_data = reinterpret_cast<PM4DmaData*>(header);
+                break;
+            }
+            case PM4ItOpcode::WriteData: {
+                const auto* write_data = reinterpret_cast<PM4CmdWriteData*>(header);
+                break;
+            }
+            case PM4ItOpcode::AcquireMem: {
+                // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
+                break;
+            }
+            case PM4ItOpcode::WaitRegMem: {
+                const auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(header);
                 break;
             }
             default:

@@ -286,6 +286,10 @@ struct PM4CmdEventWriteEop {
         return reinterpret_cast<u64*>(address_lo | u64(address_hi) << 32);
     }
 
+    u32 DataDWord() const {
+        return data_lo;
+    }
+
     u64 DataQWord() const {
         return data_lo | u64(data_hi) << 32;
     }

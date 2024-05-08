@@ -231,7 +231,7 @@ u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {
                                              0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE1
             cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
 
-            cmdbuf = WriteHeader<PM4ItOpcode::Unknown58>(
+            cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(
                 cmdbuf, 6); // for some reason the packet indicates larger size
             cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u);
 
