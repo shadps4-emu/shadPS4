@@ -330,4 +330,18 @@ struct PM4CmdWaitRegMem {
     u32 poll_interval;
 };
 
+struct PM4CmdWriteData {
+    PM4Type3Header header;
+    union {
+        BitField<8, 11, u32> dst_sel;
+        BitField<16, 1, u32> wr_one_addr;
+        BitField<20, 1, u32> wr_confirm;
+        BitField<30, 1, u32> engine_sel;
+        u32 raw;
+    };
+    u32 dst_addr_lo;
+    u32 dst_addr_hi;
+    u32 data[0];
+};
+
 } // namespace AmdGpu

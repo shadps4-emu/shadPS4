@@ -1270,12 +1270,106 @@ int PS4_SYSV_ABI sceGnmSqttWaitForEvent() {
     return ORBIS_OK;
 }
 
+static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf_idx, u32 flip_mode,
+                                   u32 flip_arg, void* unk) {
+    // check for `prepareFlip` packet
+    cmdbuf += size - 64;
+    ASSERT_MSG(cmdbuf[0] == 0xc03e1000, "Can't find `prepareFlip` packet");
+
+    std::array<u32, 7> backup{};
+    std::memcpy(backup.data(), cmdbuf, backup.size() * sizeof(decltype(backup)::value_type));
+
+    ASSERT_MSG(((backup[2] & 3) == 0u) || (backup[1] != PM4CmdNop::PayloadType::PrepareFlip),
+               "Invalid flip packet");
+    ASSERT_MSG(buf_idx != 0xffff'ffffu, "Invalid VO buffer index");
+
+    const s32 flip_result = VideoOut::sceVideoOutSubmitEopFlip(vo_handle, buf_idx, flip_mode,
+                                                               flip_arg, nullptr /*unk*/);
+    if (flip_result != 0) {
+        if (flip_result == 0x80290012) {
+            LOG_ERROR(Lib_GnmDriver, "Flip queue is full");
+            return 0x80d11081;
+        } else {
+            LOG_ERROR(Lib_GnmDriver, "Flip request failed");
+            return flip_result;
+        }
+    }
+
+    uintptr_t label_addr{};
+    VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr);
+
+    // Write event to lock the VO surface
+    auto* write_lock = reinterpret_cast<PM4CmdWriteData*>(cmdbuf);
+    write_lock->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
+    write_lock->dst_sel.Assign(5u);
+    *reinterpret_cast<uintptr_t*>(&write_lock->dst_addr_lo) =
+        (label_addr + buf_idx * sizeof(uintptr_t)) & 0xffff'fffcu;
+    write_lock->data[0] = 1;
+
+    auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf + 5);
+
+    if (backup[1] == PM4CmdNop::PayloadType::PrepareFlip) {
+        nop->header = PM4Type3Header{PM4ItOpcode::Nop, 0x39};
+        nop->data_block[0] = PM4CmdNop::PayloadType::PatchedFlip;
+    } else {
+        if (backup[1] == PM4CmdNop::PayloadType::PrepareFlipLabel) {
+            nop->header = PM4Type3Header{PM4ItOpcode::Nop, 0x34};
+            nop->data_block[0] = PM4CmdNop::PayloadType::PatchedFlip;
+
+            // Write event to update label
+            auto* write_label = reinterpret_cast<PM4CmdWriteData*>(cmdbuf + 0x3b);
+            write_label->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
+            write_label->dst_sel.Assign(5u);
+            write_label->dst_addr_lo = backup[2] & 0xffff'fffcu;
+            write_label->dst_addr_hi = backup[3];
+            write_label->data[0] = backup[4];
+        }
+        if (backup[1] == PM4CmdNop::PayloadType::PrepareFlipInterruptLabel) {
+            nop->header = PM4Type3Header{PM4ItOpcode::Nop, 0x33};
+            nop->data_block[0] = PM4CmdNop::PayloadType::PatchedFlip;
+
+            auto* write_eop = reinterpret_cast<PM4CmdEventWriteEop*>(cmdbuf + 0x3a);
+            write_eop->header = PM4Type3Header{PM4ItOpcode::EventWriteEop, 4};
+            write_eop->event_control = (backup[5] & 0x3f) + 0x500u + (backup[6] & 0x3f) * 0x1000;
+            write_eop->address_lo = backup[2] & 0xffff'fffcu;
+            write_eop->data_control = (backup[3] & 0xffffu) | 0x2200'0000u;
+            write_eop->data_lo = backup[4];
+            write_eop->data_hi = 0u;
+        }
+        if (backup[1] == PM4CmdNop::PayloadType::PrepareFlipInterrupt) {
+            nop->header = PM4Type3Header{PM4ItOpcode::Nop, 0x33};
+            nop->data_block[0] = PM4CmdNop::PayloadType::PatchedFlip;
+
+            auto* write_eop = reinterpret_cast<PM4CmdEventWriteEop*>(cmdbuf + 0x3a);
+            write_eop->header = PM4Type3Header{PM4ItOpcode::EventWriteEop, 4};
+            write_eop->event_control = (backup[5] & 0x3f) + 0x500u + (backup[6] & 0x3f) * 0x1000;
+            write_eop->address_lo = 0u;
+            write_eop->data_control = 0x100'0000u;
+            write_eop->data_lo = 0u;
+            write_eop->data_hi = 0u;
+        }
+    }
+
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addrs[],
                                                    u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg) {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_GnmDriver, "called");
+
+    auto* cmdbuf = reinterpret_cast<u32*>(dcb_gpu_addrs[count - 1]);
+    const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
+
+    const s32 patch_result =
+        PatchFlipRequest(cmdbuf, size_dw, vo_handle, buf_idx, flip_mode, flip_arg, nullptr /*unk*/);
+    if (patch_result != ORBIS_OK) {
+        return patch_result;
+    }
+
+    return sceGnmSubmitCommandBuffers(count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs,
+                                      ccb_sizes_in_bytes);
 }
 
 int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload() {
