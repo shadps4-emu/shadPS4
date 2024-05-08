@@ -38,7 +38,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
-        version:      6.6.1
+        version:      6.7.0
         host:         linux
         target:       desktop
         #arch:         clang++-17
@@ -59,4 +59,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-linux-qt
-        path: Shadps4-qt.AppImage 
+        path: Shadps4-qt.AppImage

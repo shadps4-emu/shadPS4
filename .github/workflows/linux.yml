@@ -55,4 +55,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-sdl-appimage
-        path: Shadps4-sdl.AppImage 
+        path: Shadps4-sdl.AppImage
