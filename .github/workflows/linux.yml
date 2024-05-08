@@ -13,7 +13,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  CLANG_VER: 18
+  CLANG_VER: 17
 
 jobs:
   build:
