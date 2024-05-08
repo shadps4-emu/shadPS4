@@ -102,6 +102,8 @@ s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle);
 void Flip(std::chrono::microseconds micros);
 void Vblank();
 
+void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr);
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::VideoOut

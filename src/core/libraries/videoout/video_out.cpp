@@ -210,6 +210,12 @@ void Vblank() {
     return driver->Vblank();
 }
 
+void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
+    auto* port = driver->GetPort(handle);
+    ASSERT(port);
+    *label_addr = reinterpret_cast<uintptr_t>(port->buffer_labels.data());
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
