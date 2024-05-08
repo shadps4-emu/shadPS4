@@ -238,7 +238,7 @@ u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {
             cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
             cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
         } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0x100);
+            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
         }
         return 0x100; // it is a size, not a retcode
     }
@@ -347,7 +347,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
         if constexpr (g_fair_hw_init) {
             ASSERT_MSG(0, "Not implemented");
         } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0x100);
+            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
         }
         return 0x100; // it is a size, not a retcode
     }
@@ -361,7 +361,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
         if constexpr (g_fair_hw_init) {
             ASSERT_MSG(0, "Not implemented");
         } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0x100);
+            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
         }
         return 0x100; // it is a size, not a retcode
     }
@@ -591,9 +591,9 @@ s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
     if (cmdbuf && (size == 6)) {
-        cmdbuf = WritePacket<PM4ItOpcode::Nop>(
-            cmdbuf, PM4ShaderType::ShaderGraphics,
-            static_cast<u32>(PM4CmdNop::PayloadType::DebugMarkerPop), 0u, 0u, 0u, 0u);
+        cmdbuf =
+            WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics,
+                                          PM4CmdNop::PayloadType::DebugMarkerPop, 0u, 0u, 0u, 0u);
         return ORBIS_OK;
     }
     return -1;
@@ -614,7 +614,7 @@ s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marke
             auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
             nop->header =
                 PM4Type3Header{PM4ItOpcode::Nop, packet_size, PM4ShaderType::ShaderGraphics};
-            nop->data_block[0] = static_cast<u32>(PM4CmdNop::PayloadType::DebugMarkerPush);
+            nop->data_block[0] = PM4CmdNop::PayloadType::DebugMarkerPush;
             const auto marker_len = len + 1;
             std::memcpy(&nop->data_block[1], marker, marker_len);
             std::memset(reinterpret_cast<u8*>(&nop->data_block[1]) + marker_len, 0,
@@ -650,15 +650,15 @@ s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, 
     uintptr_t label_addr{};
     VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr);
 
-    auto* write_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
-    write_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
-    write_reg_mem->function.Assign(3u);
-    write_reg_mem->mem_space.Assign(1u);
-    *reinterpret_cast<uintptr_t*>(&write_reg_mem->poll_addr_lo) =
+    auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
+    wait_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
+    wait_reg_mem->function.Assign(3u);
+    wait_reg_mem->mem_space.Assign(1u);
+    *reinterpret_cast<uintptr_t*>(&wait_reg_mem->poll_addr_lo) =
         (label_addr + buf_idx * sizeof(uintptr_t)) & 0xffff'fffcu;
-    write_reg_mem->ref = 0u;
-    write_reg_mem->mask = 0xffff'ffffu;
-    write_reg_mem->poll_interval = 10u;
+    wait_reg_mem->ref = 0u;
+    wait_reg_mem->mask = 0xffff'ffffu;
+    wait_reg_mem->poll_interval = 10u;
     return ORBIS_OK;
 }
 
@@ -1311,7 +1311,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
         }
     }
 
-    liverpool->ProcessCmdList(reinterpret_cast<u32*>(dcb_sizes_in_bytes[0]), dcb_sizes_in_bytes[0]);
+    liverpool->ProcessCmdList(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
 
     return ORBIS_OK;
 }
