@@ -140,7 +140,7 @@ s32 PS4_SYSV_ABI sceGnmSetCsShader(u32* cmdbuf, u32 size, const u32* cs_regs);
 s32 PS4_SYSV_ABI sceGnmSetCsShaderWithModifier(u32* cmdbuf, u32 size, const u32* cs_regs,
                                                u32 modifier);
 int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader();
-int PS4_SYSV_ABI sceGnmSetEmbeddedVsShader();
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier);
 int PS4_SYSV_ABI sceGnmSetEsShader();
 int PS4_SYSV_ABI sceGnmSetGsRingSizes();
 int PS4_SYSV_ABI sceGnmSetGsShader();
@@ -194,9 +194,12 @@ int PS4_SYSV_ABI sceGnmSqttStopTrace();
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer();
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer2();
 int PS4_SYSV_ABI sceGnmSqttWaitForEvent();
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers();
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+                                                   u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+                                                   u32* ccb_sizes_in_bytes, u32 vo_handle,
+                                                   u32 buf_idx, u32 flip_mode, u32 flip_arg);
 int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload();
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes);
 int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload();

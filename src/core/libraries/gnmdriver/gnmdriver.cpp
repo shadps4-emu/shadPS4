@@ -867,8 +867,48 @@ int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSetEmbeddedVsShader() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    // A fullscreen triangle with one uv set
+    const static u32 shader_code[] = {
+        0xbeeb03ffu, 00000007u,   // s_mov_b32     vcc_hi, $0x00000007
+        0x36020081u,              // v_and_b32     v1, 1, v0
+        0x34020281u,              // v_lshlrev_b32 v1, 1, v1
+        0x360000c2u,              // v_and_b32     v0, -2, v0
+        0x4a0202c1u,              // v_add_i32     v1, vcc, -1, v1
+        0x4a0000c1u,              // v_add_i32     v0, vcc, -1, v0
+        0x7e020b01u,              // v_cvt_f32_i32 v1, v1
+        0x7e040280u,              // v_cvt_f32_i32 v0, v0
+        0x7e0602f2u,              // v_mov_b32     v3, 1.0
+        0xf80008cfu, 0x03020001u, // exp           pos0, v1, v0, v2, v3 done
+        0xf800020fu, 0x03030303u, // exp           param0, v3, v3, v3, v3
+        0xbf810000u,              // s_endpgm
+
+        // OrbShdr header
+        0x5362724fu, 0x07726468u, 0x00004047u, 0u, 0x47f8c29fu, 0x9b2da5cfu, 0xff7c5b7du,
+        0x00000017u, 0x0fe000f1u, 0u, 0x000c0000u, 4u, 0u, 4u, 0u, 7u};
+
+    const auto shader_addr = uintptr_t(&shader_code); // Original address is 0xfe000f10
+    const static u32 vs_regs[] = {
+        u32(shader_addr >> 8), u32(shader_addr >> 40), 0xc0000u, 4, 0, 4, 0, 7};
+
+    if (shader_id != 0) {
+        return 0x8eee00ff;
+    }
+
+    // Normally the driver will do a call to `sceGnmSetVsShader()`, but this function has
+    // a check for zero in the upper part of shader address. In our case, the address is a
+    // pointer to a stack memory, so the check will likely fail. To workaround it we will
+    // repeat set shader functionality here as it is trivial.
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], 0u); // SPI_SHADER_PGM_LO_VS
+    cmdbuf =
+        PM4CmdSetData::SetShReg(cmdbuf, 0x4au, vs_regs[2], vs_regs[3]); // SPI_SHADER_PGM_RSRC1_VS
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x207u, vs_regs[6]);  // PA_CL_VS_OUT_CNTL
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b1u, vs_regs[4]);  // SPI_VS_OUT_CONFIG
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c3u, vs_regs[5]);  // SPI_SHADER_POS_FORMAT
+
+    WriteTrailingNop<11>(cmdbuf);
     return ORBIS_OK;
 }
 
@@ -1003,6 +1043,8 @@ int PS4_SYSV_ABI sceGnmSetVgtControl() {
 }
 
 s32 PS4_SYSV_ABI sceGnmSetVsShader(u32* cmdbuf, u32 size, const u32* vs_regs, u32 shader_modifier) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
     if (!cmdbuf || size <= 0x1c) {
         return -1;
     }
@@ -1030,7 +1072,6 @@ s32 PS4_SYSV_ABI sceGnmSetVsShader(u32* cmdbuf, u32 size, const u32* vs_regs, u3
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c3u, vs_regs[5]); // SPI_SHADER_POS_FORMAT
 
     WriteTrailingNop<11>(cmdbuf);
-
     return ORBIS_OK;
 }
 
@@ -1229,7 +1270,10 @@ int PS4_SYSV_ABI sceGnmSqttWaitForEvent() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers() {
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+                                                   u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+                                                   u32* ccb_sizes_in_bytes, u32 vo_handle,
+                                                   u32 buf_idx, u32 flip_mode, u32 flip_arg) {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1239,34 +1283,35 @@ int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcbGpuAddrs[], u32* dcbSizesInBytes,
-                                            void* ccbGpuAddrs[], u32* ccbSizesInBytes) {
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+                                            u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+                                            u32* ccb_sizes_in_bytes) {
     LOG_INFO(Lib_GnmDriver, "called");
     ASSERT_MSG(count == 1, "Multiple command buffer submission is unsupported!");
 
-    if (!dcbGpuAddrs || !dcbSizesInBytes) {
+    if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
         LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs and dcbSizesInBytes must not be NULL");
         return 0x80d11000;
     }
 
     for (u32 i = 0; i < count; i++) {
-        if (dcbSizesInBytes[i] == 0) {
+        if (dcb_sizes_in_bytes[i] == 0) {
             LOG_ERROR(Lib_GnmDriver, "Submitting a null DCB {}", i);
             return 0x80d11000;
         }
-        if (dcbSizesInBytes[i] > 0x3ffffc) {
+        if (dcb_sizes_in_bytes[i] > 0x3ffffc) {
             LOG_ERROR(Lib_GnmDriver, "dcbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
-                      dcbSizesInBytes[i]);
+                      dcb_sizes_in_bytes[i]);
             return 0x80d11000;
         }
-        if (ccbSizesInBytes && ccbSizesInBytes[i] > 0x3ffffc) {
+        if (ccb_sizes_in_bytes && ccb_sizes_in_bytes[i] > 0x3ffffc) {
             LOG_ERROR(Lib_GnmDriver, "ccbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
-                      ccbSizesInBytes[i]);
+                      ccb_sizes_in_bytes[i]);
             return 0x80d11000;
         }
     }
 
-    liverpool->ProcessCmdList(reinterpret_cast<u32*>(dcbGpuAddrs[0]), dcbSizesInBytes[0]);
+    liverpool->ProcessCmdList(reinterpret_cast<u32*>(dcb_sizes_in_bytes[0]), dcb_sizes_in_bytes[0]);
 
     return ORBIS_OK;
 }
