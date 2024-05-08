@@ -6,6 +6,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/videoout/video_out.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
@@ -639,8 +640,25 @@ int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmInsertWaitFlipDone() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, u32 buf_idx) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (size != 7) {
+        return -1;
+    }
+
+    uintptr_t label_addr{};
+    VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr);
+
+    auto* write_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
+    write_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
+    write_reg_mem->function.Assign(3u);
+    write_reg_mem->mem_space.Assign(1u);
+    *reinterpret_cast<uintptr_t*>(&write_reg_mem->poll_addr_lo) =
+        (label_addr + buf_idx * sizeof(uintptr_t)) & 0xffff'fffcu;
+    write_reg_mem->ref = 0u;
+    write_reg_mem->mask = 0xffff'ffffu;
+    write_reg_mem->poll_interval = 10u;
     return ORBIS_OK;
 }
 
