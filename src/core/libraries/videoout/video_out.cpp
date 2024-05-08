@@ -216,6 +216,17 @@ void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
     *label_addr = reinterpret_cast<uintptr_t>(port->buffer_labels.data());
 }
 
+s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void* unk) {
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return 0x8029000b;
+    }
+
+    // TODO
+
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
