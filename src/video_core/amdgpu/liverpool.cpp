@@ -117,6 +117,14 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             }
             case PM4ItOpcode::WriteData: {
                 const auto* write_data = reinterpret_cast<PM4CmdWriteData*>(header);
+                ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
+                const u32 data_size = (header->type3.count.Value() - 2) * 4;
+                if (!write_data->wr_one_addr.Value()) {
+                    std::memcpy(reinterpret_cast<void*>(write_data->Address()), write_data->data,
+                                data_size);
+                } else {
+                    UNREACHABLE();
+                }
                 break;
             }
             case PM4ItOpcode::AcquireMem: {
@@ -125,6 +133,13 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             }
             case PM4ItOpcode::WaitRegMem: {
                 const auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(header);
+                ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+                ASSERT(wait_reg_mem->function.Value() == PM4CmdWaitRegMem::Function::Equal);
+
+                {
+                    std::unique_lock lock{m_reg_mem};
+                    cv_reg_mem.wait(lock, [&]() { return wait_reg_mem->Test(); });
+                }
                 break;
             }
             default:

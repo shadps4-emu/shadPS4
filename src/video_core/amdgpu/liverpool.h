@@ -3,11 +3,14 @@
 
 #pragma once
 
+#include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
 
 #include <array>
+#include <condition_variable>
 #include <functional>
+#include <future>
 
 namespace AmdGpu {
 
@@ -612,9 +615,26 @@ struct Liverpool {
 public:
     Liverpool();
 
+    void Submit(u32* cmdbuf, u32 size_in_bytes) {
+        ASSERT_MSG(!cp.valid(), "Trying to submit while previous submission is pending");
+        cp = std::async(&Liverpool::ProcessCmdList, this, cmdbuf, size_in_bytes);
+    }
+    void SubmitDone() {
+        // This is wrong as `submitDone()` should never be blocking. The behavior will be
+        // reworked with mutiple queues introduction
+        cp.get();
+    }
+    void SetEopCallback(auto const& cb) {
+        eop_callback = cb;
+    }
+
+private:
     void ProcessCmdList(u32* cmdbuf, u32 size_in_bytes);
 
     std::function<void(void)> eop_callback{};
+    std::future<void> cp{};
+    std::condition_variable cv_reg_mem{};
+    std::mutex m_reg_mem{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

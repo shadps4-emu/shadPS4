@@ -27,7 +27,7 @@ template <u32 data_block_size>
 static inline u32* WriteTrailingNop(u32* cmdbuf) {
     auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
     nop->header = PM4Type3Header{PM4ItOpcode::Nop, data_block_size - 1};
-    nop->data_block[0] = 0; // only one out of `data_block_size` is initialized
+    nop->data_block[0] = 0u; // only one out of `data_block_size` is initialized
     return cmdbuf + data_block_size + 1 /* header */;
 }
 
@@ -48,9 +48,8 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->addEvent(kernel_event);
 
-    liverpool->eop_callback = [=]() {
-        eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
-    };
+    liverpool->SetEopCallback(
+        [=]() { eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr); });
     return ORBIS_OK;
 }
 
@@ -82,7 +81,7 @@ s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t add
         wait_reg_mem->poll_addr_hi = u32(addr >> 32u);
         wait_reg_mem->ref = ref;
         wait_reg_mem->mask = mask;
-        wait_reg_mem->poll_interval = 10;
+        wait_reg_mem->poll_interval = 10u;
 
         WriteTrailingNop<2>(cmdbuf + 7);
         return ORBIS_OK;
@@ -652,10 +651,10 @@ s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, 
 
     auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
     wait_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
-    wait_reg_mem->function.Assign(3u);
-    wait_reg_mem->mem_space.Assign(1u);
+    wait_reg_mem->function.Assign(PM4CmdWaitRegMem::Function::Equal);
+    wait_reg_mem->mem_space.Assign(PM4CmdWaitRegMem::MemSpace::Memory);
     *reinterpret_cast<uintptr_t*>(&wait_reg_mem->poll_addr_lo) =
-        (label_addr + buf_idx * sizeof(uintptr_t)) & 0xffff'fffcu;
+        (label_addr + buf_idx * sizeof(uintptr_t)) & ~0x3ull;
     wait_reg_mem->ref = 0u;
     wait_reg_mem->mask = 0xffff'ffffu;
     wait_reg_mem->poll_interval = 10u;
@@ -1303,7 +1302,7 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     write_lock->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
     write_lock->dst_sel.Assign(5u);
     *reinterpret_cast<uintptr_t*>(&write_lock->dst_addr_lo) =
-        (label_addr + buf_idx * sizeof(uintptr_t)) & 0xffff'fffcu;
+        (label_addr + buf_idx * sizeof(uintptr_t)) & ~0x3ull;
     write_lock->data[0] = 1;
 
     auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf + 5);
@@ -1405,7 +1404,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
         }
     }
 
-    liverpool->ProcessCmdList(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
+    liverpool->Submit(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
 
     return ORBIS_OK;
 }
@@ -1416,7 +1415,10 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload() {
 }
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_INFO(Lib_GnmDriver, "called");
+
+    liverpool->SubmitDone();
+
     return ORBIS_OK;
 }
 

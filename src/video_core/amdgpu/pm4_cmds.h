@@ -320,6 +320,19 @@ struct PM4DmaData {
 };
 
 struct PM4CmdWaitRegMem {
+    enum Engine : u32 { Me = 0u, Pfp = 1u };
+    enum MemSpace : u32 { Register = 0u, Memory = 1u };
+    enum Function : u32 {
+        Always = 0u,
+        LessThan = 1u,
+        LessThanEqual = 2u,
+        Equal = 3u,
+        NotEqual = 4u,
+        GreaterThanEqual = 5u,
+        GreaterThan = 6u,
+        Reserved = 7u
+    };
+
     PM4Type3Header header;
     union {
         BitField<0, 3, u32> function;
@@ -332,6 +345,41 @@ struct PM4CmdWaitRegMem {
     u32 ref;
     u32 mask;
     u32 poll_interval;
+
+    u32* Address() const {
+        return reinterpret_cast<u32*>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+    }
+
+    bool Test() const {
+        switch (function.Value()) {
+        case Function::Always: {
+            return true;
+        }
+        case Function::LessThan: {
+            return (*Address() & mask) < ref;
+        }
+        case Function::LessThanEqual: {
+            return (*Address() & mask) <= ref;
+        }
+        case Function::Equal: {
+            return (*Address() & mask) == ref;
+        }
+        case Function::NotEqual: {
+            return (*Address() & mask) != ref;
+        }
+        case Function::GreaterThanEqual: {
+            return (*Address() & mask) >= ref;
+        }
+        case Function::GreaterThan: {
+            return (*Address() & mask) > ref;
+        }
+        case Function::Reserved:
+            [[fallthrough]];
+        default: {
+            UNREACHABLE();
+        }
+        }
+    }
 };
 
 struct PM4CmdWriteData {
@@ -346,6 +394,10 @@ struct PM4CmdWriteData {
     u32 dst_addr_lo;
     u32 dst_addr_hi;
     u32 data[0];
+
+    uintptr_t Address() const {
+        return (uintptr_t(dst_addr_hi) << 32) | dst_addr_lo;
+    }
 };
 
 } // namespace AmdGpu

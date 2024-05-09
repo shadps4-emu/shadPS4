@@ -196,6 +196,9 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
                                 reinterpret_cast<void*>(req.flip_arg));
         }
     }
+
+    // Reset flip label
+    req.port->buffer_labels[req.index] = 0;
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg) {
