@@ -14,9 +14,6 @@
 	path = third-party/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
 	branch = dev
-[submodule "third-party/vulkan"]
-	path = third-party/vulkan
-	url = https://github.com/GPUCode/vulkan
 [submodule "externals/discord-rpc"]
 	path = externals/discord-rpc
 	url = https://github.com/shadps4-emu/ext-discord-rpc.git
