@@ -6,10 +6,6 @@
 	path = third-party/zydis
 	url = https://github.com/zyantific/zydis.git
 	shallow = true
-[submodule "third-party/winpthread"]
-	path = third-party/winpthread
-	url = https://github.com/shadps4/winpthread.git
-	branch = main
 [submodule "third-party/toml11"]
 	path = third-party/toml11
 	url = https://github.com/ToruNiina/toml11
@@ -64,3 +60,6 @@
 [submodule "externals/xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak
+[submodule "externals/winpthreads"]
+	path = externals/winpthreads
+	url = https://github.com/shadps4-emu/winpthreads.git

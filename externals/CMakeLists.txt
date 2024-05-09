@@ -66,3 +66,9 @@ add_subdirectory(robin-map EXCLUDE_FROM_ALL)
 
 # Xbyak
 add_subdirectory(xbyak EXCLUDE_FROM_ALL)
+
+# Winpthreads
+if (WIN32)
+    add_subdirectory(winpthreads EXCLUDE_FROM_ALL)
+    target_include_directories(winpthreads INTERFACE winpthreads/include)
+endif()

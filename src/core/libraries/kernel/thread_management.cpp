@@ -8,6 +8,9 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
+#ifdef _WIN64
+#include <windows.h>
+#endif
 
 namespace Libraries::Kernel {
 
