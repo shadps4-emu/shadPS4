@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include "common/bit_field.h"
+#include "common/rdtsc.h"
 #include "common/types.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
@@ -304,6 +305,10 @@ struct PM4CmdEventWriteEop {
         }
         case DataSelect::Data64: {
             *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::PerfCounter: {
+            *Address<u64>() = Common::FencedRDTSC();
             break;
         }
         default: {
