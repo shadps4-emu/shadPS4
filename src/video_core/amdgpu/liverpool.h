@@ -624,17 +624,11 @@ public:
         // reworked with mutiple queues introduction
         cp.get();
     }
-    void SetEopCallback(auto const& cb) {
-        eop_callback = cb;
-    }
 
 private:
     void ProcessCmdList(u32* cmdbuf, u32 size_in_bytes);
 
-    std::function<void(void)> eop_callback{};
     std::future<void> cp{};
-    std::condition_variable cv_reg_mem{};
-    std::mutex m_reg_mem{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

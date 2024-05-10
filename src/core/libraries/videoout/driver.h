@@ -34,6 +34,11 @@ struct VideoOutPort {
         }
         return index;
     }
+
+    [[nodiscard]] int NumRegisteredBuffers() const {
+        return std::count_if(buffer_slots.cbegin(), buffer_slots.cend(),
+                             [](auto& buffer) { return buffer.group_index != -1; });
+    }
 };
 
 struct ServiceThreadParams {
@@ -59,7 +64,7 @@ public:
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
     void Flip(std::chrono::microseconds timeout);
-    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg);
+    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
 
     void Vblank();
 
@@ -70,6 +75,7 @@ private:
         s32 index;
         s64 flip_arg;
         u64 submit_tsc;
+        bool eop;
     };
 
     std::mutex mutex;

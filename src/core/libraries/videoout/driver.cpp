@@ -6,6 +6,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
+#include "core/platform.h"
 
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
@@ -199,16 +200,19 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
 
     // Reset flip label
     req.port->buffer_labels[req.index] = 0;
+    LOG_INFO(Lib_VideoOut, "Flip done [buf = {}]", req.index);
 }
 
-bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg) {
+bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
+                                bool is_eop /*= false*/) {
     const auto& buffer = port->buffer_slots[index];
     const auto& group = port->groups[buffer.group_index];
     auto* frame = renderer->PrepareFrame(group, buffer.address_left);
 
     std::scoped_lock lock{mutex};
 
-    if (requests.size() >= 2) {
+    if (requests.size() >= port->NumRegisteredBuffers()) {
+        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
         return false;
     }
 
@@ -218,6 +222,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg) {
         .index = index,
         .flip_arg = flip_arg,
         .submit_tsc = Libraries::Kernel::sceKernelReadTsc(),
+        .eop = is_eop,
     });
 
     port->flip_status.flipPendingNum = static_cast<int>(requests.size());

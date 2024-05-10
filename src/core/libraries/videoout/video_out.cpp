@@ -10,6 +10,7 @@
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/loader/symbols_resolver.h"
+#include "core/platform.h"
 
 namespace Libraries::VideoOut {
 
@@ -216,13 +217,17 @@ void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
     *label_addr = reinterpret_cast<uintptr_t>(port->buffer_labels.data());
 }
 
-s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void* unk) {
+s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** unk) {
     auto* port = driver->GetPort(handle);
     if (!port) {
         return 0x8029000b;
     }
 
-    // TODO
+    Platform::IrqC::Instance()->RegisterOnce([=](Platform::InterruptId irq) {
+        ASSERT_MSG(irq == Platform::InterruptId::GfxEop, "An unexpected IRQ occured");
+        const auto result = driver->SubmitFlip(port, buf_id, arg, true);
+        ASSERT_MSG(result, "EOP flip submission failed");
+    });
 
     return ORBIS_OK;
 }

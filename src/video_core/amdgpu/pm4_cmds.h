@@ -6,6 +6,7 @@
 #include <cstring>
 #include "common/bit_field.h"
 #include "common/types.h"
+#include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
 namespace AmdGpu {
@@ -282,8 +283,9 @@ struct PM4CmdEventWriteEop {
     u32 data_lo; ///< Value that will be written to memory when event occurs
     u32 data_hi; ///< Value that will be written to memory when event occurs
 
-    u64* Address() const {
-        return reinterpret_cast<u64*>(address_lo | u64(address_hi) << 32);
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -292,6 +294,36 @@ struct PM4CmdEventWriteEop {
 
     u64 DataQWord() const {
         return data_lo | u64(data_hi) << 32;
+    }
+
+    void SignalFence() const {
+        switch (data_sel.Value()) {
+        case DataSelect::Data32Low: {
+            *Address<u32>() = DataDWord();
+            break;
+        }
+        case DataSelect::Data64: {
+            *Address<u64>() = DataQWord();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+
+        switch (int_sel.Value()) {
+        case InterruptSelect::None: {
+            // No interrupt
+            break;
+        }
+        case InterruptSelect::IrqWhenWriteConfirm: {
+            Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
     }
 };
 
@@ -434,8 +466,15 @@ struct PM4CmdEventWriteEos {
     }
 
     void SignalFence() const {
-        ASSERT_MSG(command.Value() == Command::SingalFence, "Invalid action on packet");
-        *Address() = DataDWord();
+        switch (command.Value()) {
+        case Command::SingalFence: {
+            *Address() = DataDWord();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
     }
 };
 

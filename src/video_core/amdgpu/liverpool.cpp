@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/io_file.h"
+#include "common/thread.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 
@@ -11,6 +12,8 @@ namespace AmdGpu {
 Liverpool::Liverpool() = default;
 
 void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
+    Common::SetCurrentThreadName("CommandProcessor_Gfx");
+
     auto* header = reinterpret_cast<PM4Header*>(cmdbuf);
     u32 processed_cmd_size = 0;
 
@@ -70,54 +73,12 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             }
             case PM4ItOpcode::EventWriteEos: {
                 const auto* event_eos = reinterpret_cast<PM4CmdEventWriteEos*>(header);
-                switch (event_eos->command.Value()) {
-                case PM4CmdEventWriteEos::Command::SingalFence: {
-                    event_eos->SignalFence();
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-                }
+                event_eos->SignalFence();
                 break;
             }
             case PM4ItOpcode::EventWriteEop: {
                 const auto* event_eop = reinterpret_cast<PM4CmdEventWriteEop*>(header);
-                const InterruptSelect irq_sel = event_eop->int_sel;
-                const DataSelect data_sel = event_eop->data_sel;
-
-                // Write back data if required
-                switch (data_sel) {
-                case DataSelect::Data32Low: {
-                    *reinterpret_cast<u32*>(event_eop->Address()) = event_eop->DataDWord();
-                    break;
-                }
-                case DataSelect::Data64: {
-                    *event_eop->Address() = event_eop->DataQWord();
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-                }
-
-                switch (irq_sel) {
-                case InterruptSelect::None: {
-                    // No interrupt
-                    break;
-                }
-                case InterruptSelect::IrqWhenWriteConfirm: {
-                    if (eop_callback) {
-                        eop_callback();
-                    } else {
-                        UNREACHABLE_MSG("EOP callback is not registered");
-                    }
-                    break;
-                }
-                default: {
-                    UNREACHABLE();
-                }
-                }
+                event_eop->SignalFence();
                 break;
             }
             case PM4ItOpcode::DmaData: {
@@ -143,11 +104,9 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             case PM4ItOpcode::WaitRegMem: {
                 const auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(header);
                 ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
-                ASSERT(wait_reg_mem->function.Value() == PM4CmdWaitRegMem::Function::Equal);
-
-                {
-                    std::unique_lock lock{m_reg_mem};
-                    cv_reg_mem.wait(lock, [&]() { return wait_reg_mem->Test(); });
+                while (!wait_reg_mem->Test()) {
+                    using namespace std::chrono_literals;
+                    std::this_thread::sleep_for(1ms);
                 }
                 break;
             }

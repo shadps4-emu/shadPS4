@@ -104,7 +104,7 @@ void Vblank();
 
 // Internal system functions
 void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr);
-s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void* unk);
+s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** unk);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 

@@ -7,6 +7,7 @@
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
@@ -48,8 +49,12 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->addEvent(kernel_event);
 
-    liverpool->SetEopCallback(
-        [=]() { eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr); });
+    Platform::IrqC::Instance()->Register([=](Platform::InterruptId irq) {
+        ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
+                   "An unexpected IRQ occured"); // We need to conver IRQ# to event id and do proper
+                                                 // filtering in trigger function
+        eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
+    });
     return ORBIS_OK;
 }
 
@@ -158,6 +163,8 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
     }
 
     eq->removeEvent(id);
+
+    Platform::IrqC::Instance()->Unregister();
     return ORBIS_OK;
 }
 
@@ -1356,7 +1363,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addr
                                                    u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg) {
-    LOG_INFO(Lib_GnmDriver, "called");
+    LOG_INFO(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
     auto* cmdbuf = reinterpret_cast<u32*>(dcb_gpu_addrs[count - 1]);
     const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
