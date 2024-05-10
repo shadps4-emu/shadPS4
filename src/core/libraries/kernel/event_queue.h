@@ -42,11 +42,22 @@ using ResetFunc = void (*)(EqueueEvent* event);
 using DeleteFunc = void (*)(EqueueInternal* eq, EqueueEvent* event);
 
 struct SceKernelEvent {
+    enum Type : u64 {
+        Compute0RelMem = 0x00,
+        Compute1RelMem = 0x01,
+        Compute2RelMem = 0x02,
+        Compute3RelMem = 0x03,
+        Compute4RelMem = 0x04,
+        Compute5RelMem = 0x05,
+        Compute6RelMem = 0x06,
+        GfxEop = 0x40
+    };
+
     u64 ident = 0;  /* identifier for this event */
     s16 filter = 0; /* filter for event */
     u16 flags = 0;
     u32 fflags = 0;
-    s64 data = 0;
+    u64 data = 0;
     void* udata = nullptr; /* opaque user data identifier */
 };
 
@@ -80,6 +91,7 @@ public:
         this->m_name = m_name;
     }
     int addEvent(const EqueueEvent& event);
+    int removeEvent(u64 id);
     int waitForEvents(SceKernelEvent* ev, int num, u32 micros);
     bool triggerEvent(u64 ident, s16 filter, void* trigger_data);
     int getTriggeredEvents(SceKernelEvent* ev, int num);

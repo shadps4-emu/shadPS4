@@ -11,29 +11,34 @@ namespace Libraries::Kernel {
 int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
     if (eq == nullptr) {
         LOG_ERROR(Kernel_Event, "Event queue is null!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (name == nullptr) {
-        LOG_ERROR(Kernel_Event, "Event queue name is invalid!");
-        return SCE_KERNEL_ERROR_EFAULT;
-    }
-    if (name == NULL) {
         LOG_ERROR(Kernel_Event, "Event queue name is null!");
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     // Maximum is 32 including null terminator
     static constexpr size_t MaxEventQueueNameSize = 32;
     if (std::strlen(name) > MaxEventQueueNameSize) {
         LOG_ERROR(Kernel_Event, "Event queue name exceeds 32 bytes!");
-        return SCE_KERNEL_ERROR_ENAMETOOLONG;
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
     LOG_INFO(Kernel_Event, "name = {}", name);
 
     *eq = new EqueueInternal;
     (*eq)->setName(std::string(name));
-    return SCE_OK;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq) {
+    if (eq == nullptr) {
+        return SCE_KERNEL_ERROR_EBADF;
+    }
+
+    delete eq;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int num, int* out,

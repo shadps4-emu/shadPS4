@@ -49,7 +49,7 @@ enum class PM4ItOpcode : u32 {
     PremableCntl = 0x4A,
     DmaData = 0x50,
     ContextRegRmw = 0x51,
-    Unknown58 = 0x58,
+    AcquireMem = 0x58,
     LoadShReg = 0x5F,
     LoadConfigReg = 0x60,
     LoadContextReg = 0x61,
