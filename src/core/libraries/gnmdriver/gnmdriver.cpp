@@ -658,8 +658,7 @@ s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, 
 
     auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
     wait_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
-    wait_reg_mem->function.Assign(PM4CmdWaitRegMem::Function::Equal);
-    wait_reg_mem->mem_space.Assign(PM4CmdWaitRegMem::MemSpace::Memory);
+    wait_reg_mem->raw = 0x13u;
     *reinterpret_cast<uintptr_t*>(&wait_reg_mem->poll_addr_lo) =
         (label_addr + buf_idx * sizeof(uintptr_t)) & ~0x3ull;
     wait_reg_mem->ref = 0u;
@@ -1285,7 +1284,7 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     std::array<u32, 7> backup{};
     std::memcpy(backup.data(), cmdbuf, backup.size() * sizeof(decltype(backup)::value_type));
 
-    ASSERT_MSG(((backup[2] & 3) == 0u) || (backup[1] != PM4CmdNop::PayloadType::PrepareFlip),
+    ASSERT_MSG(((backup[2] & 3) == 0u) || (backup[1] != PM4CmdNop::PayloadType::PrepareFlipLabel),
                "Invalid flip packet");
     ASSERT_MSG(buf_idx != 0xffff'ffffu, "Invalid VO buffer index");
 
@@ -1307,7 +1306,7 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     // Write event to lock the VO surface
     auto* write_lock = reinterpret_cast<PM4CmdWriteData*>(cmdbuf);
     write_lock->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
-    write_lock->dst_sel.Assign(5u);
+    write_lock->raw = 0x500u;
     *reinterpret_cast<uintptr_t*>(&write_lock->dst_addr_lo) =
         (label_addr + buf_idx * sizeof(uintptr_t)) & ~0x3ull;
     write_lock->data[0] = 1;
@@ -1325,7 +1324,7 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
             // Write event to update label
             auto* write_label = reinterpret_cast<PM4CmdWriteData*>(cmdbuf + 0x3b);
             write_label->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
-            write_label->dst_sel.Assign(5u);
+            write_label->raw = 0x500u;
             write_label->dst_addr_lo = backup[2] & 0xffff'fffcu;
             write_label->dst_addr_hi = backup[3];
             write_label->data[0] = backup[4];
