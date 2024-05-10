@@ -1307,8 +1307,8 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     auto* write_lock = reinterpret_cast<PM4CmdWriteData*>(cmdbuf);
     write_lock->header = PM4Type3Header{PM4ItOpcode::WriteData, 3};
     write_lock->raw = 0x500u;
-    *reinterpret_cast<uintptr_t*>(&write_lock->dst_addr_lo) =
-        (label_addr + buf_idx * sizeof(uintptr_t)) & ~0x3ull;
+    const auto addr = (label_addr + buf_idx * sizeof(label_addr)) & ~0x3ull;
+    write_lock->Address<uintptr_t>(addr);
     write_lock->data[0] = 1;
 
     auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf + 5);

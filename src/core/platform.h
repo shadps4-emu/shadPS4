@@ -38,10 +38,9 @@ struct IrqController {
     void Register(IrqHandler handler) {
         ASSERT_MSG(!persistent_handler.has_value(),
                    "Too many persistent handlers"); // Add a slot map if so
-        {
-            std::unique_lock lock{m_lock};
-            persistent_handler.emplace(handler);
-        }
+
+        std::unique_lock lock{m_lock};
+        persistent_handler.emplace(handler);
     }
 
     void Unregister() {
@@ -50,20 +49,19 @@ struct IrqController {
     }
 
     void Signal(InterruptId irq) {
+        std::unique_lock lock{m_lock};
+
         LOG_TRACE(Core, "IRQ signaled: {}", magic_enum::enum_name(irq));
-        {
-            std::unique_lock lock{m_lock};
 
-            if (persistent_handler) {
-                persistent_handler.value()(irq);
-            }
+        if (persistent_handler) {
+            persistent_handler.value()(irq);
+        }
 
-            while (!one_time_subscribers.empty()) {
-                const auto& h = one_time_subscribers.front();
-                h(irq);
+        while (!one_time_subscribers.empty()) {
+            const auto& h = one_time_subscribers.front();
+            h(irq);
 
-                one_time_subscribers.pop();
-            }
+            one_time_subscribers.pop();
         }
     }
 

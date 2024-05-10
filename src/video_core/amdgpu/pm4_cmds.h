@@ -428,12 +428,23 @@ struct PM4CmdWriteData {
         BitField<30, 1, u32> engine_sel;
         u32 raw;
     };
-    u32 dst_addr_lo;
-    u32 dst_addr_hi;
+    union {
+        struct {
+            u32 dst_addr_lo;
+            u32 dst_addr_hi;
+        };
+        u64 addr64;
+    };
     u32 data[0];
 
-    uintptr_t Address() const {
-        return (uintptr_t(dst_addr_hi) << 32) | dst_addr_lo;
+    template <typename T>
+    void Address(T addr) {
+        addr64 = reinterpret_cast<u64>(addr);
+    }
+
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>(addr64);
     }
 };
 

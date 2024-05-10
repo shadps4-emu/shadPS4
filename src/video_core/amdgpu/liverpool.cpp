@@ -90,8 +90,7 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
                 ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
                 const u32 data_size = (header->type3.count.Value() - 2) * 4;
                 if (!write_data->wr_one_addr.Value()) {
-                    std::memcpy(reinterpret_cast<void*>(write_data->Address()), write_data->data,
-                                data_size);
+                    std::memcpy(write_data->Address<void*>(), write_data->data, data_size);
                 } else {
                     UNREACHABLE();
                 }
