@@ -320,9 +320,9 @@ struct PM4DmaData {
 };
 
 struct PM4CmdWaitRegMem {
-    enum Engine : u32 { Me = 0u, Pfp = 1u };
-    enum MemSpace : u32 { Register = 0u, Memory = 1u };
-    enum Function : u32 {
+    enum class Engine : u32 { Me = 0u, Pfp = 1u };
+    enum class MemSpace : u32 { Register = 0u, Memory = 1u };
+    enum class Function : u32 {
         Always = 0u,
         LessThan = 1u,
         LessThanEqual = 2u,
@@ -335,9 +335,9 @@ struct PM4CmdWaitRegMem {
 
     PM4Type3Header header;
     union {
-        BitField<0, 3, u32> function;
-        BitField<4, 1, u32> mem_space;
-        BitField<8, 1, u32> engine;
+        BitField<0, 3, Function> function;
+        BitField<4, 1, MemSpace> mem_space;
+        BitField<8, 1, Engine> engine;
         u32 raw;
     };
     u32 poll_addr_lo;
@@ -397,6 +397,45 @@ struct PM4CmdWriteData {
 
     uintptr_t Address() const {
         return (uintptr_t(dst_addr_hi) << 32) | dst_addr_lo;
+    }
+};
+
+struct PM4CmdEventWriteEos {
+    enum class Command : u32 {
+        GdsStore = 1u,
+        SingalFence = 2u,
+    };
+
+    PM4Type3Header header;
+    union {
+        u32 event_control;
+        BitField<0, 6, u32> event_type;  ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, u32> event_index; ///< Event index
+    };
+    u32 address_lo;
+    union {
+        u32 cmd_info;
+        BitField<0, 16, u32> address_hi;  ///< High bits of address
+        BitField<29, 3, Command> command; ///< Command
+    };
+    union {
+        u32 data; ///< Fence value that will be written to memory when event occurs
+        BitField<0, 16, u32>
+            gds_index; ///< Indexed offset from the start of the segment within the partition
+        BitField<16, 16, u32> size; ///< Number of DWs to read from the GDS
+    };
+
+    u32* Address() const {
+        return reinterpret_cast<u32*>(address_lo | u64(address_hi) << 32);
+    }
+
+    u32 DataDWord() const {
+        return this->data;
+    }
+
+    void SignalFence() const {
+        ASSERT_MSG(command.Value() == Command::SingalFence, "Invalid action on packet");
+        *Address() = DataDWord();
     }
 };
 

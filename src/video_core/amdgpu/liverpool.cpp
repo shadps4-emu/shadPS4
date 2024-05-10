@@ -69,7 +69,16 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
                 break;
             }
             case PM4ItOpcode::EventWriteEos: {
-                // const auto* event_eos = reinterpret_cast<PM4CmdEventWriteEos*>(header);
+                const auto* event_eos = reinterpret_cast<PM4CmdEventWriteEos*>(header);
+                switch (event_eos->command.Value()) {
+                case PM4CmdEventWriteEos::Command::SingalFence: {
+                    event_eos->SignalFence();
+                    break;
+                }
+                default: {
+                    UNREACHABLE();
+                }
+                }
                 break;
             }
             case PM4ItOpcode::EventWriteEop: {
