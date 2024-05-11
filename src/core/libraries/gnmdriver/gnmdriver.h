@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/kernel/event_queues.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,7 +12,9 @@ class SymbolsResolver;
 
 namespace Libraries::GnmDriver {
 
-int PS4_SYSV_ABI sceGnmAddEqEvent();
+using namespace Kernel;
+
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
 int PS4_SYSV_ABI sceGnmBeginWorkload();
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
@@ -28,7 +31,7 @@ int PS4_SYSV_ABI sceGnmDebuggerSetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerWriteGds();
 int PS4_SYSV_ABI sceGnmDebuggerWriteSqIndirectRegister();
 int PS4_SYSV_ABI sceGnmDebugHardwareStatus();
-int PS4_SYSV_ABI sceGnmDeleteEqEvent();
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id);
 int PS4_SYSV_ABI sceGnmDestroyWorkloadStream();
 int PS4_SYSV_ABI sceGnmDingDong();
 int PS4_SYSV_ABI sceGnmDingDongForWorkload();
@@ -104,7 +107,7 @@ s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marke
 int PS4_SYSV_ABI sceGnmInsertSetColorMarker();
 int PS4_SYSV_ABI sceGnmInsertSetMarker();
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker();
-int PS4_SYSV_ABI sceGnmInsertWaitFlipDone();
+s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, u32 buf_idx);
 int PS4_SYSV_ABI sceGnmIsCoredumpValid();
 int PS4_SYSV_ABI sceGnmIsUserPaEnabled();
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex();
@@ -137,7 +140,7 @@ s32 PS4_SYSV_ABI sceGnmSetCsShader(u32* cmdbuf, u32 size, const u32* cs_regs);
 s32 PS4_SYSV_ABI sceGnmSetCsShaderWithModifier(u32* cmdbuf, u32 size, const u32* cs_regs,
                                                u32 modifier);
 int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader();
-int PS4_SYSV_ABI sceGnmSetEmbeddedVsShader();
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier);
 int PS4_SYSV_ABI sceGnmSetEsShader();
 int PS4_SYSV_ABI sceGnmSetGsRingSizes();
 int PS4_SYSV_ABI sceGnmSetGsShader();
@@ -191,9 +194,12 @@ int PS4_SYSV_ABI sceGnmSqttStopTrace();
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer();
 int PS4_SYSV_ABI sceGnmSqttSwitchTraceBuffer2();
 int PS4_SYSV_ABI sceGnmSqttWaitForEvent();
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers();
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+                                                   u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+                                                   u32* ccb_sizes_in_bytes, u32 vo_handle,
+                                                   u32 buf_idx, u32 flip_mode, u32 flip_arg);
 int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload();
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes);
 int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload();

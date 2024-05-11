@@ -5,7 +5,9 @@
 
 #include <cstring>
 #include "common/bit_field.h"
+#include "common/rdtsc.h"
 #include "common/types.h"
+#include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
 namespace AmdGpu {
@@ -201,13 +203,18 @@ struct PM4CmdNop {
     PM4Type3Header header;
     u32 data_block[0];
 
-    enum class PayloadType : u32 {
-        DebugMarkerPush = 0x68750001,      ///< Begin of GPU event scope
-        DebugMarkerPop = 0x68750002,       ///< End of GPU event scope
-        SetVsharpInUdata = 0x68750004,     ///< Indicates that V# will be set in the next packet
-        SetTsharpInUdata = 0x68750005,     ///< Indicates that T# will be set in the next packet
-        SetSsharpInUdata = 0x68750006,     ///< Indicates that S# will be set in the next packet
-        DebugColorMarkerPush = 0x6875000e, ///< Begin of GPU event scope with color
+    enum PayloadType : u32 {
+        DebugMarkerPush = 0x68750001u,      ///< Begin of GPU event scope
+        DebugMarkerPop = 0x68750002u,       ///< End of GPU event scope
+        SetVsharpInUdata = 0x68750004u,     ///< Indicates that V# will be set in the next packet
+        SetTsharpInUdata = 0x68750005u,     ///< Indicates that T# will be set in the next packet
+        SetSsharpInUdata = 0x68750006u,     ///< Indicates that S# will be set in the next packet
+        DebugColorMarkerPush = 0x6875000eu, ///< Begin of GPU event scope with color
+        PatchedFlip = 0x68750776u,          ///< Patched flip marker
+        PrepareFlip = 0x68750777u,          ///< Flip marker
+        PrepareFlipLabel = 0x68750778u,     ///< Flip marker with label address
+        PrepareFlipInterrupt = 0x68750780u, ///< Flip marker with interrupt
+        PrepareFlipInterruptLabel = 0x68750781u, ///< Flip marker with interrupt and label
     };
 };
 
@@ -277,12 +284,51 @@ struct PM4CmdEventWriteEop {
     u32 data_lo; ///< Value that will be written to memory when event occurs
     u32 data_hi; ///< Value that will be written to memory when event occurs
 
-    u64* Address() const {
-        return reinterpret_cast<u64*>(address_lo | u64(address_hi) << 32);
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+    }
+
+    u32 DataDWord() const {
+        return data_lo;
     }
 
     u64 DataQWord() const {
         return data_lo | u64(data_hi) << 32;
+    }
+
+    void SignalFence() const {
+        switch (data_sel.Value()) {
+        case DataSelect::Data32Low: {
+            *Address<u32>() = DataDWord();
+            break;
+        }
+        case DataSelect::Data64: {
+            *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::PerfCounter: {
+            *Address<u64>() = Common::FencedRDTSC();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+
+        switch (int_sel.Value()) {
+        case InterruptSelect::None: {
+            // No interrupt
+            break;
+        }
+        case InterruptSelect::IrqWhenWriteConfirm: {
+            Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
     }
 };
 
@@ -311,11 +357,24 @@ struct PM4DmaData {
 };
 
 struct PM4CmdWaitRegMem {
+    enum class Engine : u32 { Me = 0u, Pfp = 1u };
+    enum class MemSpace : u32 { Register = 0u, Memory = 1u };
+    enum class Function : u32 {
+        Always = 0u,
+        LessThan = 1u,
+        LessThanEqual = 2u,
+        Equal = 3u,
+        NotEqual = 4u,
+        GreaterThanEqual = 5u,
+        GreaterThan = 6u,
+        Reserved = 7u
+    };
+
     PM4Type3Header header;
     union {
-        BitField<0, 3, u32> function;
-        BitField<4, 1, u32> mem_space;
-        BitField<8, 1, u32> engine;
+        BitField<0, 3, Function> function;
+        BitField<4, 1, MemSpace> mem_space;
+        BitField<8, 1, Engine> engine;
         u32 raw;
     };
     u32 poll_addr_lo;
@@ -323,6 +382,116 @@ struct PM4CmdWaitRegMem {
     u32 ref;
     u32 mask;
     u32 poll_interval;
+
+    u32* Address() const {
+        return reinterpret_cast<u32*>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+    }
+
+    bool Test() const {
+        switch (function.Value()) {
+        case Function::Always: {
+            return true;
+        }
+        case Function::LessThan: {
+            return (*Address() & mask) < ref;
+        }
+        case Function::LessThanEqual: {
+            return (*Address() & mask) <= ref;
+        }
+        case Function::Equal: {
+            return (*Address() & mask) == ref;
+        }
+        case Function::NotEqual: {
+            return (*Address() & mask) != ref;
+        }
+        case Function::GreaterThanEqual: {
+            return (*Address() & mask) >= ref;
+        }
+        case Function::GreaterThan: {
+            return (*Address() & mask) > ref;
+        }
+        case Function::Reserved:
+            [[fallthrough]];
+        default: {
+            UNREACHABLE();
+        }
+        }
+    }
+};
+
+struct PM4CmdWriteData {
+    PM4Type3Header header;
+    union {
+        BitField<8, 11, u32> dst_sel;
+        BitField<16, 1, u32> wr_one_addr;
+        BitField<20, 1, u32> wr_confirm;
+        BitField<30, 1, u32> engine_sel;
+        u32 raw;
+    };
+    union {
+        struct {
+            u32 dst_addr_lo;
+            u32 dst_addr_hi;
+        };
+        u64 addr64;
+    };
+    u32 data[0];
+
+    template <typename T>
+    void Address(T addr) {
+        addr64 = reinterpret_cast<u64>(addr);
+    }
+
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>(addr64);
+    }
+};
+
+struct PM4CmdEventWriteEos {
+    enum class Command : u32 {
+        GdsStore = 1u,
+        SingalFence = 2u,
+    };
+
+    PM4Type3Header header;
+    union {
+        u32 event_control;
+        BitField<0, 6, u32> event_type;  ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, u32> event_index; ///< Event index
+    };
+    u32 address_lo;
+    union {
+        u32 cmd_info;
+        BitField<0, 16, u32> address_hi;  ///< High bits of address
+        BitField<29, 3, Command> command; ///< Command
+    };
+    union {
+        u32 data; ///< Fence value that will be written to memory when event occurs
+        BitField<0, 16, u32>
+            gds_index; ///< Indexed offset from the start of the segment within the partition
+        BitField<16, 16, u32> size; ///< Number of DWs to read from the GDS
+    };
+
+    u32* Address() const {
+        return reinterpret_cast<u32*>(address_lo | u64(address_hi) << 32);
+    }
+
+    u32 DataDWord() const {
+        return this->data;
+    }
+
+    void SignalFence() const {
+        switch (command.Value()) {
+        case Command::SingalFence: {
+            *Address() = DataDWord();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+    }
 };
 
 } // namespace AmdGpu

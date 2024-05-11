@@ -19,6 +19,8 @@ struct VideoOutPort {
     bool is_open = false;
     SceVideoOutResolutionStatus resolution;
     std::array<VideoOutBuffer, MaxDisplayBuffers> buffer_slots;
+    std::array<uintptr_t, MaxDisplayBuffers> buffer_labels; // should be contiguous in memory
+    static_assert(sizeof(buffer_labels[0]) == 8u);
     std::array<BufferAttributeGroup, MaxDisplayBufferGroups> groups;
     FlipStatus flip_status;
     SceVideoOutVblankStatus vblank_status;
@@ -31,6 +33,11 @@ struct VideoOutPort {
             index++;
         }
         return index;
+    }
+
+    [[nodiscard]] int NumRegisteredBuffers() const {
+        return std::count_if(buffer_slots.cbegin(), buffer_slots.cend(),
+                             [](auto& buffer) { return buffer.group_index != -1; });
     }
 };
 
@@ -57,7 +64,7 @@ public:
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
     void Flip(std::chrono::microseconds timeout);
-    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg);
+    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
 
     void Vblank();
 
@@ -68,6 +75,7 @@ private:
         s32 index;
         s64 flip_arg;
         u64 submit_tsc;
+        bool eop;
     };
 
     std::mutex mutex;
