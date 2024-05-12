@@ -158,6 +158,27 @@ s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
+                                                struct OrbisTimesec* st, unsigned long* dst_sec) {
+    LOG_TRACE(Kernel, "Called");
+    const auto* time_zone = std::chrono::current_zone();
+    auto info = time_zone->get_info(std::chrono::system_clock::now());
+
+    *local_time = info.offset.count() + info.save.count() * 60 + time;
+
+    if (st != nullptr) {
+        st->t = time;
+        st->west_sec = info.offset.count() * 60;
+        st->dst_sec = info.save.count() * 60;
+    }
+
+    if (dst_sec != nullptr) {
+        *dst_sec = info.save.count() * 60;
+    }
+
+    return ORBIS_OK;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -179,6 +200,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
+    LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);
