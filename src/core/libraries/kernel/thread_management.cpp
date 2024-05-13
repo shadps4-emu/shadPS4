@@ -899,6 +899,71 @@ int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
     return ORBIS_OK;
 }
 
+ScePthread PS4_SYSV_ABI pthread_self() {
+    return g_pthread_self;
+}
+
+int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_cond_signal(&(*cond)->cond);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondSignal, result={}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
+    if (cond == nullptr || *cond == nullptr) {
+        // return SCE_KERNEL_ERROR_EINVAL;
+        cond = static_cast<ScePthreadCond*>(createCond(cond)); // check this. Kero Blaster.
+    }
+    if (mutex == nullptr || *mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_cond_wait(&(*cond)->cond, &(*mutex)->pth_mutex);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondWait, result={}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EINTR:
+        return SCE_KERNEL_ERROR_EINTR;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
+    if (attr == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_condattr_destroy(&(*attr)->cond_attr);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -909,6 +974,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
 
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
+    LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, pthread_self);
     LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetaffinity);
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
@@ -931,6 +997,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
     LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, scePthreadCondBroadcast);
+    LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", 1, 1, scePthreadCondWait);
+    LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
