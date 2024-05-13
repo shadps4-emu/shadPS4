@@ -175,6 +175,8 @@ set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc/libc_string.h
                  src/core/libraries/libc/libc_stdlib.cpp
                  src/core/libraries/libc/libc_stdlib.h
+                 src/core/libraries/libc_internal/libc_internal.cpp
+                 src/core/libraries/libc_internal/libc_internal.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
