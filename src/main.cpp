@@ -70,6 +70,14 @@ int main(int argc, char* argv[]) {
     Libraries::InitHLELibs(&linker->getHLESymbols());
     linker->LoadModule(path);
 
+    // check if we have system modules to load
+    const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
+        if (entry.path().filename() == "libSceNgs2.sprx") {
+            LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
+            linker->LoadModule(entry.path().string().c_str());
+        }
+    }
     // Check if there is a libc.prx in sce_module folder
     bool found = false;
     if (Config::isLleLibc()) {
