@@ -403,7 +403,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore winpthread clang_rt.builtins-x86_64.lib)
+    target_link_libraries(shadps4 PRIVATE mincore winpthreads clang_rt.builtins-x86_64.lib)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
     if (MSVC)
@@ -438,9 +438,3 @@ add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:SDL3-shared>
      $<TARGET_FILE_DIR:shadps4>)
-
-if (WIN32)
- add_custom_command(TARGET shadps4 POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     "${PROJECT_SOURCE_DIR}/third-party/winpthread/bin/libwinpthread-1.dll" $<TARGET_FILE_DIR:shadps4>)
-endif()

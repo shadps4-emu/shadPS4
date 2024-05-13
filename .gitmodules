@@ -6,10 +6,6 @@
 	path = third-party/zydis
 	url = https://github.com/zyantific/zydis.git
 	shallow = true
-[submodule "third-party/winpthread"]
-	path = third-party/winpthread
-	url = https://github.com/shadps4/winpthread.git
-	branch = main
 [submodule "third-party/toml11"]
 	path = third-party/toml11
 	url = https://github.com/ToruNiina/toml11
@@ -18,9 +14,6 @@
 	path = third-party/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
 	branch = dev
-[submodule "third-party/vulkan"]
-	path = third-party/vulkan
-	url = https://github.com/GPUCode/vulkan
 [submodule "externals/discord-rpc"]
 	path = externals/discord-rpc
 	url = https://github.com/shadps4-emu/ext-discord-rpc.git
@@ -64,3 +57,6 @@
 [submodule "externals/xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak
+[submodule "externals/winpthreads"]
+	path = externals/winpthreads
+	url = https://github.com/shadps4-emu/winpthreads.git

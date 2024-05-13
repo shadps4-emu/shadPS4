@@ -12,15 +12,6 @@ add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
 # Toml11
 add_subdirectory(toml11 EXCLUDE_FROM_ALL)
 
-# Vulkan
-add_subdirectory(vulkan EXCLUDE_FROM_ALL)
-
-# Winpthreads
-if (WIN32)
-    add_subdirectory(winpthread EXCLUDE_FROM_ALL)
-    target_include_directories(winpthread INTERFACE winpthread/include)
-endif()
-
 # xxHash
 add_library(xxhash INTERFACE)
 target_include_directories(xxhash INTERFACE xxhash)

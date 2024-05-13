@@ -8,6 +8,9 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
+#ifdef _WIN64
+#include <windows.h>
+#endif
 
 namespace Libraries::Kernel {
 
@@ -890,6 +893,12 @@ void PS4_SYSV_ABI scePthreadYield() {
     sched_yield();
 }
 
+int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
+    LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
+    thread->is_detached = true;
+    return ORBIS_OK;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -897,11 +906,13 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DzES9hQF4f4", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedparam);
     LIB_FUNCTION("nsYoNRywwNg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrInit);
     LIB_FUNCTION("62KCwEMmzcM", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrDestroy);
+    LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
 
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetaffinity);
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
+    LIB_FUNCTION("UTXzJbWhhTE", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstacksize);
 
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
@@ -928,6 +939,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
 
     // openorbis weird functions
