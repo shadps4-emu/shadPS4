@@ -964,6 +964,29 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     }
 }
 
+int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
+
+    if (mutex == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_mutex_trylock(&(*mutex)->pth_mutex);
+    if (result != 0) {
+        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+    }
+    switch (result) {
+    case 0:
+        return ORBIS_OK;
+    case EAGAIN:
+        return ORBIS_KERNEL_ERROR_EAGAIN;
+    case EBUSY:
+        return ORBIS_KERNEL_ERROR_EBUSY;
+    case EINVAL:
+    default:
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -993,6 +1016,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrSetprotocol);
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
+    LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
     // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
