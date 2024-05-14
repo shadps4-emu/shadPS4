@@ -35,5 +35,9 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
                                                u64 alignment, int memoryType, s64* physAddrOut);
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
                                           s64 directMemoryStart, u64 alignment);
+s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addrInOut, std::size_t len, int prot,
+                                                 int flags, const char* name);
+s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
+                                            int flags);
 
 } // namespace Libraries::Kernel

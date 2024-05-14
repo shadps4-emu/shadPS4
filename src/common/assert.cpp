@@ -8,6 +8,7 @@
 
 void assert_fail_impl() {
     Common::Log::Stop();
+    std::fflush(stdout);
     Crash();
 }
 
