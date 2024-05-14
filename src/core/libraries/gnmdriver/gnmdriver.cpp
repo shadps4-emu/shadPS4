@@ -49,12 +49,13 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->addEvent(kernel_event);
 
-    Platform::IrqC::Instance()->Register([=](Platform::InterruptId irq) {
-        ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                   "An unexpected IRQ occured"); // We need to conver IRQ# to event id and do proper
-                                                 // filtering in trigger function
-        eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
-    });
+    Platform::IrqC::Instance()->Register(
+        Platform::InterruptId::GfxEop, [=](Platform::InterruptId irq) {
+            ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
+                       "An unexpected IRQ occured"); // We need to conver IRQ# to event id and do
+                                                     // proper filtering in trigger function
+            eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
+        });
     return ORBIS_OK;
 }
 
@@ -164,7 +165,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
 
     eq->removeEvent(id);
 
-    Platform::IrqC::Instance()->Unregister();
+    Platform::IrqC::Instance()->Unregister(Platform::InterruptId::GfxEop);
     return ORBIS_OK;
 }
 

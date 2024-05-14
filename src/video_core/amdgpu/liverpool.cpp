@@ -25,8 +25,24 @@ void Liverpool::ProcessCmdList(u32* cmdbuf, u32 size_in_bytes) {
             const PM4ItOpcode opcode = header->type3.opcode;
             const u32 count = header->type3.NumWords();
             switch (opcode) {
-            case PM4ItOpcode::Nop:
+            case PM4ItOpcode::Nop: {
+                const auto* nop = reinterpret_cast<PM4CmdNop*>(header);
+                if (nop->header.count.Value() == 0) {
+                    break;
+                }
+
+                switch (nop->data_block[0]) {
+                case PM4CmdNop::PayloadType::PatchedFlip: {
+                    // There is no evidence that GPU CP drives flip events by parsing
+                    // special NOP packets. For convenience lets assume that it does.
+                    Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                    break;
+                }
+                default:
+                    break;
+                }
                 break;
+            }
             case PM4ItOpcode::SetContextReg: {
                 const auto* set_data = reinterpret_cast<PM4CmdSetData*>(header);
                 std::memcpy(&regs.reg_array[ContextRegWordOffset + set_data->reg_offset],

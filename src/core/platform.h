@@ -24,51 +24,63 @@ enum class InterruptId : u32 {
     Compute4RelMem = 4u,
     Compute5RelMem = 5u,
     Compute6RelMem = 6u,
-    GfxEop = 0x40u
+    GfxEop = 7u,
+    GfxFlip = 8u
 };
 
 using IrqHandler = std::function<void(InterruptId)>;
 
 struct IrqController {
-    void RegisterOnce(IrqHandler handler) {
-        std::unique_lock lock{m_lock};
-        one_time_subscribers.emplace(handler);
+    void RegisterOnce(InterruptId irq, IrqHandler handler) {
+        ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Invalid IRQ number");
+        auto& ctx = irq_contexts[static_cast<u32>(irq)];
+        std::unique_lock lock{ctx.m_lock};
+        ctx.one_time_subscribers.emplace(handler);
     }
 
-    void Register(IrqHandler handler) {
-        ASSERT_MSG(!persistent_handler.has_value(),
+    void Register(InterruptId irq, IrqHandler handler) {
+        ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Invalid IRQ number");
+        auto& ctx = irq_contexts[static_cast<u32>(irq)];
+        ASSERT_MSG(!ctx.persistent_handler.has_value(),
                    "Too many persistent handlers"); // Add a slot map if so
 
-        std::unique_lock lock{m_lock};
-        persistent_handler.emplace(handler);
+        std::unique_lock lock{ctx.m_lock};
+        ctx.persistent_handler.emplace(handler);
     }
 
-    void Unregister() {
-        std::unique_lock lock{m_lock};
-        persistent_handler.reset();
+    void Unregister(InterruptId irq) {
+        ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Invalid IRQ number");
+        auto& ctx = irq_contexts[static_cast<u32>(irq)];
+        std::unique_lock lock{ctx.m_lock};
+        ctx.persistent_handler.reset();
     }
 
     void Signal(InterruptId irq) {
-        std::unique_lock lock{m_lock};
+        ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Unexpected IRQ signaled");
+        auto& ctx = irq_contexts[static_cast<u32>(irq)];
+        std::unique_lock lock{ctx.m_lock};
 
         LOG_TRACE(Core, "IRQ signaled: {}", magic_enum::enum_name(irq));
 
-        if (persistent_handler) {
-            persistent_handler.value()(irq);
+        if (ctx.persistent_handler) {
+            ctx.persistent_handler.value()(irq);
         }
 
-        while (!one_time_subscribers.empty()) {
-            const auto& h = one_time_subscribers.front();
+        while (!ctx.one_time_subscribers.empty()) {
+            const auto& h = ctx.one_time_subscribers.front();
             h(irq);
 
-            one_time_subscribers.pop();
+            ctx.one_time_subscribers.pop();
         }
     }
 
 private:
-    std::optional<IrqHandler> persistent_handler{};
-    std::queue<IrqHandler> one_time_subscribers{};
-    std::mutex m_lock{};
+    struct IrqContext {
+        std::optional<IrqHandler> persistent_handler{};
+        std::queue<IrqHandler> one_time_subscribers{};
+        std::mutex m_lock{};
+    };
+    std::array<IrqContext, magic_enum::enum_count<InterruptId>()> irq_contexts{};
 };
 
 using IrqC = Common::Singleton<IrqController>;
