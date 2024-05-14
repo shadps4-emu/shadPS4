@@ -166,10 +166,42 @@ Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGr
     Frame* frame = GetRenderFrame();
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-    const vk::ImageMemoryBarrier pre_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eTransferRead,
-        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .oldLayout = vk::ImageLayout::eUndefined,
+    const std::array pre_barriers{
+        vk::ImageMemoryBarrier{.srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                               .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                               .oldLayout = vk::ImageLayout::eUndefined,
+                               .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                               .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                               .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                               .image = image.image,
+                               .subresourceRange{
+                                   .aspectMask = vk::ImageAspectFlagBits::eColor,
+                                   .baseMipLevel = 0,
+                                   .levelCount = 1,
+                                   .baseArrayLayer = 0,
+                                   .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                               }},
+        vk::ImageMemoryBarrier{
+            .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+            .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .oldLayout = vk::ImageLayout::eUndefined,
+            .newLayout = vk::ImageLayout::eTransferDstOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = frame->image,
+            .subresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        },
+    };
+    const vk::ImageMemoryBarrier post_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
         .newLayout = vk::ImageLayout::eGeneral,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -186,11 +218,16 @@ Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGr
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, pre_barrier);
+                           {}, {}, pre_barriers);
     cmdbuf.blitImage(
-        image.image, vk::ImageLayout::eGeneral, frame->image, vk::ImageLayout::eGeneral,
+        image.image, vk::ImageLayout::eTransferSrcOptimal, frame->image,
+        vk::ImageLayout::eTransferDstOptimal,
         MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
         vk::Filter::eLinear);
+
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eAllCommands,
+                           vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
 
     // Flush pending vulkan operations.
     scheduler.Flush(frame->render_ready);
@@ -230,7 +267,7 @@ void RendererVulkan::Present(Frame* frame) {
             .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
             .dstAccessMask = vk::AccessFlagBits::eTransferRead,
             .oldLayout = vk::ImageLayout::eGeneral,
-            .newLayout = vk::ImageLayout::eGeneral,
+            .newLayout = vk::ImageLayout::eTransferSrcOptimal,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = frame->image,
@@ -264,7 +301,7 @@ void RendererVulkan::Present(Frame* frame) {
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, {}, pre_barriers);
 
-    cmdbuf.blitImage(frame->image, vk::ImageLayout::eGeneral, swapchain_image,
+    cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
                      vk::ImageLayout::eTransferDstOptimal,
                      MakeImageBlit(frame->width, frame->height, extent.width, extent.height),
                      vk::Filter::eLinear);
