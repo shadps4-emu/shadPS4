@@ -10,7 +10,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #define STBI_NO_STDIO
-#include "third-party/stb_image.h"
+#include "externals/stb_image.h"
 
 bool Splash::Open(const std::string& filepath) {
     ASSERT_MSG(filepath.ends_with(".png"), "Unexpected file format passed");

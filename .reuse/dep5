@@ -8,9 +8,9 @@ Files: CMakeSettings.json
        documents/readme.txt
        .github/shadps4.desktop
        .github/shadps4.png
-	   .gitmodules
-	   src/images/shadps4.ico
-	   screenshots/screenshot.png
+       .gitmodules
+       src/images/shadps4.ico
+       screenshots/screenshot.png
        src/images/controller_icon.png
        src/images/exit_icon.png
        src/images/file_icon.png
@@ -25,7 +25,8 @@ Files: CMakeSettings.json
        src/images/settings_icon.png
        src/images/stop_icon.png
        src/images/themes_icon.png
-	   src/shadps4.rc
-	   src/shadps4.qrc
+       src/shadps4.rc
+       src/shadps4.qrc
+       externals/stb_image.h
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later
