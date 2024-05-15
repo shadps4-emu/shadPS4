@@ -14,6 +14,7 @@ enum class PathType {
     ScreenshotsDir, // Where screenshots are stored.
     ShaderDir,      // Where shaders are stored.
     SaveDataDir,    // Where guest save data is stored.
+    SysModuleDir,   // Where system modules are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -23,6 +24,7 @@ constexpr auto LOG_DIR = "log";
 constexpr auto SCREENSHOTS_DIR = "screenshots";
 constexpr auto SHADER_DIR = "shader";
 constexpr auto SAVEDATA_DIR = "savedata";
+constexpr auto SYSMODULES_DIR = "sys_modules";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

@@ -7,6 +7,7 @@
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libc/libc.h"
+#include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/net.h"
@@ -57,6 +58,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
+    Libraries::LibcInternal::RegisterlibSceLibcInternal(sym);
 }
 
 } // namespace Libraries
