@@ -166,18 +166,20 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
     }
 
     if (!frame) {
-        const auto* splash = Common::Singleton<Splash>::Instance();
+        if (!splash_img.has_value()) {
+            const auto* splash = Common::Singleton<Splash>::Instance();
 
-        VideoCore::ImageInfo info{};
-        info.pixel_format = vk::Format::eR8G8B8A8Srgb;
-        info.type = vk::ImageType::e2D;
-        info.size =
-            VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
-        info.pitch = splash->GetImageInfo().width * 4;
-        info.guest_size_bytes = splash->GetImageData().size();
-        auto& image = texture_cache.FindImage(info, VAddr(splash->GetImageData().data()));
-
-        frame = PrepareFrameInternal(image);
+            VideoCore::ImageInfo info{};
+            info.pixel_format = vk::Format::eR8G8B8A8Srgb;
+            info.type = vk::ImageType::e2D;
+            info.size =
+                VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
+            info.pitch = splash->GetImageInfo().width * 4;
+            info.guest_size_bytes = splash->GetImageData().size();
+            splash_img.emplace(instance, scheduler, info, VAddr(splash->GetImageData().data()));
+            texture_cache.RefreshImage(*splash_img);
+        }
+        frame = PrepareFrameInternal(*splash_img);
     }
     Present(frame);
     return true;

@@ -54,6 +54,7 @@ private:
     std::mutex free_mutex;
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;
+    std::optional<VideoCore::Image> splash_img;
 };
 
 } // namespace Vulkan

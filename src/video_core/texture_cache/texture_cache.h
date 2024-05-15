@@ -35,6 +35,9 @@ public:
     /// Retrieves the image handle of the image with the provided attributes and address.
     Image& FindImage(const ImageInfo& info, VAddr cpu_address);
 
+    /// Reuploads image contents.
+    void RefreshImage(Image& image);
+
 private:
     /// Iterate over all page indices in a range
     template <typename Func>
@@ -92,9 +95,6 @@ private:
 
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
-
-    /// Reuploads image contents.
-    void RefreshImage(Image& image);
 
     /// Register image in the page table
     void RegisterImage(ImageId image);

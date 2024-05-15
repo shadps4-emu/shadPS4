@@ -176,8 +176,8 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
         requests.pop();
     }
 
-    if (!renderer->ShowSplash(
-            req.frame)) { // Whatever the game is rendering show splash if it is active
+    // Whatever the game is rendering show splash if it is active
+    if (!renderer->ShowSplash(req.frame)) {
         // Present the frame.
         renderer->Present(req.frame);
     }
