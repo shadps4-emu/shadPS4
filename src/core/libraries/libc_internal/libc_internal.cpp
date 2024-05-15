@@ -21,7 +21,7 @@ int PS4_SYSV_ABI internal_memcpy_s(void* dest, rsize_t destsz, const void* src, 
 #ifdef _WIN64
     return memcpy_s(dest, destsz, src, count);
 #else
-    std::memcpy(dest, destsz, src, count);
+    std::memcpy(dest, src, count);
     return 0; // ALL OK
 #endif
 }
