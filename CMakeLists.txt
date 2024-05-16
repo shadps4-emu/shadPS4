@@ -101,11 +101,7 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/memory/flexible_memory.cpp
-               src/core/libraries/kernel/memory/flexible_memory.h     
-               src/core/libraries/kernel/memory/kernel_memory.cpp
-               src/core/libraries/kernel/memory/kernel_memory.h
-               src/core/libraries/kernel/cpu_management.cpp
+set(KERNEL_LIB src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queue.cpp
                src/core/libraries/kernel/event_queue.h
@@ -244,6 +240,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
          src/core/aerolib/aerolib.cpp
          src/core/aerolib/aerolib.h
+         src/core/address_space.cpp
+         src/core/address_space.h
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h 
          src/core/crypto/keys.h
@@ -277,6 +275,8 @@ set(CORE src/core/aerolib/stubs.cpp
          ${MISC_LIBS}
          src/core/linker.cpp
          src/core/linker.h
+         src/core/memory.cpp
+         src/core/memory.h
          src/core/tls.cpp
          src/core/tls.h     
          src/core/virtual_memory.cpp
@@ -382,6 +382,7 @@ else()
         src/main.cpp
         src/sdl_window.h
         src/sdl_window.cpp
+        src/common/scope_exit.h
     )
 endif()
 
@@ -414,8 +415,14 @@ if (WIN32)
     endif()
     # Target Windows 10 RS5
     add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
-    # Increase stack,commit
+    # Increase stack commit area
     target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+    # Disable ASLR so we can reserve the user area
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /DYNAMICBASE:NO)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--disable-dynamicbase)
+    endif()
 endif()
 
 if (WIN32)

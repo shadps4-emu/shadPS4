@@ -11,12 +11,12 @@
 #include "core/libraries/kernel/event_queues.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/libkernel.h"
-#include "core/libraries/kernel/memory/kernel_memory.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
+#include "core/memory.h"
 #ifdef _WIN64
 #include <io.h>
 #include <windows.h>
@@ -43,7 +43,9 @@ static PS4_SYSV_ABI void stack_chk_fail() {
 }
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
-    LOG_ERROR(Kernel_Vmm, "(DUMMY) called");
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
+    auto* memory = Core::Memory::Instance();
+    memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
     return SCE_OK;
 }
 
@@ -188,6 +190,8 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
     LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
     LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", 1, 1, sceKernelMunmap);
+    LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
+    LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
     // equeue
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
     LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteEqueue);
@@ -205,7 +209,6 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);
     Libraries::Kernel::pthreadSymbolsRegister(sym);
-    Libraries::Kernel::RegisterKernelMemory(sym);
 
     // temp
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,

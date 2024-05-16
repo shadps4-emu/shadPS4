@@ -331,8 +331,8 @@ void RendererVulkan::Present(Frame* frame) {
         .pSignalSemaphores = &present_ready,
     };
 
+    std::scoped_lock submit_lock{scheduler.submit_mutex};
     try {
-        std::scoped_lock submit_lock{scheduler.submit_mutex};
         instance.GetGraphicsQueue().submit(submit_info, frame->present_done);
     } catch (vk::DeviceLostError& err) {
         LOG_CRITICAL(Render_Vulkan, "Device lost during present submit: {}", err.what());

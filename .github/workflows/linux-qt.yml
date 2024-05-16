@@ -12,11 +12,10 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  CLANG_VER: 17
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
@@ -25,29 +24,10 @@ jobs:
 
     - name: Install misc packages
       run: >
-       sudo apt-get update && sudo apt install libx11-dev libgl1-mesa-glx mesa-common-dev libfuse2
-       libwayland-dev libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-icccm4 libxcb-image0-dev
-       libxcb-cursor-dev libxxhash-dev libvulkan-dev
+       sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev
 
-    - name: Install newer Clang
-      run: |
-       wget https://apt.llvm.org/llvm.sh
-       chmod +x ./llvm.sh
-       sudo ./llvm.sh ${{env.CLANG_VER}}
-    
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version:      6.7.0
-        host:         linux
-        target:       desktop
-        #arch:         clang++-17
-        dir:          ${{ runner.temp }}
-        #modules:      qtcharts qt3d
-        setup-python: false  
-          
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang-${{env.CLANG_VER}} -DCMAKE_CXX_COMPILER=clang++-${{env.CLANG_VER}} -DENABLE_QT_GUI=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DENABLE_QT_GUI=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel

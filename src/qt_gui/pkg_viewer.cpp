@@ -156,7 +156,7 @@ void PKGViewer::ProcessPKGInfo() {
             if (isFlagSet(pkg_content_flag, flag.first)) {
                 if (!flagss.isEmpty())
                     flagss.append(", ");
-                flagss.append(flag.second);
+                flagss.append(QString::fromStdString(flag.second));
             }
         }
 

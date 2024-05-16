@@ -3,13 +3,11 @@
 
 #include <bit>
 #include "common/alignment.h"
-#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
-#include "core/libraries/kernel/physical_memory.h"
-#include "core/virtual_memory.h"
+#include "core/memory.h"
 
 namespace Libraries::Kernel {
 
@@ -43,15 +41,10 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    u64 physical_addr = 0;
-    auto* physical_memory = Common::Singleton<PhysicalMemory>::Instance();
-    if (!physical_memory->Alloc(searchStart, searchEnd, len, alignment, &physical_addr,
-                                memoryType)) {
-        LOG_CRITICAL(Kernel_Vmm, "Unable to allocate physical memory");
-        return SCE_KERNEL_ERROR_EAGAIN;
-    }
-    *physAddrOut = static_cast<s64>(physical_addr);
-    LOG_INFO(Kernel_Vmm, "physAddrOut = {:#x}", physical_addr);
+    auto* memory = Core::Memory::Instance();
+    PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
+    *physAddrOut = static_cast<s64>(phys_addr);
+    LOG_INFO(Kernel_Vmm, "physAddrOut = {:#x}", phys_addr);
     return SCE_OK;
 }
 
@@ -77,40 +70,48 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         }
     }
 
-    VirtualMemory::MemoryMode cpu_mode = VirtualMemory::MemoryMode::NoAccess;
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto* memory = Core::Memory::Instance();
+    return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
+                             directMemoryStart, alignment);
+}
 
-    switch (prot) {
-    case 0x03:
-        cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
-        break;
-    case 0x32:
-    case 0x33: // SCE_KERNEL_PROT_CPU_READ|SCE_KERNEL_PROT_CPU_WRITE|SCE_KERNEL_PROT_GPU_READ|SCE_KERNEL_PROT_GPU_ALL
-        cpu_mode = VirtualMemory::MemoryMode::ReadWrite;
-        break;
-    default:
-        UNREACHABLE();
+s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
+                                                 int flags, const char* name) {
+
+    if (len == 0 || !Common::is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "len is 0 or not 16kb multiple");
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto in_addr = reinterpret_cast<u64>(*addr);
-    u64 out_addr = 0;
-
-    if (flags == 0) {
-        out_addr = VirtualMemory::memory_alloc_aligned(in_addr, len, cpu_mode, alignment);
-    }
-    LOG_INFO(Kernel_Vmm, "in_addr = {:#x}, out_addr = {:#x}", in_addr, out_addr);
-
-    *addr = reinterpret_cast<void*>(out_addr); // return out_addr to first functions parameter
-
-    if (out_addr == 0) {
-        return SCE_KERNEL_ERROR_ENOMEM;
+    static constexpr size_t MaxNameSize = 32;
+    if (std::strlen(name) > MaxNameSize) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    auto* physical_memory = Common::Singleton<PhysicalMemory>::Instance();
-    if (!physical_memory->Map(out_addr, directMemoryStart, len, prot, cpu_mode)) {
-        UNREACHABLE();
+    if (name == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "name is invalid!");
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
-    return SCE_OK;
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto* memory = Core::Memory::Instance();
+    const int ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
+                                      Core::VMAType::Flexible, name);
+
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
+             fmt::ptr(*addr_in_out), len, prot, flags);
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
+                                            int flags) {
+    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "");
 }
 
 } // namespace Libraries::Kernel
