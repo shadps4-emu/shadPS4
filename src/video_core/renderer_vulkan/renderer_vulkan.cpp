@@ -161,13 +161,17 @@ void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
 }
 
 bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
+    const auto* splash = Common::Singleton<Splash>::Instance();
+    if (splash->GetImageData().empty()) {
+        return false;
+    }
+
     if (!Libraries::SystemService::IsSplashVisible()) {
         return false;
     }
 
     if (!frame) {
         if (!splash_img.has_value()) {
-            const auto* splash = Common::Singleton<Splash>::Instance();
 
             VideoCore::ImageInfo info{};
             info.pixel_format = vk::Format::eR8G8B8A8Srgb;

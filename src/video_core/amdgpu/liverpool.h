@@ -622,7 +622,9 @@ public:
     void SubmitDone() {
         // This is wrong as `submitDone()` should never be blocking. The behavior will be
         // reworked with mutiple queues introduction
-        cp.get();
+        if (cp.valid()) {
+            cp.get();
+        }
     }
 
 private:
