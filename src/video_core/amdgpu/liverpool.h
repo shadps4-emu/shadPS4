@@ -11,6 +11,8 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <span>
+#include <queue>
 
 namespace AmdGpu {
 
@@ -614,23 +616,31 @@ struct Liverpool {
 
 public:
     Liverpool();
+    ~Liverpool();
 
-    void Submit(u32* cmdbuf, u32 size_in_bytes) {
-        ASSERT_MSG(!cp.valid(), "Trying to submit while previous submission is pending");
-        cp = std::async(&Liverpool::ProcessCmdList, this, cmdbuf, size_in_bytes);
+    void SubmitGfx(const u32* dcb, u32 dcb_size) {
+        {
+            std::scoped_lock lock{m_ring_access};
+            gfx_ring.push({dcb, dcb_size});
+        }
+        cv_submit.notify_one();
     }
     void SubmitDone() {
         // This is wrong as `submitDone()` should never be blocking. The behavior will be
         // reworked with mutiple queues introduction
-        if (cp.valid()) {
-            cp.get();
-        }
+        Wait();
     }
 
 private:
-    void ProcessCmdList(u32* cmdbuf, u32 size_in_bytes);
+    void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
+    void Process(std::stop_token stoken);
+    void Wait();
 
-    std::future<void> cp{};
+    std::jthread process_thread{};
+    std::queue<std::span<const u32>> gfx_ring{};
+    std::condition_variable_any cv_submit{};
+    std::condition_variable cv_complete{};
+    std::mutex m_ring_access{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

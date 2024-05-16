@@ -1411,7 +1411,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
         }
     }
 
-    liverpool->Submit(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
+    liverpool->SubmitGfx(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
 
     return ORBIS_OK;
 }
