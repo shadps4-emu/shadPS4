@@ -987,7 +987,6 @@ int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
     }
 }
 
-
 int PS4_SYSV_ABI scePthreadEqual(ScePthread thread1, ScePthread thread2) {
     return (thread1 == thread2 ? 1 : 0);
 }
