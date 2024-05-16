@@ -102,6 +102,8 @@ struct OrbisSystemServiceDisplaySafeAreaInfo {
     uint8_t reserved[128];
 };
 
+bool IsSplashVisible();
+
 int PS4_SYSV_ABI sceAppMessagingClearEventFlag();
 int PS4_SYSV_ABI sceAppMessagingReceiveMsg();
 int PS4_SYSV_ABI sceAppMessagingSendMsg();

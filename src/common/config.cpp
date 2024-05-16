@@ -17,6 +17,7 @@ std::string logFilter;
 std::string logType = "sync";
 bool isDebugDump = false;
 bool isLibc = true;
+bool isShowSplash = false;
 
 bool isLleLibc() {
     return isLibc;
@@ -49,6 +50,10 @@ bool debugDump() {
     return isDebugDump;
 }
 
+bool showSplash() {
+    return isShowSplash;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -74,6 +79,7 @@ void load(const std::filesystem::path& path) {
             isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
             logFilter = toml::find_or<toml::string>(general, "logFilter", "");
             logType = toml::find_or<toml::string>(general, "logType", "sync");
+            isShowSplash = toml::find_or<toml::boolean>(general, "showSplash", true);
         }
     }
     if (data.contains("GPU")) {
@@ -125,6 +131,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
+    data["General"]["showSplash"] = isShowSplash;
     data["GPU"]["gpuId"] = gpuId;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;

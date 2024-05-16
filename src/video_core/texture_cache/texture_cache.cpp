@@ -101,20 +101,19 @@ void TextureCache::OnCpuWrite(VAddr address) {
     });
 }
 
-Image& TextureCache::FindDisplayBuffer(const Libraries::VideoOut::BufferAttributeGroup& group,
-                                       VAddr cpu_address) {
+Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
     boost::container::small_vector<ImageId, 2> image_ids;
-    ForEachImageInRegion(cpu_address, group.size_in_bytes, [&](ImageId image_id, Image& image) {
+    ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
         if (image.cpu_addr == cpu_address) {
             image_ids.push_back(image_id);
         }
     });
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping framebuffers not allowed!");
+    ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
-        image_id = slot_images.insert(instance, scheduler, ImageInfo{group}, cpu_address);
+        image_id = slot_images.insert(instance, scheduler, info, cpu_address);
         RegisterImage(image_id);
     } else {
         image_id = image_ids[0];

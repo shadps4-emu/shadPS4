@@ -252,6 +252,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
+         src/core/file_format/splash.h
+         src/core/file_format/splash.cpp
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h  
          src/core/loader.cpp
@@ -277,8 +279,10 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/linker.h
          src/core/memory.cpp
          src/core/memory.h
+         src/core/platform.h
+         src/core/memory.h
          src/core/tls.cpp
-         src/core/tls.h     
+         src/core/tls.h
          src/core/virtual_memory.cpp
          src/core/virtual_memory.h
 )

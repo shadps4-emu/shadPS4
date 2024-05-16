@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "common/singleton.h"
+#include "core/file_format/splash.h"
+#include "core/libraries/system/systemservice.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
@@ -157,10 +160,38 @@ void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
     frame->height = height;
 }
 
+bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
+    if (!Libraries::SystemService::IsSplashVisible()) {
+        return false;
+    }
+
+    if (!frame) {
+        const auto* splash = Common::Singleton<Splash>::Instance();
+
+        VideoCore::ImageInfo info{};
+        info.pixel_format = vk::Format::eR8G8B8A8Srgb;
+        info.type = vk::ImageType::e2D;
+        info.size =
+            VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
+        info.pitch = splash->GetImageInfo().width * 4;
+        info.guest_size_bytes = splash->GetImageData().size();
+        auto& image = texture_cache.FindImage(info, VAddr(splash->GetImageData().data()));
+
+        frame = PrepareFrameInternal(image);
+    }
+    Present(frame);
+    return true;
+}
+
 Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                                     VAddr cpu_address) {
     // Request presentation image from the texture cache.
-    auto& image = texture_cache.FindDisplayBuffer(attribute, cpu_address);
+    const auto info = VideoCore::ImageInfo{attribute};
+    auto& image = texture_cache.FindImage(info, cpu_address);
+    return PrepareFrameInternal(image);
+}
+
+Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
 
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();

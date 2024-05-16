@@ -34,10 +34,12 @@ public:
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address);
 
+    bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame);
     void RecreateFrame(Frame* frame, u32 width, u32 height);
 
 private:
+    Frame* PrepareFrameInternal(VideoCore::Image& image);
     Frame* GetRenderFrame();
 
 private:

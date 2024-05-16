@@ -13,6 +13,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "core/file_format/splash.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libc/libc.h"
@@ -62,6 +63,15 @@ int main(int argc, char* argv[]) {
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
                 std::string app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+            } else if (entry.path().filename() == "pic0.png" ||
+                       entry.path().filename() == "pic1.png") {
+                auto* splash = Common::Singleton<Splash>::Instance();
+                if (splash->IsLoaded()) {
+                    continue;
+                }
+                if (!splash->Open(entry.path().string())) {
+                    LOG_ERROR(Loader, "Game splash: unable to open file");
+                }
             }
         }
     }

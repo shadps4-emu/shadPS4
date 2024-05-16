@@ -33,8 +33,7 @@ public:
     void OnCpuWrite(VAddr address);
 
     /// Retrieves the image handle of the image with the provided attributes and address.
-    Image& FindDisplayBuffer(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                             VAddr cpu_address);
+    Image& FindImage(const ImageInfo& info, VAddr cpu_address);
 
 private:
     /// Iterate over all page indices in a range
