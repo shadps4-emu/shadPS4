@@ -7,6 +7,7 @@ if [[ -z $GITHUB_WORKSPACE ]]; then
 	GITHUB_WORKSPACE="${PWD%/*}"
 fi
 
+export Qt6_DIR="/usr/lib/qt6"
 export PATH="$Qt6_DIR/bin:$PATH"
 
 # Prepare Tools for building the AppImage

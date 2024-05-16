@@ -219,12 +219,12 @@ struct AddressSpace::Impl {
         UNREACHABLE();
     }
 
-    void* MapUser(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot) {
+    void* MapUser(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
         UNREACHABLE();
         return nullptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot) {
+    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot) {
         UNREACHABLE();
         return nullptr;
     }

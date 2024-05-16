@@ -319,7 +319,7 @@ struct PM4CmdEventWriteEop {
         switch (int_sel.Value()) {
         case InterruptSelect::None: {
             // No interrupt
-            // break;
+            break;
         }
         case InterruptSelect::IrqWhenWriteConfirm: {
             Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
