@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 
 namespace Libraries::SystemService {
+
+bool g_splash_status{true};
+
+bool IsSplashVisible() {
+    return Config::showSplash() && g_splash_status;
+}
 
 int PS4_SYSV_ABI sceAppMessagingClearEventFlag() {
     LOG_ERROR(Lib_SystemService, "(STUBBED) called");
@@ -1787,7 +1794,8 @@ int PS4_SYSV_ABI sceSystemServiceGetVersionNumberOfCameraCalibrationData() {
 }
 
 s32 PS4_SYSV_ABI sceSystemServiceHideSplashScreen() {
-    LOG_WARNING(Lib_SystemService, "called");
+    LOG_INFO(Lib_SystemService, "called");
+    g_splash_status = false;
     return ORBIS_OK;
 }
 

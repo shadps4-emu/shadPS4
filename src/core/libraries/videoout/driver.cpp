@@ -167,6 +167,7 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
         std::unique_lock lock{mutex};
         submit_cond.wait_for(lock, timeout, [&] { return !requests.empty(); });
         if (requests.empty()) {
+            renderer->ShowSplash();
             return;
         }
 
@@ -175,8 +176,11 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
         requests.pop();
     }
 
-    // Present the frame.
-    renderer->Present(req.frame);
+    // Whatever the game is rendering show splash if it is active
+    if (!renderer->ShowSplash(req.frame)) {
+        // Present the frame.
+        renderer->Present(req.frame);
+    }
 
     std::scoped_lock lock{mutex};
 
