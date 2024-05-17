@@ -67,6 +67,21 @@ add_subdirectory(robin-map EXCLUDE_FROM_ALL)
 # Xbyak
 add_subdirectory(xbyak EXCLUDE_FROM_ALL)
 
+# MagicEnum
+add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
+
+# Toml11
+add_subdirectory(toml11 EXCLUDE_FROM_ALL)
+
+# xxHash
+add_library(xxhash INTERFACE)
+target_include_directories(xxhash INTERFACE xxhash)
+
+# Zydis
+option(ZYDIS_BUILD_TOOLS "" OFF)
+option(ZYDIS_BUILD_EXAMPLES "" OFF)
+add_subdirectory(zydis EXCLUDE_FROM_ALL)
+
 # Winpthreads
 if (WIN32)
     add_subdirectory(winpthreads EXCLUDE_FROM_ALL)
