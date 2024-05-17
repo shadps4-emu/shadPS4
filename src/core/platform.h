@@ -12,6 +12,7 @@
 #include <functional>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 #include <queue>
 
 namespace Platform {
@@ -38,21 +39,21 @@ struct IrqController {
         ctx.one_time_subscribers.emplace(handler);
     }
 
-    void Register(InterruptId irq, IrqHandler handler) {
+    void Register(InterruptId irq, IrqHandler handler, void* uid) {
         ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Invalid IRQ number");
         auto& ctx = irq_contexts[static_cast<u32>(irq)];
-        ASSERT_MSG(!ctx.persistent_handler.has_value(),
-                   "Too many persistent handlers"); // Add a slot map if so
 
         std::unique_lock lock{ctx.m_lock};
-        ctx.persistent_handler.emplace(handler);
+        ASSERT_MSG(ctx.persistent_handlers.find(uid) == ctx.persistent_handlers.cend(),
+                   "The handler is already registered!");
+        ctx.persistent_handlers.emplace(uid, handler);
     }
 
-    void Unregister(InterruptId irq) {
+    void Unregister(InterruptId irq, void* uid) {
         ASSERT_MSG(static_cast<u32>(irq) < irq_contexts.size(), "Invalid IRQ number");
         auto& ctx = irq_contexts[static_cast<u32>(irq)];
         std::unique_lock lock{ctx.m_lock};
-        ctx.persistent_handler.reset();
+        ctx.persistent_handlers.erase(uid);
     }
 
     void Signal(InterruptId irq) {
@@ -62,8 +63,8 @@ struct IrqController {
 
         LOG_TRACE(Core, "IRQ signaled: {}", magic_enum::enum_name(irq));
 
-        if (ctx.persistent_handler) {
-            ctx.persistent_handler.value()(irq);
+        for (auto& [uid, h] : ctx.persistent_handlers) {
+            h(irq);
         }
 
         while (!ctx.one_time_subscribers.empty()) {
@@ -76,7 +77,7 @@ struct IrqController {
 
 private:
     struct IrqContext {
-        std::optional<IrqHandler> persistent_handler{};
+        std::unordered_map<void*, IrqHandler> persistent_handlers{};
         std::queue<IrqHandler> one_time_subscribers{};
         std::mutex m_lock{};
     };
