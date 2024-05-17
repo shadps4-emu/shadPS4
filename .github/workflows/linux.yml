@@ -38,7 +38,7 @@ jobs:
       with:
         name: shadps4-ubuntu64
         path: |
-          ${{github.workspace}}/build/shadPS4
+          ${{github.workspace}}/build/shadps4
           ${{github.workspace}}/build/libSDL3.so.0.0.0
 
     - name: Run AppImage packaging script
