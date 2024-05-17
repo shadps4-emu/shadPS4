@@ -44,7 +44,7 @@ jobs:
       run: |
         mkdir upload
         move build/Release/shadPS4.exe upload
-        move build/Release/zlib-ng.dll upload
+        move build/Release/zlib-ng2.dll upload
         windeployqt --dir upload upload/shadPS4.exe
 
     - name: Upload executable
