@@ -12,7 +12,6 @@ EqueueInternal::~EqueueInternal() = default;
 int EqueueInternal::addEvent(const EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
-    ASSERT(m_events.empty());
     ASSERT(!event.isTriggered);
 
     // TODO check if event is already exists and return it. Currently we just add in m_events array
@@ -21,6 +20,8 @@ int EqueueInternal::addEvent(const EqueueEvent& event) {
 }
 
 int EqueueInternal::removeEvent(u64 id) {
+    std::scoped_lock lock{m_mutex};
+
     const auto& event_q =
         std::ranges::find_if(m_events, [id](auto& ev) { return ev.event.ident == id; });
     ASSERT(event_q != m_events.cend());
@@ -51,12 +52,15 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
 }
 
 bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
-    std::scoped_lock lock{m_mutex};
+    {
+        std::scoped_lock lock{m_mutex};
 
-    ASSERT(m_events.size() <= 1);
-
-    auto& event = m_events[0];
-    event.trigger(trigger_data);
+        for (auto& event : m_events) {
+            if (event.event.ident == ident) { // event filter?
+                event.trigger(trigger_data);
+            }
+        }
+    }
     m_cond.notify_one();
 
     return true;
@@ -65,12 +69,11 @@ bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
 int EqueueInternal::getTriggeredEvents(SceKernelEvent* ev, int num) {
     int ret = 0;
 
-    ASSERT(m_events.size() <= 1);
-    auto& event = m_events[0];
-
-    if (event.isTriggered) {
-        ev[ret++] = event.event;
-        event.reset();
+    for (auto& event : m_events) {
+        if (event.isTriggered) {
+            ev[ret++] = event.event;
+            event.reset();
+        }
     }
 
     return ret;
