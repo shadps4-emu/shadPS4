@@ -619,6 +619,14 @@ public:
     ~Liverpool();
 
     void SubmitGfx(const u32* dcb, u32 dcb_size) {
+        if (submission_lock) {
+            WaitGpuIdle();
+
+            // Suspend logic goes here
+
+            submission_lock = false;
+        }
+
         {
             std::scoped_lock lock{m_ring_access};
             gfx_ring.push({dcb, dcb_size});
@@ -626,21 +634,21 @@ public:
         cv_submit.notify_one();
     }
     void SubmitDone() {
-        // This is wrong as `submitDone()` should never be blocking. The behavior will be
-        // reworked with mutiple queues introduction
-        Wait();
+        submission_lock = true;
     }
 
 private:
     void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
     void Process(std::stop_token stoken);
-    void Wait();
+    void WaitGpuIdle();
 
     std::jthread process_thread{};
     std::queue<std::span<const u32>> gfx_ring{};
     std::condition_variable_any cv_submit{};
     std::condition_variable cv_complete{};
     std::mutex m_ring_access{};
+
+    bool submission_lock{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

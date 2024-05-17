@@ -40,7 +40,7 @@ void Liverpool::Process(std::stop_token stoken) {
     }
 }
 
-void Liverpool::Wait() {
+void Liverpool::WaitGpuIdle() {
     std::unique_lock lock{m_ring_access};
     cv_complete.wait(lock, [this]() { return gfx_ring.empty(); });
 }
