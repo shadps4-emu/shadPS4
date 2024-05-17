@@ -100,14 +100,21 @@ struct Image {
         return cpu_addr < overlap_end && overlap_cpu_addr < cpu_addr_end;
     }
 
+    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
     UniqueImage image;
-    vk::ImageAspectFlags aspect_mask;
+    vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     ImageFlagBits flags = ImageFlagBits::CpuModified;
     VAddr cpu_addr = 0;
     VAddr cpu_addr_end = 0;
+
+    // Resource state tracking
+    vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;
+    vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
+    vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 };
 
 } // namespace VideoCore

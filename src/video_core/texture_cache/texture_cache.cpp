@@ -166,35 +166,14 @@ void TextureCache::RefreshImage(Image& image) {
         .baseArrayLayer = 0,
         .layerCount = VK_REMAINING_ARRAY_LAYERS,
     };
-    const vk::ImageMemoryBarrier read_barrier = {
-        .srcAccessMask = vk::AccessFlagBits::eShaderRead,
-        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .oldLayout = vk::ImageLayout::eGeneral,
-        .newLayout = vk::ImageLayout::eTransferDstOptimal,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image.image,
-        .subresourceRange = range,
-    };
-    const vk::ImageMemoryBarrier write_barrier = {
-        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead,
-        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-        .newLayout = vk::ImageLayout::eGeneral,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image.image,
-        .subresourceRange = range,
-    };
 
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllGraphics,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, read_barrier);
+    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
     cmdbuf.copyBufferToImage(staging.Handle(), image.image, vk::ImageLayout::eTransferDstOptimal,
                              image_copy);
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                           vk::PipelineStageFlagBits::eAllGraphics,
-                           vk::DependencyFlagBits::eByRegion, {}, {}, write_barrier);
+
+    image.Transit(vk::ImageLayout::eGeneral,
+                  vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
 }
 
 void TextureCache::RegisterImage(ImageId image_id) {
