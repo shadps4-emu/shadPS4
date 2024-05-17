@@ -124,27 +124,41 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     image.Create(image_ci);
 
-    const vk::ImageMemoryBarrier init_barrier = {
-        .srcAccessMask = vk::AccessFlagBits::eNone,
-        .dstAccessMask = vk::AccessFlagBits::eNone,
-        .oldLayout = vk::ImageLayout::eUndefined,
-        .newLayout = vk::ImageLayout::eGeneral,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .baseMipLevel = 0,
-            .levelCount = VK_REMAINING_MIP_LEVELS,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        },
-    };
+    Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
+}
 
+void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask) {
+    if (dst_layout == layout && dst_mask == access_mask) {
+        return;
+    }
+
+    const vk::ImageMemoryBarrier barrier = {.srcAccessMask = access_mask,
+                                            .dstAccessMask = dst_mask,
+                                            .oldLayout = layout,
+                                            .newLayout = dst_layout,
+                                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                            .image = image,
+                                            .subresourceRange{
+                                                .aspectMask = aspect_mask,
+                                                .baseMipLevel = 0,
+                                                .levelCount = 1,
+                                                .baseArrayLayer = 0,
+                                                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                                            }};
+
+    // Adjust pipieline stage
+    vk::PipelineStageFlagBits dst_pl_stage = (dst_mask == vk::AccessFlagBits::eTransferRead ||
+                                              dst_mask == vk::AccessFlagBits::eTransferWrite)
+                                                 ? vk::PipelineStageFlagBits::eTransfer
+                                                 : vk::PipelineStageFlagBits::eAllGraphics;
     const auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
-                           vk::PipelineStageFlagBits::eTopOfPipe, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, init_barrier);
+    cmdbuf.pipelineBarrier(pl_stage, dst_pl_stage, vk::DependencyFlagBits::eByRegion, {}, {},
+                           barrier);
+
+    layout = dst_layout;
+    access_mask = dst_mask;
+    pl_stage = dst_pl_stage;
 }
 
 Image::~Image() = default;

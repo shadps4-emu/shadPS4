@@ -203,21 +203,9 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
     Frame* frame = GetRenderFrame();
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-    const std::array pre_barriers{
-        vk::ImageMemoryBarrier{.srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-                               .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-                               .oldLayout = vk::ImageLayout::eUndefined,
-                               .newLayout = vk::ImageLayout::eTransferSrcOptimal,
-                               .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                               .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                               .image = image.image,
-                               .subresourceRange{
-                                   .aspectMask = vk::ImageAspectFlagBits::eColor,
-                                   .baseMipLevel = 0,
-                                   .levelCount = 1,
-                                   .baseArrayLayer = 0,
-                                   .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                               }},
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+
+    const std::array pre_barrier{
         vk::ImageMemoryBarrier{
             .srcAccessMask = vk::AccessFlagBits::eTransferRead,
             .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
@@ -235,6 +223,17 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
             },
         },
     };
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
+                           {}, {}, pre_barrier);
+
+    cmdbuf.blitImage(
+        image.image, image.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
+        MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
+        vk::Filter::eLinear);
+
     const vk::ImageMemoryBarrier post_barrier{
         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
@@ -251,16 +250,6 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, pre_barriers);
-    cmdbuf.blitImage(
-        image.image, vk::ImageLayout::eTransferSrcOptimal, frame->image,
-        vk::ImageLayout::eTransferDstOptimal,
-        MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
-        vk::Filter::eLinear);
 
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                            vk::PipelineStageFlagBits::eAllCommands,
