@@ -620,14 +620,6 @@ public:
     ~Liverpool();
 
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
-        if (submission_lock) {
-            WaitGpuIdle();
-
-            // Suspend logic goes here
-
-            submission_lock = false;
-        }
-
         {
             std::scoped_lock lock{m_ring_access};
             gfx_ring.emplace(dcb);
@@ -636,22 +628,18 @@ public:
         }
         cv_submit.notify_one();
     }
-    void SubmitDone() {
-        submission_lock = true;
-    }
+
+    void WaitGpuIdle();
 
 private:
     void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
     void Process(std::stop_token stoken);
-    void WaitGpuIdle();
 
     std::jthread process_thread{};
     std::queue<std::span<const u32>> gfx_ring{};
     std::condition_variable_any cv_submit{};
     std::condition_variable cv_complete{};
     std::mutex m_ring_access{};
-
-    bool submission_lock{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
