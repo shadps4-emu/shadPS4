@@ -182,11 +182,12 @@ int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion() {
+int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
     auto* param_sfo = Common::Singleton<PSF>::Instance();
     int version = param_sfo->GetInteger("SYSTEM_VER");
     LOG_INFO(Kernel, "returned system version = {:#x}", version);
-    return version;
+    *ver = version;
+    return ORBIS_OK;
 }
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
