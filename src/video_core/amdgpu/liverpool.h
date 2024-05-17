@@ -12,6 +12,7 @@
 #include <functional>
 #include <future>
 #include <span>
+#include <thread>
 #include <queue>
 
 namespace AmdGpu {
@@ -618,7 +619,7 @@ public:
     Liverpool();
     ~Liverpool();
 
-    void SubmitGfx(const u32* dcb, u32 dcb_size) {
+    void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
         if (submission_lock) {
             WaitGpuIdle();
 
@@ -629,7 +630,9 @@ public:
 
         {
             std::scoped_lock lock{m_ring_access};
-            gfx_ring.push({dcb, dcb_size});
+            gfx_ring.emplace(dcb);
+
+            ASSERT_MSG(ccb.size() == 0, "CCBs are not supported yet");
         }
         cv_submit.notify_one();
     }

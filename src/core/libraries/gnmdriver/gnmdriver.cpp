@@ -1359,13 +1359,13 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addrs[],
-                                                   u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs[],
+                                                   u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg) {
     LOG_INFO(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
-    auto* cmdbuf = reinterpret_cast<u32*>(dcb_gpu_addrs[count - 1]);
+    auto* cmdbuf = dcb_gpu_addrs[count - 1];
     const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
 
     const s32 patch_result =
@@ -1374,7 +1374,8 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, void* dcb_gpu_addr
         return patch_result;
     }
 
-    return sceGnmSubmitCommandBuffers(count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs,
+    return sceGnmSubmitCommandBuffers(count, const_cast<const u32**>(dcb_gpu_addrs),
+                                      dcb_sizes_in_bytes, const_cast<const u32**>(ccb_gpu_addrs),
                                       ccb_sizes_in_bytes);
 }
 
@@ -1383,11 +1384,10 @@ int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
-                                            u32* dcb_sizes_in_bytes, void* ccb_gpu_addrs[],
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
+                                            u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes) {
     LOG_INFO(Lib_GnmDriver, "called");
-    ASSERT_MSG(count == 1, "Multiple command buffer submission is unsupported!");
 
     if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
         LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs and dcbSizesInBytes must not be NULL");
@@ -1411,7 +1411,12 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, void* dcb_gpu_addrs[],
         }
     }
 
-    liverpool->SubmitGfx(reinterpret_cast<u32*>(dcb_gpu_addrs[0]), dcb_sizes_in_bytes[0]);
+    for (auto cbpair = 0u; cbpair < count; ++cbpair) {
+        const auto* ccb = ccb_gpu_addrs ? ccb_gpu_addrs[cbpair] : nullptr;
+        const auto ccb_size = ccb_sizes_in_bytes ? ccb_sizes_in_bytes[cbpair] : 0;
+
+        liverpool->SubmitGfx({dcb_gpu_addrs[cbpair], dcb_sizes_in_bytes[cbpair]}, {ccb, ccb_size});
+    }
 
     return ORBIS_OK;
 }
