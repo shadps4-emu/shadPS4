@@ -78,7 +78,6 @@ if (CLANG_FORMAT)
 endif()
 
 add_subdirectory(externals)
-add_subdirectory(third-party)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
@@ -444,8 +443,7 @@ endif()
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different
      $<TARGET_FILE:zlib>
-     $<TARGET_FILE_DIR:shadps4>
-)
+     $<TARGET_FILE_DIR:shadps4>)
 
 add_custom_command(TARGET shadps4 POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy_if_different

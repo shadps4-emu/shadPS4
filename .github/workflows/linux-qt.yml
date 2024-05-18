@@ -34,7 +34,7 @@ jobs:
 
     - name: Run AppImage packaging script
       run:  ./.github/linux-appimage-qt.sh
-      
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:

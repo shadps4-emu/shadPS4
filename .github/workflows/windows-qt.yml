@@ -30,7 +30,7 @@ jobs:
       with:
         arch: win64_msvc2019_64
         version: 6.7.0
-        
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -43,9 +43,9 @@ jobs:
     - name: Deploy
       run: |
         mkdir upload
-        move build/Release/shadps4.exe upload
+        move build/Release/shadPS4.exe upload
         move build/Release/zlib-ng2.dll upload
-        windeployqt --dir upload upload/shadps4.exe
+        windeployqt --dir upload upload/shadPS4.exe
 
     - name: Upload executable
       uses: actions/upload-artifact@v4

@@ -26,7 +26,7 @@ jobs:
     - name: Install misc packages
       run: >
        sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
-             
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 
@@ -40,10 +40,10 @@ jobs:
         path: |
           ${{github.workspace}}/build/shadps4
           ${{github.workspace}}/build/libSDL3.so.0.0.0
-        
+
     - name: Run AppImage packaging script
       run:  ./.github/linux-appimage-sdl.sh
-      
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
