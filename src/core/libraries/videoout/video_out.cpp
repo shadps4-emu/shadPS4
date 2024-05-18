@@ -60,6 +60,31 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     return eq->addEvent(event);
 }
 
+s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handle, void* udata) {
+    LOG_INFO(Lib_VideoOut, "handle = {}", handle);
+
+    auto* port = driver->GetPort(handle);
+    if (port == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    if (eq == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+    }
+
+    Kernel::EqueueEvent event{};
+    event.isTriggered = false;
+    event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
+    event.event.filter = Kernel::EVFILT_VIDEO_OUT;
+    event.event.udata = udata;
+    event.event.fflags = 0;
+    event.event.data = 0;
+    event.filter.data = port;
+
+    port->vblank_events.push_back(eq);
+    return eq->addEvent(event);
+}
+
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
                                             s32 bufferNum, const BufferAttribute* attribute) {
     if (!addresses || !attribute) {
@@ -243,6 +268,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutRegisterBuffers);
     LIB_FUNCTION("HXzjK9yI30k", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutAddFlipEvent);
+    LIB_FUNCTION("Xru92wHJRmg", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutAddVblankEvent);
     LIB_FUNCTION("CBiu4mCE1DA", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutSetFlipRate);
     LIB_FUNCTION("i6-sR91Wt-4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,

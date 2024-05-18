@@ -243,6 +243,13 @@ void VideoOutDriver::Vblank() {
     vblank_status.count++;
     vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
     vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+
+    // Trigger flip events for the port.
+    for (auto& event : main_port.vblank_events) {
+        if (event != nullptr) {
+            event->triggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK, Kernel::EVFILT_VIDEO_OUT, nullptr);
+        }
+    }
 }
 
 } // namespace Libraries::VideoOut

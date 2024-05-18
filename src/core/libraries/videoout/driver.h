@@ -25,6 +25,7 @@ struct VideoOutPort {
     FlipStatus flip_status;
     SceVideoOutVblankStatus vblank_status;
     std::vector<Kernel::SceKernelEqueue> flip_events;
+    std::vector<Kernel::SceKernelEqueue> vblank_events;
     int flip_rate = 0;
 
     s32 FindFreeGroup() const {

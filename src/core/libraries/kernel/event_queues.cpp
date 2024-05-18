@@ -34,7 +34,7 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
 
 int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq) {
     if (eq == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     delete eq;
@@ -46,7 +46,7 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     LOG_INFO(Kernel_Event, "num = {}", num);
 
     if (eq == nullptr) {
-        return SCE_KERNEL_ERROR_EBADF;
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (ev == nullptr) {
@@ -71,7 +71,31 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
         }
     }
 
-    return SCE_OK;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    Kernel::EqueueEvent event{};
+    event.isTriggered = false;
+    event.event.ident = id;
+    event.event.filter = Kernel::EVFILT_USER;
+    event.event.udata = 0;
+    event.event.fflags = 0;
+    event.event.data = 0;
+
+    return eq->addEvent(event);
+}
+
+void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev) {
+    if (!ev) {
+        return nullptr;
+    }
+
+    return ev->udata;
 }
 
 } // namespace Libraries::Kernel

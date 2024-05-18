@@ -23,6 +23,9 @@ static std::unique_ptr<AmdGpu::Liverpool> liverpool;
 // support is not important and can be ignored for a while.
 static constexpr bool g_fair_hw_init = false;
 
+// In case if `submitDone` is issued we need to block submissions until GPU idle
+static u32 submission_lock{};
+
 // Write a special ending NOP packet with N DWs data block
 template <u32 data_block_size>
 static inline u32* WriteTrailingNop(u32* cmdbuf) {
@@ -50,18 +53,20 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     eq->addEvent(kernel_event);
 
     Platform::IrqC::Instance()->Register(
-        Platform::InterruptId::GfxEop, [=](Platform::InterruptId irq) {
+        Platform::InterruptId::GfxEop,
+        [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
                        "An unexpected IRQ occured"); // We need to conver IRQ# to event id and do
                                                      // proper filtering in trigger function
             eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
-        });
+        },
+        eq);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return submission_lock == 0;
 }
 
 int PS4_SYSV_ABI sceGnmBeginWorkload() {
@@ -165,7 +170,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
 
     eq->removeEvent(id);
 
-    Platform::IrqC::Instance()->Unregister(Platform::InterruptId::GfxEop);
+    Platform::IrqC::Instance()->Unregister(Platform::InterruptId::GfxEop, eq);
     return ORBIS_OK;
 }
 
@@ -1411,6 +1416,14 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         }
     }
 
+    if (submission_lock != 0) {
+        liverpool->WaitGpuIdle();
+
+        // Suspend logic goes here
+
+        submission_lock = 0;
+    }
+
     for (auto cbpair = 0u; cbpair < count; ++cbpair) {
         const auto* ccb = ccb_gpu_addrs ? ccb_gpu_addrs[cbpair] : nullptr;
         const auto ccb_size = ccb_sizes_in_bytes ? ccb_sizes_in_bytes[cbpair] : 0;
@@ -1428,9 +1441,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload() {
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {
     LOG_INFO(Lib_GnmDriver, "called");
-
-    liverpool->SubmitDone();
-
+    submission_lock = true;
     return ORBIS_OK;
 }
 

@@ -14,5 +14,7 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name);
 int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq);
 int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int num, int* out,
                                      SceKernelUseconds* timo);
+void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev);
+int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id);
 
 } // namespace Libraries::Kernel
