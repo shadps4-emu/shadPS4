@@ -64,11 +64,15 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     if (timo != nullptr) {
         // Only events that have already arrived at the time of this function call can be received
         if (*timo == 0) {
-            UNREACHABLE();
+            *out = eq->getTriggeredEvents(ev, num);
         } else {
             // Wait until an event arrives with timing out
-            UNREACHABLE();
+            *out = eq->waitForEvents(ev, num, *timo);
         }
+    }
+
+    if (*out == 0) {
+        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
     }
 
     return ORBIS_OK;
