@@ -100,7 +100,9 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/cpu_management.cpp
+set(KERNEL_LIB src/core/libraries/kernel/event_flag/event_flag.cpp
+               src/core/libraries/kernel/event_flag/event_flag.h
+               src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queue.cpp
                src/core/libraries/kernel/event_queue.h
