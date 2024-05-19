@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <common/assert.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -10,7 +11,43 @@ namespace Libraries::Kernel {
 int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* pName, u32 attr,
                                           u64 initPattern,
                                           const OrbisKernelEventFlagOptParam* pOptParam) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
+    LOG_INFO(Kernel_Event, "called name = {} attr = {:#x} initPattern = {:#x}", pName, attr,
+             initPattern);
+    if (ef == nullptr || pName == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (pOptParam || !pName ||
+        attr > (ORBIS_KERNEL_EVF_ATTR_MULTI | ORBIS_KERNEL_EVF_ATTR_TH_PRIO)) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    if (strlen(pName) >= 32) {
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
+    }
+
+    bool single = true;
+    bool fifo = true;
+
+    switch (attr) {
+    case 0x10:
+    case 0x11:
+        single = true;
+        fifo = true;
+        break;
+    case 0x20:
+    case 0x21:
+        single = false;
+        fifo = true;
+        break;
+    case 0x22:
+        single = false;
+        fifo = false;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    *ef = new EventFlagInternal(std::string(pName), single, fifo, initPattern);
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelDeleteEventFlag(OrbisKernelEventFlag ef) {
@@ -45,8 +82,46 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 }
 int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat, OrbisKernelUseconds* pTimeout) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
+
+    if (bitPattern == 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    int wait = 0;
+    int clear = 0;
+    switch (waitMode & 0xf) {
+    case 0x01:
+        wait = ORBIS_KERNEL_EVF_WAITMODE_AND;
+        break;
+    case 0x02:
+        wait = ORBIS_KERNEL_EVF_WAITMODE_OR;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    switch (waitMode & 0xf0) {
+    case 0x10:
+        clear = ORBIS_KERNEL_EVF_WAITMODE_CLEAR_ALL;
+        break;
+    case 0x20:
+        clear = ORBIS_KERNEL_EVF_WAITMODE_CLEAR_PAT;
+        break;
+    default:
+        clear = 0; // not clear
+    }
+
+    int result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
+
+    if (result != ORBIS_OK) {
+        LOG_ERROR(Kernel_Event, "returned {}", result);
+    }
+
+    return result;
 }
 void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("PZku4ZrXJqg", "libkernel", 1, "libkernel", 1, 1, sceKernelCancelEventFlag);
