@@ -11,6 +11,10 @@ class SymbolsResolver;
 
 namespace Libraries::Rtc {
 
+struct OrbisRtcTick {
+    u64 tick;
+};
+
 int PS4_SYSV_ABI sceRtcCheckValid();
 int PS4_SYSV_ABI sceRtcCompareTick();
 int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc();
@@ -28,7 +32,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime();
 int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentRawNetworkTick();
-int PS4_SYSV_ABI sceRtcGetCurrentTick();
+int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetDayOfWeek();
 int PS4_SYSV_ABI sceRtcGetDaysInMonth();
 int PS4_SYSV_ABI sceRtcGetDosTime();
