@@ -7,11 +7,13 @@
 #include "event_flag.h"
 
 namespace Libraries::Kernel {
-int PS4_SYSV_ABI sceKernelCreateEventFlag() {
+int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* pName, u32 attr,
+                                          u64 initPattern,
+                                          const OrbisKernelEventFlagOptParam* pOptParam) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelDeleteEventFlag() {
+int PS4_SYSV_ABI sceKernelDeleteEventFlag(OrbisKernelEventFlag ef) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -23,23 +25,26 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelClearEventFlag() {
+int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelCancelEventFlag() {
+int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPattern,
+                                          int* pNumWaitThreads) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelSetEventFlag() {
+int PS4_SYSV_ABI sceKernelSetEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelPollEventFlag() {
+int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
+                                        u64* pResultPat) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
-int PS4_SYSV_ABI sceKernelWaitEventFlag() {
+int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
+                                        u64* pResultPat, OrbisKernelUseconds* pTimeout) {
     LOG_ERROR(Kernel_Event, "(STUBBED) called");
     return ORBIS_OK;
 }
