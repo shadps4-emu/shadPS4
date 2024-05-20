@@ -91,31 +91,35 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    int wait = 0;
-    int clear = 0;
+    EventFlagInternal::WaitMode wait = EventFlagInternal::WaitMode::And;
+    EventFlagInternal::ClearMode clear = EventFlagInternal::ClearMode::None;
+
     switch (waitMode & 0xf) {
     case 0x01:
-        wait = ORBIS_KERNEL_EVF_WAITMODE_AND;
+        wait = EventFlagInternal::WaitMode::And;
         break;
     case 0x02:
-        wait = ORBIS_KERNEL_EVF_WAITMODE_OR;
+        wait = EventFlagInternal::WaitMode::Or;
         break;
     default:
         UNREACHABLE();
     }
 
     switch (waitMode & 0xf0) {
+    case 0x00:
+        clear = EventFlagInternal::ClearMode::None;
+        break;
     case 0x10:
-        clear = ORBIS_KERNEL_EVF_WAITMODE_CLEAR_ALL;
+        clear = EventFlagInternal::ClearMode::All;
         break;
     case 0x20:
-        clear = ORBIS_KERNEL_EVF_WAITMODE_CLEAR_PAT;
+        clear = EventFlagInternal::ClearMode::Bits;
         break;
     default:
-        clear = 0; // not clear
+        UNREACHABLE();
     }
 
-    int result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
+    auto result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
 
     if (result != ORBIS_OK) {
         LOG_ERROR(Kernel_Event, "returned {}", result);

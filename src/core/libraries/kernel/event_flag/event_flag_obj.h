@@ -5,16 +5,20 @@
 #include <condition_variable>
 #include <mutex>
 #include "common/types.h"
-#include "event_flag_codes.h"
 
 namespace Libraries::Kernel {
 
 class EventFlagInternal {
 public:
+    enum class ClearMode { None, All, Bits };
+
+    enum class WaitMode { And, Or };
+
     EventFlagInternal(const std::string& name, bool single, bool fifo, uint64_t bits)
         : m_name(name), m_single_thread(single), m_fifo(fifo), m_bits(bits){};
 
-    int Wait(u64 bits, int wait_mode, int clear_mode, u64* result, u32* ptr_micros);
+    int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result,
+             u32* ptr_micros);
 
 private:
     enum class Status { Set, Canceled, Deleted };

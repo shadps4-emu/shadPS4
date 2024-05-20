@@ -5,7 +5,8 @@
 #include "event_flag_obj.h"
 
 namespace Libraries::Kernel {
-int EventFlagInternal::Wait(u64 bits, int wait_mode, int clear_mode, u64* result, u32* ptr_micros) {
+int EventFlagInternal::Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result,
+                            u32* ptr_micros) {
     std::unique_lock lock{m_mutex};
 
     uint32_t micros = 0;
@@ -23,8 +24,8 @@ int EventFlagInternal::Wait(u64 bits, int wait_mode, int clear_mode, u64* result
     m_waiting_threads++;
     auto waitFunc = [this, wait_mode, bits] {
         return (m_status == Status::Canceled || m_status == Status::Deleted ||
-                (wait_mode == ORBIS_KERNEL_EVF_WAITMODE_AND && (m_bits & bits) == bits) ||
-                (wait_mode == ORBIS_KERNEL_EVF_WAITMODE_OR && (m_bits & bits) != 0));
+                (wait_mode == WaitMode::And && (m_bits & bits) == bits) ||
+                (wait_mode == WaitMode::Or && (m_bits & bits) != 0));
     };
 
     if (infinitely) {
@@ -61,9 +62,9 @@ int EventFlagInternal::Wait(u64 bits, int wait_mode, int clear_mode, u64* result
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    if (clear_mode == ORBIS_KERNEL_EVF_WAITMODE_CLEAR_ALL) {
+    if (clear_mode == ClearMode::All) {
         m_bits = 0;
-    } else if (clear_mode == ORBIS_KERNEL_EVF_WAITMODE_CLEAR_PAT) {
+    } else if (clear_mode == ClearMode::Bits) {
         m_bits &= ~bits;
     }
 
