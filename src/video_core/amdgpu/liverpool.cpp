@@ -6,6 +6,7 @@
 #include "common/thread.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace AmdGpu {
 
@@ -107,7 +108,7 @@ void Liverpool::ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes) {
                 regs.index_base_address.base_addr_hi.Assign(draw_index->index_base_hi);
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
-                // rasterizer->DrawIndex();
+                rasterizer->DrawIndex();
                 break;
             }
             case PM4ItOpcode::DrawIndexAuto: {

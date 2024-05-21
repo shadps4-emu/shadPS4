@@ -14,6 +14,7 @@ void assert_fail_impl() {
 
 [[noreturn]] void unreachable_impl() {
     Common::Log::Stop();
+    std::fflush(stdout);
     Crash();
     throw std::runtime_error("Unreachable code");
 }

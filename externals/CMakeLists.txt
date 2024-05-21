@@ -87,3 +87,6 @@ if (WIN32)
     add_subdirectory(winpthreads EXCLUDE_FROM_ALL)
     target_include_directories(winpthreads INTERFACE winpthreads/include)
 endif()
+
+# sirit
+add_subdirectory(sirit EXCLUDE_FROM_ALL)

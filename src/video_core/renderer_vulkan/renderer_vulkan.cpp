@@ -7,6 +7,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 #include <vk_mem_alloc.h>
 
@@ -60,9 +61,10 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     };
 }
 
-RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_)
+RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool)
     : window{window_}, instance{window, Config::getGpuId()}, scheduler{instance},
       swapchain{instance, window}, texture_cache{instance, scheduler} {
+    rasterizer = std::make_unique<Rasterizer>(instance, scheduler, texture_cache, liverpool);
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 

@@ -218,6 +218,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/io_file.h
            src/common/error.cpp
            src/common/error.h
+           src/common/scope_exit.h
+           src/common/func_traits.h
            src/common/native_clock.cpp
            src/common/native_clock.h
            src/common/path_util.cpp
@@ -286,6 +288,75 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/virtual_memory.h
 )
 
+set(SHADER_RECOMPILER src/shader_recompiler/exception.h
+                      src/shader_recompiler/object_pool.h
+                      src/shader_recompiler/profile.h
+                      src/shader_recompiler/recompiler.cpp
+                      src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/runtime_info.h
+                      src/shader_recompiler/backend/spirv/emit_spirv.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv.h
+                      src/shader_recompiler/backend/spirv/emit_spirv_bitwise_conversion.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_composite.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_convert.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_instructions.h
+                      src/shader_recompiler/backend/spirv/emit_spirv_integer.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_logical.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_select.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_special.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_undefined.cpp
+                      src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+                      src/shader_recompiler/backend/spirv/spirv_emit_context.h
+                      src/shader_recompiler/frontend/translate/data_share.cpp
+                      src/shader_recompiler/frontend/translate/export.cpp
+                      src/shader_recompiler/frontend/translate/flat_memory.cpp
+                      src/shader_recompiler/frontend/translate/scalar_alu.cpp
+                      src/shader_recompiler/frontend/translate/scalar_memory.cpp
+                      src/shader_recompiler/frontend/translate/translate.cpp
+                      src/shader_recompiler/frontend/translate/translate.h
+                      src/shader_recompiler/frontend/translate/vector_alu.cpp
+                      src/shader_recompiler/frontend/translate/vector_interpolation.cpp
+                      src/shader_recompiler/frontend/translate/vector_memory.cpp
+                      src/shader_recompiler/frontend/control_flow_graph.cpp
+                      src/shader_recompiler/frontend/control_flow_graph.h
+                      src/shader_recompiler/frontend/decode.cpp
+                      src/shader_recompiler/frontend/decode.h
+                      src/shader_recompiler/frontend/format.cpp
+                      src/shader_recompiler/frontend/instruction.cpp
+                      src/shader_recompiler/frontend/instruction.h
+                      src/shader_recompiler/frontend/opcodes.h
+                      src/shader_recompiler/frontend/structured_control_flow.cpp
+                      src/shader_recompiler/frontend/structured_control_flow.h
+                      src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
+                      src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+                      src/shader_recompiler/ir/passes/constant_propogation_pass.cpp
+                      src/shader_recompiler/ir/passes/passes.h
+                      src/shader_recompiler/ir/abstract_syntax_list.h
+                      src/shader_recompiler/ir/attribute.cpp
+                      src/shader_recompiler/ir/attribute.h
+                      src/shader_recompiler/ir/basic_block.cpp
+                      src/shader_recompiler/ir/basic_block.h
+                      src/shader_recompiler/ir/condition.h
+                      src/shader_recompiler/ir/ir_emitter.cpp
+                      src/shader_recompiler/ir/ir_emitter.h
+                      src/shader_recompiler/ir/microinstruction.cpp
+                      src/shader_recompiler/ir/opcodes.cpp
+                      src/shader_recompiler/ir/opcodes.h
+                      src/shader_recompiler/ir/opcodes.inc
+                      src/shader_recompiler/ir/post_order.cpp
+                      src/shader_recompiler/ir/post_order.h
+                      src/shader_recompiler/ir/program.cpp
+                      src/shader_recompiler/ir/program.h
+                      src/shader_recompiler/ir/reg.h
+                      src/shader_recompiler/ir/type.cpp
+                      src/shader_recompiler/ir/type.h
+                      src/shader_recompiler/ir/value.cpp
+                      src/shader_recompiler/ir/value.h
+)
+
 set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
@@ -293,18 +364,26 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/renderer_vulkan/liverpool_to_vk.cpp
+               src/video_core/renderer_vulkan/liverpool_to_vk.h
                src/video_core/renderer_vulkan/renderer_vulkan.cpp
                src/video_core/renderer_vulkan/renderer_vulkan.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_descriptor_update_queue.cpp
                src/video_core/renderer_vulkan/vk_descriptor_update_queue.h
+               src/video_core/renderer_vulkan/vk_graphics_pipeline.cpp
+               src/video_core/renderer_vulkan/vk_graphics_pipeline.h
                src/video_core/renderer_vulkan/vk_instance.cpp
                src/video_core/renderer_vulkan/vk_instance.h
                src/video_core/renderer_vulkan/vk_master_semaphore.cpp
                src/video_core/renderer_vulkan/vk_master_semaphore.h
+               src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+               src/video_core/renderer_vulkan/vk_pipeline_cache.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
+               src/video_core/renderer_vulkan/vk_rasterizer.cpp
+               src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
@@ -371,6 +450,7 @@ if (ENABLE_QT_GUI)
         ${QT_GUI}
         ${COMMON}
         ${CORE}
+        ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         src/sdl_window.h
         src/sdl_window.cpp
@@ -381,18 +461,18 @@ else()
         ${INPUT}
         ${COMMON}
         ${CORE}
+        ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         src/main.cpp
         src/sdl_window.h
         src/sdl_window.cpp
-        src/common/scope_exit.h
     )
 endif()
 
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak)
-target_link_libraries(shadps4 PRIVATE discord-rpc boost vma vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
+target_link_libraries(shadps4 PRIVATE discord-rpc boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
 if (NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3-shared)

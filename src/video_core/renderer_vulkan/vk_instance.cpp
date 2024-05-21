@@ -196,8 +196,14 @@ bool Instance::CreateDevice() {
                 .shaderClipDistance = features.shaderClipDistance,
             },
         },
+        vk::PhysicalDeviceVulkan11Features{
+            .shaderDrawParameters = true,
+        },
         vk::PhysicalDeviceVulkan12Features{
             .timelineSemaphore = true,
+        },
+        vk::PhysicalDeviceVulkan13Features{
+            .dynamicRendering = true,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,

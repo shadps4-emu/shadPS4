@@ -47,16 +47,22 @@ struct SubresourceLayers {
 struct SubresourceBase {
     s32 level = 0;
     s32 layer = 0;
+
+    auto operator<=>(const SubresourceBase&) const = default;
 };
 
 struct SubresourceExtent {
     s32 levels = 1;
     s32 layers = 1;
+
+    auto operator<=>(const SubresourceExtent&) const = default;
 };
 
 struct SubresourceRange {
     SubresourceBase base;
     SubresourceExtent extent;
+
+    auto operator<=>(const SubresourceRange&) const = default;
 };
 
 struct ImageCopy {

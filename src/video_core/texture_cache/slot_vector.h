@@ -31,10 +31,6 @@ class SlotVector {
     constexpr static std::size_t InitialCapacity = 1024;
 
 public:
-    SlotVector() {
-        Reserve(InitialCapacity);
-    }
-
     ~SlotVector() noexcept {
         std::size_t index = 0;
         for (u64 bits : stored_bitset) {
