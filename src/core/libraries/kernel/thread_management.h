@@ -23,6 +23,8 @@ struct PthreadMutexInternal;
 struct PthreadMutexattrInternal;
 struct PthreadCondInternal;
 struct PthreadCondAttrInternal;
+struct PthreadRwInternal;
+struct PthreadRwLockAttrInernal;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthread = PthreadInternal*;
@@ -31,6 +33,8 @@ using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
+using ScePthreadRw = PthreadRwInternal*;
+using ScePthreadRwAttr = PthreadRwLockAttrInernal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
@@ -84,6 +88,19 @@ struct PthreadCondAttrInternal {
     pthread_condattr_t cond_attr;
 };
 
+struct PthreadRwLockAttrInernal {
+    u64 initialized = 1;
+    u8 reserved[64];
+    pthread_rwlockattr_t attr_rwlock;
+    int type;
+};
+
+struct PthreadRwInternal {
+    u64 initialized = 1;
+    pthread_rwlock_t pth_rwlock;
+    std::string name;
+};
+
 class PThreadPool {
 public:
     ScePthread Create();
@@ -113,6 +130,12 @@ public:
     void SetDefaultAttr(ScePthreadAttr attr) {
         m_default_attr = attr;
     }
+    ScePthreadRwAttr* getDefaultRwattr() {
+        return &m_default_Rwattr;
+    }
+    void setDefaultRwattr(ScePthreadRwAttr attr) {
+        m_default_Rwattr = attr;
+    }
     PThreadPool* GetPthreadPool() {
         return m_pthread_pool;
     }
@@ -123,6 +146,7 @@ public:
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
     ScePthreadCondattr m_default_condattr = nullptr;
+    ScePthreadRwAttr m_default_Rwattr = nullptr;
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
 };
@@ -164,6 +188,18 @@ int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex
 int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec);
 int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond);
+/****
+ * rwlock calls
+ */
+int PS4_SYSV_ABI scePthreadRwlockInit(ScePthreadRw* thread, ScePthreadRwAttr* attr,
+                                      const char* name);
+int PS4_SYSV_ABI scePthreadRwlockRdlock(ScePthreadRw* thread);
+int PS4_SYSV_ABI scePthreadRwlockWrlock(ScePthreadRw* thread);
+int PS4_SYSV_ABI scePthreadRwlockUnlock(ScePthreadRw* thread);
+int PS4_SYSV_ABI scePthreadRwlockDestroy(ScePthreadRw* thread);
+int PS4_SYSV_ABI scePthreadRwlockattrInit(ScePthreadRwAttr* attr);
+int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(ScePthreadRw* thread);
+int PS4_SYSV_ABI posix_pthread_rwlock_unlock(ScePthreadRw* thread);
 
 /****
  * Posix calls

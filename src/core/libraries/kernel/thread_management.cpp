@@ -31,6 +31,10 @@ void init_pthreads() {
     ScePthreadAttr default_attr = nullptr;
     scePthreadAttrInit(&default_attr);
     g_pthread_cxt->SetDefaultAttr(default_attr);
+    // default rwlock init
+    ScePthreadRwAttr default_rwattr = nullptr;
+    scePthreadRwlockattrInit(&default_rwattr);
+    g_pthread_cxt->setDefaultRwattr(default_rwattr);
 
     g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
@@ -981,7 +985,7 @@ int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
     }
     int result = pthread_cond_destroy(&(*cond)->cond);
 
-    LOG_DEBUG(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
+    LOG_INFO(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
 
     switch (result) {
     case 0:
@@ -1119,6 +1123,133 @@ int PS4_SYSV_ABI posix_pthread_cond_wait(ScePthreadCond* cond, ScePthreadMutex* 
     }
     return result;
 }
+/****
+ * rwlock
+ */
+int PS4_SYSV_ABI scePthreadRwlockInit(ScePthreadRw* thread, ScePthreadRwAttr* attr,
+                                      const char* name) {
+    *thread = new PthreadRwInternal{};
+    if (thread == nullptr || *thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    if (attr == nullptr || *attr == nullptr) {
+        attr = g_pthread_cxt->getDefaultRwattr();
+    }
+
+    int result = pthread_rwlock_init(&(*thread)->pth_rwlock, &(*attr)->attr_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockInit: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadRwlockRdlock(ScePthreadRw* thread) {
+    if (thread == nullptr || *thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_rwlock_rdlock(&(*thread)->pth_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockRdlock: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadRwlockWrlock(ScePthreadRw* thread) {
+    if (thread == nullptr || *thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_rwlock_wrlock(&(*thread)->pth_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockWrlock: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadRwlockUnlock(ScePthreadRw* thread) {
+    if (thread == nullptr || *thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_rwlock_unlock(&(*thread)->pth_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockUnlock: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    return 0;
+}
+
+int PS4_SYSV_ABI scePthreadRwlockDestroy(ScePthreadRw* thread) {
+    if (thread == nullptr || *thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_rwlock_destroy(&(*thread)->pth_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockDestroy: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadRwlockattrInit(ScePthreadRwAttr* attr) {
+    *attr = new PthreadRwLockAttrInernal{};
+
+    int result = pthread_rwlockattr_init(&(*attr)->attr_rwlock);
+    LOG_INFO(Kernel_Pthread, "scePthreadRwlockattrInit: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(ScePthreadRw* thread) {
+    int result = scePthreadRwlockRdlock(thread);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+int PS4_SYSV_ABI posix_pthread_rwlock_unlock(ScePthreadRw* thread) {
+    int result = scePthreadRwlockUnlock(thread);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
@@ -1161,6 +1292,18 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
     LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", 1, 1, scePthreadCondSignal);
     LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", 1, 1, scePthreadCondDestroy);
+
+    // Rwlock funstions
+    LIB_FUNCTION("6ULAa0fq4jA", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockInit);
+    LIB_FUNCTION("yOfGg-I1ZII", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockattrInit);
+    LIB_FUNCTION("Ox9i0c7L5w0", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockRdlock);
+    LIB_FUNCTION("mqdNorrB+gI", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockWrlock);
+    LIB_FUNCTION("+L98PIbGttk", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockUnlock);
+    LIB_FUNCTION("BB+kb08Tl9A", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockDestroy);
+
+    LIB_FUNCTION("iGjsr1WAtI0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_rdlock);
+    LIB_FUNCTION("EgmLo6EWgso", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_unlock);
+
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
