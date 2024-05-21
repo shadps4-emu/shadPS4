@@ -17,8 +17,7 @@ public:
     EventFlagInternal(const std::string& name, bool single, bool fifo, uint64_t bits)
         : m_name(name), m_single_thread(single), m_fifo(fifo), m_bits(bits){};
 
-    int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result,
-             u32* ptr_micros);
+    int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros);
 
 private:
     enum class Status { Set, Canceled, Deleted };
