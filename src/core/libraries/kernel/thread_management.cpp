@@ -1037,6 +1037,63 @@ int PS4_SYSV_ABI ps4_gettimeofday(SceKernelTimespec* tp /*, timezone */) {
     return 0;
 }
 
+int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
+    int result = scePthreadMutexattrInit(attr);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_mutexattr_destroy(ScePthreadMutexattr* attr) {
+    int result = scePthreadMutexattrDestroy(attr);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
+                                      pthreadEntryFunc start_routine, void* arg) {
+    int result = scePthreadCreate(thread, attr, start_routine, arg, "");
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadCondattr* attr) {
+    int result = scePthreadCondInit(cond, attr, "");
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_init(ScePthreadAttr* attr) {
+    int result = scePthreadAttrInit(attr);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t stack_size) {
+    int result = scePthreadAttrSetstacksize(attr, stack_size);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_wait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
+    int result = scePthreadCondWait(cond, mutex);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1081,6 +1138,15 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
+    LIB_FUNCTION("dQHWEsJtoE4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
+    LIB_FUNCTION("HF7lK46xzjY", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_mutexattr_destroy);
+    LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
+    LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
+    LIB_FUNCTION("wtkt-teR1so", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_attr_init);
+    LIB_FUNCTION("2Q0z6rnBrTE", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_setstacksize);
+    LIB_FUNCTION("Op8TBGY5KHg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_wait);
 
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
