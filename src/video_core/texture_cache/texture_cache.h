@@ -9,6 +9,7 @@
 
 #include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
+#include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/slot_vector.h"
 
 namespace Core::Libraries::VideoOut {
@@ -34,6 +35,9 @@ public:
 
     /// Retrieves the image handle of the image with the provided attributes and address.
     Image& FindImage(const ImageInfo& info, VAddr cpu_address);
+
+    /// Retrieves the render target with specified properties
+    ImageView& RenderTarget(VAddr cpu_address, u32 pitch);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
@@ -116,6 +120,7 @@ private:
     Vulkan::Scheduler& scheduler;
     Vulkan::StreamBuffer staging;
     SlotVector<Image> slot_images;
+    SlotVector<ImageView> slot_image_views;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
 #ifdef _WIN64

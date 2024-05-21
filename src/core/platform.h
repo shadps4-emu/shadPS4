@@ -7,11 +7,9 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
-#include "magic_enum.hpp"
 
 #include <functional>
 #include <mutex>
-#include <optional>
 #include <unordered_map>
 #include <queue>
 
@@ -81,7 +79,7 @@ private:
         std::queue<IrqHandler> one_time_subscribers{};
         std::mutex m_lock{};
     };
-    std::array<IrqContext, magic_enum::enum_count<InterruptId>()> irq_contexts{};
+    std::array<IrqContext, 8> irq_contexts{};
 };
 
 using IrqC = Common::Singleton<IrqController>;

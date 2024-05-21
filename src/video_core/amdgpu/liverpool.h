@@ -15,6 +15,10 @@
 #include <thread>
 #include <queue>
 
+namespace Vulkan {
+class Rasterizer;
+}
+
 namespace AmdGpu {
 
 #define GFX6_3D_REG_INDEX(field_name) (offsetof(AmdGpu::Liverpool::Regs, field_name) / sizeof(u32))
@@ -46,9 +50,10 @@ struct Liverpool {
         } settings;
         UserData user_data;
 
-        const u8* Address() const {
+        template <typename T = u8>
+        const T* Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
-            return reinterpret_cast<const u8*>(addr);
+            return reinterpret_cast<const T*>(addr);
         }
     };
 
@@ -631,10 +636,15 @@ public:
 
     void WaitGpuIdle();
 
+    void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
+        rasterizer = rasterizer_;
+    }
+
 private:
     void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
     void Process(std::stop_token stoken);
 
+    Vulkan::Rasterizer* rasterizer;
     std::jthread process_thread{};
     std::queue<std::span<const u32>> gfx_ring{};
     std::condition_variable_any cv_submit{};

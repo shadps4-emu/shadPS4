@@ -13,20 +13,9 @@ class Scheduler;
 
 namespace VideoCore {
 
-enum class ImageViewType : u32 {
-    e1D,
-    e2D,
-    Cube,
-    e3D,
-    e1DArray,
-    e2DArray,
-    CubeArray,
-    Buffer,
-};
-
 struct ImageViewInfo {
-    vk::ImageViewType type{};
-    vk::Format format{};
+    vk::ImageViewType type = vk::ImageViewType::e2D;
+    vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
 

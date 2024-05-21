@@ -10,7 +10,7 @@
 
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
-extern Frontend::WindowSDL* g_window;
+extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 
 namespace Libraries::VideoOut {
 
@@ -41,8 +41,6 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     main_port.resolution.fullHeight = height;
     main_port.resolution.paneWidth = width;
     main_port.resolution.paneHeight = height;
-
-    renderer = std::make_unique<Vulkan::RendererVulkan>(*g_window);
 }
 
 VideoOutDriver::~VideoOutDriver() = default;

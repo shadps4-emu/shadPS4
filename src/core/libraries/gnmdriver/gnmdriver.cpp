@@ -12,6 +12,9 @@
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
+extern Frontend::WindowSDL* g_window;
+std::unique_ptr<Vulkan::RendererVulkan> renderer;
+
 namespace Libraries::GnmDriver {
 
 using namespace AmdGpu;
@@ -1912,6 +1915,7 @@ int PS4_SYSV_ABI Func_F916890425496553() {
 
 void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
     liverpool = std::make_unique<AmdGpu::Liverpool>();
+    renderer = std::make_unique<Vulkan::RendererVulkan>(*g_window, liverpool.get());
 
     LIB_FUNCTION("b0xyllnVY-I", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmAddEqEvent);
     LIB_FUNCTION("b08AgtPlHPg", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1,

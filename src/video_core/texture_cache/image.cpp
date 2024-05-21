@@ -38,7 +38,7 @@ using Libraries::VideoOut::TilingMode;
     if (false /*&& IsDepthStencilFormat(format)*/) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        // usage |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage;
+        usage |= vk::ImageUsageFlagBits::eColorAttachment;
     }
     return usage;
 }

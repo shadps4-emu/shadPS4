@@ -83,6 +83,15 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     ASSERT_MSG(veh_handle, "Failed to register an exception handler");
 #endif
     g_texture_cache = this;
+
+    ImageInfo info;
+    info.pixel_format = vk::Format::eR8G8B8A8Unorm;
+    info.type = vk::ImageType::e2D;
+    const ImageId null_id = slot_images.insert(instance, scheduler, info, 0);
+    ASSERT(null_id.index == 0);
+
+    ImageViewInfo view_info;
+    void(slot_image_views.insert(instance, scheduler, view_info, slot_images[null_id].image));
 }
 
 TextureCache::~TextureCache() {
@@ -126,6 +135,29 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
     }
 
     return image;
+}
+
+ImageView& TextureCache::RenderTarget(VAddr cpu_address, u32 pitch) {
+    boost::container::small_vector<ImageId, 2> image_ids;
+    ForEachImageInRegion(cpu_address, pitch * 4, [&](ImageId image_id, Image& image) {
+        if (image.cpu_addr == cpu_address) {
+            image_ids.push_back(image_id);
+        }
+    });
+
+    ASSERT_MSG(image_ids.size() <= 1, "Overlapping framebuffers not allowed!");
+    auto* image = &slot_images[image_ids.empty() ? ImageId{0} : image_ids.back()];
+
+    ImageViewInfo info;
+    info.format = vk::Format::eB8G8R8A8Srgb;
+    if (const ImageViewId view_id = image->FindView(info); view_id) {
+        return slot_image_views[view_id];
+    }
+
+    const ImageViewId view_id = slot_image_views.insert(instance, scheduler, info, image->image);
+    image->image_view_infos.emplace_back(info);
+    image->image_view_ids.emplace_back(view_id);
+    return slot_image_views[view_id];
 }
 
 void TextureCache::RefreshImage(Image& image) {

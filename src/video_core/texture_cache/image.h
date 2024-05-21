@@ -7,6 +7,7 @@
 #include "common/types.h"
 #include "core/libraries/videoout/buffer.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/types.h"
 
 namespace Vulkan {
@@ -39,23 +40,6 @@ struct ImageInfo {
     Extent3D size{1, 1, 1};
     u32 pitch = 0;
     u32 guest_size_bytes = 0;
-};
-
-struct Handle {
-    VmaAllocation allocation;
-    VkImage image;
-
-    Handle() = default;
-
-    Handle(Handle&& other)
-        : image{std::exchange(other.image, VK_NULL_HANDLE)},
-          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)} {}
-
-    Handle& operator=(Handle&& other) {
-        image = std::exchange(other.image, VK_NULL_HANDLE);
-        allocation = std::exchange(other.allocation, VK_NULL_HANDLE);
-        return *this;
-    }
 };
 
 struct UniqueImage {
@@ -100,6 +84,14 @@ struct Image {
         return cpu_addr < overlap_end && overlap_cpu_addr < cpu_addr_end;
     }
 
+    ImageViewId FindView(const ImageViewInfo& info) const {
+        const auto it = std::ranges::find(image_view_infos, info);
+        if (it == image_view_infos.end()) {
+            return {};
+        }
+        return image_view_ids[std::distance(it, image_view_infos.begin())];
+    }
+
     void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);
 
     const Vulkan::Instance* instance;
@@ -110,6 +102,8 @@ struct Image {
     ImageFlagBits flags = ImageFlagBits::CpuModified;
     VAddr cpu_addr = 0;
     VAddr cpu_addr_end = 0;
+    std::vector<ImageViewInfo> image_view_infos;
+    std::vector<ImageViewId> image_view_ids;
 
     // Resource state tracking
     vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;
