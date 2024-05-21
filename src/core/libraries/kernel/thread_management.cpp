@@ -958,10 +958,10 @@ int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* 
     if (mutex == nullptr || *mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    timespec* time;
-    time->tv_sec = usec / 1000000;
-    time->tv_nsec = ((usec % 1000000) * 1000);
-    int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, time);
+    timespec time{};
+    time.tv_sec = usec / 1000000;
+    time.tv_nsec = ((usec % 1000000) * 1000);
+    int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, &time);
 
     LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
 
