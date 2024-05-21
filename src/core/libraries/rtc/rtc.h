@@ -15,6 +15,16 @@ struct OrbisRtcTick {
     u64 tick;
 };
 
+struct OrbisRtcDateTime {
+    u16 year;
+    u16 month;
+    u16 day;
+    u16 hour;
+    u16 minute;
+    u16 second;
+    u16 microsecond;
+};
+
 int PS4_SYSV_ABI sceRtcCheckValid();
 int PS4_SYSV_ABI sceRtcCompareTick();
 int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc();
@@ -28,12 +38,12 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339Precise();
 int PS4_SYSV_ABI sceRtcFormatRFC3339PreciseLocalTime();
 int PS4_SYSV_ABI sceRtcGetCurrentAdNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentClock();
-int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime();
+int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime);
 int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentRawNetworkTick();
 int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick);
-int PS4_SYSV_ABI sceRtcGetDayOfWeek();
+int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day);
 int PS4_SYSV_ABI sceRtcGetDaysInMonth();
 int PS4_SYSV_ABI sceRtcGetDosTime();
 int PS4_SYSV_ABI sceRtcGetTick();

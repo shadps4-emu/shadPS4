@@ -923,9 +923,9 @@ int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
 }
 
 int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
+    cond = static_cast<ScePthreadCond*>(createCond(cond));
     if (cond == nullptr || *cond == nullptr) {
-        // return SCE_KERNEL_ERROR_EINVAL;
-        cond = static_cast<ScePthreadCond*>(createCond(cond)); // check this. Kero Blaster.
+        return SCE_KERNEL_ERROR_EINVAL;
     }
     if (mutex == nullptr || *mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -937,6 +937,35 @@ int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex
     switch (result) {
     case 0:
         return SCE_OK;
+    case EINTR:
+        return SCE_KERNEL_ERROR_EINTR;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec) {
+    cond = static_cast<ScePthreadCond*>(createCond(cond));
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (mutex == nullptr || *mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    timespec* time;
+    time->tv_sec = usec / 1000000;
+    time->tv_nsec = ((usec % 1000000) * 1000);
+    int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, time);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ETIMEDOUT:
+        return SCE_KERNEL_ERROR_ETIMEDOUT;
     case EINTR:
         return SCE_KERNEL_ERROR_EINTR;
     case EAGAIN:
@@ -991,6 +1020,23 @@ int PS4_SYSV_ABI scePthreadEqual(ScePthread thread1, ScePthread thread2) {
     return (thread1 == thread2 ? 1 : 0);
 }
 
+int PS4_SYSV_ABI ps4_gettimeofday(SceKernelTimespec* tp /*, timezone */) {
+    if (tp == nullptr) {
+        return -1;
+    }
+    LOG_INFO(Kernel_Pthread, "ps4_gettimeofday");
+
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds);
+
+    tp->tv_sec = static_cast<long>(seconds.count());
+    tp->tv_nsec = static_cast<long>(nanoseconds.count());
+
+    return 0;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1027,6 +1073,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
     LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, scePthreadCondBroadcast);
     LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", 1, 1, scePthreadCondWait);
+    LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel", 1, 1, scePthreadCondTimedwait);
     LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
     LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", 1, 1, scePthreadCondSignal);
     // posix calls
@@ -1039,11 +1086,14 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
+    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, nanosleep); // CUSA18841
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
+
+    LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, ps4_gettimeofday);
 }
 
 } // namespace Libraries::Kernel

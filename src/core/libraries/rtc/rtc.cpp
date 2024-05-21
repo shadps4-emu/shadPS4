@@ -75,8 +75,23 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime() {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
+int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
+    auto now = std::chrono::system_clock::now();
+    auto now_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
+    auto epoch = now_ns.time_since_epoch();
+    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(epoch);
+
+    std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::tm local_tm = *std::localtime(&now_time_t);
+
+    pTime->year = local_tm.tm_year + 1900;
+    pTime->month = local_tm.tm_mon + 1;
+    pTime->day = local_tm.tm_mday;
+    pTime->hour = local_tm.tm_hour;
+    pTime->minute = local_tm.tm_min;
+    pTime->second = local_tm.tm_sec;
+    pTime->microsecond = micros.count() % 1000000;
+
     return ORBIS_OK;
 }
 
@@ -102,9 +117,13 @@ int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcGetDayOfWeek() {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day) {
+    std::tm timeinfo = {0};
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_mon = month - 1;
+    timeinfo.tm_mday = day;
+    std::mktime(&timeinfo);
+    return timeinfo.tm_wday;
 }
 
 int PS4_SYSV_ABI sceRtcGetDaysInMonth() {
