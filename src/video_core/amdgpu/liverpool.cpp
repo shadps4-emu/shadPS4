@@ -34,10 +34,15 @@ void Liverpool::Process(std::stop_token stoken) {
             gfx_ring.pop();
         }
 
-        ASSERT_MSG(dcb.size() != 0, "Empty command list received");
-        ProcessCmdList(dcb.data(), dcb.size());
+        ASSERT_MSG(!dcb.empty(), "Empty command list received");
+        ProcessCmdList(dcb.data(), dcb.size_bytes());
 
-        cv_complete.notify_all();
+        {
+            std::unique_lock lock{m_ring_access};
+            if (gfx_ring.empty()) {
+                cv_complete.notify_all();
+            }
+        }
     }
 }
 

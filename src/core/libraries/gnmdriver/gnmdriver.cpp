@@ -1429,9 +1429,12 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
 
     for (auto cbpair = 0u; cbpair < count; ++cbpair) {
         const auto* ccb = ccb_gpu_addrs ? ccb_gpu_addrs[cbpair] : nullptr;
-        const auto ccb_size = ccb_sizes_in_bytes ? ccb_sizes_in_bytes[cbpair] : 0;
+        const auto ccb_size_in_bytes = ccb_sizes_in_bytes ? ccb_sizes_in_bytes[cbpair] : 0;
 
-        liverpool->SubmitGfx({dcb_gpu_addrs[cbpair], dcb_sizes_in_bytes[cbpair]}, {ccb, ccb_size});
+        const auto dcb_size_dw = dcb_sizes_in_bytes[cbpair] >> 2;
+        const auto ccb_size_dw = ccb_size_in_bytes >> 2;
+
+        liverpool->SubmitGfx({dcb_gpu_addrs[cbpair], dcb_size_dw}, {ccb, ccb_size_dw});
     }
 
     return ORBIS_OK;
