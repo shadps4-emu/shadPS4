@@ -644,7 +644,7 @@ private:
     void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
     void Process(std::stop_token stoken);
 
-    Vulkan::Rasterizer* rasterizer;
+    Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
     std::queue<std::span<const u32>> gfx_ring{};
     std::condition_variable_any cv_submit{};

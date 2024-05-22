@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -19,7 +20,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, pipeline_cache{instance, scheduler, liverpool},
       vertex_index_buffer{instance, scheduler, VertexIndexFlags, 64_MB} {
-    liverpool->BindRasterizer(this);
+    if (!Config::nullGpu()) {
+        liverpool->BindRasterizer(this);
+    }
 }
 
 Rasterizer::~Rasterizer() = default;

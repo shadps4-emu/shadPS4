@@ -21,5 +21,6 @@ s32 getGpuId();
 bool debugDump();
 bool isLleLibc();
 bool showSplash();
+bool nullGpu();
 
 }; // namespace Config
