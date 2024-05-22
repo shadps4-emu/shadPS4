@@ -90,3 +90,6 @@ endif()
 
 # sirit
 add_subdirectory(sirit EXCLUDE_FROM_ALL)
+if (WIN32)
+    target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
+endif()

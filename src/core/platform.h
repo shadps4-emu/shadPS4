@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
+#include "magic_enum.hpp"
 
 #include <functional>
 #include <mutex>
@@ -24,7 +25,8 @@ enum class InterruptId : u32 {
     Compute5RelMem = 5u,
     Compute6RelMem = 6u,
     GfxEop = 7u,
-    GfxFlip = 8u
+    GfxFlip = 8u,
+    MaxValue
 };
 
 using IrqHandler = std::function<void(InterruptId)>;
@@ -79,7 +81,7 @@ private:
         std::queue<IrqHandler> one_time_subscribers{};
         std::mutex m_lock{};
     };
-    std::array<IrqContext, 8> irq_contexts{};
+    std::array<IrqContext, (int)InterruptId::MaxValue> irq_contexts{};
 };
 
 using IrqC = Common::Singleton<IrqController>;
