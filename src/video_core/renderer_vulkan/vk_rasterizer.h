@@ -29,6 +29,9 @@ public:
     /// Performs a draw call with an index buffer.
     void DrawIndex();
 
+    /// Performs a draw call without an index buffer.
+    void DrawAuto();
+
     /// Updates graphics state that is not part of the bound pipeline.
     void UpdateDynamicState();
 

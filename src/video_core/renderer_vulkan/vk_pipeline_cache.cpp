@@ -50,7 +50,7 @@ void PipelineCache::BindPipeline() {
 
         // Compile and cache shader.
         const auto data = std::span{token, bininfo.length / sizeof(u32)};
-        const auto program = Shader::TranslateProgram(inst_pool, block_pool, stage, data);
+        const auto program = Shader::TranslateProgram(inst_pool, block_pool, stage, pgm.user_data, data);
         return CompileSPV(program, instance.GetDevice());
     };
 

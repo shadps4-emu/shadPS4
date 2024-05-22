@@ -634,7 +634,6 @@ private:
                 const u32 start = stmt.block->begin_index;
                 const u32 size = stmt.block->end_index - start + 1;
                 Translate(current_block, stage, inst_list.subspan(start, size));
-                fmt::print("{}\n", IR::DumpBlock(*current_block));
                 break;
             }
             case StatementType::SetVariable: {

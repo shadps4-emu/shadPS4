@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image.h"
@@ -63,6 +64,20 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     } else {
         guest_size_bytes = pitch * 128 * ((size.height + 63) & (~63)) * 4;
     }
+}
+
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept {
+    // There is a small difference between T# and CB number types, account for it.
+    const auto number_fmt =
+        buffer.info.number_type == AmdGpu::NumberFormat::Uscaled ? AmdGpu::NumberFormat::Srgb
+                                                                 : buffer.info.number_type;
+    is_tiled = true;
+    pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, number_fmt);
+    type = vk::ImageType::e2D;
+    size.width = buffer.Pitch();
+    size.height = buffer.Height();
+    pitch = size.width;
+    guest_size_bytes = buffer.slice.tile_max * (buffer.view.slice_max + 1);
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)

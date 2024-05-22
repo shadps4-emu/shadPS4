@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 #include <array>
 #include <condition_variable>
@@ -423,39 +424,6 @@ struct Liverpool {
             Swap8In64 = 3,
         };
 
-        enum class Format : u32 {
-            Invalid = 0,
-            Color_8 = 1,
-            Color_16 = 2,
-            Color_8_8 = 3,
-            Color_32 = 4,
-            Color_16_16 = 5,
-            Color_10_11_11 = 6,
-            Color_11_11_10 = 7,
-            Color_10_10_10_2 = 8,
-            Color_2_10_10_10 = 9,
-            Color_8_8_8_8 = 10,
-            Color_32_32 = 11,
-            Color_16_16_16_16 = 12,
-            Color_32_32_32_32 = 14,
-            Color_5_6_5 = 16,
-            Color_1_5_5_5 = 17,
-            Color_5_5_5_1 = 18,
-            Color_4_4_4_4 = 19,
-            Color_8_24 = 20,
-            Color_24_8 = 21,
-            Color_X24_8_32_FL = 22,
-        };
-
-        enum class NumberType : u32 {
-            Unorm = 0,
-            Snorm = 1,
-            Uint = 4,
-            Sint = 5,
-            Srgb = 6,
-            Float = 7,
-        };
-
         enum class SwapMode : u32 {
             Standard = 0,
             Alternate = 1,
@@ -482,9 +450,9 @@ struct Liverpool {
         } view;
         union {
             BitField<0, 2, EndianSwap> endian;
-            BitField<2, 5, Format> format;
+            BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
-            BitField<8, 2, NumberType> number_type;
+            BitField<8, 2, NumberFormat> number_type;
             BitField<11, 2, SwapMode> comp_swap;
             BitField<13, 1, u32> fast_clear;
             BitField<14, 1, u32> compression;

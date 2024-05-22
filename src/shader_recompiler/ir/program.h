@@ -15,11 +15,14 @@ enum class Stage : u32;
 
 namespace Shader::IR {
 
+static constexpr size_t NumUserDataRegs = 16;
+
 struct Program {
     AbstractSyntaxList syntax_list;
     BlockList blocks;
     BlockList post_order_blocks;
     std::vector<Gcn::GcnInst> ins_list;
+    std::array<u32, NumUserDataRegs> user_data;
     Stage stage;
 };
 

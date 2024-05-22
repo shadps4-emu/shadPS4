@@ -28,6 +28,7 @@ struct BinaryInfo {
 
 [[nodiscard]] std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
                                                 ObjectPool<IR::Block>& block_pool, Stage stage,
+                                                std::span<const u32, IR::NumUserDataRegs> ud_regs,
                                                 std::span<const u32> code);
 
 } // namespace Shader

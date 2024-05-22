@@ -113,13 +113,12 @@ SharpLocation TrackSharp(const IR::Value& handle) {
     };
 }
 
-void ResourceTrackingPass(IR::BlockList& program) {
-    for (IR::Block* const block : program) {
+void ResourceTrackingPass(IR::Program& program) {
+    for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (!IsResourceInstruction(inst)) {
                 continue;
             }
-            printf("ff\n");
             IR::Inst* producer = inst.Arg(0).InstRecursive();
             const auto loc = TrackSharp(producer->Arg(0));
             fmt::print("Found resource s[{}:{}] is_eud = {}\n", loc.index_dwords,

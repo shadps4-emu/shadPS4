@@ -4,6 +4,7 @@
 #pragma once
 
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/program.h"
 
 namespace Shader::Optimization {
 
@@ -11,6 +12,6 @@ void SsaRewritePass(IR::BlockList& program);
 void IdentityRemovalPass(IR::BlockList& program);
 void DeadCodeEliminationPass(IR::BlockList& program);
 void ConstantPropagationPass(IR::BlockList& program);
-void ResourceTrackingPass(IR::BlockList& program);
+void ResourceTrackingPass(IR::Program& program);
 
 } // namespace Shader::Optimization

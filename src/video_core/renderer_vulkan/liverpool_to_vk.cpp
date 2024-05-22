@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
@@ -74,6 +74,9 @@ vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type) {
         return vk::PrimitiveTopology::eTriangleListWithAdjacency;
     case Liverpool::PrimitiveType::AdjTriangleStrip:
         return vk::PrimitiveTopology::eTriangleStripWithAdjacency;
+    case Liverpool::PrimitiveType::QuadList:
+        // Needs to generate index buffer on the fly.
+        return vk::PrimitiveTopology::eTriangleList;
     default:
         UNREACHABLE();
         return vk::PrimitiveTopology::eTriangleList;
@@ -108,6 +111,22 @@ vk::CullModeFlags CullMode(Liverpool::CullMode mode) {
         UNREACHABLE();
         return vk::CullModeFlagBits::eNone;
     }
+}
+
+vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
+    if (data_format == AmdGpu::DataFormat::Format32_32_32_32 && num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eR32G32B32A32Sfloat;
+    }
+    if (data_format == AmdGpu::DataFormat::Format32_32_32 && num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR32G32B32Uint;
+    }
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eR8G8B8A8Unorm;
+    }
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 && num_format == AmdGpu::NumberFormat::Srgb) {
+        return vk::Format::eR8G8B8A8Srgb;
+    }
+    UNREACHABLE();
 }
 
 } // namespace Vulkan::LiverpoolToVK

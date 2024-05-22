@@ -6,7 +6,7 @@
 
 namespace AmdGpu {
 
-u32 getNumComponents(DataFormat format) {
+u32 NumComponents(DataFormat format) {
     constexpr std::array numComponentsPerElement = {
         0,  1,  1,  2,  1,  2,  3,  3,  4,  4,  4,  2, 4, 3, 4, -1, 3, 4, 4, 4, 2,
         2,  2,  -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3, 4, 4,  4, 1, 2, 3, 4,

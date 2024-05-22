@@ -37,7 +37,7 @@ public:
     Image& FindImage(const ImageInfo& info, VAddr cpu_address);
 
     /// Retrieves the render target with specified properties
-    ImageView& RenderTarget(VAddr cpu_address, u32 pitch);
+    ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);

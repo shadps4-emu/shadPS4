@@ -32,6 +32,7 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 
 std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
                                   ObjectPool<IR::Block>& block_pool, Stage stage,
+                                  std::span<const u32, IR::NumUserDataRegs> ud_regs,
                                   std::span<const u32> token) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
@@ -39,6 +40,11 @@ std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
 
     Gcn::GcnCodeSlice slice(token.data(), token.data() + token.size());
     Gcn::GcnDecodeContext decoder;
+
+    static int counter = 0;
+    std::ofstream file(fmt::format("shader{}.bin", counter++), std::ios::out | std::ios::binary);
+    file.write((const char*)token.data(), token.size_bytes());
+    file.close();
 
     // Decode and save instructions
     IR::Program program;
@@ -56,13 +62,18 @@ std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
     program.stage = stage;
+    std::ranges::copy(ud_regs, program.user_data.begin());
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
-    // Shader::Optimization::ResourceTrackingPass(program.post_order_blocks);
+    Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::DeadCodeEliminationPass(program.blocks);
+
+    for (const auto& block : program.blocks) {
+        fmt::print("{}\n", IR::DumpBlock(*block));
+    }
 
     // TODO: Pass profile from vulkan backend
     const auto code = Backend::SPIRV::EmitSPIRV(Profile{}, program);

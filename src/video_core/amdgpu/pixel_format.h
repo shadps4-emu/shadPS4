@@ -59,6 +59,6 @@ enum class NumberFormat : u32 {
     Ubscaled = 13,
 };
 
-u32 getNumComponents(DataFormat format);
+u32 NumComponents(DataFormat format);
 
 } // namespace AmdGpu

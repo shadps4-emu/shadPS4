@@ -31,20 +31,11 @@ void Rasterizer::DrawIndex() {
     const auto cmdbuf = scheduler.CommandBuffer();
     auto& regs = liverpool->regs;
 
-    static bool first_time = true;
-    if (first_time) {
-        first_time = false;
-        return;
-    }
-
     UpdateDynamicState();
 
     pipeline_cache.BindPipeline();
 
-    const u32 pitch = regs.color_buffers[0].Pitch();
-    const u32 height = regs.color_buffers[0].Height();
-    const u32 tile_max = regs.color_buffers[0].slice.tile_max;
-    auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0].Address(), pitch);
+    auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
 
     const vk::RenderingAttachmentInfo color_info = {
         .imageView = *image_view.image_view,

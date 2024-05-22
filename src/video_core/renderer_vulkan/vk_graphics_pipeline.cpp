@@ -126,7 +126,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, const PipelineKey&
         .pName = "main",
     };
 
-    const vk::Format color_format = vk::Format::eB8G8R8A8Srgb;
+    const vk::Format color_format = vk::Format::eR8G8B8A8Srgb;
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
         .colorAttachmentCount = 1,
         .pColorAttachmentFormats = &color_format,

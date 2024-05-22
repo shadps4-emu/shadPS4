@@ -174,7 +174,6 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
 
     if (!frame) {
         if (!splash_img.has_value()) {
-
             VideoCore::ImageInfo info{};
             info.pixel_format = vk::Format::eR8G8B8A8Srgb;
             info.type = vk::ImageType::e2D;
@@ -200,7 +199,6 @@ Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGr
 }
 
 Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
-
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
