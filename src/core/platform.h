@@ -26,7 +26,6 @@ enum class InterruptId : u32 {
     Compute6RelMem = 6u,
     GfxEop = 7u,
     GfxFlip = 8u,
-    MaxValue
 };
 
 using IrqHandler = std::function<void(InterruptId)>;
@@ -81,7 +80,7 @@ private:
         std::queue<IrqHandler> one_time_subscribers{};
         std::mutex m_lock{};
     };
-    std::array<IrqContext, (int)InterruptId::MaxValue> irq_contexts{};
+    std::array<IrqContext, magic_enum::enum_count<InterruptId>()> irq_contexts{};
 };
 
 using IrqC = Common::Singleton<IrqController>;
