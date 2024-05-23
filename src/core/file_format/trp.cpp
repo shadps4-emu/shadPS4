@@ -2,12 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "trp.h"
-#ifdef _WIN64
-#include <Windows.h>
-#elif
-#include <limits.h>
-#include <unistd.h>
-#endif
 
 TRP::TRP() = default;
 TRP::~TRP() = default;
@@ -70,24 +64,7 @@ bool TRP::Extract(std::filesystem::path trophyPath) {
             return false;
 
         s64 seekPos = sizeof(trp_header);
-
-        char buf[1024];
-
-#ifdef _WIN64
-        GetModuleFileNameA(NULL, buf, 1024);
-#elif
-        if (getcwd(buffer, sizeof(buf)) == NULL) {
-            // std::cerr << "Error getting current directory!" << std::endl;
-            return false;
-        }
-#endif
-        std::string appPath(buf);
-        std::size_t found = appPath.find_last_of("/\\");
-        if (found != std::string::npos) {
-            appPath = appPath.substr(0, found);
-        }
-        trpFilesPath = std::filesystem::path(appPath + "/game_data/" + title);
-
+        std::filesystem::path trpFilesPath(std::filesystem::current_path() / "game_data" / title);
         std::filesystem::path multiPath(trpFilesPath / "TrophyFiles");
         if (fileList.size() > 1) {
             multiPath = trpFilesPath / "TrophyFiles" / multiTrp;
