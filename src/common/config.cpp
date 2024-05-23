@@ -18,6 +18,7 @@ std::string logType = "sync";
 bool isDebugDump = false;
 bool isLibc = true;
 bool isShowSplash = false;
+bool isNullGpu = false;
 
 bool isLleLibc() {
     return isLibc;
@@ -52,6 +53,10 @@ bool debugDump() {
 
 bool showSplash() {
     return isShowSplash;
+}
+
+bool nullGpu() {
+    return isNullGpu;
 }
 
 void load(const std::filesystem::path& path) {
@@ -90,6 +95,7 @@ void load(const std::filesystem::path& path) {
             screenWidth = toml::find_or<toml::integer>(gpu, "screenWidth", screenWidth);
             screenHeight = toml::find_or<toml::integer>(gpu, "screenHeight", screenHeight);
             gpuId = toml::find_or<toml::integer>(gpu, "gpuId", 0);
+            isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
         }
     }
     if (data.contains("Debug")) {
@@ -135,6 +141,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["gpuId"] = gpuId;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
+    data["GPU"]["nullGpu"] = isNullGpu;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
 
