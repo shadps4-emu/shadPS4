@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <iostream>
+#include <vector>
 #include "common/endian.h"
 #include "core/crypto/crypto.h"
 #include "src/common/io_file.h"
