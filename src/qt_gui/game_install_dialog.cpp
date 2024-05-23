@@ -13,10 +13,8 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include "gui_settings.h"
 
-GameInstallDialog::GameInstallDialog(std::shared_ptr<GuiSettings> gui_settings)
-    : m_gamesDirectory(nullptr), m_gui_settings(std::move(gui_settings)) {
+GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     auto layout = new QVBoxLayout(this);
 
     layout->addWidget(SetupGamesDirectory());
@@ -43,7 +41,7 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
 
     // Input.
     m_gamesDirectory = new QLineEdit();
-    m_gamesDirectory->setText(m_gui_settings->GetValue(gui::settings_install_dir).toString());
+    m_gamesDirectory->setText(QString::fromStdString(Config::getGameInstallDir()));
     m_gamesDirectory->setMinimumWidth(400);
 
     layout->addWidget(m_gamesDirectory);
@@ -78,7 +76,8 @@ void GameInstallDialog::Save() {
         return;
     }
 
-    m_gui_settings->SetValue(gui::settings_install_dir, QDir::toNativeSeparators(gamesDirectory));
-
+    Config::setGameInstallDir(gamesDirectory.toStdString());
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::save(config_dir / "config.toml");
     accept();
 }

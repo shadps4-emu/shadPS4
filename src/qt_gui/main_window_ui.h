@@ -30,6 +30,7 @@ QT_BEGIN_NAMESPACE
 class Ui_MainWindow {
 public:
     QAction* bootInstallPkgAct;
+    QAction* addElfFolderAct;
     QAction* exitAct;
     QAction* showGameListAct;
     QAction* refreshGameListAct;
@@ -39,6 +40,7 @@ public:
     QAction* setIconSizeLargeAct;
     QAction* setlistModeListAct;
     QAction* setlistModeGridAct;
+    QAction* setlistElfAct;
     QAction* gameInstallPathAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
@@ -54,14 +56,13 @@ public:
     QPushButton* stopButton;
     QPushButton* settingsButton;
     QPushButton* controllerButton;
-    QWidget* emuRunWidget;
-    QHBoxLayout* emuRunLayer;
 
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
     QSlider* sizeSlider;
     QMenuBar* menuBar;
     QMenu* menuFile;
+    QMenu* menuRecent;
     QMenu* menuView;
     QMenu* menuGame_List_Icons;
     QMenu* menuGame_List_Mode;
@@ -91,6 +92,8 @@ public:
         bootInstallPkgAct = new QAction(MainWindow);
         bootInstallPkgAct->setObjectName("bootInstallPkgAct");
         bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
+        addElfFolderAct = new QAction(MainWindow);
+        addElfFolderAct->setObjectName("addElfFolderAct");
         exitAct = new QAction(MainWindow);
         exitAct->setObjectName("exitAct");
         exitAct->setIcon(QIcon(":images/exit_icon.png"));
@@ -99,7 +102,7 @@ public:
         showGameListAct->setCheckable(true);
         refreshGameListAct = new QAction(MainWindow);
         refreshGameListAct->setObjectName("refreshGameListAct");
-        refreshGameListAct->setIcon(QIcon(":/images/refresh_icon.png"));
+        refreshGameListAct->setIcon(QIcon(":images/refresh_icon.png"));
         setIconSizeTinyAct = new QAction(MainWindow);
         setIconSizeTinyAct->setObjectName("setIconSizeTinyAct");
         setIconSizeTinyAct->setCheckable(true);
@@ -121,6 +124,9 @@ public:
         setlistModeGridAct->setObjectName("setlistModeGridAct");
         setlistModeGridAct->setCheckable(true);
         setlistModeGridAct->setIcon(QIcon(":images/grid_icon.png"));
+        setlistElfAct = new QAction(MainWindow);
+        setlistElfAct->setObjectName("setlistModeGridAct");
+        setlistElfAct->setCheckable(true);
         gameInstallPathAct = new QAction(MainWindow);
         gameInstallPathAct->setObjectName("gameInstallPathAct");
         gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
@@ -219,6 +225,8 @@ public:
         menuBar->setContextMenuPolicy(Qt::PreventContextMenu);
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName("menuFile");
+        menuRecent = new QMenu(menuFile);
+        menuRecent->setObjectName("menuRecent");
         menuView = new QMenu(menuBar);
         menuView->setObjectName("menuView");
         menuGame_List_Icons = new QMenu(menuView);
@@ -243,6 +251,9 @@ public:
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
         menuFile->addAction(bootInstallPkgAct);
+        menuFile->addAction(addElfFolderAct);
+        menuFile->addSeparator();
+        menuFile->addAction(menuRecent->menuAction());
         menuFile->addSeparator();
         menuFile->addAction(exitAct);
         menuView->addAction(showGameListAct);
@@ -262,6 +273,7 @@ public:
         menuGame_List_Icons->addAction(setIconSizeLargeAct);
         menuGame_List_Mode->addAction(setlistModeListAct);
         menuGame_List_Mode->addAction(setlistModeGridAct);
+        menuGame_List_Mode->addAction(setlistElfAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(dumpGameListAct);
@@ -274,12 +286,15 @@ public:
 
     void retranslateUi(QMainWindow* MainWindow) {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "Shadps4", nullptr));
+        addElfFolderAct->setText(
+            QCoreApplication::translate("MainWindow", "Open/Add Elf Folder", nullptr));
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(
             "MainWindow", "Install application from a .pkg file", nullptr));
 #endif // QT_CONFIG(tooltip)
+        menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
         exitAct->setText(QCoreApplication::translate("MainWindow", "Exit", nullptr));
 #if QT_CONFIG(tooltip)
         exitAct->setToolTip(QCoreApplication::translate("MainWindow", "Exit Shadps4", nullptr));
@@ -300,6 +315,7 @@ public:
             QCoreApplication::translate("MainWindow", "List View", nullptr));
         setlistModeGridAct->setText(
             QCoreApplication::translate("MainWindow", "Grid View", nullptr));
+        setlistElfAct->setText(QCoreApplication::translate("MainWindow", "Elf Viewer", nullptr));
         gameInstallPathAct->setText(
             QCoreApplication::translate("MainWindow", "Game Install Directory", nullptr));
         dumpGameListAct->setText(
@@ -307,8 +323,6 @@ public:
         pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
         mw_searchbar->setPlaceholderText(
             QCoreApplication::translate("MainWindow", "Search...", nullptr));
-        // darkModeSwitch->setText(
-        //    QCoreApplication::translate("MainWindow", "Game", nullptr));
         menuFile->setTitle(QCoreApplication::translate("MainWindow", "File", nullptr));
         menuView->setTitle(QCoreApplication::translate("MainWindow", "View", nullptr));
         menuGame_List_Icons->setTitle(

@@ -253,6 +253,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
+         src/core/file_format/trp.cpp
+         src/core/file_format/trp.h
          src/core/file_format/splash.h
          src/core/file_format/splash.cpp
          src/core/file_sys/fs.cpp
@@ -419,9 +421,6 @@ set(QT_GUI
     src/qt_gui/main_window_ui.h
     src/qt_gui/main_window.cpp
     src/qt_gui/main_window.h
-    src/qt_gui/gui_settings.cpp
-    src/qt_gui/gui_settings.h
-    src/qt_gui/gui_save.h
     src/qt_gui/gui_context_menus.h
     src/qt_gui/game_list_utils.h
     src/qt_gui/game_info.cpp
@@ -434,11 +433,14 @@ set(QT_GUI
     src/qt_gui/game_install_dialog.h
     src/qt_gui/pkg_viewer.cpp
     src/qt_gui/pkg_viewer.h
-    src/qt_gui/settings.cpp
-    src/qt_gui/settings.h
+    src/qt_gui/trophy_viewer.cpp
+    src/qt_gui/trophy_viewer.h
+    src/qt_gui/elf_viewer.cpp
+    src/qt_gui/elf_viewer.h
     src/qt_gui/main_window_themes.cpp
     src/qt_gui/main_window_themes.h
     src/qt_gui/main.cpp
+    src/run.h
     ${RESOURCE_FILES}
     )
 endif()
@@ -464,6 +466,7 @@ else()
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         src/main.cpp
+        src/run.h
         src/sdl_window.h
         src/sdl_window.cpp
     )
@@ -473,10 +476,6 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak)
 target_link_libraries(shadps4 PRIVATE discord-rpc boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
-
-if (NOT ENABLE_QT_GUI)
-  target_link_libraries(shadps4 PRIVATE SDL3-shared)
-endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     target_link_libraries(shadps4 PRIVATE cryptoppwin zlib)
@@ -516,7 +515,7 @@ target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
-        WIN32_EXECUTABLE ON
+#        WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON)
 endif()
 

@@ -3,25 +3,43 @@
 
 #include <future>
 #include <thread>
+#include <QProgressDialog>
+#include <QtConcurrent/QtConcurrent>
 #include "game_info.h"
 
-void GameInfoClass::GetGameInfo() {
-    QString installDir = m_gui_settings->GetValue(gui::settings_install_dir).toString();
-    std::filesystem::path parent_folder(installDir.toStdString());
-    std::vector<std::string> filePaths;
-    for (const auto& dir : std::filesystem::directory_iterator(parent_folder)) {
-        if (dir.is_directory()) {
-            filePaths.push_back(dir.path().string());
+GameInfoClass::GameInfoClass() = default;
+GameInfoClass::~GameInfoClass() = default;
+
+void GameInfoClass::GetGameInfo(QWidget* parent) {
+    QString installDir = QString::fromStdString(Config::getGameInstallDir());
+    QStringList filePaths;
+    QDir parentFolder(installDir);
+    QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const auto& fileInfo : fileList) {
+        if (fileInfo.isDir()) {
+            filePaths.append(fileInfo.absoluteFilePath());
         }
     }
-    std::vector<std::future<GameInfo>> futures;
+    m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
+                  return readGameInfo(path.toStdString());
+              }).results();
 
-    for (const auto& filePath : filePaths) {
-        futures.emplace_back(std::async(std::launch::async, readGameInfo, filePath));
-    }
+    // Progress bar, please be patient :)
+    QProgressDialog dialog("Loading game list, please wait :3", "Cancel", 0, 0, parent);
+    dialog.setWindowTitle("Loading...");
 
-    for (auto& future : futures) {
-        m_games.push_back(future.get());
-    }
-    std::sort(m_games.begin(), m_games.end(), CompareStrings);
+    QFutureWatcher<void> futureWatcher;
+    GameListUtils game_util;
+    bool finished = false;
+    futureWatcher.setFuture(QtConcurrent::map(m_games, game_util.GetFolderSize));
+    connect(&futureWatcher, &QFutureWatcher<void>::finished, [&]() {
+        dialog.reset();
+        std::sort(m_games.begin(), m_games.end(), CompareStrings);
+    });
+    connect(&dialog, &QProgressDialog::canceled, &futureWatcher, &QFutureWatcher<void>::cancel);
+    dialog.setRange(0, m_games.size());
+    connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
+            &QProgressDialog::setValue);
+
+    dialog.exec();
 }

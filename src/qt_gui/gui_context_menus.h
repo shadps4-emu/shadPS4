@@ -10,8 +10,10 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include "game_info.h"
+#include "trophy_viewer.h"
 
-class GuiContextMenus {
+class GuiContextMenus : public QObject {
+    Q_OBJECT
 public:
     void RequestGameMenu(const QPoint& pos, QVector<GameInfo> m_games, QTableWidget* widget,
                          bool isList) {
@@ -27,9 +29,11 @@ public:
         QMenu menu(widget);
         QAction openFolder("Open Game Folder", widget);
         QAction openSfoViewer("SFO Viewer", widget);
+        QAction openTrophyViewer("Trophy Viewer", widget);
 
         menu.addAction(&openFolder);
         menu.addAction(&openSfoViewer);
+        menu.addAction(&openTrophyViewer);
         // Show menu.
         auto selected = menu.exec(global_pos);
         if (!selected) {
@@ -43,9 +47,13 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            if (psf.open(m_games[itemID].path + "/sce_sys/param.sfo")) {
+            if (psf.open(m_games[itemID].path + "/sce_sys/param.sfo", {})) {
                 int rows = psf.map_strings.size() + psf.map_integers.size();
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
+                tableWidget->setAttribute(Qt::WA_DeleteOnClose);
+                connect(widget->parent(), &QWidget::destroyed, tableWidget,
+                        [widget, tableWidget]() { tableWidget->deleteLater(); });
+
                 tableWidget->verticalHeader()->setVisible(false); // Hide vertical header
                 int row = 0;
 
@@ -88,6 +96,15 @@ public:
                 tableWidget->show();
             }
         }
+
+        if (selected == &openTrophyViewer) {
+            QString trophyPath = QString::fromStdString(m_games[itemID].serial);
+            QString gameTrpPath = QString::fromStdString(m_games[itemID].path);
+            TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
+            trophyViewer->show();
+            connect(widget->parent(), &QWidget::destroyed, trophyViewer,
+                    [widget, trophyViewer]() { trophyViewer->deleteLater(); });
+        }
     }
 
     int GetRowIndex(QTreeWidget* treeWidget, QTreeWidgetItem* item) {
@@ -112,9 +129,9 @@ public:
         return -1;
     }
 
-    void RequestGameMenuPKGViewer(const QPoint& pos, QStringList m_pkg_app_list,
-                                  QTreeWidget* treeWidget,
-                                  std::function<void(std::string, int, int)> InstallDragDropPkg) {
+    void RequestGameMenuPKGViewer(
+        const QPoint& pos, QStringList m_pkg_app_list, QTreeWidget* treeWidget,
+        std::function<void(std::filesystem::path, int, int)> InstallDragDropPkg) {
         QPoint global_pos = treeWidget->viewport()->mapToGlobal(pos); // context menu position
         QTreeWidgetItem* currentItem = treeWidget->currentItem();     // current clicked item
         int itemIndex = GetRowIndex(treeWidget, currentItem);         // row
@@ -131,15 +148,11 @@ public:
 
         if (selected == &installPackage) {
             QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
-            std::string pkg_to_install = pkg_app_[9].toStdString();
-            InstallDragDropPkg(pkg_to_install, 1, 1);
-
-            QFile file("log.txt");
-            if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
-                return;
-
-            QTextStream stream(&file);
-            stream << QString::fromStdString(pkg_to_install) << Qt::endl;
+            std::filesystem::path path(pkg_app_[9].toStdString());
+#ifdef _WIN32
+            path = std::filesystem::path(pkg_app_[9].toStdWString());
+#endif
+            InstallDragDropPkg(path, 1, 1);
         }
     }
 };
