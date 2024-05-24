@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <ranges>
 #include <QApplication>
 #include <QFileDialog>
 #include <QMainWindow>

@@ -53,7 +53,7 @@ void ElfViewer::OpenElfFolder() {
                 m_elf_list.append(fileInfo.absoluteFilePath());
             }
         }
-        std::sort(m_elf_list.begin(), m_elf_list.end());
+        std::ranges::sort(m_elf_list);
         OpenElfFiles();
         dir_list_std.clear();
         for (auto dir : dir_list) {

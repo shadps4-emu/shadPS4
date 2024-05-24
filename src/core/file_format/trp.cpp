@@ -6,20 +6,15 @@
 TRP::TRP() = default;
 TRP::~TRP() = default;
 
-void TRP::GetNPcommID(std::filesystem::path trophyPath, int fileNbr) {
+void TRP::GetNPcommID(std::filesystem::path trophyPath, int index) {
     std::filesystem::path trpPath = trophyPath / "sce_sys/npbind.dat";
     Common::FS::IOFile npbindFile(trpPath, Common::FS::FileAccessMode::Read);
     if (!npbindFile.IsOpen()) {
         return;
     }
-    for (int i = 0; i < fileNbr; i++) {
-        std::vector<u8> vec(12);
-        npbindFile.Seek(0x84 + (i * 0x180));
-        npbindFile.Read(vec);
-        vec.resize(16);
-        NPcommID.push_back(vec);
-    }
-    npbindFile.Close();
+    npbindFile.Seek(0x84 + (index * 0x180));
+    npbindFile.Read(NPcommID);
+    NPcommID.resize(16);
 }
 
 void TRP::removePadding(std::vector<u8>& vec) {
@@ -39,81 +34,63 @@ bool TRP::Extract(std::filesystem::path trophyPath) {
         return false;
     }
     std::vector<std::filesystem::path> fileList;
-    for (const auto& entry : std::filesystem::directory_iterator(gameSysDir)) {
-        if (entry.is_regular_file()) {
-            fileList.push_back(entry.path());
-        }
-    }
+    for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
+        if (it.is_regular_file()) {
+            GetNPcommID(trophyPath, index);
 
-    if (fileList.empty())
-        return false;
-
-    GetNPcommID(trophyPath, fileList.size());
-    for (int nbr = 0; const std::filesystem::path& fileinfo : fileList) {
-        std::string multiTrp = fileinfo.stem().string();
-
-        Common::FS::IOFile file(fileinfo, Common::FS::FileAccessMode::Read);
-        if (!file.IsOpen()) {
-            return false;
-        }
-
-        trp_header header;
-        file.ReadRaw<u8>(&header, sizeof(trp_header));
-
-        if (header.magic != 0xDCA24D00)
-            return false;
-
-        s64 seekPos = sizeof(trp_header);
-        std::filesystem::path trpFilesPath(std::filesystem::current_path() / "game_data" / title);
-        std::filesystem::path multiPath(trpFilesPath / "TrophyFiles");
-        if (fileList.size() > 1) {
-            multiPath = trpFilesPath / "TrophyFiles" / multiTrp;
-        }
-        std::filesystem::create_directories(multiPath / "Icons");
-
-        for (int i = 0; i < header.entry_num; i++) {
-            file.Seek(seekPos);
-            seekPos += (s64)header.entry_size;
-            trp_entry entry;
-            file.ReadRaw<u8>(&entry, sizeof(trp_entry));
-            std::string name(entry.entry_name);
-            if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
-                file.Seek(entry.entry_pos);
-                std::vector<u8> icon(entry.entry_len);
-                file.Read(icon);
-
-                Common::FS::IOFile out(multiPath / "Icons" / name,
-                                       Common::FS::FileAccessMode::Write);
-                out.Write(icon);
-                out.Close();
+            Common::FS::IOFile file(it.path(), Common::FS::FileAccessMode::Read);
+            if (!file.IsOpen()) {
+                return false;
             }
 
-            if (entry.flag == 3 && NPcommID.at(nbr)[0] == 'N' &&
-                NPcommID.at(nbr)[1] == 'P') { // ESFM, encrypted.
-                file.Seek(entry.entry_pos);
-                efsmIv.resize(16);
-                file.Read(efsmIv); // get iv key.
+            TrpHeader header;
+            file.Read(header);
+            if (header.magic != 0xDCA24D00)
+                return false;
 
-                std::vector<u8> ESFM(entry.entry_len - 16);
-                std::vector<u8> XML(entry.entry_len - 16);
-                XML.reserve(entry.entry_len - 16);
-                file.Seek(entry.entry_pos + 16);
-                file.ReadRaw<u8>(ESFM.data(), entry.entry_len - 16);
+            s64 seekPos = sizeof(TrpHeader);
+            std::filesystem::path trpFilesPath(std::filesystem::current_path() / "game_data" /
+                                               title / "TrophyFiles" / it.path().stem());
+            std::filesystem::create_directories(trpFilesPath / "Icons");
+            std::filesystem::create_directory(trpFilesPath / "Xml");
 
-                crypto.decryptEFSM(NPcommID.at(nbr), efsmIv, ESFM, XML); // decrypt
-                ESFM.clear();
-                removePadding(XML);
-                std::string xml_name = name;
-                size_t pos = xml_name.find("ESFM");
-                if (pos != std::string::npos)
-                    xml_name.replace(pos, xml_name.length(), "XML");
-                Common::FS::IOFile out(multiPath / xml_name, Common::FS::FileAccessMode::Write);
-                out.Write(XML);
-                out.Close();
+            for (int i = 0; i < header.entry_num; i++) {
+                file.Seek(seekPos);
+                seekPos += (s64)header.entry_size;
+                TrpEntry entry;
+                file.Read(entry);
+                std::string_view name(entry.entry_name);
+                if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
+                    file.Seek(entry.entry_pos);
+                    std::vector<u8> icon(entry.entry_len);
+                    file.Read(icon);
+
+                    Common::FS::IOFile out(trpFilesPath / "Icons" / name,
+                                           Common::FS::FileAccessMode::Write);
+                    out.Write(icon);
+                    out.Close();
+                }
+                if (entry.flag == 3 && NPcommID[0] == 'N' &&
+                    NPcommID[1] == 'P') { // ESFM, encrypted.
+                    file.Seek(entry.entry_pos);
+                    file.Read(efsmIv); // get iv key.
+                    std::vector<u8> ESFM(entry.entry_len - 16);
+                    std::vector<u8> XML(entry.entry_len - 16);
+                    file.Seek(entry.entry_pos + 16);
+                    file.Read(ESFM);
+                    crypto.decryptEFSM(NPcommID, efsmIv, ESFM, XML); // decrypt
+                    removePadding(XML);
+                    std::string xml_name = entry.entry_name;
+                    size_t pos = xml_name.find("ESFM");
+                    if (pos != std::string::npos)
+                        xml_name.replace(pos, xml_name.length(), "XML");
+                    Common::FS::IOFile out(trpFilesPath / "Xml" / xml_name,
+                                           Common::FS::FileAccessMode::Write);
+                    out.Write(XML);
+                }
             }
         }
-        file.Close();
-        nbr++;
+        index++;
     }
     return true;
 }

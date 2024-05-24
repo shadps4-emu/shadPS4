@@ -5,11 +5,11 @@
 
 #include <vector>
 #include "common/endian.h"
+#include "common/io_file.h"
+#include "common/types.h"
 #include "core/crypto/crypto.h"
-#include "src/common/io_file.h"
-#include "src/common/types.h"
 
-struct trp_header {
+struct TrpHeader {
     u32_be magic; // (0xDCA24D00)
     u32_be version;
     u64_be file_size;         // size of full trp file
@@ -21,7 +21,7 @@ struct trp_header {
     unsigned char padding[44];
 };
 
-struct trp_entry {
+struct TrpEntry {
     char entry_name[32];
     u64_be entry_pos;
     u64_be entry_len;
@@ -34,12 +34,12 @@ public:
     TRP();
     ~TRP();
     bool Extract(std::filesystem::path trophyPath);
-    void GetNPcommID(std::filesystem::path trophyPath, int fileNbr);
+    void GetNPcommID(std::filesystem::path trophyPath, int index);
     void removePadding(std::vector<u8>& vec);
 
 private:
     Crypto crypto;
-    std::vector<std::vector<CryptoPP::byte>> NPcommID;
-    std::vector<CryptoPP::byte> efsmIv;
+    std::vector<u8> NPcommID = std::vector<u8>(12);
+    std::vector<u8> efsmIv = std::vector<u8>(16);
     std::filesystem::path trpFilesPath;
 };

@@ -14,15 +14,9 @@ PSF::~PSF() = default;
 
 bool PSF::open(const std::string& filepath, std::vector<u8> psfBuffer) {
     if (!psfBuffer.empty()) {
-        psf.clear();
-        map_integers.clear();
-        map_strings.clear();
         psf.resize(psfBuffer.size());
         psf = psfBuffer;
     } else {
-        psf.clear();
-        map_integers.clear();
-        map_strings.clear();
         Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
         if (!file.IsOpen()) {
             return false;

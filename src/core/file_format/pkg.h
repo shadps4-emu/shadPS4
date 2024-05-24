@@ -135,17 +135,17 @@ public:
         return (variable) & static_cast<u32>(flag);
     }
 
-    std::vector<std::pair<PKGContentFlag, std::string>> flagNames = {
-        {PKGContentFlag::FIRST_PATCH, "FIRST_PATCH"},
-        {PKGContentFlag::PATCHGO, "PATCHGO"},
-        {PKGContentFlag::REMASTER, "REMASTER"},
-        {PKGContentFlag::PS_CLOUD, "PS_CLOUD"},
-        {PKGContentFlag::GD_AC, "GD_AC"},
-        {PKGContentFlag::NON_GAME, "NON_GAME"},
-        {PKGContentFlag::UNKNOWN_0x8000000, "UNKNOWN_0x8000000"},
-        {PKGContentFlag::SUBSEQUENT_PATCH, "SUBSEQUENT_PATCH"},
-        {PKGContentFlag::DELTA_PATCH, "DELTA_PATCH"},
-        {PKGContentFlag::CUMULATIVE_PATCH, "CUMULATIVE_PATCH"}};
+    static constexpr std::array<std::pair<PKGContentFlag, std::string_view>, 10> flagNames = {
+        {{PKGContentFlag::FIRST_PATCH, "FIRST_PATCH"},
+         {PKGContentFlag::PATCHGO, "PATCHGO"},
+         {PKGContentFlag::REMASTER, "REMASTER"},
+         {PKGContentFlag::PS_CLOUD, "PS_CLOUD"},
+         {PKGContentFlag::GD_AC, "GD_AC"},
+         {PKGContentFlag::NON_GAME, "NON_GAME"},
+         {PKGContentFlag::UNKNOWN_0x8000000, "UNKNOWN_0x8000000"},
+         {PKGContentFlag::SUBSEQUENT_PATCH, "SUBSEQUENT_PATCH"},
+         {PKGContentFlag::DELTA_PATCH, "DELTA_PATCH"},
+         {PKGContentFlag::CUMULATIVE_PATCH, "CUMULATIVE_PATCH"}}};
 
 private:
     Crypto crypto;

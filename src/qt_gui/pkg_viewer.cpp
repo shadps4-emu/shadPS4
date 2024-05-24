@@ -124,7 +124,7 @@ void PKGViewer::ProcessPKGInfo() {
             if (package.isFlagSet(pkg_content_flag, flag.first)) {
                 if (!flagss.isEmpty())
                     flagss += (", ");
-                flagss += QString::fromStdString(flag.second);
+                flagss += QString::fromStdString(flag.second.data());
             }
         }
 

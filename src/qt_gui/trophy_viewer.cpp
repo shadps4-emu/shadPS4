@@ -33,13 +33,9 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     if (dirList.isEmpty())
         return;
 
-    QString tabName = "trophy00";
     for (const QFileInfo& dirInfo : dirList) {
-        QString trpDir = trophyDir;
-        if (dirList.size() > 1) {
-            tabName = dirInfo.completeBaseName();
-            trpDir += "/" + tabName;
-        }
+        QString tabName = dirInfo.fileName();
+        QString trpDir = trophyDir + "/" + tabName;
 
         QString iconsPath = trpDir + "/Icons";
         QDir iconsDir(iconsPath);
@@ -60,7 +56,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         QStringList trophyNames;
         QStringList trophyDetails;
 
-        QString xmlPath = trpDir + "/TROP.XML";
+        QString xmlPath = trpDir + "/Xml/TROP.XML";
         QFile file(xmlPath);
         if (!file.open(QFile::ReadOnly | QFile::Text)) {
             return;
