@@ -46,9 +46,9 @@ Id EmitReadConstBuffer(EmitContext& ctx, const IR::Value& handle, const IR::Valu
                        const IR::Value& offset);
 Id EmitReadConstBufferF32(EmitContext& ctx, const IR::Value& handle, const IR::Value& index,
                           const IR::Value& offset);
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, Id vertex);
-Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, Id vertex);
-void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element);
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp);
+Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
+void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
 void EmitSetFragColor(EmitContext& ctx, u32 index, u32 component, Id value);
 void EmitSetSampleMask(EmitContext& ctx, Id value);
 void EmitSetFragDepth(EmitContext& ctx, Id value);

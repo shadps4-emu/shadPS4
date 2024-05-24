@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/object_pool.h"
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader {
@@ -26,9 +28,9 @@ struct BinaryInfo {
     u32 crc32;
 };
 
-[[nodiscard]] std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
-                                                ObjectPool<IR::Block>& block_pool, Stage stage,
-                                                std::span<const u32, IR::NumUserDataRegs> ud_regs,
-                                                std::span<const u32> code);
+[[nodiscard]] IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
+                                           ObjectPool<IR::Block>& block_pool,
+                                           std::span<const u32> code,
+                                           const Info&& info);
 
 } // namespace Shader

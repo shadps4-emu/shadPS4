@@ -32,9 +32,9 @@ namespace Shader::Gcn {
  * We take the reverse way, extract the original input semantics from these instructions.
  **/
 
-std::vector<VertexAttribute> ParseFetchShader(std::span<const u32> code) {
+std::vector<VertexAttribute> ParseFetchShader(const u32* code) {
     std::vector<VertexAttribute> attributes;
-    GcnCodeSlice code_slice(code.data(), code.data() + std::numeric_limits<u32>::max());
+    GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
 
     struct VsharpLoad {

@@ -20,7 +20,6 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
-#include "core/tls.h"
 #include "input/controller.h"
 #include "sdl_window.h"
 

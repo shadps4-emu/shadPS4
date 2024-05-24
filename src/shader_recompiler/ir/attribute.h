@@ -72,10 +72,12 @@ enum class Attribute : u64 {
     LocalInvocationId = 75,
     LocalInvocationIndex = 76,
     FragCoord = 77,
+    Max,
 };
 
-constexpr size_t EXP_NUM_POS = 4;
-constexpr size_t EXP_NUM_PARAM = 32;
+constexpr size_t NumAttributes = static_cast<size_t>(Attribute::Max);
+constexpr size_t NumRenderTargets = 8;
+constexpr size_t NumParams = 32;
 
 [[nodiscard]] bool IsParam(Attribute attribute) noexcept;
 
@@ -86,7 +88,7 @@ constexpr size_t EXP_NUM_PARAM = 32;
     if (result > static_cast<int>(Attribute::Param31)) {
         throw LogicError("Overflow on register arithmetic");
     }
-    if (result < static_cast<int>(Attribute::Param0)) {
+    if (result < static_cast<int>(Attribute::RenderTarget0)) {
         throw LogicError("Underflow on register arithmetic");
     }
     return static_cast<Attribute>(result);

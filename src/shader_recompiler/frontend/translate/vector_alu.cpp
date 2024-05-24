@@ -20,9 +20,8 @@ void Translator::V_MAC_F32(const GcnInst& inst) {
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    const IR::Value vec_f32 = ir.CompositeConstruct(ir.FPConvert(16, GetSrc(inst.src[0])),
-                                                    ir.FPConvert(16, GetSrc(inst.src[1])));
-    ir.SetVectorReg(dst_reg, ir.PackFloat2x16(vec_f32));
+    const IR::Value vec_f32 = ir.CompositeConstruct(GetSrc(inst.src[0]), GetSrc(inst.src[1]));
+    ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_f32));
 }
 
 void Translator::V_MUL_F32(const GcnInst& inst) {

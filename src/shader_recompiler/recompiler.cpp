@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
-#include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
@@ -30,10 +29,8 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
     return blocks;
 }
 
-std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
-                                  ObjectPool<IR::Block>& block_pool, Stage stage,
-                                  std::span<const u32, IR::NumUserDataRegs> ud_regs,
-                                  std::span<const u32> token) {
+IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
+                             std::span<const u32> token, const Info&& info) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
@@ -47,7 +44,7 @@ std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
     file.close();
 
     // Decode and save instructions
-    IR::Program program;
+    IR::Program program{std::move(info)};
     program.ins_list.reserve(token.size());
     while (!slice.atEnd()) {
         program.ins_list.emplace_back(decoder.decodeInstruction(slice));
@@ -58,11 +55,9 @@ std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
-    program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, stage);
+    program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, program.info);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
-    program.stage = stage;
-    std::ranges::copy(ud_regs, program.user_data.begin());
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
@@ -70,14 +65,13 @@ std::vector<u32> TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::DeadCodeEliminationPass(program.blocks);
+    Shader::Optimization::CollectShaderInfoPass(program);
 
     for (const auto& block : program.blocks) {
         fmt::print("{}\n", IR::DumpBlock(*block));
     }
 
-    // TODO: Pass profile from vulkan backend
-    const auto code = Backend::SPIRV::EmitSPIRV(Profile{}, program);
-    return code;
+    return program;
 }
 
 } // namespace Shader

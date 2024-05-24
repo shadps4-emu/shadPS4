@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
 #include "common/scope_exit.h"
+#include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -11,9 +13,31 @@
 
 namespace Vulkan {
 
+Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data,
+                            AmdGpu::Liverpool::Regs& regs) {
+    Shader::Info info{user_data};
+    info.stage = stage;
+    switch (stage) {
+    case Shader::Stage::Fragment: {
+        for (u32 i = 0; i < regs.num_interp; i++) {
+            info.ps_inputs.push_back({
+                .param_index = regs.ps_inputs[i].input_offset.Value(),
+                .is_default = bool(regs.ps_inputs[i].use_default),
+                .is_flat = bool(regs.ps_inputs[i].flat_shade),
+                .default_value = regs.ps_inputs[i].default_value,
+            });
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return info;
+}
+
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                              AmdGpu::Liverpool* liverpool_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_}, inst_pool{4096},
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_}, inst_pool{8192},
       block_pool{512} {
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 0U,
@@ -50,8 +74,18 @@ void PipelineCache::BindPipeline() {
 
         // Compile and cache shader.
         const auto data = std::span{token, bininfo.length / sizeof(u32)};
-        const auto program = Shader::TranslateProgram(inst_pool, block_pool, stage, pgm.user_data, data);
-        return CompileSPV(program, instance.GetDevice());
+        block_pool.ReleaseContents();
+        inst_pool.ReleaseContents();
+        const auto info = MakeShaderInfo(stage, pgm.user_data, liverpool->regs);
+        auto program = Shader::TranslateProgram(inst_pool, block_pool, data, std::move(info));
+        const auto code = Shader::Backend::SPIRV::EmitSPIRV(Shader::Profile{}, program);
+
+        static int counter = 0;
+        std::ofstream file(fmt::format("shader{}.spv", counter++), std::ios::out | std::ios::binary);
+        file.write((const char*)code.data(), code.size() * sizeof(u32));
+        file.close();
+
+        return CompileSPV(code, instance.GetDevice());
     };
 
     // Retrieve shader stage modules.

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <span>
 #include <vector>
 #include "common/types.h"
 
@@ -17,6 +16,6 @@ struct VertexAttribute {
     u8 dword_offset;    ///< The dword offset of the V# that describes this attribute.
 };
 
-std::vector<VertexAttribute> ParseFetchShader(std::span<const u32> code);
+std::vector<VertexAttribute> ParseFetchShader(const u32* code);
 
 } // namespace Shader::Gcn

@@ -3,27 +3,22 @@
 
 #pragma once
 
-#include <array>
 #include <string>
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/ir/abstract_syntax_list.h"
 #include "shader_recompiler/ir/basic_block.h"
-
-namespace Shader {
-enum class Stage : u32;
-}
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::IR {
 
-static constexpr size_t NumUserDataRegs = 16;
-
 struct Program {
+    explicit Program(const Info&& info_) : info{info_} {}
+
     AbstractSyntaxList syntax_list;
     BlockList blocks;
     BlockList post_order_blocks;
     std::vector<Gcn::GcnInst> ins_list;
-    std::array<u32, NumUserDataRegs> user_data;
-    Stage stage;
+    Info info;
 };
 
 [[nodiscard]] std::string DumpProgram(const Program& program);

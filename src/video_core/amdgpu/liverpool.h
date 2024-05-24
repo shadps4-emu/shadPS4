@@ -33,13 +33,13 @@ struct Liverpool {
     static constexpr u32 NumColorBuffers = 8;
     static constexpr u32 NumViewports = 16;
     static constexpr u32 NumClipPlanes = 6;
-    static constexpr u32 NumWordsShaderUserData = 16;
+    static constexpr u32 NumShaderUserData = 16;
     static constexpr u32 UconfigRegWordOffset = 0xC000;
     static constexpr u32 ContextRegWordOffset = 0xA000;
     static constexpr u32 ShRegWordOffset = 0x2C00;
     static constexpr u32 NumRegs = 0xD000;
 
-    using UserData = std::array<u32, NumWordsShaderUserData>;
+    using UserData = std::array<u32, NumShaderUserData>;
 
     struct ShaderProgram {
         u32 address_lo;
@@ -56,6 +56,14 @@ struct Liverpool {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
             return reinterpret_cast<const T*>(addr);
         }
+    };
+
+    union PsInputControl {
+        u32 raw;
+        BitField<0, 5, u32> input_offset;
+        BitField<5, 1, u32> use_default;
+        BitField<8, 2, u32> default_value;
+        BitField<10, 1, u32> flat_shade;
     };
 
     enum class ShaderExportComp : u32 {
@@ -552,9 +560,12 @@ struct Liverpool {
             INSERT_PADDING_WORDS(1);
             std::array<ViewportBounds, NumViewports> viewports;
             std::array<ClipUserData, NumClipPlanes> clip_user_data;
-            INSERT_PADDING_WORDS(0xA1B1 - 0xA187);
+            INSERT_PADDING_WORDS(0xA191 - 0xA187);
+            std::array<PsInputControl, 32> ps_inputs;
             VsOutputConfig vs_output_config;
-            INSERT_PADDING_WORDS(0xA1C3 - 0xA1B1 - 1);
+            INSERT_PADDING_WORDS(4);
+            BitField<0, 6, u32> num_interp;
+            INSERT_PADDING_WORDS(0xA1C3 - 0xA1B6 - 1);
             ShaderPosFormat shader_pos_format;
             ShaderExportFormat z_export_format;
             ColorExportFormat color_export_format;
@@ -631,7 +642,9 @@ static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
+static_assert(GFX6_3D_REG_INDEX(ps_inputs) == 0xA191);
 static_assert(GFX6_3D_REG_INDEX(vs_output_config) == 0xA1B1);
+static_assert(GFX6_3D_REG_INDEX(num_interp) == 0xA1B6);
 static_assert(GFX6_3D_REG_INDEX(shader_pos_format) == 0xA1C3);
 static_assert(GFX6_3D_REG_INDEX(z_export_format) == 0xA1C4);
 static_assert(GFX6_3D_REG_INDEX(color_export_format) == 0xA1C5);

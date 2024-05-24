@@ -7,9 +7,10 @@
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader {
-enum class Stage : u32;
+struct Info;
 }
 
 namespace Shader::Gcn {
@@ -25,7 +26,9 @@ enum class ConditionOp : u32 {
 
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Stage stage);
+    explicit Translator(IR::Block* block_, Info& info);
+
+    void EmitFetch(const GcnInst& inst);
 
     // Scalar ALU
     void S_MOV(const GcnInst& inst);
@@ -66,8 +69,9 @@ private:
 private:
     IR::Block* block;
     IR::IREmitter ir;
+    Info& info;
 };
 
-void Translate(IR::Block* block, Stage stage, std::span<const GcnInst> inst_list);
+void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info);
 
 } // namespace Shader::Gcn
