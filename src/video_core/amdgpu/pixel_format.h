@@ -76,4 +76,3 @@ struct fmt::formatter<AmdGpu::NumberFormat> {
         return fmt::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
     }
 };
-

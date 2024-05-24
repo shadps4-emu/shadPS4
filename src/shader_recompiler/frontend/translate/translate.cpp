@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/exception.h"
-#include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
+#include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -103,20 +103,21 @@ void Translator::EmitFetch(const GcnInst& inst) {
     // Parse the assembly to generate a list of attributes.
     const auto attribs = ParseFetchShader(code);
     for (const auto& attrib : attribs) {
-        IR::VectorReg dst_reg{attrib.dest_vgpr};
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
+        IR::VectorReg dst_reg{attrib.dest_vgpr};
         for (u32 i = 0; i < attrib.num_elements; i++) {
             ir.SetVectorReg(dst_reg++, ir.GetAttribute(attr, i));
         }
 
         // Read the V# of the attribute to figure out component number and type.
-        const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base,
-                                                        attrib.dword_offset);
+        const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
         const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
         info.vs_inputs.push_back({
             .fmt = buffer.num_format,
             .binding = attrib.semantic,
             .num_components = std::min<u16>(attrib.num_elements, num_components),
+            .sgpr_base = attrib.sgpr_base,
+            .dword_offset = attrib.dword_offset,
         });
     }
 }

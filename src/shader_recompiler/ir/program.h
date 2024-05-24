@@ -12,8 +12,6 @@
 namespace Shader::IR {
 
 struct Program {
-    explicit Program(const Info&& info_) : info{info_} {}
-
     AbstractSyntaxList syntax_list;
     BlockList blocks;
     BlockList post_order_blocks;

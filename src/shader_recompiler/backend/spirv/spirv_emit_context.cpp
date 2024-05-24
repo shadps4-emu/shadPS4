@@ -175,12 +175,14 @@ void EmitContext::DefineInputs(const IR::Program& program) {
             const Id id{DefineInput(type, input.binding)};
             Name(id, fmt::format("vs_in_attr{}", input.binding));
             input_params[input.binding] = GetAttributeInfo(input.fmt, id);
+            interfaces.push_back(id);
         }
         break;
     case Stage::Fragment:
         for (const auto& input : info.ps_inputs) {
             if (input.is_default) {
-                input_params[input.semantic] = {MakeDefaultValue(*this, input.default_value), input_f32, F32[1]};
+                input_params[input.semantic] = {MakeDefaultValue(*this, input.default_value),
+                                                input_f32, F32[1]};
                 continue;
             }
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
@@ -192,6 +194,7 @@ void EmitContext::DefineInputs(const IR::Program& program) {
             }
             Name(id, fmt::format("fs_in_attr{}", input.semantic));
             input_params[input.semantic] = {id, input_f32, F32[1], num_components};
+            interfaces.push_back(id);
         }
     default:
         break;
@@ -212,6 +215,7 @@ void EmitContext::DefineOutputs(const IR::Program& program) {
             const Id id{DefineOutput(F32[num_components], i)};
             Name(id, fmt::format("out_attr{}", i));
             output_params[i] = {id, output_f32, F32[1], num_components};
+            interfaces.push_back(id);
         }
         break;
     case Stage::Fragment:

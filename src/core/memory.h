@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string_view>
 #include <vector>
 #include <boost/icl/split_interval_map.hpp>
@@ -10,6 +11,11 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
+#include "video_core/renderer_vulkan/vk_common.h"
+
+namespace Vulkan {
+class Instance;
+}
 
 namespace Core {
 
@@ -86,6 +92,10 @@ public:
     explicit MemoryManager();
     ~MemoryManager();
 
+    void SetInstance(const Vulkan::Instance* instance_) {
+        instance = instance_;
+    }
+
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
 
@@ -97,11 +107,9 @@ public:
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 
-private:
-    bool HasOverlap(VAddr addr, size_t size) const {
-        return vma_map.find(addr) != vma_map.end();
-    }
+    std::pair<vk::Buffer, size_t> GetVulkanBuffer(VAddr addr);
 
+private:
     VMAHandle FindVMA(VAddr target) {
         // Return first the VMA with base >= target.
         const auto it = vma_map.lower_bound(target);
@@ -117,10 +125,22 @@ private:
 
     VMAHandle MergeAdjacent(VMAHandle iter);
 
+    void MapVulkanMemory(VAddr addr, size_t size);
+
+    void UnmapVulkanMemory(VAddr addr, size_t size);
+
 private:
     AddressSpace impl;
     std::vector<DirectMemoryArea> allocations;
     VMAMap vma_map;
+
+    struct MappedMemory {
+        vk::UniqueBuffer buffer;
+        vk::UniqueDeviceMemory backing;
+        size_t buffer_size;
+    };
+    std::map<VAddr, MappedMemory> mapped_memories;
+    const Vulkan::Instance* instance{};
 };
 
 using Memory = Common::Singleton<MemoryManager>;

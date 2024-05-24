@@ -147,7 +147,8 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
         return slot_image_views[view_id];
     }
 
-    const ImageViewId view_id = slot_image_views.insert(instance, scheduler, view_info, image.image);
+    const ImageViewId view_id =
+        slot_image_views.insert(instance, scheduler, view_info, image.image);
     image.image_view_infos.emplace_back(view_info);
     image.image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
@@ -114,19 +114,41 @@ vk::CullModeFlags CullMode(Liverpool::CullMode mode) {
 }
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
-    if (data_format == AmdGpu::DataFormat::Format32_32_32_32 && num_format == AmdGpu::NumberFormat::Float) {
+    if (data_format == AmdGpu::DataFormat::Format32_32_32_32 &&
+        num_format == AmdGpu::NumberFormat::Float) {
         return vk::Format::eR32G32B32A32Sfloat;
     }
-    if (data_format == AmdGpu::DataFormat::Format32_32_32 && num_format == AmdGpu::NumberFormat::Uint) {
+    if (data_format == AmdGpu::DataFormat::Format32_32_32 &&
+        num_format == AmdGpu::NumberFormat::Uint) {
         return vk::Format::eR32G32B32Uint;
     }
-    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 && num_format == AmdGpu::NumberFormat::Unorm) {
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8G8B8A8Unorm;
     }
-    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 && num_format == AmdGpu::NumberFormat::Srgb) {
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
+        num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eR8G8B8A8Srgb;
     }
     UNREACHABLE();
+}
+
+vk::Format DepthFormat(Liverpool::DepthBuffer::ZFormat z_format,
+                       Liverpool::DepthBuffer::StencilFormat stencil_format) {
+    UNREACHABLE();
+}
+
+void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
+    static constexpr u16 NumVerticesPerQuad = 4;
+    u16* out_data = reinterpret_cast<u16*>(out_ptr);
+    for (u16 i = 0; i < num_vertices; i += NumVerticesPerQuad) {
+        *out_data++ = i;
+        *out_data++ = i + 1;
+        *out_data++ = i + 2;
+        *out_data++ = i + 2;
+        *out_data++ = i;
+        *out_data++ = i + 3;
+    }
 }
 
 } // namespace Vulkan::LiverpoolToVK

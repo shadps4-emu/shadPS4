@@ -67,12 +67,8 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept {
-    // There is a small difference between T# and CB number types, account for it.
-    const auto number_fmt =
-        buffer.info.number_type == AmdGpu::NumberFormat::Uscaled ? AmdGpu::NumberFormat::Srgb
-                                                                 : buffer.info.number_type;
     is_tiled = true;
-    pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, number_fmt);
+    pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
     size.width = buffer.Pitch();
     size.height = buffer.Height();

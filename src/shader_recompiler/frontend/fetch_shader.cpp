@@ -40,7 +40,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code) {
     struct VsharpLoad {
         u32 dword_offset{};
         s32 base_sgpr{};
-        s32 dst_sgpr{-1};
+        s32 dst_reg{-1};
     };
     boost::container::static_vector<VsharpLoad, 16> loads;
 
@@ -57,11 +57,13 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code) {
         }
 
         if (inst.inst_class == InstClass::VectorMemBufFmt) {
+            // SRSRC is in units of 4 SPGRs while SBASE is in pairs of SGPRs
+            const u32 base_sgpr = inst.src[2].code * 4;
+
             // Find the load instruction that loaded the V# to the SPGR.
             // This is so we can determine its index in the vertex table.
-            const auto it = std::ranges::find_if(loads, [&](VsharpLoad& load) {
-                return load.dst_sgpr == inst.src[2].code * 4;
-            });
+            const auto it = std::ranges::find_if(
+                loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
 
             auto& attrib = attributes.emplace_back();
             attrib.semantic = semantic_index++;
@@ -71,7 +73,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code) {
             attrib.dword_offset = it->dword_offset;
 
             // Mark load as used.
-            it->dst_sgpr = -1;
+            it->dst_reg = -1;
         }
     }
 

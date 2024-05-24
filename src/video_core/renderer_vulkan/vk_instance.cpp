@@ -271,11 +271,11 @@ void Instance::CollectDeviceParameters() {
     const std::string api_version = GetReadableVersion(properties.apiVersion);
     const std::string extensions = fmt::format("{}", fmt::join(available_extensions, ", "));
 
-    LOG_INFO(Render_Vulkan, "GPU_Vendor", vendor_name);
-    LOG_INFO(Render_Vulkan, "GPU_Model", model_name);
-    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver", driver_name);
-    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version", api_version);
-    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions", extensions);
+    LOG_INFO(Render_Vulkan, "GPU_Vendor: {}", vendor_name);
+    LOG_INFO(Render_Vulkan, "GPU_Model: {}", model_name);
+    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver: {}", driver_name);
+    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version: {}", api_version);
+    LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
 }
 
 void Instance::CollectToolingInfo() {

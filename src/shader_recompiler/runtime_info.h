@@ -40,12 +40,12 @@ enum class TextureType : u32 {
 constexpr u32 NUM_TEXTURE_TYPES = 7;
 
 struct Info {
-    explicit Info(std::span<const u32, 16> user_data_) : user_data{user_data_} {}
-
     struct VsInput {
         AmdGpu::NumberFormat fmt;
         u16 binding;
         u16 num_components;
+        u8 sgpr_base;
+        u8 dword_offset;
     };
     boost::container::static_vector<VsInput, 32> vs_inputs{};
 
@@ -60,21 +60,25 @@ struct Info {
 
     struct AttributeFlags {
         bool Get(IR::Attribute attrib, u32 comp = 0) const {
-            return flags[static_cast<size_t>(attrib)] & (1 << comp);
+            return flags[Index(attrib)] & (1 << comp);
         }
 
         bool GetAny(IR::Attribute attrib) const {
-            return flags[static_cast<size_t>(attrib)];
+            return flags[Index(attrib)];
         }
 
         void Set(IR::Attribute attrib, u32 comp = 0) {
-            flags[static_cast<size_t>(attrib)] |= (1 << comp);
+            flags[Index(attrib)] |= (1 << comp);
         }
 
         u32 NumComponents(IR::Attribute attrib) const {
-            const u8 mask = flags[static_cast<size_t>(attrib)];
+            const u8 mask = flags[Index(attrib)];
             ASSERT(mask != 0b1011 || mask != 0b1101);
             return std::popcount(mask);
+        }
+
+        static size_t Index(IR::Attribute attrib) {
+            return static_cast<size_t>(attrib);
         }
 
         std::array<u8, IR::NumAttributes> flags;
@@ -82,7 +86,7 @@ struct Info {
     AttributeFlags loads{};
     AttributeFlags stores{};
 
-    std::span<const u32, 16> user_data;
+    std::span<const u32> user_data;
     Stage stage;
 
     template <typename T>
