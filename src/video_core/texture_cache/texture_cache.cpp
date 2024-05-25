@@ -101,8 +101,8 @@ TextureCache::~TextureCache() {
 }
 
 void TextureCache::OnCpuWrite(VAddr address) {
-    const VAddr address_aligned = address & ~((1 << PageBits) - 1);
-    ForEachImageInRegion(address_aligned, 1 << PageBits, [&](ImageId image_id, Image& image) {
+    const VAddr address_aligned = address & ~((1 << PageShift) - 1);
+    ForEachImageInRegion(address_aligned, 1 << PageShift, [&](ImageId image_id, Image& image) {
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
@@ -137,26 +137,20 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
     return image;
 }
 
-ImageView& TextureCache::RenderTarget(VAddr cpu_address, u32 pitch) {
-    boost::container::small_vector<ImageId, 2> image_ids;
-    ForEachImageInRegion(cpu_address, pitch * 4, [&](ImageId image_id, Image& image) {
-        if (image.cpu_addr == cpu_address) {
-            image_ids.push_back(image_id);
-        }
-    });
+ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer) {
+    const ImageInfo info{buffer};
+    auto& image = FindImage(info, buffer.Address());
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping framebuffers not allowed!");
-    auto* image = &slot_images[image_ids.empty() ? ImageId{0} : image_ids.back()];
-
-    ImageViewInfo info;
-    info.format = vk::Format::eB8G8R8A8Srgb;
-    if (const ImageViewId view_id = image->FindView(info); view_id) {
+    ImageViewInfo view_info;
+    view_info.format = info.pixel_format;
+    if (const ImageViewId view_id = image.FindView(view_info); view_id) {
         return slot_image_views[view_id];
     }
 
-    const ImageViewId view_id = slot_image_views.insert(instance, scheduler, info, image->image);
-    image->image_view_infos.emplace_back(info);
-    image->image_view_ids.emplace_back(view_id);
+    const ImageViewId view_id =
+        slot_image_views.insert(instance, scheduler, view_info, image.image);
+    image.image_view_infos.emplace_back(view_info);
+    image.image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];
 }
 
@@ -225,13 +219,13 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
         if (page_it == page_table.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageBits);
+            ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageShift);
             return;
         }
         auto& image_ids = page_it.value();
         const auto vector_it = std::ranges::find(image_ids, image_id);
         if (vector_it == image_ids.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageBits);
+            ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageShift);
             return;
         }
         image_ids.erase(vector_it);

@@ -50,12 +50,12 @@
 [submodule "externals/toml11"]
 	path = externals/toml11
 	url = https://github.com/ToruNiina/toml11.git
-[submodule "externals/xxHash"]
-	path = externals/xxHash
-	url = https://github.com/Cyan4973/xxHash.git
 [submodule "externals/zydis"]
 	path = externals/zydis
 	url = https://github.com/zyantific/zydis.git
 [submodule "externals/sirit"]
 	path = externals/sirit
 	url = https://github.com/raphaelthegreat/sirit
+[submodule "externals/xxhash"]
+	path = externals/xxhash
+	url = https://github.com/Cyan4973/xxHash.git

@@ -35,7 +35,7 @@ public:
      * @param size Size to reserve.
      * @returns A pair of a raw memory pointer (with offset added), and the buffer offset
      */
-    std::tuple<u8*, u64, bool> Map(u64 size, u64 alignment);
+    std::tuple<u8*, u64, bool> Map(u64 size, u64 alignment = 0);
 
     /// Ensures that "size" bytes of memory are available to the GPU, potentially recording a copy.
     void Commit(u64 size);

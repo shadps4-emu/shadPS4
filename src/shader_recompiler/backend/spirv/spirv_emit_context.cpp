@@ -36,7 +36,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 } // Anonymous namespace
 
 EmitContext::EmitContext(const Profile& profile_, IR::Program& program, Bindings& bindings)
-    : Sirit::Module(profile_.supported_spirv), profile{profile_}, stage{program.stage} {
+    : Sirit::Module(profile_.supported_spirv), profile{profile_}, stage{program.info.stage} {
     u32& uniform_binding{bindings.unified};
     u32& storage_binding{bindings.unified};
     u32& texture_binding{bindings.unified};
@@ -98,6 +98,10 @@ void EmitContext::DefineArithmeticTypes() {
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
 
+    input_f32 = Name(TypePointer(spv::StorageClass::Input, F32[1]), "input_f32");
+    input_u32 = Name(TypePointer(spv::StorageClass::Input, U32[1]), "input_u32");
+    input_s32 = Name(TypePointer(spv::StorageClass::Input, S32[1]), "input_s32");
+
     output_f32 = Name(TypePointer(spv::StorageClass::Output, F32[1]), "output_f32");
     output_u32 = Name(TypePointer(spv::StorageClass::Output, U32[1]), "output_u32");
 }
@@ -107,26 +111,123 @@ void EmitContext::DefineInterfaces(const IR::Program& program) {
     DefineOutputs(program);
 }
 
+Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
+    switch (fmt) {
+    case AmdGpu::NumberFormat::Float:
+    case AmdGpu::NumberFormat::Unorm:
+        return ctx.F32[4];
+    case AmdGpu::NumberFormat::Sint:
+        return ctx.S32[4];
+    case AmdGpu::NumberFormat::Uint:
+        return ctx.U32[4];
+    case AmdGpu::NumberFormat::Sscaled:
+        return ctx.F32[4];
+    case AmdGpu::NumberFormat::Uscaled:
+        return ctx.F32[4];
+    default:
+        break;
+    }
+    throw InvalidArgument("Invalid attribute type {}", fmt);
+}
+
+EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id) {
+    switch (fmt) {
+    case AmdGpu::NumberFormat::Float:
+    case AmdGpu::NumberFormat::Unorm:
+        return {id, input_f32, F32[1], 4};
+    case AmdGpu::NumberFormat::Uint:
+        return {id, input_u32, U32[1], 4};
+    case AmdGpu::NumberFormat::Sint:
+        return {id, input_s32, S32[1], 4};
+    case AmdGpu::NumberFormat::Sscaled:
+        return {id, input_f32, F32[1], 4};
+    case AmdGpu::NumberFormat::Uscaled:
+        return {id, input_f32, F32[1], 4};
+    default:
+        break;
+    }
+    throw InvalidArgument("Invalid attribute type {}", fmt);
+}
+
+Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
+    switch (default_value) {
+    case 0:
+        return ctx.ConstF32(0.f, 0.f, 0.f, 0.f);
+    case 1:
+        return ctx.ConstF32(0.f, 0.f, 0.f, 1.f);
+    case 2:
+        return ctx.ConstF32(1.f, 1.f, 1.f, 0.f);
+    case 3:
+        return ctx.ConstF32(1.f, 1.f, 1.f, 1.f);
+    default:
+        UNREACHABLE();
+    }
+}
+
 void EmitContext::DefineInputs(const IR::Program& program) {
+    const auto& info = program.info;
     switch (stage) {
     case Stage::Vertex:
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
+        for (const auto& input : info.vs_inputs) {
+            const Id type{GetAttributeType(*this, input.fmt)};
+            const Id id{DefineInput(type, input.binding)};
+            Name(id, fmt::format("vs_in_attr{}", input.binding));
+            input_params[input.binding] = GetAttributeInfo(input.fmt, id);
+            interfaces.push_back(id);
+        }
         break;
+    case Stage::Fragment:
+        for (const auto& input : info.ps_inputs) {
+            if (input.is_default) {
+                input_params[input.semantic] = {MakeDefaultValue(*this, input.default_value),
+                                                input_f32, F32[1]};
+                continue;
+            }
+            const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
+            const u32 num_components = info.loads.NumComponents(param);
+            const Id type{F32[num_components]};
+            const Id id{DefineInput(type, input.semantic)};
+            if (input.is_flat) {
+                Decorate(id, spv::Decoration::Flat);
+            }
+            Name(id, fmt::format("fs_in_attr{}", input.semantic));
+            input_params[input.semantic] = {id, input_f32, F32[1], num_components};
+            interfaces.push_back(id);
+        }
     default:
         break;
     }
 }
 
 void EmitContext::DefineOutputs(const IR::Program& program) {
+    const auto& info = program.info;
     switch (stage) {
     case Stage::Vertex:
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            const IR::Attribute param{IR::Attribute::Param0 + i};
+            if (!info.stores.GetAny(param)) {
+                continue;
+            }
+            const u32 num_components = info.stores.NumComponents(param);
+            const Id id{DefineOutput(F32[num_components], i)};
+            Name(id, fmt::format("out_attr{}", i));
+            output_params[i] = {id, output_f32, F32[1], num_components};
+            interfaces.push_back(id);
+        }
         break;
     case Stage::Fragment:
-        frag_color[0] = DefineOutput(F32[4], 0);
-        Name(frag_color[0], fmt::format("frag_color{}", 0));
-        interfaces.push_back(frag_color[0]);
+        for (u32 i = 0; i < IR::NumRenderTargets; i++) {
+            const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
+            if (!info.stores.GetAny(mrt)) {
+                continue;
+            }
+            frag_color[i] = DefineOutput(F32[4], i);
+            Name(frag_color[i], fmt::format("frag_color{}", i));
+            interfaces.push_back(frag_color[i]);
+        }
         break;
     default:
         break;

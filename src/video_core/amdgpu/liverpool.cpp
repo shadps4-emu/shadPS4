@@ -114,7 +114,7 @@ void Liverpool::ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes) {
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (rasterizer) {
-                    rasterizer->DrawIndex();
+                    rasterizer->Draw(true);
                 }
                 break;
             }
@@ -122,7 +122,9 @@ void Liverpool::ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes) {
                 const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndexAuto*>(header);
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
-                // rasterizer->DrawIndex();
+                if (rasterizer) {
+                    rasterizer->Draw(false);
+                }
                 break;
             }
             case PM4ItOpcode::DispatchDirect: {

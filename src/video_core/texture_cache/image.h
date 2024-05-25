@@ -6,6 +6,7 @@
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/videoout/buffer.h"
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/types.h"
@@ -32,6 +33,7 @@ DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 struct ImageInfo {
     ImageInfo() = default;
     explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
+    explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept;
 
     bool is_tiled = false;
     vk::Format pixel_format = vk::Format::eUndefined;

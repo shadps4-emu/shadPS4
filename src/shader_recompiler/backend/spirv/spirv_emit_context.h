@@ -135,6 +135,9 @@ public:
     Id u32_zero_value{};
     Id f32_zero_value{};
 
+    Id input_u32{};
+    Id input_f32{};
+    Id input_s32{};
     Id output_u32{};
     Id output_f32{};
 
@@ -145,25 +148,22 @@ public:
     Id base_vertex{};
     std::array<Id, 8> frag_color{};
 
-    struct InputParamInfo {
+    struct SpirvAttribute {
         Id id;
         Id pointer_type;
         Id component_type;
+        u32 num_components;
     };
-    std::array<InputParamInfo, 32> input_params{};
-
-    struct ParamElementInfo {
-        Id id{};
-        u32 first_element{};
-        u32 num_components{};
-    };
-    std::array<std::array<ParamElementInfo, 4>, 32> output_params{};
+    std::array<SpirvAttribute, 32> input_params{};
+    std::array<SpirvAttribute, 32> output_params{};
 
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces(const IR::Program& program);
     void DefineInputs(const IR::Program& program);
     void DefineOutputs(const IR::Program& program);
+
+    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };
 
 } // namespace Shader::Backend::SPIRV

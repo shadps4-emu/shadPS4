@@ -171,7 +171,7 @@ Id DefineMain(EmitContext& ctx, IR::Program& program) {
 void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
-    switch (program.stage) {
+    switch (program.info.stage) {
     case Stage::Compute: {
         // const std::array<u32, 3> workgroup_size{program.workgroup_size};
         // execution_model = spv::ExecutionModel::GLCompute;
@@ -194,7 +194,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         // }
         break;
     default:
-        throw NotImplementedException("Stage {}", u32(program.stage));
+        throw NotImplementedException("Stage {}", u32(program.info.stage));
     }
     ctx.AddEntryPoint(execution_model, main, "main", interfaces);
 }
@@ -222,7 +222,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, Binding
     EmitContext ctx{profile, program, bindings};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    if (program.stage == Stage::Vertex) {
+    if (program.info.stage == Stage::Vertex) {
         ctx.AddExtension("SPV_KHR_shader_draw_parameters");
         ctx.AddCapability(spv::Capability::DrawParameters);
     }

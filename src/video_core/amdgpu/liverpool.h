@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 #include <array>
 #include <condition_variable>
@@ -32,13 +33,13 @@ struct Liverpool {
     static constexpr u32 NumColorBuffers = 8;
     static constexpr u32 NumViewports = 16;
     static constexpr u32 NumClipPlanes = 6;
-    static constexpr u32 NumWordsShaderUserData = 16;
+    static constexpr u32 NumShaderUserData = 16;
     static constexpr u32 UconfigRegWordOffset = 0xC000;
     static constexpr u32 ContextRegWordOffset = 0xA000;
     static constexpr u32 ShRegWordOffset = 0x2C00;
     static constexpr u32 NumRegs = 0xD000;
 
-    using UserData = std::array<u32, NumWordsShaderUserData>;
+    using UserData = std::array<u32, NumShaderUserData>;
 
     struct ShaderProgram {
         u32 address_lo;
@@ -55,6 +56,14 @@ struct Liverpool {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
             return reinterpret_cast<const T*>(addr);
         }
+    };
+
+    union PsInputControl {
+        u32 raw;
+        BitField<0, 5, u32> input_offset;
+        BitField<5, 1, u32> use_default;
+        BitField<8, 2, u32> default_value;
+        BitField<10, 1, u32> flat_shade;
     };
 
     enum class ShaderExportComp : u32 {
@@ -171,25 +180,6 @@ struct Liverpool {
         BitField<31, 1, u32> disable_color_writes_on_depth_pass;
     };
 
-    union DepthSize {
-        u32 raw;
-        BitField<0, 11, u32> pitch_tile_max;
-        BitField<11, 11, u32> height_tile_max;
-
-        u32 Pitch() const {
-            return (pitch_tile_max + 1) << 3;
-        }
-
-        u32 Height() const {
-            return (height_tile_max + 1) << 3;
-        }
-    };
-
-    union DepthSlice {
-        u32 raw;
-        BitField<0, 22, u32> slice_tile_max;
-    };
-
     enum class StencilFunc : u32 {
         Keep = 0,
         Zero = 1,
@@ -227,9 +217,45 @@ struct Liverpool {
         BitField<24, 8, u32> stencil_op_val;
     };
 
-    union StencilInfo {
-        u32 raw;
-        BitField<0, 1, u32> format;
+    struct DepthBuffer {
+        enum class ZFormat : u32 {
+            Invald = 0,
+            Z16 = 1,
+            Z32Float = 2,
+        };
+
+        enum class StencilFormat : u32 {
+            Invalid = 0,
+            Stencil8 = 1,
+        };
+
+        union {
+            BitField<0, 2, ZFormat> format;
+            BitField<2, 2, u32> num_samples;
+            BitField<13, 3, u32> tile_split;
+        } z_info;
+        union {
+            BitField<0, 1, StencilFormat> format;
+        } stencil_info;
+        u32 z_read_base;
+        u32 stencil_read_base;
+        u32 z_write_base;
+        u32 stencil_write_base;
+        union {
+            BitField<0, 11, u32> pitch_tile_max;
+            BitField<11, 11, u32> height_tile_max;
+        } depth_size;
+        union {
+            BitField<0, 22, u32> tile_max;
+        } depth_slice;
+
+        u32 Pitch() const {
+            return (depth_size.pitch_tile_max + 1) << 3;
+        }
+
+        u32 Height() const {
+            return (depth_size.height_tile_max + 1) << 3;
+        }
     };
 
     enum class ClipSpace : u32 {
@@ -423,39 +449,6 @@ struct Liverpool {
             Swap8In64 = 3,
         };
 
-        enum class Format : u32 {
-            Invalid = 0,
-            Color_8 = 1,
-            Color_16 = 2,
-            Color_8_8 = 3,
-            Color_32 = 4,
-            Color_16_16 = 5,
-            Color_10_11_11 = 6,
-            Color_11_11_10 = 7,
-            Color_10_10_10_2 = 8,
-            Color_2_10_10_10 = 9,
-            Color_8_8_8_8 = 10,
-            Color_32_32 = 11,
-            Color_16_16_16_16 = 12,
-            Color_32_32_32_32 = 14,
-            Color_5_6_5 = 16,
-            Color_1_5_5_5 = 17,
-            Color_5_5_5_1 = 18,
-            Color_4_4_4_4 = 19,
-            Color_8_24 = 20,
-            Color_24_8 = 21,
-            Color_X24_8_32_FL = 22,
-        };
-
-        enum class NumberType : u32 {
-            Unorm = 0,
-            Snorm = 1,
-            Uint = 4,
-            Sint = 5,
-            Srgb = 6,
-            Float = 7,
-        };
-
         enum class SwapMode : u32 {
             Standard = 0,
             Alternate = 1,
@@ -482,9 +475,9 @@ struct Liverpool {
         } view;
         union {
             BitField<0, 2, EndianSwap> endian;
-            BitField<2, 5, Format> format;
+            BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
-            BitField<8, 2, NumberType> number_type;
+            BitField<8, 2, NumberFormat> number_type;
             BitField<11, 2, SwapMode> comp_swap;
             BitField<13, 1, u32> fast_clear;
             BitField<14, 1, u32> compression;
@@ -529,6 +522,12 @@ struct Liverpool {
         u64 CmaskAddress() const {
             return u64(cmask_base_address) << 8;
         }
+
+        NumberFormat NumFormat() const {
+            // There is a small difference between T# and CB number types, account for it.
+            return info.number_type == AmdGpu::NumberFormat::Uscaled ? AmdGpu::NumberFormat::Srgb
+                                                                     : info.number_type;
+        }
     };
 
     enum class PrimitiveType : u32 {
@@ -563,14 +562,8 @@ struct Liverpool {
             u32 stencil_clear;
             u32 depth_clear;
             Scissor screen_scissor;
-            INSERT_PADDING_WORDS(0xA011 - 0xA00C - 2);
-            StencilInfo stencil_info;
-            u32 z_read_base;
-            u32 stencil_read_base;
-            u32 z_write_base;
-            u32 stencil_write_base;
-            DepthSize depth_size;
-            DepthSlice depth_slice;
+            INSERT_PADDING_WORDS(0xA010 - 0xA00C - 2);
+            DepthBuffer depth_buffer;
             INSERT_PADDING_WORDS(0xA08E - 0xA018);
             ColorBufferMask color_target_mask;
             ColorBufferMask color_shader_mask;
@@ -584,9 +577,12 @@ struct Liverpool {
             INSERT_PADDING_WORDS(1);
             std::array<ViewportBounds, NumViewports> viewports;
             std::array<ClipUserData, NumClipPlanes> clip_user_data;
-            INSERT_PADDING_WORDS(0xA1B1 - 0xA187);
+            INSERT_PADDING_WORDS(0xA191 - 0xA187);
+            std::array<PsInputControl, 32> ps_inputs;
             VsOutputConfig vs_output_config;
-            INSERT_PADDING_WORDS(0xA1C3 - 0xA1B1 - 1);
+            INSERT_PADDING_WORDS(4);
+            BitField<0, 6, u32> num_interp;
+            INSERT_PADDING_WORDS(0xA1C3 - 0xA1B6 - 1);
             ShaderPosFormat shader_pos_format;
             ShaderExportFormat z_export_format;
             ColorExportFormat color_export_format;
@@ -616,6 +612,17 @@ struct Liverpool {
             VgtNumInstances num_instances;
         };
         std::array<u32, NumRegs> reg_array{};
+
+        const ShaderProgram* ProgramForStage(u32 index) const {
+            switch (index) {
+            case 0:
+                return &vs_program;
+            case 4:
+                return &ps_program;
+            default:
+                return nullptr;
+            }
+        }
     };
 
     Regs regs{};
@@ -656,14 +663,16 @@ static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
 static_assert(GFX6_3D_REG_INDEX(vs_program) == 0x2C48);
 static_assert(GFX6_3D_REG_INDEX(vs_program.user_data) == 0x2C4C);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
-static_assert(GFX6_3D_REG_INDEX(depth_slice) == 0xA017);
+static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
+static_assert(GFX6_3D_REG_INDEX(ps_inputs) == 0xA191);
 static_assert(GFX6_3D_REG_INDEX(vs_output_config) == 0xA1B1);
+static_assert(GFX6_3D_REG_INDEX(num_interp) == 0xA1B6);
 static_assert(GFX6_3D_REG_INDEX(shader_pos_format) == 0xA1C3);
 static_assert(GFX6_3D_REG_INDEX(z_export_format) == 0xA1C4);
 static_assert(GFX6_3D_REG_INDEX(color_export_format) == 0xA1C5);

@@ -4,22 +4,58 @@
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
+#include "core/memory.h"
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
 
 namespace Vulkan {
 
-GraphicsPipeline::GraphicsPipeline(const Instance& instance_, const PipelineKey& key_,
-                                   vk::PipelineCache pipeline_cache_, vk::PipelineLayout layout_,
+GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
+                                   const PipelineKey& key_, vk::PipelineCache pipeline_cache,
+                                   std::span<const Shader::Info*, MaxShaderStages> infos,
                                    std::array<vk::ShaderModule, MaxShaderStages> modules)
-    : instance{instance_}, pipeline_layout{layout_}, pipeline_cache{pipeline_cache_}, key{key_} {
+    : instance{instance_}, scheduler{scheduler_}, key{key_} {
     const vk::Device device = instance.GetDevice();
+    for (u32 i = 0; i < MaxShaderStages; i++) {
+        if (!infos[i]) {
+            continue;
+        }
+        stages[i] = *infos[i];
+    }
+
+    const vk::PipelineLayoutCreateInfo layout_info = {
+        .setLayoutCount = 0U,
+        .pSetLayouts = nullptr,
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = nullptr,
+    };
+    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+
+    boost::container::static_vector<vk::VertexInputBindingDescription, 32> bindings;
+    boost::container::static_vector<vk::VertexInputAttributeDescription, 32> attributes;
+    const auto& vs_info = stages[0];
+    for (const auto& input : vs_info.vs_inputs) {
+        const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        attributes.push_back({
+            .location = input.binding,
+            .binding = input.binding,
+            .format = LiverpoolToVK::SurfaceFormat(buffer.data_format, buffer.num_format),
+            .offset = 0,
+        });
+        bindings.push_back({
+            .binding = input.binding,
+            .stride = u32(buffer.stride),
+            .inputRate = vk::VertexInputRate::eVertex,
+        });
+    }
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
-        .vertexBindingDescriptionCount = 0U,
-        .pVertexBindingDescriptions = nullptr,
-        .vertexAttributeDescriptionCount = 0U,
-        .pVertexAttributeDescriptions = nullptr,
+        .vertexBindingDescriptionCount = static_cast<u32>(bindings.size()),
+        .pVertexBindingDescriptions = bindings.data(),
+        .vertexAttributeDescriptionCount = static_cast<u32>(attributes.size()),
+        .pVertexAttributeDescriptions = attributes.data(),
     };
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
@@ -126,11 +162,12 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, const PipelineKey&
         .pName = "main",
     };
 
-    const vk::Format color_format = vk::Format::eB8G8R8A8Srgb;
+    const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
+    const u32 num_color_formats = std::distance(key.color_formats.begin(), it);
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = 1,
-        .pColorAttachmentFormats = &color_format,
-        .depthAttachmentFormat = vk::Format::eUndefined,
+        .colorAttachmentCount = num_color_formats,
+        .pColorAttachmentFormats = key.color_formats.data(),
+        .depthAttachmentFormat = key.depth.depth_enable ? key.depth_format : vk::Format::eUndefined,
         .stencilAttachmentFormat = vk::Format::eUndefined,
     };
 
@@ -146,7 +183,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, const PipelineKey&
         .pDepthStencilState = &depth_info,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
-        .layout = pipeline_layout,
+        .layout = *pipeline_layout,
     };
 
     auto result = device.createGraphicsPipelineUnique(pipeline_cache, pipeline_info);
@@ -158,5 +195,21 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, const PipelineKey&
 }
 
 GraphicsPipeline::~GraphicsPipeline() = default;
+
+void GraphicsPipeline::BindResources(Core::MemoryManager* memory) const {
+    std::array<vk::Buffer, MaxVertexBufferCount> buffers;
+    std::array<vk::DeviceSize, MaxVertexBufferCount> offsets;
+
+    const auto& vs_info = stages[0];
+    const size_t num_buffers = vs_info.vs_inputs.size();
+    for (u32 i = 0; i < num_buffers; ++i) {
+        const auto& input = vs_info.vs_inputs[i];
+        const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        std::tie(buffers[i], offsets[i]) = memory->GetVulkanBuffer(buffer.base_address);
+    }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.bindVertexBuffers(0, num_buffers, buffers.data(), offsets.data());
+}
 
 } // namespace Vulkan

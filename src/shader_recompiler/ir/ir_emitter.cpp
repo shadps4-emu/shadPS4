@@ -174,16 +174,8 @@ void IREmitter::SetVcc(const U1& value) {
     Inst(Opcode::SetVcc, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute) {
-    return GetAttribute(attribute, 0);
-}
-
 F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
     return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp));
-}
-
-U32 IREmitter::GetAttributeU32(IR::Attribute attribute) {
-    return GetAttributeU32(attribute, 0);
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {

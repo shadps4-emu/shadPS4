@@ -600,9 +600,9 @@ public:
     TranslatePass(ObjectPool<IR::Inst>& inst_pool_, ObjectPool<IR::Block>& block_pool_,
                   ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
                   IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
-                  Stage stage_)
+                  Info& info_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
-          syntax_list{syntax_list_}, inst_list{inst_list_}, stage{stage_} {
+          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_} {
         Visit(root_stmt, nullptr, nullptr);
 
         IR::Block& first_block{*syntax_list.front().data.block};
@@ -633,8 +633,7 @@ private:
                 ensure_block();
                 const u32 start = stmt.block->begin_index;
                 const u32 size = stmt.block->end_index - start + 1;
-                Translate(current_block, stage, inst_list.subspan(start, size));
-                fmt::print("{}\n", IR::DumpBlock(*current_block));
+                Translate(current_block, inst_list.subspan(start, size), info);
                 break;
             }
             case StatementType::SetVariable: {
@@ -812,17 +811,17 @@ private:
     IR::AbstractSyntaxList& syntax_list;
     const Block dummy_flow_block{};
     std::span<const GcnInst> inst_list;
-    Stage stage;
+    Info& info;
 };
 } // Anonymous namespace
 
 IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                                CFG& cfg, Stage stage) {
+                                CFG& cfg, Info& info) {
     ObjectPool<Statement> stmt_pool{64};
     GotoPass goto_pass{cfg, stmt_pool};
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;
-    TranslatePass{inst_pool, block_pool, stmt_pool, root, syntax_list, cfg.inst_list, stage};
+    TranslatePass{inst_pool, block_pool, stmt_pool, root, syntax_list, cfg.inst_list, info};
     return syntax_list;
 }
 

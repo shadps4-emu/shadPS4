@@ -74,8 +74,8 @@ add_subdirectory(magic_enum EXCLUDE_FROM_ALL)
 add_subdirectory(toml11 EXCLUDE_FROM_ALL)
 
 # xxHash
-add_library(xxhash INTERFACE)
-target_include_directories(xxhash INTERFACE xxhash)
+add_library(xxhash xxhash/xxhash.h xxhash/xxhash.c)
+target_include_directories(xxhash PUBLIC xxhash)
 
 # Zydis
 option(ZYDIS_BUILD_TOOLS "" OFF)

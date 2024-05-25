@@ -324,6 +324,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/control_flow_graph.h
                       src/shader_recompiler/frontend/decode.cpp
                       src/shader_recompiler/frontend/decode.h
+                      src/shader_recompiler/frontend/fetch_shader.cpp
+                      src/shader_recompiler/frontend/fetch_shader.h
                       src/shader_recompiler/frontend/format.cpp
                       src/shader_recompiler/frontend/instruction.cpp
                       src/shader_recompiler/frontend/instruction.h
@@ -333,6 +335,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
                       src/shader_recompiler/ir/passes/constant_propogation_pass.cpp
+                      src/shader_recompiler/ir/passes/info_collection.cpp
                       src/shader_recompiler/ir/passes/passes.h
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp

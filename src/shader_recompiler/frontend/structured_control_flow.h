@@ -10,13 +10,13 @@
 #include "shader_recompiler/object_pool.h"
 
 namespace Shader {
-enum class Stage : u32;
+struct Info;
 }
 
 namespace Shader::Gcn {
 
 [[nodiscard]] IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool,
                                               ObjectPool<IR::Block>& block_pool, CFG& cfg,
-                                              Stage stage);
+                                              Info& info);
 
 } // namespace Shader::Gcn

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <string_view>
+#include <fmt/format.h>
 #include "common/types.h"
 
 namespace AmdGpu {
@@ -59,6 +61,18 @@ enum class NumberFormat : u32 {
     Ubscaled = 13,
 };
 
-u32 getNumComponents(DataFormat format);
+[[nodiscard]] std::string_view NameOf(NumberFormat fmt);
+
+u32 NumComponents(DataFormat format);
 
 } // namespace AmdGpu
+
+template <>
+struct fmt::formatter<AmdGpu::NumberFormat> {
+    constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+    auto format(AmdGpu::NumberFormat fmt, format_context& ctx) const {
+        return fmt::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
+    }
+};

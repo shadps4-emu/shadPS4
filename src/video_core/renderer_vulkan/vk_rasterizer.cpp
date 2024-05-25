@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -18,33 +19,25 @@ static constexpr vk::BufferUsageFlags VertexIndexFlags = vk::BufferUsageFlagBits
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        VideoCore::TextureCache& texture_cache_, AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
-      liverpool{liverpool_}, pipeline_cache{instance, scheduler, liverpool},
+      liverpool{liverpool_}, memory{Core::Memory::Instance()},
+      pipeline_cache{instance, scheduler, liverpool},
       vertex_index_buffer{instance, scheduler, VertexIndexFlags, 64_MB} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
+
+    memory->SetInstance(&instance);
 }
 
 Rasterizer::~Rasterizer() = default;
 
-void Rasterizer::DrawIndex() {
+void Rasterizer::Draw(bool is_indexed) {
     const auto cmdbuf = scheduler.CommandBuffer();
-    auto& regs = liverpool->regs;
-
-    static bool first_time = true;
-    if (first_time) {
-        first_time = false;
-        return;
-    }
-
-    UpdateDynamicState();
-
-    pipeline_cache.BindPipeline();
-
-    const u32 pitch = regs.color_buffers[0].Pitch();
-    const u32 height = regs.color_buffers[0].Height();
-    const u32 tile_max = regs.color_buffers[0].slice.tile_max;
-    auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0].Address(), pitch);
+    const auto& regs = liverpool->regs;
+    const u32 num_indices = SetupIndexBuffer(is_indexed);
+    const auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
+    const GraphicsPipeline* pipeline = pipeline_cache.GetPipeline();
+    pipeline->BindResources(memory);
 
     const vk::RenderingAttachmentInfo color_info = {
         .imageView = *image_view.image_view,
@@ -61,11 +54,48 @@ void Rasterizer::DrawIndex() {
         .pColorAttachments = &color_info,
     };
 
+    UpdateDynamicState();
+
     cmdbuf.beginRendering(rendering_info);
-    cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), 0, vk::IndexType::eUint32);
-    cmdbuf.bindVertexBuffers(0, vertex_index_buffer.Handle(), vk::DeviceSize(0));
-    cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), 0, 0);
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    if (is_indexed) {
+        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
+    } else {
+        cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), 0, 0);
+    }
     cmdbuf.endRendering();
+}
+
+u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
+    // Emulate QuadList primitive type with CPU made index buffer.
+    const auto& regs = liverpool->regs;
+    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::QuadList) {
+        ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
+        is_indexed = true;
+
+        // Emit indices.
+        const u32 index_size = 3 * regs.num_indices;
+        const auto [data, offset, _] = vertex_index_buffer.Map(index_size);
+        LiverpoolToVK::EmitQuadToTriangleListIndices(data, regs.num_indices);
+        vertex_index_buffer.Commit(index_size);
+
+        // Bind index buffer.
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset, vk::IndexType::eUint16);
+        return index_size / sizeof(u16);
+    }
+    if (!is_indexed) {
+        return 0;
+    }
+
+    const VAddr index_address = regs.index_base_address.Address();
+    const auto [buffer, offset] = memory->GetVulkanBuffer(index_address);
+    const vk::IndexType index_type =
+        regs.index_buffer_type.index_type == Liverpool::IndexType::Index16 ? vk::IndexType::eUint16
+                                                                           : vk::IndexType::eUint32;
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.bindIndexBuffer(buffer, offset, index_type);
+    return regs.num_indices;
 }
 
 void Rasterizer::UpdateDynamicState() {

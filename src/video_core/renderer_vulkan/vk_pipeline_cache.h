@@ -8,6 +8,10 @@
 #include "shader_recompiler/object_pool.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
+namespace Shader {
+struct Info;
+}
+
 namespace Vulkan {
 
 class Instance;
@@ -21,7 +25,12 @@ public:
                            AmdGpu::Liverpool* liverpool);
     ~PipelineCache() = default;
 
-    void BindPipeline();
+    const GraphicsPipeline* GetPipeline();
+
+private:
+    void RefreshKey();
+
+    std::unique_ptr<GraphicsPipeline> CreatePipeline();
 
 private:
     const Instance& instance;
@@ -31,7 +40,7 @@ private:
     vk::UniquePipelineLayout pipeline_layout;
     tsl::robin_map<size_t, vk::UniqueShaderModule> module_map;
     std::array<vk::ShaderModule, MaxShaderStages> stages{};
-    std::unique_ptr<GraphicsPipeline> pipeline;
+    tsl::robin_map<PipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
     PipelineKey graphics_key{};
     Shader::ObjectPool<Shader::IR::Inst> inst_pool;
     Shader::ObjectPool<Shader::IR::Block> block_pool;

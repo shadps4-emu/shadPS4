@@ -7,6 +7,7 @@
 #include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/memory.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 
 namespace Core {
 
@@ -61,6 +62,10 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         new_vma.prot = prot;
         new_vma.name = name;
         new_vma.type = type;
+
+        if (type == VMAType::Direct) {
+            MapVulkanMemory(mapped_addr, size);
+        }
     };
 
     // When virtual addr is zero let the address space manager pick the address.
@@ -103,6 +108,10 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(it != vma_map.end() && it->first == virtual_addr,
                "Attempting to unmap partially mapped range");
 
+    if (it->second.type == VMAType::Direct) {
+        UnmapVulkanMemory(virtual_addr, size);
+    }
+
     // Mark region as free and attempt to coalesce it with neighbours.
     auto& vma = it->second;
     vma.type = VMAType::Free;
@@ -112,6 +121,13 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
 
     // Unmap the memory region.
     impl.Unmap(virtual_addr, size);
+}
+
+std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
+    auto it = mapped_memories.upper_bound(addr);
+    it = std::prev(it);
+    ASSERT(it != mapped_memories.end() && it->first <= addr);
+    return std::make_pair(*it->second.buffer, addr - it->first);
 }
 
 VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
@@ -169,6 +185,83 @@ MemoryManager::VMAHandle MemoryManager::MergeAdjacent(VMAHandle iter) {
     }
 
     return iter;
+}
+
+void MemoryManager::MapVulkanMemory(VAddr addr, size_t size) {
+    const vk::Device device = instance->GetDevice();
+    const auto memory_props = instance->GetPhysicalDevice().getMemoryProperties();
+    void* host_pointer = reinterpret_cast<void*>(addr);
+    const auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(
+        vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, host_pointer);
+    ASSERT(host_mem_props.memoryTypeBits != 0);
+
+    int mapped_memory_type = -1;
+    auto find_mem_type_with_flag = [&](const vk::MemoryPropertyFlags flags) {
+        u32 host_mem_types = host_mem_props.memoryTypeBits;
+        while (host_mem_types != 0) {
+            // Try to find a cached memory type
+            mapped_memory_type = std::countr_zero(host_mem_types);
+            host_mem_types -= (1 << mapped_memory_type);
+
+            if ((memory_props.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags) {
+                return;
+            }
+        }
+
+        mapped_memory_type = -1;
+    };
+
+    // First try to find a memory that is both coherent and cached
+    find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent |
+                            vk::MemoryPropertyFlagBits::eHostCached);
+    if (mapped_memory_type == -1)
+        // Then only coherent (lower performance)
+        find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent);
+
+    if (mapped_memory_type == -1) {
+        LOG_CRITICAL(Render_Vulkan, "No coherent memory available for memory mapping");
+        mapped_memory_type = std::countr_zero(host_mem_props.memoryTypeBits);
+    }
+
+    const vk::StructureChain alloc_info = {
+        vk::MemoryAllocateInfo{
+            .allocationSize = size,
+            .memoryTypeIndex = static_cast<uint32_t>(mapped_memory_type),
+        },
+        vk::ImportMemoryHostPointerInfoEXT{
+            .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+            .pHostPointer = host_pointer,
+        },
+    };
+
+    const auto [it, new_memory] = mapped_memories.try_emplace(addr);
+    ASSERT_MSG(new_memory, "Attempting to remap already mapped vulkan memory");
+
+    auto& memory = it->second;
+    memory.backing = device.allocateMemoryUnique(alloc_info.get());
+
+    constexpr vk::BufferUsageFlags MapFlags =
+        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
+        vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst |
+        vk::BufferUsageFlagBits::eUniformBuffer;
+
+    const vk::StructureChain buffer_info = {
+        vk::BufferCreateInfo{
+            .size = size,
+            .usage = MapFlags,
+            .sharingMode = vk::SharingMode::eExclusive,
+        },
+        vk::ExternalMemoryBufferCreateInfoKHR{
+            .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+        }};
+    memory.buffer = device.createBufferUnique(buffer_info.get());
+    device.bindBufferMemory(*memory.buffer, *memory.backing, 0);
+}
+
+void MemoryManager::UnmapVulkanMemory(VAddr addr, size_t size) {
+    const auto it = mapped_memories.find(addr);
+    ASSERT(it != mapped_memories.end() && it->second.buffer_size == size);
+    mapped_memories.erase(it);
 }
 
 } // namespace Core

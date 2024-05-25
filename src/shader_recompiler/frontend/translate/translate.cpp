@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/exception.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/resource.h"
 
 namespace Shader::Gcn {
 
-Translator::Translator(IR::Block* block_, Stage stage) : block{block_}, ir{*block} {
+Translator::Translator(IR::Block* block_, Info& info_) : block{block_}, ir{*block}, info{info_} {
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
-    switch (stage) {
+    switch (info.stage) {
     case Stage::Vertex:
         // https://github.com/chaotic-cx/mesa-mirror/blob/72326e15/src/amd/vulkan/radv_shader_args.c#L146C1-L146C23
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
@@ -92,11 +94,39 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     }
 }
 
-void Translate(IR::Block* block, Stage stage, std::span<const GcnInst> inst_list) {
+void Translator::EmitFetch(const GcnInst& inst) {
+    // Read the pointer to the fetch shader assembly.
+    const u32 sgpr_base = inst.src[0].code;
+    const u32* code;
+    std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
+
+    // Parse the assembly to generate a list of attributes.
+    const auto attribs = ParseFetchShader(code);
+    for (const auto& attrib : attribs) {
+        const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
+        IR::VectorReg dst_reg{attrib.dest_vgpr};
+        for (u32 i = 0; i < attrib.num_elements; i++) {
+            ir.SetVectorReg(dst_reg++, ir.GetAttribute(attr, i));
+        }
+
+        // Read the V# of the attribute to figure out component number and type.
+        const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
+        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
+        info.vs_inputs.push_back({
+            .fmt = buffer.num_format,
+            .binding = attrib.semantic,
+            .num_components = std::min<u16>(attrib.num_elements, num_components),
+            .sgpr_base = attrib.sgpr_base,
+            .dword_offset = attrib.dword_offset,
+        });
+    }
+}
+
+void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info) {
     if (inst_list.empty()) {
         return;
     }
-    Translator translator{block, stage};
+    Translator translator{block, info};
     for (const auto& inst : inst_list) {
         switch (inst.opcode) {
         case Opcode::S_MOV_B32:
@@ -115,6 +145,9 @@ void Translate(IR::Block* block, Stage stage, std::span<const GcnInst> inst_list
             translator.V_MUL_F32(inst);
             break;
         case Opcode::S_SWAPPC_B64:
+            ASSERT(info.stage == Stage::Vertex);
+            translator.EmitFetch(inst);
+            break;
         case Opcode::S_WAITCNT:
             break; // Ignore for now.
         case Opcode::S_BUFFER_LOAD_DWORDX16:

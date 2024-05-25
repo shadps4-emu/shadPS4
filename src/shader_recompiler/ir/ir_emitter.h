@@ -58,11 +58,9 @@ public:
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
-    [[nodiscard]] F32 GetAttribute(IR::Attribute attribute);
-    [[nodiscard]] F32 GetAttribute(IR::Attribute attribute, u32 comp);
-    [[nodiscard]] U32 GetAttributeU32(IR::Attribute attribute);
-    [[nodiscard]] U32 GetAttributeU32(IR::Attribute attribute, u32 comp);
-    void SetAttribute(IR::Attribute attribute, const F32& value, u32 comp);
+    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0);
+    [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
+    void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
     [[nodiscard]] U32U64 ReadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
