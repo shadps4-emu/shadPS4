@@ -29,6 +29,10 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
 }
 } // Anonymous namespace
 
+void EmitGetUserData(EmitContext&) {
+    throw LogicError("Unreachable instruction");
+}
+
 void EmitGetScalarRegister(EmitContext&) {
     throw LogicError("Unreachable instruction");
 }
@@ -93,6 +97,40 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
     ctx.OpStore(pointer, value);
+}
+
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                     const IR::Value& address) {
+    UNREACHABLE();
+}
+
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address) {
+    UNREACHABLE();
+}
+
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address) {
+    UNREACHABLE();
+}
+
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address) {
+    const auto info = inst->Flags<IR::BufferInstInfo>();
+    const Id buffer = ctx.buffers[handle.U32()];
+    const Id type = ctx.info.buffers[handle.U32()].is_storage ? ctx.storage_f32 : ctx.uniform_f32;
+    if (info.index_enable && info.offset_enable) {
+        UNREACHABLE();
+    } else if (info.index_enable) {
+        boost::container::static_vector<Id, 4> ids;
+        for (u32 i = 0; i < 4; i++) {
+            const Id index{ctx.OpIAdd(ctx.U32[1], ctx.Def(address), ctx.ConstU32(i))};
+            const Id ptr{ctx.OpAccessChain(type, buffer, ctx.ConstU32(0U), index)};
+            ids.push_back(ctx.OpLoad(ctx.F32[1], ptr));
+        }
+        return ctx.OpCompositeConstruct(ctx.F32[4], ids);
+    }
+    UNREACHABLE();
 }
 
 } // namespace Shader::Backend::SPIRV

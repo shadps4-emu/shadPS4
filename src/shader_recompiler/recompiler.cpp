@@ -62,15 +62,16 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
-    Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::DeadCodeEliminationPass(program.blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
 
     for (const auto& block : program.blocks) {
         fmt::print("{}\n", IR::DumpBlock(*block));
     }
+    std::fflush(stdout);
 
     return program;
 }

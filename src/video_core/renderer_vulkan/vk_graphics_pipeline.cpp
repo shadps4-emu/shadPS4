@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
@@ -25,9 +26,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         stages[i] = *infos[i];
     }
 
+    desc_layout = BuildSetLayout();
+    const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
-        .setLayoutCount = 0U,
-        .pSetLayouts = nullptr,
+        .setLayoutCount = 1U,
+        .pSetLayouts = &set_layout,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr,
     };
@@ -196,10 +199,32 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
 GraphicsPipeline::~GraphicsPipeline() = default;
 
+vk::UniqueDescriptorSetLayout GraphicsPipeline::BuildSetLayout() const {
+    u32 binding{};
+    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+    for (const auto& stage : stages) {
+        for (const auto& buffer : stage.buffers) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+            });
+        }
+    }
+    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = static_cast<u32>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+    return instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+}
+
 void GraphicsPipeline::BindResources(Core::MemoryManager* memory) const {
     std::array<vk::Buffer, MaxVertexBufferCount> buffers;
     std::array<vk::DeviceSize, MaxVertexBufferCount> offsets;
 
+    // Bind vertex buffer.
     const auto& vs_info = stages[0];
     const size_t num_buffers = vs_info.vs_inputs.size();
     for (u32 i = 0; i < num_buffers; ++i) {
@@ -210,6 +235,33 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory) const {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindVertexBuffers(0, num_buffers, buffers.data(), offsets.data());
+
+    // Bind resource buffers and textures.
+    boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
+    boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
+    u32 binding{};
+
+    for (const auto& stage : stages) {
+        for (const auto& buffer : stage.buffers) {
+            const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
+            const auto [vk_buffer, offset] = memory->GetVulkanBuffer(vsharp.base_address);
+            buffer_infos.push_back({
+                .buffer = vk_buffer,
+                .offset = offset,
+                .range = vsharp.stride * vsharp.num_records,
+            });
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .pBufferInfo = &buffer_infos.back(),
+            });
+        }
+    }
+
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, set_writes);
 }
 
 } // namespace Vulkan

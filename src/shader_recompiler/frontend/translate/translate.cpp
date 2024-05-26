@@ -36,7 +36,7 @@ Translator::Translator(IR::Block* block_, Info& info_) : block{block_}, ir{*bloc
     // Initialize user data.
     IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
     for (u32 i = 0; i < 16; i++) {
-        ir.SetScalarReg(dst_sreg++, ir.Imm32(0U));
+        ir.SetScalarReg(dst_sreg++, ir.GetUserData(dst_sreg));
     }
 }
 
@@ -170,6 +170,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
+            translator.TBUFFER_LOAD_FORMAT_XYZW(inst);
             break;
         case Opcode::S_MOV_B64:
         case Opcode::S_WQM_B64:

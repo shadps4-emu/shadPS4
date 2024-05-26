@@ -107,6 +107,8 @@ public:
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 
+    int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
+
     std::pair<vk::Buffer, size_t> GetVulkanBuffer(VAddr addr);
 
 private:

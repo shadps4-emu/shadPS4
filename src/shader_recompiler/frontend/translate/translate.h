@@ -48,6 +48,9 @@ public:
     void V_CMP_EQ_U32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
 
+    // Vector Memory
+    void TBUFFER_LOAD_FORMAT_XYZW(const GcnInst& inst);
+
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
 

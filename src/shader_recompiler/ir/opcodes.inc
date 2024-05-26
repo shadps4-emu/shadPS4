@@ -19,6 +19,7 @@ OPCODE(ReadConstBuffer,                                     U32,            Opaq
 OPCODE(ReadConstBufferF32,                                  F32,            Opaque,         U32,            U32                                             )
 
 // Context getters/setters
+OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
 OPCODE(GetScalarRegister,                                   U32,            ScalarReg,                                                                      )
 OPCODE(SetScalarRegister,                                   Void,           ScalarReg,      U32,                                                            )
 OPCODE(GetVectorRegister,                                   U32,            VectorReg,                                                                      )
@@ -41,6 +42,12 @@ OPCODE(UndefU8,                                             U8,                 
 OPCODE(UndefU16,                                            U16,                                                                                            )
 OPCODE(UndefU32,                                            U32,                                                                                            )
 OPCODE(UndefU64,                                            U64,                                                                                            )
+
+// Buffer operations
+OPCODE(LoadBufferF32,                                       F32,            Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x2,                                     F32x2,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x3,                                     F32x3,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x4,                                     F32x4,          Opaque,         Opaque,                                                         )
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )

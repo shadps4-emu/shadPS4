@@ -189,6 +189,7 @@ public:
         } else {
             ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
         }
+        std::fflush(stdout);
     }
 
 private:

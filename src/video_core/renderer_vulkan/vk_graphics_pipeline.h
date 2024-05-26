@@ -55,11 +55,15 @@ public:
     }
 
 private:
+    vk::UniqueDescriptorSetLayout BuildSetLayout() const;
+
+private:
     const Instance& instance;
     Scheduler& scheduler;
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
-    std::array<Shader::Info, MaxShaderStages> stages;
+    vk::UniqueDescriptorSetLayout desc_layout;
+    std::array<Shader::Info, MaxShaderStages> stages{};
     PipelineKey key;
 };
 
