@@ -54,6 +54,8 @@ void Liverpool::Process(std::stop_token stoken) {
             task.resume();
 
             if (task.done()) {
+                task.destroy();
+
                 std::scoped_lock lock{queue.m_access};
                 queue.submits.pop();
 
@@ -268,6 +270,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
     if (ce_task.handle) {
         ASSERT_MSG(ce_task.handle.done(), "Partially processed CCB");
+        ce_task.handle.destroy();
     }
 }
 
