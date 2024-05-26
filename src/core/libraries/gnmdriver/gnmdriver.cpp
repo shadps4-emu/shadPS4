@@ -1447,7 +1447,9 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload() {
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {
     LOG_INFO(Lib_GnmDriver, "called");
-    submission_lock = true;
+    if (!liverpool->IsGpuIdle()) {
+        submission_lock = true;
+    }
     return ORBIS_OK;
 }
 

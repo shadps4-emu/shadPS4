@@ -494,4 +494,50 @@ struct PM4CmdEventWriteEos {
     }
 };
 
+struct PM4WriteConstRam {
+    PM4Type3Header header;
+    union {
+        BitField<0, 16, u32> offset; // in DWs
+        u32 dw1;
+    };
+    u32 data[0];
+
+    [[nodiscard]] u32 Offset() const {
+        return offset.Value() << 2u;
+    }
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
+};
+
+struct PM4DumpConstRam {
+    PM4Type3Header header;
+    union {
+        BitField<0, 16, u32> offset; ///< Starting byte offset into the Constant RAM. The minimum
+                                     ///< granularity is 4 bytes
+        u32 dw1;
+    };
+    union {
+        BitField<0, 15, u32>
+            num_dw; ///< Number of DWs to read from the constant RAM. The minimum granularity is DWs
+        u32 dw2;
+    };
+    u32 addr_lo;
+    u32 addr_hi;
+
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>((u64(addr_hi) << 32u) | addr_lo);
+    }
+
+    [[nodiscard]] u32 Offset() const {
+        return offset.Value();
+    }
+
+    [[nodiscard]] u32 Size() const {
+        return num_dw.Value() << 2u;
+    }
+};
+
 } // namespace AmdGpu

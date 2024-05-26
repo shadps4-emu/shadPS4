@@ -10,6 +10,7 @@
 
 #include <array>
 #include <condition_variable>
+#include <coroutine>
 #include <functional>
 #include <future>
 #include <span>
@@ -30,6 +31,12 @@ namespace AmdGpu {
     [[maybe_unused]] std::array<u32, num_words> CONCAT2(pad, __LINE__)
 
 struct Liverpool {
+    static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
+    static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
+    static constexpr u32 NumQueuesPerPipe = 8u;
+    static constexpr u32 NumTotalQueues = NumGfxRings + (NumComputePipes * NumQueuesPerPipe);
+    static_assert(NumTotalQueues < 64u); // need to fit into u64 bitmap for ffs
+
     static constexpr u32 NumColorBuffers = 8;
     static constexpr u32 NumViewports = 16;
     static constexpr u32 NumClipPlanes = 6;
@@ -631,32 +638,81 @@ public:
     Liverpool();
     ~Liverpool();
 
-    void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
-        {
-            std::scoped_lock lock{m_ring_access};
-            gfx_ring.emplace(dcb);
-
-            ASSERT_MSG(ccb.size() == 0, "CCBs are not supported yet");
-        }
-        cv_submit.notify_one();
-    }
+    void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
+    void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
     void WaitGpuIdle();
+    bool IsGpuIdle() const {
+        return num_submits == 0;
+    }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
     }
 
 private:
-    void ProcessCmdList(const u32* cmdbuf, u32 size_in_bytes);
+    struct Task {
+        struct promise_type {
+            auto get_return_object() {
+                Task task{};
+                task.handle = std::coroutine_handle<promise_type>::from_promise(*this);
+                return task;
+            }
+            static constexpr std::suspend_always initial_suspend() noexcept {
+                // We want the task to be suspended at start
+                return {};
+            }
+            static constexpr std::suspend_always final_suspend() noexcept {
+                return {};
+            }
+            void unhandled_exception() {}
+            void return_void() {}
+            struct empty {};
+            std::suspend_always yield_value(empty&&) {
+                return {};
+            }
+        };
+
+        using Handle = std::coroutine_handle<promise_type>;
+        Handle handle;
+    };
+
+    Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
+    Task ProcessCeUpdate(std::span<const u32> ccb);
+    Task ProcessCompute(std::span<const u32> acb);
+
     void Process(std::stop_token stoken);
+
+    struct GpuQueue {
+        std::mutex m_access{};
+        std::queue<Task::Handle> submits{};
+    };
+    std::array<GpuQueue, NumTotalQueues> mapped_queues{};
+
+    struct ConstantEngine {
+        void Reset() {
+            ce_count = 0;
+            de_count = 0;
+            ce_compare_count = 0;
+        }
+
+        [[nodiscard]] u32 Diff() const {
+            ASSERT_MSG(ce_count >= de_count, "DE counter is ahead of CE");
+            return ce_count - de_count;
+        }
+
+        u32 ce_compare_count{};
+        u32 ce_count{};
+        u32 de_count{};
+        static std::array<u8, 48_KB> constants_heap;
+    } cblock{};
 
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
-    std::queue<std::span<const u32>> gfx_ring{};
     std::condition_variable_any cv_submit{};
     std::condition_variable cv_complete{};
-    std::mutex m_ring_access{};
+    std::mutex m_submit{};
+    std::atomic<u32> num_submits{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

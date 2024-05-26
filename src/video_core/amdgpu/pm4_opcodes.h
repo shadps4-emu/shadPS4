@@ -58,7 +58,13 @@ enum class PM4ItOpcode : u32 {
     SetContextRegIndirect = 0x73,
     SetShReg = 0x76,
     SetShRegOffset = 0x77,
-    SetUconfigReg = 0x79
+    SetUconfigReg = 0x79,
+    WriteConstRam = 0x81,
+    DumpConstRam = 0x83,
+    IncrementCeCounter = 0x84,
+    IncrementDeCounter = 0x85,
+    WaitOnCeCounter = 0x86,
+    WaitOnDeCounterDiff = 0x88,
 };
 
 } // namespace AmdGpu
