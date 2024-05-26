@@ -110,6 +110,8 @@ std::string NameOf(Attribute attribute) {
         return "InstanceId";
     case Attribute::FragCoord:
         return "FragCoord";
+    case Attribute::IsFrontFace:
+        return "IsFrontFace";
     default:
         break;
     }

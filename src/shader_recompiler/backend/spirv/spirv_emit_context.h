@@ -6,7 +6,6 @@
 #include <array>
 #include <sirit/sirit.h>
 
-#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
@@ -29,7 +28,7 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, IR::Program& program, Bindings& binding);
+    explicit EmitContext(const Profile& profile, IR::Program& program, u32& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
@@ -152,8 +151,20 @@ public:
     Id base_vertex{};
     std::array<Id, 8> frag_color{};
 
-    u32 binding{};
+    struct TextureDefinition {
+        Id id;
+        Id sampled_type;
+        Id pointer_type;
+        Id image_type;
+    };
+
+    u32& binding;
     boost::container::small_vector<Id, 4> buffers;
+    boost::container::small_vector<TextureDefinition, 4> images;
+    boost::container::small_vector<Id, 4> samplers;
+
+    Id sampler_type{};
+    Id sampler_pointer_type{};
 
     struct SpirvAttribute {
         Id id;
@@ -170,6 +181,7 @@ private:
     void DefineInputs(const Info& info);
     void DefineOutputs(const Info& info);
     void DefineBuffers(const Info& info);
+    void DefineImagesAndSamplers(const Info& info);
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

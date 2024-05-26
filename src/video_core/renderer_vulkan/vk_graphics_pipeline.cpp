@@ -10,6 +10,8 @@
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_stream_buffer.h"
+#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
@@ -25,8 +27,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         }
         stages[i] = *infos[i];
     }
-
-    desc_layout = BuildSetLayout();
+    BuildDescSetLayout();
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 1U,
@@ -81,20 +82,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .sampleShadingEnable = false,
     };
 
-    const vk::PipelineColorBlendAttachmentState colorblend_attachment = {
-        .blendEnable = false,
-        .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
-    };
-
-    const vk::PipelineColorBlendStateCreateInfo color_blending = {
-        .logicOpEnable = false,
-        .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = 1,
-        .pAttachments = &colorblend_attachment,
-        .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
-    };
-
     const vk::Viewport viewport = {
         .x = 0.0f,
         .y = 0.0f,
@@ -119,6 +106,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
+        vk::DynamicState::eBlendConstants,
     };
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -174,6 +162,30 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .stencilAttachmentFormat = vk::Format::eUndefined,
     };
 
+    std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
+    for (u32 i = 0; i < num_color_formats; i++) {
+        const auto& control = key.blend_controls[i];
+        attachments[i] = vk::PipelineColorBlendAttachmentState{
+            .blendEnable = key.blend_controls[i].enable,
+            .srcColorBlendFactor = LiverpoolToVK::BlendFactor(control.color_src_factor),
+            .dstColorBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
+            .colorBlendOp = LiverpoolToVK::BlendOp(control.color_func),
+            .srcAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.alpha_src_factor),
+            .dstAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
+            .alphaBlendOp = LiverpoolToVK::BlendOp(control.alpha_func),
+            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+        };
+    }
+
+    const vk::PipelineColorBlendStateCreateInfo color_blending = {
+        .logicOpEnable = false,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = num_color_formats,
+        .pAttachments = attachments.data(),
+        .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
+    };
+
     const vk::GraphicsPipelineCreateInfo pipeline_info = {
         .pNext = &pipeline_rendering_ci,
         .stageCount = shader_count,
@@ -199,14 +211,31 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
 GraphicsPipeline::~GraphicsPipeline() = default;
 
-vk::UniqueDescriptorSetLayout GraphicsPipeline::BuildSetLayout() const {
+void GraphicsPipeline::BuildDescSetLayout() {
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
+                                                    : vk::DescriptorType::eUniformBuffer,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+            });
+        }
+        for (const auto& image : stage.images) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eSampledImage,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+            });
+        }
+        for (const auto& sampler : stage.samplers) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = vk::DescriptorType::eSampler,
                 .descriptorCount = 1,
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
@@ -217,12 +246,24 @@ vk::UniqueDescriptorSetLayout GraphicsPipeline::BuildSetLayout() const {
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    return instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
 }
 
-void GraphicsPipeline::BindResources(Core::MemoryManager* memory) const {
+void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+                                     VideoCore::TextureCache& texture_cache) const {
+    static constexpr u64 MinUniformAlignment = 64;
+
+    const auto map_staging = [&](auto src, size_t size) {
+        const auto [data, offset, _] = staging.Map(size, MinUniformAlignment);
+        std::memcpy(data, reinterpret_cast<const void*>(src), size);
+        staging.Commit(size);
+        return offset;
+    };
+
     std::array<vk::Buffer, MaxVertexBufferCount> buffers;
     std::array<vk::DeviceSize, MaxVertexBufferCount> offsets;
+    VAddr base_address = 0;
+    u32 start_offset = 0;
 
     // Bind vertex buffer.
     const auto& vs_info = stages[0];
@@ -230,38 +271,77 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory) const {
     for (u32 i = 0; i < num_buffers; ++i) {
         const auto& input = vs_info.vs_inputs[i];
         const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        std::tie(buffers[i], offsets[i]) = memory->GetVulkanBuffer(buffer.base_address);
+        if (i == 0) {
+            start_offset =
+                map_staging(buffer.base_address.Value(), buffer.stride * buffer.num_records);
+            base_address = buffer.base_address;
+        }
+        buffers[i] = staging.Handle();
+        offsets[i] = start_offset + buffer.base_address - base_address;
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindVertexBuffers(0, num_buffers, buffers.data(), offsets.data());
+    if (num_buffers > 0) {
+        cmdbuf.bindVertexBuffers(0, num_buffers, buffers.data(), offsets.data());
+    }
 
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 8> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     u32 binding{};
 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
-            const auto [vk_buffer, offset] = memory->GetVulkanBuffer(vsharp.base_address);
-            buffer_infos.push_back({
-                .buffer = vk_buffer,
-                .offset = offset,
-                .range = vsharp.stride * vsharp.num_records,
-            });
+            const u32 size = vsharp.stride * vsharp.num_records;
+            const u32 offset = map_staging(vsharp.base_address.Value(), size);
+            buffer_infos.emplace_back(staging.Handle(), offset, size);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding,
+                .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
+                                                    : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
+            });
+        }
+
+        for (const auto& image : stage.images) {
+            const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
+            const auto& image_view = texture_cache.FindImageView(tsharp);
+            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
+                                     vk::ImageLayout::eGeneral);
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eSampledImage,
+                .pImageInfo = &image_infos.back(),
+            });
+        }
+        for (const auto& sampler : stage.samplers) {
+            const auto ssharp =
+                stage.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+            const auto vk_sampler = texture_cache.GetSampler(ssharp);
+            image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eSampler,
+                .pImageInfo = &image_infos.back(),
             });
         }
     }
 
-    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, set_writes);
+    if (!set_writes.empty()) {
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
+                                    set_writes);
+    }
 }
 
 } // namespace Vulkan

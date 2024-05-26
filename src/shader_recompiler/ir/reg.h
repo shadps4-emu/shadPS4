@@ -33,13 +33,11 @@ union Mode {
 
 union TextureInstInfo {
     u32 raw;
-    BitField<0, 16, u32> descriptor_index;
-    BitField<19, 1, u32> is_depth;
-    BitField<20, 1, u32> has_bias;
-    BitField<21, 1, u32> has_lod_clamp;
-    BitField<22, 1, u32> relaxed_precision;
-    BitField<23, 2, u32> gather_component;
-    BitField<25, 2, u32> num_derivatives;
+    BitField<0, 1, u32> is_depth;
+    BitField<1, 1, u32> has_bias;
+    BitField<2, 1, u32> has_lod_clamp;
+    BitField<3, 1, u32> force_level0;
+    BitField<4, 1, u32> explicit_lod;
 };
 
 union BufferInstInfo {

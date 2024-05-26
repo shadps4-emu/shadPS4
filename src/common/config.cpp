@@ -9,16 +9,17 @@
 
 namespace Config {
 
-bool isNeo = false;
-u32 screenWidth = 1280;
-u32 screenHeight = 720;
-s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
-std::string logFilter;
-std::string logType = "sync";
-bool isDebugDump = false;
-bool isLibc = true;
-bool isShowSplash = false;
-bool isNullGpu = false;
+static bool isNeo = false;
+static u32 screenWidth = 1280;
+static u32 screenHeight = 720;
+static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
+static std::string logFilter;
+static std::string logType = "sync";
+static bool isDebugDump = false;
+static bool isLibc = true;
+static bool isShowSplash = false;
+static bool isNullGpu = false;
+static bool shouldDumpShaders = false;
 
 bool isLleLibc() {
     return isLibc;
@@ -59,6 +60,10 @@ bool nullGpu() {
     return isNullGpu;
 }
 
+bool dumpShaders() {
+    return shouldDumpShaders;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -96,6 +101,7 @@ void load(const std::filesystem::path& path) {
             screenHeight = toml::find_or<toml::integer>(gpu, "screenHeight", screenHeight);
             gpuId = toml::find_or<toml::integer>(gpu, "gpuId", 0);
             isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
+            shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
         }
     }
     if (data.contains("Debug")) {
@@ -142,6 +148,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
+    data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
 

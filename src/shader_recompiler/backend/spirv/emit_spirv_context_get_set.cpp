@@ -61,14 +61,11 @@ Id EmitReadConst(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
-Id EmitReadConstBuffer(EmitContext& ctx, const IR::Value& binding, const IR::Value& addr,
-                       const IR::Value& offset) {
-    throw LogicError("Unreachable instruction");
-}
-
-Id EmitReadConstBufferF32(EmitContext& ctx, const IR::Value& binding, const IR::Value& addr,
-                          const IR::Value& offset) {
-    throw LogicError("Unreachable instruction");
+Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
+    const Id buffer = ctx.buffers[handle];
+    const Id type = ctx.info.buffers[handle].is_storage ? ctx.storage_f32 : ctx.uniform_f32;
+    const Id ptr{ctx.OpAccessChain(type, buffer, ctx.ConstU32(0U), index)};
+    return ctx.OpLoad(ctx.F32[1], ptr);
 }
 
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
@@ -99,32 +96,28 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     ctx.OpStore(pointer, value);
 }
 
-Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                     const IR::Value& address) {
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     UNREACHABLE();
 }
 
-Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address) {
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     UNREACHABLE();
 }
 
-Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address) {
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     UNREACHABLE();
 }
 
-Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address) {
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto info = inst->Flags<IR::BufferInstInfo>();
-    const Id buffer = ctx.buffers[handle.U32()];
-    const Id type = ctx.info.buffers[handle.U32()].is_storage ? ctx.storage_f32 : ctx.uniform_f32;
+    const Id buffer = ctx.buffers[handle];
+    const Id type = ctx.info.buffers[handle].is_storage ? ctx.storage_f32 : ctx.uniform_f32;
     if (info.index_enable && info.offset_enable) {
         UNREACHABLE();
     } else if (info.index_enable) {
         boost::container::static_vector<Id, 4> ids;
         for (u32 i = 0; i < 4; i++) {
-            const Id index{ctx.OpIAdd(ctx.U32[1], ctx.Def(address), ctx.ConstU32(i))};
+            const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
             const Id ptr{ctx.OpAccessChain(type, buffer, ctx.ConstU32(0U), index)};
             ids.push_back(ctx.OpLoad(ctx.F32[1], ptr));
         }

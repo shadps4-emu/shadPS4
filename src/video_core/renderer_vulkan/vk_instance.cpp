@@ -151,6 +151,7 @@ bool Instance::CreateDevice() {
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     index_type_uint8 = add_extension(VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+    add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -212,6 +213,9 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceIndexTypeUint8FeaturesEXT{
             .indexTypeUint8 = true,
+        },
+        vk::PhysicalDeviceMaintenance4Features{
+            .maintenance4 = true,
         },
     };
 

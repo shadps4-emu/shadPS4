@@ -6,9 +6,14 @@
 
 namespace Shader::Backend::SPIRV {
 
-Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
-                              Id bias_lc, const IR::Value& offset) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
+                              Id offset) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
+    const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
+    const auto info = inst->Flags<IR::TextureInstInfo>();
+    return ctx.OpImageSampleImplicitLod(ctx.F32[4], sampled_image, coords);
 }
 
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,

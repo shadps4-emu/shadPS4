@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <limits>
+#include <xxhash.h>
 #include "common/assert.h"
 #include "common/config.h"
-#include "core/libraries/videoout/buffer.h"
 #include "core/virtual_memory.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -137,6 +136,21 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
     return image;
 }
 
+ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
+    Image& image = FindImage(ImageInfo{desc}, desc.Address());
+
+    const ImageViewInfo view_info{desc};
+    if (const ImageViewId view_id = image.FindView(view_info); view_id) {
+        return slot_image_views[view_id];
+    }
+
+    const ImageViewId view_id =
+        slot_image_views.insert(instance, scheduler, view_info, image.image);
+    image.image_view_infos.emplace_back(view_info);
+    image.image_view_ids.emplace_back(view_id);
+    return slot_image_views[view_id];
+}
+
 ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer) {
     const ImageInfo info{buffer};
     auto& image = FindImage(info, buffer.Address());
@@ -159,7 +173,7 @@ void TextureCache::RefreshImage(Image& image) {
     image.flags &= ~ImageFlagBits::CpuModified;
 
     // Upload data to the staging buffer.
-    const auto [data, offset, _] = staging.Map(image.info.guest_size_bytes, 0);
+    const auto [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
     const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
     if (image.info.is_tiled) {
         ConvertTileToLinear(data, image_data, image.info.size.width, image.info.size.height,
@@ -200,6 +214,12 @@ void TextureCache::RefreshImage(Image& image) {
 
     image.Transit(vk::ImageLayout::eGeneral,
                   vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+}
+
+vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
+    const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
+    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler);
+    return it->second.Handle();
 }
 
 void TextureCache::RegisterImage(ImageId image_id) {

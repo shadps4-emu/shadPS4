@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/debug.h"
 #include "core/libraries/kernel/event_queue.h"
 
 namespace Libraries::Kernel {

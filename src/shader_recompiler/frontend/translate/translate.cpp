@@ -73,8 +73,14 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         return ir.Imm32(1.f);
     case OperandField::ConstFloatPos_0_5:
         return ir.Imm32(0.5f);
+    case OperandField::ConstFloatPos_2_0:
+        return ir.Imm32(2.0f);
+    case OperandField::ConstFloatPos_4_0:
+        return ir.Imm32(4.0f);
     case OperandField::ConstFloatNeg_0_5:
         return ir.Imm32(-0.5f);
+    case OperandField::ConstFloatNeg_1_0:
+        return ir.Imm32(-1.0f);
     default:
         UNREACHABLE();
     }
@@ -135,6 +141,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_MUL_I32:
             translator.S_MUL_I32(inst);
             break;
+        case Opcode::V_MAD_F32:
+            translator.V_MAD_F32(inst);
+            break;
         case Opcode::V_MOV_B32:
             translator.V_MOV(inst);
             break;
@@ -144,12 +153,39 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MUL_F32:
             translator.V_MUL_F32(inst);
             break;
+        case Opcode::V_AND_B32:
+            translator.V_AND_B32(inst);
+            break;
+        case Opcode::V_LSHLREV_B32:
+            translator.V_LSHLREV_B32(inst);
+            break;
+        case Opcode::V_ADD_I32:
+            translator.V_ADD_I32(inst);
+            break;
+        case Opcode::V_CVT_F32_I32:
+            translator.V_CVT_F32_I32(inst);
+            break;
+        case Opcode::V_CVT_F32_U32:
+            translator.V_CVT_F32_U32(inst);
+            break;
         case Opcode::S_SWAPPC_B64:
             ASSERT(info.stage == Stage::Vertex);
             translator.EmitFetch(inst);
             break;
         case Opcode::S_WAITCNT:
-            break; // Ignore for now.
+            break;
+        case Opcode::S_BUFFER_LOAD_DWORD:
+            translator.S_BUFFER_LOAD_DWORD(1, inst);
+            break;
+        case Opcode::S_BUFFER_LOAD_DWORDX2:
+            translator.S_BUFFER_LOAD_DWORD(2, inst);
+            break;
+        case Opcode::S_BUFFER_LOAD_DWORDX4:
+            translator.S_BUFFER_LOAD_DWORD(4, inst);
+            break;
+        case Opcode::S_BUFFER_LOAD_DWORDX8:
+            translator.S_BUFFER_LOAD_DWORD(8, inst);
+            break;
         case Opcode::S_BUFFER_LOAD_DWORDX16:
             translator.S_BUFFER_LOAD_DWORD(16, inst);
             break;
@@ -180,7 +216,8 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ENDPGM:
             break;
         default:
-            UNREACHABLE_MSG("Unknown opcode {}", u32(inst.opcode));
+            const u32 opcode = u32(inst.opcode);
+            UNREACHABLE_MSG("Unknown opcode {}", opcode);
         }
     }
 }

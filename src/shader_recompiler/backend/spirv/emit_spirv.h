@@ -4,18 +4,12 @@
 #pragma once
 
 #include <vector>
-#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 
 namespace Shader::Backend::SPIRV {
 
 [[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program,
-                                         Bindings& bindings);
-
-[[nodiscard]] inline std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program) {
-    Bindings binding;
-    return EmitSPIRV(profile, program, binding);
-}
+                                         u32& binding);
 
 } // namespace Shader::Backend::SPIRV

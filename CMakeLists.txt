@@ -401,6 +401,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/image.h
                src/video_core/texture_cache/image_view.cpp
                src/video_core/texture_cache/image_view.h
+               src/video_core/texture_cache/sampler.cpp
+               src/video_core/texture_cache/sampler.h
                src/video_core/texture_cache/slot_vector.h
                src/video_core/texture_cache/texture_cache.cpp
                src/video_core/texture_cache/texture_cache.h

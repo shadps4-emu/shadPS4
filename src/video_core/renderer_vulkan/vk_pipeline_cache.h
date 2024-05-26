@@ -6,6 +6,7 @@
 #include <tsl/robin_map.h>
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/object_pool.h"
+#include "shader_recompiler/profile.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
 namespace Shader {
@@ -32,6 +33,8 @@ private:
 
     std::unique_ptr<GraphicsPipeline> CreatePipeline();
 
+    void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, std::string_view ext);
+
 private:
     const Instance& instance;
     Scheduler& scheduler;
@@ -41,6 +44,7 @@ private:
     tsl::robin_map<size_t, vk::UniqueShaderModule> module_map;
     std::array<vk::ShaderModule, MaxShaderStages> stages{};
     tsl::robin_map<PipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    Shader::Profile profile{};
     PipelineKey graphics_key{};
     Shader::ObjectPool<Shader::IR::Inst> inst_pool;
     Shader::ObjectPool<Shader::IR::Block> block_pool;

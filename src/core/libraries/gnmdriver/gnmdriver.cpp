@@ -881,29 +881,36 @@ int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier) {
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
+                                           u32 shader_modifier) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
     // A fullscreen triangle with one uv set
-    const static u32 shader_code[] = {
-        0xbeeb03ffu, 00000007u,   // s_mov_b32     vcc_hi, $0x00000007
-        0x36020081u,              // v_and_b32     v1, 1, v0
-        0x34020281u,              // v_lshlrev_b32 v1, 1, v1
-        0x360000c2u,              // v_and_b32     v0, -2, v0
-        0x4a0202c1u,              // v_add_i32     v1, vcc, -1, v1
-        0x4a0000c1u,              // v_add_i32     v0, vcc, -1, v0
-        0x7e020b01u,              // v_cvt_f32_i32 v1, v1
-        0x7e040280u,              // v_cvt_f32_i32 v0, v0
-        0x7e0602f2u,              // v_mov_b32     v3, 1.0
-        0xf80008cfu, 0x03020001u, // exp           pos0, v1, v0, v2, v3 done
-        0xf800020fu, 0x03030303u, // exp           param0, v3, v3, v3, v3
-        0xbf810000u,              // s_endpgm
+    // clang-format off
+    constexpr static std::array shader_code alignas(256) = {
+        0xbeeb03ffu, 0x00000009u,   // s_mov_b32       vcc_hi, lit(9)
+        0x36020081u,                // v_and_b32       v1, 1, v0
+        0x36000082u,                // v_and_b32       v0, 2, v0
+        0x7e000d00u,                // v_cvt_f32_u32   v0, v0
+        0x7e040d01u,                // v_cvt_f32_u32   v2, v1
+        0xd2820003u, 0x3ce00f4u,    // v_mad_f32       v3, 2.0, v0, -1.0
+        0xd2820004u, 0x3ce04f6u,    // v_mad_f32       v4, 4.0, v2, -1.0
+        0x7e020280u,                // v_mov_b32       v1, 0
+        0x7e0a02f2u,                // v_mov_b32       v5, 1.0
+        0xf80008cfu, 0x5010403u,    // exp             pos0, v3, v4, v1, v5 done
+        0x100404f4u,                // v_mul_f32       v2, 2.0, v2
+        0xf800020fu, 0x1010200u,    // exp             param0, v0, v2, v1, v1
+        0xbf810000u,                // s_endpgm
+        0x302u,
+        0x46d611cu,
 
         // OrbShdr header
-        0x5362724fu, 0x07726468u, 0x00004047u, 0u, 0x47f8c29fu, 0x9b2da5cfu, 0xff7c5b7du,
-        0x00000017u, 0x0fe000f1u, 0u, 0x000c0000u, 4u, 0u, 4u, 0u, 7u};
+        0x5362724fu, 0x7726468u, 0x4845u, 0x5080002u, 0xd1e7de61u, 0x0u, 0xb9cae598u,
+    };
+    // clang-format on
 
-    const auto shader_addr = uintptr_t(&shader_code); // Original address is 0xfe000f10
+    const auto shader_addr = uintptr_t(shader_code.data()); // Original address is 0xfe000f10
+    ASSERT((shader_addr & 0xFF) == 0);
     const static u32 vs_regs[] = {
         u32(shader_addr >> 8), u32(shader_addr >> 40), 0xc0000u, 4, 0, 4, 0, 7};
 

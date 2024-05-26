@@ -43,18 +43,11 @@ void EmitSetGotoVariable(EmitContext& ctx);
 void EmitGetGotoVariable(EmitContext& ctx);
 void EmitSetScc(EmitContext& ctx);
 Id EmitReadConst(EmitContext& ctx);
-Id EmitReadConstBuffer(EmitContext& ctx, const IR::Value& handle, const IR::Value& index,
-                       const IR::Value& offset);
-Id EmitReadConstBufferF32(EmitContext& ctx, const IR::Value& handle, const IR::Value& index,
-                          const IR::Value& offset);
-Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                     const IR::Value& address);
-Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address);
-Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address);
-Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
-                       const IR::Value& address);
+Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index);
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
@@ -319,8 +312,8 @@ Id EmitConvertF64U16(EmitContext& ctx, Id value);
 Id EmitConvertF64U32(EmitContext& ctx, Id value);
 Id EmitConvertF64U64(EmitContext& ctx, Id value);
 
-Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
-                              Id bias_lc, const IR::Value& offset);
+Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
+                              Id offset);
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
                               Id lod, const IR::Value& offset);
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index,

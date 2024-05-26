@@ -7,9 +7,11 @@
 #include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
 
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
+#include "video_core/texture_cache/sampler.h"
 #include "video_core/texture_cache/slot_vector.h"
 
 namespace Core::Libraries::VideoOut {
@@ -36,11 +38,17 @@ public:
     /// Retrieves the image handle of the image with the provided attributes and address.
     Image& FindImage(const ImageInfo& info, VAddr cpu_address);
 
+    /// Retrieves an image view with the properties of the specified image descriptor.
+    ImageView& FindImageView(const AmdGpu::Image& image);
+
     /// Retrieves the render target with specified properties
     ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
+
+    /// Retrieves the sampler that matches the provided S# descriptor.
+    vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
 
 private:
     /// Iterate over all page indices in a range
@@ -121,6 +129,7 @@ private:
     Vulkan::StreamBuffer staging;
     SlotVector<Image> slot_images;
     SlotVector<ImageView> slot_image_views;
+    tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
 #ifdef _WIN64
