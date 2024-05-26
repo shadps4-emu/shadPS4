@@ -27,6 +27,7 @@ struct Buffer {
         BitField<15, 4, DataFormat> data_format;
         BitField<19, 2, u32> element_size;
         BitField<21, 2, u32> index_stride;
+        BitField<23, 1, u32> add_tid_enable;
     };
 };
 

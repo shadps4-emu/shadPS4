@@ -114,6 +114,7 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    Info& info;
     const Profile& profile;
     Stage stage{};
 
@@ -141,12 +142,18 @@ public:
     Id output_u32{};
     Id output_f32{};
 
+    Id uniform_f32{};
+    Id storage_f32{};
+
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
     Id vertex_index{};
     Id base_vertex{};
     std::array<Id, 8> frag_color{};
+
+    u32 binding{};
+    boost::container::small_vector<Id, 4> buffers;
 
     struct SpirvAttribute {
         Id id;
@@ -160,8 +167,9 @@ public:
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces(const IR::Program& program);
-    void DefineInputs(const IR::Program& program);
-    void DefineOutputs(const IR::Program& program);
+    void DefineInputs(const Info& info);
+    void DefineOutputs(const Info& info);
+    void DefineBuffers(const Info& info);
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

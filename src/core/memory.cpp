@@ -123,6 +123,17 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     impl.Unmap(virtual_addr, size);
 }
 
+int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
+    const auto it = FindVMA(addr);
+    const auto& vma = it->second;
+    ASSERT_MSG(vma.type != VMAType::Free, "Provided address is not mapped");
+
+    *start = reinterpret_cast<void*>(vma.base);
+    *end = reinterpret_cast<void*>(vma.base + vma.size);
+    *prot = static_cast<u32>(vma.prot);
+    return SCE_OK;
+}
+
 std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     auto it = mapped_memories.upper_bound(addr);
     it = std::prev(it);
@@ -243,7 +254,7 @@ void MemoryManager::MapVulkanMemory(VAddr addr, size_t size) {
     constexpr vk::BufferUsageFlags MapFlags =
         vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
         vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst |
-        vk::BufferUsageFlagBits::eUniformBuffer;
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
 
     const vk::StructureChain buffer_info = {
         vk::BufferCreateInfo{

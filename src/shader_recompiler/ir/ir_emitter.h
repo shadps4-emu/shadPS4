@@ -42,6 +42,8 @@ public:
     void Prologue();
     void Epilogue();
 
+    U32 GetUserData(IR::ScalarReg reg);
+
     template <typename T = U32>
     [[nodiscard]] T GetScalarReg(IR::ScalarReg reg);
     template <typename T = U32>
@@ -68,6 +70,9 @@ public:
     [[nodiscard]] U32 ReadConst(const U64& address, const U32& offset);
     template <typename T = U32>
     [[nodiscard]] T ReadConstBuffer(const Value& handle, const U32& index, const U32& offset);
+
+    [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
+                                   BufferInstInfo info);
 
     [[nodiscard]] U1 GetZeroFromOp(const Value& op);
     [[nodiscard]] U1 GetSignFromOp(const Value& op);

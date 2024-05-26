@@ -34,6 +34,7 @@ void EmitGetVcc(EmitContext& ctx);
 void EmitSetVcc(EmitContext& ctx);
 void EmitPrologue(EmitContext& ctx);
 void EmitEpilogue(EmitContext& ctx);
+void EmitGetUserData(EmitContext& ctx);
 void EmitGetScalarRegister(EmitContext& ctx);
 void EmitSetScalarRegister(EmitContext& ctx);
 void EmitGetVectorRegister(EmitContext& ctx);
@@ -46,6 +47,14 @@ Id EmitReadConstBuffer(EmitContext& ctx, const IR::Value& handle, const IR::Valu
                        const IR::Value& offset);
 Id EmitReadConstBufferF32(EmitContext& ctx, const IR::Value& handle, const IR::Value& index,
                           const IR::Value& offset);
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                     const IR::Value& address);
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address);
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address);
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, const IR::Value& handle,
+                       const IR::Value& address);
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);

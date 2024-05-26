@@ -6,6 +6,7 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 #include "shader_recompiler/exception.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
@@ -39,6 +40,16 @@ union TextureInstInfo {
     BitField<22, 1, u32> relaxed_precision;
     BitField<23, 2, u32> gather_component;
     BitField<25, 2, u32> num_derivatives;
+};
+
+union BufferInstInfo {
+    u32 raw;
+    BitField<0, 1, u32> index_enable;
+    BitField<1, 1, u32> offset_enable;
+    BitField<2, 12, u32> inst_offset;
+    BitField<14, 4, AmdGpu::DataFormat> dmft;
+    BitField<18, 3, AmdGpu::NumberFormat> nfmt;
+    BitField<21, 1, u32> is_typed;
 };
 
 enum class ScalarReg : u32 {

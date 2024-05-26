@@ -123,7 +123,12 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreatePipeline() {
                                                std::move(info));
 
         // Compile IR to SPIR-V
-        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(Shader::Profile{}, programs[i]);
+        const auto profile = Shader::Profile{.supported_spirv = 0x00010600U};
+        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i]);
+        std::ofstream file("shader0.spv", std::ios::out | std::ios::binary);
+        file.write((const char*)spv_code.data(), spv_code.size() * 4);
+        file.close();
+
         stages[i] = CompileSPV(spv_code, instance.GetDevice());
         infos[i] = &programs[i].info;
     }

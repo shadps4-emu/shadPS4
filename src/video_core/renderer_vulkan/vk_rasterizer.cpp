@@ -61,7 +61,7 @@ void Rasterizer::Draw(bool is_indexed) {
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
-        cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), 0, 0);
+        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), 0, 0);
     }
     cmdbuf.endRendering();
 }
@@ -85,7 +85,7 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
         return index_size / sizeof(u16);
     }
     if (!is_indexed) {
-        return 0;
+        return regs.num_indices;
     }
 
     const VAddr index_address = regs.index_base_address.Address();

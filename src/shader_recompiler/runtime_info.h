@@ -8,6 +8,8 @@
 #include "common/assert.h"
 #include "common/types.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader {
@@ -38,6 +40,18 @@ enum class TextureType : u32 {
     Buffer,
 };
 constexpr u32 NUM_TEXTURE_TYPES = 7;
+
+struct BufferResource {
+    u32 sgpr_base;
+    u32 dword_offset;
+    u32 stride;
+    u32 num_records;
+    IR::Type used_types;
+    bool is_storage;
+
+    auto operator<=>(const BufferResource&) const = default;
+};
+using BufferResourceList = boost::container::static_vector<BufferResource, 8>;
 
 struct Info {
     struct VsInput {
@@ -86,17 +100,31 @@ struct Info {
     AttributeFlags loads{};
     AttributeFlags stores{};
 
+    BufferResourceList buffers;
     std::span<const u32> user_data;
     Stage stage;
 
     template <typename T>
     T ReadUd(u32 ptr_index, u32 dword_offset) const noexcept {
         T data;
-        u32* base;
-        std::memcpy(&base, &user_data[ptr_index], sizeof(base));
+        const u32* base = user_data.data();
+        if (ptr_index != IR::NumScalarRegs) {
+            std::memcpy(&base, &user_data[ptr_index], sizeof(base));
+        }
         std::memcpy(&data, base + dword_offset, sizeof(T));
         return data;
     }
 };
 
 } // namespace Shader
+
+template <>
+struct fmt::formatter<Shader::Stage> {
+    constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+    auto format(const Shader::Stage& stage, format_context& ctx) const {
+        constexpr static std::array names = {"vs", "tc", "te", "gs", "fs", "cs"};
+        return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
+    }
+};

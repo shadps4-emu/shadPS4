@@ -111,6 +111,10 @@ void IREmitter::Epilogue() {
     Inst(Opcode::Epilogue);
 }
 
+U32 IREmitter::GetUserData(IR::ScalarReg reg) {
+    return Inst<U32>(Opcode::GetUserData, reg);
+}
+
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetScalarRegister, reg);
@@ -231,6 +235,22 @@ U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index, const U32&
 template <>
 F32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index, const U32& offset) {
     return Inst<F32>(Opcode::ReadConstBufferF32, handle, index, offset);
+}
+
+Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& address,
+                            BufferInstInfo info) {
+    switch (num_dwords) {
+    case 1:
+        return Inst(Opcode::LoadBufferF32, Flags{info}, handle, address);
+    case 2:
+        return Inst(Opcode::LoadBufferF32x2, Flags{info}, handle, address);
+    case 3:
+        return Inst(Opcode::LoadBufferF32x3, Flags{info}, handle, address);
+    case 4:
+        return Inst(Opcode::LoadBufferF32x4, Flags{info}, handle, address);
+    default:
+        throw InvalidArgument("Invalid number of dwords {}", num_dwords);
+    }
 }
 
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {

@@ -4,28 +4,51 @@
 #include <algorithm>
 #include <bit>
 #include <optional>
-
 #include <boost/container/small_vector.hpp>
-
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
 namespace {
 
 struct SharpLocation {
-    IR::ScalarReg eud_ptr;
-    u32 index_dwords;
+    u32 sgpr_base;
+    u32 dword_offset;
 
     auto operator<=>(const SharpLocation&) const = default;
 };
 
-bool IsResourceInstruction(const IR::Inst& inst) {
+bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferF32:
+    case IR::Opcode::LoadBufferF32x2:
+    case IR::Opcode::LoadBufferF32x3:
+    case IR::Opcode::LoadBufferF32x4:
     case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::ReadConstBufferF32:
+        return true;
+    default:
+        return false;
+    }
+}
+
+IR::Type BufferLoadType(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferF32:
+    case IR::Opcode::LoadBufferF32x2:
+    case IR::Opcode::LoadBufferF32x3:
+    case IR::Opcode::LoadBufferF32x4:
+        return IR::Type::F32;
+    default:
+        UNREACHABLE();
+    }
+}
+
+bool IsImageInstruction(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
     case IR::Opcode::ImageSampleExplicitLod:
     case IR::Opcode::ImageSampleImplicitLod:
     case IR::Opcode::ImageSampleDrefExplicitLod:
@@ -44,32 +67,26 @@ bool IsResourceInstruction(const IR::Inst& inst) {
     }
 }
 
-/*class Descriptors {
+class Descriptors {
 public:
-    explicit Descriptors(TextureDescriptors& texture_descriptors_)
-        : texture_descriptors{texture_descriptors_} {}
+    explicit Descriptors(BufferResourceList& buffer_resources_)
+        : buffer_resources{buffer_resources_} {}
 
-    u32 Add(const TextureDescriptor& desc) {
-        const u32 index{Add(texture_descriptors, desc, [&desc](const auto& existing) {
-            return desc.type == existing.type && desc.is_depth == existing.is_depth &&
-                   desc.has_secondary == existing.has_secondary &&
-                   desc.cbuf_index == existing.cbuf_index &&
-                   desc.cbuf_offset == existing.cbuf_offset &&
-                   desc.shift_left == existing.shift_left &&
-                   desc.secondary_cbuf_index == existing.secondary_cbuf_index &&
-                   desc.secondary_cbuf_offset == existing.secondary_cbuf_offset &&
-                   desc.secondary_shift_left == existing.secondary_shift_left &&
-                   desc.count == existing.count && desc.size_shift == existing.size_shift;
+    u32 Add(const BufferResource& desc) {
+        const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
+            return desc.sgpr_base == existing.sgpr_base &&
+                   desc.dword_offset == existing.dword_offset;
         })};
-        // TODO: Read this from TIC
-        texture_descriptors[index].is_multisample |= desc.is_multisample;
+        auto& buffer = buffer_resources[index];
+        ASSERT(buffer.stride == desc.stride && buffer.num_records == desc.num_records);
+        buffer.is_storage |= desc.is_storage;
+        buffer.used_types |= desc.used_types;
         return index;
     }
 
 private:
     template <typename Descriptors, typename Descriptor, typename Func>
     static u32 Add(Descriptors& descriptors, const Descriptor& desc, Func&& pred) {
-        // TODO: Handle arrays
         const auto it{std::ranges::find_if(descriptors, pred)};
         if (it != descriptors.end()) {
             return static_cast<u32>(std::distance(descriptors.begin(), it));
@@ -78,17 +95,16 @@ private:
         return static_cast<u32>(descriptors.size()) - 1;
     }
 
-    TextureDescriptors& texture_descriptors;
-};*/
+    BufferResourceList& buffer_resources;
+};
 
 } // Anonymous namespace
 
-SharpLocation TrackSharp(const IR::Value& handle) {
-    IR::Inst* inst = handle.InstRecursive();
-    if (inst->GetOpcode() == IR::Opcode::GetScalarRegister) {
+SharpLocation TrackSharp(const IR::Inst* inst) {
+    if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return SharpLocation{
-            .eud_ptr = IR::ScalarReg::Max,
-            .index_dwords = inst->Arg(0).U32(),
+            .sgpr_base = u32(IR::ScalarReg::Max),
+            .dword_offset = u32(inst->Arg(0).ScalarReg()),
         };
     }
     ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst, "Sharp load not from constant memory");
@@ -108,21 +124,55 @@ SharpLocation TrackSharp(const IR::Value& handle) {
 
     // Return retrieved location.
     return SharpLocation{
-        .eud_ptr = base,
-        .index_dwords = dword_offset,
+        .sgpr_base = u32(base),
+        .dword_offset = dword_offset,
     };
 }
 
+void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+                            Descriptors& descriptors) {
+    IR::Inst* producer = inst.Arg(0).InstRecursive();
+    const auto sharp = TrackSharp(producer);
+    const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+    const u32 binding = descriptors.Add(BufferResource{
+        .sgpr_base = sharp.sgpr_base,
+        .dword_offset = sharp.dword_offset,
+        .stride = u32(buffer.stride),
+        .num_records = u32(buffer.num_records),
+        .used_types = BufferLoadType(inst),
+        .is_storage = buffer.base_address % 64 != 0,
+    });
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    // Replace handle with binding index in buffer resource list.
+    inst.SetArg(0, ir.Imm32(binding));
+    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+    if (inst_info.is_typed) {
+        ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
+               inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32);
+    }
+    // Calculate buffer address.
+    const u32 dword_stride = buffer.stride / sizeof(u32);
+    const u32 dword_offset = inst_info.inst_offset.Value() / sizeof(u32);
+    IR::U32 address = ir.Imm32(dword_offset);
+    if (inst_info.index_enable && inst_info.offset_enable) {
+        UNREACHABLE();
+    } else if (inst_info.index_enable) {
+        const IR::U32 index{inst.Arg(1)};
+        address = ir.IAdd(ir.IMul(index, ir.Imm32(dword_stride)), address);
+    }
+    inst.SetArg(1, address);
+}
+
 void ResourceTrackingPass(IR::Program& program) {
+    auto& info = program.info;
+    Descriptors descriptors{info.buffers};
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            if (!IsResourceInstruction(inst)) {
+            if (IsBufferInstruction(inst)) {
+                PatchBufferInstruction(*block, inst, info, descriptors);
                 continue;
             }
-            IR::Inst* producer = inst.Arg(0).InstRecursive();
-            const auto loc = TrackSharp(producer->Arg(0));
-            fmt::print("Found resource s[{}:{}] is_eud = {}\n", loc.index_dwords,
-                       loc.index_dwords + 4, loc.eud_ptr != IR::ScalarReg::Max);
         }
     }
 }

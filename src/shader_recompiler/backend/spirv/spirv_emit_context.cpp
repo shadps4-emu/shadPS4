@@ -36,7 +36,8 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 } // Anonymous namespace
 
 EmitContext::EmitContext(const Profile& profile_, IR::Program& program, Bindings& bindings)
-    : Sirit::Module(profile_.supported_spirv), profile{profile_}, stage{program.info.stage} {
+    : Sirit::Module(profile_.supported_spirv), info{program.info}, profile{profile_},
+      stage{program.info.stage} {
     u32& uniform_binding{bindings.unified};
     u32& storage_binding{bindings.unified};
     u32& texture_binding{bindings.unified};
@@ -44,6 +45,7 @@ EmitContext::EmitContext(const Profile& profile_, IR::Program& program, Bindings
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces(program);
+    DefineBuffers(program.info);
 }
 
 EmitContext::~EmitContext() = default;
@@ -107,8 +109,8 @@ void EmitContext::DefineArithmeticTypes() {
 }
 
 void EmitContext::DefineInterfaces(const IR::Program& program) {
-    DefineInputs(program);
-    DefineOutputs(program);
+    DefineInputs(program.info);
+    DefineOutputs(program.info);
 }
 
 Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
@@ -164,8 +166,7 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
     }
 }
 
-void EmitContext::DefineInputs(const IR::Program& program) {
-    const auto& info = program.info;
+void EmitContext::DefineInputs(const Info& info) {
     switch (stage) {
     case Stage::Vertex:
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
@@ -201,8 +202,7 @@ void EmitContext::DefineInputs(const IR::Program& program) {
     }
 }
 
-void EmitContext::DefineOutputs(const IR::Program& program) {
-    const auto& info = program.info;
+void EmitContext::DefineOutputs(const Info& info) {
     switch (stage) {
     case Stage::Vertex:
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
@@ -231,6 +231,47 @@ void EmitContext::DefineOutputs(const IR::Program& program) {
         break;
     default:
         break;
+    }
+}
+
+void EmitContext::DefineBuffers(const Info& info) {
+    const auto define_buffer = [&](const BufferResource& buffer, Id type, u32 element_size,
+                                   char type_char, u32 index) {
+        ASSERT(buffer.stride % element_size == 0);
+        const u32 num_elements = buffer.stride * buffer.num_records / element_size;
+        const Id record_array_type{TypeArray(F32[1], ConstU32(num_elements))};
+        Decorate(record_array_type, spv::Decoration::ArrayStride, element_size);
+
+        const Id struct_type{TypeStruct(record_array_type)};
+        const auto name =
+            fmt::format("{}_cbuf_block_{}{}", stage, type_char, element_size * CHAR_BIT);
+        Name(struct_type, name);
+        Decorate(struct_type, spv::Decoration::Block);
+        MemberName(struct_type, 0, "data");
+        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+
+        const auto storage_class =
+            buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+        if (buffer.is_storage) {
+            storage_f32 = TypePointer(storage_class, type);
+        } else {
+            uniform_f32 = TypePointer(storage_class, type);
+        }
+        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, fmt::format("c{}", index));
+
+        binding++;
+        buffers.push_back(id);
+        interfaces.push_back(id);
+    };
+
+    for (u32 i = 0; const auto& buffer : info.buffers) {
+        ASSERT(True(buffer.used_types & IR::Type::F32));
+        define_buffer(buffer, F32[1], 4, 'f', i);
+        i++;
     }
 }
 
