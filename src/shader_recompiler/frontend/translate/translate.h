@@ -47,6 +47,12 @@ public:
     void V_MUL_F32(const GcnInst& inst);
     void V_CMP_EQ_U32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
+    void V_AND_B32(const GcnInst& inst);
+    void V_LSHLREV_B32(const GcnInst& inst);
+    void V_ADD_I32(const GcnInst& inst);
+    void V_CVT_F32_I32(const GcnInst& inst);
+    void V_CVT_F32_U32(const GcnInst& inst);
+    void V_MAD_F32(const GcnInst& inst);
 
     // Vector Memory
     void TBUFFER_LOAD_FORMAT_XYZW(const GcnInst& inst);

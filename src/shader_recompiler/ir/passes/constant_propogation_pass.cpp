@@ -88,15 +88,15 @@ void FoldBitCast(IR::Inst& inst, IR::Opcode reverse) {
         inst.ReplaceUsesWith(arg_inst->Arg(0));
         return;
     }
-    if constexpr (op == IR::Opcode::BitCastF32U32) {
-        if (arg_inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            // Replace the bitcast with a typed constant buffer read
-            inst.ReplaceOpcode(IR::Opcode::ReadConstBufferF32);
-            inst.SetArg(0, arg_inst->Arg(0));
-            inst.SetArg(1, arg_inst->Arg(1));
-            return;
-        }
-    }
+    // if constexpr (op == IR::Opcode::BitCastF32U32) {
+    //     if (arg_inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+    //         // Replace the bitcast with a typed constant buffer read
+    //         inst.ReplaceOpcode(IR::Opcode::ReadConstBufferF32);
+    //         inst.SetArg(0, arg_inst->Arg(0));
+    //         inst.SetArg(1, arg_inst->Arg(1));
+    //         return;
+    //     }
+    // }
 }
 
 std::optional<IR::Value> FoldCompositeExtractImpl(IR::Value inst_value, IR::Opcode insert,

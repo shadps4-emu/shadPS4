@@ -10,7 +10,7 @@
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
-#include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/resource.h"
 
 namespace Shader {
 
@@ -52,6 +52,22 @@ struct BufferResource {
     auto operator<=>(const BufferResource&) const = default;
 };
 using BufferResourceList = boost::container::static_vector<BufferResource, 8>;
+
+struct ImageResource {
+    u32 sgpr_base;
+    u32 dword_offset;
+    AmdGpu::ImageType type;
+    AmdGpu::NumberFormat nfmt;
+    bool is_storage;
+    bool is_depth;
+};
+using ImageResourceList = boost::container::static_vector<ImageResource, 8>;
+
+struct SamplerResource {
+    u32 sgpr_base;
+    u32 dword_offset;
+};
+using SamplerResourceList = boost::container::static_vector<SamplerResource, 8>;
 
 struct Info {
     struct VsInput {
@@ -101,6 +117,9 @@ struct Info {
     AttributeFlags stores{};
 
     BufferResourceList buffers;
+    ImageResourceList images;
+    SamplerResourceList samplers;
+
     std::span<const u32> user_data;
     Stage stage;
 

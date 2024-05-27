@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
 
@@ -14,6 +15,9 @@ class Scheduler;
 namespace VideoCore {
 
 struct ImageViewInfo {
+    explicit ImageViewInfo() = default;
+    explicit ImageViewInfo(const AmdGpu::Image& image) noexcept;
+
     vk::ImageViewType type = vk::ImageViewType::e2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;

@@ -63,27 +63,34 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     // Since these are at most 4 dwords, we load them into a single uvec4 and place them
     // in coords field of the instruction. Then the resource tracking pass will patch the
-    // IR instruction to fill in lod_clamp field. The vector can also be used
-    // as coords directly as SPIR-V will ignore any extra parameters.
-    const IR::Value body =
-        ir.CompositeConstruct(ir.GetVectorReg(addr_reg++), ir.GetVectorReg(addr_reg++),
-                              ir.GetVectorReg(addr_reg++), ir.GetVectorReg(addr_reg++));
+    // IR instruction to fill in lod_clamp field.
+    const IR::Value body = ir.CompositeConstruct(
+        ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
+        ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
+
+    const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
+
+    IR::TextureInstInfo info{};
+    info.is_depth.Assign(flags.test(MimgModifier::Pcf));
+    info.has_bias.Assign(flags.test(MimgModifier::LodBias));
+    info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
+    info.force_level0.Assign(flags.test(MimgModifier::Level0));
+    info.explicit_lod.Assign(explicit_lod);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
         const IR::F32 lod = flags.test(MimgModifier::Level0) ? ir.Imm32(0.f) : IR::F32{};
-        const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
         if (!flags.test(MimgModifier::Pcf)) {
             if (explicit_lod) {
-                return ir.ImageSampleExplicitLod(handle, body, lod, offset, {});
+                return ir.ImageSampleExplicitLod(handle, body, lod, offset, info);
             } else {
-                return ir.ImageSampleImplicitLod(handle, body, bias, offset, {}, {});
+                return ir.ImageSampleImplicitLod(handle, body, bias, offset, {}, info);
             }
         }
         if (explicit_lod) {
-            return ir.ImageSampleDrefExplicitLod(handle, body, dref, lod, offset, {});
+            return ir.ImageSampleDrefExplicitLod(handle, body, dref, lod, offset, info);
         }
-        return ir.ImageSampleDrefImplicitLod(handle, body, dref, bias, offset, {}, {});
+        return ir.ImageSampleDrefImplicitLod(handle, body, dref, bias, offset, {}, info);
     }();
 
     for (u32 i = 0; i < 4; i++) {

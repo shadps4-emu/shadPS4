@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include "common/assert.h"
 #include "video_core/texture_cache/tile_manager.h"
 
 namespace VideoCore {

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fstream>
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
@@ -38,11 +37,6 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Gcn::GcnCodeSlice slice(token.data(), token.data() + token.size());
     Gcn::GcnDecodeContext decoder;
 
-    static int counter = 0;
-    std::ofstream file(fmt::format("shader{}.bin", counter++), std::ios::out | std::ios::binary);
-    file.write((const char*)token.data(), token.size_bytes());
-    file.close();
-
     // Decode and save instructions
     IR::Program program;
     program.ins_list.reserve(token.size());
@@ -71,7 +65,6 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     for (const auto& block : program.blocks) {
         fmt::print("{}\n", IR::DumpBlock(*block));
     }
-    std::fflush(stdout);
 
     return program;
 }

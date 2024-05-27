@@ -22,5 +22,6 @@ bool debugDump();
 bool isLleLibc();
 bool showSplash();
 bool nullGpu();
+bool dumpShaders();
 
 }; // namespace Config

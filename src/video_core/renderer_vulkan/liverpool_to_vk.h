@@ -5,6 +5,7 @@
 
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Vulkan::LiverpoolToVK {
@@ -20,6 +21,22 @@ vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type);
 vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode);
 
 vk::CullModeFlags CullMode(Liverpool::CullMode mode);
+
+vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor);
+
+vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func);
+
+vk::SamplerAddressMode ClampMode(AmdGpu::ClampMode mode);
+
+vk::CompareOp DepthCompare(AmdGpu::DepthCompare comp);
+
+vk::Filter Filter(AmdGpu::Filter filter);
+
+vk::SamplerReductionMode FilterMode(AmdGpu::FilterMode mode);
+
+vk::SamplerMipmapMode MipFilter(AmdGpu::MipFilter filter);
+
+vk::BorderColor BorderColor(AmdGpu::BorderColor color);
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format);
 

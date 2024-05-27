@@ -12,16 +12,17 @@
 
 namespace Vulkan {
 
-static constexpr vk::BufferUsageFlags VertexIndexFlags = vk::BufferUsageFlagBits::eVertexBuffer |
-                                                         vk::BufferUsageFlagBits::eIndexBuffer |
-                                                         vk::BufferUsageFlagBits::eTransferDst;
+static constexpr vk::BufferUsageFlags VertexIndexFlags =
+    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer |
+    vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer |
+    vk::BufferUsageFlagBits::eStorageBuffer;
 
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        VideoCore::TextureCache& texture_cache_, AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 64_MB} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 32_MB} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -35,9 +36,10 @@ void Rasterizer::Draw(bool is_indexed) {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
     const u32 num_indices = SetupIndexBuffer(is_indexed);
-    const auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
     const GraphicsPipeline* pipeline = pipeline_cache.GetPipeline();
-    pipeline->BindResources(memory);
+    pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+
+    const auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
 
     const vk::RenderingAttachmentInfo color_info = {
         .imageView = *image_view.image_view,
@@ -61,7 +63,8 @@ void Rasterizer::Draw(bool is_indexed) {
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
-        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), 0, 0);
+        const u32 num_vertices = pipeline->IsEmbeddedVs() ? 4 : regs.num_indices;
+        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
     }
     cmdbuf.endRendering();
 }
@@ -88,18 +91,30 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
         return regs.num_indices;
     }
 
-    const VAddr index_address = regs.index_base_address.Address();
-    const auto [buffer, offset] = memory->GetVulkanBuffer(index_address);
-    const vk::IndexType index_type =
-        regs.index_buffer_type.index_type == Liverpool::IndexType::Index16 ? vk::IndexType::eUint16
-                                                                           : vk::IndexType::eUint32;
+    // Figure out index type and size.
+    const bool is_index16 = regs.index_buffer_type.index_type == Liverpool::IndexType::Index16;
+    const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+    const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
+
+    // Upload index data to stream buffer.
+    const auto index_address = regs.index_base_address.Address<const void*>();
+    const u32 index_buffer_size = regs.num_indices * index_size;
+    const auto [data, offset, _] = vertex_index_buffer.Map(index_buffer_size);
+    std::memcpy(data, index_address, index_buffer_size);
+    vertex_index_buffer.Commit(index_buffer_size);
+
+    // Bind index buffer.
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindIndexBuffer(buffer, offset, index_type);
+    cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset, index_type);
     return regs.num_indices;
 }
 
 void Rasterizer::UpdateDynamicState() {
     UpdateViewportScissorState();
+
+    auto& regs = liverpool->regs;
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.setBlendConstants(&regs.blend_constants.red);
 }
 
 void Rasterizer::UpdateViewportScissorState() {

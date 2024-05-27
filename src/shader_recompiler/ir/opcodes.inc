@@ -15,8 +15,7 @@ OPCODE(Epilogue,                                            Void,               
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U64,            U32,                                                            )
-OPCODE(ReadConstBuffer,                                     U32,            Opaque,         U32,            U32                                             )
-OPCODE(ReadConstBufferF32,                                  F32,            Opaque,         U32,            U32                                             )
+OPCODE(ReadConstBuffer,                                     F32,            Opaque,         U32,                                                            )
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )

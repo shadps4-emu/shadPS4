@@ -11,6 +11,10 @@ namespace Core {
 class MemoryManager;
 }
 
+namespace VideoCore {
+class TextureCache;
+}
+
 namespace Vulkan {
 
 static constexpr u32 MaxVertexBufferCount = 32;
@@ -18,6 +22,7 @@ static constexpr u32 MaxShaderStages = 5;
 
 class Instance;
 class Scheduler;
+class StreamBuffer;
 
 using Liverpool = AmdGpu::Liverpool;
 
@@ -33,6 +38,7 @@ struct PipelineKey {
     Liverpool::PrimitiveType prim_type;
     Liverpool::PolygonMode polygon_mode;
     Liverpool::CullMode cull_mode;
+    std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
 
     bool operator==(const PipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(PipelineKey)) == 0;
@@ -48,14 +54,20 @@ public:
                               std::array<vk::ShaderModule, MaxShaderStages> modules);
     ~GraphicsPipeline();
 
-    void BindResources(Core::MemoryManager* memory) const;
+    void BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+                       VideoCore::TextureCache& texture_cache) const;
 
     [[nodiscard]] vk::Pipeline Handle() const noexcept {
         return *pipeline;
     }
 
+    [[nodiscard]] bool IsEmbeddedVs() const noexcept {
+        static constexpr size_t EmbeddedVsHash = 0x59c556606a027efd;
+        return key.stage_hashes[0] == EmbeddedVsHash;
+    }
+
 private:
-    vk::UniqueDescriptorSetLayout BuildSetLayout() const;
+    void BuildDescSetLayout();
 
 private:
     const Instance& instance;

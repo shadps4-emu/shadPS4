@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include "shader_recompiler/frontend/translate/translate.h"
 
 namespace Shader::Gcn {
@@ -59,6 +59,47 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     const IR::U32F32 src1 = GetSrc(inst.src[1], has_flt_source);
     const IR::Value result = ir.Select(flag, src1, src0);
     ir.SetVectorReg(dst_reg, IR::U32F32{result});
+}
+
+void Translator::V_AND_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.BitwiseAnd(src0, src1));
+}
+
+void Translator::V_LSHLREV_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.ShiftLeftLogical(src1, src0));
+}
+
+void Translator::V_ADD_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.IAdd(src0, src1));
+    // TODO: Carry
+}
+
+void Translator::V_CVT_F32_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.ConvertSToF(32, 32, src0));
+}
+
+void Translator::V_CVT_F32_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.ConvertUToF(32, 32, src0));
+}
+
+void Translator::V_MAD_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src1{GetSrc(inst.src[1])};
+    const IR::F32 src2{GetSrc(inst.src[2])};
+    SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
 } // namespace Shader::Gcn

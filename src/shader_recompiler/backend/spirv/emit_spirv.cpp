@@ -218,8 +218,8 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
 }
 } // Anonymous namespace
 
-std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, Bindings& bindings) {
-    EmitContext ctx{profile, program, bindings};
+std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, u32& binding) {
+    EmitContext ctx{profile, program, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
     if (program.info.stage == Stage::Vertex) {

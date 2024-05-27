@@ -881,11 +881,13 @@ int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier) {
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
+                                           u32 shader_modifier) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
     // A fullscreen triangle with one uv set
-    const static u32 shader_code[] = {
+    // clang-format off
+    constexpr static std::array shader_code alignas(256) = {
         0xbeeb03ffu, 00000007u,   // s_mov_b32     vcc_hi, $0x00000007
         0x36020081u,              // v_and_b32     v1, 1, v0
         0x34020281u,              // v_lshlrev_b32 v1, 1, v1
@@ -893,6 +895,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
         0x4a0202c1u,              // v_add_i32     v1, vcc, -1, v1
         0x4a0000c1u,              // v_add_i32     v0, vcc, -1, v0
         0x7e020b01u,              // v_cvt_f32_i32 v1, v1
+        0x7E000B00U,
         0x7e040280u,              // v_cvt_f32_i32 v0, v0
         0x7e0602f2u,              // v_mov_b32     v3, 1.0
         0xf80008cfu, 0x03020001u, // exp           pos0, v1, v0, v2, v3 done
@@ -901,9 +904,11 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
         // OrbShdr header
         0x5362724fu, 0x07726468u, 0x00004047u, 0u, 0x47f8c29fu, 0x9b2da5cfu, 0xff7c5b7du,
-        0x00000017u, 0x0fe000f1u, 0u, 0x000c0000u, 4u, 0u, 4u, 0u, 7u};
+        0x00000017u, 0x0fe000f1u, 0u, 0x000c0000u, 4u, 0u, 4u, 0u, 7u,
+    };
+    // clang-format on
 
-    const auto shader_addr = uintptr_t(&shader_code); // Original address is 0xfe000f10
+    const auto shader_addr = uintptr_t(shader_code.data()); // Original address is 0xfe000f10
     const static u32 vs_regs[] = {
         u32(shader_addr >> 8), u32(shader_addr >> 40), 0xc0000u, 4, 0, 4, 0, 7};
 

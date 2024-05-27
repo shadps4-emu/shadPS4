@@ -63,6 +63,16 @@ struct Liverpool {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
             return reinterpret_cast<const T*>(addr);
         }
+
+        std::span<const u32> Code() const {
+            u32 code_size = 0;
+            const u32* code = Address<u32>();
+            static constexpr std::string_view PostHeader = "OrbShdr";
+            while (std::memcmp(code + code_size, PostHeader.data(), PostHeader.size()) != 0) {
+                code_size++;
+            }
+            return std::span{code, code_size};
+        }
     };
 
     union PsInputControl {
@@ -228,7 +238,7 @@ struct Liverpool {
         enum class ZFormat : u32 {
             Invald = 0,
             Z16 = 1,
-            Z32Float = 2,
+            Z32Float = 3,
         };
 
         enum class StencilFormat : u32 {
@@ -353,8 +363,9 @@ struct Liverpool {
         BitField<0, 8, u32> base_addr_hi;
         u32 base_addr_lo;
 
-        VAddr Address() const {
-            return base_addr_lo | u64(base_addr_hi) << 32;
+        template <typename T = VAddr>
+        T Address() const {
+            return reinterpret_cast<T>(base_addr_lo | u64(base_addr_hi) << 32);
         }
     };
 
@@ -446,6 +457,53 @@ struct Liverpool {
         u32 data_y;
         u32 data_z;
         u32 data_w;
+    };
+
+    struct BlendConstants {
+        float red;
+        float green;
+        float blue;
+        float alpha;
+    };
+
+    union BlendControl {
+        enum class BlendFactor : u32 {
+            Zero = 0,
+            One = 1,
+            SrcColor = 2,
+            OneMinusSrcColor = 3,
+            SrcAlpha = 4,
+            OneMinusSrcAlpha = 5,
+            DstAlpha = 6,
+            OneMinusDstAlpha = 7,
+            DstColor = 8,
+            OneMinusDstColor = 9,
+            SrcAlphaSaturate = 10,
+            ConstantColor = 13,
+            OneMinusConstantColor = 14,
+            Src1Color = 15,
+            InvSrc1Color = 16,
+            Src1Alpha = 17,
+            InvSrc1Alpha = 18,
+            ConstantAlpha = 19,
+            OneMinusConstantAlpha = 20,
+        };
+
+        enum class BlendFunc : u32 {
+            Add = 0,
+            Subtract = 1,
+            Min = 2,
+            Max = 3,
+        };
+
+        BitField<0, 5, BlendFactor> color_src_factor;
+        BitField<5, 3, BlendFunc> color_func;
+        BitField<8, 5, BlendFactor> color_dst_factor;
+        BitField<16, 5, BlendFactor> alpha_src_factor;
+        BitField<21, 3, BlendFunc> alpha_func;
+        BitField<24, 5, BlendFactor> alpha_dst_factor;
+        BitField<29, 1, u32> separate_alpha_blend;
+        BitField<30, 1, u32> enable;
     };
 
     struct ColorBuffer {
@@ -577,7 +635,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA094 - 0xA08E - 2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
-            INSERT_PADDING_WORDS(0xA10B - 0xA0D4);
+            INSERT_PADDING_WORDS(0xA105 - 0xA0D4);
+            BlendConstants blend_constants;
+            INSERT_PADDING_WORDS(0xA10B - 0xA105 - 4);
             StencilControl stencil_control;
             StencilRefMask stencil_ref_front;
             StencilRefMask stencil_ref_back;
@@ -593,7 +653,9 @@ struct Liverpool {
             ShaderPosFormat shader_pos_format;
             ShaderExportFormat z_export_format;
             ColorExportFormat color_export_format;
-            INSERT_PADDING_WORDS(0xA1F9 - 0xA1C3 - 3);
+            INSERT_PADDING_WORDS(0xA1E0 - 0xA1C3 - 3);
+            std::array<BlendControl, NumColorBuffers> blend_control;
+            INSERT_PADDING_WORDS(0xA1F9 - 0xA1E0 - 8);
             IndexBufferBase index_base_address;
             INSERT_PADDING_WORDS(1);
             u32 draw_initiator;
@@ -732,6 +794,7 @@ static_assert(GFX6_3D_REG_INDEX(num_interp) == 0xA1B6);
 static_assert(GFX6_3D_REG_INDEX(shader_pos_format) == 0xA1C3);
 static_assert(GFX6_3D_REG_INDEX(z_export_format) == 0xA1C4);
 static_assert(GFX6_3D_REG_INDEX(color_export_format) == 0xA1C5);
+static_assert(GFX6_3D_REG_INDEX(blend_control) == 0xA1E0);
 static_assert(GFX6_3D_REG_INDEX(index_base_address) == 0xA1F9);
 static_assert(GFX6_3D_REG_INDEX(draw_initiator) == 0xA1FC);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);

@@ -44,6 +44,22 @@ using Libraries::VideoOut::TilingMode;
     return usage;
 }
 
+[[nodiscard]] vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
+    switch (type) {
+    case AmdGpu::ImageType::Color1D:
+        return vk::ImageType::e1D;
+    case AmdGpu::ImageType::Color2D:
+    case AmdGpu::ImageType::Color1DArray:
+    case AmdGpu::ImageType::Cube:
+        return vk::ImageType::e2D;
+    case AmdGpu::ImageType::Color3D:
+    case AmdGpu::ImageType::Color2DArray:
+        return vk::ImageType::e3D;
+    default:
+        UNREACHABLE();
+    }
+}
+
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept {
     const auto& attrib = group.attrib;
     is_tiled = attrib.tiling_mode == TilingMode::Tile;
@@ -72,8 +88,21 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept {
     type = vk::ImageType::e2D;
     size.width = buffer.Pitch();
     size.height = buffer.Height();
+    size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.slice.tile_max * (buffer.view.slice_max + 1);
+}
+
+ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
+    is_tiled = false;
+    pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    type = ConvertImageType(image.type);
+    size.width = image.width + 1;
+    size.height = image.height + 1;
+    size.depth = 1;
+    // TODO: Derive this properly from tiling params
+    pitch = size.width;
+    guest_size_bytes = size.width * size.height * 4;
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
@@ -109,7 +138,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{cpu_addr},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
-    vk::ImageCreateFlags flags{};
+    vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat};
     if (info.type == vk::ImageType::e2D && info.resources.layers >= 6 &&
         info.size.width == info.size.height) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;

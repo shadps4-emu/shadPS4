@@ -35,17 +35,14 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 
 } // Anonymous namespace
 
-EmitContext::EmitContext(const Profile& profile_, IR::Program& program, Bindings& bindings)
+EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& binding_)
     : Sirit::Module(profile_.supported_spirv), info{program.info}, profile{profile_},
-      stage{program.info.stage} {
-    u32& uniform_binding{bindings.unified};
-    u32& storage_binding{bindings.unified};
-    u32& texture_binding{bindings.unified};
-    u32& image_binding{bindings.unified};
+      stage{program.info.stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces(program);
     DefineBuffers(program.info);
+    DefineImagesAndSamplers(program.info);
 }
 
 EmitContext::~EmitContext() = default;
@@ -235,16 +232,15 @@ void EmitContext::DefineOutputs(const Info& info) {
 }
 
 void EmitContext::DefineBuffers(const Info& info) {
-    const auto define_buffer = [&](const BufferResource& buffer, Id type, u32 element_size,
-                                   char type_char, u32 index) {
-        ASSERT(buffer.stride % element_size == 0);
-        const u32 num_elements = buffer.stride * buffer.num_records / element_size;
+    for (u32 i = 0; const auto& buffer : info.buffers) {
+        ASSERT(True(buffer.used_types & IR::Type::F32));
+        ASSERT(buffer.stride % sizeof(float) == 0);
+        const u32 num_elements = buffer.stride * buffer.num_records / sizeof(float);
         const Id record_array_type{TypeArray(F32[1], ConstU32(num_elements))};
-        Decorate(record_array_type, spv::Decoration::ArrayStride, element_size);
-
         const Id struct_type{TypeStruct(record_array_type)};
-        const auto name =
-            fmt::format("{}_cbuf_block_{}{}", stage, type_char, element_size * CHAR_BIT);
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
+
+        const auto name = fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
         Name(struct_type, name);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
@@ -254,24 +250,111 @@ void EmitContext::DefineBuffers(const Info& info) {
             buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
         const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
         if (buffer.is_storage) {
-            storage_f32 = TypePointer(storage_class, type);
+            storage_f32 = TypePointer(storage_class, F32[1]);
         } else {
-            uniform_f32 = TypePointer(storage_class, type);
+            uniform_f32 = TypePointer(storage_class, F32[1]);
         }
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("c{}", index));
+        Name(id, fmt::format("c{}", i));
 
         binding++;
         buffers.push_back(id);
         interfaces.push_back(id);
-    };
-
-    for (u32 i = 0; const auto& buffer : info.buffers) {
-        ASSERT(True(buffer.used_types & IR::Type::F32));
-        define_buffer(buffer, F32[1], 4, 'f', i);
         i++;
+    }
+}
+
+Id ImageType(EmitContext& ctx, const ImageResource& desc) {
+    const spv::ImageFormat format{spv::ImageFormat::Unknown};
+    const Id type{ctx.F32[1]};
+    const bool depth{desc.is_depth};
+    switch (desc.type) {
+    case AmdGpu::ImageType::Color1D:
+        return ctx.TypeImage(type, spv::Dim::Dim1D, depth, false, false, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Color1DArray:
+        return ctx.TypeImage(type, spv::Dim::Dim1D, depth, true, false, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Color2D:
+    case AmdGpu::ImageType::Color2DMsaa:
+        return ctx.TypeImage(type, spv::Dim::Dim2D, depth, false,
+                             desc.type == AmdGpu::ImageType::Color2DMsaa, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Color2DMsaaArray:
+        return ctx.TypeImage(type, spv::Dim::Dim2D, depth, true,
+                             desc.type == AmdGpu::ImageType::Color2DMsaaArray, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Color3D:
+        return ctx.TypeImage(type, spv::Dim::Dim3D, depth, false, false, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Cube:
+        return ctx.TypeImage(type, spv::Dim::Cube, depth, false, false, 1, format,
+                             spv::AccessQualifier::ReadOnly);
+    case AmdGpu::ImageType::Buffer:
+        break;
+    }
+    throw InvalidArgument("Invalid texture type {}", desc.type);
+}
+
+Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
+    const auto format = spv::ImageFormat::Unknown; // Read this from tsharp?
+    switch (desc.type) {
+    case AmdGpu::ImageType::Color1D:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, 1, format);
+    case AmdGpu::ImageType::Color1DArray:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, true, false, 1, format);
+    case AmdGpu::ImageType::Color2D:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, false, 1, format);
+    case AmdGpu::ImageType::Color2DArray:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, 1, format);
+    case AmdGpu::ImageType::Color3D:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, 2, format);
+    case AmdGpu::ImageType::Buffer:
+        throw NotImplementedException("Image buffer");
+    default:
+        break;
+    }
+    throw InvalidArgument("Invalid texture type {}", desc.type);
+}
+
+void EmitContext::DefineImagesAndSamplers(const Info& info) {
+    for (const auto& image_desc : info.images) {
+        const Id sampled_type{image_desc.nfmt == AmdGpu::NumberFormat::Uint ? U32[1] : F32[1]};
+        const Id image_type{ImageType(*this, image_desc, sampled_type)};
+        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
+        const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
+        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
+                             image_desc.dword_offset));
+        images.push_back({
+            .id = id,
+            .sampled_type = TypeSampledImage(image_type),
+            .pointer_type = pointer_type,
+            .image_type = image_type,
+        });
+        interfaces.push_back(id);
+        ++binding;
+    }
+
+    if (info.samplers.empty()) {
+        return;
+    }
+
+    sampler_type = TypeSampler();
+    sampler_pointer_type = TypePointer(spv::StorageClass::UniformConstant, sampler_type);
+    for (const auto& samp_desc : info.samplers) {
+        const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
+        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "samp", samp_desc.sgpr_base,
+                             samp_desc.dword_offset));
+        samplers.push_back(id);
+        interfaces.push_back(id);
+        ++binding;
     }
 }
 
