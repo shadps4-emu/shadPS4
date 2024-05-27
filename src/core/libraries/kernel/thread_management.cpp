@@ -177,6 +177,22 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI posix_pthread_attr_setdetachstate(ScePthreadAttr* attr, int detachstate) {
+    int result = scePthreadAttrSetdetachstate(attr, detachstate);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_destroy(ScePthreadAttr* attr) {
+    int result = scePthreadAttrDestroy(attr);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
     if (attr == nullptr || *attr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -899,7 +915,13 @@ void PS4_SYSV_ABI scePthreadYield() {
 }
 
 int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
-    LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
+    LOG_INFO(Kernel_Pthread, "thread detach name = {}", thread->name);
+    thread->is_detached = true;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
+    LOG_INFO(Kernel_Pthread, "thread detach name = {}", thread->name);
     thread->is_detached = true;
     return ORBIS_OK;
 }
@@ -963,6 +985,31 @@ int PS4_SYSV_ABI posix_pthread_setspecific(pthread_key_t key, void* ptr) {
     default:
         return SCE_KERNEL_ERROR_EINVAL;
     }
+}
+
+int PS4_SYSV_ABI scePthreadSetschedparam(ScePthread thread, int policy,
+                                         const SceKernelSchedParam* param) {
+    int ppolicy;
+    if (policy != SCHED_OTHER)
+        ppolicy = SCHED_OTHER;
+    int result = pthread_setschedparam(thread->pth, ppolicy, param);
+    // 0 only on win?
+    LOG_INFO(Kernel_Pthread, "Todo? scePthreadSetschedparam: policy = {}, result = {}", policy,
+             result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_setschedparam(ScePthread thread, int policy,
+                                             const SceKernelSchedParam* param) {
+    int result = scePthreadSetschedparam(thread, policy, param);
+    LOG_INFO(Kernel_Pthread, "Todo? posix_pthread_setschedparam: policy = {}, result = {}", policy,
+             result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_sched_get_priority_max(int algo) {
+    LOG_INFO(Kernel_Pthread, "posix_sched_get_priority_max: algo = {}", algo);
+    return SCE_KERNEL_PRIO_FIFO_HIGHEST;
 }
 
 int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
@@ -1381,6 +1428,9 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetaffinity);
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
     LIB_FUNCTION("UTXzJbWhhTE", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstacksize);
+    LIB_FUNCTION("E+tyo3lp5Lw", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_setdetachstate);
+    LIB_FUNCTION("zHchY8ft5pk", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_attr_destroy);
 
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
@@ -1391,9 +1441,13 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);
     LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, scePthreadKeyCreate);
+    LIB_FUNCTION("oIRFTjoILbg", "libkernel", 1, "libkernel", 1, 1, scePthreadSetschedparam);
     LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
     LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_key_create);
     LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, posix_pthread_setspecific);
+    LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
+    LIB_FUNCTION("CBNtXOoef-E", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_max);
+    LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_detach);
 
     // mutex calls
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);

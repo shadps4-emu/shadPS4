@@ -29,6 +29,30 @@ struct OrbisSaveDataMount2 {
     s32 unk2;
 };
 
+constexpr int SCE_SAVE_DATA_TITLE_ID_DATA_SIZE = 10;
+typedef struct OrbisSaveDataTitleId {
+    char data[SCE_SAVE_DATA_TITLE_ID_DATA_SIZE];
+    char padding[6];
+
+} OrbisSaveDataTitleId;
+
+constexpr int SCE_SAVE_DATA_FINGERPRINT_DATA_SIZE = 65;
+typedef struct OrbisSaveDataFingerprint {
+    char data[SCE_SAVE_DATA_FINGERPRINT_DATA_SIZE];
+    char padding[15];
+} OrbisSaveDataFingerprint;
+
+typedef struct OrbisSaveDataMount {
+    s32 user_id;
+    s32 pad;
+    const OrbisSaveDataTitleId* titleId;
+    const OrbisSaveDataDirName* dir_name;
+    const OrbisSaveDataFingerprint* fingerprint;
+    u64 blocks;
+    u32 mount_mode;
+    u8 reserved[32];
+} OrbisSaveDataMount;
+
 struct OrbisSaveDataMountPoint {
     char data[ORBIS_SAVE_DATA_MOUNT_POINT_DATA_MAXSIZE];
 };
@@ -41,6 +65,14 @@ struct OrbisSaveDataMountResult {
     u8 reserved[28];
     s32 unk1;
 };
+
+typedef struct OrbisSaveDataMountInfo {
+    u64 blocks;     // total num of blocks
+    u64 freeBlocks; // free num of blocks
+    uint8_t reserved[32];
+} OrbisSaveDataMountInfo;
+
+typedef struct _OrbisSaveDataInitParams OrbisSaveDataInitParams;
 
 // savedataMount2 mountModes (ORed values)
 constexpr int ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY = 1;
@@ -95,7 +127,8 @@ int PS4_SYSV_ABI sceSaveDataGetEventInfo();
 int PS4_SYSV_ABI sceSaveDataGetEventResult();
 int PS4_SYSV_ABI sceSaveDataGetFormat();
 int PS4_SYSV_ABI sceSaveDataGetMountedSaveDataCount();
-int PS4_SYSV_ABI sceSaveDataGetMountInfo();
+int PS4_SYSV_ABI sceSaveDataGetMountInfo(OrbisSaveDataMountPoint* mountPoint,
+                                         OrbisSaveDataMountInfo* info);
 int PS4_SYSV_ABI sceSaveDataGetParam();
 int PS4_SYSV_ABI sceSaveDataGetProgress();
 int PS4_SYSV_ABI sceSaveDataGetSaveDataCount();
@@ -106,14 +139,15 @@ int PS4_SYSV_ABI sceSaveDataGetSaveDataRootPath();
 int PS4_SYSV_ABI sceSaveDataGetSaveDataRootUsbPath();
 int PS4_SYSV_ABI sceSaveDataGetSavePoint();
 int PS4_SYSV_ABI sceSaveDataGetUpdatedDataCount();
-int PS4_SYSV_ABI sceSaveDataInitialize();
-int PS4_SYSV_ABI sceSaveDataInitialize2();
-int PS4_SYSV_ABI sceSaveDataInitialize3();
+int PS4_SYSV_ABI sceSaveDataInitialize(const OrbisSaveDataInitParams* initParam);
+int PS4_SYSV_ABI sceSaveDataInitialize2(const OrbisSaveDataInitParams* initParam);
+int PS4_SYSV_ABI sceSaveDataInitialize3(const OrbisSaveDataInitParams* initParam);
 int PS4_SYSV_ABI sceSaveDataInitializeForCdlg();
 int PS4_SYSV_ABI sceSaveDataIsDeletingUsbDb();
 int PS4_SYSV_ABI sceSaveDataIsMounted();
 int PS4_SYSV_ABI sceSaveDataLoadIcon();
-int PS4_SYSV_ABI sceSaveDataMount();
+int PS4_SYSV_ABI sceSaveDataMount(const OrbisSaveDataMount* mount,
+                                  OrbisSaveDataMountResult* mount_result);
 s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
                                    OrbisSaveDataMountResult* mount_result);
 int PS4_SYSV_ABI sceSaveDataMount5();

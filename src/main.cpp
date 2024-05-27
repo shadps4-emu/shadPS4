@@ -63,6 +63,13 @@ int main(int argc, char* argv[]) {
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
                 std::string app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+
+                // Just testing for now.
+                // Working fine, one case only so far (CUSA00402 - Crimsonland)
+                const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
+                                        "1" / "savedata" / id;
+                mnt->Mount(mount_dir, "/savedata0");
+
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();

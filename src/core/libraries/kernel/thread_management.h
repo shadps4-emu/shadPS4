@@ -17,6 +17,13 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+/* sceKernelSchedGetPriorityMax/Min */
+constexpr int SCE_KERNEL_SCHED_FIFO = SCHED_FIFO;
+constexpr int SCE_KERNEL_SCHED_RR = SCHED_RR;
+constexpr int SCE_KERNEL_PRIO_FIFO_DEFAULT = 700;
+constexpr int SCE_KERNEL_PRIO_FIFO_HIGHEST = 256;
+constexpr int SCE_KERNEL_PRIO_FIFO_LOWEST = 767;
+
 struct PthreadInternal;
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;

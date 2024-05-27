@@ -82,6 +82,15 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
     if (buf == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
     }
+    if (d == 1) {
+        // temp, just to print the message. not a file?
+        // CUSA00402 - Crimsonland and probably other games.
+        char* msg = reinterpret_cast<char*>(buf);
+        size_t length = std::strlen(msg);
+        LOG_INFO(Kernel_Fs, "sceKernelWrite fd = 1, str = {}, length = {}", msg, length);
+        return length;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -159,7 +168,12 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
         return SCE_KERNEL_ERROR_EEXIST;
     }
 
-    if (!std::filesystem::create_directory(dir_name)) {
+    if (!std::filesystem::create_directories(dir_name)) {
+        // check me on saveDataMount.
+        // CUSA02456: calls sceSaveDataMount then mkdir
+        // CUSA00402: calls mkdir first before sceSaveDataMount
+        // maybe consider mounting save data at emu start? (added in main)
+
         return SCE_KERNEL_ERROR_EIO;
     }
 

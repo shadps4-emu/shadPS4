@@ -23,6 +23,7 @@
 #include <windows.h>
 #else
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 #include <core/file_format/psf.h>
 
@@ -217,6 +218,18 @@ int PS4_SYSV_ABI sceKernelGetCpumode() {
     return SCE_KERNEL_CPUMODE_7CPU_NORMAL;
 }
 
+int PS4_SYSV_ABI scePthreadGetthreadid() {
+#ifdef _WIN64
+    return GetCurrentProcessId();
+#else
+    return getpid();
+#endif
+}
+
+int PS4_SYSV_ABI posix_getpid() {
+    return scePthreadGetthreadid();
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -250,6 +263,8 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
+    LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, scePthreadGetthreadid);
+    LIB_FUNCTION("HoLVWNanBBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpid);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);
