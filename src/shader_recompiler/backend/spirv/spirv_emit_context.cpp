@@ -237,9 +237,9 @@ void EmitContext::DefineBuffers(const Info& info) {
         ASSERT(buffer.stride % sizeof(float) == 0);
         const u32 num_elements = buffer.stride * buffer.num_records / sizeof(float);
         const Id record_array_type{TypeArray(F32[1], ConstU32(num_elements))};
-        Decorate(record_array_type, spv::Decoration::ArrayStride, sizeof(float));
-
         const Id struct_type{TypeStruct(record_array_type)};
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
+
         const auto name = fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
         Name(struct_type, name);
         Decorate(struct_type, spv::Decoration::Block);

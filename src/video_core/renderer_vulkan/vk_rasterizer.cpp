@@ -22,7 +22,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 128_MB} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 32_MB} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -63,7 +63,8 @@ void Rasterizer::Draw(bool is_indexed) {
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
-        cmdbuf.draw(num_indices, regs.num_instances.NumInstances(), 0, 0);
+        const u32 num_vertices = pipeline->IsEmbeddedVs() ? 4 : regs.num_indices;
+        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
     }
     cmdbuf.endRendering();
 }
@@ -97,7 +98,7 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
 
     // Upload index data to stream buffer.
     const auto index_address = regs.index_base_address.Address<const void*>();
-    const u32 index_buffer_size = regs.num_indices * 4;
+    const u32 index_buffer_size = regs.num_indices * index_size;
     const auto [data, offset, _] = vertex_index_buffer.Map(index_buffer_size);
     std::memcpy(data, index_address, index_buffer_size);
     vertex_index_buffer.Commit(index_buffer_size);

@@ -65,7 +65,7 @@ struct Liverpool {
         }
 
         std::span<const u32> Code() const {
-            u32 code_size = 1;
+            u32 code_size = 0;
             const u32* code = Address<u32>();
             static constexpr std::string_view PostHeader = "OrbShdr";
             while (std::memcmp(code + code_size, PostHeader.data(), PostHeader.size()) != 0) {

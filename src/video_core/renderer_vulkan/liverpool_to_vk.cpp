@@ -80,7 +80,7 @@ vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type) {
         // Needs to generate index buffer on the fly.
         return vk::PrimitiveTopology::eTriangleList;
     case Liverpool::PrimitiveType::RectList:
-        return vk::PrimitiveTopology::eTriangleList;
+        return vk::PrimitiveTopology::eTriangleStrip;
     default:
         UNREACHABLE();
         return vk::PrimitiveTopology::eTriangleList;

@@ -61,6 +61,11 @@ public:
         return *pipeline;
     }
 
+    [[nodiscard]] bool IsEmbeddedVs() const noexcept {
+        static constexpr size_t EmbeddedVsHash = 0x59c556606a027efd;
+        return key.stage_hashes[0] == EmbeddedVsHash;
+    }
+
 private:
     void BuildDescSetLayout();
 

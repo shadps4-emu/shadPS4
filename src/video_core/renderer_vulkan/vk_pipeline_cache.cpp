@@ -145,6 +145,9 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
                                std::string_view ext) {
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+    if (!std::filesystem::exists(dump_dir)) {
+        std::filesystem::create_directories(dump_dir);
+    }
     const auto filename = fmt::format("{}_{:#X}.{}", stage, hash, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
