@@ -51,8 +51,19 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     return SCE_OK;
 }
 
-void PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {
+int PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return SCE_OK;
+}
+
+int PS4_SYSV_ABI posix_usleep(unsigned int microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return SCE_OK;
+}
+
+u32 PS4_SYSV_ABI sceKernelSleep(unsigned int seconds) {
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    return SCE_OK;
 }
 
 struct iovec {
@@ -198,6 +209,14 @@ s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
         strlen(std::fgets(static_cast<char*>(buf), static_cast<int>(nbytes), stdin)));
 }
 
+s64 PS4_SYSV_ABI posix_getpagesize() {
+    return 4096;
+}
+
+int PS4_SYSV_ABI sceKernelGetCpumode() {
+    return SCE_KERNEL_CPUMODE_7CPU_NORMAL;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -221,11 +240,16 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
+    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
+    LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
+    LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
+    LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

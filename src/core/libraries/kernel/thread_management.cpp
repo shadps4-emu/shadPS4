@@ -714,7 +714,7 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, SceKernelTimespec* tp) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-int PS4_SYSV_ABI clock_gettime(s32 clock_id, SceKernelTimespec* time) {
+int PS4_SYSV_ABI ps4_clock_gettime(s32 clock_id, SceKernelTimespec* time) {
     int result = sceKernelClockGettime(clock_id, time);
     if (result < 0) {
         UNREACHABLE(); // TODO return posix error code
@@ -723,23 +723,24 @@ int PS4_SYSV_ABI clock_gettime(s32 clock_id, SceKernelTimespec* time) {
 }
 
 int PS4_SYSV_ABI sceKernelNanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
-
     if (rqtp == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
     }
-
     if (rqtp->tv_sec < 0 || rqtp->tv_nsec < 0) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-
+    auto start = std::chrono::high_resolution_clock::now();
     u64 nanos = rqtp->tv_sec * 1000000000 + rqtp->tv_nsec;
     std::this_thread::sleep_for(std::chrono::nanoseconds(nanos));
     if (rmtp != nullptr) {
-        UNREACHABLE(); // not supported yet
+        auto const end = std::chrono::high_resolution_clock::now();
+        auto const diff = std::chrono::duration_cast<std::chrono::nanoseconds>(start - end).count();
+        rmtp->tv_sec = (diff / 1000000000l);
+        rmtp->tv_nsec = (diff % 1000000000l);
     }
     return SCE_OK;
 }
-int PS4_SYSV_ABI nanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
+int PS4_SYSV_ABI posix_nanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
     int result = sceKernelNanosleep(rqtp, rmtp);
     if (result < 0) {
         UNREACHABLE(); // TODO return posix error code
@@ -907,6 +908,63 @@ ScePthread PS4_SYSV_ABI pthread_self() {
     return g_pthread_self;
 }
 
+int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res) {
+    if (thread == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_join(thread->pth, res);
+    LOG_DEBUG(Kernel_Pthread, "scePthreadJoin: result = {}", result);
+    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+}
+
+int PS4_SYSV_ABI scePthreadRename(ScePthread thread, const char* name) {
+    LOG_DEBUG(Kernel_Pthread, "scePthreadRename: name = {}", name);
+    thread->name = std::string(name);
+    return SCE_OK;
+}
+
+int PS4_SYSV_ABI scePthreadKeyCreate(pthread_key_t* key, void (*dest)(void*)) {
+    int result = pthread_key_create(key, dest); // Does dest really need sysv_abi?
+    LOG_INFO(Kernel_Pthread, "scePthreadKeyCreate: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EINVAL:
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI posix_pthread_key_create(pthread_key_t* key, void (*dest)(void*)) {
+    int result = scePthreadKeyCreate(key, dest);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_setspecific(pthread_key_t key, void* ptr) {
+    int result = pthread_setspecific(key, ptr);
+    LOG_DEBUG(Kernel_Pthread, "posix_pthread_setspecific: result = {}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ENOMEM:
+        return SCE_KERNEL_ERROR_ENOMEM;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    case EINVAL:
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
 int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
     if (cond == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -1057,6 +1115,33 @@ int PS4_SYSV_ABI ps4_gettimeofday(SceKernelTimespec* tp /*, timezone */) {
     tp->tv_nsec = static_cast<long>(nanoseconds.count());
 
     return 0;
+}
+
+int PS4_SYSV_ABI ps4_clock_getres(u32 clock_id, SceKernelTimespec* res) {
+    if (res == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+    clockid_t pclock_id = CLOCK_REALTIME;
+    switch (clock_id) {
+    case 0:
+        pclock_id = CLOCK_REALTIME;
+        break;
+    case 13:
+    case 4:
+        pclock_id = CLOCK_MONOTONIC;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    timespec t{};
+    int result = clock_getres(pclock_id, &t);
+    res->tv_sec = t.tv_sec;
+    res->tv_nsec = t.tv_nsec;
+    if (result == 0) {
+        return SCE_OK;
+    }
+    return SCE_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
@@ -1285,26 +1370,30 @@ int PS4_SYSV_ABI posix_pthread_rwlock_unlock(ScePthreadRw* thread) {
 }
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+    // pthreadattr calls
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
     LIB_FUNCTION("eXbUSpEaTsA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetinheritsched);
     LIB_FUNCTION("DzES9hQF4f4", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedparam);
     LIB_FUNCTION("nsYoNRywwNg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrInit);
     LIB_FUNCTION("62KCwEMmzcM", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrDestroy);
-    LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
-    LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
-
-    LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
-    LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, pthread_self);
-    LIB_FUNCTION("EotR8a3ASf4", "libScePosix", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("3qxgM4ezETA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetaffinity);
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetaffinity);
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
     LIB_FUNCTION("UTXzJbWhhTE", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstacksize);
 
+    LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
+    LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
+    LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
+    LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, pthread_self);
+    LIB_FUNCTION("EotR8a3ASf4", "libScePosix", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);
+    LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, scePthreadKeyCreate);
+    LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
+    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_key_create);
+    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, posix_pthread_setspecific);
 
     // mutex calls
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
@@ -1333,7 +1422,6 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mqdNorrB+gI", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockWrlock);
     LIB_FUNCTION("+L98PIbGttk", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockUnlock);
     LIB_FUNCTION("BB+kb08Tl9A", "libkernel", 1, "libkernel", 1, 1, scePthreadRwlockDestroy);
-
     LIB_FUNCTION("iGjsr1WAtI0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_rdlock);
     LIB_FUNCTION("EgmLo6EWgso", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_unlock);
 
@@ -1360,20 +1448,24 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("5txKfcMUAok", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_mutexattr_setprotocol);
 
-    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
-    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
-    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
-    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
-    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, nanosleep); // CUSA18841
-
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
 
+    // time
+    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
+    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
+    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, ps4_clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, ps4_clock_gettime);
+    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, posix_nanosleep);
+    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1,
+                 posix_nanosleep); // CUSA18841
     LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, ps4_gettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, ps4_gettimeofday);
+    LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", 1, 1,
+                 ps4_gettimeofday); // sceKernelGettimeofday
+    LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, ps4_clock_getres);
 }
 
 } // namespace Libraries::Kernel

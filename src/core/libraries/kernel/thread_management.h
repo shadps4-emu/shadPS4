@@ -38,10 +38,7 @@ using ScePthreadRwAttr = PthreadRwLockAttrInernal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
-struct SceKernelTimespec {
-    int64_t tv_sec;
-    int64_t tv_nsec;
-};
+typedef struct timespec SceKernelTimespec;
 
 struct PthreadInternal {
     u8 reserved[4096];
@@ -166,6 +163,13 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   pthreadEntryFunc start_routine, void* arg, const char* name);
+int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res);
+int PS4_SYSV_ABI scePthreadRename(ScePthread thread, const char* name);
+int PS4_SYSV_ABI scePthreadKeyCreate(pthread_key_t* key, void (*dest)(void*));
+int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
+                                      pthreadEntryFunc start_routine, void* arg);
+int PS4_SYSV_ABI posix_pthread_key_create(pthread_key_t* key, void (*dest)(void*));
+int PS4_SYSV_ABI posix_pthread_setspecific(pthread_key_t key, void* ptr);
 
 /***
  * Mutex calls

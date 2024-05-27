@@ -12,6 +12,10 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+constexpr int SCE_KERNEL_CPUMODE_6CPU = 0;
+constexpr int SCE_KERNEL_CPUMODE_7CPU_LOW = 1;
+constexpr int SCE_KERNEL_CPUMODE_7CPU_NORMAL = 5;
+
 struct OrbisTimesec {
     time_t t;
     u64 west_sec;
