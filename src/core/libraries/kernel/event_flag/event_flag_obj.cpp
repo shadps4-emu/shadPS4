@@ -16,7 +16,7 @@ int EventFlagInternal::Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, 
         infinitely = false;
     }
 
-    if (m_single_thread && m_waiting_threads > 0) {
+    if (m_thread_mode == ThreadMode::Single && m_waiting_threads > 0) {
         return ORBIS_KERNEL_ERROR_EPERM;
     }
 

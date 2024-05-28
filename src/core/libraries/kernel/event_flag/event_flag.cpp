@@ -18,36 +18,44 @@ int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* 
     }
     if (pOptParam || !pName ||
         attr > (ORBIS_KERNEL_EVF_ATTR_MULTI | ORBIS_KERNEL_EVF_ATTR_TH_PRIO)) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (strlen(pName) >= 32) {
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    bool single = true;
-    bool fifo = true;
+    EventFlagInternal::ThreadMode thread_mode = EventFlagInternal::ThreadMode::Single;
+    EventFlagInternal::QueueMode queue_mode = EventFlagInternal::QueueMode::Fifo;
 
-    switch (attr) {
-    case 0x10:
-    case 0x11:
-        single = true;
-        fifo = true;
+    switch (attr & 0xfu) {
+    case 0x01:
+        queue_mode = EventFlagInternal::QueueMode::Fifo;
         break;
-    case 0x20:
-    case 0x21:
-        single = false;
-        fifo = true;
+    case 0x02:
+        queue_mode = EventFlagInternal::QueueMode::ThreadPrio;
         break;
-    case 0x22:
-        single = false;
-        fifo = false;
+    case 0x00:
         break;
     default:
         UNREACHABLE();
     }
 
-    *ef = new EventFlagInternal(std::string(pName), single, fifo, initPattern);
+    switch (attr & 0xf0) {
+    case 0x10:
+        thread_mode = EventFlagInternal::ThreadMode::Single;
+        break;
+    case 0x20:
+        thread_mode = EventFlagInternal::ThreadMode::Multi;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    ASSERT_MSG(queue_mode == EventFlagInternal::QueueMode::Fifo,
+               "ThreadPriority attr is not supported!");
+
+    *ef = new EventFlagInternal(std::string(pName), thread_mode, queue_mode, initPattern);
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelDeleteEventFlag(OrbisKernelEventFlag ef) {

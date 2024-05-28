@@ -14,8 +14,13 @@ public:
 
     enum class WaitMode { And, Or };
 
-    EventFlagInternal(const std::string& name, bool single, bool fifo, uint64_t bits)
-        : m_name(name), m_single_thread(single), m_fifo(fifo), m_bits(bits){};
+    enum class ThreadMode { Single, Multi };
+
+    enum class QueueMode { Fifo, ThreadPrio };
+
+    EventFlagInternal(const std::string& name, ThreadMode thread_mode, QueueMode queue_mode,
+                      uint64_t bits)
+        : m_name(name), m_thread_mode(thread_mode), m_queue_mode(queue_mode), m_bits(bits){};
 
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros);
     int Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result);
@@ -29,8 +34,8 @@ private:
     Status m_status = Status::Set;
     int m_waiting_threads = 0;
     std::string m_name;
-    bool m_single_thread = false;
-    bool m_fifo = false;
+    ThreadMode m_thread_mode = ThreadMode::Single;
+    QueueMode m_queue_mode = QueueMode::Fifo;
     u64 m_bits = 0;
 };
 } // namespace Libraries::Kernel
