@@ -8,6 +8,7 @@
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/cpu_management.h"
+#include "core/libraries/kernel/event_flag/event_flag.h"
 #include "core/libraries/kernel/event_queues.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/libkernel.h"
@@ -231,6 +232,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);
     Libraries::Kernel::pthreadSymbolsRegister(sym);
+    Libraries::Kernel::RegisterKernelEventFlag(sym);
 
     // temp
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
