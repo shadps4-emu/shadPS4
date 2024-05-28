@@ -18,6 +18,8 @@ public:
         : m_name(name), m_single_thread(single), m_fifo(fifo), m_bits(bits){};
 
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros);
+    int Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result);
+    void Set(u64 bits);
 
 private:
     enum class Status { Set, Canceled, Deleted };

@@ -72,13 +72,60 @@ int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPatter
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelSetEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
+    LOG_TRACE(Kernel_Event, "called");
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
+    ef->Set(bitPattern);
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
+
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
+
+    if (bitPattern == 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    EventFlagInternal::WaitMode wait = EventFlagInternal::WaitMode::And;
+    EventFlagInternal::ClearMode clear = EventFlagInternal::ClearMode::None;
+
+    switch (waitMode & 0xf) {
+    case 0x01:
+        wait = EventFlagInternal::WaitMode::And;
+        break;
+    case 0x02:
+        wait = EventFlagInternal::WaitMode::Or;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    switch (waitMode & 0xf0) {
+    case 0x00:
+        clear = EventFlagInternal::ClearMode::None;
+        break;
+    case 0x10:
+        clear = EventFlagInternal::ClearMode::All;
+        break;
+    case 0x20:
+        clear = EventFlagInternal::ClearMode::Bits;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    auto result = ef->Poll(bitPattern, wait, clear, pResultPat);
+
+    if (result != ORBIS_OK) {
+        LOG_ERROR(Kernel_Event, "returned {}", result);
+    }
+
+    return result;
 }
 int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat, OrbisKernelUseconds* pTimeout) {

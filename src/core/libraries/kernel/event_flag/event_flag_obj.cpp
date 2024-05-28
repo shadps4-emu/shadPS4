@@ -70,4 +70,24 @@ int EventFlagInternal::Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, 
 
     return ORBIS_OK;
 }
+
+int EventFlagInternal::Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result) {
+    u32 micros = 0;
+    return Wait(bits, wait_mode, clear_mode, result, &micros);
+}
+
+void EventFlagInternal::Set(u64 bits) {
+    std::unique_lock lock{m_mutex};
+
+    while (m_status != Status::Set) {
+        m_mutex.unlock();
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        m_mutex.lock();
+    }
+
+    m_bits |= bits;
+
+    m_cond_var.notify_all();
+}
+
 } // namespace Libraries::Kernel
