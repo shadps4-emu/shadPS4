@@ -16,7 +16,8 @@
 namespace Vulkan {
 
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
-                                   const PipelineKey& key_, vk::PipelineCache pipeline_cache,
+                                   const GraphicsPipelineKey& key_,
+                                   vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
                                    std::array<vk::ShaderModule, MaxShaderStages> modules)
     : instance{instance_}, scheduler{scheduler_}, key{key_} {
@@ -50,7 +51,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         });
         bindings.push_back({
             .binding = input.binding,
-            .stride = u32(buffer.stride),
+            .stride = buffer.GetStride(),
             .inputRate = vk::VertexInputRate::eVertex,
         });
     }
@@ -275,8 +276,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
         const auto& input = vs_info.vs_inputs[i];
         const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         if (i == 0) {
-            start_offset =
-                map_staging(buffer.base_address.Value(), buffer.stride * buffer.num_records);
+            start_offset = map_staging(buffer.base_address.Value(), buffer.GetSize());
             base_address = buffer.base_address;
         }
         buffers[i] = staging.Handle();
@@ -297,7 +297,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
-            const u32 size = vsharp.stride * vsharp.num_records;
+            const u32 size = vsharp.GetSize();
             const u32 offset = map_staging(vsharp.base_address.Value(), size);
             buffer_infos.emplace_back(staging.Handle(), offset, size);
             set_writes.push_back({

@@ -194,6 +194,12 @@ void EmitContext::DefineInputs(const Info& info) {
             input_params[input.semantic] = {id, input_f32, F32[1], num_components};
             interfaces.push_back(id);
         }
+        break;
+    case Stage::Compute:
+        workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        local_invocation_id =
+            DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        break;
     default:
         break;
     }
@@ -233,10 +239,11 @@ void EmitContext::DefineOutputs(const Info& info) {
 
 void EmitContext::DefineBuffers(const Info& info) {
     for (u32 i = 0; const auto& buffer : info.buffers) {
-        ASSERT(True(buffer.used_types & IR::Type::F32));
-        ASSERT(buffer.stride % sizeof(float) == 0);
-        const u32 num_elements = buffer.stride * buffer.num_records / sizeof(float);
-        const Id record_array_type{TypeArray(F32[1], ConstU32(num_elements))};
+        const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
+        const Id data_type = (*data_types)[1];
+        const u32 stride = buffer.stride == 0 ? 1 : buffer.stride;
+        const u32 num_elements = stride * buffer.num_records;
+        const Id record_array_type{TypeArray(data_type, ConstU32(num_elements))};
         const Id struct_type{TypeStruct(record_array_type)};
         Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
 
@@ -249,18 +256,18 @@ void EmitContext::DefineBuffers(const Info& info) {
         const auto storage_class =
             buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
         const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        if (buffer.is_storage) {
-            storage_f32 = TypePointer(storage_class, F32[1]);
-        } else {
-            uniform_f32 = TypePointer(storage_class, F32[1]);
-        }
+        const Id pointer_type = TypePointer(storage_class, data_type);
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("c{}", i));
+        Name(id, fmt::format("{}{}", buffer.is_storage ? "ssbo" : "cbuf", i));
 
         binding++;
-        buffers.push_back(id);
+        buffers.push_back({
+            .id = id,
+            .data_types = data_types,
+            .pointer_type = pointer_type,
+        });
         interfaces.push_back(id);
         i++;
     }

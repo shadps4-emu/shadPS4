@@ -23,6 +23,14 @@ struct VectorIds {
         return ids[index - 1];
     }
 
+    [[nodiscard]] Id& Get(u32 index) {
+        return ids[index - 1];
+    }
+
+    [[nodiscard]] const Id& Get(u32 index) const {
+        return ids[index - 1];
+    }
+
     std::array<Id, 4> ids;
 };
 
@@ -141,15 +149,15 @@ public:
     Id output_u32{};
     Id output_f32{};
 
-    Id uniform_f32{};
-    Id storage_f32{};
-
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
     Id vertex_index{};
     Id base_vertex{};
     std::array<Id, 8> frag_color{};
+
+    Id workgroup_id{};
+    Id local_invocation_id{};
 
     struct TextureDefinition {
         Id id;
@@ -158,8 +166,14 @@ public:
         Id image_type;
     };
 
+    struct BufferDefinition {
+        Id id;
+        const VectorIds* data_types;
+        Id pointer_type;
+    };
+
     u32& binding;
-    boost::container::small_vector<Id, 4> buffers;
+    boost::container::small_vector<BufferDefinition, 4> buffers;
     boost::container::small_vector<TextureDefinition, 4> images;
     boost::container::small_vector<Id, 4> samplers;
 

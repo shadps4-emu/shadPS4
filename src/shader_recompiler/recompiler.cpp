@@ -4,9 +4,8 @@
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
-#include "shader_recompiler/ir/passes/passes.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
-#include "shader_recompiler/recompiler.h"
 
 namespace Shader {
 
@@ -62,9 +61,8 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Shader::Optimization::DeadCodeEliminationPass(program.blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
 
-    for (const auto& block : program.blocks) {
-        fmt::print("{}\n", IR::DumpBlock(*block));
-    }
+    fmt::print("{}\n", Shader::IR::DumpProgram(program));
+    std::fflush(stdout);
 
     return program;
 }

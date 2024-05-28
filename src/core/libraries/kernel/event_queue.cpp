@@ -36,17 +36,12 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
         ret = getTriggeredEvents(ev, num);
         return ret > 0;
     };
-#ifndef _WIN64
-    char buf[128];
-    pthread_getname_np(pthread_self(), buf, 128);
-    fmt::print("Thread {} waiting for events (micros = {})\n", buf, micros);
-#endif // !_WIN64
+
     if (micros == 0) {
         m_cond.wait(lock, predicate);
     } else {
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
-    fmt::print("Wait done\n");
     return ret;
 }
 

@@ -9,7 +9,18 @@
 
 namespace Shader::Gcn {
 
-Translator::Translator(IR::Block* block_, Info& info_) : block{block_}, ir{*block}, info{info_} {
+Translator::Translator(IR::Block* block_, Info& info_)
+    : ir{*block_, block_->begin()}, info{info_} {}
+
+void Translator::EmitPrologue() {
+    ir.Prologue();
+
+    // Initialize user data.
+    IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
+    for (u32 i = 0; i < info.num_user_data; i++) {
+        ir.SetScalarReg(dst_sreg++, ir.GetUserData(dst_sreg));
+    }
+
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
     switch (info.stage) {
     case Stage::Vertex:
@@ -29,69 +40,108 @@ Translator::Translator(IR::Block* block_, Info& info_) : block{block_}, ir{*bloc
         }
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
         break;
+    case Stage::Compute:
+        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
+        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 1));
+        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 2));
+
+        ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 0));
+        ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 1));
+        ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
+        break;
     default:
         throw NotImplementedException("Unknown shader stage");
-    }
-
-    // Initialize user data.
-    IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
-    for (u32 i = 0; i < 16; i++) {
-        ir.SetScalarReg(dst_sreg++, ir.GetUserData(dst_sreg));
     }
 }
 
 IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
+    IR::U32F32 value{};
     switch (operand.field) {
     case OperandField::ScalarGPR:
         if (operand.type == ScalarType::Float32 || force_flt) {
-            return ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
+            value = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
         } else {
-            return ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
+            value = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
         }
+        break;
     case OperandField::VectorGPR:
         if (operand.type == ScalarType::Float32 || force_flt) {
-            return ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code));
+            value = ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code));
         } else {
-            return ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
+            value = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
         }
+        break;
     case OperandField::ConstZero:
         if (force_flt) {
-            return ir.Imm32(0.f);
+            value = ir.Imm32(0.f);
         } else {
-            return ir.Imm32(0U);
+            value = ir.Imm32(0U);
         }
+        break;
     case OperandField::SignedConstIntPos:
         ASSERT(!force_flt);
-        return ir.Imm32(operand.code - SignedConstIntPosMin + 1);
+        value = ir.Imm32(operand.code - SignedConstIntPosMin + 1);
+        break;
     case OperandField::SignedConstIntNeg:
         ASSERT(!force_flt);
-        return ir.Imm32(-s32(operand.code) + SignedConstIntNegMin - 1);
+        value = ir.Imm32(-s32(operand.code) + SignedConstIntNegMin - 1);
+        break;
     case OperandField::LiteralConst:
-        ASSERT(!force_flt);
-        return ir.Imm32(operand.code);
+        if (force_flt) {
+            value = ir.Imm32(std::bit_cast<float>(operand.code));
+        } else {
+            value = ir.Imm32(operand.code);
+        }
+        break;
     case OperandField::ConstFloatPos_1_0:
-        return ir.Imm32(1.f);
+        value = ir.Imm32(1.f);
+        break;
     case OperandField::ConstFloatPos_0_5:
-        return ir.Imm32(0.5f);
+        value = ir.Imm32(0.5f);
+        break;
     case OperandField::ConstFloatPos_2_0:
-        return ir.Imm32(2.0f);
+        value = ir.Imm32(2.0f);
+        break;
     case OperandField::ConstFloatPos_4_0:
-        return ir.Imm32(4.0f);
+        value = ir.Imm32(4.0f);
+        break;
     case OperandField::ConstFloatNeg_0_5:
-        return ir.Imm32(-0.5f);
+        value = ir.Imm32(-0.5f);
+        break;
     case OperandField::ConstFloatNeg_1_0:
-        return ir.Imm32(-1.0f);
+        value = ir.Imm32(-1.0f);
+        break;
+    case OperandField::VccLo:
+        value = ir.GetVccLo();
+        break;
     default:
         UNREACHABLE();
     }
+
+    if (operand.input_modifier.abs) {
+        value = ir.FPAbs(value);
+    }
+    if (operand.input_modifier.neg) {
+        value = ir.FPNeg(value);
+    }
+    return value;
 }
 
 void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
+    IR::U32F32 result = value;
+    if (operand.output_modifier.multiplier != 0.f) {
+        result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
+    }
+    if (operand.output_modifier.clamp) {
+        result = ir.FPSaturate(value);
+    }
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        return ir.SetScalarReg(IR::ScalarReg(operand.code), value);
+        return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
     case OperandField::VectorGPR:
-        return ir.SetVectorReg(IR::VectorReg(operand.code), value);
+        return ir.SetVectorReg(IR::VectorReg(operand.code), result);
+    case OperandField::VccLo:
+        return ir.SetVccLo(result);
     case OperandField::VccHi:
     case OperandField::M0:
         break; // Ignore for now
@@ -168,6 +218,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CVT_F32_U32:
             translator.V_CVT_F32_U32(inst);
             break;
+        case Opcode::V_RCP_F32:
+            translator.V_RCP_F32(inst);
+            break;
         case Opcode::S_SWAPPC_B64:
             ASSERT(info.stage == Stage::Vertex);
             translator.EmitFetch(inst);
@@ -198,18 +251,81 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CVT_PKRTZ_F16_F32:
             translator.V_CVT_PKRTZ_F16_F32(inst);
             break;
+        case Opcode::V_FRACT_F32:
+            translator.V_FRACT_F32(inst);
+            break;
+        case Opcode::V_ADD_F32:
+            translator.V_ADD_F32(inst);
+            break;
+        case Opcode::V_CVT_OFF_F32_I4:
+            translator.V_CVT_OFF_F32_I4(inst);
+            break;
+        case Opcode::V_MED3_F32:
+            translator.V_MED3_F32(inst);
+            break;
+        case Opcode::V_FLOOR_F32:
+            translator.V_FLOOR_F32(inst);
+            break;
+        case Opcode::V_SUB_F32:
+            translator.V_SUB_F32(inst);
+            break;
+        case Opcode::V_FMA_F32:
+        case Opcode::V_MADAK_F32: // Yes these can share the opcode
+            translator.V_FMA_F32(inst);
+            break;
         case Opcode::IMAGE_SAMPLE:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::V_CMP_EQ_U32:
             translator.V_CMP_EQ_U32(inst);
             break;
+        case Opcode::V_CMPX_GT_U32:
+            translator.V_CMPX_GT_U32(inst);
+            break;
+        case Opcode::V_CMP_F_F32:
+            translator.V_CMP_F32(ConditionOp::F, inst);
+            break;
+        case Opcode::V_CMP_LT_F32:
+            translator.V_CMP_F32(ConditionOp::LT, inst);
+            break;
+        case Opcode::V_CMP_EQ_F32:
+            translator.V_CMP_F32(ConditionOp::EQ, inst);
+            break;
+        case Opcode::V_CMP_LE_F32:
+            translator.V_CMP_F32(ConditionOp::LE, inst);
+            break;
+        case Opcode::V_CMP_GT_F32:
+            translator.V_CMP_F32(ConditionOp::GT, inst);
+            break;
+        case Opcode::V_CMP_LG_F32:
+            translator.V_CMP_F32(ConditionOp::LG, inst);
+            break;
+        case Opcode::V_CMP_GE_F32:
+            translator.V_CMP_F32(ConditionOp::GE, inst);
+            break;
+        case Opcode::S_CMP_LG_U32:
+            translator.S_CMP(ConditionOp::LG, false, inst);
+            break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
-            translator.TBUFFER_LOAD_FORMAT_XYZW(inst);
+            translator.BUFFER_LOAD_FORMAT(4, true, inst);
             break;
+        case Opcode::BUFFER_LOAD_FORMAT_X:
+            translator.BUFFER_LOAD_FORMAT(1, false, inst);
+            break;
+        case Opcode::BUFFER_STORE_FORMAT_X:
+            translator.BUFFER_STORE_FORMAT(1, false, inst);
+            break;
+        case Opcode::V_MAX_F32:
+            translator.V_MAX_F32(inst);
+            break;
+        case Opcode::S_ANDN2_B64:
+            translator.S_ANDN2_B64(inst);
+            break;
+        case Opcode::S_CBRANCH_EXECZ:
+        case Opcode::S_CBRANCH_SCC0:
         case Opcode::S_MOV_B64:
         case Opcode::S_WQM_B64:
         case Opcode::V_INTERP_P1_F32:

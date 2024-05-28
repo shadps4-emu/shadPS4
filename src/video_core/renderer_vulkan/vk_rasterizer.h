@@ -31,6 +31,8 @@ public:
 
     void Draw(bool is_indexed);
 
+    void DispatchDirect();
+
 private:
     u32 SetupIndexBuffer(bool& is_indexed);
     void MapMemory(VAddr addr, size_t size);

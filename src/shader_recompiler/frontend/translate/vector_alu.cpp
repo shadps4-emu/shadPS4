@@ -102,4 +102,95 @@ void Translator::V_MAD_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
+void Translator::V_FRACT_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.Fract(src0));
+}
+
+void Translator::V_ADD_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.FPAdd(src0, src1));
+}
+
+void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(
+        dst_reg,
+        ir.FPMul(ir.ConvertUToF(32, 32, ir.ISub(ir.BitwiseAnd(src0, ir.Imm32(0xF)), ir.Imm32(8))),
+                 ir.Imm32(1.f / 16.f)));
+}
+
+void Translator::V_MED3_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1])};
+    const IR::F32 src2{GetSrc(inst.src[2])};
+    const IR::F32 mmx = ir.FPMin(ir.FPMax(src0, src1), src2);
+    SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
+}
+
+void Translator::V_FLOOR_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.FPFloor(src0));
+}
+
+void Translator::V_SUB_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.FPSub(src0, src1));
+}
+
+void Translator::V_RCP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0])};
+    SetDst(inst.dst[0], ir.FPRecip(src0));
+}
+
+void Translator::V_CMPX_GT_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U1 result = ir.IGreaterThan(src0, src1, false);
+    ir.SetVcc(result);
+    ir.SetExec(result);
+}
+
+void Translator::V_FMA_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
+}
+
+void Translator::V_CMP_F32(ConditionOp op, const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::U1 result = [&] {
+        switch (op) {
+        case ConditionOp::F:
+            return ir.Imm1(false);
+        case ConditionOp::EQ:
+            return ir.FPEqual(src0, src1);
+        case ConditionOp::LG:
+            return ir.FPNotEqual(src0, src1);
+        case ConditionOp::GT:
+            return ir.FPGreaterThan(src0, src1);
+        case ConditionOp::LT:
+            return ir.FPLessThan(src0, src1);
+        case ConditionOp::LE:
+            return ir.FPLessThanEqual(src0, src1);
+        case ConditionOp::GE:
+            return ir.FPGreaterThanEqual(src0, src1);
+        }
+    }();
+    ir.SetVcc(result);
+}
+
+void Translator::V_MAX_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    SetDst(inst.dst[0], ir.FPMax(src0, src1));
+}
+
 } // namespace Shader::Gcn

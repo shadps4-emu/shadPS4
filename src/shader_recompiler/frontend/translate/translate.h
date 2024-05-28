@@ -16,6 +16,7 @@ struct Info;
 namespace Shader::Gcn {
 
 enum class ConditionOp : u32 {
+    F,
     EQ,
     LG,
     GT,
@@ -28,12 +29,14 @@ class Translator {
 public:
     explicit Translator(IR::Block* block_, Info& info);
 
+    void EmitPrologue();
     void EmitFetch(const GcnInst& inst);
 
     // Scalar ALU
     void S_MOV(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
+    void S_ANDN2_B64(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -53,9 +56,21 @@ public:
     void V_CVT_F32_I32(const GcnInst& inst);
     void V_CVT_F32_U32(const GcnInst& inst);
     void V_MAD_F32(const GcnInst& inst);
+    void V_FRACT_F32(const GcnInst& inst);
+    void V_ADD_F32(const GcnInst& inst);
+    void V_CVT_OFF_F32_I4(const GcnInst& inst);
+    void V_MED3_F32(const GcnInst& inst);
+    void V_FLOOR_F32(const GcnInst& inst);
+    void V_SUB_F32(const GcnInst& inst);
+    void V_RCP_F32(const GcnInst& inst);
+    void V_CMPX_GT_U32(const GcnInst& inst);
+    void V_FMA_F32(const GcnInst& inst);
+    void V_CMP_F32(ConditionOp op, const GcnInst& inst);
+    void V_MAX_F32(const GcnInst& inst);
 
     // Vector Memory
-    void TBUFFER_LOAD_FORMAT_XYZW(const GcnInst& inst);
+    void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
@@ -76,7 +91,6 @@ private:
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
 
 private:
-    IR::Block* block;
     IR::IREmitter ir;
     Info& info;
 };

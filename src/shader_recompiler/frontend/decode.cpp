@@ -684,7 +684,7 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
     outputMod.clamp = static_cast<bool>(control.clmp);
     switch (control.omod) {
     case 0:
-        outputMod.multiplier = std::numeric_limits<float>::quiet_NaN();
+        outputMod.multiplier = 0.f;
         break;
     case 1:
         outputMod.multiplier = 2.0f;

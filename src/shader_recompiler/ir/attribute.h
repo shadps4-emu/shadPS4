@@ -81,6 +81,8 @@ constexpr size_t NumParams = 32;
 
 [[nodiscard]] bool IsParam(Attribute attribute) noexcept;
 
+[[nodiscard]] bool IsMrt(Attribute attribute) noexcept;
+
 [[nodiscard]] std::string NameOf(Attribute attribute);
 
 [[nodiscard]] constexpr Attribute operator+(Attribute attr, int num) {

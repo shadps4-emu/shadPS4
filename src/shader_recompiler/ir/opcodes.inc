@@ -12,10 +12,12 @@ OPCODE(PhiMove,                                             Void,           Opaq
 // Special operations
 OPCODE(Prologue,                                            Void,                                                                                           )
 OPCODE(Epilogue,                                            Void,                                                                                           )
+OPCODE(Discard,                                             Void,                                                                                           )
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U64,            U32,                                                            )
 OPCODE(ReadConstBuffer,                                     F32,            Opaque,         U32,                                                            )
+OPCODE(ReadConstBufferU32,                                  U32,            Opaque,         U32,                                                            )
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
@@ -30,10 +32,14 @@ OPCODE(GetAttributeU32,                                     U32,            Attr
 OPCODE(SetAttribute,                                        Void,           Attribute,      F32,            U32,                                            )
 
 // Flags
-//OPCODE(GetScc,                                             U1,             Void,                                                                           )
-OPCODE(GetVcc,                                             U1,             Void,                                                                           )
-//OPCODE(SetScc,                                             Void,           U1,                                                                             )
-OPCODE(SetVcc,                                             Void,           U1,                                                                             )
+OPCODE(GetScc,                                             U1,             Void,                                                                            )
+OPCODE(GetExec,                                            U1,             Void,                                                                            )
+OPCODE(GetVcc,                                             U1,             Void,                                                                            )
+OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
+OPCODE(SetScc,                                             Void,           U1,                                                                              )
+OPCODE(SetExec,                                            Void,           U1,                                                                              )
+OPCODE(SetVcc,                                             Void,           U1,                                                                              )
+OPCODE(SetVccLo,                                           Void,           U32,                                                                             )
 
 // Undefined
 OPCODE(UndefU1,                                             U1,                                                                                             )
@@ -47,6 +53,12 @@ OPCODE(LoadBufferF32,                                       F32,            Opaq
 OPCODE(LoadBufferF32x2,                                     F32x2,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferF32x3,                                     F32x3,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferF32x4,                                     F32x4,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferU32,                                       U32,            Opaque,         Opaque,                                                         )
+OPCODE(StoreBufferF32,                                      Void,           Opaque,         Opaque,         F32,                                            )
+OPCODE(StoreBufferF32x2,                                    Void,           Opaque,         Opaque,         F32x2,                                          )
+OPCODE(StoreBufferF32x3,                                    Void,           Opaque,         Opaque,         F32x3,                                          )
+OPCODE(StoreBufferF32x4,                                    Void,           Opaque,         Opaque,         F32x4,                                          )
+OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -114,6 +126,7 @@ OPCODE(FPAbs32,                                             F32,            F32,
 OPCODE(FPAbs64,                                             F64,            F64,                                                                            )
 OPCODE(FPAdd32,                                             F32,            F32,            F32,                                                            )
 OPCODE(FPAdd64,                                             F64,            F64,            F64,                                                            )
+OPCODE(FPSub32,                                             F32,            F32,            F32,                                                            )
 OPCODE(FPFma32,                                             F32,            F32,            F32,            F32,                                            )
 OPCODE(FPFma64,                                             F64,            F64,            F64,            F64,                                            )
 OPCODE(FPMax32,                                             F32,            F32,            F32,                                                            )
@@ -145,6 +158,7 @@ OPCODE(FPCeil32,                                            F32,            F32,
 OPCODE(FPCeil64,                                            F64,            F64,                                                                            )
 OPCODE(FPTrunc32,                                           F32,            F32,                                                                            )
 OPCODE(FPTrunc64,                                           F64,            F64,                                                                            )
+OPCODE(FPFract,                                             F32,            F32,                                                                            )
 
 OPCODE(FPOrdEqual32,                                        U1,             F32,            F32,                                                            )
 OPCODE(FPOrdEqual64,                                        U1,             F64,            F64,                                                            )

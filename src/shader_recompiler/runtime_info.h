@@ -120,6 +120,9 @@ struct Info {
     ImageResourceList images;
     SamplerResourceList samplers;
 
+    std::array<u32, 3> workgroup_size{};
+
+    u32 num_user_data;
     std::span<const u32> user_data;
     Stage stage;
 

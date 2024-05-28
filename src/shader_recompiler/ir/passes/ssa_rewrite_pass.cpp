@@ -17,10 +17,8 @@
 #include <span>
 #include <unordered_map>
 #include <variant>
-#include <vector>
 
 #include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
@@ -30,11 +28,10 @@ namespace {
 struct FlagTag {
     auto operator<=>(const FlagTag&) const noexcept = default;
 };
-struct ZeroFlagTag : FlagTag {};
-struct SignFlagTag : FlagTag {};
-struct CarryFlagTag : FlagTag {};
-struct OverflowFlagTag : FlagTag {};
+struct SccFlagTag : FlagTag {};
+struct ExecFlagTag : FlagTag {};
 struct VccFlagTag : FlagTag {};
+struct VccLoTag : FlagTag {};
 
 struct GotoVariable : FlagTag {
     GotoVariable() = default;
@@ -45,8 +42,8 @@ struct GotoVariable : FlagTag {
     u32 index;
 };
 
-using Variant = std::variant<IR::ScalarReg, IR::VectorReg, ZeroFlagTag, SignFlagTag, CarryFlagTag,
-                             OverflowFlagTag, GotoVariable, VccFlagTag>;
+using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, SccFlagTag, ExecFlagTag,
+                             VccFlagTag, VccLoTag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -71,32 +68,25 @@ struct DefTable {
         goto_vars[variable.index].insert_or_assign(block, value);
     }
 
-    const IR::Value& Def(IR::Block* block, ZeroFlagTag) {
-        return zero_flag[block];
+    const IR::Value& Def(IR::Block* block, SccFlagTag) {
+        return scc_flag[block];
     }
-    void SetDef(IR::Block* block, ZeroFlagTag, const IR::Value& value) {
-        zero_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, SignFlagTag) {
-        return sign_flag[block];
-    }
-    void SetDef(IR::Block* block, SignFlagTag, const IR::Value& value) {
-        sign_flag.insert_or_assign(block, value);
+    void SetDef(IR::Block* block, SccFlagTag, const IR::Value& value) {
+        scc_flag.insert_or_assign(block, value);
     }
 
-    const IR::Value& Def(IR::Block* block, CarryFlagTag) {
-        return carry_flag[block];
+    const IR::Value& Def(IR::Block* block, ExecFlagTag) {
+        return exec_flag[block];
     }
-    void SetDef(IR::Block* block, CarryFlagTag, const IR::Value& value) {
-        carry_flag.insert_or_assign(block, value);
+    void SetDef(IR::Block* block, ExecFlagTag, const IR::Value& value) {
+        exec_flag.insert_or_assign(block, value);
     }
 
-    const IR::Value& Def(IR::Block* block, OverflowFlagTag) {
-        return overflow_flag[block];
+    const IR::Value& Def(IR::Block* block, VccLoTag) {
+        return vcc_lo_flag[block];
     }
-    void SetDef(IR::Block* block, OverflowFlagTag, const IR::Value& value) {
-        overflow_flag.insert_or_assign(block, value);
+    void SetDef(IR::Block* block, VccLoTag, const IR::Value& value) {
+        vcc_lo_flag.insert_or_assign(block, value);
     }
 
     const IR::Value& Def(IR::Block* block, VccFlagTag) {
@@ -107,12 +97,10 @@ struct DefTable {
     }
 
     std::unordered_map<u32, ValueMap> goto_vars;
-    ValueMap indirect_branch_var;
-    ValueMap zero_flag;
-    ValueMap sign_flag;
-    ValueMap carry_flag;
-    ValueMap overflow_flag;
+    ValueMap scc_flag;
+    ValueMap exec_flag;
     ValueMap vcc_flag;
+    ValueMap vcc_lo_flag;
 };
 
 IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
@@ -306,18 +294,18 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetGotoVariable:
         pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
         break;
+    case IR::Opcode::SetExec:
+        pass.WriteVariable(ExecFlagTag{}, block, inst.Arg(0));
+        break;
+    case IR::Opcode::SetScc:
+        pass.WriteVariable(SccFlagTag{}, block, inst.Arg(0));
+        break;
     case IR::Opcode::SetVcc:
         pass.WriteVariable(VccFlagTag{}, block, inst.Arg(0));
         break;
-    // case IR::Opcode::SetSFlag:
-    //     pass.WriteVariable(SignFlagTag{}, block, inst.Arg(0));
-    //     break;
-    // case IR::Opcode::SetCFlag:
-    //     pass.WriteVariable(CarryFlagTag{}, block, inst.Arg(0));
-    //     break;
-    // case IR::Opcode::SetOFlag:
-    //     pass.WriteVariable(OverflowFlagTag{}, block, inst.Arg(0));
-    //     break;
+    case IR::Opcode::SetVccLo:
+        pass.WriteVariable(VccLoTag{}, block, inst.Arg(0));
+        break;
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
         inst.ReplaceUsesWith(pass.ReadVariable(reg, block));
@@ -331,18 +319,18 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::GetGotoVariable:
         inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
         break;
+    case IR::Opcode::GetExec:
+        inst.ReplaceUsesWith(pass.ReadVariable(ExecFlagTag{}, block));
+        break;
+    case IR::Opcode::GetScc:
+        inst.ReplaceUsesWith(pass.ReadVariable(SccFlagTag{}, block));
+        break;
     case IR::Opcode::GetVcc:
         inst.ReplaceUsesWith(pass.ReadVariable(VccFlagTag{}, block));
         break;
-    // case IR::Opcode::GetSFlag:
-    //     inst.ReplaceUsesWith(pass.ReadVariable(SignFlagTag{}, block));
-    //     break;
-    // case IR::Opcode::GetCFlag:
-    //     inst.ReplaceUsesWith(pass.ReadVariable(CarryFlagTag{}, block));
-    //     break;
-    // case IR::Opcode::GetOFlag:
-    //     inst.ReplaceUsesWith(pass.ReadVariable(OverflowFlagTag{}, block));
-    //     break;
+    case IR::Opcode::GetVccLo:
+        inst.ReplaceUsesWith(pass.ReadVariable(VccLoTag{}, block));
+        break;
     default:
         break;
     }
@@ -362,46 +350,6 @@ void SsaRewritePass(IR::BlockList& program) {
     const auto end{program.rend()};
     for (auto block = program.rbegin(); block != end; ++block) {
         VisitBlock(pass, *block);
-    }
-}
-
-void IdentityRemovalPass(IR::BlockList& program) {
-    std::vector<IR::Inst*> to_invalidate;
-    for (IR::Block* const block : program) {
-        for (auto inst = block->begin(); inst != block->end();) {
-            const size_t num_args{inst->NumArgs()};
-            for (size_t i = 0; i < num_args; ++i) {
-                IR::Value arg;
-                while ((arg = inst->Arg(i)).IsIdentity()) {
-                    inst->SetArg(i, arg.Inst()->Arg(0));
-                }
-            }
-            if (inst->GetOpcode() == IR::Opcode::Identity ||
-                inst->GetOpcode() == IR::Opcode::Void) {
-                to_invalidate.push_back(&*inst);
-                inst = block->Instructions().erase(inst);
-            } else {
-                ++inst;
-            }
-        }
-    }
-    for (IR::Inst* const inst : to_invalidate) {
-        inst->Invalidate();
-    }
-}
-
-void DeadCodeEliminationPass(IR::BlockList& program) {
-    // We iterate over the instructions in reverse order.
-    // This is because removing an instruction reduces the number of uses for earlier instructions.
-    for (IR::Block* const block : program) {
-        auto it{block->end()};
-        while (it != block->begin()) {
-            --it;
-            if (!it->HasUses() && !it->MayHaveSideEffects()) {
-                it->Invalidate();
-                it = block->Instructions().erase(it);
-            }
-        }
     }
 }
 

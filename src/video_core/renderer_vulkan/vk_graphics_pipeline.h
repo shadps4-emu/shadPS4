@@ -26,7 +26,7 @@ class StreamBuffer;
 
 using Liverpool = AmdGpu::Liverpool;
 
-struct PipelineKey {
+struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
     vk::Format depth_format;
@@ -40,16 +40,16 @@ struct PipelineKey {
     Liverpool::CullMode cull_mode;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
 
-    bool operator==(const PipelineKey& key) const noexcept {
-        return std::memcmp(this, &key, sizeof(PipelineKey)) == 0;
+    bool operator==(const GraphicsPipelineKey& key) const noexcept {
+        return std::memcmp(this, &key, sizeof(GraphicsPipelineKey)) == 0;
     }
 };
-static_assert(std::has_unique_object_representations_v<PipelineKey>);
+static_assert(std::has_unique_object_representations_v<GraphicsPipelineKey>);
 
 class GraphicsPipeline {
 public:
     explicit GraphicsPipeline(const Instance& instance, Scheduler& scheduler,
-                              const PipelineKey& key, vk::PipelineCache pipeline_cache,
+                              const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
                               std::span<const Shader::Info*, MaxShaderStages> infos,
                               std::array<vk::ShaderModule, MaxShaderStages> modules);
     ~GraphicsPipeline();
@@ -76,14 +76,14 @@ private:
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
     std::array<Shader::Info, MaxShaderStages> stages{};
-    PipelineKey key;
+    GraphicsPipelineKey key;
 };
 
 } // namespace Vulkan
 
 template <>
-struct std::hash<Vulkan::PipelineKey> {
-    std::size_t operator()(const Vulkan::PipelineKey& key) const noexcept {
+struct std::hash<Vulkan::GraphicsPipelineKey> {
+    std::size_t operator()(const Vulkan::GraphicsPipelineKey& key) const noexcept {
         return XXH3_64bits(&key, sizeof(key));
     }
 };

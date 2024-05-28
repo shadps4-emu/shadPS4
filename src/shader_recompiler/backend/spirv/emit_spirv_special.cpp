@@ -10,6 +10,10 @@ void EmitPrologue(EmitContext& ctx) {}
 
 void EmitEpilogue(EmitContext& ctx) {}
 
+void EmitDiscard(EmitContext& ctx) {
+    ctx.OpDemoteToHelperInvocationEXT();
+}
+
 void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }

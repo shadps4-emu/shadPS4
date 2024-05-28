@@ -36,7 +36,7 @@ void Rasterizer::Draw(bool is_indexed) {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
     const u32 num_indices = SetupIndexBuffer(is_indexed);
-    const GraphicsPipeline* pipeline = pipeline_cache.GetPipeline();
+    const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     const auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
@@ -49,8 +49,13 @@ void Rasterizer::Draw(bool is_indexed) {
     };
 
     // TODO: Don't restart renderpass every draw
+    const auto& scissor = regs.screen_scissor;
     const vk::RenderingInfo rendering_info = {
-        .renderArea = {.offset = {0, 0}, .extent = {1920, 1080}},
+        .renderArea =
+            {
+                .offset = {scissor.top_left_x, scissor.top_left_y},
+                .extent = {scissor.GetWidth(), scissor.GetHeight()},
+            },
         .layerCount = 1,
         .colorAttachmentCount = 1,
         .pColorAttachments = &color_info,
@@ -67,6 +72,17 @@ void Rasterizer::Draw(bool is_indexed) {
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
     }
     cmdbuf.endRendering();
+}
+
+void Rasterizer::DispatchDirect() {
+    return;
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto& cs_program = liverpool->regs.cs_program;
+    const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
+    pipeline->BindResources(memory, texture_cache);
+
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+    cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
 u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {

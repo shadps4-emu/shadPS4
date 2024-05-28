@@ -205,6 +205,7 @@ bool Instance::CreateDevice() {
             .timelineSemaphore = true,
         },
         vk::PhysicalDeviceVulkan13Features{
+            .shaderDemoteToHelperInvocation = true,
             .dynamicRendering = true,
             .maintenance4 = true,
         },

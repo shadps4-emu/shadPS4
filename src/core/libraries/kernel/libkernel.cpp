@@ -52,7 +52,7 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     return SCE_OK;
 }
 
-void PS4_SYSV_ABI sceKernelUsleep(unsigned int microseconds) {
+void PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 

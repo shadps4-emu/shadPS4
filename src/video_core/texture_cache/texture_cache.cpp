@@ -100,8 +100,7 @@ TextureCache::~TextureCache() {
 }
 
 void TextureCache::OnCpuWrite(VAddr address) {
-    const VAddr address_aligned = address & ~((1 << PageShift) - 1);
-    ForEachImageInRegion(address_aligned, 1 << PageShift, [&](ImageId image_id, Image& image) {
+    ForEachImageInRegion(address, 1 << PageShift, [&](ImageId image_id, Image& image) {
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
@@ -270,6 +269,7 @@ void TextureCache::UntrackImage(Image& image, ImageId image_id) {
 }
 
 void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
+    std::scoped_lock lk{mutex};
     const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
     const u64 page_start = addr >> PageShift;
     const u64 page_end = page_start + num_pages;
@@ -288,7 +288,7 @@ void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const u32 interval_size = interval_end_addr - interval_start_addr;
         void* addr = reinterpret_cast<void*>(interval_start_addr);
         if (delta > 0 && count == delta) {
-            mprotect(addr, interval_size, PAGE_NOACCESS);
+            mprotect(addr, interval_size, PAGE_READONLY);
         } else if (delta < 0 && count == -delta) {
             mprotect(addr, interval_size, PAGE_READWRITE);
         } else {

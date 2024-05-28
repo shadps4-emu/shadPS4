@@ -21,7 +21,12 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
     info.user_data = user_data;
     info.stage = stage;
     switch (stage) {
+    case Shader::Stage::Vertex: {
+        info.num_user_data = regs.vs_program.settings.num_user_regs;
+        break;
+    }
     case Shader::Stage::Fragment: {
+        info.num_user_data = regs.ps_program.settings.num_user_regs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.ps_inputs.push_back({
                 .param_index = regs.ps_inputs[i].input_offset.Value(),
@@ -30,6 +35,13 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
                 .default_value = regs.ps_inputs[i].default_value,
             });
         }
+        break;
+    }
+    case Shader::Stage::Compute: {
+        const auto& cs_pgm = regs.cs_program;
+        info.num_user_data = cs_pgm.settings.num_user_regs;
+        info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
+                               cs_pgm.num_thread_z.full};
         break;
     }
     default:
@@ -48,17 +60,30 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     };
 }
 
-const GraphicsPipeline* PipelineCache::GetPipeline() {
-    RefreshKey();
+const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = CreatePipeline();
+        it.value() = CreateGraphicsPipeline();
     }
     const GraphicsPipeline* pipeline = it->second.get();
     return pipeline;
 }
 
-void PipelineCache::RefreshKey() {
+const ComputePipeline* PipelineCache::GetComputePipeline() {
+    const auto& cs_pgm = liverpool->regs.cs_program;
+    ASSERT(cs_pgm.Address() != nullptr);
+    const auto code = cs_pgm.Code();
+    compute_key = XXH3_64bits(code.data(), code.size_bytes());
+    const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
+    if (is_new) {
+        it.value() = CreateComputePipeline();
+    }
+    const ComputePipeline* pipeline = it->second.get();
+    return pipeline;
+}
+
+void PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
@@ -92,7 +117,7 @@ void PipelineCache::RefreshKey() {
     }
 }
 
-std::unique_ptr<GraphicsPipeline> PipelineCache::CreatePipeline() {
+std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
     const auto& regs = liverpool->regs;
 
     u32 binding{};
@@ -139,6 +164,36 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreatePipeline() {
 
     return std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key, *pipeline_cache,
                                               infos, stages);
+}
+
+std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
+    const auto& cs_pgm = liverpool->regs.cs_program;
+    const auto code = cs_pgm.Code();
+
+    // Dump shader code if requested.
+    if (Config::dumpShaders()) {
+        DumpShader(code, compute_key, Shader::Stage::Compute, "bin");
+    }
+
+    block_pool.ReleaseContents();
+    inst_pool.ReleaseContents();
+
+    // Recompile shader to IR.
+    const Shader::Info info =
+        MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
+    auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
+
+    // Compile IR to SPIR-V
+    u32 binding{};
+    const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
+    const auto module = CompileSPV(spv_code, instance.GetDevice());
+
+    if (Config::dumpShaders()) {
+        DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
+    }
+
+    return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, &program.info,
+                                             module);
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,

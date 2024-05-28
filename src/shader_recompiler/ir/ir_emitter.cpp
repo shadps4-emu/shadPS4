@@ -111,6 +111,10 @@ void IREmitter::Epilogue() {
     Inst(Opcode::Epilogue);
 }
 
+void IREmitter::Discard() {
+    Inst(Opcode::Discard);
+}
+
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetUserData, reg);
 }
@@ -156,11 +160,17 @@ U1 IREmitter::Condition(IR::Condition cond) {
     case IR::Condition::True:
         return Imm1(true);
     case IR::Condition::Scc0:
+        return LogicalNot(GetScc());
     case IR::Condition::Scc1:
+        return GetScc();
     case IR::Condition::Vccz:
+        return LogicalNot(GetVcc());
     case IR::Condition::Vccnz:
+        return GetVcc();
     case IR::Condition::Execz:
+        return LogicalNot(GetExec());
     case IR::Condition::Execnz:
+        return GetExec();
     default:
         throw NotImplementedException("");
     }
@@ -170,12 +180,36 @@ void IREmitter::SetGotoVariable(u32 id, const U1& value) {
     Inst(Opcode::SetGotoVariable, id, value);
 }
 
+U1 IREmitter::GetScc() {
+    return Inst<U1>(Opcode::GetScc);
+}
+
+U1 IREmitter::GetExec() {
+    return Inst<U1>(Opcode::GetExec);
+}
+
 U1 IREmitter::GetVcc() {
     return Inst<U1>(Opcode::GetVcc);
 }
 
+U32 IREmitter::GetVccLo() {
+    return Inst<U32>(Opcode::GetVccLo);
+}
+
+void IREmitter::SetScc(const U1& value) {
+    Inst(Opcode::SetScc, value);
+}
+
+void IREmitter::SetExec(const U1& value) {
+    Inst(Opcode::SetExec, value);
+}
+
 void IREmitter::SetVcc(const U1& value) {
     Inst(Opcode::SetVcc, value);
+}
+
+void IREmitter::SetVccLo(const U32& value) {
+    Inst(Opcode::SetVccLo, value);
 }
 
 F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {
@@ -247,6 +281,27 @@ Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
+void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& address,
+                            const Value& data, BufferInstInfo info) {
+    switch (num_dwords) {
+    case 1:
+        Inst(data.Type() == Type::F32 ? Opcode::StoreBufferF32 : Opcode::StoreBufferU32,
+             Flags{info}, handle, address, data);
+        break;
+    case 2:
+        Inst(Opcode::StoreBufferF32x2, Flags{info}, handle, address, data);
+        break;
+    case 3:
+        Inst(Opcode::StoreBufferF32x3, Flags{info}, handle, address, data);
+        break;
+    case 4:
+        Inst(Opcode::StoreBufferF32x4, Flags{info}, handle, address, data);
+        break;
+    default:
+        throw InvalidArgument("Invalid number of dwords {}", num_dwords);
+    }
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         throw InvalidArgument("Mismatching types {} and {}", a.Type(), b.Type());
@@ -256,6 +311,18 @@ F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
         return Inst<F32>(Opcode::FPAdd32, a, b);
     case Type::F64:
         return Inst<F64>(Opcode::FPAdd64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
+F32F64 IREmitter::FPSub(const F32F64& a, const F32F64& b) {
+    if (a.Type() != b.Type()) {
+        throw InvalidArgument("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::FPSub32, a, b);
     default:
         ThrowInvalidType(a.Type());
     }
@@ -610,6 +677,10 @@ F32F64 IREmitter::FPTrunc(const F32F64& value) {
     default:
         ThrowInvalidType(value.Type());
     }
+}
+
+F32 IREmitter::Fract(const F32& value) {
+    return Inst<F32>(Opcode::FPFract, value);
 }
 
 U1 IREmitter::FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {

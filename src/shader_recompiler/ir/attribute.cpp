@@ -10,6 +10,10 @@ bool IsParam(Attribute attribute) noexcept {
     return attribute >= Attribute::Param0 && attribute <= Attribute::Param31;
 }
 
+bool IsMrt(Attribute attribute) noexcept {
+    return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
+}
+
 std::string NameOf(Attribute attribute) {
     switch (attribute) {
     case Attribute::RenderTarget0:
@@ -112,6 +116,12 @@ std::string NameOf(Attribute attribute) {
         return "FragCoord";
     case Attribute::IsFrontFace:
         return "IsFrontFace";
+    case Attribute::WorkgroupId:
+        return "WorkgroupId";
+    case Attribute::LocalInvocationId:
+        return "LocalInvocationId";
+    case Attribute::LocalInvocationIndex:
+        return "LocalInvocationIndex";
     default:
         break;
     }

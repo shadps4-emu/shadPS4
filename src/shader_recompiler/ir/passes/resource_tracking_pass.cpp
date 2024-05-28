@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <bit>
-#include <optional>
 #include <boost/container/small_vector.hpp>
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -27,23 +25,51 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
     case IR::Opcode::LoadBufferF32x4:
+    case IR::Opcode::LoadBufferU32:
     case IR::Opcode::ReadConstBuffer:
+    case IR::Opcode::ReadConstBufferU32:
+    case IR::Opcode::StoreBufferF32:
+    case IR::Opcode::StoreBufferF32x2:
+    case IR::Opcode::StoreBufferF32x3:
+    case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferU32:
         return true;
     default:
         return false;
     }
 }
 
-IR::Type BufferLoadType(const IR::Inst& inst) {
+IR::Type BufferDataType(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferF32:
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
     case IR::Opcode::LoadBufferF32x4:
     case IR::Opcode::ReadConstBuffer:
+    case IR::Opcode::StoreBufferF32:
+    case IR::Opcode::StoreBufferF32x2:
+    case IR::Opcode::StoreBufferF32x3:
+    case IR::Opcode::StoreBufferF32x4:
         return IR::Type::F32;
+    case IR::Opcode::LoadBufferU32:
+    case IR::Opcode::ReadConstBufferU32:
+    case IR::Opcode::StoreBufferU32:
+        return IR::Type::U32;
     default:
         UNREACHABLE();
+    }
+}
+
+bool IsBufferStore(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::StoreBufferF32:
+    case IR::Opcode::StoreBufferF32x2:
+    case IR::Opcode::StoreBufferF32x3:
+    case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferU32:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -157,10 +183,10 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const u32 binding = descriptors.Add(BufferResource{
         .sgpr_base = sharp.sgpr_base,
         .dword_offset = sharp.dword_offset,
-        .stride = u32(buffer.stride),
+        .stride = buffer.GetStride(),
         .num_records = u32(buffer.num_records),
-        .used_types = BufferLoadType(inst),
-        .is_storage = /*buffer.base_address % 64 != 0*/ true,
+        .used_types = BufferDataType(inst),
+        .is_storage = true || IsBufferStore(inst),
     });
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -171,17 +197,18 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32);
     }
-    if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+    if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
+        inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {
         return;
     }
     // Calculate buffer address.
-    const u32 dword_stride = buffer.stride / sizeof(u32);
+    const u32 dword_stride = buffer.GetStrideElements(sizeof(u32));
     const u32 dword_offset = inst_info.inst_offset.Value() / sizeof(u32);
     IR::U32 address = ir.Imm32(dword_offset);
     if (inst_info.index_enable && inst_info.offset_enable) {
         UNREACHABLE();
     } else if (inst_info.index_enable) {
-        const IR::U32 index{inst.Arg(1)};
+        IR::U32 index{inst.Arg(1)};
         address = ir.IAdd(ir.IMul(index, ir.Imm32(dword_stride)), address);
     } else if (inst_info.offset_enable) {
         const IR::U32 offset{inst.Arg(1)};
@@ -245,6 +272,36 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 }
 
 void ResourceTrackingPass(IR::Program& program) {
+    // When loading data from untyped buffer we don't have if it is float or integer.
+    // Most of the time it is float so that is the default. This pass detects float buffer loads
+    // combined with bitcasts and patches them to be integer loads.
+    for (IR::Block* const block : program.post_order_blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() != IR::Opcode::BitCastU32F32) {
+                continue;
+            }
+            // Replace the bitcast with a typed buffer read
+            IR::Inst* const arg_inst{inst.Arg(0).TryInstRecursive()};
+            if (!arg_inst) {
+                continue;
+            }
+            const auto replace{[&](IR::Opcode new_opcode) {
+                inst.ReplaceOpcode(new_opcode);
+                inst.SetArg(0, arg_inst->Arg(0));
+                inst.SetArg(1, arg_inst->Arg(1));
+                inst.SetFlags(arg_inst->Flags<u32>());
+                arg_inst->Invalidate();
+            }};
+            if (arg_inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                replace(IR::Opcode::ReadConstBufferU32);
+            }
+            if (arg_inst->GetOpcode() == IR::Opcode::LoadBufferF32) {
+                replace(IR::Opcode::LoadBufferU32);
+            }
+        }
+    }
+
+    // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
     Descriptors descriptors{info.buffers, info.images, info.samplers};
     for (IR::Block* const block : program.post_order_blocks) {
