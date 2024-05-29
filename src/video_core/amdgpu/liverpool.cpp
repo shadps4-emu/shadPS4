@@ -19,6 +19,7 @@ Liverpool::Liverpool() {
 Liverpool::~Liverpool() {
     process_thread.request_stop();
     cv_submit.notify_one();
+    process_thread.join();
 }
 
 void Liverpool::Process(std::stop_token stoken) {
