@@ -66,7 +66,7 @@ struct IrqController {
             h(irq);
         }
 
-        while (!ctx.one_time_subscribers.empty()) {
+        if (!ctx.one_time_subscribers.empty()) {
             const auto& h = ctx.one_time_subscribers.front();
             h(irq);
 
