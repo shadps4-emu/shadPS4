@@ -18,7 +18,7 @@ struct VideoOutPort {
     bool is_open = false;
     SceVideoOutResolutionStatus resolution;
     std::array<VideoOutBuffer, MaxDisplayBuffers> buffer_slots;
-    std::array<uintptr_t, MaxDisplayBuffers> buffer_labels; // should be contiguous in memory
+    std::array<u64, MaxDisplayBuffers> buffer_labels; // should be contiguous in memory
     static_assert(sizeof(buffer_labels[0]) == 8u);
     std::array<BufferAttributeGroup, MaxDisplayBufferGroups> groups;
     FlipStatus flip_status;

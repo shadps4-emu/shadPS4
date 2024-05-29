@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include "common/assert.h"
 #include "core/libraries/libc/libc_math.h"
 
 namespace Libraries::LibC {
@@ -38,8 +39,13 @@ double PS4_SYSV_ABI ps4__Sin(double x) {
     return sin(x);
 }
 
-float PS4_SYSV_ABI ps4__Fsin(float arg) {
-    return sinf(arg);
+float PS4_SYSV_ABI ps4__Fsin(float arg, unsigned int m, int n) {
+    ASSERT(n == 0);
+    if (m != 0) {
+        return cosf(arg);
+    } else {
+        return sinf(arg);
+    }
 }
 
 double PS4_SYSV_ABI ps4_exp2(double arg) {

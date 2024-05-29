@@ -206,6 +206,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceVulkan13Features{
             .dynamicRendering = true,
+            .maintenance4 = true,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
@@ -213,9 +214,6 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceIndexTypeUint8FeaturesEXT{
             .indexTypeUint8 = true,
-        },
-        vk::PhysicalDeviceMaintenance4Features{
-            .maintenance4 = true,
         },
     };
 

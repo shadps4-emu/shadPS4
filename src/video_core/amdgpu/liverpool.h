@@ -771,9 +771,6 @@ private:
 
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
-    std::condition_variable_any cv_submit{};
-    std::condition_variable cv_complete{};
-    std::mutex m_submit{};
     std::atomic<u32> num_submits{};
 };
 
