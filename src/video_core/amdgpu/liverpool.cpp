@@ -18,7 +18,8 @@ Liverpool::Liverpool() {
 
 Liverpool::~Liverpool() {
     process_thread.request_stop();
-    cv_submit.notify_one();
+    num_submits = -1;
+    num_submits.notify_one();
     process_thread.join();
 }
 
@@ -26,10 +27,7 @@ void Liverpool::Process(std::stop_token stoken) {
     Common::SetCurrentThreadName("GPU_CommandProcessor");
 
     while (!stoken.stop_requested()) {
-        {
-            std::unique_lock lock{m_submit};
-            cv_submit.wait(lock, stoken, [this]() { return num_submits != 0; });
-        }
+        num_submits.wait(0);
 
         if (stoken.stop_requested()) {
             break;
@@ -63,13 +61,14 @@ void Liverpool::Process(std::stop_token stoken) {
                 --num_submits;
             }
         }
-        cv_complete.notify_all(); // Notify GPU idle
+        num_submits.notify_all();
     }
 }
 
 void Liverpool::WaitGpuIdle() {
-    std::unique_lock lock{m_submit};
-    cv_complete.wait(lock, [this]() { return num_submits == 0; });
+    while (const auto old = num_submits.load()) {
+        num_submits.wait(old);
+    }
 }
 
 Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
@@ -309,11 +308,8 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
         queue.submits.emplace(task.handle);
     }
 
-    {
-        std::unique_lock lock{m_submit};
-        ++num_submits;
-    }
-    cv_submit.notify_one();
+    ++num_submits;
+    num_submits.notify_one();
 }
 
 void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
@@ -326,11 +322,8 @@ void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
         queue.submits.emplace(task.handle);
     }
 
-    {
-        std::unique_lock lock{m_submit};
-        ++num_submits;
-    }
-    cv_submit.notify_one();
+    ++num_submits;
+    num_submits.notify_one();
 }
 
 } // namespace AmdGpu
