@@ -37,7 +37,7 @@ private:
     u32 SetupIndexBuffer(bool& is_indexed);
     void MapMemory(VAddr addr, size_t size);
 
-    void UpdateDynamicState();
+    void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();
     void UpdateDepthStencilState();
 

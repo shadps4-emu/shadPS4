@@ -93,16 +93,26 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
-    key.blend_controls = regs.blend_control;
 
     const auto& db = regs.depth_buffer;
     key.depth_format = key.depth.depth_enable
                            ? LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format)
                            : vk::Format::eUndefined;
-    for (u32 i = 0; i < Liverpool::NumColorBuffers; i++) {
-        const auto& cb = regs.color_buffers[i];
-        key.color_formats[i] = cb ? LiverpoolToVK::SurfaceFormat(cb.info.format, cb.NumFormat())
-                                  : vk::Format::eUndefined;
+    // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
+    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
+    // We need to do some arrays compaction at this stage
+    int remapped_cb{};
+    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+        auto const& col_buf = regs.color_buffers[cb];
+        if (!col_buf) {
+            continue;
+        }
+        key.color_formats[remapped_cb] =
+            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
+        key.blend_controls[remapped_cb] = regs.blend_control[cb];
+        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
+
+        ++remapped_cb;
     }
 
     for (u32 i = 0; i < MaxShaderStages; i++) {

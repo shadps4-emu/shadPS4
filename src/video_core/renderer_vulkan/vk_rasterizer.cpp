@@ -68,7 +68,7 @@ void Rasterizer::Draw(bool is_indexed) {
         .pColorAttachments = color_attachments.data(),
     };
 
-    UpdateDynamicState();
+    UpdateDynamicState(*pipeline);
 
     cmdbuf.beginRendering(rendering_info);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
@@ -132,7 +132,7 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
     return regs.num_indices;
 }
 
-void Rasterizer::UpdateDynamicState() {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     UpdateViewportScissorState();
 
     auto& regs = liverpool->regs;
@@ -140,16 +140,13 @@ void Rasterizer::UpdateDynamicState() {
     cmdbuf.setBlendConstants(&regs.blend_constants.red);
 
     if (instance.IsColorWriteEnableSupported()) {
-        std::array<VkBool32, Liverpool::NumColorBuffers> write_en{};
-        std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_mask{};
-        for (int col_buf_idx = 0; col_buf_idx < Liverpool::NumColorBuffers; ++col_buf_idx) {
-            const auto mask = regs.color_target_mask.raw >> (col_buf_idx * 4);
-            write_en[col_buf_idx] = mask ? vk::True : vk::False;
-            write_mask[col_buf_idx] = vk::ColorComponentFlags{mask};
-        }
+        const auto& write_masks = pipeline.GetWriteMasks();
+        std::array<vk::Bool32, Liverpool::NumColorBuffers> write_ens{};
+        std::transform(write_masks.cbegin(), write_masks.cend(), write_ens.begin(),
+                       [](auto in) { return in ? vk::True : vk::False; });
 
-        cmdbuf.setColorWriteEnableEXT(write_en);
-        cmdbuf.setColorWriteMaskEXT(0, write_mask);
+        cmdbuf.setColorWriteEnableEXT(write_ens);
+        cmdbuf.setColorWriteMaskEXT(0, write_masks);
     }
 }
 

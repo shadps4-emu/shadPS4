@@ -39,6 +39,7 @@ struct GraphicsPipelineKey {
     Liverpool::PolygonMode polygon_mode;
     Liverpool::CullMode cull_mode;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
+    std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(GraphicsPipelineKey)) == 0;
@@ -64,6 +65,10 @@ public:
     [[nodiscard]] bool IsEmbeddedVs() const noexcept {
         static constexpr size_t EmbeddedVsHash = 0x59c556606a027efd;
         return key.stage_hashes[0] == EmbeddedVsHash;
+    }
+
+    [[nodiscard]] auto GetWriteMasks() const {
+        return key.write_masks;
     }
 
 private:

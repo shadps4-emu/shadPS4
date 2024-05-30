@@ -416,6 +416,10 @@ struct Liverpool {
         BitField<20, 4, u32> output5_mask;
         BitField<24, 4, u32> output6_mask;
         BitField<28, 4, u32> output7_mask;
+
+        [[nodiscard]] u8 GetMask(int buf_id) const {
+            return (raw >> (buf_id * 4)) & 0xffu;
+        }
     };
 
     struct IndexBufferBase {

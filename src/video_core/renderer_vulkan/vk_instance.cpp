@@ -151,10 +151,11 @@ bool Instance::CreateDevice() {
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     index_type_uint8 = add_extension(VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME);
-    color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
-    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    // The next two extensions are required to be available together in order to support write masks
+    color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
+    color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -194,6 +195,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceFeatures2{
             .features{
                 .robustBufferAccess = features.robustBufferAccess,
+                .independentBlend = true,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
                 .samplerAnisotropy = features.samplerAnisotropy,
@@ -233,6 +235,7 @@ bool Instance::CreateDevice() {
 
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();
+        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
 
     try {

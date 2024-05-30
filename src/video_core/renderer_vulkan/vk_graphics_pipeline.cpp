@@ -185,8 +185,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .srcAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.alpha_src_factor),
             .dstAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
             .alphaBlendOp = LiverpoolToVK::BlendOp(control.alpha_func),
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+            .colorWriteMask =
+                instance.IsColorWriteEnableSupported()
+                    ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+                    : key.write_masks[i],
         };
     }
 
