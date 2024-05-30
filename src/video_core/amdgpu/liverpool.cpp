@@ -61,7 +61,11 @@ void Liverpool::Process(std::stop_token stoken) {
                 --num_submits;
             }
         }
-        num_submits.notify_all();
+
+        if (submit_done) {
+            num_submits.notify_all();
+            submit_done = false;
+        }
     }
 }
 

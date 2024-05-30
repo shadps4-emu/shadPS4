@@ -777,6 +777,10 @@ public:
         return num_submits == 0;
     }
 
+    void NotifySubmitDone() {
+        submit_done = true;
+    }
+
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
     }
@@ -841,6 +845,7 @@ private:
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<bool> submit_done{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

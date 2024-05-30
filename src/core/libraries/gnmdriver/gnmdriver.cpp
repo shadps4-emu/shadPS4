@@ -1455,6 +1455,7 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
+    liverpool->NotifySubmitDone();
     return ORBIS_OK;
 }
 
