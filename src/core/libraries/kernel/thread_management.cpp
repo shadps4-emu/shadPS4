@@ -634,6 +634,35 @@ int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
     return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
 }
 
+int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec) {
+    cond = static_cast<ScePthreadCond*>(createCond(cond));
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (mutex == nullptr || *mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    timespec time{};
+    time.tv_sec = usec / 1000000;
+    time.tv_nsec = ((usec % 1000000) * 1000);
+    int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, &time);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ETIMEDOUT:
+        return SCE_KERNEL_ERROR_ETIMEDOUT;
+    case EINTR:
+        return SCE_KERNEL_ERROR_EINTR;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
@@ -1029,6 +1058,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", 1, 1, scePthreadCondWait);
     LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
     LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", 1, 1, scePthreadCondSignal);
+    LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel", 1, 1, scePthreadCondTimedwait);
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
