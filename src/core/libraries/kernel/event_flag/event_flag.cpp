@@ -48,6 +48,8 @@ int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* 
     case 0x20:
         thread_mode = EventFlagInternal::ThreadMode::Multi;
         break;
+    case 0x00:
+        break;
     default:
         UNREACHABLE();
     }
