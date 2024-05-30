@@ -122,6 +122,10 @@ Id EmitFPSqrt(EmitContext& ctx, Id value) {
     return ctx.OpSqrt(ctx.F32[1], value);
 }
 
+Id EmitFPInvSqrt(EmitContext& ctx, Id value) {
+    return ctx.OpInverseSqrt(ctx.F32[1], value);
+}
+
 Id EmitFPSaturate16(EmitContext& ctx, Id value) {
     const Id zero{ctx.Constant(ctx.F16[1], u16{0})};
     const Id one{ctx.Constant(ctx.F16[1], u16{0x3c00})};

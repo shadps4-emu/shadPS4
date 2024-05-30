@@ -193,4 +193,9 @@ void Translator::V_MAX_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(src0, src1));
 }
 
+void Translator::V_RSQ_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPInvSqrt(src0));
+}
+
 } // namespace Shader::Gcn

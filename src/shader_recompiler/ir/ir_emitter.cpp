@@ -609,6 +609,10 @@ F32 IREmitter::FPSqrt(const F32& value) {
     return Inst<F32>(Opcode::FPSqrt, value);
 }
 
+F32 IREmitter::FPInvSqrt(const F32& value) {
+    return Inst<F32>(Opcode::FPInvSqrt, value);
+}
+
 F32F64 IREmitter::FPSaturate(const F32F64& value) {
     switch (value.Type()) {
     case Type::F32:
