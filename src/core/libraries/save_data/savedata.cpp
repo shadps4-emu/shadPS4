@@ -372,6 +372,18 @@ s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
         mount_result->mount_status = 1;
         strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
     } break;
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
+        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
+        if (!std::filesystem::exists(mount_dir)) {
+            std::filesystem::create_directories(mount_dir);
+        }
+
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        mnt->Mount(mount_dir, g_mount_point);
+
+        mount_result->mount_status = 1;
+        strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
+    } break;
     default:
         UNREACHABLE();
     }
