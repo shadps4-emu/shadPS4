@@ -113,6 +113,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         vk::DynamicState::eBlendConstants,
     };
 
+    if (instance.IsColorWriteEnableSupported()) {
+        dynamic_states.push_back(vk::DynamicState::eColorWriteEnableEXT);
+        dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
+    }
+
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
         .pDynamicStates = dynamic_states.data(),

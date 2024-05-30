@@ -138,6 +138,19 @@ void Rasterizer::UpdateDynamicState() {
     auto& regs = liverpool->regs;
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setBlendConstants(&regs.blend_constants.red);
+
+    if (instance.IsColorWriteEnableSupported()) {
+        std::array<VkBool32, Liverpool::NumColorBuffers> write_en{};
+        std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_mask{};
+        for (int col_buf_idx = 0; col_buf_idx < Liverpool::NumColorBuffers; ++col_buf_idx) {
+            const auto mask = regs.color_target_mask.raw >> (col_buf_idx * 4);
+            write_en[col_buf_idx] = mask ? vk::True : vk::False;
+            write_mask[col_buf_idx] = vk::ColorComponentFlags{mask};
+        }
+
+        cmdbuf.setColorWriteEnableEXT(write_en);
+        cmdbuf.setColorWriteMaskEXT(0, write_mask);
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {
