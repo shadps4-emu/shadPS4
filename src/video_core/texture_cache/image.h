@@ -98,7 +98,7 @@ struct Image {
         if (it == image_view_infos.end()) {
             return {};
         }
-        return image_view_ids[std::distance(it, image_view_infos.begin())];
+        return image_view_ids[std::distance(image_view_infos.begin(), it)];
     }
 
     void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);

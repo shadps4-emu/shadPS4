@@ -107,7 +107,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     }
 }
 
-void Translator::TBUFFER_LOAD_FORMAT_XYZW(const GcnInst& inst) {
+void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
@@ -127,15 +127,68 @@ void Translator::TBUFFER_LOAD_FORMAT_XYZW(const GcnInst& inst) {
     info.index_enable.Assign(mtbuf.idxen);
     info.offset_enable.Assign(mtbuf.offen);
     info.inst_offset.Assign(mtbuf.offset);
-    info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
-    info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
-    info.is_typed.Assign(1);
+    info.is_typed.Assign(is_typed);
+    if (is_typed) {
+        info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
+        info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
+    }
 
-    const IR::Value value = ir.LoadBuffer(4, ir.GetScalarReg(sharp), address, info);
+    const IR::Value value = ir.LoadBuffer(num_dwords, ir.GetScalarReg(sharp), address, info);
     const IR::VectorReg dst_reg{inst.src[1].code};
-    for (u32 i = 0; i < 4; i++) {
+    if (num_dwords == 1) {
+        ir.SetVectorReg(dst_reg, IR::F32{value});
+        return;
+    }
+    for (u32 i = 0; i < num_dwords; i++) {
         ir.SetVectorReg(dst_reg + i, IR::F32{ir.CompositeExtract(value, i)});
     }
+}
+
+void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst) {
+    const auto& mtbuf = inst.control.mtbuf;
+    const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+    const IR::Value address = [&] -> IR::Value {
+        if (mtbuf.idxen && mtbuf.offen) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
+        }
+        if (mtbuf.idxen || mtbuf.offen) {
+            return ir.GetVectorReg(vaddr);
+        }
+        return {};
+    }();
+    const IR::Value soffset{GetSrc(inst.src[3])};
+    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
+
+    IR::BufferInstInfo info{};
+    info.index_enable.Assign(mtbuf.idxen);
+    info.offset_enable.Assign(mtbuf.offen);
+    info.inst_offset.Assign(mtbuf.offset);
+    info.is_typed.Assign(is_typed);
+    if (is_typed) {
+        info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
+        info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
+    }
+
+    IR::Value value{};
+    const IR::VectorReg src_reg{inst.src[1].code};
+    switch (num_dwords) {
+    case 1:
+        value = ir.GetVectorReg(src_reg);
+        break;
+    case 2:
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1));
+        break;
+    case 3:
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
+                                      ir.GetVectorReg(src_reg + 2));
+        break;
+    case 4:
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
+                                      ir.GetVectorReg(src_reg + 2), ir.GetVectorReg(src_reg + 3));
+        break;
+    }
+    ir.StoreBuffer(num_dwords, ir.GetScalarReg(sharp), address, value, info);
 }
 
 } // namespace Shader::Gcn

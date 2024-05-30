@@ -173,10 +173,10 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     spv::ExecutionModel execution_model{};
     switch (program.info.stage) {
     case Stage::Compute: {
-        // const std::array<u32, 3> workgroup_size{program.workgroup_size};
-        // execution_model = spv::ExecutionModel::GLCompute;
-        // ctx.AddExecutionMode(main, spv::ExecutionMode::LocalSize, workgroup_size[0],
-        //                      workgroup_size[1], workgroup_size[2]);
+        const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
+        execution_model = spv::ExecutionModel::GLCompute;
+        ctx.AddExecutionMode(main, spv::ExecutionMode::LocalSize, workgroup_size[0],
+                             workgroup_size[1], workgroup_size[2]);
         break;
     }
     case Stage::Vertex:
@@ -189,6 +189,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
+        ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
         // if (program.info.stores_frag_depth) {
         //     ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         // }
@@ -249,7 +250,11 @@ Id EmitIdentity(EmitContext& ctx, const IR::Value& value) {
 }
 
 Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
-    throw NotImplementedException("Forward identity declaration");
+    const Id id{ctx.Def(value)};
+    if (!Sirit::ValidId(id)) {
+        throw NotImplementedException("Forward identity declaration");
+    }
+    return id;
 }
 
 void EmitReference(EmitContext&) {}
@@ -258,19 +263,27 @@ void EmitPhiMove(EmitContext&) {
     throw LogicError("Unreachable instruction");
 }
 
-void EmitGetZeroFromOp(EmitContext&) {
+void EmitGetScc(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
-void EmitGetSignFromOp(EmitContext&) {
+void EmitGetExec(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
-void EmitGetCarryFromOp(EmitContext&) {
+void EmitGetVcc(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
-void EmitGetOverflowFromOp(EmitContext&) {
+void EmitGetVccLo(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
+void EmitSetScc(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
+void EmitSetExec(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
@@ -278,7 +291,7 @@ void EmitSetVcc(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
-void EmitGetVcc(EmitContext& ctx) {
+void EmitSetVccLo(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 

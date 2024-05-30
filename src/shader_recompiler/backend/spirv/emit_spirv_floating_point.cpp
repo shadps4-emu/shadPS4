@@ -30,6 +30,10 @@ Id EmitFPAdd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return ctx.OpFAdd(ctx.F64[1], a, b);
 }
 
+Id EmitFPSub32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    return ctx.OpFSub(ctx.F32[1], a, b);
+}
+
 Id EmitFPFma16(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
     return ctx.OpFma(ctx.F16[1], a, b, c);
 }
@@ -194,6 +198,10 @@ Id EmitFPTrunc32(EmitContext& ctx, Id value) {
 
 Id EmitFPTrunc64(EmitContext& ctx, Id value) {
     return ctx.OpTrunc(ctx.F64[1], value);
+}
+
+Id EmitFPFract(EmitContext& ctx, Id value) {
+    return ctx.OpFract(ctx.F32[1], value);
 }
 
 Id EmitFPOrdEqual16(EmitContext& ctx, Id lhs, Id rhs) {

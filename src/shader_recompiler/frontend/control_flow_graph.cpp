@@ -42,7 +42,7 @@ static IR::Condition MakeCondition(Opcode opcode) {
 
 CFG::CFG(ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
     : block_pool{block_pool_}, inst_list{inst_list_} {
-    index_to_pc.resize(inst_list.size());
+    index_to_pc.resize(inst_list.size() + 1);
     EmitLabels();
     EmitBlocks();
     LinkBlocks();
@@ -78,6 +78,7 @@ void CFG::EmitLabels() {
         }
         pc += inst.length;
     }
+    index_to_pc[inst_list.size()] = pc;
 
     // Sort labels to make sure block insertion is correct.
     std::ranges::sort(labels);
@@ -90,7 +91,7 @@ void CFG::EmitBlocks() {
         }
         const auto it_index = std::ranges::lower_bound(index_to_pc, label);
         ASSERT(it_index != index_to_pc.end() || label > index_to_pc.back());
-        return std::distance(index_to_pc.begin(), std::prev(it_index));
+        return std::distance(index_to_pc.begin(), it_index);
     };
 
     for (auto it = labels.begin(); it != labels.end(); it++) {
@@ -102,7 +103,7 @@ void CFG::EmitBlocks() {
             return;
         }
         const Label end = *next_it;
-        const size_t end_index = get_index(end);
+        const size_t end_index = get_index(end) - 1;
         const auto& end_inst = inst_list[end_index];
 
         // Insert block between the labels using the last instruction
@@ -146,9 +147,15 @@ void CFG::LinkBlocks() {
             block.branch_true = get_block(target_pc);
             block.branch_false = get_block(block.end);
             block.end_class = EndClass::Branch;
+        } else if (end_inst.opcode == Opcode::S_ENDPGM) {
+            const auto& prev_inst = inst_list[block.end_index - 1];
+            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0) {
+                block.end_class = EndClass::Kill;
+            } else {
+                block.end_class = EndClass::Exit;
+            }
         } else {
-            // Exit blocks don't link to anything.
-            block.end_class = EndClass::Exit;
+            UNREACHABLE();
         }
     }
 }
@@ -187,12 +194,12 @@ std::string CFG::Dot() const {
                 fmt::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n", node_uid);
             ++node_uid;
             break;
-            // case EndClass::Kill:
-            //     dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-            //     dot += fmt::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n",
-            //                        node_uid);
-            //     ++node_uid;
-            //     break;
+        case EndClass::Kill:
+            dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
+            dot +=
+                fmt::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n", node_uid);
+            ++node_uid;
+            break;
         }
     }
     dot += "\t\tlabel = \"main\";\n\t}\n";

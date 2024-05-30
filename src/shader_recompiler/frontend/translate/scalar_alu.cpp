@@ -30,9 +30,16 @@ void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
             return ir.ILessThan(lhs, rhs, is_signed);
         case ConditionOp::LE:
             return ir.ILessThanEqual(lhs, rhs, is_signed);
+        default:
+            UNREACHABLE();
         }
     }();
-    // ir.SetScc(result);
+    ir.SetScc(result);
+}
+
+void Translator::S_ANDN2_B64(const GcnInst& inst) {
+    // TODO: Actually implement this.
+    ir.SetScc(ir.GetVcc());
 }
 
 } // namespace Shader::Gcn

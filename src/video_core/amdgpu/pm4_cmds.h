@@ -540,4 +540,12 @@ struct PM4DumpConstRam {
     }
 };
 
+struct PM4CmdDispatchDirect {
+    PM4Type3Header header;
+    u32 dim_x;              ///< X dimensions of the array of thread groups to be dispatched
+    u32 dim_y;              ///< Y dimensions of the array of thread groups to be dispatched
+    u32 dim_z;              ///< Z dimensions of the array of thread groups to be dispatched
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+};
+
 } // namespace AmdGpu

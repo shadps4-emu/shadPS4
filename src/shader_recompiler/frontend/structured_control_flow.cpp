@@ -409,9 +409,9 @@ private:
             case EndClass::Exit:
                 root.insert(ip, *pool.Create(Return{}, &root_stmt));
                 break;
-                // case EndClass::Kill:
-                //     root.insert(ip, *pool.Create(Kill{}, &root_stmt));
-                //     break;
+            case EndClass::Kill:
+                root.insert(ip, *pool.Create(Kill{}, &root_stmt));
+                break;
             }
         }
     }
@@ -606,8 +606,7 @@ public:
         Visit(root_stmt, nullptr, nullptr);
 
         IR::Block& first_block{*syntax_list.front().data.block};
-        IR::IREmitter ir(first_block, first_block.begin());
-        ir.Prologue();
+        Translator{&first_block, info}.EmitPrologue();
     }
 
 private:
@@ -767,7 +766,7 @@ private:
             case StatementType::Kill: {
                 ensure_block();
                 IR::Block* demote_block{MergeBlock(parent, stmt)};
-                // IR::IREmitter{*current_block}.DemoteToHelperInvocation();
+                IR::IREmitter{*current_block}.Discard();
                 current_block->AddBranch(demote_block);
                 current_block = demote_block;
 

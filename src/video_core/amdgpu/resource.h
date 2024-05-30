@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
 #include "video_core/amdgpu/pixel_format.h"
@@ -29,6 +30,22 @@ struct Buffer {
         BitField<21, 2, u32> index_stride;
         BitField<23, 1, u32> add_tid_enable;
     };
+
+    u32 GetStride() const noexcept {
+        return stride == 0 ? 1U : stride;
+    }
+
+    u32 GetStrideElements(u32 element_size) const noexcept {
+        if (stride == 0) {
+            return 1U;
+        }
+        ASSERT(stride % element_size == 0);
+        return stride / element_size;
+    }
+
+    u32 GetSize() const noexcept {
+        return GetStride() * num_records;
+    }
 };
 
 enum class ImageType : u64 {
@@ -70,7 +87,7 @@ constexpr std::string_view NameOf(ImageType type) {
 
 struct Image {
     union {
-        BitField<0, 40, u64> base_address;
+        BitField<0, 38, u64> base_address;
         BitField<40, 12, u64> min_lod;
         BitField<52, 6, u64> data_format;
         BitField<58, 4, u64> num_format;

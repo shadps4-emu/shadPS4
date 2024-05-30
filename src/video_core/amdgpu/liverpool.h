@@ -48,9 +48,28 @@ struct Liverpool {
 
     using UserData = std::array<u32, NumShaderUserData>;
 
+    struct BinaryInfo {
+        u8 signature[7];
+        u8 version;
+        u32 pssl_or_cg : 1;
+        u32 cached : 1;
+        u32 type : 4;
+        u32 source_type : 2;
+        u32 length : 24;
+        u8 chunk_usage_base_offset_in_dw;
+        u8 num_input_usage_slots;
+        u8 is_srt : 1;
+        u8 is_srt_used_info_valid : 1;
+        u8 is_extended_usage_info : 1;
+        u8 reserved2 : 5;
+        u8 reserved3;
+        u64 shader_hash;
+        u32 crc32;
+    };
+
     struct ShaderProgram {
         u32 address_lo;
-        u32 address_hi;
+        BitField<0, 8, u32> address_hi;
         union {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
@@ -65,13 +84,53 @@ struct Liverpool {
         }
 
         std::span<const u32> Code() const {
-            u32 code_size = 0;
             const u32* code = Address<u32>();
-            static constexpr std::string_view PostHeader = "OrbShdr";
-            while (std::memcmp(code + code_size, PostHeader.data(), PostHeader.size()) != 0) {
-                code_size++;
-            }
-            return std::span{code, code_size};
+            BinaryInfo bininfo;
+            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const u32 num_dwords = bininfo.length / sizeof(u32);
+            return std::span{code, num_dwords};
+        }
+    };
+
+    struct ComputeProgram {
+        u32 dispatch_initiator;
+        u32 dim_x;
+        u32 dim_y;
+        u32 dim_z;
+        u32 start_x;
+        u32 start_y;
+        u32 start_z;
+        struct {
+            u16 full;
+            u16 partial;
+        } num_thread_x, num_thread_y, num_thread_z;
+        INSERT_PADDING_WORDS(1);
+        BitField<0, 12, u32> max_wave_id;
+        u32 address_lo;
+        BitField<0, 8, u32> address_hi;
+        INSERT_PADDING_WORDS(4);
+        union {
+            BitField<0, 6, u64> num_vgprs;
+            BitField<6, 4, u64> num_sgprs;
+            BitField<33, 5, u64> num_user_regs;
+        } settings;
+        INSERT_PADDING_WORDS(1);
+        u32 resource_limits;
+        INSERT_PADDING_WORDS(0x2A);
+        UserData user_data;
+
+        template <typename T = u8>
+        const T* Address() const {
+            const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
+            return reinterpret_cast<const T*>(addr);
+        }
+
+        std::span<const u32> Code() const {
+            const u32* code = Address<u32>();
+            BinaryInfo bininfo;
+            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const u32 num_dwords = bininfo.length / sizeof(u32);
+            return std::span{code, num_dwords};
         }
     };
 
@@ -621,7 +680,9 @@ struct Liverpool {
             ShaderProgram ps_program;
             INSERT_PADDING_WORDS(0x2C);
             ShaderProgram vs_program;
-            INSERT_PADDING_WORDS(0xA008 - 0x2C4C - 16);
+            INSERT_PADDING_WORDS(0x2E00 - 0x2C4C - 16);
+            ComputeProgram cs_program;
+            INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80);
             u32 depth_bounds_min;
             u32 depth_bounds_max;
             u32 stencil_clear;
@@ -777,6 +838,10 @@ private:
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
 static_assert(GFX6_3D_REG_INDEX(vs_program) == 0x2C48);
 static_assert(GFX6_3D_REG_INDEX(vs_program.user_data) == 0x2C4C);
+static_assert(GFX6_3D_REG_INDEX(cs_program) == 0x2E00);
+static_assert(GFX6_3D_REG_INDEX(cs_program.dim_z) == 0x2E03);
+static_assert(GFX6_3D_REG_INDEX(cs_program.address_lo) == 0x2E0C);
+static_assert(GFX6_3D_REG_INDEX(cs_program.user_data) == 0x2E40);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);

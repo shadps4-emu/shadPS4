@@ -33,7 +33,7 @@ struct InputModifiers {
 /// These are applied before storing an operand register.
 struct OutputModifiers {
     bool clamp = false;
-    float multiplier = std::numeric_limits<float>::quiet_NaN();
+    float multiplier = 0.f;
 };
 
 struct InstOperand {

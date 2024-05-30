@@ -206,7 +206,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             break;
         }
         case PM4ItOpcode::DispatchDirect: {
-            // const auto* dispatch_direct = reinterpret_cast<PM4CmdDispatchDirect*>(header);
+            const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
+            regs.cs_program.dim_x = dispatch_direct->dim_x;
+            regs.cs_program.dim_y = dispatch_direct->dim_y;
+            regs.cs_program.dim_z = dispatch_direct->dim_z;
+            regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
+            if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                rasterizer->DispatchDirect();
+            }
             break;
         }
         case PM4ItOpcode::EventWrite: {

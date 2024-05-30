@@ -45,15 +45,13 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::PhiMove:
     case Opcode::Prologue:
     case Opcode::Epilogue:
-    // case Opcode::Join:
-    // case Opcode::Barrier:
-    // case Opcode::WorkgroupMemoryBarrier:
-    // case Opcode::DeviceMemoryBarrier:
-    // case Opcode::EmitVertex:
-    // case Opcode::EndPrimitive:
+    case Opcode::Discard:
     case Opcode::SetAttribute:
-        // case Opcode::SetFragColor:
-        // case Opcode::SetFragDepth:
+    case Opcode::StoreBufferF32:
+    case Opcode::StoreBufferF32x2:
+    case Opcode::StoreBufferF32x3:
+    case Opcode::StoreBufferF32x4:
+    case Opcode::StoreBufferU32:
         return true;
     default:
         return false;

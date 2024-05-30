@@ -41,6 +41,7 @@ public:
 
     void Prologue();
     void Epilogue();
+    void Discard();
 
     U32 GetUserData(IR::ScalarReg reg);
 
@@ -54,9 +55,14 @@ public:
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
 
+    [[nodiscard]] U1 GetScc();
+    [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
-
+    [[nodiscard]] U32 GetVccLo();
+    void SetScc(const U1& value);
+    void SetExec(const U1& value);
     void SetVcc(const U1& value);
+    void SetVccLo(const U32& value);
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
@@ -72,6 +78,8 @@ public:
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);
+    void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
+                     BufferInstInfo info);
 
     [[nodiscard]] U1 GetZeroFromOp(const Value& op);
     [[nodiscard]] U1 GetSignFromOp(const Value& op);
@@ -100,6 +108,7 @@ public:
     [[nodiscard]] Value UnpackHalf2x16(const U32& value);
 
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
+    [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPMul(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPFma(const F32F64& a, const F32F64& b, const F32F64& c);
 
@@ -121,6 +130,7 @@ public:
     [[nodiscard]] F32F64 FPFloor(const F32F64& value);
     [[nodiscard]] F32F64 FPCeil(const F32F64& value);
     [[nodiscard]] F32F64 FPTrunc(const F32F64& value);
+    [[nodiscard]] F32 Fract(const F32& value);
 
     [[nodiscard]] U1 FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPNotEqual(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
