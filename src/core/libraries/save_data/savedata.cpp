@@ -331,22 +331,14 @@ int PS4_SYSV_ABI sceSaveDataLoadIcon() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataMount() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
-                                   OrbisSaveDataMountResult* mount_result) {
-    LOG_INFO(Lib_SaveData, "called user_id = {} dir_name = {} blocks = {} mount_mode = {}",
-             mount->user_id, mount->dir_name->data, mount->blocks, mount->mount_mode);
+s32 saveDataMount(u32 user_id, std::string dir_name, u32 mount_mode,
+                  OrbisSaveDataMountResult* mount_result) {
 
     auto* param_sfo = Common::Singleton<PSF>::Instance();
     std::string id(param_sfo->GetString("CONTENT_ID"), 7, 9);
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(mount->user_id) / "savedata" / id /
-                            std::string(mount->dir_name->data);
-    switch (mount->mount_mode) {
+                            std::to_string(user_id) / "savedata" / id / dir_name;
+    switch (mount_mode) {
     case ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY:
     case ORBIS_SAVE_DATA_MOUNT_MODE_RDWR: {
         if (!std::filesystem::exists(mount_dir)) {
@@ -390,6 +382,28 @@ s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
     mount_result->required_blocks = 0;
 
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceSaveDataMount(const OrbisSaveDataMount* mount,
+                                  OrbisSaveDataMountResult* mount_result) {
+    if (mount == nullptr) {
+        return ORBIS_SAVE_DATA_ERROR_PARAMETER;
+    }
+    LOG_INFO(Lib_SaveData, "called: mount = {}, mode = {}, blocks = {}", mount->dir_name->data,
+             mount->mount_mode, mount->blocks);
+    return saveDataMount(mount->user_id, std::string(mount->dir_name->data), mount->mount_mode,
+                         mount_result);
+}
+
+s32 PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
+                                   OrbisSaveDataMountResult* mount_result) {
+    if (mount == nullptr) {
+        return ORBIS_SAVE_DATA_ERROR_PARAMETER;
+    }
+    LOG_INFO(Lib_SaveData, "called: mount = {}, mode = {}, blocks = {}", mount->dir_name->data,
+             mount->mount_mode, mount->blocks);
+    return saveDataMount(mount->user_id, std::string(mount->dir_name->data), mount->mount_mode,
+                         mount_result);
 }
 
 int PS4_SYSV_ABI sceSaveDataMount5() {
