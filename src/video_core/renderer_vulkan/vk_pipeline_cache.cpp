@@ -101,9 +101,8 @@ void PipelineCache::RefreshGraphicsKey() {
                            : vk::Format::eUndefined;
     for (u32 i = 0; i < Liverpool::NumColorBuffers; i++) {
         const auto& cb = regs.color_buffers[i];
-        key.color_formats[i] = cb.base_address
-                                   ? LiverpoolToVK::SurfaceFormat(cb.info.format, cb.NumFormat())
-                                   : vk::Format::eUndefined;
+        key.color_formats[i] = cb ? LiverpoolToVK::SurfaceFormat(cb.info.format, cb.NumFormat())
+                                  : vk::Format::eUndefined;
     }
 
     for (u32 i = 0; i < MaxShaderStages; i++) {

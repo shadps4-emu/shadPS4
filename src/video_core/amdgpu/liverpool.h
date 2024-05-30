@@ -631,6 +631,10 @@ struct Liverpool {
         u32 clear_word1;
         INSERT_PADDING_WORDS(2);
 
+        operator bool() const {
+            return info.format != DataFormat::FormatInvalid;
+        }
+
         u32 Pitch() const {
             return (pitch.tile_max + 1) << 3;
         }
