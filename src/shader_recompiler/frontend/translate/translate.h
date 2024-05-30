@@ -67,6 +67,7 @@ public:
     void V_FMA_F32(const GcnInst& inst);
     void V_CMP_F32(ConditionOp op, const GcnInst& inst);
     void V_MAX_F32(const GcnInst& inst);
+    void V_RSQ_F32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);

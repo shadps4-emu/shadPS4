@@ -321,9 +321,13 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MAX_F32:
             translator.V_MAX_F32(inst);
             break;
+        case Opcode::V_RSQ_F32:
+            translator.V_RSQ_F32(inst);
+            break;
         case Opcode::S_ANDN2_B64:
             translator.S_ANDN2_B64(inst);
             break;
+        case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:
         case Opcode::S_MOV_B64:

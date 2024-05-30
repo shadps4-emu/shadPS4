@@ -15,6 +15,7 @@
 
 #define PAGE_NOACCESS PROT_NONE
 #define PAGE_READWRITE (PROT_READ | PROT_WRITE)
+#define PAGE_READONLY PROT_READ
 #else
 #include <windows.h>
 

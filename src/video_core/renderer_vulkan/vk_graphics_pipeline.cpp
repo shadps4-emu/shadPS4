@@ -113,6 +113,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         vk::DynamicState::eBlendConstants,
     };
 
+    if (instance.IsColorWriteEnableSupported()) {
+        dynamic_states.push_back(vk::DynamicState::eColorWriteEnableEXT);
+        dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
+    }
+
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
         .pDynamicStates = dynamic_states.data(),
@@ -144,18 +149,21 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         },
     };
 
-    u32 shader_count = 2;
+    u32 shader_count = 1;
     std::array<vk::PipelineShaderStageCreateInfo, MaxShaderStages> shader_stages;
     shader_stages[0] = vk::PipelineShaderStageCreateInfo{
         .stage = vk::ShaderStageFlagBits::eVertex,
         .module = modules[0],
         .pName = "main",
     };
-    shader_stages[1] = vk::PipelineShaderStageCreateInfo{
-        .stage = vk::ShaderStageFlagBits::eFragment,
-        .module = modules[4],
-        .pName = "main",
-    };
+    if (modules[4]) {
+        shader_stages[1] = vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eFragment,
+            .module = modules[4],
+            .pName = "main",
+        };
+        ++shader_count;
+    }
 
     const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
     const u32 num_color_formats = std::distance(key.color_formats.begin(), it);
@@ -177,8 +185,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .srcAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.alpha_src_factor),
             .dstAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
             .alphaBlendOp = LiverpoolToVK::BlendOp(control.alpha_func),
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+            .colorWriteMask =
+                instance.IsColorWriteEnableSupported()
+                    ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+                    : key.write_masks[i],
         };
     }
 

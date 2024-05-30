@@ -111,6 +111,11 @@ public:
         return external_memory_host;
     }
 
+    /// Returns true when VK_EXT_color_write_enable is supported
+    bool IsColorWriteEnableSupported() const {
+        return color_write_en;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -218,6 +223,7 @@ private:
     bool fragment_shader_barycentric{};
     bool shader_stencil_export{};
     bool external_memory_host{};
+    bool color_write_en{};
     u64 min_imported_host_pointer_alignment{};
     bool tooling_info{};
     bool debug_utils_supported{};

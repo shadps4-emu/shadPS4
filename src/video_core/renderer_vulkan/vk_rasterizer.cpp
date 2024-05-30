@@ -39,14 +39,21 @@ void Rasterizer::Draw(bool is_indexed) {
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
-    const auto& image_view = texture_cache.RenderTarget(regs.color_buffers[0]);
+    boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
+        color_attachments{};
+    for (const auto& col_buf : regs.color_buffers) {
+        if (!col_buf) {
+            continue;
+        }
+        const auto& image_view = texture_cache.RenderTarget(col_buf);
 
-    const vk::RenderingAttachmentInfo color_info = {
-        .imageView = *image_view.image_view,
-        .imageLayout = vk::ImageLayout::eGeneral,
-        .loadOp = vk::AttachmentLoadOp::eLoad,
-        .storeOp = vk::AttachmentStoreOp::eStore,
-    };
+        color_attachments.push_back({
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        });
+    }
 
     // TODO: Don't restart renderpass every draw
     const auto& scissor = regs.screen_scissor;
@@ -57,11 +64,11 @@ void Rasterizer::Draw(bool is_indexed) {
                 .extent = {scissor.GetWidth(), scissor.GetHeight()},
             },
         .layerCount = 1,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &color_info,
+        .colorAttachmentCount = static_cast<u32>(color_attachments.size()),
+        .pColorAttachments = color_attachments.data(),
     };
 
-    UpdateDynamicState();
+    UpdateDynamicState(*pipeline);
 
     cmdbuf.beginRendering(rendering_info);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
@@ -125,12 +132,22 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
     return regs.num_indices;
 }
 
-void Rasterizer::UpdateDynamicState() {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     UpdateViewportScissorState();
 
     auto& regs = liverpool->regs;
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setBlendConstants(&regs.blend_constants.red);
+
+    if (instance.IsColorWriteEnableSupported()) {
+        const auto& write_masks = pipeline.GetWriteMasks();
+        std::array<vk::Bool32, Liverpool::NumColorBuffers> write_ens{};
+        std::transform(write_masks.cbegin(), write_masks.cend(), write_ens.begin(),
+                       [](auto in) { return in ? vk::True : vk::False; });
+
+        cmdbuf.setColorWriteEnableEXT(write_ens);
+        cmdbuf.setColorWriteMaskEXT(0, write_masks);
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {
