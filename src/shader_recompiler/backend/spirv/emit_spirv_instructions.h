@@ -174,7 +174,6 @@ Id EmitFPRecip64(EmitContext& ctx, Id value);
 Id EmitFPRecipSqrt32(EmitContext& ctx, Id value);
 Id EmitFPRecipSqrt64(EmitContext& ctx, Id value);
 Id EmitFPSqrt(EmitContext& ctx, Id value);
-Id EmitFPInvSqrt(EmitContext& ctx, Id value);
 Id EmitFPSaturate16(EmitContext& ctx, Id value);
 Id EmitFPSaturate32(EmitContext& ctx, Id value);
 Id EmitFPSaturate64(EmitContext& ctx, Id value);
