@@ -111,6 +111,9 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     case OperandField::ConstFloatNeg_1_0:
         value = ir.Imm32(-1.0f);
         break;
+    case OperandField::ConstFloatNeg_2_0:
+        value = ir.Imm32(-2.0f);
+        break;
     case OperandField::VccLo:
         value = ir.GetVccLo();
         break;
@@ -327,9 +330,30 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ANDN2_B64:
             translator.S_ANDN2_B64(inst);
             break;
+        case Opcode::V_SIN_F32:
+            translator.V_SIN_F32(inst);
+            break;
+        case Opcode::V_LOG_F32:
+            translator.V_LOG_F32(inst);
+            break;
+        case Opcode::V_EXP_F32:
+            translator.V_EXP_F32(inst);
+            break;
+        case Opcode::V_SQRT_F32:
+            translator.V_SQRT_F32(inst);
+            break;
+        case Opcode::V_MIN_F32:
+            translator.V_MIN_F32(inst);
+            break;
+        case Opcode::V_MIN3_F32:
+            translator.V_MIN3_F32(inst);
+            break;
         case Opcode::S_NOP:
+        case Opcode::S_AND_B64:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:
+        case Opcode::S_CBRANCH_SCC1:
+        case Opcode::S_BRANCH:
         case Opcode::S_MOV_B64:
         case Opcode::S_WQM_B64:
         case Opcode::V_INTERP_P1_F32:

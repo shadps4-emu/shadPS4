@@ -42,7 +42,7 @@ struct GraphicsPipelineKey {
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
-        return std::memcmp(this, &key, sizeof(GraphicsPipelineKey)) == 0;
+        return std::memcmp(this, &key, sizeof(key)) == 0;
     }
 };
 static_assert(std::has_unique_object_representations_v<GraphicsPipelineKey>);
