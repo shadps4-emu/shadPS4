@@ -18,11 +18,6 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut) {
-    LOG_INFO(Kernel_Vmm,
-             "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, alignment = {:#x}, memoryType = "
-             "{:#x}",
-             searchStart, searchEnd, len, alignment, memoryType);
-
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
@@ -44,7 +39,12 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
     *physAddrOut = static_cast<s64>(phys_addr);
-    LOG_INFO(Kernel_Vmm, "physAddrOut = {:#x}", phys_addr);
+
+    LOG_INFO(Kernel_Vmm,
+             "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, "
+             "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
+             searchStart, searchEnd, len, alignment, memoryType, phys_addr);
+
     return SCE_OK;
 }
 
@@ -115,8 +115,16 @@ s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len,
 }
 
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot) {
+    LOG_WARNING(Kernel_Vmm, "called");
     auto* memory = Core::Memory::Instance();
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
+}
+
+int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
+                                            size_t infoSize) {
+    LOG_WARNING(Kernel_Vmm, "called");
+    auto* memory = Core::Memory::Instance();
+    return memory->DirectMemoryQuery(offset, flags == 1, query_info);
 }
 
 } // namespace Libraries::Kernel

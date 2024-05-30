@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 
@@ -80,7 +81,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     if (True(flags & MemoryMapFlags::Fixed) && True(flags & MemoryMapFlags::NoOverwrite)) {
         // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
         const auto& vma = FindVMA(mapped_addr)->second;
-        const u32 remaining_size = vma.base + vma.size - mapped_addr;
+        const size_t remaining_size = vma.base + vma.size - mapped_addr;
         ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
     }
 
@@ -131,7 +132,22 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
     *start = reinterpret_cast<void*>(vma.base);
     *end = reinterpret_cast<void*>(vma.base + vma.size);
     *prot = static_cast<u32>(vma.prot);
-    return SCE_OK;
+    return ORBIS_OK;
+}
+
+int MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
+                                     Libraries::Kernel::OrbisQueryInfo* out_info) {
+    const auto it = std::ranges::find_if(allocations, [&](const DirectMemoryArea& alloc) {
+        return alloc.base <= addr && addr < alloc.base + alloc.size;
+    });
+    if (it == allocations.end()) {
+        return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    out_info->start = it->base;
+    out_info->end = it->base + it->size;
+    out_info->memoryType = it->memory_type;
+    return ORBIS_OK;
 }
 
 std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
@@ -146,7 +162,8 @@ VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG(vma.type == VMAType::Free, "Adding a mapping to already mapped region");
+    ASSERT_MSG(vma.type == VMAType::Free && vma.base <= virtual_addr,
+               "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;
     const VAddr end_in_vma = start_in_vma + size;
@@ -164,7 +181,7 @@ VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
     return vma_handle->second;
 }
 
-MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u32 offset_in_vma) {
+MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, size_t offset_in_vma) {
     auto& old_vma = vma_handle->second;
     ASSERT(offset_in_vma < old_vma.size && offset_in_vma > 0);
 
@@ -199,6 +216,7 @@ MemoryManager::VMAHandle MemoryManager::MergeAdjacent(VMAHandle iter) {
 }
 
 void MemoryManager::MapVulkanMemory(VAddr addr, size_t size) {
+    return;
     const vk::Device device = instance->GetDevice();
     const auto memory_props = instance->GetPhysicalDevice().getMemoryProperties();
     void* host_pointer = reinterpret_cast<void*>(addr);
@@ -270,6 +288,7 @@ void MemoryManager::MapVulkanMemory(VAddr addr, size_t size) {
 }
 
 void MemoryManager::UnmapVulkanMemory(VAddr addr, size_t size) {
+    return;
     const auto it = mapped_memories.find(addr);
     ASSERT(it != mapped_memories.end() && it->second.buffer_size == size);
     mapped_memories.erase(it);

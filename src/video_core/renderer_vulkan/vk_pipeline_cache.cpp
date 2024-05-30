@@ -93,6 +93,7 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
+    key.cull_mode = regs.polygon_control.CullingMode();
 
     const auto& db = regs.depth_buffer;
     key.depth_format = key.depth.depth_enable

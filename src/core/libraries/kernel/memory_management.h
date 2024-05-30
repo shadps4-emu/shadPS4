@@ -30,6 +30,12 @@ enum MemoryProtection : u32 {
     SCE_KERNEL_PROT_GPU_RW = 0x30     // Permit reads/writes from the GPU
 };
 
+struct OrbisQueryInfo {
+    uintptr_t start;
+    uintptr_t end;
+    int memoryType;
+};
+
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut);
@@ -40,5 +46,8 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addrInOut, std::size_t l
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                             int flags);
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot);
+
+int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
+                                            size_t infoSize);
 
 } // namespace Libraries::Kernel

@@ -17,6 +17,10 @@ namespace Vulkan {
 class Instance;
 }
 
+namespace Libraries::Kernel {
+struct OrbisQueryInfo;
+}
+
 namespace Core {
 
 enum class MemoryProt : u32 {
@@ -77,12 +81,12 @@ struct VirtualMemoryArea {
     }
 };
 
-constexpr VAddr SYSTEM_RESERVED = 0x800000000u;
-constexpr VAddr CODE_BASE_OFFSET = 0x100000000u;
-constexpr VAddr SYSTEM_MANAGED_MIN = 0x0000040000u;
-constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFu;
-constexpr VAddr USER_MIN = 0x1000000000u;
-constexpr VAddr USER_MAX = 0xFBFFFFFFFFu;
+constexpr VAddr SYSTEM_RESERVED = 0x800000000ULL;
+constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
+constexpr VAddr SYSTEM_MANAGED_MIN = 0x0000040000ULL;
+constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
+constexpr VAddr USER_MIN = 0x1000000000ULL;
+constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
 
 class MemoryManager {
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
@@ -109,6 +113,8 @@ public:
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
+    int DirectMemoryQuery(PAddr addr, bool find_next, Libraries::Kernel::OrbisQueryInfo* out_info);
+
     std::pair<vk::Buffer, size_t> GetVulkanBuffer(VAddr addr);
 
 private:
@@ -123,7 +129,7 @@ private:
 
     VirtualMemoryArea& AddMapping(VAddr virtual_addr, size_t size);
 
-    VMAHandle Split(VMAHandle vma_handle, u32 offset_in_vma);
+    VMAHandle Split(VMAHandle vma_handle, size_t offset_in_vma);
 
     VMAHandle MergeAdjacent(VMAHandle iter);
 

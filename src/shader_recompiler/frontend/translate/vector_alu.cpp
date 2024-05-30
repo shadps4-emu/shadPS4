@@ -26,7 +26,7 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
 
 void Translator::V_MUL_F32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.FPMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
+    ir.SetVectorReg(dst_reg, ir.FPMul(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true)));
 }
 
 void Translator::V_CMP_EQ_U32(const GcnInst& inst) {
@@ -196,6 +196,39 @@ void Translator::V_MAX_F32(const GcnInst& inst) {
 void Translator::V_RSQ_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
+}
+
+void Translator::V_SIN_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPSin(src0));
+}
+
+void Translator::V_LOG_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPLog2(src0));
+}
+
+void Translator::V_EXP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPExp2(src0));
+}
+
+void Translator::V_SQRT_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPSqrt(src0));
+}
+
+void Translator::V_MIN_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    SetDst(inst.dst[0], ir.FPMin(src0, src1));
+}
+
+void Translator::V_MIN3_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    SetDst(inst.dst[0], ir.FPMin(src0, ir.FPMin(src1, src2)));
 }
 
 } // namespace Shader::Gcn

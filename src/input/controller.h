@@ -32,7 +32,7 @@ private:
     };
 
     std::mutex m_mutex;
-    bool m_connected = false;
+    bool m_connected = true;
     State m_last_state;
     int m_connected_count = 0;
     u32 m_states_num = 0;
