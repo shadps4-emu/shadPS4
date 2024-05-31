@@ -101,6 +101,7 @@ TextureCache::~TextureCache() {
 }
 
 void TextureCache::OnCpuWrite(VAddr address) {
+    std::unique_lock lock{m_page_table};
     ForEachImageInRegion(address, 1 << PageShift, [&](ImageId image_id, Image& image) {
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::CpuModified;
@@ -110,6 +111,7 @@ void TextureCache::OnCpuWrite(VAddr address) {
 }
 
 Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
+    std::unique_lock lock{m_page_table};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
         if (image.cpu_addr == cpu_address) {

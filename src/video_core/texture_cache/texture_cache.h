@@ -136,6 +136,7 @@ private:
 #ifdef _WIN64
     void* veh_handle{};
 #endif
+    std::mutex m_page_table;
 };
 
 } // namespace VideoCore
