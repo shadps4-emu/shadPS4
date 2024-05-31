@@ -152,6 +152,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/userservice.cpp
                 src/core/libraries/system/userservice.h
+                src/core/libraries/app_content/app_content.cpp
+                src/core/libraries/app_content/app_content.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h

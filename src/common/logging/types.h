@@ -68,6 +68,7 @@ enum class Class : u8 {
     Lib_NpTrophy,       ///< The LibSceNpTrophy implementation
     Lib_Screenshot,     ///< The LibSceScreenshot implementation
     Lib_LibCInternal,   ///< The LibCInternal implementation.
+    Lib_AppContent,     ///< The LibSceAppContent implementation.
     Frontend,           ///< Emulator UI
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend

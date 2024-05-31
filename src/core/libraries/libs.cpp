@@ -27,6 +27,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/libraries/app_content/app_content.h"
 
 namespace Libraries {
 
@@ -59,6 +60,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
     Libraries::LibcInternal::RegisterlibSceLibcInternal(sym);
+    Libraries::AppContent::RegisterlibSceAppContent(sym);
 }
 
 } // namespace Libraries
