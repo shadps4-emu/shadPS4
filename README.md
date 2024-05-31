@@ -5,15 +5,15 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # shadPS4
 
-shadPS4 is an early PS4 emulator for Windows and Linux written in C++
+shadPS4 is an early PS4 emulator for Windows and Linux written in C++.
 
-To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.gg/MyZRaBngxA)
+To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.gg/MyZRaBngxA).
 
-Check us on [twitter](https://twitter.com/shadps4)
+Check us on [Twitter/X](https://x.com/shadps4)
 
 # Status
 
-Early progress, a small amount of PS4 SDK demos and homebrew games working.
+Early progress, a small amount of simple games (that includes Sonic Mania) working.
 
 # Why?
 
