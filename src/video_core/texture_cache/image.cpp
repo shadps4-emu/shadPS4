@@ -8,7 +8,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image.h"
 
-#include <vk_mem_alloc.h>
+#include <include/vk_mem_alloc.h>
 
 namespace VideoCore {
 

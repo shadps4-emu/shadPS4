@@ -12,7 +12,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
-#include <vk_mem_alloc.h>
+#include <include/vk_mem_alloc.h>
 
 namespace Vulkan {
 
