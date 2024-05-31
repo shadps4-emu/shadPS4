@@ -48,8 +48,8 @@ add_library(vulkan-headers INTERFACE)
 target_include_directories(vulkan-headers SYSTEM INTERFACE ./vulkan-headers/include)
 
 # VMA
-add_library(vma INTERFACE)
-target_include_directories(vma SYSTEM INTERFACE ./vma/include)
+add_library(vulkanmemoryallocator INTERFACE)
+target_include_directories(vulkanmemoryallocator SYSTEM INTERFACE ./vulkanmemoryallocator/include)
 
 # glslang
 set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "")
