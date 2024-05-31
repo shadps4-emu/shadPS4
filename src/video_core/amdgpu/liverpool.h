@@ -779,6 +779,7 @@ public:
 
     void NotifySubmitDone() {
         submit_done = true;
+        num_submits.notify_all();
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
