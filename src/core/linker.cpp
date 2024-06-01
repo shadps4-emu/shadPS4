@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
+#include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/libraries/kernel/thread_management.h"
@@ -675,6 +676,8 @@ void Linker::Execute() {
     if (Config::debugDump()) {
         DebugDump();
     }
+
+    Common::SetCurrentThreadName("GAME_MainThread");
 
     Libraries::Kernel::pthreadInitSelfMainThread();
     // Relocate all modules
