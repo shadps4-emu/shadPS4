@@ -7,9 +7,11 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
 
+[![Video](http://img.youtube.com/vi/AAHoNzhHyCU/0.jpg)](https://www.youtube.com/watch?v=AAHoNzhHyCU)
+
 To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.gg/MyZRaBngxA)
 
-Check us on [twitter](https://twitter.com/shadps4)
+Check us on [X (twitter)](https://x.com/shadps4)
 
 # Status
 
@@ -33,8 +35,17 @@ Check building instructions in [Linux build](https://github.com/shadps4-emu/shad
 
 |Platform|Build status|
 |--------|------------|
-|Windows SDL build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
-|Linux SDL build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
+|Windows SDL Build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
+|Windows Qt Build|[![Windows-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml)
+|Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
+|Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
+
+# Executing a program
+
+You can copy and paste the path to the CMD or drag the executable file to the application.
+```
+C:\Users\******\shadPS4.exe C:\******\game_eboot.bin
+```
 
 # Main team
 

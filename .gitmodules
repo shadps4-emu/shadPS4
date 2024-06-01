@@ -1,19 +1,15 @@
 [submodule "externals/discord-rpc"]
 	path = externals/discord-rpc
 	url = https://github.com/shadps4-emu/ext-discord-rpc.git
-	branch = master
 [submodule "externals/cryptopp-cmake"]
 	path = externals/cryptopp-cmake
 	url = https://github.com/shadps4-emu/ext-cryptopp-cmake.git
-	branch = master
 [submodule "externals/cryptopp"]
 	path = externals/cryptopp
 	url = https://github.com/shadps4-emu/ext-cryptopp.git
-	branch = master
 [submodule "externals/cryptoppwin"]
 	path = externals/cryptoppwin
 	url = https://github.com/shadps4-emu/ext-cryptoppwin.git
-	branch = main
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
@@ -25,22 +21,22 @@
 	url = https://github.com/shadps4-emu/ext-fmt.git
 [submodule "externals/vulkan-headers"]
 	path = externals/vulkan-headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
 [submodule "externals/vma"]
 	path = externals/vma
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "externals/glslang"]
 	path = externals/glslang
-	url = https://github.com/KhronosGroup/glslang
+	url = https://github.com/KhronosGroup/glslang.git
 [submodule "externals/robin-map"]
 	path = externals/robin-map
-	url = https://github.com/Tessil/robin-map
+	url = https://github.com/Tessil/robin-map.git
 [submodule "externals/boost"]
 	path = externals/boost
-	url = https://github.com/raphaelthegreat/ext-boost
+	url = https://github.com/raphaelthegreat/ext-boost.git
 [submodule "externals/xbyak"]
 	path = externals/xbyak
-	url = https://github.com/herumi/xbyak
+	url = https://github.com/herumi/xbyak.git
 [submodule "externals/winpthreads"]
 	path = externals/winpthreads
 	url = https://github.com/shadps4-emu/winpthreads.git
