@@ -682,6 +682,18 @@ struct Liverpool {
         Polygon = 21,
     };
 
+    enum ContextRegs : u32 {
+        DbZInfo = 0xA010,
+        CbColor0Base = 0xA318,
+        CbColor1Base = 0xA327,
+        CbColor2Base = 0xA336,
+        CbColor3Base = 0xA345,
+        CbColor4Base = 0xA354,
+        CbColor5Base = 0xA363,
+        CbColor6Base = 0xA372,
+        CbColor7Base = 0xA381,
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -765,6 +777,21 @@ struct Liverpool {
 
     Regs regs{};
 
+    // See for a comment in context reg parsing code
+    union CbDbExtent {
+        struct {
+            u16 width;
+            u16 height;
+        };
+        u32 raw{0u};
+
+        [[nodiscard]] bool Valid() const {
+            return raw != 0;
+        }
+    };
+    std::array<CbDbExtent, NumColorBuffers> last_cb_extent{};
+    CbDbExtent last_db_extent{};
+
 public:
     Liverpool();
     ~Liverpool();
@@ -775,6 +802,11 @@ public:
     void WaitGpuIdle();
     bool IsGpuIdle() const {
         return num_submits == 0;
+    }
+
+    void NotifySubmitDone() {
+        submit_done = true;
+        num_submits.notify_all();
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -841,6 +873,7 @@ private:
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<bool> submit_done{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

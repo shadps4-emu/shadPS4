@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
@@ -28,6 +30,21 @@ static constexpr bool g_fair_hw_init = false;
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
+static u64 frames_submitted{}; // frame counter
+
+static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {
+    using namespace Common::FS;
+    const auto dump_dir = GetUserPath(PathType::PM4Dir);
+    if (!std::filesystem::exists(dump_dir)) {
+        std::filesystem::create_directories(dump_dir);
+    }
+    if (cmd_list.empty()) {
+        return;
+    }
+    const auto filename = std::format("{:08}_{}", frames_submitted, postfix);
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+    file.WriteSpan(cmd_list);
+}
 
 // Write a special ending NOP packet with N DWs data block
 template <u32 data_block_size>
@@ -1439,7 +1456,25 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         const auto dcb_size_dw = dcb_sizes_in_bytes[cbpair] >> 2;
         const auto ccb_size_dw = ccb_size_in_bytes >> 2;
 
-        liverpool->SubmitGfx({dcb_gpu_addrs[cbpair], dcb_size_dw}, {ccb, ccb_size_dw});
+        const auto& dcb_span = std::span<const u32>{dcb_gpu_addrs[cbpair], dcb_size_dw};
+        const auto& ccb_span = std::span<const u32>{ccb, ccb_size_dw};
+
+        if (Config::dumpPM4()) {
+            static auto last_frame_num = frames_submitted;
+            static u32 seq_num{};
+            if (last_frame_num == frames_submitted) {
+                ++seq_num;
+            } else {
+                last_frame_num = frames_submitted;
+                seq_num = 0u;
+            }
+
+            // File name format is: <queue>_<submit num>_<buffer_in_submit>
+            DumpCommandList(dcb_span, std::format("dcb_{}_{}", seq_num, cbpair));
+            DumpCommandList(ccb_span, std::format("ccb_{}_{}", seq_num, cbpair));
+        }
+
+        liverpool->SubmitGfx(dcb_span, ccb_span);
     }
 
     return ORBIS_OK;
@@ -1455,6 +1490,8 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
+    liverpool->NotifySubmitDone();
+    ++frames_submitted;
     return ORBIS_OK;
 }
 

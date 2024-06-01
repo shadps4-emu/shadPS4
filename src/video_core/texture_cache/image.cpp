@@ -82,12 +82,13 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     }
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                     const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
     is_tiled = true;
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
-    size.width = buffer.Pitch();
-    size.height = buffer.Height();
+    size.width = hint.Valid() ? hint.width : buffer.Pitch();
+    size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.slice.tile_max * (buffer.view.slice_max + 1);

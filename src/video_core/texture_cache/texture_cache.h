@@ -42,7 +42,8 @@ public:
     ImageView& FindImageView(const AmdGpu::Image& image);
 
     /// Retrieves the render target with specified properties
-    ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer);
+    ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                            const AmdGpu::Liverpool::CbDbExtent& hint);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
@@ -136,6 +137,7 @@ private:
 #ifdef _WIN64
     void* veh_handle{};
 #endif
+    std::mutex m_page_table;
 };
 
 } // namespace VideoCore

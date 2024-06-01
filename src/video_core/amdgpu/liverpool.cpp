@@ -61,7 +61,11 @@ void Liverpool::Process(std::stop_token stoken) {
                 --num_submits;
             }
         }
-        num_submits.notify_all();
+
+        if (submit_done) {
+            num_submits.notify_all();
+            submit_done = false;
+        }
     }
 }
 
@@ -163,8 +167,61 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
         case PM4ItOpcode::SetContextReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-            std::memcpy(&regs.reg_array[ContextRegWordOffset + set_data->reg_offset], header + 2,
-                        (count - 1) * sizeof(u32));
+            const auto reg_addr = ContextRegWordOffset + set_data->reg_offset;
+            const auto* payload = reinterpret_cast<const u32*>(header + 2);
+
+            std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
+
+            // In the case of HW, render target memory has alignment as color block operates on
+            // tiles. There is no information of actual resource extents stored in CB context
+            // regs, so any deduction of it from slices/pitch will lead to a larger surface created.
+            // The same applies to the depth targets. Fortunatelly, the guest always sends
+            // a trailing NOP packet right after the context regs setup, so we can use the heuristic
+            // below and extract the hint to determine actual resource dims.
+
+            switch (reg_addr) {
+            case ContextRegs::CbColor0Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor1Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor2Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor3Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor4Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor5Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor6Base:
+                [[fallthrough]];
+            case ContextRegs::CbColor7Base: {
+                const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Base) /
+                                        (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
+                ASSERT(col_buf_id < NumColorBuffers);
+
+                const auto nop_offset = header->type3.count;
+                if (nop_offset == 0x0e) {
+                    ASSERT_MSG(payload[nop_offset] == 0xc0001000,
+                               "NOP hint is missing in CB setup sequence");
+                    last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
+                } else {
+                    last_cb_extent[col_buf_id].raw = 0;
+                }
+                break;
+            }
+            case ContextRegs::DbZInfo: {
+                if (header->type3.count == 8) {
+                    ASSERT_MSG(payload[20] == 0xc0001000,
+                               "NOP hint is missing in DB setup sequence");
+                    last_db_extent.raw = payload[21];
+                } else {
+                    last_db_extent.raw = 0;
+                }
+                break;
+            }
+            default:
+                break;
+            }
             break;
         }
         case PM4ItOpcode::SetShReg: {

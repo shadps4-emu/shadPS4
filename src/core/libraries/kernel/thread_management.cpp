@@ -5,6 +5,7 @@
 #include <thread>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
@@ -827,6 +828,7 @@ static void cleanup_thread(void* arg) {
 
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
+    Common::SetCurrentThreadName(thread->name.c_str());
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);

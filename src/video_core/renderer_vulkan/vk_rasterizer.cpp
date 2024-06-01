@@ -41,11 +41,14 @@ void Rasterizer::Draw(bool is_indexed) {
 
     boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
         color_attachments{};
-    for (const auto& col_buf : regs.color_buffers) {
+    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
+        const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
             continue;
         }
-        const auto& image_view = texture_cache.RenderTarget(col_buf);
+
+        const auto& hint = liverpool->last_cb_extent[col_buf_id];
+        const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
 
         color_attachments.push_back({
             .imageView = *image_view.image_view,
