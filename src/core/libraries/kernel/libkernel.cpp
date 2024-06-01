@@ -56,6 +56,11 @@ void PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 
+int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return SCE_OK;
+}
+
 struct iovec {
     void* iov_base; /* Base	address. */
     size_t iov_len; /* Length. */
@@ -205,6 +210,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // memory
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
     LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
+    LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
     LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
     LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", 1, 1, sceKernelDirectMemoryQuery);
@@ -229,6 +235,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
+    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

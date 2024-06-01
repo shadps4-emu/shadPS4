@@ -47,9 +47,9 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 
     return SCE_OK;
 }
-
-int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
-                                          s64 directMemoryStart, u64 alignment) {
+int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
+                                               s64 directMemoryStart, u64 alignment,
+                                               const char* name) {
     LOG_INFO(
         Kernel_Vmm,
         "len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, alignment = {:#x}",
@@ -74,8 +74,12 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
-    return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
-                             directMemoryStart, alignment);
+    return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct,
+                             std::string_view(name), directMemoryStart, alignment);
+}
+int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
+                                          s64 directMemoryStart, u64 alignment) {
+    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment, "");
 }
 
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
