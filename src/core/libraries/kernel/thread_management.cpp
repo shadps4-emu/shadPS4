@@ -1149,6 +1149,21 @@ int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelGettimeofday(SceKernelTimespec* tp) {
+    if (tp == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds);
+
+    tp->tv_sec = static_cast<long>(seconds.count());
+    tp->tv_nsec = static_cast<long>(nanoseconds.count());
+
+    return ORBIS_OK;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1206,7 +1221,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel", 1, 1, scePthreadCondTimedwait);
     LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", 1, 1, scePthreadCondDestroy);
     LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_destroy);
-    
+
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
@@ -1218,6 +1233,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
+    LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimeofday);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
