@@ -225,6 +225,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/io_file.h
            src/common/error.cpp
            src/common/error.h
+           src/common/fs.cpp
+           src/common/fs.h
            src/common/scope_exit.h
            src/common/func_traits.h
            src/common/native_clock.cpp
