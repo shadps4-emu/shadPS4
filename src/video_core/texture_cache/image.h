@@ -34,7 +34,8 @@ DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 struct ImageInfo {
     ImageInfo() = default;
     explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer) noexcept;
+    explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                       const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool is_tiled = false;

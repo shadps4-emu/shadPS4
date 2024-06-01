@@ -153,8 +153,9 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer) {
-    const ImageInfo info{buffer};
+ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                                      const AmdGpu::Liverpool::CbDbExtent& hint) {
+    const ImageInfo info{buffer, hint};
     auto& image = FindImage(info, buffer.Address());
 
     ImageViewInfo view_info;
