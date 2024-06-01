@@ -9,7 +9,7 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
-#include <include/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 namespace Vulkan {
 
