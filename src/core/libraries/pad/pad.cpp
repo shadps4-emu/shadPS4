@@ -113,12 +113,15 @@ s32 PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool enable) {
     return SCE_OK;
 }
 
+int PS4_SYSV_ABI scePadGetHandle(s32 userId, int32_t type, int32_t index) {
+    return 1;
+}
 void padSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hv1luiJrqQM", "libScePad", 1, "libScePad", 1, 1, scePadInit);
     LIB_FUNCTION("xk0AcarP3V4", "libScePad", 1, "libScePad", 1, 1, scePadOpen);
     LIB_FUNCTION("YndgXqQVV7c", "libScePad", 1, "libScePad", 1, 1, scePadReadState);
     LIB_FUNCTION("q1cHNfGycLI", "libScePad", 1, "libScePad", 1, 1, scePadRead);
-
+    LIB_FUNCTION("u1GRHp+oWoY", "libScePad", 1, "libScePad", 1, 1, scePadGetHandle);
     LIB_FUNCTION("gjP9-KQzoUk", "libScePad", 1, "libScePad", 1, 1, scePadGetControllerInformation);
     LIB_FUNCTION("clVvL4ZDntw", "libScePad", 1, "libScePad", 1, 1, scePadSetMotionSensorState);
 }
