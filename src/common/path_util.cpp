@@ -35,6 +35,7 @@ static auto UserPaths = [] {
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
     create_path(PathType::ShaderDir, user_dir / SHADER_DIR);
+    create_path(PathType::PM4Dir, user_dir / PM4_DIR);
     create_path(PathType::SaveDataDir, user_dir / SAVEDATA_DIR);
     create_path(PathType::SysModuleDir, user_dir / SYSMODULES_DIR);
 

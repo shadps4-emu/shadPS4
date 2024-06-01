@@ -20,6 +20,7 @@ static bool isLibc = true;
 static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
+static bool shouldDumpPM4 = false;
 
 bool isLleLibc() {
     return isLibc;
@@ -64,6 +65,10 @@ bool dumpShaders() {
     return shouldDumpShaders;
 }
 
+bool dumpPM4() {
+    return shouldDumpPM4;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -102,6 +107,7 @@ void load(const std::filesystem::path& path) {
             gpuId = toml::find_or<toml::integer>(gpu, "gpuId", 0);
             isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
             shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
+            shouldDumpPM4 = toml::find_or<toml::boolean>(gpu, "dumpPM4", false);
         }
     }
     if (data.contains("Debug")) {
@@ -149,6 +155,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
+    data["GPU"]["dumpPM4"] = shouldDumpPM4;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
 
