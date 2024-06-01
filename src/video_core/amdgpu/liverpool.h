@@ -374,10 +374,16 @@ struct Liverpool {
         FrontAndBack = 3,
     };
 
+    enum class FrontFace : u32 {
+        CounterClockwise = 0,
+        Clockwise = 1,
+    };
+
     union PolygonControl {
         u32 raw;
         BitField<0, 1, u32> cull_front;
         BitField<1, 1, u32> cull_back;
+        BitField<2, 1, FrontFace> front_face;
         BitField<3, 2, u32> enable_polygon_mode;
         BitField<5, 3, PolygonMode> polygon_mode_front;
         BitField<8, 3, PolygonMode> polygon_mode_back;

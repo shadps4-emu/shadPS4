@@ -206,14 +206,28 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const u32 dword_offset = inst_info.inst_offset.Value() / sizeof(u32);
     IR::U32 address = ir.Imm32(dword_offset);
     if (inst_info.index_enable && inst_info.offset_enable) {
-        UNREACHABLE();
+        const IR::U32 offset{ir.CompositeExtract(inst.Arg(1), 0)};
+        const IR::U32 index{ir.CompositeExtract(inst.Arg(1), 1)};
+        address = ir.IAdd(ir.IMul(index, ir.Imm32(dword_stride)), address);
+        address = ir.IAdd(address, ir.ShiftRightLogical(offset, ir.Imm32(2)));
     } else if (inst_info.index_enable) {
-        IR::U32 index{inst.Arg(1)};
+        const IR::U32 index{inst.Arg(1)};
         address = ir.IAdd(ir.IMul(index, ir.Imm32(dword_stride)), address);
     } else if (inst_info.offset_enable) {
         const IR::U32 offset{inst.Arg(1)};
     }
     inst.SetArg(1, address);
+}
+
+IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
+                         const IR::Value& z) {
+    // We need to fix x and y coordinate,
+    // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
+    // We already force the scale value to be 1.0 when handling v_cubema_f32,
+    // here we subtract 1.5 to recover the original value.
+    const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
+    const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
+    return ir.CompositeConstruct(x, y, z);
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -256,8 +270,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
         case AmdGpu::ImageType::Color2DArray:
         case AmdGpu::ImageType::Color3D:
-        case AmdGpu::ImageType::Cube:
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
+        case AmdGpu::ImageType::Cube:
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
             UNREACHABLE();
         }
@@ -276,6 +291,7 @@ void ResourceTrackingPass(IR::Program& program) {
     // Most of the time it is float so that is the default. This pass detects float buffer loads
     // combined with bitcasts and patches them to be integer loads.
     for (IR::Block* const block : program.post_order_blocks) {
+        break;
         for (IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() != IR::Opcode::BitCastU32F32) {
                 continue;

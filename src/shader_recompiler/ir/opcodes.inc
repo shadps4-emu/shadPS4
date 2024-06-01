@@ -21,6 +21,8 @@ OPCODE(ReadConstBufferU32,                                  U32,            Opaq
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
+OPCODE(GetThreadBitScalarReg,                               U1,             ScalarReg,                                                                      )
+OPCODE(SetThreadBitScalarReg,                               Void,           ScalarReg,      U1,                                                             )
 OPCODE(GetScalarRegister,                                   U32,            ScalarReg,                                                                      )
 OPCODE(SetScalarRegister,                                   Void,           ScalarReg,      U32,                                                            )
 OPCODE(GetVectorRegister,                                   U32,            VectorReg,                                                                      )
@@ -36,10 +38,12 @@ OPCODE(GetScc,                                             U1,             Void,
 OPCODE(GetExec,                                            U1,             Void,                                                                            )
 OPCODE(GetVcc,                                             U1,             Void,                                                                            )
 OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
+OPCODE(GetVccHi,                                           U32,            Void,                                                                            )
 OPCODE(SetScc,                                             Void,           U1,                                                                              )
 OPCODE(SetExec,                                            Void,           U1,                                                                              )
 OPCODE(SetVcc,                                             Void,           U1,                                                                              )
 OPCODE(SetVccLo,                                           Void,           U32,                                                                             )
+OPCODE(SetVccHi,                                           Void,           U32,                                                                             )
 
 // Undefined
 OPCODE(UndefU1,                                             U1,                                                                                             )

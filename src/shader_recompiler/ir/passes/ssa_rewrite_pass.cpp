@@ -32,6 +32,7 @@ struct SccFlagTag : FlagTag {};
 struct ExecFlagTag : FlagTag {};
 struct VccFlagTag : FlagTag {};
 struct VccLoTag : FlagTag {};
+struct VccHiTag : FlagTag {};
 
 struct GotoVariable : FlagTag {
     GotoVariable() = default;
@@ -43,7 +44,7 @@ struct GotoVariable : FlagTag {
 };
 
 using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, SccFlagTag, ExecFlagTag,
-                             VccFlagTag, VccLoTag>;
+                             VccFlagTag, VccLoTag, VccHiTag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -89,6 +90,13 @@ struct DefTable {
         vcc_lo_flag.insert_or_assign(block, value);
     }
 
+    const IR::Value& Def(IR::Block* block, VccHiTag) {
+        return vcc_hi_flag[block];
+    }
+    void SetDef(IR::Block* block, VccHiTag, const IR::Value& value) {
+        vcc_hi_flag.insert_or_assign(block, value);
+    }
+
     const IR::Value& Def(IR::Block* block, VccFlagTag) {
         return vcc_flag[block];
     }
@@ -101,6 +109,7 @@ struct DefTable {
     ValueMap exec_flag;
     ValueMap vcc_flag;
     ValueMap vcc_lo_flag;
+    ValueMap vcc_hi_flag;
 };
 
 IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
@@ -108,6 +117,14 @@ IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
 }
 
 IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
+    return IR::Opcode::UndefU32;
+}
+
+IR::Opcode UndefOpcode(const VccLoTag&) noexcept {
+    return IR::Opcode::UndefU32;
+}
+
+IR::Opcode UndefOpcode(const VccHiTag&) noexcept {
     return IR::Opcode::UndefU32;
 }
 
@@ -281,6 +298,7 @@ private:
 void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
+    case IR::Opcode::SetThreadBitScalarReg:
     case IR::Opcode::SetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
         pass.WriteVariable(reg, block, inst.Arg(1));
@@ -306,6 +324,10 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetVccLo:
         pass.WriteVariable(VccLoTag{}, block, inst.Arg(0));
         break;
+    case IR::Opcode::SetVccHi:
+        pass.WriteVariable(VccHiTag{}, block, inst.Arg(0));
+        break;
+    case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
         inst.ReplaceUsesWith(pass.ReadVariable(reg, block));
@@ -330,6 +352,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::GetVccLo:
         inst.ReplaceUsesWith(pass.ReadVariable(VccLoTag{}, block));
+        break;
+    case IR::Opcode::GetVccHi:
+        inst.ReplaceUsesWith(pass.ReadVariable(VccHiTag{}, block));
         break;
     default:
         break;

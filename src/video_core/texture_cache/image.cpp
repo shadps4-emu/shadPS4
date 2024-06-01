@@ -39,7 +39,9 @@ using Libraries::VideoOut::TilingMode;
     if (false /*&& IsDepthStencilFormat(format)*/) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        usage |= vk::ImageUsageFlagBits::eColorAttachment;
+        if (format != vk::Format::eBc3SrgbBlock) {
+            usage |= vk::ImageUsageFlagBits::eColorAttachment;
+        }
     }
     return usage;
 }
@@ -101,8 +103,10 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = 1;
+    pitch = image.Pitch();
+    resources.levels = image.NumLevels();
+    resources.layers = image.NumLayers();
     // TODO: Derive this properly from tiling params
-    pitch = size.width;
     guest_size_bytes = size.width * size.height * 4;
 }
 
@@ -183,7 +187,7 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
                                             .subresourceRange{
                                                 .aspectMask = aspect_mask,
                                                 .baseMipLevel = 0,
-                                                .levelCount = 1,
+                                                .levelCount = VK_REMAINING_MIP_LEVELS,
                                                 .baseArrayLayer = 0,
                                                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
                                             }};

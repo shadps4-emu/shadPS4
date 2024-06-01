@@ -38,6 +38,8 @@ struct GraphicsPipelineKey {
     Liverpool::PrimitiveType prim_type;
     Liverpool::PolygonMode polygon_mode;
     Liverpool::CullMode cull_mode;
+    Liverpool::FrontFace front_face;
+    u32 pad{};
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
 

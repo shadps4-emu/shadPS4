@@ -140,6 +140,7 @@ public:
 
     Id true_value{};
     Id false_value{};
+    Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
 
@@ -154,6 +155,8 @@ public:
     Id output_position{};
     Id vertex_index{};
     Id base_vertex{};
+    Id frag_coord{};
+    Id front_facing{};
     std::array<Id, 8> frag_color{};
 
     Id workgroup_id{};

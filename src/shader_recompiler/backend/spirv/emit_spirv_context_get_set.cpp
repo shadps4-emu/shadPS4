@@ -33,6 +33,14 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     return ctx.ConstU32(ctx.info.user_data[static_cast<size_t>(reg)]);
 }
 
+void EmitGetThreadBitScalarReg(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
+void EmitSetThreadBitScalarReg(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
 void EmitGetScalarRegister(EmitContext&) {
     throw LogicError("Unreachable instruction");
 }
@@ -68,7 +76,7 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
 }
 
 Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
-    return EmitReadConstBuffer(ctx, handle, index);
+    return ctx.OpBitcast(ctx.U32[1], EmitReadConstBuffer(ctx, handle, index));
 }
 
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
@@ -86,7 +94,13 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
             return ctx.OpLoad(param.component_type, param.id);
         }
     }
-    throw NotImplementedException("Read attribute {}", attr);
+    switch (attr) {
+    case IR::Attribute::FragCoord:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(comp)));
+    default:
+        throw NotImplementedException("Read attribute {}", attr);
+    }
 }
 
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
@@ -98,6 +112,9 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::LocalInvocationId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.local_invocation_id),
                                       comp);
+    case IR::Attribute::IsFrontFace:
+        return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
+                            ctx.u32_zero_value);
     default:
         throw NotImplementedException("Read U32 attribute {}", attr);
     }
@@ -136,19 +153,13 @@ Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address)
 Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto info = inst->Flags<IR::BufferInstInfo>();
     const auto& buffer = ctx.buffers[handle];
-    if (info.index_enable && info.offset_enable) {
-        UNREACHABLE();
-    } else if (info.index_enable) {
-        boost::container::static_vector<Id, 4> ids;
-        for (u32 i = 0; i < 4; i++) {
-            const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
-            const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-            ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
-        }
-        return ctx.OpCompositeConstruct(buffer.data_types->Get(4), ids);
+    boost::container::static_vector<Id, 4> ids;
+    for (u32 i = 0; i < 4; i++) {
+        const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
+        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
     }
-    UNREACHABLE();
+    return ctx.OpCompositeConstruct(buffer.data_types->Get(4), ids);
 }
 
 void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {

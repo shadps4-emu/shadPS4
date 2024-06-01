@@ -75,8 +75,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
-        .frontFace = vk::FrontFace::eClockwise,
+        .cullMode = vk::CullModeFlagBits::eNone, /*LiverpoolToVK::CullMode(key.cull_mode),*/
+        .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
+                         ? vk::FrontFace::eClockwise
+                         : vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = false,
         .lineWidth = 1.0f,
     };
@@ -177,14 +179,23 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
     for (u32 i = 0; i < num_color_formats; i++) {
         const auto& control = key.blend_controls[i];
+        const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
+        const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
+        const auto color_blend = LiverpoolToVK::BlendOp(control.color_func);
         attachments[i] = vk::PipelineColorBlendAttachmentState{
             .blendEnable = key.blend_controls[i].enable,
-            .srcColorBlendFactor = LiverpoolToVK::BlendFactor(control.color_src_factor),
-            .dstColorBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
-            .colorBlendOp = LiverpoolToVK::BlendOp(control.color_func),
-            .srcAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.alpha_src_factor),
-            .dstAlphaBlendFactor = LiverpoolToVK::BlendFactor(control.color_dst_factor),
-            .alphaBlendOp = LiverpoolToVK::BlendOp(control.alpha_func),
+            .srcColorBlendFactor = src_color,
+            .dstColorBlendFactor = dst_color,
+            .colorBlendOp = color_blend,
+            .srcAlphaBlendFactor = control.separate_alpha_blend
+                                       ? LiverpoolToVK::BlendFactor(control.alpha_src_factor)
+                                       : src_color,
+            .dstAlphaBlendFactor = control.separate_alpha_blend
+                                       ? LiverpoolToVK::BlendFactor(control.alpha_dst_factor)
+                                       : dst_color,
+            .alphaBlendOp = control.separate_alpha_blend
+                                ? LiverpoolToVK::BlendOp(control.alpha_func)
+                                : color_blend,
             .colorWriteMask =
                 instance.IsColorWriteEnableSupported()
                     ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
