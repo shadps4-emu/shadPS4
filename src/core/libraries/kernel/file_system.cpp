@@ -30,12 +30,23 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
-
+    u32 handle = h->CreateHandle();
+    auto* file = h->GetFile(handle);
     if (directory) {
-        UNREACHABLE(); // not supported yet
+        file->is_directory = true;
+        file->m_guest_name = path;
+        file->m_host_name = mnt->GetHostDirectory(file->m_guest_name);
+        if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
+            UNREACHABLE();                                       // not supported yet
+        } else {
+            if (create) {
+                return handle; // dir already exists
+            } else {
+                // get dirents TODO
+                file->dirents_index = 0;
+            }
+        }
     } else {
-        u32 handle = h->CreateHandle();
-        auto* file = h->GetFile(handle);
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostFile(file->m_guest_name);
         if (read) {
@@ -49,10 +60,9 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
             h->DeleteHandle(handle);
             return SCE_KERNEL_ERROR_EACCES;
         }
-        file->is_opened = true;
-        return handle;
     }
-    return -1; // dummy
+    file->is_opened = true;
+    return handle;
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
