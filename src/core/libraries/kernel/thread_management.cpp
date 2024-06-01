@@ -1115,6 +1115,39 @@ int PS4_SYSV_ABI posix_pthread_attr_destroy(ScePthreadAttr* attr) {
     }
     return result;
 }
+int PS4_SYSV_ABI posix_pthread_cond_signal(ScePthreadCond* cond) {
+    int result = scePthreadCondSignal(cond);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
+    if (cond == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_cond_destroy(&(*cond)->cond);
+
+    LOG_INFO(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case EBUSY:
+        return SCE_KERNEL_ERROR_EBUSY;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
+    int result = scePthreadCondDestroy(cond);
+    if (result < 0) {
+        UNREACHABLE();
+    }
+    return result;
+}
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
@@ -1171,11 +1204,15 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
     LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", 1, 1, scePthreadCondSignal);
     LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel", 1, 1, scePthreadCondTimedwait);
+    LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", 1, 1, scePthreadCondDestroy);
+    LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_destroy);
+    
     // posix calls
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_signal);
 
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
