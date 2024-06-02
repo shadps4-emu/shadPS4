@@ -40,17 +40,30 @@ std::string_view NameOf(NumberFormat fmt) {
     }
 }
 
-u32 NumComponents(DataFormat format) {
-    constexpr std::array numComponentsPerElement = {
+int NumComponents(DataFormat format) {
+    constexpr std::array num_components_per_element = {
         0,  1,  1,  2,  1,  2,  3,  3,  4,  4,  4,  2, 4, 3, 4, -1, 3, 4, 4, 4, 2,
         2,  2,  -1, -1, -1, -1, -1, -1, -1, -1, -1, 3, 3, 3, 4, 4,  4, 1, 2, 3, 4,
         -1, -1, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2, 2, 2,  3, 1, 1};
 
     const u32 index = static_cast<u32>(format);
-    if (index >= numComponentsPerElement.size()) {
+    if (index >= num_components_per_element.size()) {
         return 0;
     }
-    return numComponentsPerElement[index];
+    return num_components_per_element[index];
+}
+
+int NumBits(DataFormat format) {
+    const std::array num_bits_per_element = {
+        0,  8,  16, 16, 32, 32, 32, 32, 32, 32, 32, 64, 64, 96, 128, -1, 16, 16, 16, 16, 32,
+        32, 64, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, 16, 32, 4,   8,  8,  4,  8,  8,  8,
+        -1, -1, 8,  8,  8,  8,  8,  8,  16, 16, 32, 32, 32, 64, 64,  8,  16, 1,  1};
+
+    const u32 index = static_cast<u32>(format);
+    if (index >= num_bits_per_element.size()) {
+        return 0;
+    }
+    return num_bits_per_element[index];
 }
 
 } // namespace AmdGpu

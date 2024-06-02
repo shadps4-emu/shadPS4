@@ -63,7 +63,8 @@ enum class NumberFormat : u32 {
 
 [[nodiscard]] std::string_view NameOf(NumberFormat fmt);
 
-u32 NumComponents(DataFormat format);
+int NumComponents(DataFormat format);
+int NumBits(DataFormat format);
 
 } // namespace AmdGpu
 
