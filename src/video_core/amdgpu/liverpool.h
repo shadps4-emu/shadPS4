@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
+#include "resource.h"
 #include "video_core/amdgpu/pixel_format.h"
 
 #include <array>
@@ -622,7 +623,7 @@ struct Liverpool {
             BitField<19, 1, u32> cmask_is_linear;
         } info;
         union {
-            BitField<0, 5, u32> tile_mode_index;
+            BitField<0, 5, TilingMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
             BitField<12, 3, u32> num_samples_log2;
             BitField<15, 3, u32> num_fragments_log2;
@@ -659,6 +660,22 @@ struct Liverpool {
 
         u64 CmaskAddress() const {
             return u64(cmask_base_address) << 8;
+        }
+
+        [[nodiscard]] size_t GetSizeAligned() const {
+            const auto num_bytes_per_element = NumBits(info.format) / 8u;
+            const auto slice_size = (slice.tile_max + 1) * 64u;
+            const auto total_size = slice_size * (view.slice_max + 1) * num_bytes_per_element;
+            ASSERT(total_size > 0);
+            return total_size;
+        }
+
+        [[nodiscard]] TilingMode GetTilingMode() const {
+            return attrib.tile_mode_index;
+        }
+
+        [[nodiscard]] bool IsTiled() const {
+            return !info.linear_general;
         }
 
         NumberFormat NumFormat() const {

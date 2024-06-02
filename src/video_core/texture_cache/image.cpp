@@ -86,18 +86,19 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
-    is_tiled = true;
+    is_tiled = buffer.IsTiled();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.slice.tile_max * (buffer.view.slice_max + 1);
+    guest_size_bytes = buffer.GetSizeAligned();
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
-    is_tiled = false;
+    is_tiled = image.IsTiled();
+    tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     type = ConvertImageType(image.type);
     size.width = image.width + 1;
@@ -106,8 +107,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    // TODO: Derive this properly from tiling params
-    guest_size_bytes = size.width * size.height * 4;
+    guest_size_bytes = image.GetSizeAligned();
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)

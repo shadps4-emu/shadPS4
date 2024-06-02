@@ -45,6 +45,7 @@ struct ImageInfo {
     Extent3D size{1, 1, 1};
     u32 pitch = 0;
     u32 guest_size_bytes = 0;
+    AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
 };
 
 struct UniqueImage {
