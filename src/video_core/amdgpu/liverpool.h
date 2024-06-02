@@ -834,7 +834,9 @@ private:
             static constexpr std::suspend_always final_suspend() noexcept {
                 return {};
             }
-            void unhandled_exception() {}
+            void unhandled_exception() {
+                UNREACHABLE();
+            }
             void return_void() {}
             struct empty {};
             std::suspend_always yield_value(empty&&) {
