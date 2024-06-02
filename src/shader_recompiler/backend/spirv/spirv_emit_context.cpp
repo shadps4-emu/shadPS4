@@ -94,6 +94,7 @@ void EmitContext::DefineArithmeticTypes() {
 
     true_value = ConstantTrue(U1[1]);
     false_value = ConstantFalse(U1[1]);
+    u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
 
@@ -177,21 +178,24 @@ void EmitContext::DefineInputs(const Info& info) {
         }
         break;
     case Stage::Fragment:
+        frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+        front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : info.ps_inputs) {
+            const u32 semantic = input.param_index;
             if (input.is_default) {
-                input_params[input.semantic] = {MakeDefaultValue(*this, input.default_value),
-                                                input_f32, F32[1]};
+                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), input_f32,
+                                          F32[1]};
                 continue;
             }
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
             const u32 num_components = info.loads.NumComponents(param);
             const Id type{F32[num_components]};
-            const Id id{DefineInput(type, input.semantic)};
+            const Id id{DefineInput(type, semantic)};
             if (input.is_flat) {
                 Decorate(id, spv::Decoration::Flat);
             }
-            Name(id, fmt::format("fs_in_attr{}", input.semantic));
-            input_params[input.semantic] = {id, input_f32, F32[1], num_components};
+            Name(id, fmt::format("fs_in_attr{}", semantic));
+            input_params[semantic] = {id, input_f32, F32[1], num_components};
             interfaces.push_back(id);
         }
         break;
@@ -260,7 +264,7 @@ void EmitContext::DefineBuffers(const Info& info) {
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}{}", buffer.is_storage ? "ssbo" : "cbuf", i));
+        Name(id, fmt::format("{}_{}", buffer.is_storage ? "ssbo" : "cbuf", buffer.sgpr_base));
 
         binding++;
         buffers.push_back({
@@ -318,7 +322,9 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     case AmdGpu::ImageType::Color2DArray:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, 1, format);
     case AmdGpu::ImageType::Color3D:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, 2, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, 1, format);
+    case AmdGpu::ImageType::Cube:
+        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, false, false, 1, format);
     case AmdGpu::ImageType::Buffer:
         throw NotImplementedException("Image buffer");
     default:

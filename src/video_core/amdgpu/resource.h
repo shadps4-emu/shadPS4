@@ -110,9 +110,27 @@ struct Image {
         BitField<59, 1, u64> atc;
         BitField<60, 4, ImageType> type;
     };
+    union {
+        BitField<0, 13, u64> depth;
+        BitField<13, 14, u64> pitch;
+        BitField<32, 13, u64> base_array;
+        BitField<45, 13, u64> last_array;
+    };
 
     VAddr Address() const {
         return base_address << 8;
+    }
+
+    u32 Pitch() const {
+        return pitch;
+    }
+
+    u32 NumLayers() const {
+        return last_array - base_array + 1;
+    }
+
+    u32 NumLevels() const {
+        return last_level + 1;
     }
 
     DataFormat GetDataFmt() const noexcept {

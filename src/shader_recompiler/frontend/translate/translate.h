@@ -23,6 +23,7 @@ enum class ConditionOp : u32 {
     GE,
     LT,
     LE,
+    TRU,
 };
 
 class Translator {
@@ -37,6 +38,15 @@ public:
     void S_MUL_I32(const GcnInst& inst);
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
     void S_ANDN2_B64(const GcnInst& inst);
+    void S_AND_SAVEEXEC_B64(const GcnInst& inst);
+    void S_MOV_B64(const GcnInst& inst);
+    void S_OR_B64(bool negate, const GcnInst& inst);
+    void S_AND_B64(const GcnInst& inst);
+    void S_ADD_I32(const GcnInst& inst);
+    void S_AND_B32(const GcnInst& inst);
+    void S_LSHR_B32(const GcnInst& inst);
+    void S_CSELECT_B32(const GcnInst& inst);
+    void S_BFE_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -48,7 +58,6 @@ public:
     void V_MAC_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
-    void V_CMP_EQ_U32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
@@ -63,7 +72,6 @@ public:
     void V_FLOOR_F32(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
-    void V_CMPX_GT_U32(const GcnInst& inst);
     void V_FMA_F32(const GcnInst& inst);
     void V_CMP_F32(ConditionOp op, const GcnInst& inst);
     void V_MAX_F32(const GcnInst& inst);
@@ -74,6 +82,25 @@ public:
     void V_SQRT_F32(const GcnInst& inst);
     void V_MIN_F32(const GcnInst& inst);
     void V_MIN3_F32(const GcnInst& inst);
+    void V_MADMK_F32(const GcnInst& inst);
+    void V_CUBEMA_F32(const GcnInst& inst);
+    void V_CUBESC_F32(const GcnInst& inst);
+    void V_CUBETC_F32(const GcnInst& inst);
+    void V_CUBEID_F32(const GcnInst& inst);
+    void V_CVT_U32_F32(const GcnInst& inst);
+    void V_SUBREV_F32(const GcnInst& inst);
+    void V_SUBREV_I32(const GcnInst& inst);
+    void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
+    void V_LSHRREV_B32(const GcnInst& inst);
+    void V_MUL_LO_I32(const GcnInst& inst);
+    void V_SAD_U32(const GcnInst& inst);
+    void V_BFE_U32(const GcnInst& inst);
+    void V_MAD_I32_I24(const GcnInst& inst);
+    void V_MUL_I32_I24(const GcnInst& inst);
+    void V_SUB_I32(const GcnInst& inst);
+    void V_LSHR_B32(const GcnInst& inst);
+    void V_ASHRREV_I32(const GcnInst& inst);
+    void V_MAD_U32_U24(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
@@ -94,12 +121,13 @@ public:
     void EXP(const GcnInst& inst);
 
 private:
-    IR::U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
-    void SetDst(const InstOperand& operand, const IR::U32F32& value);
+    IR::U1U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
+    void SetDst(const InstOperand& operand, const IR::U1U32F32& value);
 
 private:
     IR::IREmitter ir;
     Info& info;
+    static std::array<bool, IR::NumScalarRegs> exec_contexts;
 };
 
 void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info);

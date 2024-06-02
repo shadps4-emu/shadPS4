@@ -94,6 +94,7 @@ void PipelineCache::RefreshGraphicsKey() {
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
+    key.front_face = regs.polygon_control.front_face;
 
     const auto& db = regs.depth_buffer;
     key.depth_format = key.depth.depth_enable
@@ -163,9 +164,18 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
         // Compile IR to SPIR-V
-        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
+        auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
         stages[i] = CompileSPV(spv_code, instance.GetDevice());
         infos[i] = &programs[i].info;
+
+        // Set module name to hash in renderdoc
+        const auto name = fmt::format("{}_{:#x}", stage, hash);
+        const vk::DebugUtilsObjectNameInfoEXT name_info = {
+            .objectType = vk::ObjectType::eShaderModule,
+            .objectHandle = std::bit_cast<u64>(stages[i]),
+            .pObjectName = name.c_str(),
+        };
+        instance.GetDevice().setDebugUtilsObjectNameEXT(name_info);
 
         if (Config::dumpShaders()) {
             DumpShader(spv_code, hash, stage, "spv");

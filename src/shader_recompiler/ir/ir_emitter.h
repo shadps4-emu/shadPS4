@@ -43,7 +43,9 @@ public:
     void Epilogue();
     void Discard();
 
-    U32 GetUserData(IR::ScalarReg reg);
+    [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
+    [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
+    void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
 
     template <typename T = U32>
     [[nodiscard]] T GetScalarReg(IR::ScalarReg reg);
@@ -59,10 +61,12 @@ public:
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
     [[nodiscard]] U32 GetVccLo();
+    [[nodiscard]] U32 GetVccHi();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
     void SetVcc(const U1& value);
     void SetVccLo(const U32& value);
+    void SetVccHi(const U32& value);
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 

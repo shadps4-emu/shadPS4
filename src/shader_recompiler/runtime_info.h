@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <vector>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
@@ -81,7 +82,6 @@ struct Info {
 
     struct PsInput {
         u32 param_index;
-        u32 semantic;
         bool is_default;
         bool is_flat;
         u32 default_value;

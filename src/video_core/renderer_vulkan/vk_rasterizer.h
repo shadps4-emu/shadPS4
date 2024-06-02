@@ -49,6 +49,7 @@ private:
     Core::MemoryManager* memory;
     PipelineCache pipeline_cache;
     StreamBuffer vertex_index_buffer;
+    bool compute_done{};
 };
 
 } // namespace Vulkan

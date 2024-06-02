@@ -119,6 +119,14 @@ U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetUserData, reg);
 }
 
+U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {
+    return Inst<U1>(Opcode::GetThreadBitScalarReg, reg);
+}
+
+void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
+    Inst(Opcode::SetThreadBitScalarReg, reg, value);
+}
+
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetScalarRegister, reg);
@@ -196,6 +204,10 @@ U32 IREmitter::GetVccLo() {
     return Inst<U32>(Opcode::GetVccLo);
 }
 
+U32 IREmitter::GetVccHi() {
+    return Inst<U32>(Opcode::GetVccHi);
+}
+
 void IREmitter::SetScc(const U1& value) {
     Inst(Opcode::SetScc, value);
 }
@@ -210,6 +222,10 @@ void IREmitter::SetVcc(const U1& value) {
 
 void IREmitter::SetVccLo(const U32& value) {
     Inst(Opcode::SetVccLo, value);
+}
+
+void IREmitter::SetVccHi(const U32& value) {
+    Inst(Opcode::SetVccHi, value);
 }
 
 F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {

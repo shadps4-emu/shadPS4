@@ -207,6 +207,7 @@ bool Instance::CreateDevice() {
             .shaderDrawParameters = true,
         },
         vk::PhysicalDeviceVulkan12Features{
+            .scalarBlockLayout = true,
             .timelineSemaphore = true,
         },
         vk::PhysicalDeviceVulkan13Features{

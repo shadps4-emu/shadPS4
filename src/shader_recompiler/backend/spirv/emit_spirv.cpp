@@ -9,6 +9,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 
@@ -28,6 +29,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg;
     } else if constexpr (std::is_same_v<ArgType, u32>) {
         return arg.U32();
+    } else if constexpr (std::is_same_v<ArgType, u64>) {
+        return arg.U64();
     } else if constexpr (std::is_same_v<ArgType, IR::Attribute>) {
         return arg.Attribute();
     } else if constexpr (std::is_same_v<ArgType, IR::ScalarReg>) {
@@ -279,6 +282,10 @@ void EmitGetVccLo(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
+void EmitGetVccHi(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
 void EmitSetScc(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
@@ -292,6 +299,10 @@ void EmitSetVcc(EmitContext& ctx) {
 }
 
 void EmitSetVccLo(EmitContext& ctx) {
+    throw LogicError("Unreachable instruction");
+}
+
+void EmitSetVccHi(EmitContext& ctx) {
     throw LogicError("Unreachable instruction");
 }
 
