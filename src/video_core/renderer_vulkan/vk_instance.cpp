@@ -150,7 +150,6 @@ bool Instance::CreateDevice() {
     external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
-    index_type_uint8 = add_extension(VK_KHR_INDEX_TYPE_UINT8_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     // The next two extensions are required to be available together in order to support write masks
@@ -219,9 +218,6 @@ bool Instance::CreateDevice() {
             .customBorderColors = true,
             .customBorderColorWithoutFormat = true,
         },
-        vk::PhysicalDeviceIndexTypeUint8FeaturesEXT{
-            .indexTypeUint8 = true,
-        },
         vk::PhysicalDeviceColorWriteEnableFeaturesEXT{
             .colorWriteEnable = true,
         },
@@ -229,10 +225,6 @@ bool Instance::CreateDevice() {
             .extendedDynamicState3ColorWriteMask = true,
         },
     };
-
-    if (!index_type_uint8) {
-        device_chain.unlink<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>();
-    }
 
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();
