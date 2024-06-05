@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #version 450
-#extension GL_KHR_shader_subgroup_shuffle : require
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
@@ -39,7 +38,7 @@ void main() {
     uint col = bitfieldExtract(packed_pos, 4, 4);
     uint row = bitfieldExtract(packed_pos, 0, 4);
 
-    uint tiles_per_pitch = info.pitch / MICRO_TILE_DIM;
+    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
     uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
     uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
 

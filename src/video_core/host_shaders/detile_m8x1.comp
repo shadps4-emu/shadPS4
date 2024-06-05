@@ -32,7 +32,7 @@ void main() {
     uint row = (gl_LocalInvocationID.x % TEXELS_PER_ELEMENT)
                 + TEXELS_PER_ELEMENT * (gl_LocalInvocationID.x >> 3);
 
-    uint tiles_per_pitch = info.pitch / MICRO_TILE_DIM;
+    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
     uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
     uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
     uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + TEXELS_PER_ELEMENT * col;

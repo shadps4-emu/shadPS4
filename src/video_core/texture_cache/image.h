@@ -12,6 +12,8 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/types.h"
 
+#include <optional>
+
 namespace Vulkan {
 class Instance;
 class Scheduler;
@@ -117,6 +119,7 @@ struct Image {
     VAddr cpu_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
+    std::optional<ImageView> view_for_detiler;
 
     // Resource state tracking
     vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;

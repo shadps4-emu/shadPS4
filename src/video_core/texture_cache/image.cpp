@@ -7,6 +7,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image.h"
+#include "video_core/texture_cache/tile_manager.h"
 
 #include <vk_mem_alloc.h>
 
@@ -180,6 +181,14 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     };
 
     image.Create(image_ci);
+
+    // Create a special view for detiler
+    if (info.is_tiled) {
+        ImageViewInfo view_info;
+        view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
+        view_info.used_for_detiling = true;
+        view_for_detiler.emplace(*instance, view_info, image);
+    }
 
     Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }

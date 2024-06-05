@@ -206,10 +206,8 @@ static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eT
                                                      vk::BufferUsageFlagBits::eUniformBuffer |
                                                      vk::BufferUsageFlagBits::eStorageBuffer;
 
-TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         TextureCache& texture_cache)
-    : instance{instance}, scheduler{scheduler}, texture_cache{texture_cache},
-      staging{instance, scheduler, StagingFlags, 64_MB} {
+TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
+    : instance{instance}, scheduler{scheduler}, staging{instance, scheduler, StagingFlags, 64_MB} {
 
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,
@@ -322,9 +320,9 @@ bool TileManager::TryDetile(Image& image) {
         .range = image.info.guest_size_bytes,
     };
 
-    const auto& demoted_view = texture_cache.GetImageViewForDetiler(image);
+    ASSERT(image.view_for_detiler.has_value());
     const vk::DescriptorImageInfo output_image_info{
-        .imageView = *demoted_view.image_view,
+        .imageView = *image.view_for_detiler->image_view,
         .imageLayout = image.layout,
     };
 

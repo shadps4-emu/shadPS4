@@ -66,7 +66,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     : instance{instance_}, scheduler{scheduler_},
       staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
               Vulkan::BufferType::Upload},
-      tile_manager{instance, scheduler, *this} {
+      tile_manager{instance, scheduler} {
 
 #ifndef _WIN64
     sigset_t signal_mask;
@@ -164,14 +164,6 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
     Image& image = FindImage(ImageInfo{desc}, desc.Address());
 
     const ImageViewInfo view_info{desc};
-    return RegisterImageView(image, view_info);
-}
-
-ImageView& TextureCache::GetImageViewForDetiler(Image& image) {
-    ImageViewInfo view_info;
-    view_info.format = DemoteImageFormatForDetiling(image.info.pixel_format);
-    view_info.used_for_detiling = true;
-
     return RegisterImageView(image, view_info);
 }
 

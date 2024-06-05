@@ -42,9 +42,6 @@ public:
     /// Retrieves an image view with the properties of the specified image descriptor.
     [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image);
 
-    /// Retrieves an image view with "demoted" pixel format used in detiling
-    [[nodiscard]] ImageView& GetImageViewForDetiler(Image& image);
-
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                           const AmdGpu::Liverpool::CbDbExtent& hint);
