@@ -9,8 +9,8 @@ Files: CMakeSettings.json
        .github/shadps4.desktop
        .github/shadps4.png
        .gitmodules
+       documents/Screenshots/screenshot.png
        src/images/shadps4.ico
-       screenshots/screenshot.png
        src/images/controller_icon.png
        src/images/exit_icon.png
        src/images/file_icon.png
