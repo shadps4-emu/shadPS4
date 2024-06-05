@@ -216,54 +216,45 @@ void TextureCache::RefreshImage(Image& image) {
         return;
     }
 
-    const vk::ImageSubresourceRange range = {
-        .aspectMask = vk::ImageAspectFlagBits::eColor,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-    };
-
     const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-    for (u32 l = 0; l < image.info.resources.layers; l++) {
+    for (u32 m = 0; m < image.info.resources.levels; m++) {
+        const u32 width = image.info.size.width >> m;
+        const u32 height = image.info.size.height >> m;
+        const u32 map_size = width * height * image.info.resources.layers;
+
         // Upload data to the staging buffer.
-        for (u32 m = 0; m < image.info.resources.levels; m++) {
-            const u32 width = image.info.size.width >> m;
-            const u32 height = image.info.size.height >> m;
-            const u32 map_size = width * height;
-            const auto [data, offset, _] = staging.Map(map_size, 16);
-            if (image.info.is_tiled) {
-                ConvertTileToLinear(data, image_data, width, height, Config::isNeoMode());
-            } else {
-                std::memcpy(data, image_data, map_size);
-            }
-            staging.Commit(map_size);
-            image_data += map_size;
-
-            // Copy to the image.
-            const vk::BufferImageCopy image_copy = {
-                .bufferOffset = offset,
-                .bufferRowLength = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = m,
-                    .baseArrayLayer = l,
-                    .layerCount = 1,
-                },
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {width, height, 1},
-            };
-
-            const auto cmdbuf = scheduler.CommandBuffer();
-            image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
-            cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                     vk::ImageLayout::eTransferDstOptimal, image_copy);
-
-            image.Transit(vk::ImageLayout::eGeneral,
-                          vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+        const auto [data, offset, _] = staging.Map(map_size, 16);
+        if (image.info.is_tiled) {
+            ConvertTileToLinear(data, image_data, width, height, Config::isNeoMode());
+        } else {
+            std::memcpy(data, image_data, map_size);
         }
+        staging.Commit(map_size);
+        image_data += map_size;
+
+        // Copy to the image.
+        const vk::BufferImageCopy image_copy = {
+            .bufferOffset = offset,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = u32(image.info.resources.layers),
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, 1},
+        };
+
+        const auto cmdbuf = scheduler.CommandBuffer();
+        image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+        cmdbuf.copyBufferToImage(staging.Handle(), image.image,
+                                 vk::ImageLayout::eTransferDstOptimal, image_copy);
+
+        image.Transit(vk::ImageLayout::eGeneral,
+                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
     }
 }
 

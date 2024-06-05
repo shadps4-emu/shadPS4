@@ -104,18 +104,21 @@ void Translator::S_MOV_B64(const GcnInst& inst) {
     if (inst.src[0].field == OperandField::VccLo || inst.dst[0].field == OperandField::VccLo) {
         return;
     }
-    const IR::U1 src0{GetSrc(inst.src[0])};
     if (inst.dst[0].field == OperandField::ScalarGPR && inst.src[0].field == OperandField::ExecLo) {
         // Exec context push
         exec_contexts[inst.dst[0].code] = true;
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
     } else if (inst.dst[0].field == OperandField::ExecLo &&
                inst.src[0].field == OperandField::ScalarGPR) {
         // Exec context pop
         exec_contexts[inst.src[0].code] = false;
-    } else if (inst.src[0].field != OperandField::ConstZero) {
+        ir.SetExec(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+    } else if (inst.dst[0].field == OperandField::ExecLo &&
+               inst.src[0].field == OperandField::ConstZero) {
+        ir.SetExec(ir.Imm1(false));
+    } else {
         UNREACHABLE();
     }
-    SetDst(inst.dst[0], src0);
 }
 
 void Translator::S_OR_B64(bool negate, const GcnInst& inst) {

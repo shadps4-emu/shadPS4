@@ -41,6 +41,7 @@ struct Block : Hook {
     EndClass end_class{};
     Block* branch_true{};
     Block* branch_false{};
+    bool is_dummy{};
 };
 
 class CFG {

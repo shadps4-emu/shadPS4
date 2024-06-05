@@ -58,16 +58,13 @@ void Translator::EmitPrologue() {
     }
 }
 
-IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
+IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     // Input modifiers work on float values.
     force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
 
-    IR::U1U32F32 value{};
+    IR::U32F32 value{};
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (exec_contexts[operand.code]) {
-            value = ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
-        }
         if (operand.type == ScalarType::Float32 || force_flt) {
             value = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
         } else {
@@ -124,9 +121,6 @@ IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     case OperandField::ConstFloatNeg_2_0:
         value = ir.Imm32(-2.0f);
         break;
-    case OperandField::ExecLo:
-        value = ir.GetExec();
-        break;
     case OperandField::VccLo:
         if (force_flt) {
             value = ir.BitCast<IR::F32>(ir.GetVccLo());
@@ -150,8 +144,8 @@ IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     return value;
 }
 
-void Translator::SetDst(const InstOperand& operand, const IR::U1U32F32& value) {
-    IR::U1U32F32 result = value;
+void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
+    IR::U32F32 result = value;
     if (operand.output_modifier.multiplier != 0.f) {
         result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
     }
@@ -160,14 +154,9 @@ void Translator::SetDst(const InstOperand& operand, const IR::U1U32F32& value) {
     }
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (value.Type() == IR::Type::U1) {
-            return ir.SetThreadBitScalarReg(IR::ScalarReg(operand.code), result);
-        }
         return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
     case OperandField::VectorGPR:
         return ir.SetVectorReg(IR::VectorReg(operand.code), result);
-    case OperandField::ExecLo:
-        return ir.SetExec(result);
     case OperandField::VccLo:
         return ir.SetVccLo(result);
     case OperandField::VccHi:

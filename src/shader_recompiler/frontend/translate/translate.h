@@ -124,8 +124,8 @@ public:
     void EXP(const GcnInst& inst);
 
 private:
-    IR::U1U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
-    void SetDst(const InstOperand& operand, const IR::U1U32F32& value);
+    IR::U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
+    void SetDst(const InstOperand& operand, const IR::U32F32& value);
 
 private:
     IR::IREmitter ir;
