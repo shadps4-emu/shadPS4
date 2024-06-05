@@ -27,6 +27,11 @@ SPDX-License-Identifier: GPL-2.0-or-later
  <a href="https://github.com/shadps4-emu/shadPS4/stargazers">
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 
+<h1 align="center">
+  <br>
+  <a href="https://shadps4.net/"><img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/screenshot.png" width="550"></a>
+  <br>
+
 # shadPS4
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
@@ -38,8 +43,6 @@ Check us on [X (twitter)](https://x.com/shadps4) or on our [website](https://sha
 # Status
 
 In development, 2D games are working like [Sonic Mania](https://www.youtube.com/watch?v=AAHoNzhHyCU), Undertale, Momodora and others...
-
-![screenshot](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/screenshot.png)
 
 # Why?
 
