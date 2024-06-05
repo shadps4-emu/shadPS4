@@ -530,6 +530,13 @@ endif()
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Shaders sources
+set(HOST_SHADERS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/video_core/host_shaders)
+
+add_subdirectory(${HOST_SHADERS_INCLUDE})
+add_dependencies(shadps4 host_shaders)
+target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
+
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
         WIN32_EXECUTABLE ON

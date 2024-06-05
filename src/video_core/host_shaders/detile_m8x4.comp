@@ -1,0 +1,57 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf {
+    uint in_data[];
+};
+layout(rgba8ui, binding = 1) uniform writeonly uimage2D output_img;
+
+layout(push_constant) uniform image_info {
+    uint pitch;
+} info;
+
+// Inverse morton LUT, small enough to fit into K$
+uint lut_8x4[16] = {
+    0x11011000, 0x31213020,
+    0x13031202, 0x33233222,
+    0x51415040, 0x71617060,
+    0x53435242, 0x73637262,
+
+    0x15051404, 0x35253424,
+    0x17071606, 0x37273626,
+    0x55455444, 0x75657464,
+    0x57475646, 0x77677666,
+};
+
+#define MICRO_TILE_DIM      8
+#define TEXELS_PER_ELEMENT  1
+
+void main() {
+    uint src_tx = in_data[gl_GlobalInvocationID.x];
+
+    uint bit_ofs = 8 * (gl_LocalInvocationID.x % 4);
+    uint packed_pos = lut_8x4[gl_LocalInvocationID.x >> 2] >> bit_ofs;
+    uint col = bitfieldExtract(packed_pos, 4, 4);
+    uint row = bitfieldExtract(packed_pos, 0, 4);
+
+    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
+    uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
+    uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
+
+    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + TEXELS_PER_ELEMENT * col;
+    uint dw_ofs_y = target_tile_y * MICRO_TILE_DIM + row;
+
+    ivec2 img_pos = ivec2(dw_ofs_x, dw_ofs_y);
+
+    uvec4 dst_tx = uvec4(
+        bitfieldExtract(src_tx,  0, 8),
+        bitfieldExtract(src_tx,  8, 8),
+        bitfieldExtract(src_tx, 16, 8),
+        bitfieldExtract(src_tx, 24, 8)
+    );
+    imageStore(output_img, img_pos, dst_tx);
+}

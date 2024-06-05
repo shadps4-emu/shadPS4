@@ -85,6 +85,12 @@ constexpr std::string_view NameOf(ImageType type) {
     }
 }
 
+enum class TilingMode : u32 {
+    Display_Linear = 0x8u,
+    Display_MacroTiled = 0xAu,
+    Texture_MicroTiled = 0xDu,
+};
+
 struct Image {
     union {
         BitField<0, 38, u64> base_address;
@@ -122,7 +128,7 @@ struct Image {
     }
 
     u32 Pitch() const {
-        return pitch;
+        return pitch + 1;
     }
 
     u32 NumLayers() const {
@@ -139,6 +145,19 @@ struct Image {
 
     NumberFormat GetNumberFmt() const noexcept {
         return static_cast<NumberFormat>(num_format.Value());
+    }
+
+    [[nodiscard]] TilingMode GetTilingMode() const {
+        return static_cast<TilingMode>(tiling_index.Value());
+    }
+
+    [[nodiscard]] bool IsTiled() const {
+        return GetTilingMode() != TilingMode::Display_Linear;
+    }
+
+    [[nodiscard]] size_t GetSizeAligned() const {
+        // TODO: Derive this properly from tiling params
+        return (width + 1) * (height + 1) * NumComponents(GetDataFmt());
     }
 };
 

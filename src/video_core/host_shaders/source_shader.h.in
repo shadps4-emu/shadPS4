@@ -1,0 +1,14 @@
+// SPDX-FileCopyrightText: Copyright 2022 Citra Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#include <string_view>
+
+namespace HostShaders {
+
+constexpr std::string_view @CONTENTS_NAME@ = {
+@CONTENTS@
+};
+
+} // namespace HostShaders

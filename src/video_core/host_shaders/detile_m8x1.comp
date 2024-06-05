@@ -1,0 +1,48 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+#extension GL_KHR_shader_subgroup_shuffle : require
+
+// NOTE: Current subgroup utilization is subotimal on most GPUs, so
+// it will be nice to process two tiles at once here.
+layout (local_size_x = 16, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf {
+    uint in_data[];
+};
+layout(r8ui, binding = 1) uniform writeonly uimage2D output_img;
+
+layout(push_constant) uniform image_info {
+    uint pitch;
+} info;
+
+#define MICRO_TILE_DIM      8
+#define TEXELS_PER_ELEMENT  4
+
+void main() {
+    uint p0 = in_data[gl_GlobalInvocationID.x];
+    uint p1 = subgroupShuffleXor(p0, 1);
+    uint hword = gl_LocalInvocationID.x & 1;
+    uint dst_tx = (hword == 1)
+        ? (p0 & 0xffff0000) | (p1 >> 16)
+        : (p0 & 0x0000ffff) | (p1 << 16);
+
+    uint col = (gl_LocalInvocationID.x >> 2) & 1;
+    uint row = (gl_LocalInvocationID.x % TEXELS_PER_ELEMENT)
+                + TEXELS_PER_ELEMENT * (gl_LocalInvocationID.x >> 3);
+
+    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
+    uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
+    uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
+    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + TEXELS_PER_ELEMENT * col;
+    uint dw_ofs_y = target_tile_y * MICRO_TILE_DIM + row;
+
+    ivec2 img_pos = ivec2(dw_ofs_x, dw_ofs_y);
+
+    #pragma unroll
+    for (int ofs = 0; ofs < TEXELS_PER_ELEMENT; ++ofs) {
+        imageStore(output_img, img_pos + ivec2(ofs, 0), uvec4(dst_tx & 0xff));
+        dst_tx >>= 8;
+    }
+}

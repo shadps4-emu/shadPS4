@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "core/virtual_memory.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
@@ -64,7 +65,8 @@ static constexpr u64 PageShift = 12;
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
     : instance{instance_}, scheduler{scheduler_},
       staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
-              Vulkan::BufferType::Upload} {
+              Vulkan::BufferType::Upload},
+      tile_manager{instance, scheduler} {
 
 #ifndef _WIN64
     sigset_t signal_mask;
@@ -91,7 +93,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     ASSERT(null_id.index == 0);
 
     ImageViewInfo view_info;
-    void(slot_image_views.insert(instance, scheduler, view_info, slot_images[null_id].image));
+    void(slot_image_views.insert(instance, view_info, slot_images[null_id].image));
 }
 
 TextureCache::~TextureCache() {
@@ -138,19 +140,31 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address) {
     return image;
 }
 
-ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
-    Image& image = FindImage(ImageInfo{desc}, desc.Address());
-
-    const ImageViewInfo view_info{desc};
+ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& view_info) {
     if (const ImageViewId view_id = image.FindView(view_info); view_id) {
         return slot_image_views[view_id];
     }
 
+    // All tiled images are created with storage usage flag. This makes set of formats (e.g. sRGB)
+    // impossible to use. However, during view creation, if an image isn't used as storage and not a
+    // target for the detiler, we can temporary remove its storage bit.
+    std::optional<vk::ImageUsageFlags> usage_override;
+    if (!image.info.is_storage && !view_info.used_for_detiling) {
+        usage_override = image.info.usage & ~vk::ImageUsageFlagBits::eStorage;
+    }
+
     const ImageViewId view_id =
-        slot_image_views.insert(instance, scheduler, view_info, image.image);
+        slot_image_views.insert(instance, view_info, image.image, usage_override);
     image.image_view_infos.emplace_back(view_info);
     image.image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];
+}
+
+ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
+    Image& image = FindImage(ImageInfo{desc}, desc.Address());
+
+    const ImageViewInfo view_info{desc};
+    return RegisterImageView(image, view_info);
 }
 
 ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
@@ -160,15 +174,7 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;
-    if (const ImageViewId view_id = image.FindView(view_info); view_id) {
-        return slot_image_views[view_id];
-    }
-
-    const ImageViewId view_id =
-        slot_image_views.insert(instance, scheduler, view_info, image.image);
-    image.image_view_infos.emplace_back(view_info);
-    image.image_view_ids.emplace_back(view_id);
-    return slot_image_views[view_id];
+    return RegisterImageView(image, view_info);
 }
 
 void TextureCache::RefreshImage(Image& image) {
@@ -176,51 +182,47 @@ void TextureCache::RefreshImage(Image& image) {
     image.flags &= ~ImageFlagBits::CpuModified;
 
     {
-
-        // Upload data to the staging buffer.
-        const auto [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
-        const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-        if (image.info.is_tiled) {
-            ConvertTileToLinear(data, image_data, image.info.size.width, image.info.size.height,
-                                Config::isNeoMode());
-        } else {
+        if (!tile_manager.TryDetile(image)) {
+            // Upload data to the staging buffer.
+            const auto& [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
+            const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
             std::memcpy(data, image_data, image.info.guest_size_bytes);
+            staging.Commit(image.info.guest_size_bytes);
+
+            const auto cmdbuf = scheduler.CommandBuffer();
+            image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+            // Copy to the image.
+            const vk::BufferImageCopy image_copy = {
+                .bufferOffset = offset,
+                .bufferRowLength = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource{
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {image.info.size.width, image.info.size.height, 1},
+            };
+
+            cmdbuf.copyBufferToImage(staging.Handle(), image.image,
+                                     vk::ImageLayout::eTransferDstOptimal, image_copy);
         }
-        staging.Commit(image.info.guest_size_bytes);
-
-        // Copy to the image.
-        const vk::BufferImageCopy image_copy = {
-            .bufferOffset = offset,
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource{
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {image.info.size.width, image.info.size.height, 1},
-        };
-
-        const auto cmdbuf = scheduler.CommandBuffer();
-        const vk::ImageSubresourceRange range = {
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        };
-
-        image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
-        cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                 vk::ImageLayout::eTransferDstOptimal, image_copy);
 
         image.Transit(vk::ImageLayout::eGeneral,
                       vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
         return;
     }
+
+    const vk::ImageSubresourceRange range = {
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
 
     const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
     for (u32 l = 0; l < image.info.resources.layers; l++) {

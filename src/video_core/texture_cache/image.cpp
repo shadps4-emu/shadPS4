@@ -7,6 +7,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image.h"
+#include "video_core/texture_cache/tile_manager.h"
 
 #include <vk_mem_alloc.h>
 
@@ -16,7 +17,7 @@ using namespace Vulkan;
 using VideoOutFormat = Libraries::VideoOut::PixelFormat;
 using Libraries::VideoOut::TilingMode;
 
-[[nodiscard]] vk::Format ConvertPixelFormat(const VideoOutFormat format) {
+static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     switch (format) {
     case VideoOutFormat::A8R8G8B8Srgb:
         return vk::Format::eB8G8R8A8Srgb;
@@ -32,7 +33,7 @@ using Libraries::VideoOut::TilingMode;
     return {};
 }
 
-[[nodiscard]] vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
+static vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
@@ -46,7 +47,7 @@ using Libraries::VideoOut::TilingMode;
     return usage;
 }
 
-[[nodiscard]] vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
+static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
         return vk::ImageType::e1D;
@@ -86,18 +87,19 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
-    is_tiled = true;
+    is_tiled = buffer.IsTiled();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.slice.tile_max * (buffer.view.slice_max + 1);
+    guest_size_bytes = buffer.GetSizeAligned();
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
-    is_tiled = false;
+    is_tiled = image.IsTiled();
+    tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     type = ConvertImageType(image.type);
     size.width = image.width + 1;
@@ -106,8 +108,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    // TODO: Derive this properly from tiling params
-    guest_size_bytes = size.width * size.height * 4;
+    guest_size_bytes = image.GetSizeAligned();
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
@@ -151,6 +152,18 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.type == vk::ImageType::e3D) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
+    if (info.is_tiled) {
+        flags |= vk::ImageCreateFlagBits::eExtendedUsage;
+        if (false) { // IsBlockCodedFormat()
+            flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
+        }
+    }
+
+    info.usage = ImageUsageFlags(info.pixel_format);
+    if (info.is_tiled || info.is_storage) {
+        info.usage |= vk::ImageUsageFlagBits::eStorage;
+    }
+
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
         .imageType = info.type,
@@ -163,11 +176,19 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = ImageUsageFlags(info.pixel_format),
+        .usage = info.usage,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
     image.Create(image_ci);
+
+    // Create a special view for detiler
+    if (info.is_tiled) {
+        ImageViewInfo view_info;
+        view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
+        view_info.used_for_detiling = true;
+        view_for_detiler.emplace(*instance, view_info, image);
+    }
 
     Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }

@@ -13,6 +13,7 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/sampler.h"
 #include "video_core/texture_cache/slot_vector.h"
+#include "video_core/texture_cache/tile_manager.h"
 
 namespace Core::Libraries::VideoOut {
 struct BufferAttributeGroup;
@@ -36,22 +37,24 @@ public:
     void OnCpuWrite(VAddr address);
 
     /// Retrieves the image handle of the image with the provided attributes and address.
-    Image& FindImage(const ImageInfo& info, VAddr cpu_address);
+    [[nodiscard]] Image& FindImage(const ImageInfo& info, VAddr cpu_address);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
-    ImageView& FindImageView(const AmdGpu::Image& image);
+    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image);
 
     /// Retrieves the render target with specified properties
-    ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                            const AmdGpu::Liverpool::CbDbExtent& hint);
+    [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                                          const AmdGpu::Liverpool::CbDbExtent& hint);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
-    vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
+    [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
 
 private:
+    ImageView& RegisterImageView(Image& image, const ImageViewInfo& view_info);
+
     /// Iterate over all page indices in a range
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
@@ -128,6 +131,7 @@ private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     Vulkan::StreamBuffer staging;
+    TileManager tile_manager;
     SlotVector<Image> slot_images;
     SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;

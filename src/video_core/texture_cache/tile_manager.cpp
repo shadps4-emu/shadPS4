@@ -1,9 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
-#include "common/assert.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/texture_cache/image_view.h"
+#include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
+
+#include "video_core/host_shaders/detile_m8x1_comp.h"
+#include "video_core/host_shaders/detile_m8x4_comp.h"
+
+#include <boost/container/static_vector.hpp>
+#include <magic_enum.hpp>
+#include <vulkan/vulkan_to_string.hpp>
 
 namespace VideoCore {
 
@@ -160,6 +170,190 @@ void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool is_
             std::memcpy(dst + linear_offset, src + tiled_offset, sizeof(u32));
         }
     }
+}
+
+vk::Format DemoteImageFormatForDetiling(vk::Format format) {
+    switch (format) {
+    case vk::Format::eB8G8R8A8Srgb:
+    case vk::Format::eR8G8B8A8Unorm:
+        return vk::Format::eR8G8B8A8Uint;
+    case vk::Format::eR8Unorm:
+        return vk::Format::eR8Uint;
+    default:
+        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+        break;
+    }
+    return format;
+}
+
+const DetilerContext* TileManager::GetDetiler(const Image& image) const {
+    const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
+
+    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled) {
+        switch (format) {
+        case vk::Format::eR8Uint:
+            return &detilers[DetilerType::Micro8x1];
+        case vk::Format::eR8G8B8A8Uint:
+            return &detilers[DetilerType::Micro8x4];
+        default:
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eTransferDst |
+                                                     vk::BufferUsageFlagBits::eUniformBuffer |
+                                                     vk::BufferUsageFlagBits::eStorageBuffer;
+
+TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
+    : instance{instance}, scheduler{scheduler}, staging{instance, scheduler, StagingFlags, 64_MB} {
+
+    static const std::array detiler_shaders{
+        HostShaders::DETILE_M8X1_COMP,
+        HostShaders::DETILE_M8X4_COMP,
+    };
+
+    for (int pl_id = 0; pl_id < DetilerType::Max; ++pl_id) {
+        auto& ctx = detilers[pl_id];
+
+        const auto& module = Vulkan::Compile(
+            detiler_shaders[pl_id], vk::ShaderStageFlagBits::eCompute, instance.GetDevice());
+
+        // Set module debug name
+        auto module_name = magic_enum::enum_name(static_cast<DetilerType>(pl_id));
+        const vk::DebugUtilsObjectNameInfoEXT name_info = {
+            .objectType = vk::ObjectType::eShaderModule,
+            .objectHandle = std::bit_cast<u64>(module),
+            .pObjectName = module_name.data(),
+        };
+        instance.GetDevice().setDebugUtilsObjectNameEXT(name_info);
+
+        const vk::PipelineShaderStageCreateInfo shader_ci = {
+            .stage = vk::ShaderStageFlagBits::eCompute,
+            .module = module,
+            .pName = "main",
+        };
+
+        boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
+            {
+                .binding = 0,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eCompute,
+            },
+            {
+                .binding = 1,
+                .descriptorType = vk::DescriptorType::eStorageImage,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eCompute,
+            },
+        };
+
+        const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
+            .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+            .bindingCount = static_cast<u32>(bindings.size()),
+            .pBindings = bindings.data(),
+        };
+        static auto desc_layout =
+            instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+
+        const vk::PushConstantRange push_constants = {
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+            .offset = 0,
+            .size = sizeof(u32),
+        };
+
+        const vk::DescriptorSetLayout set_layout = *desc_layout;
+        const vk::PipelineLayoutCreateInfo layout_info = {
+            .setLayoutCount = 1U,
+            .pSetLayouts = &set_layout,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &push_constants,
+        };
+        ctx.pl_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+
+        const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
+            .stage = shader_ci,
+            .layout = *ctx.pl_layout,
+        };
+        auto result = instance.GetDevice().createComputePipelineUnique(
+            /*pipeline_cache*/ {}, compute_pipeline_ci);
+        if (result.result == vk::Result::eSuccess) {
+            ctx.pl = std::move(result.value);
+        } else {
+            UNREACHABLE_MSG("Detiler pipeline creation failed!");
+        }
+
+        // Once pipeline is compiled, we don't need the shader module anymore
+        instance.GetDevice().destroyShaderModule(module);
+    }
+}
+
+TileManager::~TileManager() = default;
+
+bool TileManager::TryDetile(Image& image) {
+    if (!image.info.is_tiled) {
+        return false;
+    }
+
+    const auto* detiler = GetDetiler(image);
+    if (!detiler) {
+        LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} {}",
+                  vk::to_string(image.info.pixel_format), static_cast<u32>(image.info.tiling_mode));
+        return false;
+    }
+
+    const auto& [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
+    const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
+    std::memcpy(data, image_data, image.info.guest_size_bytes);
+    staging.Commit(image.info.guest_size_bytes);
+
+    auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *detiler->pl);
+
+    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+
+    const vk::DescriptorBufferInfo input_buffer_info{
+        .buffer = staging.Handle(),
+        .offset = offset,
+        .range = image.info.guest_size_bytes,
+    };
+
+    ASSERT(image.view_for_detiler.has_value());
+    const vk::DescriptorImageInfo output_image_info{
+        .imageView = *image.view_for_detiler->image_view,
+        .imageLayout = image.layout,
+    };
+
+    std::vector<vk::WriteDescriptorSet> set_writes{
+        {
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &input_buffer_info,
+        },
+        {
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageImage,
+            .pImageInfo = &output_image_info,
+        },
+    };
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
+                                set_writes);
+
+    cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u,
+                         sizeof(image.info.pitch), &image.info.pitch);
+
+    cmdbuf.dispatch((image.info.size.width * image.info.size.height) / 64, 1,
+                    1); // round to 64
+
+    return true;
 }
 
 } // namespace VideoCore

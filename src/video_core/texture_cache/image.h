@@ -12,6 +12,8 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/types.h"
 
+#include <optional>
+
 namespace Vulkan {
 class Instance;
 class Scheduler;
@@ -39,12 +41,15 @@ struct ImageInfo {
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool is_tiled = false;
+    bool is_storage = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
+    vk::ImageUsageFlags usage;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
     u32 pitch = 0;
     u32 guest_size_bytes = 0;
+    AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
 };
 
 struct UniqueImage {
@@ -114,6 +119,7 @@ struct Image {
     VAddr cpu_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
+    std::optional<ImageView> view_for_detiler;
 
     // Resource state tracking
     vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;

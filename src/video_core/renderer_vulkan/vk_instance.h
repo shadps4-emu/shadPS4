@@ -81,11 +81,6 @@ public:
         return custom_border_color;
     }
 
-    /// Returns true when VK_EXT_index_type_uint8 is supported
-    bool IsIndexTypeUint8Supported() const {
-        return index_type_uint8;
-    }
-
     /// Returns true when VK_EXT_fragment_shader_interlock is supported
     bool IsFragmentShaderInterlockSupported() const {
         return fragment_shader_interlock;
@@ -216,7 +211,6 @@ private:
     bool image_view_reinterpretation{true};
     bool timeline_semaphores{};
     bool custom_border_color{};
-    bool index_type_uint8{};
     bool fragment_shader_interlock{};
     bool image_format_list{};
     bool pipeline_creation_cache_control{};
