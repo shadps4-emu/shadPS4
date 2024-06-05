@@ -445,7 +445,7 @@ std::string Elf::ElfHeaderStr() {
     return header;
 }
 
-std::string Elf::ElfPheaderTypeStr(u32 type) {
+std::string_view Elf::ElfPheaderTypeStr(u32 type) {
     switch (type) {
     case PT_NULL:
         return "Null";

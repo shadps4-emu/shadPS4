@@ -20,7 +20,7 @@ bool PhysicalMemory::Alloc(u64 searchStart, u64 searchEnd, u64 len, u64 alignmen
     }
 
     // Align free position
-    find_free_pos = Common::alignUp(find_free_pos, alignment);
+    find_free_pos = Common::AlignUp(find_free_pos, alignment);
 
     // If the new position is between searchStart - searchEnd , allocate a new block
     if (find_free_pos >= searchStart && find_free_pos + len <= searchEnd) {

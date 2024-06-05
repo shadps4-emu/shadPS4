@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fmt/format.h>
 #include "common/io_file.h"
-#include "common/logging/log.h"
 #include "common/string_util.h"
 #include "common/types.h"
 #include "core/aerolib/aerolib.h"
@@ -50,10 +50,6 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
                         symbol.virtual_address, ids.at(0), nidName, ids.at(1), ids.at(2), ids.at(3),
                         ids.at(4), ids.at(5), ids.at(6)));
     }
-}
-
-int SymbolsResolver::GetSize() {
-    return m_symbols.size();
 }
 
 } // namespace Core::Loader
