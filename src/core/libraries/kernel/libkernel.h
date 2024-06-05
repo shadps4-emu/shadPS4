@@ -14,8 +14,8 @@ namespace Libraries::Kernel {
 
 struct OrbisTimesec {
     time_t t;
-    u64 west_sec;
-    u64 dst_sec;
+    u32 west_sec;
+    u32 dst_sec;
 };
 
 int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len);
