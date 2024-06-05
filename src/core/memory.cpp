@@ -26,7 +26,7 @@ MemoryManager::~MemoryManager() = default;
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                               int memory_type) {
-    PAddr free_addr = 0;
+    PAddr free_addr = search_start;
 
     // Iterate through allocated blocked and find the next free position
     for (const auto& block : allocations) {
@@ -99,7 +99,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     }
 
     // Perform the mapping.
-    *out_addr = impl.Map(mapped_addr, size);
+    *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr);
     return ORBIS_OK;
 }
 

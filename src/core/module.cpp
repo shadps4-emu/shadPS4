@@ -349,7 +349,6 @@ void Module::LoadSymbols() {
 
             const auto aeronid = AeroLib::FindByNid(ids.at(0).c_str());
             const auto nid_name = aeronid ? aeronid->name : "UNK";
-            LOG_INFO(Core_Linker, "NidName {}", nid_name);
 
             Loader::SymbolResolver sym_r{};
             sym_r.name = ids.at(0);

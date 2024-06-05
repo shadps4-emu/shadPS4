@@ -102,14 +102,14 @@ struct AddressSpace::Impl {
 
         // Perform the map.
         void* ptr = nullptr;
-        if (phys_addr) {
+        if (phys_addr != -1) {
             ptr = MapViewOfFile3(backing_handle, process, reinterpret_cast<PVOID>(virtual_addr),
                                  phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         } else {
             ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                 MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         }
-        ASSERT(ptr);
+        ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
         return ptr;
     }
 
@@ -121,7 +121,7 @@ struct AddressSpace::Impl {
         //     (virtual_addr == 0 ? reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN)
         //                        : reinterpret_cast<PVOID>(virtual_addr));
         req.HighestEndingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MAX);
-        req.Alignment = alignment;
+        req.Alignment = alignment < 64_KB ? 0 : alignment;
         param.Type = MemExtendedParameterAddressRequirements;
         param.Pointer = &req;
         ULONG alloc_type = MEM_COMMIT | MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);

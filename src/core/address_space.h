@@ -42,7 +42,7 @@ public:
      *                  If zero is provided the mapping is considered as private.
      * @return A pointer to the mapped memory.
      */
-    void* Map(VAddr virtual_addr, size_t size, u64 alignment = 0, PAddr phys_addr = 0);
+    void* Map(VAddr virtual_addr, size_t size, u64 alignment = 0, PAddr phys_addr = -1);
 
     /// Unmaps specified virtual memory area.
     void Unmap(VAddr virtual_addr, size_t size);

@@ -23,12 +23,12 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = (searchStart < len && searchEnd > len);
+    const bool is_in_range = searchEnd - searchStart >= len;
     if (len <= 0 || !Common::Is16KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if ((alignment != 0 || Common::Is16KBAligned(alignment)) && !std::has_single_bit(alignment)) {
+    if (alignment != 0 && !Common::Is16KBAligned(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -47,6 +47,12 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
              searchStart, searchEnd, len, alignment, memoryType, phys_addr);
 
     return SCE_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
+                                                   s64* physAddrOut) {
+    return sceKernelAllocateDirectMemory(0, SCE_KERNEL_MAIN_DMEM_SIZE, len, alignment, memoryType,
+                                         physAddrOut);
 }
 
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
