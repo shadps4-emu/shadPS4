@@ -135,7 +135,11 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
 
 #else
 
-void SetTLSStorage(u64 image_address) {
+void SetTcbBase(void* image_address) {
+    UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
+}
+
+Tcb* GetTcbBase() {
     UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
 }
 

@@ -21,6 +21,7 @@ enum class SymbolType {
 
 struct SymbolRecord {
     std::string name;
+    std::string nid_name;
     u64 virtual_address;
 };
 

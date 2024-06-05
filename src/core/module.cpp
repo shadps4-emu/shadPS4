@@ -13,7 +13,7 @@
 
 namespace Core {
 
-using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, ModuleFunc func);
+using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
 static u64 LoadAddress = SYSTEM_RESERVED + CODE_BASE_OFFSET;
 static constexpr u64 CODE_BASE_INCR = 0x010000000u;
@@ -64,10 +64,10 @@ Module::Module(const std::filesystem::path& file_) : file{file_} {
 
 Module::~Module() = default;
 
-void Module::Start(size_t args, const void* argp, ModuleFunc func) {
+void Module::Start(size_t args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", file.filename().string());
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
-    reinterpret_cast<EntryFunc>(addr)(args, argp, func);
+    reinterpret_cast<EntryFunc>(addr)(args, argp, param);
 }
 
 void Module::LoadModuleToMemory() {

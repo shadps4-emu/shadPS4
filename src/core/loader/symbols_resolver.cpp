@@ -11,9 +11,7 @@
 namespace Core::Loader {
 
 void SymbolsResolver::AddSymbol(const SymbolResolver& s, u64 virtual_addr) {
-    SymbolRecord& r = m_symbols.emplace_back();
-    r.name = GenerateName(s);
-    r.virtual_address = virtual_addr;
+    m_symbols.emplace_back(GenerateName(s), s.nidName, virtual_addr);
 }
 
 std::string SymbolsResolver::GenerateName(const SymbolResolver& s) {

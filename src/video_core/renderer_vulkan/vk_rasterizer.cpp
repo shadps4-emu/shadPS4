@@ -85,7 +85,6 @@ void Rasterizer::Draw(bool is_indexed) {
 }
 
 void Rasterizer::DispatchDirect() {
-    compute_done = true;
     return;
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& cs_program = liverpool->regs.cs_program;

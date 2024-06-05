@@ -252,6 +252,8 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 }
 
 void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
+    std::scoped_lock lk{mutex};
+
     DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
     ASSERT_MSG(dtv_table[0].counter == dtv_generation_counter,
                "Reallocation of DTV table is not supported");
