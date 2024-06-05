@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cinttypes>
 #include <span>
 #include <string>
 #include <vector>
@@ -482,11 +481,15 @@ public:
         return m_elf_header.e_entry;
     }
 
+    [[nodiscard]] bool IsSharedLib() const {
+        return m_elf_header.e_type == ET_SCE_DYNAMIC;
+    }
+
     std::string SElfHeaderStr();
     std::string SELFSegHeader(u16 no);
     std::string ElfHeaderStr();
     std::string ElfPHeaderStr(u16 no);
-    std::string ElfPheaderTypeStr(u32 type);
+    std::string_view ElfPheaderTypeStr(u32 type);
     std::string ElfPheaderFlagsStr(u32 flags);
 
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);

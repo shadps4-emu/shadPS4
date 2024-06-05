@@ -11,8 +11,22 @@ class CodeGenerator;
 
 namespace Core {
 
-/// Sets the data pointer that contains the TLS image.
-void SetTLSStorage(u64 image_address);
+union DtvEntry {
+    size_t counter;
+    void* pointer;
+};
+
+struct Tcb {
+    Tcb* tcb_self;
+    DtvEntry* tcb_dtv;
+    void* tcb_thread;
+};
+
+/// Sets the data pointer to the TCB block.
+void SetTcbBase(void* image_address);
+
+/// Retrieves Tcb structure for the calling thread.
+Tcb* GetTcbBase();
 
 /// Patches any instructions that access guest TLS to use provided storage.
 void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c);

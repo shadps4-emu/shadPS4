@@ -59,7 +59,7 @@ LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 }
 #endif
 
-static constexpr u64 StreamBufferSize = 128_MB;
+static constexpr u64 StreamBufferSize = 512_MB;
 static constexpr u64 PageShift = 12;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)

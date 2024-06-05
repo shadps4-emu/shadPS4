@@ -26,7 +26,7 @@ MemoryManager::~MemoryManager() = default;
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                               int memory_type) {
-    PAddr free_addr = 0;
+    PAddr free_addr = search_start;
 
     // Iterate through allocated blocked and find the next free position
     for (const auto& block : allocations) {
@@ -35,7 +35,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     }
 
     // Align free position
-    free_addr = Common::alignUp(free_addr, alignment);
+    free_addr = Common::AlignUp(free_addr, alignment);
     ASSERT(free_addr >= search_start && free_addr + size <= search_end);
 
     // Add the allocated region to the list and commit its pages.
@@ -56,7 +56,7 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
 int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              PAddr phys_addr, u64 alignment) {
-    VAddr mapped_addr = alignment > 0 ? Common::alignUp(virtual_addr, alignment) : virtual_addr;
+    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
     SCOPE_EXIT {
         auto& new_vma = AddMapping(mapped_addr, size);
         new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
@@ -99,7 +99,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     }
 
     // Perform the mapping.
-    *out_addr = impl.Map(mapped_addr, size);
+    *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr);
     return ORBIS_OK;
 }
 

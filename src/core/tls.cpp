@@ -44,11 +44,13 @@ constexpr static TLSPattern TlsPatterns[] = {
 #ifdef _WIN32
 static DWORD slot = 0;
 
-void SetTLSStorage(u64 image_address) {
-    // Guest apps will use both positive and negative offsets to the TLS pointer.
-    // User data at probably in negative offsets, while pthread data at positive offset.
-    const BOOL result = TlsSetValue(slot, reinterpret_cast<LPVOID>(image_address));
+void SetTcbBase(void* image_address) {
+    const BOOL result = TlsSetValue(slot, image_address);
     ASSERT(result != 0);
+}
+
+Tcb* GetTcbBase() {
+    return reinterpret_cast<Tcb*>(TlsGetValue(slot));
 }
 
 void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
@@ -81,6 +83,7 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
                 std::memcpy(&offset, code + tls_pattern.pattern_size, sizeof(u64));
                 LOG_INFO(Core_Linker, "PATTERN64 FOUND at {}, reg: {} offset: {:#x}",
                          fmt::ptr(code), tls_pattern.target_reg, offset);
+                continue;
             }
             ASSERT(offset == 0);
 
@@ -132,7 +135,11 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
 
 #else
 
-void SetTLSStorage(u64 image_address) {
+void SetTcbBase(void* image_address) {
+    UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
+}
+
+Tcb* GetTcbBase() {
     UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
 }
 

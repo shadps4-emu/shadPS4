@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     }
 
     auto linker = Common::Singleton<Core::Linker>::Instance();
-    Libraries::InitHLELibs(&linker->getHLESymbols());
+    Libraries::InitHLELibs(&linker->GetHLESymbols());
     linker->LoadModule(path);
 
     // check if we have system modules to load
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
         }
     }
     if (!found) {
-        Libraries::LibC::libcSymbolsRegister(&linker->getHLESymbols());
+        Libraries::LibC::libcSymbolsRegister(&linker->GetHLESymbols());
     }
     std::thread mainthread([linker]() { linker->Execute(); });
     Discord::RPC discordRPC;

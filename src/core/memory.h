@@ -107,7 +107,7 @@ public:
 
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "",
-                  PAddr phys_addr = 0, u64 alignment = 0);
+                  PAddr phys_addr = -1, u64 alignment = 0);
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 
@@ -121,7 +121,7 @@ private:
     VMAHandle FindVMA(VAddr target) {
         // Return first the VMA with base >= target.
         const auto it = vma_map.lower_bound(target);
-        if (it->first == target) {
+        if (it != vma_map.end() && it->first == target) {
             return it;
         }
         return std::prev(it);

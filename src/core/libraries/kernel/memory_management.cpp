@@ -7,6 +7,7 @@
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
+#include "core/linker.h"
 #include "core/memory.h"
 
 namespace Libraries::Kernel {
@@ -22,12 +23,12 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = (searchStart < len && searchEnd > len);
-    if (len <= 0 || !Common::is16KBAligned(len) || !is_in_range) {
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (len <= 0 || !Common::Is16KBAligned(len) || !is_in_range) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if ((alignment != 0 || Common::is16KBAligned(alignment)) && !std::has_single_bit(alignment)) {
+    if (alignment != 0 && !Common::Is16KBAligned(alignment)) {
         LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -48,6 +49,12 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     return SCE_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
+                                                   s64* physAddrOut) {
+    return sceKernelAllocateDirectMemory(0, SCE_KERNEL_MAIN_DMEM_SIZE, len, alignment, memoryType,
+                                         physAddrOut);
+}
+
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
                                           s64 directMemoryStart, u64 alignment) {
     LOG_INFO(
@@ -55,16 +62,16 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
         "len = {:#x}, prot = {:#x}, flags = {:#x}, directMemoryStart = {:#x}, alignment = {:#x}",
         len, prot, flags, directMemoryStart, alignment);
 
-    if (len == 0 || !Common::is16KBAligned(len)) {
+    if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (!Common::is16KBAligned(directMemoryStart)) {
+    if (!Common::Is16KBAligned(directMemoryStart)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
         return SCE_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
-        if ((!std::has_single_bit(alignment) && !Common::is16KBAligned(alignment))) {
+        if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
             return SCE_KERNEL_ERROR_EINVAL;
         }
@@ -81,7 +88,7 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                                  int flags, const char* name) {
 
-    if (len == 0 || !Common::is16KBAligned(len)) {
+    if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "len is 0 or not 16kb multiple");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -125,6 +132,11 @@ int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInf
     LOG_WARNING(Kernel_Vmm, "called");
     auto* memory = Core::Memory::Instance();
     return memory->DirectMemoryQuery(offset, flags == 1, query_info);
+}
+
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    linker->SetHeapApiFunc(func);
 }
 
 } // namespace Libraries::Kernel

@@ -92,14 +92,14 @@ StreamBuffer::~StreamBuffer() {
 
 std::tuple<u8*, u64, bool> StreamBuffer::Map(u64 size, u64 alignment) {
     if (!is_coherent && type == BufferType::Stream) {
-        size = Common::alignUp(size, instance.NonCoherentAtomSize());
+        size = Common::AlignUp(size, instance.NonCoherentAtomSize());
     }
 
     ASSERT(size <= stream_buffer_size);
     mapped_size = size;
 
     if (alignment > 0) {
-        offset = Common::alignUp(offset, alignment);
+        offset = Common::AlignUp(offset, alignment);
     }
 
     bool invalidate{false};
@@ -124,7 +124,7 @@ std::tuple<u8*, u64, bool> StreamBuffer::Map(u64 size, u64 alignment) {
 
 void StreamBuffer::Commit(u64 size) {
     if (!is_coherent && type == BufferType::Stream) {
-        size = Common::alignUp(size, instance.NonCoherentAtomSize());
+        size = Common::AlignUp(size, instance.NonCoherentAtomSize());
     }
 
     ASSERT_MSG(size <= mapped_size, "Reserved size {} is too small compared to {}", mapped_size,

@@ -3,8 +3,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <span>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include "common/types.h"
 
@@ -20,6 +21,7 @@ enum class SymbolType {
 
 struct SymbolRecord {
     std::string name;
+    std::string nid_name;
     u64 virtual_address;
 };
 
@@ -42,6 +44,16 @@ public:
     void AddSymbol(const SymbolResolver& s, u64 virtual_addr);
     const SymbolRecord* FindSymbol(const SymbolResolver& s) const;
 
+    void DebugDump(const std::filesystem::path& file_name);
+
+    std::span<const SymbolRecord> GetSymbols() const {
+        return m_symbols;
+    }
+
+    size_t GetSize() const noexcept {
+        return m_symbols.size();
+    }
+
     static std::string GenerateName(const SymbolResolver& s);
 
     static std::string_view SymbolTypeToS(SymbolType sym_type) {
@@ -58,9 +70,6 @@ public:
             return "NoType";
         }
     }
-
-    void DebugDump(const std::filesystem::path& file_name);
-    int GetSize();
 
 private:
     std::vector<SymbolRecord> m_symbols;
