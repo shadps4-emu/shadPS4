@@ -5,10 +5,12 @@
 #include <thread>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "common/thread.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
+#include "core/linker.h"
 #ifdef _WIN64
 #include <windows.h>
 #endif
@@ -829,6 +831,8 @@ static void cleanup_thread(void* arg) {
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    linker->InitTlsForThread(false);
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
@@ -1022,6 +1026,16 @@ int PS4_SYSV_ABI scePthreadEqual(ScePthread thread1, ScePthread thread2) {
     return (thread1 == thread2 ? 1 : 0);
 }
 
+struct TlsIndex {
+    u64 ti_module;
+    u64 ti_offset;
+};
+
+void* PS4_SYSV_ABI __tls_get_addr(TlsIndex* index) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->TlsGetAddr(index->ti_module, index->ti_offset);
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1038,6 +1052,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8+s5BzZjxSg", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetaffinity);
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
     LIB_FUNCTION("UTXzJbWhhTE", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstacksize);
+    LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", 1, 1, __tls_get_addr);
 
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);

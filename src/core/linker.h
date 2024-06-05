@@ -18,6 +18,8 @@ struct EntryParams {
     const char* argv[3];
 };
 
+using HeapApiFunc = PS4_SYSV_ABI void* (*)(size_t);
+
 class Linker {
 public:
     explicit Linker();
@@ -35,6 +37,13 @@ public:
         return m_modules.at(index).get();
     }
 
+    void SetHeapApiFunc(void* func) {
+        heap_api_func = *reinterpret_cast<HeapApiFunc*>(func);
+    }
+
+    void* TlsGetAddr(u64 module_index, u64 offset);
+    void InitTlsForThread(bool is_primary = false);
+
     s32 LoadModule(const std::filesystem::path& elf_name);
 
     void Relocate(Module* module);
@@ -50,6 +59,7 @@ private:
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};
     size_t max_tls_index{};
+    HeapApiFunc heap_api_func{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
 };

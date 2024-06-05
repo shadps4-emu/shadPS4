@@ -7,6 +7,7 @@
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
+#include "core/linker.h"
 #include "core/memory.h"
 
 namespace Libraries::Kernel {
@@ -125,6 +126,11 @@ int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInf
     LOG_WARNING(Kernel_Vmm, "called");
     auto* memory = Core::Memory::Instance();
     return memory->DirectMemoryQuery(offset, flags == 1, query_info);
+}
+
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    linker->SetHeapApiFunc(func);
 }
 
 } // namespace Libraries::Kernel

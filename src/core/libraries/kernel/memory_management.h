@@ -49,5 +49,6 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize);
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func);
 
 } // namespace Libraries::Kernel

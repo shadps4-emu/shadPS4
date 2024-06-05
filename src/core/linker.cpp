@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <windows.h>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -10,8 +10,10 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
+#include "core/tls.h"
 #include "core/virtual_memory.h"
 
 namespace Core {
@@ -70,6 +72,7 @@ void Linker::Execute() {
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
     Libraries::Kernel::pthreadInitSelfMainThread();
+    InitTlsForThread(true);
 
     // Start shared library modules
     for (auto& m : m_modules) {
@@ -246,6 +249,69 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
     LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
               return_info->name, library->name, module->name);
+}
+
+void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
+    DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
+    ASSERT_MSG(dtv_table[0].counter == dtv_generation_counter,
+               "Reallocation of DTV table is not supported");
+
+    void* module = (u8*)dtv_table[module_index + 1].pointer + offset;
+    ASSERT_MSG(module, "DTV allocation is not supported");
+    return module;
+}
+
+void Linker::InitTlsForThread(bool is_primary) {
+    static constexpr size_t TcbSize = 0x40;
+    static constexpr size_t TlsAllocAlign = 0x20;
+    const size_t total_tls_size = Common::AlignUp(static_tls_size, TlsAllocAlign) + TcbSize;
+
+    // The kernel module has a few different paths for TLS allocation.
+    // For SDK < 1.7 it allocates both main and secondary thread blocks using libc mspace/malloc.
+    // In games compiled with newer SDK, the main thread gets mapped from flexible memory,
+    // with addr = 0, so system managed area. Here we will only implement the latter.
+    void* addr_out{};
+    if (is_primary) {
+        const size_t tls_aligned = Common::AlignUp(total_tls_size, 16_KB);
+        const int ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
+            &addr_out, tls_aligned, 3, 0, "SceKernelPrimaryTcbTls");
+        ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
+    } else {
+        if (heap_api_func) {
+            addr_out = heap_api_func(total_tls_size);
+        } else {
+            addr_out = std::malloc(total_tls_size);
+        }
+    }
+
+    // Initialize allocated memory and allocate DTV table.
+    const u32 num_dtvs = max_tls_index;
+    std::memset(addr_out, 0, total_tls_size);
+    DtvEntry* dtv_table = new DtvEntry[num_dtvs + 2];
+
+    // Initialize thread control block
+    u8* addr = reinterpret_cast<u8*>(addr_out);
+    Tcb* tcb = reinterpret_cast<Tcb*>(addr + static_tls_size);
+    tcb->tcb_self = tcb;
+    tcb->tcb_dtv = dtv_table;
+
+    // Dtv[0] is the generation counter. libkernel puts their number into dtv[1] (why?)
+    dtv_table[0].counter = dtv_generation_counter;
+    dtv_table[1].counter = num_dtvs;
+
+    // Copy init images to TLS thread blocks and map them to DTV slots.
+    for (const auto& module : m_modules) {
+        if (module->tls.image_size == 0) {
+            continue;
+        }
+        u8* dest = reinterpret_cast<u8*>(addr + static_tls_size - module->tls.offset);
+        const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
+        std::memcpy(dest, src, module->tls.init_image_size);
+        tcb->tcb_dtv[module->tls.modid + 1].pointer = dest;
+    }
+
+    // Set pointer to FS base
+    SetTcbBase(tcb);
 }
 
 void Linker::DebugDump() {
