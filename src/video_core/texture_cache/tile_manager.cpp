@@ -202,9 +202,14 @@ const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     return nullptr;
 }
 
+static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eTransferDst |
+                                                     vk::BufferUsageFlagBits::eUniformBuffer |
+                                                     vk::BufferUsageFlagBits::eStorageBuffer;
+
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         TextureCache& texture_cache, Vulkan::StreamBuffer& staging)
-    : instance{instance}, scheduler{scheduler}, texture_cache{texture_cache}, staging{staging} {
+                         TextureCache& texture_cache)
+    : instance{instance}, scheduler{scheduler}, texture_cache{texture_cache},
+      staging{instance, scheduler, StagingFlags, 64_MB} {
 
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,

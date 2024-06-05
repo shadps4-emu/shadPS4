@@ -32,7 +32,7 @@ struct DetilerContext {
 class TileManager {
 public:
     TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                TextureCache& texture_cache, Vulkan::StreamBuffer& staging);
+                TextureCache& texture_cache);
     ~TileManager();
 
     bool TryDetile(Image& image);
@@ -44,7 +44,7 @@ private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     TextureCache& texture_cache;
-    Vulkan::StreamBuffer& staging;
+    Vulkan::StreamBuffer staging;
     std::array<DetilerContext, DetilerType::Max> detilers;
 };
 

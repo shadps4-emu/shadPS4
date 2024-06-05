@@ -64,10 +64,9 @@ static constexpr u64 PageShift = 12;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
     : instance{instance_}, scheduler{scheduler_},
-      staging{instance, scheduler,
-              vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer,
-              StreamBufferSize, Vulkan::BufferType::Upload},
-      tile_manager{instance, scheduler, *this, staging} {
+      staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
+              Vulkan::BufferType::Upload},
+      tile_manager{instance, scheduler, *this} {
 
 #ifndef _WIN64
     sigset_t signal_mask;
