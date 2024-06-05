@@ -39,8 +39,10 @@ struct ImageInfo {
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool is_tiled = false;
+    bool is_storage = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
+    vk::ImageUsageFlags usage;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
     u32 pitch = 0;

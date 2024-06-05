@@ -58,10 +58,16 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image) noexcept {
     mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
 }
 
-ImageView::ImageView(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                     const ImageViewInfo& info_, vk::Image image)
+ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, vk::Image image,
+                     std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
     : info{info_} {
+    vk::ImageViewUsageCreateInfo usage_ci{};
+    if (usage_override) {
+        usage_ci.usage = usage_override.value();
+    }
+
     const vk::ImageViewCreateInfo image_view_ci = {
+        .pNext = usage_override.has_value() ? &usage_ci : nullptr,
         .image = image,
         .viewType = info.type,
         .format = info.format,

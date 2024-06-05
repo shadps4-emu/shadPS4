@@ -151,6 +151,18 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.type == vk::ImageType::e3D) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
+    if (info.is_tiled) {
+        flags |= vk::ImageCreateFlagBits::eExtendedUsage;
+        if (false) { // IsBlockCodedFormat()
+            flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
+        }
+    }
+
+    info.usage = ImageUsageFlags(info.pixel_format);
+    if (info.is_tiled || info.is_storage) {
+        info.usage |= vk::ImageUsageFlagBits::eStorage;
+    }
+
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
         .imageType = info.type,
@@ -163,7 +175,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = ImageUsageFlags(info.pixel_format),
+        .usage = info.usage,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
