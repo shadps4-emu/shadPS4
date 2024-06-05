@@ -4,9 +4,13 @@
 #include "boost/container/static_vector.hpp"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
+
+#include "video_core/host_shaders/detile_m8x1_comp.h"
+#include "video_core/host_shaders/detile_m8x4_comp.h"
 
 #include <vulkan/vulkan_to_string.hpp>
 
@@ -201,26 +205,20 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
                          TextureCache& texture_cache, Vulkan::StreamBuffer& staging)
     : instance{instance}, scheduler{scheduler}, texture_cache{texture_cache}, staging{staging} {
 
+    static const std::array detiler_shaders{
+        HostShaders::DETILE_M8X1_COMP,
+        HostShaders::DETILE_M8X4_COMP,
+    };
+
     for (int pl_id = 0; pl_id < DetilerType::Max; ++pl_id) {
         auto& ctx = detilers[pl_id];
 
-        const std::vector<u32> shader_code{};
-
-        const vk::ShaderModuleCreateInfo shader_info = {
-            .codeSize = shader_code.size(),
-            .pCode = shader_code.data(),
-        };
-
-        vk::UniqueShaderModule module;
-        try {
-            module = instance.GetDevice().createShaderModuleUnique(shader_info);
-        } catch (vk::SystemError& err) {
-            UNREACHABLE_MSG("{}", err.what());
-        }
+        const auto& module = Vulkan::Compile(
+            detiler_shaders[pl_id], vk::ShaderStageFlagBits::eCompute, instance.GetDevice());
 
         const vk::PipelineShaderStageCreateInfo shader_ci = {
             .stage = vk::ShaderStageFlagBits::eCompute,
-            .module = *module,
+            .module = module,
             .pName = "main",
         };
 
