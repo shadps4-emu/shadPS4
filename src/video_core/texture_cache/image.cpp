@@ -16,7 +16,7 @@ using namespace Vulkan;
 using VideoOutFormat = Libraries::VideoOut::PixelFormat;
 using Libraries::VideoOut::TilingMode;
 
-[[nodiscard]] vk::Format ConvertPixelFormat(const VideoOutFormat format) {
+static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     switch (format) {
     case VideoOutFormat::A8R8G8B8Srgb:
         return vk::Format::eB8G8R8A8Srgb;
@@ -32,7 +32,7 @@ using Libraries::VideoOut::TilingMode;
     return {};
 }
 
-[[nodiscard]] vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
+static vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
@@ -46,7 +46,7 @@ using Libraries::VideoOut::TilingMode;
     return usage;
 }
 
-[[nodiscard]] vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
+static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
         return vk::ImageType::e1D;
