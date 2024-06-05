@@ -14,6 +14,8 @@ vk::StencilOp StencilOp(Liverpool::StencilFunc op) {
         return vk::StencilOp::eKeep;
     case Liverpool::StencilFunc::Zero:
         return vk::StencilOp::eZero;
+    case Liverpool::StencilFunc::ReplaceTest:
+        return vk::StencilOp::eReplace;
     case Liverpool::StencilFunc::AddClamp:
         return vk::StencilOp::eIncrementAndClamp;
     case Liverpool::StencilFunc::SubClamp:
@@ -306,6 +308,13 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::FormatBc3 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc3SrgbBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::Format16_16_16_16 &&
+        num_format == AmdGpu::NumberFormat::Sint) {
+        return vk::Format::eR16G16B16A16Sint;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Srgb) {
+        return vk::Format::eBc7SrgbBlock;
     }
     UNREACHABLE();
 }

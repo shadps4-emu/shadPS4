@@ -32,10 +32,10 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 
 Rasterizer::~Rasterizer() = default;
 
-void Rasterizer::Draw(bool is_indexed) {
+void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
-    const u32 num_indices = SetupIndexBuffer(is_indexed);
+    const u32 num_indices = SetupIndexBuffer(is_indexed, index_offset);
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
@@ -85,17 +85,16 @@ void Rasterizer::Draw(bool is_indexed) {
 }
 
 void Rasterizer::DispatchDirect() {
-    return;
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& cs_program = liverpool->regs.cs_program;
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
-    pipeline->BindResources(memory, texture_cache);
+    pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
-u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
+u32 Rasterizer::SetupIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
     if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::QuadList) {
@@ -131,7 +130,8 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed) {
 
     // Bind index buffer.
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset, index_type);
+    cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset + index_offset * index_size,
+                           index_type);
     return regs.num_indices;
 }
 

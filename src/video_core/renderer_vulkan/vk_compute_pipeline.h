@@ -31,7 +31,8 @@ public:
         return *pipeline;
     }
 
-    void BindResources(Core::MemoryManager* memory, VideoCore::TextureCache& texture_cache) const;
+    void BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+                       VideoCore::TextureCache& texture_cache) const;
 
 private:
     const Instance& instance;

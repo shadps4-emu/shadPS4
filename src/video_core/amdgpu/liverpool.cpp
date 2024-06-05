@@ -252,6 +252,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             break;
         }
+        case PM4ItOpcode::DrawIndexOffset2: {
+            const auto* draw_index_off = reinterpret_cast<const PM4CmdDrawIndexOffset2*>(header);
+            regs.max_index_size = draw_index_off->max_size;
+            regs.num_indices = draw_index_off->index_count;
+            regs.draw_initiator = draw_index_off->draw_initiator;
+            if (rasterizer) {
+                rasterizer->Draw(true, draw_index_off->index_offset);
+            }
+            break;
+        }
         case PM4ItOpcode::DrawIndexAuto: {
             const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndexAuto*>(header);
             regs.num_indices = draw_index->index_count;
@@ -270,6 +280,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                 rasterizer->DispatchDirect();
             }
+            break;
+        }
+        case PM4ItOpcode::NumInstances: {
+            const auto* num_instances = reinterpret_cast<const PM4CmdDrawNumInstances*>(header);
+            regs.num_instances.num_instances = num_instances->num_instances;
+            break;
+        }
+        case PM4ItOpcode::IndexBase: {
+            const auto* index_base = reinterpret_cast<const PM4CmdDrawIndexBase*>(header);
+            regs.index_base_address.base_addr_lo = index_base->addr_lo;
+            regs.index_base_address.base_addr_hi.Assign(index_base->addr_hi);
             break;
         }
         case PM4ItOpcode::EventWrite: {

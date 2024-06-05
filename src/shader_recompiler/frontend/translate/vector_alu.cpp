@@ -33,7 +33,7 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::ScalarReg flag_reg{inst.src[2].code};
     const IR::U1 flag = inst.src[2].field == OperandField::ScalarGPR
-                            ? ir.INotEqual(ir.GetScalarReg(flag_reg), ir.Imm32(0U))
+                            ? ir.GetThreadBitScalarReg(flag_reg)
                             : ir.GetVcc();
 
     // We can treat the instruction as integer most of the time, but when a source is
@@ -85,21 +85,21 @@ void Translator::V_CVT_F32_U32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
-    const IR::F32 src1{GetSrc(inst.src[1])};
-    const IR::F32 src2{GetSrc(inst.src[2])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src2{GetSrc(inst.src[2], true)};
     SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.Fract(src0));
 }
 
 void Translator::V_ADD_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
-    const IR::F32 src1{GetSrc(inst.src[1])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
     SetDst(inst.dst[0], ir.FPAdd(src0, src1));
 }
 
@@ -114,14 +114,14 @@ void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
 
 void Translator::V_MED3_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1])};
-    const IR::F32 src2{GetSrc(inst.src[2])};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src2{GetSrc(inst.src[2], true)};
     const IR::F32 mmx = ir.FPMin(ir.FPMax(src0, src1), src2);
     SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
 }
 
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.FPFloor(src0));
 }
@@ -167,7 +167,17 @@ void Translator::V_CMP_F32(ConditionOp op, const GcnInst& inst) {
             UNREACHABLE();
         }
     }();
-    ir.SetVcc(result);
+
+    switch (inst.dst[1].field) {
+    case OperandField::VccLo:
+        ir.SetVcc(result);
+        break;
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
+        break;
+    default:
+        UNREACHABLE();
+    }
 }
 
 void Translator::V_MAX_F32(const GcnInst& inst) {
@@ -355,6 +365,11 @@ void Translator::V_ASHRREV_I32(const GcnInst& inst) {
 void Translator::V_MAD_U32_U24(const GcnInst& inst) {
     // TODO:
     V_MAD_I32_I24(inst);
+}
+
+void Translator::V_RNDNE_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPRoundEven(src0));
 }
 
 } // namespace Shader::Gcn

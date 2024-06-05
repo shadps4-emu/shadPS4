@@ -548,4 +548,15 @@ struct PM4CmdDispatchDirect {
     u32 dispatch_initiator; ///< Dispatch Initiator Register
 };
 
+struct PM4CmdDrawNumInstances {
+    PM4Type3Header header;
+    u32 num_instances;
+};
+
+struct PM4CmdDrawIndexBase {
+    PM4Type3Header header;
+    u32 addr_lo;
+    u32 addr_hi;
+};
+
 } // namespace AmdGpu
