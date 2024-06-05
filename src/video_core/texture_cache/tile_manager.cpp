@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "boost/container/static_vector.hpp"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -12,6 +11,8 @@
 #include "video_core/host_shaders/detile_m8x1_comp.h"
 #include "video_core/host_shaders/detile_m8x4_comp.h"
 
+#include <boost/container/static_vector.hpp>
+#include <magic_enum.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
 namespace VideoCore {
@@ -216,6 +217,15 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
         const auto& module = Vulkan::Compile(
             detiler_shaders[pl_id], vk::ShaderStageFlagBits::eCompute, instance.GetDevice());
 
+        // Set module debug name
+        auto module_name = magic_enum::enum_name(static_cast<DetilerType>(pl_id));
+        const vk::DebugUtilsObjectNameInfoEXT name_info = {
+            .objectType = vk::ObjectType::eShaderModule,
+            .objectHandle = std::bit_cast<u64>(module),
+            .pObjectName = module_name.data(),
+        };
+        instance.GetDevice().setDebugUtilsObjectNameEXT(name_info);
+
         const vk::PipelineShaderStageCreateInfo shader_ci = {
             .stage = vk::ShaderStageFlagBits::eCompute,
             .module = module,
@@ -271,6 +281,9 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
         } else {
             UNREACHABLE_MSG("Detiler pipeline creation failed!");
         }
+
+        // Once pipeline is compiled, we don't need the shader module anymore
+        instance.GetDevice().destroyShaderModule(module);
     }
 }
 
