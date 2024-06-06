@@ -186,7 +186,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.is_tiled) {
         ImageViewInfo view_info;
         view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
-        view_info.used_for_detiling = true;
         view_for_detiler.emplace(*instance, view_info, image);
     }
 

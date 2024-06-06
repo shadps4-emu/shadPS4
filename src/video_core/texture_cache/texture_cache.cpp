@@ -146,10 +146,10 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     }
 
     // All tiled images are created with storage usage flag. This makes set of formats (e.g. sRGB)
-    // impossible to use. However, during view creation, if an image isn't used as storage and not a
-    // target for the detiler, we can temporary remove its storage bit.
+    // impossible to use. However, during view creation, if an image isn't used as storage we can
+    // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
-    if (!image.info.is_storage && !view_info.used_for_detiling) {
+    if (!image.info.is_storage) {
         usage_override = image.info.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
