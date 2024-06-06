@@ -278,7 +278,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
 
 void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                      VideoCore::TextureCache& texture_cache) const {
-    static constexpr u64 MinUniformAlignment = 64;
+    static const u64 MinUniformAlignment = instance.UniformMinAlignment();
 
     const auto map_staging = [&](auto src, size_t size) {
         const auto [data, offset, _] = staging.Map(size, MinUniformAlignment);
