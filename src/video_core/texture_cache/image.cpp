@@ -88,6 +88,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
     is_tiled = buffer.IsTiled();
+    tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
