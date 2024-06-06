@@ -12,7 +12,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <p align="center">
 
- <a href="https://discord.gg/MyZRaBngxA">
+ <a href="https://discord.com/invite/MyZRaBngxA">
         <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4 Discord&logo=Discord&logoColor=white" width="240">
 
  <a href="https://github.com/shadps4-emu/shadPS4/releases/latest">
@@ -36,7 +36,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
 
-To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.gg/MyZRaBngxA)
+To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.com/invite/MyZRaBngxA)
 
 Check us on [X (twitter)](https://x.com/shadps4) or on our [website](https://shadps4.net/).
 
@@ -101,4 +101,4 @@ We currently accept any contribution, just open a PR and we will check it :)
 # Sister Projects
 
 - [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
-- [hydra](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
+- [hydra](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from OFFTKP.
