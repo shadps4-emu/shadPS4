@@ -299,8 +299,8 @@ bool TileManager::TryDetile(Image& image) {
 
     const auto* detiler = GetDetiler(image);
     if (!detiler) {
-        LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} {}",
-                  vk::to_string(image.info.pixel_format), static_cast<u32>(image.info.tiling_mode));
+        LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
+                  vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
         return false;
     }
 
