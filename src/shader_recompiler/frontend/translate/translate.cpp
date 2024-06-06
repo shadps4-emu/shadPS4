@@ -58,16 +58,13 @@ void Translator::EmitPrologue() {
     }
 }
 
-IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
+IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     // Input modifiers work on float values.
     force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
 
-    IR::U1U32F32 value{};
+    IR::U32F32 value{};
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (exec_contexts[operand.code]) {
-            value = ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
-        }
         if (operand.type == ScalarType::Float32 || force_flt) {
             value = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
         } else {
@@ -124,11 +121,12 @@ IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     case OperandField::ConstFloatNeg_2_0:
         value = ir.Imm32(-2.0f);
         break;
-    case OperandField::ExecLo:
-        value = ir.GetExec();
-        break;
     case OperandField::VccLo:
-        value = ir.GetVccLo();
+        if (force_flt) {
+            value = ir.BitCast<IR::F32>(ir.GetVccLo());
+        } else {
+            value = ir.GetVccLo();
+        }
         break;
     case OperandField::VccHi:
         value = ir.GetVccHi();
@@ -146,8 +144,8 @@ IR::U1U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     return value;
 }
 
-void Translator::SetDst(const InstOperand& operand, const IR::U1U32F32& value) {
-    IR::U1U32F32 result = value;
+void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
+    IR::U32F32 result = value;
     if (operand.output_modifier.multiplier != 0.f) {
         result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
     }
@@ -156,14 +154,9 @@ void Translator::SetDst(const InstOperand& operand, const IR::U1U32F32& value) {
     }
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (value.Type() == IR::Type::U1) {
-            return ir.SetThreadBitScalarReg(IR::ScalarReg(operand.code), result);
-        }
         return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
     case OperandField::VectorGPR:
         return ir.SetVectorReg(IR::VectorReg(operand.code), result);
-    case OperandField::ExecLo:
-        return ir.SetExec(result);
     case OperandField::VccLo:
         return ir.SetVccLo(result);
     case OperandField::VccHi:
@@ -251,6 +244,12 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.EmitFetch(inst);
             break;
         case Opcode::S_WAITCNT:
+            break;
+        case Opcode::S_LOAD_DWORDX4:
+            translator.S_LOAD_DWORD(4, inst);
+            break;
+        case Opcode::S_LOAD_DWORDX8:
+            translator.S_LOAD_DWORD(8, inst);
             break;
         case Opcode::S_BUFFER_LOAD_DWORD:
             translator.S_BUFFER_LOAD_DWORD(1, inst);
@@ -352,8 +351,17 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
             break;
+        case Opcode::S_CMP_LG_I32:
+            translator.S_CMP(ConditionOp::LG, true, inst);
+            break;
         case Opcode::S_CMP_EQ_I32:
             translator.S_CMP(ConditionOp::EQ, true, inst);
+            break;
+        case Opcode::S_CMP_EQ_U32:
+            translator.S_CMP(ConditionOp::EQ, false, inst);
+            break;
+        case Opcode::S_LSHL_B32:
+            translator.S_LSHL_B32(inst);
             break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
@@ -505,13 +513,21 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_CSELECT_B32:
             translator.S_CSELECT_B32(inst);
             break;
+        case Opcode::S_CSELECT_B64:
+            translator.S_CSELECT_B64(inst);
+            break;
         case Opcode::S_BFE_U32:
             translator.S_BFE_U32(inst);
+            break;
+        case Opcode::V_RNDNE_F32:
+            translator.V_RNDNE_F32(inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:
         case Opcode::S_CBRANCH_SCC1:
+        case Opcode::S_CBRANCH_VCCNZ:
+        case Opcode::S_CBRANCH_VCCZ:
         case Opcode::S_BRANCH:
         case Opcode::S_WQM_B64:
         case Opcode::V_INTERP_P1_F32:

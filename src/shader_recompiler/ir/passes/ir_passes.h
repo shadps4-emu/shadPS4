@@ -10,7 +10,7 @@ namespace Shader::Optimization {
 
 void SsaRewritePass(IR::BlockList& program);
 void IdentityRemovalPass(IR::BlockList& program);
-void DeadCodeEliminationPass(IR::BlockList& program);
+void DeadCodeEliminationPass(IR::Program& program);
 void ConstantPropagationPass(IR::BlockList& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);

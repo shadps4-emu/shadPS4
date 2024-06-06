@@ -95,9 +95,14 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         }
     }
     switch (attr) {
-    case IR::Attribute::FragCoord:
-        return ctx.OpLoad(ctx.F32[1],
-                          ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(comp)));
+    case IR::Attribute::FragCoord: {
+        const Id coord = ctx.OpLoad(
+            ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(comp)));
+        if (comp == 3) {
+            return ctx.OpFDiv(ctx.F32[1], ctx.ConstF32(1.f), coord);
+        }
+        return coord;
+    }
     default:
         throw NotImplementedException("Read attribute {}", attr);
     }

@@ -630,9 +630,11 @@ private:
                 break;
             case StatementType::Code: {
                 ensure_block();
-                const u32 start = stmt.block->begin_index;
-                const u32 size = stmt.block->end_index - start + 1;
-                Translate(current_block, inst_list.subspan(start, size), info);
+                if (!stmt.block->is_dummy) {
+                    const u32 start = stmt.block->begin_index;
+                    const u32 size = stmt.block->end_index - start + 1;
+                    Translate(current_block, inst_list.subspan(start, size), info);
+                }
                 break;
             }
             case StatementType::SetVariable: {
@@ -808,7 +810,7 @@ private:
     ObjectPool<IR::Inst>& inst_pool;
     ObjectPool<IR::Block>& block_pool;
     IR::AbstractSyntaxList& syntax_list;
-    const Block dummy_flow_block{};
+    const Block dummy_flow_block{.is_dummy = true};
     std::span<const GcnInst> inst_list;
     Info& info;
 };

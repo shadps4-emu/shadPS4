@@ -77,7 +77,7 @@ public:
     [[nodiscard]] U32U64 ReadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
-    [[nodiscard]] U32 ReadConst(const U64& address, const U32& offset);
+    [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] F32 ReadConstBuffer(const Value& handle, const U32& index);
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,

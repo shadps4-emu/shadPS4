@@ -273,8 +273,8 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     }*/
 }
 
-U32 IREmitter::ReadConst(const U64& address, const U32& offset) {
-    return Inst<U32>(Opcode::ReadConst, address, offset);
+U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
+    return Inst<U32>(Opcode::ReadConst, base, offset);
 }
 
 F32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {

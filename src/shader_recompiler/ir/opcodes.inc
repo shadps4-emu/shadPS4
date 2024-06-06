@@ -15,7 +15,7 @@ OPCODE(Epilogue,                                            Void,               
 OPCODE(Discard,                                             Void,                                                                                           )
 
 // Constant memory operations
-OPCODE(ReadConst,                                           U32,            U64,            U32,                                                            )
+OPCODE(ReadConst,                                           U32,            U32x2,          U32,                                                            )
 OPCODE(ReadConstBuffer,                                     F32,            Opaque,         U32,                                                            )
 OPCODE(ReadConstBufferU32,                                  U32,            Opaque,         U32,                                                            )
 
