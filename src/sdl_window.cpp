@@ -109,16 +109,16 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     case SDLK_RIGHT:
         button = ScePadButton::RIGHT;
         break;
-    case SDLK_KP_8:
+    case SDLK_a:
         button = ScePadButton::TRIANGLE;
         break;
-    case SDLK_KP_6:
+    case SDLK_x:
         button = ScePadButton::CIRCLE;
         break;
-    case SDLK_KP_2:
+    case SDLK_z:
         button = ScePadButton::CROSS;
         break;
-    case SDLK_KP_4:
+    case SDLK_s:
         button = ScePadButton::SQUARE;
         break;
     case SDLK_RETURN:
