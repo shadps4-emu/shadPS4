@@ -379,7 +379,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
             const auto& image_view = texture_cache.FindImageView(tsharp);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     vk::ImageLayout::eGeneral);
+                                     vk::ImageLayout::eShaderReadOnlyOptimal);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,

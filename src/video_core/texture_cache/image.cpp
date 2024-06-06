@@ -214,10 +214,11 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
                                             }};
 
     // Adjust pipieline stage
-    vk::PipelineStageFlagBits dst_pl_stage = (dst_mask == vk::AccessFlagBits::eTransferRead ||
-                                              dst_mask == vk::AccessFlagBits::eTransferWrite)
-                                                 ? vk::PipelineStageFlagBits::eTransfer
-                                                 : vk::PipelineStageFlagBits::eAllGraphics;
+    vk::PipelineStageFlags dst_pl_stage =
+        (dst_mask == vk::AccessFlagBits::eTransferRead ||
+         dst_mask == vk::AccessFlagBits::eTransferWrite)
+            ? vk::PipelineStageFlagBits::eTransfer
+            : vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eComputeShader;
     const auto cmdbuf = scheduler->CommandBuffer();
     cmdbuf.pipelineBarrier(pl_stage, dst_pl_stage, vk::DependencyFlagBits::eByRegion, {}, {},
                            barrier);
