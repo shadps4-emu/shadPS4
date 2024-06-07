@@ -49,6 +49,8 @@ public:
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 
+    void* Reserve(size_t size, u64 alignment);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;

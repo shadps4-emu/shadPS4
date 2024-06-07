@@ -113,7 +113,8 @@ struct AddressSpace::Impl {
         return ptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot) {
+    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot,
+                     bool no_commit = false) {
         // Map a private allocation
         MEM_ADDRESS_REQUIREMENTS req{};
         MEM_EXTENDED_PARAMETER param{};
@@ -124,8 +125,12 @@ struct AddressSpace::Impl {
         req.Alignment = alignment < 64_KB ? 0 : alignment;
         param.Type = MemExtendedParameterAddressRequirements;
         param.Pointer = &req;
-        ULONG alloc_type = MEM_COMMIT | MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);
-        void* const ptr = VirtualAlloc2(process, nullptr, size, alloc_type, prot, &param, 1);
+        ULONG alloc_type = MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);
+        if (!no_commit) {
+            alloc_type |= MEM_COMMIT;
+        }
+        void* const ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
+                                        alloc_type, prot, &param, 1);
         ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
         return ptr;
     }
@@ -224,7 +229,8 @@ struct AddressSpace::Impl {
         return nullptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot) {
+    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot,
+                     bool no_commit = false) {
         UNREACHABLE();
         return nullptr;
     }
@@ -269,6 +275,10 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size) {
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
     return impl->Protect(virtual_addr, size, true, true, true);
+}
+
+void* AddressSpace::Reserve(size_t size, u64 alignment) {
+    return impl->MapPrivate(0, size, alignment, PAGE_READWRITE, true);
 }
 
 } // namespace Core

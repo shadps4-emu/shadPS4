@@ -10,6 +10,7 @@
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/memory.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
@@ -39,6 +40,10 @@ struct AscQueueInfo {
     u32 ring_size_dw;
 };
 static VideoCore::SlotVector<AscQueueInfo> asc_queues{};
+
+static constexpr u32 TessellationFactorRingSize = 128_KB;
+static constexpr u32 TessellationFactorRingAlignment = 64_KB; // toolkit is using this alignment
+VAddr tessellation_factors_ring_addr{0};
 
 static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {
     using namespace Common::FS;
@@ -607,9 +612,15 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Actual virtual buffer address is hardcoded in the driver to 0xff00'000
+    if (tessellation_factors_ring_addr == 0) {
+        auto* memory = Core::Memory::Instance();
+        tessellation_factors_ring_addr =
+            memory->Reserve(TessellationFactorRingSize, TessellationFactorRingAlignment);
+    }
+    return tessellation_factors_ring_addr;
 }
 
 int PS4_SYSV_ABI sceGnmGpuPaDebugEnter() {

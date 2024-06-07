@@ -97,7 +97,7 @@ int PS4_SYSV_ABI sceGnmGetResourceType();
 int PS4_SYSV_ABI sceGnmGetResourceUserData();
 int PS4_SYSV_ABI sceGnmGetShaderProgramBaseAddress();
 int PS4_SYSV_ABI sceGnmGetShaderStatus();
-int PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
+VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
 int PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
 int PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
