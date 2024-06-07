@@ -129,7 +129,11 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::VccHi:
-        value = ir.GetVccHi();
+        if (force_flt) {
+            value = ir.BitCast<IR::F32>(ir.GetVccHi());
+        } else {
+            value = ir.GetVccHi();
+        }
         break;
     default:
         UNREACHABLE();
@@ -297,6 +301,8 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MADAK_F32: // Yes these can share the opcode
             translator.V_FMA_F32(inst);
             break;
+        case Opcode::IMAGE_SAMPLE_C_LZ:
+        case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
             translator.IMAGE_SAMPLE(inst);
             break;
@@ -351,8 +357,14 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
             break;
+        case Opcode::S_CMP_LT_I32:
+            translator.S_CMP(ConditionOp::LT, true, inst);
+            break;
         case Opcode::S_CMP_LG_I32:
             translator.S_CMP(ConditionOp::LG, true, inst);
+            break;
+        case Opcode::S_CMP_GT_I32:
+            translator.S_CMP(ConditionOp::GT, true, inst);
             break;
         case Opcode::S_CMP_EQ_I32:
             translator.S_CMP(ConditionOp::EQ, true, inst);
@@ -386,6 +398,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_SIN_F32:
             translator.V_SIN_F32(inst);
+            break;
+        case Opcode::V_COS_F32:
+            translator.V_COS_F32(inst);
             break;
         case Opcode::V_LOG_F32:
             translator.V_LOG_F32(inst);
@@ -521,6 +536,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_RNDNE_F32:
             translator.V_RNDNE_F32(inst);
+            break;
+        case Opcode::V_BCNT_U32_B32:
+            translator.V_BCNT_U32_B32(inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

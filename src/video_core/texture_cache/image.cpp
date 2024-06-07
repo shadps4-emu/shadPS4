@@ -33,11 +33,23 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     return {};
 }
 
+static bool IsDepthStencilFormat(vk::Format format) {
+    switch (format) {
+    case vk::Format::eD16Unorm:
+    case vk::Format::eD16UnormS8Uint:
+    case vk::Format::eD32Sfloat:
+    case vk::Format::eD32SfloatS8Uint:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
-    if (false /*&& IsDepthStencilFormat(format)*/) {
+    if (IsDepthStencilFormat(format)) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
         if (format != vk::Format::eBc3SrgbBlock) {
@@ -54,9 +66,9 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Cube:
+    case AmdGpu::ImageType::Color2DArray:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
-    case AmdGpu::ImageType::Color2DArray:
         return vk::ImageType::e3D;
     default:
         UNREACHABLE();
@@ -90,6 +102,18 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     is_tiled = buffer.IsTiled();
     tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
+    type = vk::ImageType::e2D;
+    size.width = hint.Valid() ? hint.width : buffer.Pitch();
+    size.height = hint.Valid() ? hint.height : buffer.Height();
+    size.depth = 1;
+    pitch = size.width;
+    guest_size_bytes = buffer.GetSizeAligned();
+}
+
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                     const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
+    is_tiled = false;
+    pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
@@ -165,6 +189,13 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         info.usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
+    if (info.pixel_format == vk::Format::eD32Sfloat) {
+        aspect_mask = vk::ImageAspectFlagBits::eDepth;
+    }
+    if (info.pixel_format == vk::Format::eD32SfloatS8Uint) {
+        aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+    }
+
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
         .imageType = info.type,
@@ -187,7 +218,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.is_tiled) {
         ImageViewInfo view_info;
         view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
-        view_for_detiler.emplace(*instance, view_info, image);
+        view_for_detiler.emplace(*instance, view_info, *this);
     }
 
     Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
@@ -198,23 +229,25 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
         return;
     }
 
-    const vk::ImageMemoryBarrier barrier = {.srcAccessMask = access_mask,
-                                            .dstAccessMask = dst_mask,
-                                            .oldLayout = layout,
-                                            .newLayout = dst_layout,
-                                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                            .image = image,
-                                            .subresourceRange{
-                                                .aspectMask = aspect_mask,
-                                                .baseMipLevel = 0,
-                                                .levelCount = VK_REMAINING_MIP_LEVELS,
-                                                .baseArrayLayer = 0,
-                                                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                                            }};
+    const vk::ImageMemoryBarrier barrier = {
+        .srcAccessMask = access_mask,
+        .dstAccessMask = dst_mask,
+        .oldLayout = layout,
+        .newLayout = dst_layout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange{
+            .aspectMask = aspect_mask,
+            .baseMipLevel = 0,
+            .levelCount = VK_REMAINING_MIP_LEVELS,
+            .baseArrayLayer = 0,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        },
+    };
 
     // Adjust pipieline stage
-    vk::PipelineStageFlags dst_pl_stage =
+    const vk::PipelineStageFlags dst_pl_stage =
         (dst_mask == vk::AccessFlagBits::eTransferRead ||
          dst_mask == vk::AccessFlagBits::eTransferWrite)
             ? vk::PipelineStageFlagBits::eTransfer

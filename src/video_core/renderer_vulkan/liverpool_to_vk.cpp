@@ -176,6 +176,8 @@ vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
         return vk::BlendOp::eMin;
     case BlendFunc::Max:
         return vk::BlendOp::eMax;
+    case BlendFunc::ReverseSubtract:
+        return vk::BlendOp::eReverseSubtract;
     default:
         UNREACHABLE();
     }
@@ -316,7 +318,23 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc7SrgbBlock;
     }
-    UNREACHABLE();
+    if (data_format == AmdGpu::DataFormat::FormatBc1 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc1RgbaUnormBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc3 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc3UnormBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
+        num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR8G8B8A8Uint;
+    }
+    if (data_format == AmdGpu::DataFormat::Format16 && num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eR16Sfloat;
+    }
+    if (data_format == AmdGpu::DataFormat::Format32 && num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eR32Sfloat;
+    }
+    UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }
 
 vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat stencil_format) {
@@ -327,6 +345,14 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
     if (z_format == DepthBuffer::ZFormat::Z32Float &&
         stencil_format == DepthBuffer::StencilFormat::Invalid) {
         return vk::Format::eD32Sfloat;
+    }
+    if (z_format == DepthBuffer::ZFormat::Z16 &&
+        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+        return vk::Format::eD16Unorm;
+    }
+    if (z_format == DepthBuffer::ZFormat::Z16 &&
+        stencil_format == DepthBuffer::StencilFormat::Stencil8) {
+        return vk::Format::eD16UnormS8Uint;
     }
     UNREACHABLE();
 }

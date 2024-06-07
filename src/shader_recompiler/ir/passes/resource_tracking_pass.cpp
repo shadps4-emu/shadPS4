@@ -148,6 +148,9 @@ private:
 } // Anonymous namespace
 
 SharpLocation TrackSharp(const IR::Inst* inst) {
+    while (inst->GetOpcode() == IR::Opcode::Phi) {
+        inst = inst->Arg(0).InstRecursive();
+    }
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return SharpLocation{
             .sgpr_base = u32(IR::ScalarReg::Max),
@@ -163,6 +166,12 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     // Retrieve SGPR pair that holds sbase
     const IR::Inst* sbase0 = spgpr_base->Arg(0).InstRecursive();
     const IR::Inst* sbase1 = spgpr_base->Arg(1).InstRecursive();
+    while (sbase0->GetOpcode() == IR::Opcode::Phi) {
+        sbase0 = sbase0->Arg(0).TryInstRecursive();
+    }
+    while (sbase1->GetOpcode() == IR::Opcode::Phi) {
+        sbase1 = sbase1->Arg(0).TryInstRecursive();
+    }
     ASSERT_MSG(sbase0->GetOpcode() == IR::Opcode::GetUserData &&
                    sbase1->GetOpcode() == IR::Opcode::GetUserData,
                "Nested resource loads not supported");

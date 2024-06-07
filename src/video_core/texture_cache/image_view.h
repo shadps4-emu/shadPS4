@@ -28,8 +28,10 @@ struct ImageViewInfo {
     auto operator<=>(const ImageViewInfo&) const = default;
 };
 
+struct Image;
+
 struct ImageView {
-    explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, vk::Image image,
+    explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
                        std::optional<vk::ImageUsageFlags> usage_override = {});
     ~ImageView();
 
