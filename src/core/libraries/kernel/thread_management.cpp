@@ -14,6 +14,7 @@
 #ifdef _WIN64
 #include <windows.h>
 #endif
+#include "core/libraries/kernel/threads/kernel_threads.h"
 
 namespace Libraries::Kernel {
 
@@ -1091,6 +1092,9 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
+
+    // libs
+    ThreadsRwlockSymbolsRegister(sym);
 }
 
 } // namespace Libraries::Kernel
