@@ -194,12 +194,7 @@ void TextureCache::RefreshImage(Image& image) {
     {
         if (!tile_manager.TryDetile(image)) {
             // Upload data to the staging buffer.
-            const auto& [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
-            const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-            std::memcpy(data, image_data, image.info.guest_size_bytes);
-            staging.Commit(image.info.guest_size_bytes);
-
-            const auto cmdbuf = scheduler.CommandBuffer();
+            const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
             image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
 
             // Copy to the image.
@@ -217,6 +212,7 @@ void TextureCache::RefreshImage(Image& image) {
                 .imageExtent = {image.info.size.width, image.info.size.height, 1},
             };
 
+            const auto cmdbuf = scheduler.CommandBuffer();
             cmdbuf.copyBufferToImage(staging.Handle(), image.image,
                                      vk::ImageLayout::eTransferDstOptimal, image_copy);
         }

@@ -304,15 +304,11 @@ bool TileManager::TryDetile(Image& image) {
         return false;
     }
 
-    const auto& [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
-    const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-    std::memcpy(data, image_data, image.info.guest_size_bytes);
-    staging.Commit(image.info.guest_size_bytes);
+    const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
+    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
 
     auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *detiler->pl);
-
-    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
 
     const vk::DescriptorBufferInfo input_buffer_info{
         .buffer = staging.Handle(),
