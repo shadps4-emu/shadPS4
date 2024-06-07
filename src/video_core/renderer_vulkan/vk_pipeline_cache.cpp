@@ -88,12 +88,26 @@ void PipelineCache::RefreshGraphicsKey() {
     auto& key = graphics_key;
 
     key.depth = regs.depth_control;
+    key.depth_bounds_min = regs.depth_bounds_min;
+    key.depth_bounds_max = regs.depth_bounds_max;
+    key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
+                            regs.polygon_control.enable_polygon_offset_front ||
+                            regs.polygon_control.enable_polygon_offset_para;
+    if (regs.polygon_control.enable_polygon_offset_front) {
+        key.depth_bias_const_factor = regs.poly_offset.front_offset;
+        key.depth_bias_slope_factor = regs.poly_offset.front_scale;
+    } else {
+        key.depth_bias_const_factor = regs.poly_offset.back_offset;
+        key.depth_bias_slope_factor = regs.poly_offset.back_scale;
+    }
+    key.depth_bias_clamp = regs.poly_offset.depth_bias;
     key.stencil = regs.stencil_control;
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
+    key.clip_space = regs.clipper_control.clip_space;
     key.front_face = regs.polygon_control.front_face;
 
     const auto& db = regs.depth_buffer;
@@ -103,6 +117,9 @@ void PipelineCache::RefreshGraphicsKey() {
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
     // We need to do some arrays compaction at this stage
+    key.color_formats.fill(vk::Format::eUndefined);
+    key.blend_controls.fill({});
+    key.write_masks.fill({});
     int remapped_cb{};
     for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
@@ -112,6 +129,8 @@ void PipelineCache::RefreshGraphicsKey() {
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
+        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
+                                                      !col_buf.info.blend_bypass);
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
 
         ++remapped_cb;

@@ -10,10 +10,8 @@
 #include "video_core/amdgpu/pixel_format.h"
 
 #include <array>
-#include <condition_variable>
 #include <coroutine>
-#include <functional>
-#include <future>
+#include <mutex>
 #include <span>
 #include <thread>
 #include <queue>
@@ -332,6 +330,14 @@ struct Liverpool {
 
         u32 Height() const {
             return (depth_size.height_tile_max + 1) << 3;
+        }
+
+        u64 Address() const {
+            return u64(z_read_base) << 8;
+        }
+
+        [[nodiscard]] size_t GetSizeAligned() const {
+            return depth_slice.tile_max * 8;
         }
     };
 
@@ -717,6 +723,14 @@ struct Liverpool {
         CbColor7Base = 0xA381,
     };
 
+    struct PolygonOffset {
+        float depth_bias;
+        float front_scale;
+        float front_offset;
+        float back_scale;
+        float back_offset;
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -726,8 +740,8 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0x2E00 - 0x2C4C - 16);
             ComputeProgram cs_program;
             INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80);
-            u32 depth_bounds_min;
-            u32 depth_bounds_max;
+            float depth_bounds_min;
+            float depth_bounds_max;
             u32 stencil_clear;
             u32 depth_clear;
             Scissor screen_scissor;
@@ -776,7 +790,9 @@ struct Liverpool {
             IndexBufferType index_buffer_type;
             INSERT_PADDING_WORDS(0xA2A1 - 0xA29E - 2);
             u32 enable_primitive_id;
-            INSERT_PADDING_WORDS(0xA318 - 0xA2A1 - 1);
+            INSERT_PADDING_WORDS(0xA2DF - 0xA2A1 - 1);
+            PolygonOffset poly_offset;
+            INSERT_PADDING_WORDS(0xA318 - 0xA2DF - 5);
             ColorBuffer color_buffers[NumColorBuffers];
             INSERT_PADDING_WORDS(0xC242 - 0xA390);
             PrimitiveType primitive_type;
@@ -930,6 +946,7 @@ static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
+static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);

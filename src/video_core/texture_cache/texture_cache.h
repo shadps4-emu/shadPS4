@@ -37,7 +37,8 @@ public:
     void OnCpuWrite(VAddr address);
 
     /// Retrieves the image handle of the image with the provided attributes and address.
-    [[nodiscard]] Image& FindImage(const ImageInfo& info, VAddr cpu_address);
+    [[nodiscard]] Image& FindImage(const ImageInfo& info, VAddr cpu_address,
+                                   bool refresh_on_create = true);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
     [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image);
@@ -45,6 +46,8 @@ public:
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                           const AmdGpu::Liverpool::CbDbExtent& hint);
+    [[nodiscard]] ImageView& DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                         const AmdGpu::Liverpool::CbDbExtent& hint);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);

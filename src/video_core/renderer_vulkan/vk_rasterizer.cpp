@@ -41,6 +41,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
         color_attachments{};
+    vk::RenderingAttachmentInfo depth_attachment{};
+    u32 num_depth_attachments{};
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
@@ -57,6 +59,17 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
             .storeOp = vk::AttachmentStoreOp::eStore,
         });
     }
+    if (regs.depth_control.depth_enable && regs.depth_buffer.Address() != 0) {
+        const auto& image_view =
+            texture_cache.DepthTarget(regs.depth_buffer, liverpool->last_db_extent);
+        depth_attachment = {
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+        };
+        num_depth_attachments++;
+    }
 
     // TODO: Don't restart renderpass every draw
     const auto& scissor = regs.screen_scissor;
@@ -69,6 +82,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         .layerCount = 1,
         .colorAttachmentCount = static_cast<u32>(color_attachments.size()),
         .pColorAttachments = color_attachments.data(),
+        .pDepthAttachment = num_depth_attachments ? &depth_attachment : nullptr,
     };
 
     UpdateDynamicState(*pipeline);
@@ -78,7 +92,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
-        const u32 num_vertices = pipeline->IsEmbeddedVs() ? 4 : regs.num_indices;
+        const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
+                                     ? 4
+                                     : regs.num_indices;
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
     }
     cmdbuf.endRendering();
@@ -156,13 +172,15 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
 void Rasterizer::UpdateViewportScissorState() {
     auto& regs = liverpool->regs;
 
+    const float reduce_z =
+        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
     const auto cmdbuf = scheduler.CommandBuffer();
     const vk::Viewport viewport{
         .x = regs.viewports[0].xoffset - regs.viewports[0].xscale,
         .y = regs.viewports[0].yoffset - regs.viewports[0].yscale,
         .width = regs.viewports[0].xscale * 2.0f,
         .height = regs.viewports[0].yscale * 2.0f,
-        .minDepth = regs.viewports[0].zoffset - regs.viewports[0].zscale,
+        .minDepth = regs.viewports[0].zoffset - regs.viewports[0].zscale * reduce_z,
         .maxDepth = regs.viewports[0].zscale + regs.viewports[0].zoffset,
     };
     const vk::Rect2D scissor{

@@ -64,8 +64,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pVertexAttributeDescriptions = attributes.data(),
     };
 
-    ASSERT_MSG(key.prim_type != Liverpool::PrimitiveType::RectList || IsEmbeddedVs(),
-               "Rectangle List primitive type is only supported for embedded VS");
+    if (key.prim_type == Liverpool::PrimitiveType::RectList && !IsEmbeddedVs()) {
+        LOG_WARNING(Render_Vulkan,
+                    "Rectangle List primitive type is only supported for embedded VS");
+    }
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
@@ -76,11 +78,14 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = vk::CullModeFlagBits::eNone, /*LiverpoolToVK::CullMode(key.cull_mode),*/
+        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = false,
+        .depthBiasEnable = bool(key.depth_bias_enable),
+        .depthBiasConstantFactor = key.depth_bias_const_factor,
+        .depthBiasClamp = key.depth_bias_clamp,
+        .depthBiasSlopeFactor = key.depth_bias_slope_factor,
         .lineWidth = 1.0f,
     };
 
@@ -103,7 +108,12 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .extent = {1, 1},
     };
 
+    const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
+        .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+    };
+
     const vk::PipelineViewportStateCreateInfo viewport_info = {
+        .pNext = &clip_control,
         .viewportCount = 1,
         .pViewports = &viewport,
         .scissorCount = 1,
@@ -150,6 +160,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .writeMask = key.stencil_ref_back.stencil_write_mask,
             .reference = key.stencil_ref_back.stencil_test_val,
         },
+        .minDepthBounds = key.depth_bounds_min,
+        .maxDepthBounds = key.depth_bounds_max,
     };
 
     u32 shader_count = 1;
