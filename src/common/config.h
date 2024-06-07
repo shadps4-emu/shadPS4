@@ -11,6 +11,7 @@ void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 
 bool isNeoMode();
+bool isFullscreenMode();
 std::string getLogFilter();
 std::string getLogType();
 

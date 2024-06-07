@@ -10,6 +10,7 @@
 namespace Config {
 
 static bool isNeo = false;
+static bool isFullscreen = true;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
@@ -27,8 +28,13 @@ static bool vkValidationSync = false;
 bool isLleLibc() {
     return isLibc;
 }
+
 bool isNeoMode() {
     return isNeo;
+}
+
+bool isFullscreenMode() {
+    return isFullscreen;
 }
 
 u32 getScreenWidth() {
@@ -102,6 +108,7 @@ void load(const std::filesystem::path& path) {
             auto general = generalResult.unwrap();
 
             isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
+            isFullscreen = toml::find_or<toml::boolean>(general, "Fullscreen", true);
             logFilter = toml::find_or<toml::string>(general, "logFilter", "");
             logType = toml::find_or<toml::string>(general, "logType", "sync");
             isShowSplash = toml::find_or<toml::boolean>(general, "showSplash", true);
@@ -166,6 +173,7 @@ void save(const std::filesystem::path& path) {
     }
 
     data["General"]["isPS4Pro"] = isNeo;
+    data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["showSplash"] = isShowSplash;

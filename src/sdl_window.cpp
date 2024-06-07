@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/version.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
@@ -31,8 +32,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to create window handle: {}", SDL_GetError());
     }
 
-    // We don't support resizable at the moment.
-    SDL_SetWindowResizable(window, SDL_FALSE);
+    SDL_SetWindowFullscreen(window, SDL_TRUE);
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
