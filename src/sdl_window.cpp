@@ -18,7 +18,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
 
-    const std::string title = "shadPS4 V." + std::string(Common::VERSION);
+    const std::string title = "shadPS4 v" + std::string(Common::VERSION);
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
