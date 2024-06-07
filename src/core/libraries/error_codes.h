@@ -251,6 +251,7 @@ constexpr int ORBIS_OK = 0x00000000;
 constexpr int ORBIS_FAIL = 0xFFFFFFFF;
 
 // Libkernel library
+constexpr int ORBIS_KERNEL_ERROR_UNKNOWN = 0x80020000;
 constexpr int ORBIS_KERNEL_ERROR_EPERM = 0x80020001;
 constexpr int ORBIS_KERNEL_ERROR_ENOENT = 0x80020002;
 constexpr int ORBIS_KERNEL_ERROR_ESRCH = 0x80020003;
