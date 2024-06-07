@@ -35,7 +35,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     }
 
     // Align free position
-    free_addr = Common::AlignUp(free_addr, alignment);
+    free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
     ASSERT(free_addr >= search_start && free_addr + size <= search_end);
 
     // Add the allocated region to the list and commit its pages.

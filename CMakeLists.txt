@@ -117,8 +117,6 @@ set(KERNEL_LIB
                src/core/libraries/kernel/libkernel.h
                src/core/libraries/kernel/memory_management.cpp
                src/core/libraries/kernel/memory_management.h
-               src/core/libraries/kernel/physical_memory.cpp
-               src/core/libraries/kernel/physical_memory.h
                src/core/libraries/kernel/thread_management.cpp
                src/core/libraries/kernel/thread_management.h
                src/core/libraries/kernel/time_management.cpp
