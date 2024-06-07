@@ -148,10 +148,20 @@ struct Image {
     }
 
     u32 NumLayers() const {
-        return last_array - base_array + 1;
+        u32 slices = type == ImageType::Color3D ? 1 : depth.Value() + 1;
+        if (type == ImageType::Cube) {
+            slices *= 6;
+        }
+        if (pow2pad) {
+            slices = std::bit_ceil(slices);
+        }
+        return slices;
     }
 
     u32 NumLevels() const {
+        if (type == ImageType::Color2DMsaa || type == ImageType::Color2DMsaaArray) {
+            return 1;
+        }
         return last_level + 1;
     }
 

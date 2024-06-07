@@ -512,8 +512,8 @@ struct Liverpool {
         float xoffset;
         float yscale;
         float yoffset;
-        float zoffset;
         float zscale;
+        float zoffset;
     };
 
     union ViewportControl {
@@ -570,6 +570,7 @@ struct Liverpool {
             Subtract = 1,
             Min = 2,
             Max = 3,
+            ReverseSubtract = 4,
         };
 
         BitField<0, 5, BlendFactor> color_src_factor;
@@ -618,7 +619,7 @@ struct Liverpool {
             BitField<0, 2, EndianSwap> endian;
             BitField<2, 5, DataFormat> format;
             BitField<7, 1, u32> linear_general;
-            BitField<8, 2, NumberFormat> number_type;
+            BitField<8, 3, NumberFormat> number_type;
             BitField<11, 2, SwapMode> comp_swap;
             BitField<13, 1, u32> fast_clear;
             BitField<14, 1, u32> compression;
@@ -686,7 +687,7 @@ struct Liverpool {
 
         NumberFormat NumFormat() const {
             // There is a small difference between T# and CB number types, account for it.
-            return info.number_type == AmdGpu::NumberFormat::Uscaled ? AmdGpu::NumberFormat::Srgb
+            return info.number_type == AmdGpu::NumberFormat::SnormNz ? AmdGpu::NumberFormat::Srgb
                                                                      : info.number_type;
         }
     };
