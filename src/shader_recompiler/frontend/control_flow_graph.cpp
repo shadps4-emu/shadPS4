@@ -149,7 +149,8 @@ void CFG::LinkBlocks() {
             block.end_class = EndClass::Branch;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
             const auto& prev_inst = inst_list[block.end_index - 1];
-            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0) {
+            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0 &&
+                prev_inst.control.exp.target != 9) {
                 block.end_class = EndClass::Kill;
             } else {
                 block.end_class = EndClass::Exit;
