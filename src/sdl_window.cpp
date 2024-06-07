@@ -32,7 +32,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to create window handle: {}", SDL_GetError());
     }
 
-    SDL_SetWindowFullscreen(window, SDL_TRUE);
+    SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
