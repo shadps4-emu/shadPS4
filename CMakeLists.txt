@@ -235,6 +235,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/singleton.h
+           src/common/slot_vector.h
            src/common/string_util.cpp
            src/common/string_util.h
            src/common/thread.cpp
@@ -415,7 +416,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/image_view.h
                src/video_core/texture_cache/sampler.cpp
                src/video_core/texture_cache/sampler.h
-               src/video_core/texture_cache/slot_vector.h
                src/video_core/texture_cache/texture_cache.cpp
                src/video_core/texture_cache/texture_cache.h
                src/video_core/texture_cache/tile_manager.cpp
