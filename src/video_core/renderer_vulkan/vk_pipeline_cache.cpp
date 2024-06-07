@@ -170,12 +170,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
 
         // Set module name to hash in renderdoc
         const auto name = fmt::format("{}_{:#x}", stage, hash);
-        const vk::DebugUtilsObjectNameInfoEXT name_info = {
-            .objectType = vk::ObjectType::eShaderModule,
-            .objectHandle = std::bit_cast<u64>(stages[i]),
-            .pObjectName = name.c_str(),
-        };
-        instance.GetDevice().setDebugUtilsObjectNameEXT(name_info);
+        Vulkan::SetObjectName(instance.GetDevice(), stages[i], name);
 
         if (Config::dumpShaders()) {
             DumpShader(spv_code, hash, stage, "spv");

@@ -62,8 +62,8 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
 }
 
 RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool)
-    : window{window_}, instance{window, Config::getGpuId()}, scheduler{instance},
-      swapchain{instance, window}, texture_cache{instance, scheduler} {
+    : window{window_}, instance{window, Config::getGpuId(), Config::vkValidationEnabled()},
+      scheduler{instance}, swapchain{instance, window}, texture_cache{instance, scheduler} {
     rasterizer = std::make_unique<Rasterizer>(instance, scheduler, texture_cache, liverpool);
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();

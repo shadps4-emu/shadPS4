@@ -222,12 +222,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
 
         // Set module debug name
         auto module_name = magic_enum::enum_name(static_cast<DetilerType>(pl_id));
-        const vk::DebugUtilsObjectNameInfoEXT name_info = {
-            .objectType = vk::ObjectType::eShaderModule,
-            .objectHandle = std::bit_cast<u64>(module),
-            .pObjectName = module_name.data(),
-        };
-        instance.GetDevice().setDebugUtilsObjectNameEXT(name_info);
+        Vulkan::SetObjectName(instance.GetDevice(), module, module_name);
 
         const vk::PipelineShaderStageCreateInfo shader_ci = {
             .stage = vk::ShaderStageFlagBits::eCompute,
