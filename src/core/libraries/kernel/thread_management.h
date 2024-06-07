@@ -33,7 +33,7 @@ using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
-using OrbisPthreadRwlock  = PthreadRwInternal*;
+using OrbisPthreadRwlock = PthreadRwInternal*;
 using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);

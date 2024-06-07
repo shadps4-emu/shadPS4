@@ -8,19 +8,39 @@
 
 namespace Libraries::Kernel {
 
-int PS4_SYSV_ABI posix_pthread_rwlock_destroy() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+extern PThreadCxt* g_pthread_cxt;
+
+int PS4_SYSV_ABI posix_pthread_rwlock_destroy(OrbisPthreadRwlock* rwlock) {
+    int result = pthread_rwlock_destroy(&(*rwlock)->pth_rwlock);
+    delete *rwlock;
+    *rwlock = nullptr;
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_destroy: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_init(OrbisPthreadRwlock* rwlock,
+                                           const OrbisPthreadRwlockattr* attr, const char* name) {
+    *rwlock = new PthreadRwInternal{};
+    if (attr == nullptr || *attr == nullptr) {
+        attr = g_pthread_cxt->getDefaultRwattr();
+    }
+    int result = pthread_rwlock_init(&(*rwlock)->pth_rwlock, &(*attr)->attr_rwlock);
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_init: error = {}", result);
+    }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_pthread_rwlock_init() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI posix_pthread_rwlock_rdlock() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(OrbisPthreadRwlock* rwlock) {
+    int result = pthread_rwlock_rdlock(&(*rwlock)->pth_rwlock);
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_rdlock: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_reltimedrdlock_np() {
@@ -75,14 +95,19 @@ int PS4_SYSV_ABI posix_pthread_rwlock_unlock(OrbisPthreadRwlock* rwlock) {
 int PS4_SYSV_ABI posix_pthread_rwlock_wrlock(OrbisPthreadRwlock* rwlock) {
     int result = pthread_rwlock_wrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
-        LOG_ERROR(Kernel_Pthread, "scePthreadRwlockWrlock: error = {}", result);
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_wrlock: error = {}", result);
     }
     return result;
 }
 
-int PS4_SYSV_ABI posix_pthread_rwlockattr_destroy() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI posix_pthread_rwlockattr_destroy(OrbisPthreadRwlockattr* attr) {
+    int result = pthread_rwlockattr_destroy(&(*attr)->attr_rwlock);
+    delete *attr;
+    *attr = nullptr;
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlockattr_destroy: error = {}", result);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlockattr_getpshared() {
@@ -95,9 +120,13 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_gettype_np() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_pthread_rwlockattr_init() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI posix_pthread_rwlockattr_init(OrbisPthreadRwlockattr* attr) {
+    *attr = new PthreadRwLockAttrInernal{};
+    int result = pthread_rwlockattr_init(&(*attr)->attr_rwlock);
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlockattr_init: error = {}", result);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlockattr_setpshared() {
@@ -110,9 +139,15 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_settype_np() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePthreadRwlockattrDestroy() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePthreadRwlockattrDestroy(OrbisPthreadRwlockattr* attr) {
+    int result = pthread_rwlockattr_destroy(&(*attr)->attr_rwlock);
+    delete *attr;
+    *attr = nullptr;
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadRwlockattrDestroy: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI scePthreadRwlockattrGetpshared() {
@@ -125,9 +160,14 @@ int PS4_SYSV_ABI scePthreadRwlockattrGettype() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePthreadRwlockattrInit() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePthreadRwlockattrInit(OrbisPthreadRwlockattr* attr) {
+    *attr = new PthreadRwLockAttrInernal{};
+    int result = pthread_rwlockattr_init(&(*attr)->attr_rwlock);
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadRwlockattrInit: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI scePthreadRwlockattrSetpshared() {
@@ -141,18 +181,38 @@ int PS4_SYSV_ABI scePthreadRwlockattrSettype() {
 }
 
 int PS4_SYSV_ABI scePthreadRwlockDestroy(OrbisPthreadRwlock* rwlock) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
-    return ORBIS_OK;
+    int result = pthread_rwlock_destroy(&(*rwlock)->pth_rwlock);
+    delete *rwlock;
+    *rwlock = nullptr;
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadRwlockDestroy: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
+    return result;
 }
 
-int PS4_SYSV_ABI scePthreadRwlockInit() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+int PS4_SYSV_ABI scePthreadRwlockInit(OrbisPthreadRwlock* rwlock,
+                                      const OrbisPthreadRwlockattr* attr, const char* name) {
+    *rwlock = new PthreadRwInternal{};
+    if (rwlock == nullptr || *rwlock == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (attr == nullptr || *attr == nullptr) {
+        attr = g_pthread_cxt->getDefaultRwattr();
+    }
+    (*rwlock)->name = name;
+    int result = pthread_rwlock_init(&(*rwlock)->pth_rwlock, &(*attr)->attr_rwlock);
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadRwlockInit: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+    }
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadRwlockRdlock(OrbisPthreadRwlock* rwlock) {
     if (rwlock == nullptr || *rwlock == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_rwlock_rdlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
@@ -174,7 +234,7 @@ int PS4_SYSV_ABI scePthreadRwlockTimedwrlock() {
 
 int PS4_SYSV_ABI scePthreadRwlockTryrdlock(OrbisPthreadRwlock* rwlock) {
     if (rwlock == nullptr || *rwlock == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_rwlock_tryrdlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
@@ -186,7 +246,7 @@ int PS4_SYSV_ABI scePthreadRwlockTryrdlock(OrbisPthreadRwlock* rwlock) {
 
 int PS4_SYSV_ABI scePthreadRwlockTrywrlock(OrbisPthreadRwlock* rwlock) {
     if (rwlock == nullptr || *rwlock == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_rwlock_trywrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
@@ -198,7 +258,7 @@ int PS4_SYSV_ABI scePthreadRwlockTrywrlock(OrbisPthreadRwlock* rwlock) {
 
 int PS4_SYSV_ABI scePthreadRwlockUnlock(OrbisPthreadRwlock* rwlock) {
     if (rwlock == nullptr || *rwlock == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_rwlock_unlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
@@ -210,7 +270,7 @@ int PS4_SYSV_ABI scePthreadRwlockUnlock(OrbisPthreadRwlock* rwlock) {
 
 int PS4_SYSV_ABI scePthreadRwlockWrlock(OrbisPthreadRwlock* rwlock) {
     if (rwlock == nullptr || *rwlock == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_rwlock_wrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
