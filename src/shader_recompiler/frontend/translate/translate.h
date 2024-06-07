@@ -104,6 +104,8 @@ public:
     void V_ASHRREV_I32(const GcnInst& inst);
     void V_MAD_U32_U24(const GcnInst& inst);
     void V_RNDNE_F32(const GcnInst& inst);
+    void V_BCNT_U32_B32(const GcnInst& inst);
+    void V_COS_F32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
