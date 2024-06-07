@@ -113,8 +113,11 @@ int PS4_SYSV_ABI sceGnmIsUserPaEnabled();
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex();
 int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask();
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical();
-int PS4_SYSV_ABI sceGnmMapComputeQueue();
-int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority();
+int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                       u32 ring_size_dw, u32* read_ptr_addr);
+int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                                   u32 ring_size_dw, u32* read_ptr_addr,
+                                                   u32 pipePriority);
 int PS4_SYSV_ABI sceGnmPaDisableFlipCallbacks();
 int PS4_SYSV_ABI sceGnmPaEnableFlipCallbacks();
 int PS4_SYSV_ABI sceGnmPaHeartbeat();
