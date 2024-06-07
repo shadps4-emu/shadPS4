@@ -24,7 +24,6 @@ struct ImageViewInfo {
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
-    bool used_for_detiling = false;
 
     auto operator<=>(const ImageViewInfo&) const = default;
 };

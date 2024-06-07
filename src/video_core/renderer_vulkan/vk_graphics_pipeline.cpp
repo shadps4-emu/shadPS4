@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 
@@ -277,38 +278,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
 
 void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                      VideoCore::TextureCache& texture_cache) const {
-    static constexpr u64 MinUniformAlignment = 64;
-
-    const auto map_staging = [&](auto src, size_t size) {
-        const auto [data, offset, _] = staging.Map(size, MinUniformAlignment);
-        std::memcpy(data, reinterpret_cast<const void*>(src), size);
-        staging.Commit(size);
-        return offset;
-    };
-
-    std::array<vk::Buffer, MaxVertexBufferCount> buffers;
-    std::array<vk::DeviceSize, MaxVertexBufferCount> offsets;
-    VAddr base_address = 0;
-    u32 start_offset = 0;
-
-    // Bind vertex buffer.
-    const auto& vs_info = stages[0];
-    const size_t num_buffers = vs_info.vs_inputs.size();
-    for (u32 i = 0; i < num_buffers; ++i) {
-        const auto& input = vs_info.vs_inputs[i];
-        const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        if (i == 0) {
-            start_offset = map_staging(buffer.base_address.Value(), buffer.GetSize());
-            base_address = buffer.base_address;
-        }
-        buffers[i] = staging.Handle();
-        offsets[i] = start_offset + buffer.base_address - base_address;
-    }
-
-    const auto cmdbuf = scheduler.CommandBuffer();
-    if (num_buffers > 0) {
-        cmdbuf.bindVertexBuffers(0, num_buffers, buffers.data(), offsets.data());
-    }
+    BindVertexBuffers(staging);
 
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
@@ -320,7 +290,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
         for (const auto& buffer : stage.buffers) {
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
             const u32 size = vsharp.GetSize();
-            const u32 offset = map_staging(vsharp.base_address.Value(), size);
+            const u32 offset = staging.Copy(vsharp.base_address.Value(), size,
+                                            buffer.is_storage ? 4 : instance.UniformMinAlignment());
             buffer_infos.emplace_back(staging.Handle(), offset, size);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -337,7 +308,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
             const auto& image_view = texture_cache.FindImageView(tsharp);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     vk::ImageLayout::eGeneral);
+                                     vk::ImageLayout::eShaderReadOnlyOptimal);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,
@@ -364,8 +335,75 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
     }
 
     if (!set_writes.empty()) {
+        const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
                                     set_writes);
+    }
+}
+
+void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
+    const auto& vs_info = stages[0];
+    if (vs_info.vs_inputs.empty()) {
+        return;
+    }
+
+    std::array<vk::Buffer, MaxVertexBufferCount> host_buffers;
+    std::array<vk::DeviceSize, MaxVertexBufferCount> host_offsets;
+    boost::container::static_vector<AmdGpu::Buffer, MaxVertexBufferCount> guest_buffers;
+
+    struct BufferRange {
+        VAddr base_address;
+        VAddr end_address;
+        u64 offset; // offset in the mapped memory
+
+        size_t GetSize() const {
+            return end_address - base_address;
+        }
+    };
+
+    // Calculate buffers memory overlaps
+    std::vector<BufferRange> ranges{};
+    for (const auto& input : vs_info.vs_inputs) {
+        const auto& buffer = guest_buffers.emplace_back(
+            vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset));
+        ranges.emplace_back(buffer.base_address.Value(),
+                            buffer.base_address.Value() + buffer.GetSize());
+    }
+    std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
+        return lhv.base_address < rhv.base_address;
+    });
+
+    boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges_merged{ranges[0]};
+    for (auto range : ranges) {
+        auto& prev_range = ranges.back();
+        if (prev_range.end_address < range.base_address) {
+            ranges_merged.emplace_back(range);
+        } else {
+            ranges_merged.back().end_address = std::max(prev_range.end_address, range.end_address);
+        }
+    }
+
+    // Map buffers
+    for (auto& range : ranges_merged) {
+        range.offset = staging.Copy(range.base_address, range.GetSize(), 4);
+    }
+
+    // Bind vertex buffers
+    const size_t num_buffers = guest_buffers.size();
+    for (u32 i = 0; i < num_buffers; ++i) {
+        const auto& buffer = guest_buffers[i];
+        const auto& host_buffer = std::ranges::find_if(
+            ranges_merged.cbegin(), ranges_merged.cend(),
+            [&](const BufferRange& range) { return (buffer.base_address >= range.base_address); });
+        assert(host_buffer != ranges_merged.cend());
+
+        host_buffers[i] = staging.Handle();
+        host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
+    }
+
+    if (num_buffers > 0) {
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
     }
 }
 

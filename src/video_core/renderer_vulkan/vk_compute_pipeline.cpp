@@ -83,15 +83,6 @@ ComputePipeline::~ComputePipeline() = default;
 
 void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                     VideoCore::TextureCache& texture_cache) const {
-    static constexpr u64 MinUniformAlignment = 64;
-
-    const auto map_staging = [&](auto src, size_t size) {
-        const auto [data, offset, _] = staging.Map(size, MinUniformAlignment);
-        std::memcpy(data, reinterpret_cast<const void*>(src), size);
-        staging.Commit(size);
-        return offset;
-    };
-
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 8> image_infos;
@@ -103,7 +94,8 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         const u32 size = vsharp.GetSize();
         const VAddr addr = vsharp.base_address.Value();
         texture_cache.OnCpuWrite(addr);
-        const u32 offset = map_staging(addr, size);
+        const u32 offset =
+            staging.Copy(addr, size, buffer.is_storage ? 4 : instance.UniformMinAlignment());
         // const auto [vk_buffer, offset] = memory->GetVulkanBuffer(addr);
         buffer_infos.emplace_back(staging.Handle(), offset, size);
         set_writes.push_back({

@@ -86,10 +86,26 @@ constexpr std::string_view NameOf(ImageType type) {
 }
 
 enum class TilingMode : u32 {
+    Depth_MicroTiled = 0x5u,
     Display_Linear = 0x8u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
 };
+
+constexpr std::string_view NameOf(TilingMode type) {
+    switch (type) {
+    case TilingMode::Depth_MicroTiled:
+        return "Depth_MicroTiled";
+    case TilingMode::Display_Linear:
+        return "Display_Linear";
+    case TilingMode::Display_MacroTiled:
+        return "Display_MacroTiled";
+    case TilingMode::Texture_MicroTiled:
+        return "Texture_MicroTiled";
+    default:
+        return "Unknown";
+    }
+}
 
 struct Image {
     union {

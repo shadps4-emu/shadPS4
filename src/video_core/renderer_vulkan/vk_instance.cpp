@@ -40,10 +40,13 @@ Instance::Instance(bool enable_validation, bool dump_command_buffers)
                               dump_command_buffers)},
       physical_devices{instance->enumeratePhysicalDevices()} {}
 
-Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index)
-    : instance{CreateInstance(dl, window.getWindowInfo().type, true, false)},
-      debug_callback{CreateDebugCallback(*instance)},
+Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
+                   bool enable_validation /*= false*/)
+    : instance{CreateInstance(dl, window.getWindowInfo().type, enable_validation, false)},
       physical_devices{instance->enumeratePhysicalDevices()} {
+    if (enable_validation) {
+        debug_callback = CreateDebugCallback(*instance);
+    }
     const std::size_t num_physical_devices = static_cast<u16>(physical_devices.size());
     ASSERT_MSG(num_physical_devices > 0, "No physical devices found");
 

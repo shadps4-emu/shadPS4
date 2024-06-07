@@ -21,6 +21,8 @@ static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;
+static bool vkValidation = false;
+static bool vkValidationSync = false;
 
 bool isLleLibc() {
     return isLibc;
@@ -69,6 +71,14 @@ bool dumpPM4() {
     return shouldDumpPM4;
 }
 
+bool vkValidationEnabled() {
+    return vkValidation;
+}
+
+bool vkValidationSyncEnabled() {
+    return vkValidationSync;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -108,6 +118,15 @@ void load(const std::filesystem::path& path) {
             isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
             shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
             shouldDumpPM4 = toml::find_or<toml::boolean>(gpu, "dumpPM4", false);
+        }
+    }
+    if (data.contains("Vulkan")) {
+        const auto vkResult = toml::expect<toml::value>(data.at("Vulkan"));
+        if (vkResult.is_ok()) {
+            auto vk = vkResult.unwrap();
+
+            vkValidation = toml::find_or<toml::boolean>(vk, "validation", true);
+            vkValidationSync = toml::find_or<toml::boolean>(vk, "validation_sync", true);
         }
     }
     if (data.contains("Debug")) {
@@ -156,6 +175,8 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["dumpPM4"] = shouldDumpPM4;
+    data["Vulkan"]["validation"] = vkValidation;
+    data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
 

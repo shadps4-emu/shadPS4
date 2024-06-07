@@ -15,11 +15,15 @@
 
 #include <vector>
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
 namespace Vulkan {
+
+static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
+static const char* const API_DUMP_LAYER_NAME = "VK_LAYER_LUNARG_api_dump";
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
@@ -179,7 +183,7 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
             VK_VERSION_MAJOR(available_version), VK_VERSION_MINOR(available_version)));
     }
 
-    const auto extensions = GetInstanceExtensions(window_type, enable_validation);
+    const auto extensions = GetInstanceExtensions(window_type, true);
 
     const vk::ApplicationInfo application_info = {
         .pApplicationName = "shadPS4",
@@ -193,21 +197,37 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
     std::array<const char*, 2> layers;
 
     if (enable_validation) {
-        layers[num_layers++] = "VK_LAYER_KHRONOS_validation";
+        layers[num_layers++] = VALIDATION_LAYER_NAME;
     }
     if (dump_command_buffers) {
-        layers[num_layers++] = "VK_LAYER_LUNARG_api_dump";
+        layers[num_layers++] = API_DUMP_LAYER_NAME;
     }
 
-    vk::InstanceCreateInfo instance_ci = {
-        .pApplicationInfo = &application_info,
-        .enabledLayerCount = num_layers,
-        .ppEnabledLayerNames = layers.data(),
-        .enabledExtensionCount = static_cast<u32>(extensions.size()),
-        .ppEnabledExtensionNames = extensions.data(),
+    vk::Bool32 enable_sync =
+        enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
+    vk::LayerSettingEXT layer_set = {
+        .pLayerName = VALIDATION_LAYER_NAME,
+        .pSettingName = "validate_sync",
+        .type = vk::LayerSettingTypeEXT::eBool32,
+        .valueCount = 1,
+        .pValues = &enable_sync,
     };
 
-    auto instance = vk::createInstanceUnique(instance_ci);
+    vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
+        vk::InstanceCreateInfo{
+            .pApplicationInfo = &application_info,
+            .enabledLayerCount = num_layers,
+            .ppEnabledLayerNames = layers.data(),
+            .enabledExtensionCount = static_cast<u32>(extensions.size()),
+            .ppEnabledExtensionNames = extensions.data(),
+        },
+        vk::LayerSettingsCreateInfoEXT{
+            .settingCount = 1,
+            .pSettings = &layer_set,
+        },
+    };
+
+    auto instance = vk::createInstanceUnique(instance_ci_chain.get());
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 

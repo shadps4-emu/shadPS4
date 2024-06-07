@@ -25,4 +25,7 @@ bool nullGpu();
 bool dumpShaders();
 bool dumpPM4();
 
+bool vkValidationEnabled();
+bool vkValidationSyncEnabled();
+
 }; // namespace Config

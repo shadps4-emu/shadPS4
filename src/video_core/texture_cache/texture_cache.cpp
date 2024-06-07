@@ -146,10 +146,10 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     }
 
     // All tiled images are created with storage usage flag. This makes set of formats (e.g. sRGB)
-    // impossible to use. However, during view creation, if an image isn't used as storage and not a
-    // target for the detiler, we can temporary remove its storage bit.
+    // impossible to use. However, during view creation, if an image isn't used as storage we can
+    // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
-    if (!image.info.is_storage && !view_info.used_for_detiling) {
+    if (!image.info.is_storage) {
         usage_override = image.info.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
@@ -163,6 +163,12 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
 ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
     Image& image = FindImage(ImageInfo{desc}, desc.Address());
 
+    if (image.info.is_storage) {
+        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+    } else {
+        image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
+    }
+
     const ImageViewInfo view_info{desc};
     return RegisterImageView(image, view_info);
 }
@@ -171,6 +177,10 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                                       const AmdGpu::Liverpool::CbDbExtent& hint) {
     const ImageInfo info{buffer, hint};
     auto& image = FindImage(info, buffer.Address());
+
+    image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
+                  vk::AccessFlagBits::eColorAttachmentWrite |
+                      vk::AccessFlagBits::eColorAttachmentRead);
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;
@@ -184,12 +194,7 @@ void TextureCache::RefreshImage(Image& image) {
     {
         if (!tile_manager.TryDetile(image)) {
             // Upload data to the staging buffer.
-            const auto& [data, offset, _] = staging.Map(image.info.guest_size_bytes, 4);
-            const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-            std::memcpy(data, image_data, image.info.guest_size_bytes);
-            staging.Commit(image.info.guest_size_bytes);
-
-            const auto cmdbuf = scheduler.CommandBuffer();
+            const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
             image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
 
             // Copy to the image.
@@ -207,6 +212,7 @@ void TextureCache::RefreshImage(Image& image) {
                 .imageExtent = {image.info.size.width, image.info.size.height, 1},
             };
 
+            const auto cmdbuf = scheduler.CommandBuffer();
             cmdbuf.copyBufferToImage(staging.Handle(), image.image,
                                      vk::ImageLayout::eTransferDstOptimal, image_copy);
         }

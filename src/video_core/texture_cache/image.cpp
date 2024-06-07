@@ -88,6 +88,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
     is_tiled = buffer.IsTiled();
+    tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -186,7 +187,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.is_tiled) {
         ImageViewInfo view_info;
         view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
-        view_info.used_for_detiling = true;
         view_for_detiler.emplace(*instance, view_info, image);
     }
 
@@ -214,10 +214,11 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
                                             }};
 
     // Adjust pipieline stage
-    vk::PipelineStageFlagBits dst_pl_stage = (dst_mask == vk::AccessFlagBits::eTransferRead ||
-                                              dst_mask == vk::AccessFlagBits::eTransferWrite)
-                                                 ? vk::PipelineStageFlagBits::eTransfer
-                                                 : vk::PipelineStageFlagBits::eAllGraphics;
+    vk::PipelineStageFlags dst_pl_stage =
+        (dst_mask == vk::AccessFlagBits::eTransferRead ||
+         dst_mask == vk::AccessFlagBits::eTransferWrite)
+            ? vk::PipelineStageFlagBits::eTransfer
+            : vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eComputeShader;
     const auto cmdbuf = scheduler->CommandBuffer();
     cmdbuf.pipelineBarrier(pl_stage, dst_pl_stage, vk::DependencyFlagBits::eByRegion, {}, {},
                            barrier);

@@ -40,6 +40,9 @@ public:
     /// Ensures that "size" bytes of memory are available to the GPU, potentially recording a copy.
     void Commit(u64 size);
 
+    /// Maps and commits a memory region with user provided data
+    u64 Copy(VAddr src, size_t size, size_t alignment = 0);
+
     vk::Buffer Handle() const noexcept {
         return buffer;
     }
