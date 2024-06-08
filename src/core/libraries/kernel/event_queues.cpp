@@ -102,4 +102,13 @@ void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev) {
     return ev->udata;
 }
 
+int PS4_SYSV_ABI sceKernelTriggerUserEvent(SceKernelEqueue eq, int id, void* udata) {
+    eq->triggerEvent(id, Kernel::EVFILT_USER, udata);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
+    eq->removeEvent(id);
+    return ORBIS_OK;
+}
 } // namespace Libraries::Kernel
