@@ -13,6 +13,10 @@ namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", path, flags, mode);
+    if (strcmp(path, "/dev/urandom") == 0 || strcmp(path, "/dev/random") == 0) {
+        std::srand(std::time(nullptr));
+        return 2222; // random hackish descriptor
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -74,6 +78,9 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 int PS4_SYSV_ABI sceKernelClose(int d) {
     if (d < 3) { // d probably hold an error code
         return ORBIS_KERNEL_ERROR_EPERM;
+    }
+    if (d == 2222) { // random / urandom
+        return SCE_OK;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -144,6 +151,14 @@ s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
 }
 
 s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
+    if (d == 2222) { // random / urandom
+        auto charbuff = static_cast<char*>(buf);
+
+        for (size_t i = 0; i < nbytes; i++)
+            charbuff[i] = std::rand() & 0xFF;
+
+        return nbytes;
+    }
     if (buf == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
     }
