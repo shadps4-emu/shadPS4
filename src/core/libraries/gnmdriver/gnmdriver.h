@@ -54,7 +54,7 @@ int PS4_SYSV_ABI sceGnmDrawIndirect();
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndirectMulti();
 int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState();
-int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175();
+u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState();
@@ -97,7 +97,7 @@ int PS4_SYSV_ABI sceGnmGetResourceType();
 int PS4_SYSV_ABI sceGnmGetResourceUserData();
 int PS4_SYSV_ABI sceGnmGetShaderProgramBaseAddress();
 int PS4_SYSV_ABI sceGnmGetShaderStatus();
-int PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
+VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
 int PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
 int PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
@@ -113,8 +113,11 @@ int PS4_SYSV_ABI sceGnmIsUserPaEnabled();
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex();
 int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask();
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical();
-int PS4_SYSV_ABI sceGnmMapComputeQueue();
-int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority();
+int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                       u32 ring_size_dw, u32* read_ptr_addr);
+int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                                   u32 ring_size_dw, u32* read_ptr_addr,
+                                                   u32 pipePriority);
 int PS4_SYSV_ABI sceGnmPaDisableFlipCallbacks();
 int PS4_SYSV_ABI sceGnmPaEnableFlipCallbacks();
 int PS4_SYSV_ABI sceGnmPaHeartbeat();

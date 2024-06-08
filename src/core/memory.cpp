@@ -92,10 +92,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
             it++;
         }
         ASSERT(it != vma_map.end());
-        if (alignment > 0) {
-            ASSERT_MSG(it->second.base % alignment == 0, "Free region base is not aligned");
-        }
-        mapped_addr = it->second.base;
+        mapped_addr = alignment > 0 ? Common::AlignUp(it->second.base, alignment) : it->second.base;
     }
 
     // Perform the mapping.

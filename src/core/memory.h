@@ -115,6 +115,10 @@ public:
 
     int DirectMemoryQuery(PAddr addr, bool find_next, Libraries::Kernel::OrbisQueryInfo* out_info);
 
+    VAddr Reserve(size_t size, u64 alignment) {
+        return reinterpret_cast<VAddr>(impl.Reserve(size, alignment));
+    }
+
     std::pair<vk::Buffer, size_t> GetVulkanBuffer(VAddr addr);
 
 private:

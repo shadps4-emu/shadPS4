@@ -7,12 +7,12 @@
 #include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
 
+#include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/sampler.h"
-#include "video_core/texture_cache/slot_vector.h"
 #include "video_core/texture_cache/tile_manager.h"
 
 namespace Core::Libraries::VideoOut {
