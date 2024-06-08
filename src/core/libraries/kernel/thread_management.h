@@ -16,6 +16,9 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Kernel {
+constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
 
 struct PthreadInternal;
 struct PthreadAttrInternal;
@@ -182,6 +185,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
                                     const char* name);
 int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
+int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex);
 /****
  * Posix calls
  */
