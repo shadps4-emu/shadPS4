@@ -5,6 +5,7 @@
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libc/libc.h"
@@ -18,6 +19,7 @@
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/system/commondialog.h"
@@ -61,6 +63,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
     Libraries::LibcInternal::RegisterlibSceLibcInternal(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
+    Libraries::Rtc::RegisterlibSceRtc(sym);
+    Libraries::DiscMap::RegisterlibSceDiscMap(sym);
 }
 
 } // namespace Libraries
