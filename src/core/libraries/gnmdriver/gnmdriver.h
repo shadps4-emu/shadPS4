@@ -54,7 +54,7 @@ int PS4_SYSV_ABI sceGnmDrawIndirect();
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndirectMulti();
 int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState();
-int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175();
+u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState();
