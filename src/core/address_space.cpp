@@ -116,6 +116,7 @@ struct AddressSpace::Impl {
     void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot,
                      bool no_commit = false) {
         // Map a private allocation
+        PVOID addr = reinterpret_cast<PVOID>(virtual_addr);
         MEM_ADDRESS_REQUIREMENTS req{};
         MEM_EXTENDED_PARAMETER param{};
         // req.LowestStartingAddress =
@@ -129,9 +130,23 @@ struct AddressSpace::Impl {
         if (!no_commit) {
             alloc_type |= MEM_COMMIT;
         }
-        void* const ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
-                                        alloc_type, prot, &param, 1);
-        ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+        // Check if the area has been reserved beforehand (typically for tesselation buffer)
+        // and in that case don't reserve it again as Windows complains.
+        if (virtual_addr) {
+            MEMORY_BASIC_INFORMATION info;
+            VirtualQuery(addr, &info, sizeof(info));
+            if (info.State == MEM_RESERVE) {
+                alloc_type &= ~MEM_RESERVE;
+            }
+        }
+        void* ptr{};
+        if (virtual_addr) {
+            ptr = VirtualAlloc2(process, addr, size, alloc_type, prot, NULL, 0);
+            ASSERT_MSG(ptr && VAddr(ptr) == virtual_addr, "{}", Common::GetLastErrorMsg());
+        } else {
+            ptr = VirtualAlloc2(process, nullptr, size, alloc_type, prot, &param, 1);
+            ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+        }
         return ptr;
     }
 
