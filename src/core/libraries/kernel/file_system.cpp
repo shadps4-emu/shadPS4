@@ -231,6 +231,28 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     return bytes_read;
 }
 
+int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    memset(sb, 0, sizeof(OrbisKernelStat));
+
+    if (file->is_directory) {
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_size = 0;
+        sb->st_blksize = 512;
+        sb->st_blocks = 0;
+        // TODO incomplete
+    } else {
+        sb->st_mode = 0000777u | 0100000u;
+        sb->st_size = file->f.GetSize();
+        sb->st_blksize = 512;
+        sb->st_blocks = (sb->st_size + 511) / 512;
+        // TODO incomplete
+    }
+    return ORBIS_OK;
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -243,6 +265,8 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
+    LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
+    
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
 
