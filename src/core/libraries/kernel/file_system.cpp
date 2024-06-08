@@ -72,6 +72,9 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 }
 
 int PS4_SYSV_ABI sceKernelClose(int d) {
+    if (d < 3) { // d probably hold an error code
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
