@@ -57,6 +57,10 @@ void PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 
+void PS4_SYSV_ABI posix_usleep(u32 microseconds) {
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+}
+
 struct iovec {
     void* iov_base; /* Base	address. */
     size_t iov_len; /* Length. */
@@ -268,6 +272,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);

@@ -1145,6 +1145,10 @@ int PS4_SYSV_ABI scePthreadEqual(ScePthread thread1, ScePthread thread2) {
     return (thread1 == thread2 ? 1 : 0);
 }
 
+int PS4_SYSV_ABI posix_pthread_equal(ScePthread thread1, ScePthread thread2) {
+    return (thread1 == thread2 ? 1 : 0);
+}
+
 struct TlsIndex {
     u64 ti_module;
     u64 ti_offset;
@@ -1173,6 +1177,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("onNY9Byn-W8", "libkernel", 1, "libkernel", 1, 1, scePthreadJoin);
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
+    LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);
 
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
