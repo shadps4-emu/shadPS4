@@ -42,6 +42,14 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
             file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (write && create && truncate) {
             file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+        } else if (write && create && append) { // CUSA04729 (appends app0/shaderlist.txt)
+            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+        } else if (rdwr) {
+            if (create) { // Create an empty file first.
+                Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+            }
+            // RW, then scekernelWrite is called and savedata is written just fine now.
+            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
         } else {
             UNREACHABLE();
         }
@@ -64,6 +72,9 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 }
 
 int PS4_SYSV_ABI sceKernelClose(int d) {
+    if (d < 3) { // d probably hold an error code
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
