@@ -221,8 +221,9 @@ int PS4_SYSV_ABI scePthreadCondInit(OrbisPthreadCond* cond, const OrbisPthreadCo
     if (attr == nullptr) {
         attr = g_pthread_cxt->getDefaultCondattr();
     }
-
-    (*cond)->name = name;
+    if (name != nullptr) {
+        (*cond)->name = name;
+    }
 
     int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
     if (result != 0) {
