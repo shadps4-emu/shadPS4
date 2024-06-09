@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 #include "types.h"
 
 namespace Config {

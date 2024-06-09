@@ -12,15 +12,19 @@
 
 namespace Frontend {
 
-WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_)
+WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
+                     std::string_view game_title_, std::string_view game_serial_,
+                     std::string_view game_appver_)
     : width{width_}, height{height_}, controller{controller_} {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
 
-    const std::string title = "shadPS4 v" + std::string(Common::VERSION);
+    const std::string windowTitle = "shadPS4 v" + std::string(Common::VERSION) + " | " +
+                                    game_serial_.data() + " - " + game_title_.data() + " (v" +
+                                    game_appver_.data() + ")";
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, windowTitle.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
