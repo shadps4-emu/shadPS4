@@ -53,12 +53,19 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     return SCE_OK;
 }
 
-void PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
+int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return SCE_OK;
 }
 
-void PS4_SYSV_ABI posix_usleep(u32 microseconds) {
+int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return SCE_OK;
+}
+
+int PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    return SCE_OK;
 }
 
 struct iovec {
@@ -273,6 +280,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
     LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
+    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
