@@ -42,6 +42,9 @@ struct ImageInfo {
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
+    bool IsBlockCoded() const;
+    bool IsDepthStencil() const;
+
     bool is_tiled = false;
     bool is_storage = false;
     vk::Format pixel_format = vk::Format::eUndefined;

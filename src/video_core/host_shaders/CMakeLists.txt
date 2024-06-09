@@ -3,7 +3,8 @@
 
 set(SHADER_FILES
     detile_m8x1.comp
-    detile_m8x4.comp
+    detile_m32x1.comp
+    detile_m32x4.comp
 )
 
 set(SHADER_INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include)
