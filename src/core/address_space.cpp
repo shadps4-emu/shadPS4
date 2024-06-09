@@ -113,8 +113,10 @@ struct AddressSpace::Impl {
         return ptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot) {
+    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot,
+                     bool no_commit = false) {
         // Map a private allocation
+        PVOID addr = reinterpret_cast<PVOID>(virtual_addr);
         MEM_ADDRESS_REQUIREMENTS req{};
         MEM_EXTENDED_PARAMETER param{};
         // req.LowestStartingAddress =
@@ -124,9 +126,27 @@ struct AddressSpace::Impl {
         req.Alignment = alignment < 64_KB ? 0 : alignment;
         param.Type = MemExtendedParameterAddressRequirements;
         param.Pointer = &req;
-        ULONG alloc_type = MEM_COMMIT | MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);
-        void* const ptr = VirtualAlloc2(process, nullptr, size, alloc_type, prot, &param, 1);
-        ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+        ULONG alloc_type = MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);
+        if (!no_commit) {
+            alloc_type |= MEM_COMMIT;
+        }
+        // Check if the area has been reserved beforehand (typically for tesselation buffer)
+        // and in that case don't reserve it again as Windows complains.
+        if (virtual_addr) {
+            MEMORY_BASIC_INFORMATION info;
+            VirtualQuery(addr, &info, sizeof(info));
+            if (info.State == MEM_RESERVE) {
+                alloc_type &= ~MEM_RESERVE;
+            }
+        }
+        void* ptr{};
+        if (virtual_addr) {
+            ptr = VirtualAlloc2(process, addr, size, alloc_type, prot, NULL, 0);
+            ASSERT_MSG(ptr && VAddr(ptr) == virtual_addr, "{}", Common::GetLastErrorMsg());
+        } else {
+            ptr = VirtualAlloc2(process, nullptr, size, alloc_type, prot, &param, 1);
+            ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+        }
         return ptr;
     }
 
@@ -224,7 +244,8 @@ struct AddressSpace::Impl {
         return nullptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot) {
+    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot,
+                     bool no_commit = false) {
         UNREACHABLE();
         return nullptr;
     }
@@ -269,6 +290,10 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size) {
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
     return impl->Protect(virtual_addr, size, true, true, true);
+}
+
+void* AddressSpace::Reserve(size_t size, u64 alignment) {
+    return impl->MapPrivate(0, size, alignment, PAGE_READWRITE, true);
 }
 
 } // namespace Core

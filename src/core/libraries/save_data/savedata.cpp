@@ -340,7 +340,8 @@ s32 saveDataMount(u32 user_id, std::string dir_name, u32 mount_mode,
                             std::to_string(user_id) / "savedata" / id / dir_name;
     switch (mount_mode) {
     case ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY:
-    case ORBIS_SAVE_DATA_MOUNT_MODE_RDWR: {
+    case ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY | ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF: {
         if (!std::filesystem::exists(mount_dir)) {
             return ORBIS_SAVE_DATA_ERROR_NOT_FOUND;
         }
@@ -352,6 +353,8 @@ s32 saveDataMount(u32 user_id, std::string dir_name, u32 mount_mode,
     } break;
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
+        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
         if (std::filesystem::exists(mount_dir)) {
             return ORBIS_SAVE_DATA_ERROR_EXISTS;
@@ -364,6 +367,7 @@ s32 saveDataMount(u32 user_id, std::string dir_name, u32 mount_mode,
         mount_result->mount_status = 1;
         strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
     } break;
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
         if (!std::filesystem::exists(mount_dir)) {

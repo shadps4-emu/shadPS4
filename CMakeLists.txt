@@ -105,6 +105,8 @@ set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
                src/core/libraries/kernel/event_flag/event_flag_obj.h
+               src/core/libraries/kernel/threads/kernel_threads.h
+               src/core/libraries/kernel/threads/kernel_threads_rwlock.cpp
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queue.cpp
@@ -152,6 +154,11 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/userservice.h
                 src/core/libraries/app_content/app_content.cpp
                 src/core/libraries/app_content/app_content.h
+                src/core/libraries/rtc/rtc.cpp
+                src/core/libraries/rtc/rtc.h
+                src/core/libraries/disc_map/disc_map.cpp
+                src/core/libraries/disc_map/disc_map.h
+                src/core/libraries/disc_map/disc_map_codes.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -233,6 +240,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/singleton.h
+           src/common/slot_vector.h
            src/common/string_util.cpp
            src/common/string_util.h
            src/common/thread.cpp
@@ -413,7 +421,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/image_view.h
                src/video_core/texture_cache/sampler.cpp
                src/video_core/texture_cache/sampler.h
-               src/video_core/texture_cache/slot_vector.h
                src/video_core/texture_cache/texture_cache.cpp
                src/video_core/texture_cache/texture_cache.h
                src/video_core/texture_cache/tile_manager.cpp

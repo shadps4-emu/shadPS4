@@ -16,6 +16,9 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Kernel {
+constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
 
 struct PthreadInternal;
 struct PthreadAttrInternal;
@@ -23,6 +26,8 @@ struct PthreadMutexInternal;
 struct PthreadMutexattrInternal;
 struct PthreadCondInternal;
 struct PthreadCondAttrInternal;
+struct PthreadRwInternal;
+struct PthreadRwLockAttrInernal;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthread = PthreadInternal*;
@@ -31,6 +36,8 @@ using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
+using OrbisPthreadRwlock = PthreadRwInternal*;
+using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
@@ -84,6 +91,17 @@ struct PthreadCondAttrInternal {
     pthread_condattr_t cond_attr;
 };
 
+struct PthreadRwLockAttrInernal {
+    u8 reserved[64];
+    pthread_rwlockattr_t attr_rwlock;
+    int type;
+};
+
+struct PthreadRwInternal {
+    pthread_rwlock_t pth_rwlock;
+    std::string name;
+};
+
 class PThreadPool {
 public:
     ScePthread Create();
@@ -119,12 +137,19 @@ public:
     void SetPthreadPool(PThreadPool* pool) {
         m_pthread_pool = pool;
     }
+    OrbisPthreadRwlockattr* getDefaultRwattr() {
+        return &m_default_Rwattr;
+    }
+    void setDefaultRwattr(OrbisPthreadRwlockattr attr) {
+        m_default_Rwattr = attr;
+    }
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
     ScePthreadCondattr m_default_condattr = nullptr;
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
+    OrbisPthreadRwlockattr m_default_Rwattr = nullptr;
 };
 
 void init_pthreads();
@@ -160,6 +185,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
                                     const char* name);
 int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
+int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex);
 /****
  * Posix calls
  */

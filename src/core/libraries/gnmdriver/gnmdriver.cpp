@@ -5,10 +5,12 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/slot_vector.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/memory.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
@@ -31,6 +33,17 @@ static constexpr bool g_fair_hw_init = false;
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
 static u64 frames_submitted{}; // frame counter
+
+struct AscQueueInfo {
+    VAddr map_addr;
+    u32* read_addr;
+    u32 ring_size_dw;
+};
+static VideoCore::SlotVector<AscQueueInfo> asc_queues{};
+
+static constexpr u32 TessellationFactorRingSize = 128_KB;
+static constexpr u32 TessellationFactorRingAlignment = 64_KB; // toolkit is using this alignment
+VAddr tessellation_factors_ring_addr{0};
 
 static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {
     using namespace Common::FS;
@@ -367,9 +380,18 @@ int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (size > 0xff) {
+        if constexpr (g_fair_hw_init) {
+            ASSERT_MSG(0, "Not implemented");
+        } else {
+            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
+        }
+        return 0x100; // it is a size, not a retcode
+    }
+    return 0;
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
@@ -379,7 +401,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
         if constexpr (g_fair_hw_init) {
             ASSERT_MSG(0, "Not implemented");
         } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
+            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
         }
         return 0x100; // it is a size, not a retcode
     }
@@ -393,7 +415,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
         if constexpr (g_fair_hw_init) {
             ASSERT_MSG(0, "Not implemented");
         } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
+            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
         }
         return 0x100; // it is a size, not a retcode
     }
@@ -599,9 +621,15 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Actual virtual buffer address is hardcoded in the driver to 0xff00'000
+    if (tessellation_factors_ring_addr == 0) {
+        auto* memory = Core::Memory::Instance();
+        tessellation_factors_ring_addr =
+            memory->Reserve(TessellationFactorRingSize, TessellationFactorRingAlignment);
+    }
+    return tessellation_factors_ring_addr;
 }
 
 int PS4_SYSV_ABI sceGnmGpuPaDebugEnter() {
@@ -718,14 +746,44 @@ int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmMapComputeQueue() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                       u32 ring_size_dw, u32* read_ptr_addr) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (pipe_id >= Liverpool::NumComputePipes) {
+        return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_PIPE_ID;
+    }
+
+    if (queue_id >= Liverpool::NumQueuesPerPipe) {
+        return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_QUEUE_ID;
+    }
+
+    if (VAddr(ring_base_addr) % 256 != 0) { // alignment check
+        return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_RING_BASE_ADDR;
+    }
+
+    if (!std::has_single_bit(ring_size_dw)) {
+        return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_RING_SIZE;
+    }
+
+    if (VAddr(read_ptr_addr) % 4 != 0) { // alignment check
+        return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_READ_PTR_ADDR;
+    }
+
+    auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw);
+    LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
+             vqid.index);
+
+    return vqid.index;
 }
 
-int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
+                                                   u32 ring_size_dw, u32* read_ptr_addr,
+                                                   u32 pipePriority) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    (void)pipePriority;
+    return sceGnmMapComputeQueue(pipe_id, queue_id, ring_base_addr, ring_size_dw, read_ptr_addr);
 }
 
 int PS4_SYSV_ABI sceGnmPaDisableFlipCallbacks() {

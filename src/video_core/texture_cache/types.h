@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include "common/slot_vector.h"
 #include "common/types.h"
-#include "video_core/texture_cache/slot_vector.h"
 
 namespace VideoCore {
 
