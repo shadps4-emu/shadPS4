@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "game_list_frame.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
-                             std::shared_ptr<GuiSettings> m_gui_settings, QWidget* parent)
-    : QTableWidget(parent) {
-    m_game_info = game_info_get;
-    icon_size = m_gui_settings->GetValue(gui::m_icon_size).toInt();
-
+GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
+    : QTableWidget(parent), m_game_info(game_info_get) {
+    icon_size = Config::getIconSize();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
     this->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -25,17 +23,19 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
-    this->setColumnCount(8);
+    this->setColumnCount(9);
     this->setColumnWidth(1, 250);
     this->setColumnWidth(2, 110);
     this->setColumnWidth(3, 80);
     this->setColumnWidth(4, 90);
     this->setColumnWidth(5, 80);
     this->setColumnWidth(6, 80);
+    this->setColumnWidth(7, 80);
     QStringList headers;
     headers << "Icon"
             << "Name"
             << "Serial"
+            << "Region"
             << "Firmware"
             << "Size"
             << "Version"
@@ -81,13 +81,14 @@ void GameListFrame::PopulateGameList() {
     ResizeIcons(icon_size);
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
-        SetTableItem(this, i, 1, QString::fromStdString(m_game_info->m_games[i].name));
-        SetTableItem(this, i, 2, QString::fromStdString(m_game_info->m_games[i].serial));
-        SetTableItem(this, i, 3, QString::fromStdString(m_game_info->m_games[i].fw));
-        SetTableItem(this, i, 4, QString::fromStdString(m_game_info->m_games[i].size));
-        SetTableItem(this, i, 5, QString::fromStdString(m_game_info->m_games[i].version));
-        SetTableItem(this, i, 6, QString::fromStdString(m_game_info->m_games[i].category));
-        SetTableItem(this, i, 7, QString::fromStdString(m_game_info->m_games[i].path));
+        SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
+        SetTableItem(i, 2, QString::fromStdString(m_game_info->m_games[i].serial));
+        SetRegionFlag(i, 3, QString::fromStdString(m_game_info->m_games[i].region));
+        SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
+        SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
+        SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
+        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].category));
+        SetTableItem(i, 8, QString::fromStdString(m_game_info->m_games[i].path));
     }
 }
 
@@ -119,12 +120,14 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 }
 
 void GameListFrame::RefreshListBackgroundImage() {
-    QPixmap blurredPixmap = QPixmap::fromImage(backgroundImage);
-    QPalette palette;
-    palette.setBrush(QPalette::Base, QBrush(blurredPixmap.scaled(size(), Qt::IgnoreAspectRatio)));
-    QColor transparentColor = QColor(135, 206, 235, 40);
-    palette.setColor(QPalette::Highlight, transparentColor);
-    this->setPalette(palette);
+    if (!backgroundImage.isNull()) {
+        QPalette palette;
+        palette.setBrush(QPalette::Base,
+                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
+        QColor transparentColor = QColor(135, 206, 235, 40);
+        palette.setColor(QPalette::Highlight, transparentColor);
+        this->setPalette(palette);
+    }
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {
@@ -142,22 +145,66 @@ void GameListFrame::SortNameDescending(int columnIndex) {
 }
 
 void GameListFrame::ResizeIcons(int iconSize) {
-    QList<int> indices;
-    for (int i = 0; i < m_game_info->m_games.size(); i++) {
-        indices.append(i);
+    for (int index = 0; auto& game : m_game_info->m_games) {
+        QImage scaledPixmap = game.icon.scaled(QSize(iconSize, iconSize), Qt::KeepAspectRatio,
+                                               Qt::SmoothTransformation);
+        QTableWidgetItem* iconItem = new QTableWidgetItem();
+        this->verticalHeader()->resizeSection(index, scaledPixmap.height());
+        this->horizontalHeader()->resizeSection(0, scaledPixmap.width());
+        iconItem->setData(Qt::DecorationRole, scaledPixmap);
+        this->setItem(index, 0, iconItem);
+        index++;
     }
-    std::future<void> future = std::async(std::launch::async, [=, this]() {
-        for (int index : indices) {
-            QPixmap scaledPixmap = m_game_info->m_games[index].icon.scaled(
-                QSize(iconSize, iconSize), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-            QTableWidgetItem* iconItem = new QTableWidgetItem();
-            this->verticalHeader()->resizeSection(index, scaledPixmap.height());
-            this->horizontalHeader()->resizeSection(0, scaledPixmap.width());
-            iconItem->setData(Qt::DecorationRole, scaledPixmap);
-            this->setItem(index, 0, iconItem);
-        }
-    });
-    future.wait();
     this->horizontalHeader()->setSectionResizeMode(7, QHeaderView::ResizeToContents);
+}
+
+void GameListFrame::SetTableItem(int row, int column, QString itemStr) {
+    QTableWidgetItem* item = new QTableWidgetItem();
+    QWidget* widget = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    QLabel* label = new QLabel(itemStr, widget);
+
+    label->setStyleSheet("color: white; font-size: 15px; font-weight: bold;");
+
+    // Create shadow effect
+    QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
+    shadowEffect->setBlurRadius(5);               // Set the blur radius of the shadow
+    shadowEffect->setColor(QColor(0, 0, 0, 160)); // Set the color and opacity of the shadow
+    shadowEffect->setOffset(2, 2);                // Set the offset of the shadow
+
+    label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
+
+    layout->addWidget(label);
+    if (column != 8 && column != 1)
+        layout->setAlignment(Qt::AlignCenter);
+    widget->setLayout(layout);
+    this->setItem(row, column, item);
+    this->setCellWidget(row, column, widget);
+}
+
+void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
+    QTableWidgetItem* item = new QTableWidgetItem();
+    QImage scaledPixmap;
+    if (itemStr == "Japan") {
+        scaledPixmap = QImage(":/images/flag_jp.png");
+    } else if (itemStr == "Europe") {
+        scaledPixmap = QImage(":/images/flag_eu.png");
+    } else if (itemStr == "USA") {
+        scaledPixmap = QImage(":/images/flag_us.png");
+    } else if (itemStr == "Asia") {
+        scaledPixmap = QImage(":/images/flag_china.png");
+    } else if (itemStr == "World") {
+        scaledPixmap = QImage(":/images/flag_world.png");
+    } else {
+        scaledPixmap = QImage(":/images/flag_unk.png");
+    }
+    QWidget* widget = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    QLabel* label = new QLabel(widget);
+    label->setPixmap(QPixmap::fromImage(scaledPixmap));
+    layout->setAlignment(Qt::AlignCenter);
+    layout->addWidget(label);
+    widget->setLayout(layout);
+    this->setItem(row, column, item);
+    this->setCellWidget(row, column, widget);
 }

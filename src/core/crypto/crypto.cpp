@@ -4,67 +4,69 @@
 #include <array>
 #include "crypto.h"
 
-RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
-    InvertibleRSAFunction params;
-    params.SetPrime1(Integer(pkg_derived_key3_keyset.Prime1, 0x80));
-    params.SetPrime2(Integer(pkg_derived_key3_keyset.Prime2, 0x80));
+CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
+    CryptoPP::InvertibleRSAFunction params;
+    params.SetPrime1(CryptoPP::Integer(pkg_derived_key3_keyset.Prime1, 0x80));
+    params.SetPrime2(CryptoPP::Integer(pkg_derived_key3_keyset.Prime2, 0x80));
 
-    params.SetPublicExponent(Integer(pkg_derived_key3_keyset.PublicExponent, 4));
-    params.SetPrivateExponent(Integer(pkg_derived_key3_keyset.PrivateExponent, 0x100));
+    params.SetPublicExponent(CryptoPP::Integer(pkg_derived_key3_keyset.PublicExponent, 4));
+    params.SetPrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.PrivateExponent, 0x100));
 
-    params.SetModPrime1PrivateExponent(Integer(pkg_derived_key3_keyset.Exponent1, 0x80));
-    params.SetModPrime2PrivateExponent(Integer(pkg_derived_key3_keyset.Exponent2, 0x80));
+    params.SetModPrime1PrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.Exponent1, 0x80));
+    params.SetModPrime2PrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.Exponent2, 0x80));
 
-    params.SetModulus(Integer(pkg_derived_key3_keyset.Modulus, 0x100));
+    params.SetModulus(CryptoPP::Integer(pkg_derived_key3_keyset.Modulus, 0x100));
     params.SetMultiplicativeInverseOfPrime2ModPrime1(
-        Integer(pkg_derived_key3_keyset.Coefficient, 0x80));
+        CryptoPP::Integer(pkg_derived_key3_keyset.Coefficient, 0x80));
 
-    RSA::PrivateKey privateKey(params);
-
-    return privateKey;
-}
-
-RSA::PrivateKey Crypto::FakeKeyset_keyset_init() {
-    InvertibleRSAFunction params;
-    params.SetPrime1(Integer(FakeKeyset_keyset.Prime1, 0x80));
-    params.SetPrime2(Integer(FakeKeyset_keyset.Prime2, 0x80));
-
-    params.SetPublicExponent(Integer(FakeKeyset_keyset.PublicExponent, 4));
-    params.SetPrivateExponent(Integer(FakeKeyset_keyset.PrivateExponent, 0x100));
-
-    params.SetModPrime1PrivateExponent(Integer(FakeKeyset_keyset.Exponent1, 0x80));
-    params.SetModPrime2PrivateExponent(Integer(FakeKeyset_keyset.Exponent2, 0x80));
-
-    params.SetModulus(Integer(FakeKeyset_keyset.Modulus, 0x100));
-    params.SetMultiplicativeInverseOfPrime2ModPrime1(Integer(FakeKeyset_keyset.Coefficient, 0x80));
-
-    RSA::PrivateKey privateKey(params);
+    CryptoPP::RSA::PrivateKey privateKey(params);
 
     return privateKey;
 }
 
-RSA::PrivateKey Crypto::DebugRifKeyset_init() {
-    AutoSeededRandomPool rng;
-    InvertibleRSAFunction params;
-    params.SetPrime1(Integer(DebugRifKeyset_keyset.Prime1, sizeof(DebugRifKeyset_keyset.Prime1)));
-    params.SetPrime2(Integer(DebugRifKeyset_keyset.Prime2, sizeof(DebugRifKeyset_keyset.Prime2)));
+CryptoPP::RSA::PrivateKey Crypto::FakeKeyset_keyset_init() {
+    CryptoPP::InvertibleRSAFunction params;
+    params.SetPrime1(CryptoPP::Integer(FakeKeyset_keyset.Prime1, 0x80));
+    params.SetPrime2(CryptoPP::Integer(FakeKeyset_keyset.Prime2, 0x80));
 
-    params.SetPublicExponent(Integer(DebugRifKeyset_keyset.PrivateExponent,
-                                     sizeof(DebugRifKeyset_keyset.PrivateExponent)));
-    params.SetPrivateExponent(Integer(DebugRifKeyset_keyset.PrivateExponent,
-                                      sizeof(DebugRifKeyset_keyset.PrivateExponent)));
+    params.SetPublicExponent(CryptoPP::Integer(FakeKeyset_keyset.PublicExponent, 4));
+    params.SetPrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.PrivateExponent, 0x100));
 
-    params.SetModPrime1PrivateExponent(
-        Integer(DebugRifKeyset_keyset.Exponent1, sizeof(DebugRifKeyset_keyset.Exponent1)));
-    params.SetModPrime2PrivateExponent(
-        Integer(DebugRifKeyset_keyset.Exponent2, sizeof(DebugRifKeyset_keyset.Exponent2)));
+    params.SetModPrime1PrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.Exponent1, 0x80));
+    params.SetModPrime2PrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.Exponent2, 0x80));
+
+    params.SetModulus(CryptoPP::Integer(FakeKeyset_keyset.Modulus, 0x100));
+    params.SetMultiplicativeInverseOfPrime2ModPrime1(
+        CryptoPP::Integer(FakeKeyset_keyset.Coefficient, 0x80));
+
+    CryptoPP::RSA::PrivateKey privateKey(params);
+
+    return privateKey;
+}
+
+CryptoPP::RSA::PrivateKey Crypto::DebugRifKeyset_init() {
+    CryptoPP::InvertibleRSAFunction params;
+    params.SetPrime1(
+        CryptoPP::Integer(DebugRifKeyset_keyset.Prime1, sizeof(DebugRifKeyset_keyset.Prime1)));
+    params.SetPrime2(
+        CryptoPP::Integer(DebugRifKeyset_keyset.Prime2, sizeof(DebugRifKeyset_keyset.Prime2)));
+
+    params.SetPublicExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PrivateExponent,
+                                               sizeof(DebugRifKeyset_keyset.PrivateExponent)));
+    params.SetPrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PrivateExponent,
+                                                sizeof(DebugRifKeyset_keyset.PrivateExponent)));
+
+    params.SetModPrime1PrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.Exponent1,
+                                                         sizeof(DebugRifKeyset_keyset.Exponent1)));
+    params.SetModPrime2PrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.Exponent2,
+                                                         sizeof(DebugRifKeyset_keyset.Exponent2)));
 
     params.SetModulus(
-        Integer(DebugRifKeyset_keyset.Modulus, sizeof(DebugRifKeyset_keyset.Modulus)));
-    params.SetMultiplicativeInverseOfPrime2ModPrime1(
-        Integer(DebugRifKeyset_keyset.Coefficient, sizeof(DebugRifKeyset_keyset.Coefficient)));
+        CryptoPP::Integer(DebugRifKeyset_keyset.Modulus, sizeof(DebugRifKeyset_keyset.Modulus)));
+    params.SetMultiplicativeInverseOfPrime2ModPrime1(CryptoPP::Integer(
+        DebugRifKeyset_keyset.Coefficient, sizeof(DebugRifKeyset_keyset.Coefficient)));
 
-    RSA::PrivateKey privateKey(params);
+    CryptoPP::RSA::PrivateKey privateKey(params);
 
     return privateKey;
 }
@@ -73,21 +75,21 @@ void Crypto::RSA2048Decrypt(std::span<CryptoPP::byte, 32> dec_key,
                             std::span<const CryptoPP::byte, 256> ciphertext,
                             bool is_dk3) { // RSAES_PKCS1v15_
     // Create an RSA decryptor
-    RSA::PrivateKey privateKey;
+    CryptoPP::RSA::PrivateKey privateKey;
     if (is_dk3) {
         privateKey = key_pkg_derived_key3_keyset_init();
     } else {
         privateKey = FakeKeyset_keyset_init();
     }
 
-    RSAES_PKCS1v15_Decryptor rsaDecryptor(privateKey);
+    CryptoPP::RSAES_PKCS1v15_Decryptor rsaDecryptor(privateKey);
 
     // Allocate memory for the decrypted data
     std::array<CryptoPP::byte, 256> decrypted;
 
     // Perform the decryption
-    AutoSeededRandomPool rng;
-    DecodingResult result =
+    CryptoPP::AutoSeededRandomPool rng;
+    CryptoPP::DecodingResult result =
         rsaDecryptor.Decrypt(rng, ciphertext.data(), decrypted.size(), decrypted.data());
     std::copy(decrypted.begin(), decrypted.begin() + dec_key.size(), dec_key.begin());
 }
@@ -117,6 +119,47 @@ void Crypto::aesCbcCfb128Decrypt(std::span<const CryptoPP::byte, 32> ivkey,
     for (size_t i = 0; i < decrypted.size(); i += CryptoPP::AES::BLOCKSIZE) {
         cbcDecryption.ProcessData(decrypted.data() + i, ciphertext.data() + i,
                                   CryptoPP::AES::BLOCKSIZE);
+    }
+}
+
+void Crypto::aesCbcCfb128DecryptEntry(std::span<const CryptoPP::byte, 32> ivkey,
+                                      std::span<CryptoPP::byte> ciphertext,
+                                      std::span<CryptoPP::byte> decrypted) {
+    std::array<CryptoPP::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key;
+    std::array<CryptoPP::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> iv;
+
+    std::copy(ivkey.begin() + 16, ivkey.begin() + 16 + key.size(), key.begin());
+    std::copy(ivkey.begin(), ivkey.begin() + iv.size(), iv.begin());
+
+    CryptoPP::AES::Decryption aesDecryption(key.data(), CryptoPP::AES::DEFAULT_KEYLENGTH);
+    CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption(aesDecryption, iv.data());
+
+    for (size_t i = 0; i < decrypted.size(); i += CryptoPP::AES::BLOCKSIZE) {
+        cbcDecryption.ProcessData(decrypted.data() + i, ciphertext.data() + i,
+                                  CryptoPP::AES::BLOCKSIZE);
+    }
+}
+
+void Crypto::decryptEFSM(std::span<CryptoPP::byte, 16> NPcommID,
+                         std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
+                         std::span<CryptoPP::byte> decrypted) {
+
+    std::vector<CryptoPP::byte> TrophyKey = {0x21, 0xF4, 0x1A, 0x6B, 0xAD, 0x8A, 0x1D, 0x3E,
+                                             0xCA, 0x7A, 0xD5, 0x86, 0xC1, 0x01, 0xB7, 0xA9};
+    std::vector<CryptoPP::byte> TrophyIV = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // step 1: Encrypt NPcommID
+    CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
+    encrypt.SetKeyWithIV(TrophyKey.data(), TrophyKey.size(), TrophyIV.data());
+
+    std::vector<CryptoPP::byte> trpKey(16);
+
+    encrypt.ProcessData(trpKey.data(), NPcommID.data(), 16);
+    // step 2: decrypt efsm.
+    CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decrypt;
+    decrypt.SetKeyWithIV(trpKey.data(), trpKey.size(), efsmIv.data());
+
+    for (size_t i = 0; i < decrypted.size(); i += CryptoPP::AES::BLOCKSIZE) {
+        decrypt.ProcessData(decrypted.data() + i, ciphertext.data() + i, CryptoPP::AES::BLOCKSIZE);
     }
 }
 
@@ -151,8 +194,8 @@ void Crypto::decryptPFS(std::span<const CryptoPP::byte, 16> dataKey,
     // Start at 0x10000 to keep the header when decrypting the whole pfs_image.
     for (int i = 0; i < src_image.size(); i += 0x1000) {
         const u64 current_sector = sector + (i / 0x1000);
-        CryptoPP::ECB_Mode<AES>::Encryption encrypt(tweakKey.data(), tweakKey.size());
-        CryptoPP::ECB_Mode<AES>::Decryption decrypt(dataKey.data(), dataKey.size());
+        CryptoPP::ECB_Mode<CryptoPP::AES>::Encryption encrypt(tweakKey.data(), tweakKey.size());
+        CryptoPP::ECB_Mode<CryptoPP::AES>::Decryption decrypt(dataKey.data(), dataKey.size());
 
         std::array<CryptoPP::byte, 16> tweak{};
         std::array<CryptoPP::byte, 16> encryptedTweak;

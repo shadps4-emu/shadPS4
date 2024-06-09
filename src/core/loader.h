@@ -14,5 +14,5 @@ enum class FileTypes {
     Pkg,
 };
 
-FileTypes DetectFileType(const std::string& filepath);
+FileTypes DetectFileType(const std::filesystem::path& filepath);
 } // namespace Loader

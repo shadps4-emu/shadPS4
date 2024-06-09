@@ -15,17 +15,15 @@
 #include "common/types.h"
 #include "keys.h"
 
-using namespace CryptoPP;
-
 class Crypto {
 public:
     PkgDerivedKey3Keyset pkg_derived_key3_keyset;
     FakeKeyset FakeKeyset_keyset;
     DebugRifKeyset DebugRifKeyset_keyset;
 
-    RSA::PrivateKey key_pkg_derived_key3_keyset_init();
-    RSA::PrivateKey FakeKeyset_keyset_init();
-    RSA::PrivateKey DebugRifKeyset_init();
+    CryptoPP::RSA::PrivateKey key_pkg_derived_key3_keyset_init();
+    CryptoPP::RSA::PrivateKey FakeKeyset_keyset_init();
+    CryptoPP::RSA::PrivateKey DebugRifKeyset_init();
 
     void RSA2048Decrypt(std::span<CryptoPP::byte, 32> dk3,
                         std::span<const CryptoPP::byte, 256> ciphertext,
@@ -35,6 +33,11 @@ public:
     void aesCbcCfb128Decrypt(std::span<const CryptoPP::byte, 32> ivkey,
                              std::span<const CryptoPP::byte, 256> ciphertext,
                              std::span<CryptoPP::byte, 256> decrypted);
+    void aesCbcCfb128DecryptEntry(std::span<const CryptoPP::byte, 32> ivkey,
+                                  std::span<CryptoPP::byte> ciphertext,
+                                  std::span<CryptoPP::byte> decrypted);
+    void decryptEFSM(std::span<CryptoPP::byte, 16>, std::span<CryptoPP::byte, 16> efsmIv,
+                     std::span<CryptoPP::byte> ciphertext, std::span<CryptoPP::byte> decrypted);
     void PfsGenCryptoKey(std::span<const CryptoPP::byte, 32> ekpfs,
                          std::span<const CryptoPP::byte, 16> seed,
                          std::span<CryptoPP::byte, 16> dataKey,
