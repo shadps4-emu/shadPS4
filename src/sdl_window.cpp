@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/version.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
@@ -17,7 +18,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
 
-    const std::string title = "shadps4 v" + std::string(Common::VERSION);
+    const std::string title = "shadPS4 v" + std::string(Common::VERSION);
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
@@ -31,8 +32,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to create window handle: {}", SDL_GetError());
     }
 
-    // We don't support resizable at the moment.
-    SDL_SetWindowResizable(window, SDL_FALSE);
+    SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
