@@ -23,6 +23,11 @@ jobs:
       with:
         submodules: recursive
 
+    - name: "Setup cmake"
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: ''
+
     - name: Install misc packages
       run: >
        sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential

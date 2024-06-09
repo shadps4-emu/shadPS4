@@ -25,6 +25,11 @@ jobs:
       with:
           submodules: recursive
 
+    - name: "Setup cmake"
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: ''
+
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
