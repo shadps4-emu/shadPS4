@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
+#include "core/memory.h"
 #include "core/module.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
@@ -81,8 +82,11 @@ void Module::LoadModuleToMemory() {
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
     // Map module segments (and possible TLS trampolines)
-    base_virtual_addr = VirtualMemory::memory_alloc(LoadAddress, aligned_base_size + TrampolineSize,
-                                                    VirtualMemory::MemoryMode::ExecuteReadWrite);
+    auto* memory = Core::Memory::Instance();
+    void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
+    const auto name = file.filename().string();
+    memory->MapMemory(out_addr, LoadAddress, aligned_base_size + TrampolineSize,
+                      MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadAddress += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
 
     // Initialize trampoline generator.
