@@ -9,6 +9,7 @@
 #include "video_core/texture_cache/tile_manager.h"
 
 #include "video_core/host_shaders/detile_m32x1_comp.h"
+#include "video_core/host_shaders/detile_m32x2_comp.h"
 #include "video_core/host_shaders/detile_m32x4_comp.h"
 #include "video_core/host_shaders/detile_m8x1_comp.h"
 
@@ -175,12 +176,16 @@ void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool is_
 
 vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
-    case vk::Format::eB8G8R8A8Srgb:
-    case vk::Format::eR8G8B8A8Unorm:
-        return vk::Format::eR32Uint;
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
+    case vk::Format::eB8G8R8A8Srgb:
+        [[fallthrough]];
+    case vk::Format::eR8G8B8A8Unorm:
+        return vk::Format::eR32Uint;
+    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eR32G32Uint;
     case vk::Format::eBc3SrgbBlock:
+        [[fallthrough]];
     case vk::Format::eBc3UnormBlock:
         return vk::Format::eR32G32B32A32Uint;
     default:
@@ -200,6 +205,8 @@ const DetilerContext* TileManager::GetDetiler(const Image& image) const {
             return &detilers[DetilerType::Micro8x1];
         case vk::Format::eR32Uint:
             return &detilers[DetilerType::Micro32x1];
+        case vk::Format::eR32G32Uint:
+            return &detilers[DetilerType::Micro32x2];
         case vk::Format::eR32G32B32A32Uint:
             return &detilers[DetilerType::Micro32x4];
         default:
@@ -219,6 +226,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,
         HostShaders::DETILE_M32X1_COMP,
+        HostShaders::DETILE_M32X2_COMP,
         HostShaders::DETILE_M32X4_COMP,
     };
 
