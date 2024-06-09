@@ -9,6 +9,7 @@
 #include <QStatusBar>
 #include <QtConcurrent>
 #include "common/io_file.h"
+#include "common/version.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
@@ -37,7 +38,7 @@ bool MainWindow::Init() {
     LoadGameLists();
 
     setMinimumSize(350, minimumSizeHint().height());
-    setWindowTitle(QString::fromStdString("ShadPS4 v0.0.3"));
+    setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
     show();
 
     auto end = std::chrono::steady_clock::now();
