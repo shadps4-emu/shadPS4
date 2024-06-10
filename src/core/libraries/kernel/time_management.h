@@ -12,13 +12,18 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 struct OrbisKernelTimeval {
-    u64 tv_sec;
-    u64 tv_usec;
+    s64 tv_sec;
+    s64 tv_usec;
 };
 
 struct OrbisKernelTimezone {
     s32 tz_minuteswest;
     s32 tz_dsttime;
+};
+
+struct OrbisKernelTimespec {
+    s64 tv_sec;
+    s64 tv_nsec;
 };
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency();

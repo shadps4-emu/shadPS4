@@ -51,8 +51,57 @@ u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
     return 0;
 }
 
-int PS4_SYSV_ABI posix_nanosleep(timespec* requested_time, timespec* remaining) {
-    return nanosleep(requested_time, remaining);
+int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
+    if (tp == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+    clockid_t pclock_id = CLOCK_REALTIME;
+    switch (clock_id) {
+    case 0:
+        pclock_id = CLOCK_REALTIME;
+        break;
+    case 13:
+    case 4:
+        pclock_id = CLOCK_MONOTONIC;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    timespec t{};
+    int result = clock_gettime(pclock_id, &t);
+    tp->tv_sec = t.tv_sec;
+    tp->tv_nsec = t.tv_nsec;
+    if (result == 0) {
+        return SCE_OK;
+    }
+    return SCE_KERNEL_ERROR_EINVAL;
+}
+
+int PS4_SYSV_ABI clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
+    int result = sceKernelClockGettime(clock_id, time);
+    if (result < 0) {
+        UNREACHABLE(); // TODO return posix error code
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI posix_nanosleep(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp) {
+    const auto* request = reinterpret_cast<const timespec*>(rqtp);
+    auto* remain = reinterpret_cast<timespec*>(rmtp);
+    return nanosleep(request, remain);
+}
+
+int PS4_SYSV_ABI sceKernelNanosleep(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp) {
+    if (!rqtp || !rmtp) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+
+    if (rqtp->tv_sec < 0 || rqtp->tv_nsec < 0) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    return posix_nanosleep(rqtp, rmtp);
 }
 
 int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
@@ -97,6 +146,9 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
+    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
 }
 
 } // namespace Libraries::Kernel
