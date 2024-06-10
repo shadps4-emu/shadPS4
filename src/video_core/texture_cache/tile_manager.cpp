@@ -8,8 +8,10 @@
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
+#include "video_core/host_shaders/detile_m32x1_comp.h"
+#include "video_core/host_shaders/detile_m32x2_comp.h"
+#include "video_core/host_shaders/detile_m32x4_comp.h"
 #include "video_core/host_shaders/detile_m8x1_comp.h"
-#include "video_core/host_shaders/detile_m8x4_comp.h"
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum.hpp>
@@ -174,27 +176,39 @@ void ConvertTileToLinear(u8* dst, const u8* src, u32 width, u32 height, bool is_
 
 vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
-    case vk::Format::eB8G8R8A8Srgb:
-    case vk::Format::eR8G8B8A8Unorm:
-        return vk::Format::eR8G8B8A8Uint;
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
+    case vk::Format::eB8G8R8A8Srgb:
+        [[fallthrough]];
+    case vk::Format::eR8G8B8A8Unorm:
+        return vk::Format::eR32Uint;
+    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eR32G32Uint;
+    case vk::Format::eBc3SrgbBlock:
+        [[fallthrough]];
+    case vk::Format::eBc3UnormBlock:
+        return vk::Format::eR32G32B32A32Uint;
     default:
-        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
         break;
     }
+    LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
     return format;
 }
 
 const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
 
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled) {
+    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled ||
+        image.info.tiling_mode == AmdGpu::TilingMode::Depth_MicroTiled) {
         switch (format) {
         case vk::Format::eR8Uint:
             return &detilers[DetilerType::Micro8x1];
-        case vk::Format::eR8G8B8A8Uint:
-            return &detilers[DetilerType::Micro8x4];
+        case vk::Format::eR32Uint:
+            return &detilers[DetilerType::Micro32x1];
+        case vk::Format::eR32G32Uint:
+            return &detilers[DetilerType::Micro32x2];
+        case vk::Format::eR32G32B32A32Uint:
+            return &detilers[DetilerType::Micro32x4];
         default:
             return nullptr;
         }
@@ -211,7 +225,9 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
 
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,
-        HostShaders::DETILE_M8X4_COMP,
+        HostShaders::DETILE_M32X1_COMP,
+        HostShaders::DETILE_M32X2_COMP,
+        HostShaders::DETILE_M32X4_COMP,
     };
 
     for (int pl_id = 0; pl_id < DetilerType::Max; ++pl_id) {

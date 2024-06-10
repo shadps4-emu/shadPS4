@@ -84,7 +84,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .baseMipLevel = 0U,
             .levelCount = 1,
             .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            .layerCount = image.info.IsBlockCoded() ? 1 : VK_REMAINING_ARRAY_LAYERS,
         },
     };
     image_view = instance.GetDevice().createImageViewUnique(image_view_ci);

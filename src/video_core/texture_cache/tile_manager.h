@@ -19,7 +19,9 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format);
 
 enum DetilerType : u32 {
     Micro8x1,
-    Micro8x4,
+    Micro32x1,
+    Micro32x2,
+    Micro32x4,
 
     Max
 };

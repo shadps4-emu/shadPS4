@@ -33,8 +33,32 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     return {};
 }
 
-static bool IsDepthStencilFormat(vk::Format format) {
-    switch (format) {
+bool ImageInfo::IsBlockCoded() const {
+    switch (pixel_format) {
+    case vk::Format::eBc1RgbaSrgbBlock:
+    case vk::Format::eBc1RgbaUnormBlock:
+    case vk::Format::eBc1RgbSrgbBlock:
+    case vk::Format::eBc1RgbUnormBlock:
+    case vk::Format::eBc2SrgbBlock:
+    case vk::Format::eBc2UnormBlock:
+    case vk::Format::eBc3SrgbBlock:
+    case vk::Format::eBc3UnormBlock:
+    case vk::Format::eBc4SnormBlock:
+    case vk::Format::eBc4UnormBlock:
+    case vk::Format::eBc5SnormBlock:
+    case vk::Format::eBc5UnormBlock:
+    case vk::Format::eBc6HSfloatBlock:
+    case vk::Format::eBc6HUfloatBlock:
+    case vk::Format::eBc7SrgbBlock:
+    case vk::Format::eBc7UnormBlock:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool ImageInfo::IsDepthStencil() const {
+    switch (pixel_format) {
     case vk::Format::eD16Unorm:
     case vk::Format::eD16UnormS8Uint:
     case vk::Format::eD32Sfloat:
@@ -45,16 +69,19 @@ static bool IsDepthStencilFormat(vk::Format format) {
     }
 }
 
-static vk::ImageUsageFlags ImageUsageFlags(const vk::Format format) {
+static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
-    if (IsDepthStencilFormat(format)) {
+    if (info.IsDepthStencil()) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        if (format != vk::Format::eBc3SrgbBlock) {
+        if (!info.IsBlockCoded()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
+    }
+    if (info.is_tiled || info.is_storage) {
+        usage |= vk::ImageUsageFlagBits::eStorage;
     }
     return usage;
 }
@@ -179,15 +206,12 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
     if (info.is_tiled) {
         flags |= vk::ImageCreateFlagBits::eExtendedUsage;
-        if (false) { // IsBlockCodedFormat()
+        if (info.IsBlockCoded()) {
             flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
         }
     }
 
-    info.usage = ImageUsageFlags(info.pixel_format);
-    if (info.is_tiled || info.is_storage) {
-        info.usage |= vk::ImageUsageFlagBits::eStorage;
-    }
+    info.usage = ImageUsageFlags(info);
 
     if (info.pixel_format == vk::Format::eD32Sfloat) {
         aspect_mask = vk::ImageAspectFlagBits::eDepth;
