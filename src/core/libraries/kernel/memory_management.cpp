@@ -62,6 +62,12 @@ s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, size_t len) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, size_t len) {
+    auto* memory = Core::Memory::Instance();
+    memory->Free(start, len);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
                                        size_t infoSize) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}", fmt::ptr(addr), flags);
