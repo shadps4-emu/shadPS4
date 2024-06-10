@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
-#include <pthread_time.h>
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
+
+#ifdef _WIN64
+#include <pthread_time.h>
+#else
+#include <time.h>
+#endif
 
 namespace Libraries::Kernel {
 

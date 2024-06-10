@@ -32,8 +32,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
     if (directory) {
-        const std::string host_dir = mnt->GetHostFile(path);
-        std::filesystem::create_directories(host_dir);
+        LOG_ERROR(Kernel_Fs, "called on directory");
     } else {
         u32 handle = h->CreateHandle();
         auto* file = h->GetFile(handle);

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "thread_management.h"
+#include "core/libraries/kernel/time_management.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -25,18 +25,18 @@ struct OrbisKernelStat {
     u32 st_uid;
     u32 st_gid;
     u32 st_rdev;
-    SceKernelTimespec st_atim;
-    SceKernelTimespec st_mtim;
-    SceKernelTimespec st_ctim;
+    OrbisKernelTimespec st_atim;
+    OrbisKernelTimespec st_mtim;
+    OrbisKernelTimespec st_ctim;
     s64 st_size;
     s64 st_blocks;
     u32 st_blksize;
     u32 st_flags;
     u32 st_gen;
     s32 st_lspare;
-    SceKernelTimespec st_birthtim;
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(SceKernelTimespec)));
-    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(SceKernelTimespec)));
+    OrbisKernelTimespec st_birthtim;
+    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
+    unsigned int : (8 / 2) * (16 - static_cast<int>(sizeof(OrbisKernelTimespec)));
 };
 
 // flags for Open
