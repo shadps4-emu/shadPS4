@@ -132,6 +132,7 @@ void PipelineCache::RefreshGraphicsKey() {
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
+        key.cb_shader_mask = regs.color_shader_mask;
 
         ++remapped_cb;
     }

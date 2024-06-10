@@ -420,6 +420,13 @@ struct Liverpool {
     };
 
     union ColorBufferMask {
+        enum ColorComponent : u32 {
+            ComponentR = (1u << 0),
+            ComponentG = (1u << 1),
+            ComponentB = (1u << 2),
+            ComponentA = (1u << 3),
+        };
+
         u32 raw;
         BitField<0, 4, u32> output0_mask;
         BitField<4, 4, u32> output1_mask;
@@ -430,7 +437,7 @@ struct Liverpool {
         BitField<24, 4, u32> output6_mask;
         BitField<28, 4, u32> output7_mask;
 
-        [[nodiscard]] u8 GetMask(int buf_id) const {
+        u32 GetMask(int buf_id) const {
             return (raw >> (buf_id * 4)) & 0xfu;
         }
     };

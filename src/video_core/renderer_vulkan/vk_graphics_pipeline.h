@@ -46,6 +46,7 @@ struct GraphicsPipelineKey {
     Liverpool::CullMode cull_mode;
     Liverpool::FrontFace front_face;
     Liverpool::ClipSpace clip_space;
+    Liverpool::ColorBufferMask cb_shader_mask{};
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
 
