@@ -60,13 +60,16 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         });
     }
     if (regs.depth_control.depth_enable && regs.depth_buffer.Address() != 0) {
+        const bool is_clear = regs.depth_render_control.depth_clear_enable;
         const auto& image_view =
             texture_cache.DepthTarget(regs.depth_buffer, liverpool->last_db_extent);
         depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
-            .storeOp = vk::AttachmentStoreOp::eStore,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
+                                                          .stencil = regs.stencil_clear}},
         };
         num_depth_attachments++;
     }
