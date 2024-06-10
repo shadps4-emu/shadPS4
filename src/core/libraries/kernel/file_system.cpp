@@ -208,10 +208,11 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 
 int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     int result = sceKernelStat(path, sb);
-    if (result < 0) {
-        UNREACHABLE(); // TODO
+    if (result != 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_stat: error = {}", result);
+        result += ORBIS_KERNEL_ERROR_UNKNOWN;
     }
-    return ORBIS_OK;
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
