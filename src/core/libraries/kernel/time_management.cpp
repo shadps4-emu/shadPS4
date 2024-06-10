@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/native_clock.h"
+#include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/error_codes.h"
 
 namespace Libraries::Kernel {
 
@@ -31,7 +31,7 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
     return clock->GetUptime();
 }
 
-int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval *tp) {
+int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
     if (!tp) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
@@ -46,7 +46,7 @@ int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval *tp) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval *tp, OrbisKernelTimezone* tz) {
+int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone* tz) {
     // FreeBSD docs mention that the kernel generally does not track these values
     // and they	are usually returned as	zero.
     if (tz) {
