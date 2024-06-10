@@ -18,7 +18,6 @@ struct OrbisTimesec {
     u32 dst_sec;
 };
 
-int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len);
 int* PS4_SYSV_ABI __Error();
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);

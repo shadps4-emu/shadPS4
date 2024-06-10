@@ -32,7 +32,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
     if (directory) {
-        UNREACHABLE(); // not supported yet
+        LOG_ERROR(Kernel_Fs, "called on directory");
     } else {
         u32 handle = h->CreateHandle();
         auto* file = h->GetFile(handle);
@@ -92,6 +92,14 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
 size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
     if (buf == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
+    }
+    if (d <= 2) { // stdin,stdout,stderr
+        char* str = strdup((const char*)buf);
+        if (str[nbytes - 1] == '\n')
+            str[nbytes - 1] = 0;
+        LOG_INFO(Tty, "{}", str);
+        free(str);
+        return nbytes;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -215,6 +223,15 @@ int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    std::string path_name = mnt->GetHostFile(path);
+    if (!std::filesystem::exists(path_name)) {
+        return SCE_KERNEL_ERROR_ENOENT;
+    }
+    return ORBIS_OK;
+}
+
 s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     if (d < 3) {
         return ORBIS_KERNEL_ERROR_EPERM;
@@ -281,6 +298,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
+    LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,

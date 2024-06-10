@@ -36,12 +36,6 @@ static void* PS4_SYSV_ABI sceKernelGetProcParam() {
     return reinterpret_cast<void*>(linker->GetProcParam());
 }
 
-int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
-    auto* memory = Core::Memory::Instance();
-    memory->Free(start, len);
-    return 0;
-}
-
 static PS4_SYSV_ABI void stack_chk_fail() {
     UNREACHABLE();
 }
@@ -50,21 +44,6 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
     auto* memory = Core::Memory::Instance();
     memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
-    return SCE_OK;
-}
-
-int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    return SCE_OK;
-}
-
-int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    return SCE_OK;
-}
-
-int PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
-    std::this_thread::sleep_for(std::chrono::seconds(seconds));
     return SCE_OK;
 }
 
@@ -253,6 +232,9 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
     LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelAllocateMainDirectMemory);
+    LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelAvailableDirectMemorySize);
+    LIB_FUNCTION("rVjRvHJ0X6c", "libkernel", 1, "libkernel", 1, 1, sceKernelVirtualQuery);
     LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
     LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
@@ -281,9 +263,6 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
-    LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
-    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
-    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);

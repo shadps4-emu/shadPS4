@@ -35,6 +35,10 @@ void init_pthreads() {
     ScePthreadAttr default_attr = nullptr;
     scePthreadAttrInit(&default_attr);
     g_pthread_cxt->SetDefaultAttr(default_attr);
+    // default rw init
+    OrbisPthreadRwlockattr default_rwattr = nullptr;
+    scePthreadRwlockattrInit(&default_rwattr);
+    g_pthread_cxt->setDefaultRwattr(default_rwattr);
 
     g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
@@ -526,7 +530,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
@@ -549,7 +553,7 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
@@ -816,65 +820,6 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(ScePthreadMutexattr* attr, 
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, SceKernelTimespec* tp) {
-    if (tp == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
-    }
-    clockid_t pclock_id = CLOCK_REALTIME;
-    switch (clock_id) {
-    case 0:
-        pclock_id = CLOCK_REALTIME;
-        break;
-    case 13:
-    case 4:
-        pclock_id = CLOCK_MONOTONIC;
-        break;
-    default:
-        UNREACHABLE();
-    }
-
-    timespec t{};
-    int result = clock_gettime(pclock_id, &t);
-    tp->tv_sec = t.tv_sec;
-    tp->tv_nsec = t.tv_nsec;
-    if (result == 0) {
-        return SCE_OK;
-    }
-    return SCE_KERNEL_ERROR_EINVAL;
-}
-
-int PS4_SYSV_ABI clock_gettime(s32 clock_id, SceKernelTimespec* time) {
-    int result = sceKernelClockGettime(clock_id, time);
-    if (result < 0) {
-        UNREACHABLE(); // TODO return posix error code
-    }
-    return result;
-}
-
-int PS4_SYSV_ABI sceKernelNanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
-
-    if (rqtp == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
-    }
-
-    if (rqtp->tv_sec < 0 || rqtp->tv_nsec < 0) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-
-    u64 nanos = rqtp->tv_sec * 1000000000 + rqtp->tv_nsec;
-    std::this_thread::sleep_for(std::chrono::nanoseconds(nanos));
-    if (rmtp != nullptr) {
-        UNREACHABLE(); // not supported yet
-    }
-    return SCE_OK;
-}
-int PS4_SYSV_ABI nanosleep(const SceKernelTimespec* rqtp, SceKernelTimespec* rmtp) {
-    int result = sceKernelNanosleep(rqtp, rmtp);
-    if (result < 0) {
-        UNREACHABLE(); // TODO return posix error code
-    }
-    return result;
-}
 static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* src) {
     if (dst == nullptr || *dst == nullptr || src == nullptr || *src == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -1133,7 +1078,7 @@ int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_trylock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
@@ -1284,10 +1229,6 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_mutexattr_setprotocol);
     LIB_FUNCTION("HF7lK46xzjY", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_mutexattr_destroy);
-    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
-    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, nanosleep);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);

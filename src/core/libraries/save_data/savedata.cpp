@@ -351,6 +351,7 @@ s32 saveDataMount(u32 user_id, std::string dir_name, u32 mount_mode,
         mount_result->mount_status = 0;
         strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
     } break;
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDONLY:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:

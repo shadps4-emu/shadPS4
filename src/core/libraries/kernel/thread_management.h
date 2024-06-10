@@ -41,11 +41,6 @@ using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
-struct SceKernelTimespec {
-    int64_t tv_sec;
-    int64_t tv_nsec;
-};
-
 struct PthreadInternal {
     u8 reserved[4096];
     std::string name;

@@ -55,7 +55,7 @@ int PS4_SYSV_ABI sceSaveDataDialogTerminate() {
 
 int PS4_SYSV_ABI sceSaveDataDialogUpdateStatus() {
     LOG_ERROR(Lib_SaveDataDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return 3; // SCE_COMMON_DIALOG_STATUS_FINISHED
 }
 
 void RegisterlibSceSaveDataDialog(Core::Loader::SymbolsResolver* sym) {
