@@ -35,6 +35,10 @@ void init_pthreads() {
     ScePthreadAttr default_attr = nullptr;
     scePthreadAttrInit(&default_attr);
     g_pthread_cxt->SetDefaultAttr(default_attr);
+    // default rw init
+    OrbisPthreadRwlockattr default_rwattr = nullptr;
+    scePthreadRwlockattrInit(&default_rwattr);
+    g_pthread_cxt->setDefaultRwattr(default_rwattr);
 
     g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
