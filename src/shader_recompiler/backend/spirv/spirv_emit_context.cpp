@@ -178,6 +178,11 @@ void EmitContext::DefineInputs(const Info& info) {
         }
         break;
     case Stage::Fragment:
+        if (info.uses_group_quad) {
+            subgroup_local_invocation_id = DefineVariable(
+                U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
+            Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
+        }
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : info.ps_inputs) {
@@ -231,7 +236,9 @@ void EmitContext::DefineOutputs(const Info& info) {
             if (!info.stores.GetAny(mrt)) {
                 continue;
             }
-            frag_color[i] = DefineOutput(F32[4], i);
+            const u32 num_components = info.stores.NumComponents(mrt);
+            frag_color[i] = DefineOutput(F32[num_components], i);
+            frag_num_comp[i] = num_components;
             Name(frag_color[i], fmt::format("frag_color{}", i));
             interfaces.push_back(frag_color[i]);
         }
@@ -277,54 +284,22 @@ void EmitContext::DefineBuffers(const Info& info) {
     }
 }
 
-Id ImageType(EmitContext& ctx, const ImageResource& desc) {
-    const spv::ImageFormat format{spv::ImageFormat::Unknown};
-    const Id type{ctx.F32[1]};
-    const bool depth{desc.is_depth};
-    switch (desc.type) {
-    case AmdGpu::ImageType::Color1D:
-        return ctx.TypeImage(type, spv::Dim::Dim1D, depth, false, false, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Color1DArray:
-        return ctx.TypeImage(type, spv::Dim::Dim1D, depth, true, false, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Color2D:
-    case AmdGpu::ImageType::Color2DMsaa:
-        return ctx.TypeImage(type, spv::Dim::Dim2D, depth, false,
-                             desc.type == AmdGpu::ImageType::Color2DMsaa, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Color2DArray:
-    case AmdGpu::ImageType::Color2DMsaaArray:
-        return ctx.TypeImage(type, spv::Dim::Dim2D, depth, true,
-                             desc.type == AmdGpu::ImageType::Color2DMsaaArray, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Color3D:
-        return ctx.TypeImage(type, spv::Dim::Dim3D, depth, false, false, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Cube:
-        return ctx.TypeImage(type, spv::Dim::Cube, depth, false, false, 1, format,
-                             spv::AccessQualifier::ReadOnly);
-    case AmdGpu::ImageType::Buffer:
-        break;
-    }
-    throw InvalidArgument("Invalid texture type {}", desc.type);
-}
-
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto format = spv::ImageFormat::Unknown; // Read this from tsharp?
+    const auto format = spv::ImageFormat::Unknown;
+    const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
     case AmdGpu::ImageType::Color1D:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Color1DArray:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, true, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, true, false, sampled, format);
     case AmdGpu::ImageType::Color2D:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Color2DArray:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, sampled, format);
     case AmdGpu::ImageType::Color3D:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Cube:
-        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, false, false, 1, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, false, false, sampled, format);
     case AmdGpu::ImageType::Buffer:
         throw NotImplementedException("Image buffer");
     default:
@@ -345,7 +320,7 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
                              image_desc.dword_offset));
         images.push_back({
             .id = id,
-            .sampled_type = TypeSampledImage(image_type),
+            .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
         });

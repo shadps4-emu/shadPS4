@@ -52,6 +52,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferF32x3:
     case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferU32:
+    case Opcode::ImageWrite:
         return true;
     default:
         return false;

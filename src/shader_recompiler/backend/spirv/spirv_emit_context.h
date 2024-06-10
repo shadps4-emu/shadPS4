@@ -158,9 +158,11 @@ public:
     Id frag_coord{};
     Id front_facing{};
     std::array<Id, 8> frag_color{};
+    std::array<u32, 8> frag_num_comp{};
 
     Id workgroup_id{};
     Id local_invocation_id{};
+    Id subgroup_local_invocation_id{};
 
     struct TextureDefinition {
         Id id;

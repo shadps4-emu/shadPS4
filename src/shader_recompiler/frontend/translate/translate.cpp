@@ -306,6 +306,15 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE:
             translator.IMAGE_SAMPLE(inst);
             break;
+        case Opcode::IMAGE_STORE:
+            translator.IMAGE_STORE(inst);
+            break;
+        case Opcode::IMAGE_LOAD_MIP:
+            translator.IMAGE_LOAD_MIP(inst);
+            break;
+        case Opcode::V_CMP_GE_I32:
+            translator.V_CMP_U32(ConditionOp::GE, true, false, inst);
+            break;
         case Opcode::V_CMP_EQ_I32:
             translator.V_CMP_U32(ConditionOp::EQ, true, false, inst);
             break;
@@ -331,28 +340,31 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_CMP_U32(ConditionOp::TRU, false, false, inst);
             break;
         case Opcode::V_CMP_NEQ_F32:
-            translator.V_CMP_F32(ConditionOp::LG, inst);
+            translator.V_CMP_F32(ConditionOp::LG, false, inst);
             break;
         case Opcode::V_CMP_F_F32:
-            translator.V_CMP_F32(ConditionOp::F, inst);
+            translator.V_CMP_F32(ConditionOp::F, false, inst);
             break;
         case Opcode::V_CMP_LT_F32:
-            translator.V_CMP_F32(ConditionOp::LT, inst);
+            translator.V_CMP_F32(ConditionOp::LT, false, inst);
             break;
         case Opcode::V_CMP_EQ_F32:
-            translator.V_CMP_F32(ConditionOp::EQ, inst);
+            translator.V_CMP_F32(ConditionOp::EQ, false, inst);
             break;
         case Opcode::V_CMP_LE_F32:
-            translator.V_CMP_F32(ConditionOp::LE, inst);
+            translator.V_CMP_F32(ConditionOp::LE, false, inst);
             break;
         case Opcode::V_CMP_GT_F32:
-            translator.V_CMP_F32(ConditionOp::GT, inst);
+            translator.V_CMP_F32(ConditionOp::GT, false, inst);
             break;
         case Opcode::V_CMP_LG_F32:
-            translator.V_CMP_F32(ConditionOp::LG, inst);
+            translator.V_CMP_F32(ConditionOp::LG, false, inst);
             break;
         case Opcode::V_CMP_GE_F32:
-            translator.V_CMP_F32(ConditionOp::GE, inst);
+            translator.V_CMP_F32(ConditionOp::GE, false, inst);
+            break;
+        case Opcode::V_CMP_NLE_F32:
+            translator.V_CMP_F32(ConditionOp::GT, false, inst);
             break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
@@ -377,6 +389,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
+            translator.BUFFER_LOAD_FORMAT(3, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
             translator.BUFFER_LOAD_FORMAT(4, true, inst);
@@ -414,6 +429,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MIN_F32:
             translator.V_MIN_F32(inst);
             break;
+        case Opcode::V_MIN_I32:
+            translator.V_MIN_I32(inst);
+            break;
         case Opcode::V_MIN3_F32:
             translator.V_MIN3_F32(inst);
             break;
@@ -435,6 +453,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CVT_U32_F32:
             translator.V_CVT_U32_F32(inst);
             break;
+        case Opcode::V_CVT_I32_F32:
+            translator.V_CVT_I32_F32(inst);
+            break;
         case Opcode::V_SUBREV_F32:
             translator.V_SUBREV_F32(inst);
             break;
@@ -447,11 +468,60 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_SUBREV_I32:
             translator.V_SUBREV_I32(inst);
             break;
+
+        case Opcode::V_CMPX_F_F32:
+            translator.V_CMP_F32(ConditionOp::F, true, inst);
+            break;
+        case Opcode::V_CMPX_LT_F32:
+            translator.V_CMP_F32(ConditionOp::LT, true, inst);
+            break;
+        case Opcode::V_CMPX_EQ_F32:
+            translator.V_CMP_F32(ConditionOp::EQ, true, inst);
+            break;
+        case Opcode::V_CMPX_LE_F32:
+            translator.V_CMP_F32(ConditionOp::LE, true, inst);
+            break;
+        case Opcode::V_CMPX_GT_F32:
+            translator.V_CMP_F32(ConditionOp::GT, true, inst);
+            break;
+        case Opcode::V_CMPX_LG_F32:
+            translator.V_CMP_F32(ConditionOp::LG, true, inst);
+            break;
+        case Opcode::V_CMPX_GE_F32:
+            translator.V_CMP_F32(ConditionOp::GE, true, inst);
+            break;
+        case Opcode::V_CMPX_NGE_F32:
+            translator.V_CMP_F32(ConditionOp::LT, true, inst);
+            break;
+        case Opcode::V_CMPX_NLG_F32:
+            translator.V_CMP_F32(ConditionOp::EQ, true, inst);
+            break;
+        case Opcode::V_CMPX_NGT_F32:
+            translator.V_CMP_F32(ConditionOp::LE, true, inst);
+            break;
+        case Opcode::V_CMPX_NLE_F32:
+            translator.V_CMP_F32(ConditionOp::GT, true, inst);
+            break;
+        case Opcode::V_CMPX_NEQ_F32:
+            translator.V_CMP_F32(ConditionOp::LG, true, inst);
+            break;
+        case Opcode::V_CMPX_NLT_F32:
+            translator.V_CMP_F32(ConditionOp::GE, true, inst);
+            break;
+        case Opcode::V_CMPX_TRU_F32:
+            translator.V_CMP_F32(ConditionOp::TRU, true, inst);
+            break;
         case Opcode::V_CMP_LE_U32:
             translator.V_CMP_U32(ConditionOp::LE, false, false, inst);
             break;
         case Opcode::V_CMP_GT_I32:
             translator.V_CMP_U32(ConditionOp::GT, true, false, inst);
+            break;
+        case Opcode::V_CMP_LT_I32:
+            translator.V_CMP_U32(ConditionOp::LT, true, false, inst);
+            break;
+        case Opcode::V_CMPX_LT_I32:
+            translator.V_CMP_U32(ConditionOp::LT, true, true, inst);
             break;
         case Opcode::V_CMPX_F_U32:
             translator.V_CMP_U32(ConditionOp::F, false, true, inst);
@@ -539,6 +609,18 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_BCNT_U32_B32:
             translator.V_BCNT_U32_B32(inst);
+            break;
+        case Opcode::V_MAX3_F32:
+            translator.V_MAX3_F32(inst);
+            break;
+        case Opcode::DS_SWIZZLE_B32:
+            translator.DS_SWIZZLE_B32(inst);
+            break;
+        case Opcode::V_MUL_LO_U32:
+            translator.V_MUL_LO_U32(inst);
+            break;
+        case Opcode::S_BFM_B32:
+            translator.S_BFM_B32(inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

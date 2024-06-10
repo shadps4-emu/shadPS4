@@ -21,10 +21,19 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::Position0: {
         return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
     case IR::Attribute::RenderTarget0:
-        return ctx.OpAccessChain(ctx.output_f32, ctx.frag_color[0], ctx.ConstU32(element));
+    case IR::Attribute::RenderTarget1:
+    case IR::Attribute::RenderTarget2:
+    case IR::Attribute::RenderTarget3: {
+        const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
+        if (ctx.frag_num_comp[index] > 1) {
+            return ctx.OpAccessChain(ctx.output_f32, ctx.frag_color[index], ctx.ConstU32(element));
+        } else {
+            return ctx.frag_color[index];
+        }
     }
     default:
         throw NotImplementedException("Read attribute {}", attr);
+    }
     }
 }
 } // Anonymous namespace
@@ -152,7 +161,15 @@ Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address)
 }
 
 Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    UNREACHABLE();
+    const auto info = inst->Flags<IR::BufferInstInfo>();
+    const auto& buffer = ctx.buffers[handle];
+    boost::container::static_vector<Id, 3> ids;
+    for (u32 i = 0; i < 3; i++) {
+        const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
+        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
+    }
+    return ctx.OpCompositeConstruct(buffer.data_types->Get(3), ids);
 }
 
 Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {

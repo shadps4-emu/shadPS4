@@ -318,6 +318,14 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
+U32 IREmitter::LaneId() {
+    return Inst<U32>(Opcode::LaneId);
+}
+
+U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
+    return Inst<U32>(Opcode::QuadShuffle, value, index);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         throw InvalidArgument("Mismatching types {} and {}", a.Type(), b.Type());

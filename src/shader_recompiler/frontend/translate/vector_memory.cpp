@@ -107,6 +107,48 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     }
 }
 
+void Translator::IMAGE_LOAD_MIP(const GcnInst& inst) {
+    const auto& mimg = inst.control.mimg;
+    IR::VectorReg addr_reg{inst.src[0].code};
+    IR::VectorReg dest_reg{inst.dst[0].code};
+    const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
+
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value body =
+        ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
+                              ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
+
+    IR::TextureInstInfo info{};
+    info.explicit_lod.Assign(1);
+    const IR::Value texel = ir.ImageFetch(handle, body, {}, {}, {}, info);
+
+    for (u32 i = 0; i < 4; i++) {
+        if (((mimg.dmask >> i) & 1) == 0) {
+            continue;
+        }
+        IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
+        ir.SetVectorReg(dest_reg++, value);
+    }
+}
+
+void Translator::IMAGE_STORE(const GcnInst& inst) {
+    const auto& mimg = inst.control.mimg;
+    IR::VectorReg addr_reg{inst.src[0].code};
+    IR::VectorReg data_reg{inst.dst[0].code};
+    const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
+
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value body =
+        ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
+                              ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
+
+    ASSERT(mimg.dmask == 0xF);
+    const IR::Value value = ir.CompositeConstruct(
+        ir.GetVectorReg<IR::F32>(data_reg), ir.GetVectorReg<IR::F32>(data_reg + 1),
+        ir.GetVectorReg<IR::F32>(data_reg + 2), ir.GetVectorReg<IR::F32>(data_reg + 3));
+    ir.ImageWrite(handle, body, value, {});
+}
+
 void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
