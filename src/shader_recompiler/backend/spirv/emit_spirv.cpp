@@ -174,6 +174,7 @@ Id DefineMain(EmitContext& ctx, IR::Program& program) {
 void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
+    ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
@@ -191,6 +192,10 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginLowerLeft);
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
+        }
+        if (program.info.uses_group_quad) {
+            ctx.AddCapability(spv::Capability::GroupNonUniform);
+            ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
         }
         ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
         // if (program.info.stores_frag_depth) {

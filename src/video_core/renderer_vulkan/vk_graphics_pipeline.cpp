@@ -196,7 +196,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
         const auto color_blend = LiverpoolToVK::BlendOp(control.color_func);
         attachments[i] = vk::PipelineColorBlendAttachmentState{
-            .blendEnable = key.blend_controls[i].enable,
+            .blendEnable = control.enable,
             .srcColorBlendFactor = src_color,
             .dstColorBlendFactor = dst_color,
             .colorBlendOp = color_blend,
@@ -215,6 +215,29 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
                     : key.write_masks[i],
         };
+
+        // On GCN GPU there is an additional mask which allows to control color components exported
+        // from a pixel shader. A situation possible, when the game may mask out the alpha channel,
+        // while it is still need to be used in blending ops. For such cases, HW will default alpha
+        // to 1 and perform the blending, while shader normally outputs 0 in the last component.
+        // Unfortunatelly, Vulkan doesn't provide any control on blend inputs, so below we detecting
+        // such cases and override alpha value in order to emulate HW behaviour.
+        const auto has_alpha_masked_out =
+            (key.cb_shader_mask.GetMask(i) & Liverpool::ColorBufferMask::ComponentA) == 0;
+        const auto has_src_alpha_in_src_blend = src_color == vk::BlendFactor::eSrcAlpha ||
+                                                src_color == vk::BlendFactor::eOneMinusSrcAlpha;
+        const auto has_src_alpha_in_dst_blend = dst_color == vk::BlendFactor::eSrcAlpha ||
+                                                dst_color == vk::BlendFactor::eOneMinusSrcAlpha;
+        if (has_alpha_masked_out && has_src_alpha_in_src_blend) {
+            attachments[i].srcColorBlendFactor = src_color == vk::BlendFactor::eSrcAlpha
+                                                     ? vk::BlendFactor::eOne
+                                                     : vk::BlendFactor::eZero; // 1-A
+        }
+        if (has_alpha_masked_out && has_src_alpha_in_dst_blend) {
+            attachments[i].dstColorBlendFactor = dst_color == vk::BlendFactor::eSrcAlpha
+                                                     ? vk::BlendFactor::eOne
+                                                     : vk::BlendFactor::eZero; // 1-A
+        }
     }
 
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
@@ -318,7 +341,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
         for (const auto& image : stage.images) {
             const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-            const auto& image_view = texture_cache.FindImageView(tsharp);
+            const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
                                      vk::ImageLayout::eShaderReadOnlyOptimal);
             set_writes.push_back({
@@ -326,7 +349,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
                 .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eSampledImage,
+                .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
+                                                   : vk::DescriptorType::eSampledImage,
                 .pImageInfo = &image_infos.back(),
             });
         }
@@ -387,11 +411,11 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
 
     boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges_merged{ranges[0]};
     for (auto range : ranges) {
-        auto& prev_range = ranges.back();
+        auto& prev_range = ranges_merged.back();
         if (prev_range.end_address < range.base_address) {
             ranges_merged.emplace_back(range);
         } else {
-            ranges_merged.back().end_address = std::max(prev_range.end_address, range.end_address);
+            prev_range.end_address = std::max(prev_range.end_address, range.end_address);
         }
     }
 

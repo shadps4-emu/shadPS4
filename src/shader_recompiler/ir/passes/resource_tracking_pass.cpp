@@ -93,6 +93,16 @@ bool IsImageInstruction(const IR::Inst& inst) {
     }
 }
 
+bool IsImageStorageInstruction(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::ImageWrite:
+    case IR::Opcode::ImageRead:
+        return true;
+    default:
+        return false;
+    }
+}
+
 class Descriptors {
 public:
     explicit Descriptors(BufferResourceList& buffer_resources_, ImageResourceList& image_resources_,
@@ -241,32 +251,42 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     IR::Inst* producer = inst.Arg(0).InstRecursive();
-    ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
+    ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
+           producer->GetOpcode() == IR::Opcode::GetUserData);
+    const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
+        if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
+            return std::make_pair(producer->Arg(0).InstRecursive(),
+                                  producer->Arg(1).InstRecursive());
+        }
+        return std::make_pair(producer, nullptr);
+    }();
 
     // Read image sharp.
-    const auto tsharp = TrackSharp(producer->Arg(0).InstRecursive());
+    const auto tsharp = TrackSharp(tsharp_handle);
     const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const u32 image_binding = descriptors.Add(ImageResource{
+    u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
         .type = image.type,
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.num_format.Value()),
-        .is_storage = false,
+        .is_storage = IsImageStorageInstruction(inst),
         .is_depth = bool(inst_info.is_depth),
     });
 
-    // Read sampler sharp.
-    const auto ssharp = TrackSharp(producer->Arg(1).InstRecursive());
-    const u32 sampler_binding = descriptors.Add(SamplerResource{
-        .sgpr_base = ssharp.sgpr_base,
-        .dword_offset = ssharp.dword_offset,
-    });
+    // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
+    if (ssharp_handle) {
+        const auto ssharp = TrackSharp(ssharp_handle);
+        const u32 sampler_binding = descriptors.Add(SamplerResource{
+            .sgpr_base = ssharp.sgpr_base,
+            .dword_offset = ssharp.dword_offset,
+        });
+        image_binding |= (sampler_binding << 16);
+    }
 
     // Patch image handle
-    const u32 handle = image_binding | (sampler_binding << 16);
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(handle));
+    inst.SetArg(0, ir.Imm32(image_binding));
 
     // Now that we know the image type, adjust texture coordinate vector.
     const IR::Inst* body = inst.Arg(1).InstRecursive();
@@ -283,7 +303,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Cube:
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown image type {}", image.type.Value());
         }
     }();
     inst.SetArg(1, coords);
@@ -292,6 +312,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         // Final argument contains lod_clamp
         const u32 arg_pos = inst_info.is_depth ? 5 : 4;
         inst.SetArg(arg_pos, arg);
+    }
+    if (inst_info.explicit_lod && inst.GetOpcode() == IR::Opcode::ImageFetch) {
+        inst.SetArg(3, arg);
     }
 }
 

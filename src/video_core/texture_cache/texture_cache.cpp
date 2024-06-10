@@ -160,10 +160,10 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc) {
+ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
     Image& image = FindImage(ImageInfo{desc}, desc.Address());
 
-    if (image.info.is_storage) {
+    if (is_storage) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
     } else {
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
@@ -193,6 +193,10 @@ ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffe
     const ImageInfo info{buffer, hint};
     auto& image = FindImage(info, buffer.Address(), false);
     image.flags &= ~ImageFlagBits::CpuModified;
+
+    image.Transit(vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                  vk::AccessFlagBits::eDepthStencilAttachmentWrite |
+                      vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;

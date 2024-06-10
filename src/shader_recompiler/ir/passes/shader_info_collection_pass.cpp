@@ -16,6 +16,9 @@ void Visit(Info& info, IR::Inst& inst) {
         info.stores.Set(inst.Arg(0).Attribute(), inst.Arg(2).U32());
         break;
     }
+    case IR::Opcode::QuadShuffle:
+        info.uses_group_quad = true;
+        break;
     default:
         break;
     }

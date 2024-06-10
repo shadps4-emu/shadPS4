@@ -126,6 +126,8 @@ struct Info {
     std::span<const u32> user_data;
     Stage stage;
 
+    bool uses_group_quad{};
+
     template <typename T>
     T ReadUd(u32 ptr_index, u32 dword_offset) const noexcept {
         T data;

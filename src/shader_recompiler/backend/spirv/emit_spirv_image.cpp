@@ -50,9 +50,11 @@ Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, const IR::Value& index,
     throw NotImplementedException("SPIR-V Instruction");
 }
 
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id offset,
-                  Id lod, Id ms) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
+                  Id ms) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    return ctx.OpImageFetch(ctx.F32[4], image, coords, spv::ImageOperandsMask::Lod, lod);
 }
 
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id lod,
@@ -73,8 +75,10 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id co
     throw NotImplementedException("SPIR-V Instruction");
 }
 
-void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords, Id color) {
-    throw NotImplementedException("SPIR-V Instruction");
+void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    ctx.OpImageWrite(image, ctx.OpBitcast(ctx.S32[2], coords), color);
 }
 
 } // namespace Shader::Backend::SPIRV

@@ -111,14 +111,15 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
 
     for (const auto& image : info.images) {
         const auto tsharp = info.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-        const auto& image_view = texture_cache.FindImageView(tsharp);
+        const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage);
         image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, vk::ImageLayout::eGeneral);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = binding++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eSampledImage,
+            .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
+                                               : vk::DescriptorType::eSampledImage,
             .pImageInfo = &image_infos.back(),
         });
     }

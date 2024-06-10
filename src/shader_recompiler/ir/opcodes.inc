@@ -269,3 +269,7 @@ OPCODE(ImageQueryLod,                                       F32x4,          Opaq
 OPCODE(ImageGradient,                                       F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         Opaque,         )
 OPCODE(ImageRead,                                           U32x4,          Opaque,         Opaque,                                                         )
 OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32x4,                                          )
+
+// Warp operations
+OPCODE(LaneId,                                              U32,                                                                                            )
+OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
