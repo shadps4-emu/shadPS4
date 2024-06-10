@@ -11,6 +11,16 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+struct OrbisKernelTimeval {
+    time_t tv_sec;
+    u64 tv_usec;
+};
+
+struct OrbisKernelTimezone {
+    s32 tz_minuteswest;
+    s32 tz_dsttime;
+};
+
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency();
 u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
