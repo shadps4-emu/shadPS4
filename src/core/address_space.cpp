@@ -218,21 +218,12 @@ struct AddressSpace::Impl {
         UNREACHABLE();
     }
 
-    void* MapUser(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
         UNREACHABLE();
         return nullptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot) {
-        UNREACHABLE();
-        return nullptr;
-    }
-
-    void UnmapUser(VAddr virtual_addr, size_t size) {
-        UNREACHABLE();
-    }
-
-    void UnmapPrivate(VAddr virtual_addr, size_t size) {
+    void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
         UNREACHABLE();
     }
 
@@ -242,6 +233,7 @@ struct AddressSpace::Impl {
 
     u8* backing_base{};
     u8* virtual_base{};
+    size_t virtual_size{};
 };
 #endif
 
