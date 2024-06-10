@@ -366,6 +366,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CMP_NLE_F32:
             translator.V_CMP_F32(ConditionOp::GT, false, inst);
             break;
+        case Opcode::V_CMP_NLT_F32:
+            translator.V_CMP_F32(ConditionOp::GE, false, inst);
+            break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
             break;
@@ -554,7 +557,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.S_OR_B64(true, inst);
             break;
         case Opcode::S_AND_B64:
-            translator.S_AND_B64(inst);
+            translator.S_AND_B64(false, inst);
+            break;
+        case Opcode::S_NAND_B64:
+            translator.S_AND_B64(true, inst);
             break;
         case Opcode::V_LSHRREV_B32:
             translator.V_LSHRREV_B32(inst);

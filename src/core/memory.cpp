@@ -83,6 +83,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
     std::scoped_lock lk{mutex};
+    if (total_flexible_usage + size > 448_MB) {
+        return SCE_KERNEL_ERROR_ENOMEM;
+    }
 
     // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
     // flag so we will take the branch that searches for free (or reserved) mappings.
@@ -99,6 +102,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         if (type == VMAType::Direct) {
             new_vma.phys_base = phys_addr;
             MapVulkanMemory(mapped_addr, size);
+        }
+        if (type == VMAType::Flexible) {
+            total_flexible_usage += size;
         }
     };
 
@@ -138,6 +144,9 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     const PAddr phys_addr = type == VMAType::Direct ? it->second.phys_base : -1;
     if (type == VMAType::Direct) {
         UnmapVulkanMemory(virtual_addr, size);
+    }
+    if (type == VMAType::Flexible) {
+        total_flexible_usage -= size;
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.

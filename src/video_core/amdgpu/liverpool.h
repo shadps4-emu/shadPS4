@@ -479,9 +479,9 @@ struct Liverpool {
     };
 
     struct Scissor {
-        union {
-            BitField<0, 16, s32> top_left_x;
-            BitField<16, 16, s32> top_left_y;
+        struct {
+            s16 top_left_x;
+            s16 top_left_y;
         };
         union {
             BitField<0, 15, u32> bottom_right_x;

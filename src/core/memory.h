@@ -182,6 +182,7 @@ private:
     DMemMap dmem_map;
     VMAMap vma_map;
     std::recursive_mutex mutex;
+    size_t total_flexible_usage{};
 
     struct MappedMemory {
         vk::UniqueBuffer buffer;

@@ -8,6 +8,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "shader_recompiler/exception.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -88,6 +89,8 @@ void PipelineCache::RefreshGraphicsKey() {
     auto& key = graphics_key;
 
     key.depth = regs.depth_control;
+    key.depth.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
+                                        !regs.depth_render_control.depth_clear_enable);
     key.depth_bounds_min = regs.depth_bounds_min;
     key.depth_bounds_max = regs.depth_bounds_max;
     key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
@@ -180,6 +183,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         inst_pool.ReleaseContents();
 
         // Recompile shader to IR.
+        LOG_INFO(Render_Vulkan, "Compiling {} shader {:#X}", stage, hash);
         const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
         programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 

@@ -104,7 +104,7 @@ int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
-    LOG_INFO(Lib_UserService, "(DUMMY) called");
+    LOG_TRACE(Lib_UserService, "(DUMMY) called");
     // fake a loggin event
     static bool logged_in = false;
 
