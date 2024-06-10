@@ -201,7 +201,9 @@ int PS4_SYSV_ABI scePthreadRwlockInit(OrbisPthreadRwlock* rwlock,
     if (attr == nullptr || *attr == nullptr) {
         attr = g_pthread_cxt->getDefaultRwattr();
     }
-    (*rwlock)->name = name;
+    if (name != nullptr) {
+        (*rwlock)->name = name;
+    }
     int result = pthread_rwlock_init(&(*rwlock)->pth_rwlock, &(*attr)->attr_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "scePthreadRwlockInit: error = {}", result);
