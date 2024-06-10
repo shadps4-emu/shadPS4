@@ -93,6 +93,14 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
     if (buf == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
     }
+    if (d <= 2) { // stdin,stdout,stderr
+        char* str = strdup((const char*)buf);
+        if (str[nbytes - 1] == '\n')
+            str[nbytes - 1] = 0;
+        LOG_INFO(Tty, "{}", str);
+        free(str);
+        return nbytes;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
