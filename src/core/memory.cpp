@@ -135,8 +135,6 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
                "Attempting to unmap partially mapped range");
 
     const auto type = it->second.type;
-    fmt::print("{}\n", u32(type));
-    std::fflush(stdout);
     const PAddr phys_addr = type == VMAType::Direct ? it->second.phys_base : -1;
     if (type == VMAType::Direct) {
         UnmapVulkanMemory(virtual_addr, size);
@@ -168,6 +166,8 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
 
 int MemoryManager::VirtualQuery(VAddr addr, int flags,
                                 Libraries::Kernel::OrbisVirtualQueryInfo* info) {
+    std::scoped_lock lk{mutex};
+
     auto it = FindVMA(addr);
     if (it->second.type == VMAType::Free && flags == 1) {
         it++;
