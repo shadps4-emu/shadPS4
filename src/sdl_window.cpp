@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL.h>
+
 
 #include "common/assert.h"
 #include "common/config.h"
@@ -9,6 +9,10 @@
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_events.h>
 
 namespace Frontend {
 

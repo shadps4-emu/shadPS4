@@ -4,8 +4,7 @@
 #pragma once
 
 #include <mutex>
-#include <SDL.h>
-
+#include <SDL3/SDL_audio.h>
 #include "core/libraries/audio/audioout.h"
 
 namespace Audio {
