@@ -248,6 +248,7 @@ int PS4_SYSV_ABI sceRtcTickAddYears() {
 }
 
 void RegisterlibSceRtc(Core::Loader::SymbolsResolver* sym) {
+    return;
     LIB_FUNCTION("lPEBYdVX0XQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCheckValid);
     LIB_FUNCTION("fNaZ4DbzHAE", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCompareTick);
     LIB_FUNCTION("8Yr143yEnRo", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcConvertLocalTimeToUtc);

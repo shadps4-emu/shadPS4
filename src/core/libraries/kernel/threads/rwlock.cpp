@@ -4,7 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "kernel_threads.h"
+#include "threads.h"
 
 namespace Libraries::Kernel {
 
@@ -282,7 +282,7 @@ int PS4_SYSV_ABI scePthreadRwlockWrlock(OrbisPthreadRwlock* rwlock) {
     return result;
 }
 
-void ThreadsRwlockSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+void RwlockSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1471ajPzxh0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_destroy);
     LIB_FUNCTION("ytQULN-nhL4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_init);
     LIB_FUNCTION("iGjsr1WAtI0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_rwlock_rdlock);

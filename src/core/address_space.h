@@ -62,8 +62,11 @@ public:
     void* Map(VAddr virtual_addr, size_t size, u64 alignment = 0, PAddr phys_addr = -1,
               bool exec = false);
 
+    /// Memory maps a specified file descriptor.
+    void* MapFile(VAddr virtual_addr, size_t size, size_t offset, void* fd);
+
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, size_t size, PAddr phys_addr);
+    void Unmap(VAddr virtual_addr, size_t size, bool has_backing);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 

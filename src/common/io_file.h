@@ -100,6 +100,8 @@ public:
         return file != nullptr;
     }
 
+    void* GetFileMapping();
+
     void Open(const std::filesystem::path& path, FileAccessMode mode,
               FileType type = FileType::BinaryFile,
               FileShareFlag flag = FileShareFlag::ShareReadOnly);
@@ -207,6 +209,7 @@ private:
     FileType file_type{};
 
     std::FILE* file = nullptr;
+    void* file_mapping = nullptr;
 };
 
 } // namespace Common::FS

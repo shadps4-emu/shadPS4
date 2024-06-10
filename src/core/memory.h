@@ -36,8 +36,12 @@ enum class MemoryProt : u32 {
 
 enum class MemoryMapFlags : u32 {
     NoFlags = 0,
+    Shared = 1,
+    Private = 2,
     Fixed = 0x10,
     NoOverwrite = 0x0080,
+    NoSync = 0x800,
+    NoCore = 0x20000,
     NoCoalesce = 0x400000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
@@ -50,6 +54,7 @@ enum class VMAType : u32 {
     Pooled = 4,
     Stack = 5,
     Code = 6,
+    File = 7,
 };
 
 struct DirectMemoryArea {
@@ -81,6 +86,7 @@ struct VirtualMemoryArea {
     MemoryProt prot = MemoryProt::NoAccess;
     bool disallow_merge = false;
     std::string name = "";
+    void* fd = nullptr;
 
     bool CanMergeWith(const VirtualMemoryArea& next) const {
         if (disallow_merge || next.disallow_merge) {
@@ -122,6 +128,9 @@ public:
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
+
+    int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
+                MemoryMapFlags flags, void* fd, size_t offset);
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 

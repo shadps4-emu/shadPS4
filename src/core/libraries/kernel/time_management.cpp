@@ -134,6 +134,18 @@ int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone* tz) {
     return sceKernelGettimeofday(tp);
 }
 
+s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
+    ASSERT(tz);
+    static int tzflag = 0;
+    if (!tzflag) {
+        _tzset();
+        tzflag++;
+    }
+    tz->tz_minuteswest = _timezone / 60;
+    tz->tz_dsttime = _daylight;
+    return ORBIS_OK;
+}
+
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
@@ -154,6 +166,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
     LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
+    LIB_FUNCTION("kOcnerypnQA", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimezone);
 }
 
 } // namespace Libraries::Kernel

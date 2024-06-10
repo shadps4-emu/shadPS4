@@ -84,7 +84,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot, HANDLE fd = nullptr) {
         const auto it = placeholders.find(virtual_addr);
         ASSERT_MSG(it != placeholders.end(), "Cannot map already mapped region");
         ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + size <= it->upper(),
@@ -116,7 +116,8 @@ struct AddressSpace::Impl {
         // Perform the map.
         void* ptr = nullptr;
         if (phys_addr != -1) {
-            ptr = MapViewOfFile3(backing_handle, process, reinterpret_cast<PVOID>(virtual_addr),
+            HANDLE backing = fd ? fd : backing_handle;
+            ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
                                  phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         } else {
             ptr =
@@ -127,9 +128,9 @@ struct AddressSpace::Impl {
         return ptr;
     }
 
-    void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
+    void Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
         bool ret;
-        if (phys_addr != -1) {
+        if (has_backing) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
@@ -251,8 +252,12 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
                      is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, size_t size, PAddr phys_addr) {
-    return impl->Unmap(virtual_addr, phys_addr, size);
+void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, void* fd) {
+    return impl->Map(virtual_addr, offset, size, PAGE_READWRITE, fd);
+}
+
+void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
+    return impl->Unmap(virtual_addr, size, has_backing);
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {

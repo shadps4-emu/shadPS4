@@ -10,6 +10,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <share.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -205,6 +206,24 @@ void IOFile::Close() {
     }
 
     file = nullptr;
+
+#ifdef _WIN64
+    if (file_mapping) {
+        CloseHandle(file_mapping);
+    }
+#endif
+}
+
+void* IOFile::GetFileMapping() {
+#ifdef _WIN64
+    if (file_mapping) {
+        return file_mapping;
+    }
+    const int fd = fileno(file);
+    HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    file_mapping = CreateFileMapping(hfile, NULL, PAGE_READWRITE, 0, 0, NULL);
+    return file_mapping;
+#endif
 }
 
 std::string IOFile::ReadString(size_t length) const {

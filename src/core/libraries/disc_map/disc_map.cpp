@@ -36,6 +36,7 @@ int PS4_SYSV_ABI Func_E7EBCE96E92F91F8() {
 }
 
 void RegisterlibSceDiscMap(Core::Loader::SymbolsResolver* sym) {
+    return;
     LIB_FUNCTION("fl1eoDnwQ4s", "libSceDiscMap", 1, "libSceDiscMap", 1, 1,
                  sceDiscMapGetPackageSize);
     LIB_FUNCTION("lbQKqsERhtE", "libSceDiscMap", 1, "libSceDiscMap", 1, 1,

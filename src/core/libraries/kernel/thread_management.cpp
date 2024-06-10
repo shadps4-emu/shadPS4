@@ -8,13 +8,13 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #ifdef _WIN64
 #include <windows.h>
 #endif
-#include "core/libraries/kernel/threads/kernel_threads.h"
 
 namespace Libraries::Kernel {
 
@@ -1165,7 +1165,19 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
     return result;
 }
 
+using Destructor = void(*)(void*);
+
+int PS4_SYSV_ABI posix_pthread_key_create(u32* key, Destructor func) {
+    return pthread_key_create(key, func);
+}
+
+int PS4_SYSV_ABI posix_pthread_setspecific(int key, const void *value) {
+    return pthread_setspecific(key, value);
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
+    LIB_FUNCTION("WrOLvHU0yQM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setspecific);
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
     LIB_FUNCTION("eXbUSpEaTsA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetinheritsched);
@@ -1242,7 +1254,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("CBNtXOoef-E", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_min);
     // libs
-    ThreadsRwlockSymbolsRegister(sym);
+    RwlockSymbolsRegister(sym);
+    SemaphoreSymbolsRegister(sym);
 }
 
 } // namespace Libraries::Kernel
