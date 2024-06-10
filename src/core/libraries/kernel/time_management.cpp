@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <thread>
+#include <pthread_time.h>
+#include "common/assert.h"
 #include "common/native_clock.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
@@ -29,6 +32,27 @@ u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
     return clock->GetUptime();
+}
+
+int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
+    ASSERT(microseconds >= 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
+    ASSERT(microseconds >= 1000);
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    return 0;
+}
+
+u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
+    std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_nanosleep(timespec* requested_time, timespec* remaining) {
+    return nanosleep(requested_time, remaining);
 }
 
 int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
@@ -68,6 +92,11 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, gettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, gettimeofday);
+    LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
+    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
+    LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);
+    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
 }
 
 } // namespace Libraries::Kernel
