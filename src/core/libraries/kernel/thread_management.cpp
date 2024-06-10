@@ -526,7 +526,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
@@ -549,7 +549,7 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
@@ -1133,7 +1133,7 @@ int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_trylock(&(*mutex)->pth_mutex);
     if (result != 0) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
     switch (result) {
     case 0:
