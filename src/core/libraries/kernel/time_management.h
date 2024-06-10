@@ -12,7 +12,7 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 struct OrbisKernelTimeval {
-    time_t tv_sec;
+    u64 tv_sec;
     u64 tv_usec;
 };
 
