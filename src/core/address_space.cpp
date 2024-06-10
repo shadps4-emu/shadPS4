@@ -6,7 +6,6 @@
 #include "common/error.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory_management.h"
-#include "core/virtual_memory.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -17,11 +16,40 @@
 namespace Core {
 
 static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE;
-static constexpr size_t VirtualSize = USER_MAX - USER_MIN + 1;
 
 #ifdef _WIN32
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
+        // Allocate virtual address placeholder for our address space.
+        MEM_ADDRESS_REQUIREMENTS req{};
+        MEM_EXTENDED_PARAMETER param{};
+        req.LowestStartingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN);
+        // The ending address must align to page boundary - 1
+        // https://stackoverflow.com/questions/54223343/virtualalloc2-with-memextendedparameteraddressrequirements-always-produces-error
+        req.HighestEndingAddress = reinterpret_cast<PVOID>(USER_MIN + UserSize - 1);
+        req.Alignment = 0;
+        param.Type = MemExtendedParameterAddressRequirements;
+        param.Pointer = &req;
+
+        // Typically, lower parts of system managed area is already reserved in windows.
+        // If reservation fails attempt again by reducing the area size a little bit.
+        // System managed is about 31GB in size so also cap the number of times we can reduce it
+        // to a reasonable amount.
+        static constexpr size_t ReductionOnFail = 1_GB;
+        static constexpr size_t MaxReductions = 10;
+        virtual_size = SystemSize + UserSize + ReductionOnFail;
+        for (u32 i = 0; i < MaxReductions && !virtual_base; i++) {
+            virtual_size -= ReductionOnFail;
+            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size,
+                                                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
+                                                          PAGE_NOACCESS, &param, 1));
+        }
+        ASSERT_MSG(virtual_base, "Unable to reserve virtual address space!");
+
+        // Initializer placeholder tracker
+        const uintptr_t virtual_addr = reinterpret_cast<uintptr_t>(virtual_base);
+        placeholders.insert({virtual_addr, virtual_addr + virtual_size});
+
         // Allocate backing file that represents the total physical memory.
         backing_handle =
             CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_WRITE | FILE_MAP_READ,
@@ -35,21 +63,6 @@ struct AddressSpace::Impl {
         void* const ret = MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
                                          MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, nullptr, 0);
         ASSERT(ret == backing_base);
-        // Allocate virtual address placeholder for our address space.
-        MEM_ADDRESS_REQUIREMENTS req{};
-        MEM_EXTENDED_PARAMETER param{};
-        req.LowestStartingAddress = reinterpret_cast<PVOID>(USER_MIN);
-        req.HighestEndingAddress = reinterpret_cast<PVOID>(USER_MAX);
-        req.Alignment = 0;
-        param.Type = MemExtendedParameterAddressRequirements;
-        param.Pointer = &req;
-        virtual_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, VirtualSize,
-                                                      MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-                                                      PAGE_NOACCESS, &param, 1));
-        ASSERT(virtual_base);
-
-        const uintptr_t virtual_addr = reinterpret_cast<uintptr_t>(virtual_base);
-        placeholders.insert({virtual_addr, virtual_addr + VirtualSize});
     }
 
     ~Impl() {
@@ -71,7 +84,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* MapUser(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot) {
         const auto it = placeholders.find(virtual_addr);
         ASSERT_MSG(it != placeholders.end(), "Cannot map already mapped region");
         ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + size <= it->upper(),
@@ -106,54 +119,25 @@ struct AddressSpace::Impl {
             ptr = MapViewOfFile3(backing_handle, process, reinterpret_cast<PVOID>(virtual_addr),
                                  phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         } else {
-            ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
-                                MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+            ptr =
+                VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
+                              MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         }
         ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
         return ptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, ULONG prot,
-                     bool no_commit = false) {
-        // Map a private allocation
-        PVOID addr = reinterpret_cast<PVOID>(virtual_addr);
-        MEM_ADDRESS_REQUIREMENTS req{};
-        MEM_EXTENDED_PARAMETER param{};
-        // req.LowestStartingAddress =
-        //     (virtual_addr == 0 ? reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN)
-        //                        : reinterpret_cast<PVOID>(virtual_addr));
-        req.HighestEndingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MAX);
-        req.Alignment = alignment < 64_KB ? 0 : alignment;
-        param.Type = MemExtendedParameterAddressRequirements;
-        param.Pointer = &req;
-        ULONG alloc_type = MEM_RESERVE | (alignment > 2_MB ? MEM_LARGE_PAGES : 0);
-        if (!no_commit) {
-            alloc_type |= MEM_COMMIT;
-        }
-        // Check if the area has been reserved beforehand (typically for tesselation buffer)
-        // and in that case don't reserve it again as Windows complains.
-        if (virtual_addr) {
-            MEMORY_BASIC_INFORMATION info;
-            VirtualQuery(addr, &info, sizeof(info));
-            if (info.State == MEM_RESERVE) {
-                alloc_type &= ~MEM_RESERVE;
-            }
-        }
-        void* ptr{};
-        if (virtual_addr) {
-            ptr = VirtualAlloc2(process, addr, size, alloc_type, prot, NULL, 0);
-            ASSERT_MSG(ptr && VAddr(ptr) == virtual_addr, "{}", Common::GetLastErrorMsg());
+    void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
+        bool ret;
+        if (phys_addr != -1) {
+            ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
+                                   MEM_PRESERVE_PLACEHOLDER);
         } else {
-            ptr = VirtualAlloc2(process, nullptr, size, alloc_type, prot, &param, 1);
-            ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+            ret = VirtualFreeEx(process, reinterpret_cast<PVOID>(virtual_addr), size,
+                                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER);
         }
-        return ptr;
-    }
-
-    void UnmapUser(VAddr virtual_addr, size_t size) {
-        const bool ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
-                                          MEM_PRESERVE_PLACEHOLDER);
-        ASSERT_MSG(ret, "Unmap operation on virtual_addr={:#X} failed", virtual_addr);
+        ASSERT_MSG(ret, "Unmap operation on virtual_addr={:#X} failed: {}", virtual_addr,
+                   Common::GetLastErrorMsg());
 
         // The unmap call will create a new placeholder region. We need to see if we can coalesce it
         // with neighbors.
@@ -186,12 +170,6 @@ struct AddressSpace::Impl {
         placeholders.insert({placeholder_start, placeholder_end});
     }
 
-    void UnmapPrivate(VAddr virtual_addr, size_t size) {
-        const bool ret =
-            VirtualFreeEx(process, reinterpret_cast<LPVOID>(virtual_addr), 0, MEM_RELEASE);
-        ASSERT_MSG(ret, "{}", Common::GetLastErrorMsg());
-    }
-
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
         if (read && write) {
@@ -221,6 +199,7 @@ struct AddressSpace::Impl {
     HANDLE backing_handle{};
     u8* backing_base{};
     u8* virtual_base{};
+    size_t virtual_size{};
     boost::icl::separate_interval_set<uintptr_t> placeholders;
 };
 #else
@@ -239,22 +218,12 @@ struct AddressSpace::Impl {
         UNREACHABLE();
     }
 
-    void* MapUser(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
         UNREACHABLE();
         return nullptr;
     }
 
-    void* MapPrivate(VAddr virtual_addr, size_t size, u64 alignment, PosixPageProtection prot,
-                     bool no_commit = false) {
-        UNREACHABLE();
-        return nullptr;
-    }
-
-    void UnmapUser(VAddr virtual_addr, size_t size) {
-        UNREACHABLE();
-    }
-
-    void UnmapPrivate(VAddr virtual_addr, size_t size) {
+    void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
         UNREACHABLE();
     }
 
@@ -264,36 +233,30 @@ struct AddressSpace::Impl {
 
     u8* backing_base{};
     u8* virtual_base{};
+    size_t virtual_size{};
 };
 #endif
 
 AddressSpace::AddressSpace() : impl{std::make_unique<Impl>()} {
     virtual_base = impl->virtual_base;
     backing_base = impl->backing_base;
+    virtual_size = impl->virtual_size;
 }
 
 AddressSpace::~AddressSpace() = default;
 
-void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr) {
-    if (virtual_addr >= USER_MIN) {
-        return impl->MapUser(virtual_addr, phys_addr, size, PAGE_READWRITE);
-    }
-    return impl->MapPrivate(virtual_addr, size, alignment, PAGE_READWRITE);
+void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr,
+                        bool is_exec) {
+    return impl->Map(virtual_addr, phys_addr, size,
+                     is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, size_t size) {
-    if (virtual_addr >= USER_MIN) {
-        return impl->UnmapUser(virtual_addr, size);
-    }
-    return impl->UnmapPrivate(virtual_addr, size);
+void AddressSpace::Unmap(VAddr virtual_addr, size_t size, PAddr phys_addr) {
+    return impl->Unmap(virtual_addr, phys_addr, size);
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
     return impl->Protect(virtual_addr, size, true, true, true);
-}
-
-void* AddressSpace::Reserve(size_t size, u64 alignment) {
-    return impl->MapPrivate(0, size, alignment, PAGE_READWRITE, true);
 }
 
 } // namespace Core
