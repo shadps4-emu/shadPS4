@@ -36,12 +36,6 @@ static void* PS4_SYSV_ABI sceKernelGetProcParam() {
     return reinterpret_cast<void*>(linker->GetProcParam());
 }
 
-int32_t PS4_SYSV_ABI sceKernelReleaseDirectMemory(off_t start, size_t len) {
-    auto* memory = Core::Memory::Instance();
-    memory->Free(start, len);
-    return 0;
-}
-
 static PS4_SYSV_ABI void stack_chk_fail() {
     UNREACHABLE();
 }
