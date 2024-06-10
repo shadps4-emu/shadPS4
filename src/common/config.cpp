@@ -10,7 +10,7 @@
 namespace Config {
 
 static bool isNeo = false;
-static bool isFullscreen = true;
+static bool isFullscreen = false;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
