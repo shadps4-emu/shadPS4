@@ -388,11 +388,11 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
 
     boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges_merged{ranges[0]};
     for (auto range : ranges) {
-        auto& prev_range = ranges.back();
+        auto& prev_range = ranges_merged.back();
         if (prev_range.end_address < range.base_address) {
             ranges_merged.emplace_back(range);
         } else {
-            ranges_merged.back().end_address = std::max(prev_range.end_address, range.end_address);
+            prev_range.end_address = std::max(prev_range.end_address, range.end_address);
         }
     }
 
