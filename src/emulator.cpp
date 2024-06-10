@@ -102,6 +102,8 @@ void Emulator::Run(const std::filesystem::path& file) {
                     found = true;
                     LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
                     linker->LoadModule(entry.path());
+                } else {
+                    LOG_ERROR(Loader, "Skipped loading module {}", entry.path().string().c_str());
                 }
             }
         }

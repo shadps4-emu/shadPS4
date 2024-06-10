@@ -90,6 +90,9 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
 }
 
 size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
+    if (buf == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
     if (d <= 2) { // stdin,stdout,stderr
         char* str = strdup((const char*)buf);
         if (str[nbytes - 1] == '\n')
@@ -97,9 +100,6 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
         LOG_INFO(Tty, "{}", str);
         free(str);
         return nbytes;
-    }
-    if (buf == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
