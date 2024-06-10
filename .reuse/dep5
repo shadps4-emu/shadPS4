@@ -34,5 +34,6 @@ Files: CMakeSettings.json
        src/shadps4.rc
        src/shadps4.qrc
        externals/stb_image.h
+       externals/tracy/*
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later

@@ -10,3 +10,5 @@
 #else
 #error What the fuck is this compiler
 #endif
+
+#include <tracy/Tracy.hpp>

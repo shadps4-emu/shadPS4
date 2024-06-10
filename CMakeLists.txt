@@ -500,7 +500,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak Tracy::TracyClient)
 target_link_libraries(shadps4 PRIVATE discord-rpc boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
 if (NOT ENABLE_QT_GUI)
