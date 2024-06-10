@@ -50,6 +50,13 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, IR::U32F32{result});
 }
 
+void Translator::V_OR_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.BitwiseOr(src0, src1));
+}
+
 void Translator::V_AND_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
