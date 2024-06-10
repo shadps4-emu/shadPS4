@@ -486,6 +486,8 @@ else()
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         src/main.cpp
+        src/emulator.cpp
+        src/emulator.h
         src/sdl_window.h
         src/sdl_window.cpp
     )
