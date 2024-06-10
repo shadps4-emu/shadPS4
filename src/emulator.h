@@ -22,8 +22,10 @@ public:
     void Run(const std::filesystem::path& file);
 
 private:
+    void LoadSystemModules(const std::filesystem::path& file);
     Discord::RPC discord_rpc;
     Input::GameController* controller = Common::Singleton<Input::GameController>::Instance();
+    Core::Linker* linker = Common::Singleton<Core::Linker>::Instance();
     Frontend::WindowSDL window;
 };
 

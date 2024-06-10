@@ -1,3 +1,4 @@
+#include "emulator.h"
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -45,6 +46,7 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
 
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
+    Libraries::InitHLELibs(&linker->GetHLESymbols());
 }
 
 Emulator::~Emulator() {
@@ -54,10 +56,6 @@ Emulator::~Emulator() {
 }
 
 void Emulator::Run(const std::filesystem::path& file) {
-    // Initialize linker
-    auto linker = Common::Singleton<Core::Linker>::Instance();
-    Libraries::InitHLELibs(&linker->GetHLESymbols());
-
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(file.parent_path(), "/app0");
@@ -92,13 +90,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     linker->LoadModule(file);
 
     // check if we have system modules to load
-    const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
-    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
-        if (entry.path().filename() == "libSceNgs2.sprx") {
-            LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
-            linker->LoadModule(entry.path().string().c_str());
-        }
-    }
+    LoadSystemModules(file);
+
     // Check if there is a libc.prx in sce_module folder
     bool found = false;
     if (Config::isLleLibc()) {
@@ -109,7 +102,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                     entry.path().filename() == "libSceFios2.prx") {
                     found = true;
                     LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
-                    linker->LoadModule(entry.path().string().c_str());
+                    linker->LoadModule(entry.path());
                 }
             }
         }
@@ -119,7 +112,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 
     // start execution
-    std::thread mainthread([linker]() { linker->Execute(); });
+    std::jthread mainthread =
+        std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
 
     // Begin main window loop until the application exits
     static constexpr std::chrono::microseconds FlipPeriod{100000};
@@ -131,6 +125,16 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
 
     std::exit(0);
+}
+
+void Emulator::LoadSystemModules(const std::filesystem::path& file) {
+    const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
+        if (entry.path().filename() == "libSceNgs2.sprx") {
+            LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
+            linker->LoadModule(entry.path());
+        }
+    }
 }
 
 } // namespace Core
