@@ -88,6 +88,10 @@ struct VirtualMemoryArea {
     std::string name = "";
     void* fd = nullptr;
 
+    bool Contains(VAddr addr, size_t size) const {
+        return addr >= base && (addr + size) < (base + this->size);
+    }
+
     bool CanMergeWith(const VirtualMemoryArea& next) const {
         if (disallow_merge || next.disallow_merge) {
             return false;

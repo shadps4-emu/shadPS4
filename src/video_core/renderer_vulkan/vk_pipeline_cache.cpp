@@ -114,9 +114,10 @@ void PipelineCache::RefreshGraphicsKey() {
     key.front_face = regs.polygon_control.front_face;
 
     const auto& db = regs.depth_buffer;
-    key.depth_format = key.depth.depth_enable
-                           ? LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format)
-                           : vk::Format::eUndefined;
+    if (key.depth.depth_enable) {
+        key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+        key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
+    }
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
     // We need to do some arrays compaction at this stage

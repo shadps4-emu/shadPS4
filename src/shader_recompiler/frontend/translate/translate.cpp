@@ -121,6 +121,9 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     case OperandField::ConstFloatNeg_2_0:
         value = ir.Imm32(-2.0f);
         break;
+    case OperandField::ConstFloatNeg_4_0:
+        value = ir.Imm32(-4.0f);
+        break;
     case OperandField::VccLo:
         if (force_flt) {
             value = ir.BitCast<IR::F32>(ir.GetVccLo());
@@ -301,6 +304,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MADAK_F32: // Yes these can share the opcode
             translator.V_FMA_F32(inst);
             break;
+        case Opcode::IMAGE_SAMPLE_LZ_O:
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:

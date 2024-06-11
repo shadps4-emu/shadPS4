@@ -79,6 +79,10 @@ public:
         return key.write_masks;
     }
 
+    [[nodiscard]] bool IsDepthEnabled() const {
+        return key.depth.depth_enable.Value();
+    }
+
 private:
     void BuildDescSetLayout();
     void BindVertexBuffers(StreamBuffer& staging) const;

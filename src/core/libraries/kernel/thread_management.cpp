@@ -650,7 +650,6 @@ int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
 }
 
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread, "called");
     cond = static_cast<ScePthreadCond*>(createCond(cond));
 
     if (cond == nullptr) {
@@ -659,7 +658,7 @@ int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
 
     int result = pthread_cond_broadcast(&(*cond)->cond);
 
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+    LOG_TRACE(Kernel_Pthread, "called name={}, result={}", (*cond)->name, result);
 
     return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
 }

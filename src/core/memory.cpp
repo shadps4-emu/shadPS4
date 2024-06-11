@@ -119,12 +119,18 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
         auto it = FindVMA(mapped_addr);
-        while (it->second.type != VMAType::Free || it->second.size < size) {
-            it++;
+        // If the VMA is free and contains the requested mapping we are done.
+        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
+            mapped_addr = alignment > 0 ? Common::AlignUp(base, alignment) : base;
+        } else {
+            // Search for the first free VMA that fits our mapping.
+            while (it->second.type != VMAType::Free || it->second.size < size) {
+                it++;
+            }
+            ASSERT(it != vma_map.end());
+            const auto& vma = it->second;
+            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
         }
-        ASSERT(it != vma_map.end());
-        const VAddr base = it->second.base;
-        mapped_addr = alignment > 0 ? Common::AlignUp(base, alignment) : base;
     }
 
     // Perform the mapping.
