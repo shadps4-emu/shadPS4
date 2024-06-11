@@ -3,21 +3,33 @@
 
 #include <QtWidgets/QApplication>
 
+#include "common/config.h"
+#include "core/file_sys/fs.h"
 #include "qt_gui/game_install_dialog.h"
-#include "qt_gui/gui_settings.h"
 #include "qt_gui/main_window.h"
-#include "src/sdl_window.h"
 
-Frontend::WindowSDL* g_window;
+void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
 int main(int argc, char* argv[]) {
     QApplication a(argc, argv);
-    auto m_gui_settings = std::make_shared<GuiSettings>();
-    if (m_gui_settings->GetValue(gui::settings_install_dir) == "") {
-        GameInstallDialog dlg(m_gui_settings);
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(config_dir / "config.toml");
+    QString gameDataPath = qApp->applicationDirPath() + "/game_data/";
+    std::string stdStr = gameDataPath.toStdString();
+    std::filesystem::path path(stdStr);
+#ifdef _WIN64
+    std::wstring wstdStr = gameDataPath.toStdWString();
+    path = std::filesystem::path(wstdStr);
+#endif
+    std::filesystem::create_directory(path);
+
+    if (Config::getGameInstallDir() == "") {
+        GameInstallDialog dlg;
         dlg.exec();
     }
-    MainWindow* m_main_window = new MainWindow(m_gui_settings, nullptr);
+    qInstallMessageHandler(customMessageHandler); // ignore qt logs.
+
+    MainWindow* m_main_window = new MainWindow(nullptr);
     m_main_window->Init();
 
     return a.exec();

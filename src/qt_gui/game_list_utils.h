@@ -8,6 +8,21 @@
 #include <QImage>
 #include <QString>
 
+struct GameInfo {
+    std::string path; // root path of game directory (normaly directory that contains eboot.bin)
+    std::string icon_path; // path of icon0.png
+    std::string pic_path;  // path of pic1.png
+    QImage icon;
+    std::string size;
+    // variables extracted from param.sfo
+    std::string name = "Unknown";
+    std::string serial = "Unknown";
+    std::string version = "Unknown";
+    std::string region = "Unknown";
+    std::string category = "Unknown";
+    std::string fw = "Unknown";
+};
+
 class GameListUtils {
 public:
     static QString FormatSize(qint64 size) {
@@ -33,25 +48,49 @@ public:
         return sizeString + " " + suffixes[suffixIndex];
     }
 
-    static QString GetFolderSize(const QDir& dir) {
-
+    static void GetFolderSize(GameInfo& game) {
+        QDir dir(QString::fromStdString(game.path));
         QDirIterator it(dir.absolutePath(), QDirIterator::Subdirectories);
         qint64 total = 0;
-
         while (it.hasNext()) {
-            // check if entry is file
-            if (it.fileInfo().isFile()) {
-                total += it.fileInfo().size();
-            }
-            it.next(); // this is heavy.
-        }
-
-        // if there is a file left "at the end" get it's size
-        if (it.fileInfo().isFile()) {
+            it.next();
             total += it.fileInfo().size();
         }
+        game.size = FormatSize(total).toStdString();
+    }
 
-        return FormatSize(total);
+    static QString GetRegion(char region) {
+        switch (region) {
+        case 'U':
+            return "USA";
+        case 'E':
+            return "Europe";
+        case 'J':
+            return "Japan";
+        case 'H':
+            return "Asia";
+        case 'I':
+            return "World";
+        default:
+            return "Unknown";
+        }
+    }
+
+    static QString GetAppType(int type) {
+        switch (type) {
+        case 0:
+            return "Not Specified";
+        case 1:
+            return "FULL APP";
+        case 2:
+            return "UPGRADABLE";
+        case 3:
+            return "DEMO";
+        case 4:
+            return "FREEMIUM";
+        default:
+            return "Unknown";
+        }
     }
 
     QImage BlurImage(const QImage& image, const QRect& rect, int radius) {

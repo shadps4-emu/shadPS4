@@ -4,13 +4,14 @@
 #pragma once
 
 #include <QDialog>
-#include "gui_settings.h"
+#include "common/config.h"
+#include "common/path_util.h"
 
 class QLineEdit;
 
 class GameInstallDialog final : public QDialog {
 public:
-    GameInstallDialog(std::shared_ptr<GuiSettings> gui_settings);
+    GameInstallDialog();
     ~GameInstallDialog();
 
 private slots:
@@ -23,5 +24,4 @@ private:
 
 private:
     QLineEdit* m_gamesDirectory;
-    std::shared_ptr<GuiSettings> m_gui_settings;
 };

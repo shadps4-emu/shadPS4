@@ -3,12 +3,9 @@
 
 #include "game_grid_frame.h"
 
-GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
-                             std::shared_ptr<GuiSettings> m_gui_settings, QWidget* parent)
-    : QTableWidget(parent) {
-    m_game_info = game_info_get;
-    m_gui_settings_ = m_gui_settings;
-    icon_size = m_gui_settings->GetValue(gui::m_icon_size_grid).toInt();
+GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
+    : QTableWidget(parent), m_game_info(game_info_get) {
+    icon_size = Config::getIconSizeGrid();
     windowWidth = parent->width();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -33,6 +30,12 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, false);
     });
+    connect(this, &QTableWidget::cellClicked, this, [&]() {
+        cellClicked = true;
+        crtRow = this->currentRow();
+        crtColumn = this->currentColumn();
+        columnCnt = this->columnCount();
+    });
 }
 
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
@@ -43,9 +46,7 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     else
         m_games_ = m_game_info->m_games;
     m_games_shared = std::make_shared<QVector<GameInfo>>(m_games_);
-
-    icon_size = m_gui_settings_->GetValue(gui::m_icon_size_grid)
-                    .toInt(); // update icon size for resize event.
+    icon_size = Config::getIconSizeGrid(); // update icon size for resize event.
 
     int gamesPerRow = windowWidth / (icon_size + 20); // 2 x cell widget border size.
     int row = 0;
@@ -62,10 +63,10 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
         QWidget* widget = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout();
         QLabel* image_label = new QLabel();
-        QPixmap icon = m_games_[gameCounter].icon.scaled(
+        QImage icon = m_games_[gameCounter].icon.scaled(
             QSize(icon_size, icon_size), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         image_label->setFixedSize(icon.width(), icon.height());
-        image_label->setPixmap(icon);
+        image_label->setPixmap(QPixmap::fromImage(icon));
         QLabel* name_label = new QLabel(QString::fromStdString(m_games_[gameCounter].serial));
         name_label->setAlignment(Qt::AlignHCenter);
         layout->addWidget(image_label);
@@ -86,8 +87,7 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
                                        "color: #000000;"
                                        "border: 1px solid #000000;"
                                        "padding: 2px;"
-                                       "font-size: 12px; }")
-                                   .arg(tooltipText);
+                                       "font-size: 12px; }");
         widget->setStyleSheet(tooltipStyle);
         this->setCellWidget(row, column, widget);
 
@@ -134,10 +134,12 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
 }
 
 void GameGridFrame::RefreshGridBackgroundImage() {
-    QPixmap blurredPixmap = QPixmap::fromImage(backgroundImage);
-    QPalette palette;
-    palette.setBrush(QPalette::Base, QBrush(blurredPixmap.scaled(size(), Qt::IgnoreAspectRatio)));
-    QColor transparentColor = QColor(135, 206, 235, 40);
-    palette.setColor(QPalette::Highlight, transparentColor);
-    this->setPalette(palette);
+    if (!backgroundImage.isNull()) {
+        QPalette palette;
+        palette.setBrush(QPalette::Base,
+                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
+        QColor transparentColor = QColor(135, 206, 235, 40);
+        palette.setColor(QPalette::Highlight, transparentColor);
+        this->setPalette(palette);
+    }
 }

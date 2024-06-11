@@ -15,5 +15,11 @@
 		<file>images/controller_icon.png</file>
 		<file>images/refresh_icon.png</file>
 		<file>images/list_mode_icon.png</file>
+		<file>images/flag_jp.png</file>
+		<file>images/flag_eu.png</file>
+		<file>images/flag_unk.png</file>
+		<file>images/flag_us.png</file>
+		<file>images/flag_world.png</file>
+		<file>images/flag_china.png</file>
 	</qresource>
 </RCC>

@@ -266,6 +266,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
+         src/core/file_format/trp.cpp
+         src/core/file_format/trp.h
          src/core/file_format/splash.h
          src/core/file_format/splash.cpp
          src/core/file_sys/fs.cpp
@@ -433,6 +435,12 @@ set(INPUT src/input/controller.cpp
           src/input/controller.h
 )
 
+set(EMULATOR src/emulator.cpp
+             src/emulator.h
+             src/sdl_window.h
+             src/sdl_window.cpp
+)
+
 # the above is shared in sdl and qt version (TODO share them all)
 
 if(ENABLE_QT_GUI)
@@ -442,9 +450,6 @@ set(QT_GUI
     src/qt_gui/main_window_ui.h
     src/qt_gui/main_window.cpp
     src/qt_gui/main_window.h
-    src/qt_gui/gui_settings.cpp
-    src/qt_gui/gui_settings.h
-    src/qt_gui/gui_save.h
     src/qt_gui/gui_context_menus.h
     src/qt_gui/game_list_utils.h
     src/qt_gui/game_info.cpp
@@ -457,11 +462,14 @@ set(QT_GUI
     src/qt_gui/game_install_dialog.h
     src/qt_gui/pkg_viewer.cpp
     src/qt_gui/pkg_viewer.h
-    src/qt_gui/settings.cpp
-    src/qt_gui/settings.h
+    src/qt_gui/trophy_viewer.cpp
+    src/qt_gui/trophy_viewer.h
+    src/qt_gui/elf_viewer.cpp
+    src/qt_gui/elf_viewer.h
     src/qt_gui/main_window_themes.cpp
     src/qt_gui/main_window_themes.h
     src/qt_gui/main.cpp
+    ${EMULATOR}
     ${RESOURCE_FILES}
     )
 endif()
@@ -475,8 +483,7 @@ if (ENABLE_QT_GUI)
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
-        src/sdl_window.h
-        src/sdl_window.cpp
+        ${EMULATOR}
     )
 else()
     add_executable(shadps4
@@ -486,11 +493,8 @@ else()
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
+        ${EMULATOR}
         src/main.cpp
-        src/emulator.cpp
-        src/emulator.h
-        src/sdl_window.h
-        src/sdl_window.cpp
     )
 endif()
 
@@ -548,7 +552,7 @@ target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
-        WIN32_EXECUTABLE ON
+#        WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON)
 endif()
 

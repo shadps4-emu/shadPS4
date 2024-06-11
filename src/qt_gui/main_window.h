@@ -3,10 +3,19 @@
 
 #pragma once
 
+#include <QAbstractButton>
 #include <QActionGroup>
 #include <QDragEnterEvent>
 #include <QMainWindow>
 #include <QMimeData>
+#include <QScopedPointer>
+#include <emulator.h>
+#include <fmt/core.h>
+#include "common/config.h"
+#include "common/path_util.h"
+#include "core/file_format/psf.h"
+#include "core/file_sys/fs.h"
+#include "elf_viewer.h"
 #include "game_grid_frame.h"
 #include "game_info.h"
 #include "game_list_frame.h"
@@ -15,26 +24,19 @@
 #include "main_window_ui.h"
 #include "pkg_viewer.h"
 
-class GuiSettings;
 class GameListFrame;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
-
-    std::unique_ptr<Ui_MainWindow> ui;
-
-    bool m_is_list_mode = true;
-    bool m_save_slider_pos = false;
-    int m_other_slider_pos = 0;
 signals:
     void WindowResized(QResizeEvent* event);
+    void ExtractionFinished();
 
 public:
-    explicit MainWindow(std::shared_ptr<GuiSettings> gui_settings, QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
     bool Init();
-    void InstallPkg();
-    void InstallDragDropPkg(std::string file, int pkgNum, int nPkg);
+    void InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg);
     void InstallDirectory();
 
 private Q_SLOTS:
@@ -45,38 +47,40 @@ private Q_SLOTS:
     void HandleResize(QResizeEvent* event);
 
 private:
+    Ui_MainWindow* ui;
     void AddUiWidgets();
     void CreateActions();
+    void CreateRecentGameActions();
     void CreateDockWindows();
     void LoadGameLists();
     void CreateConnects();
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
+    void InstallPkg();
+    void AddRecentFiles(QString filePath);
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
-
     bool isIconBlack = false;
     bool isTableList = true;
-
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
     QActionGroup* m_theme_act_group = nullptr;
-
+    QActionGroup* m_recent_files_group = nullptr;
+    PKG pkg;
     // Dockable widget frames
-    QMainWindow* m_main_window = nullptr;
     WindowThemes m_window_themes;
     GameListUtils m_game_list_utils;
-    QDockWidget* m_dock_widget = nullptr;
+    QScopedPointer<QDockWidget> m_dock_widget;
     // Game Lists
-    GameListFrame* m_game_list_frame = nullptr;
-    GameGridFrame* m_game_grid_frame = nullptr;
-    // Packge Viewer
-    PKGViewer* m_pkg_viewer = nullptr;
+    QScopedPointer<GameListFrame> m_game_list_frame;
+    QScopedPointer<GameGridFrame> m_game_grid_frame;
+    QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
-    QStatusBar* statusBar = nullptr;
+    QScopedPointer<QStatusBar> statusBar;
+
+    PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
-    std::shared_ptr<GuiSettings> m_gui_settings;
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event1) override {
@@ -93,7 +97,11 @@ protected:
             int nPkg = urlList.size();
             for (const QUrl& url : urlList) {
                 pkgNum++;
-                InstallDragDropPkg(url.toLocalFile().toStdString(), pkgNum, nPkg);
+                std::filesystem::path path(url.toLocalFile().toStdString());
+#ifdef _WIN64
+                path = std::filesystem::path(url.toLocalFile().toStdWString());
+#endif
+                InstallDragDropPkg(path, pkgNum, nPkg);
             }
         }
     }

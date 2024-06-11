@@ -6,10 +6,10 @@ Files: CMakeSettings.json
        scripts/ps4_names.txt
        documents/changelog.txt
        documents/readme.txt
+	   documents/Screenshots/screenshot.png
        .github/shadps4.desktop
        .github/shadps4.png
        .gitmodules
-       documents/Screenshots/screenshot.png
        src/images/shadps4.ico
        src/images/controller_icon.png
        src/images/exit_icon.png
@@ -25,6 +25,12 @@ Files: CMakeSettings.json
        src/images/settings_icon.png
        src/images/stop_icon.png
        src/images/themes_icon.png
+	   src/images/flag_jp.png
+	   src/images/flag_eu.png
+	   src/images/flag_us.png
+	   src/images/flag_china.png
+	   src/images/flag_world.png
+	   src/images/flag_unk.png
        src/shadps4.rc
        src/shadps4.qrc
        externals/stb_image.h
