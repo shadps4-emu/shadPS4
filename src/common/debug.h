@@ -33,7 +33,7 @@ enum MarkersPallete : int {
     EmulatorMarkerColor = 0x264653,
     RendererMarkerColor = 0x2a9d8f,
     HleMarkerColor = 0xe9c46a,
-    Reserved0 = 0xf4a261,
+    GpuMarkerColor = 0xf4a261,
     Reserved1 = 0xe76f51,
 };
 
@@ -47,5 +47,8 @@ enum MarkersPallete : int {
     [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::Red); }(msg)
 #define TRACE_CRIT(msg)                                                                            \
     [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::HotPink); }(msg)
+
+#define GPU_SCOPE_LOCATION(name, color)                                                            \
+    tracy::SourceLocationData{name, TracyFunction, TracyFile, (uint32_t)TracyLine, color};
 
 #define FRAME_END FrameMark

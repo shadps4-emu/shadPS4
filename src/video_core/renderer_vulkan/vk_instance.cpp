@@ -160,6 +160,7 @@ bool Instance::CreateDevice() {
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
+    const auto calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -212,6 +213,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceVulkan12Features{
             .scalarBlockLayout = true,
+            .hostQueryReset = true,
             .timelineSemaphore = true,
         },
         vk::PhysicalDeviceVulkan13Features{
@@ -250,6 +252,27 @@ bool Instance::CreateDevice() {
 
     graphics_queue = device->getQueue(queue_family_index, 0);
     present_queue = device->getQueue(queue_family_index, 0);
+
+    if (calibrated_timestamps) {
+        const auto& time_domains = physical_device.getCalibrateableTimeDomainsEXT();
+#if _WIN64
+        const bool has_host_time_domain =
+            std::find(time_domains.cbegin(), time_domains.cend(),
+                      vk::TimeDomainEXT::eQueryPerformanceCounter) != time_domains.cend();
+#else
+        const bool has_host_time_domain =
+            std::find(time_domains.cbegin(), time_domains.cend(),
+                      vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
+#endif
+        if (has_host_time_domain) {
+            static constexpr std::string_view context_name{"vk_rasterizer"};
+            profiler_context =
+                TracyVkContextHostCalibrated(*instance, physical_device, *device,
+                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
+                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr);
+            TracyVkContextName(profiler_context, context_name.data(), context_name.size());
+        }
+    }
 
     CreateAllocator();
     return true;

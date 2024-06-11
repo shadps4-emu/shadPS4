@@ -7,6 +7,9 @@
 
 #include "video_core/renderer_vulkan/vk_platform.h"
 
+#define TRACY_VK_USE_SYMBOL_TABLE
+#include <tracy/TracyVulkan.hpp>
+
 namespace Frontend {
 class WindowSDL;
 }
@@ -65,6 +68,10 @@ public:
 
     vk::Queue GetPresentQueue() const {
         return present_queue;
+    }
+
+    TracyVkCtx GetProfilerContext() const {
+        return profiler_context;
     }
 
     /// Returns true when a known debugging tool is attached.
@@ -208,6 +215,7 @@ private:
     vk::Queue graphics_queue;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
+    TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
     bool image_view_reinterpretation{true};
     bool timeline_semaphores{};
