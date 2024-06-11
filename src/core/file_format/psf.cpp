@@ -12,16 +12,22 @@ PSF::PSF() = default;
 
 PSF::~PSF() = default;
 
-bool PSF::open(const std::string& filepath) {
-    Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
-    if (!file.IsOpen()) {
-        return false;
-    }
+bool PSF::open(const std::string& filepath, std::vector<u8> psfBuffer) {
+    if (!psfBuffer.empty()) {
+        psf.resize(psfBuffer.size());
+        psf = psfBuffer;
+    } else {
+        Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
+        if (!file.IsOpen()) {
+            return false;
+        }
 
-    const u64 psfSize = file.GetSize();
-    psf.resize(psfSize);
-    file.Seek(0);
-    file.Read(psf);
+        const u64 psfSize = file.GetSize();
+        psf.resize(psfSize);
+        file.Seek(0);
+        file.Read(psf);
+        file.Close();
+    }
 
     // Parse file contents
     PSFHeader header;
