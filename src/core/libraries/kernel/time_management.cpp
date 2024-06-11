@@ -47,8 +47,8 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 }
 
 int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
+#ifdef _WIN64
     if (microseconds < 1000u) {
-#if _WIN64
         LARGE_INTEGER interval{
             .QuadPart = -1 * (microseconds * 10u),
         };
@@ -57,7 +57,7 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
         std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
     }
 #else
-        usleep(microseconds);
+    usleep(microseconds);
 #endif
     return 0;
 }
