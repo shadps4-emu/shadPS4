@@ -3,11 +3,11 @@ SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
-# Build shadps4 for Windows 
+# Build shadPS4 for Windows
 
-## Download Visual Studio Community 2022 17.9.6
+## Download Visual Studio Community 2022
 
-Download link: [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
+Download link: [**Visual Studio 2022**](https://visualstudio.microsoft.com/vs/)
 
 ## Requirements
 
@@ -22,4 +22,4 @@ Download link: [Visual Studio 2022](https://visualstudio.microsoft.com/vs/)
 
 - ## Compiling
 
-- Open Visual Studio and select the Clang-debug or Clang-release. It should compile just fine.
+- Open Visual Studio Community and select the **x64-Clang-Release**, **x64-Clang-Debug** or **x64-Clang-RelWithDebInfo**. It should compile just fine.
