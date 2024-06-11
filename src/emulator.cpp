@@ -8,6 +8,7 @@
 #include <core/libraries/videoout/video_out.h>
 #include <fmt/core.h>
 #include "common/config.h"
+#include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
@@ -121,6 +122,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         window.waitEvent();
         Libraries::VideoOut::Flip(FlipPeriod);
         Libraries::VideoOut::Vblank();
+        FRAME_END;
     }
 
     std::exit(0);

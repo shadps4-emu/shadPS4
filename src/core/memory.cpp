@@ -3,6 +3,7 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
@@ -123,6 +124,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // Perform the mapping.
     *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
+    TRACK_ALLOC(*out_addr, size, "VMEM");
     return ORBIS_OK;
 }
 
@@ -149,6 +151,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
 
     // Unmap the memory region.
     impl.Unmap(virtual_addr, size, phys_addr);
+    TRACK_FREE(virtual_addr, "VMEM");
 }
 
 int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {

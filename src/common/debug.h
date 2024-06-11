@@ -12,3 +12,40 @@
 #endif
 
 #include <tracy/Tracy.hpp>
+
+static inline bool IsProfilerConnected() {
+    return tracy::GetProfiler().IsConnected();
+}
+
+#define CUSTOM_LOCK(type, varname)                                                                 \
+    tracy::LockableCtx varname {                                                                   \
+        []() -> const tracy::SourceLocationData* {                                                 \
+            static constexpr tracy::SourceLocationData srcloc{nullptr, #type " " #varname,         \
+                                                              TracyFile, TracyLine, 0};            \
+            return &srcloc;                                                                        \
+        }()                                                                                        \
+    }
+
+#define TRACK_ALLOC(ptr, size, pool) TracyAllocN(std::bit_cast<void*>(ptr), (size), (pool))
+#define TRACK_FREE(ptr, pool) TracyFreeN(std::bit_cast<void*>(ptr), (pool))
+
+enum MarkersPallete : int {
+    EmulatorMarkerColor = 0x264653,
+    RendererMarkerColor = 0x2a9d8f,
+    HleMarkerColor = 0xe9c46a,
+    Reserved0 = 0xf4a261,
+    Reserved1 = 0xe76f51,
+};
+
+#define EMULATOR_TRACE ZoneScopedC(EmulatorMarkerColor)
+#define RENDERER_TRACE ZoneScopedC(RendererMarkerColor)
+#define HLE_TRACE ZoneScopedC(HleMarkerColor)
+
+#define TRACE_WARN(msg)                                                                            \
+    [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::DarkOrange); }(msg);
+#define TRACE_ERROR(msg)                                                                           \
+    [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::Red); }(msg)
+#define TRACE_CRIT(msg)                                                                            \
+    [](const auto& msg) { TracyMessageC(msg.c_str(), msg.size(), tracy::Color::HotPink); }(msg)
+
+#define FRAME_END FrameMark
