@@ -4,8 +4,8 @@
 #pragma once
 
 #include <filesystem>
-#include "types.h"
 #include <vector>
+#include "types.h"
 
 namespace Config {
 void load(const std::filesystem::path& path);
