@@ -28,7 +28,7 @@ void init_pthreads() {
     scePthreadMutexattrInit(&default_mutexattr);
     g_pthread_cxt->setDefaultMutexattr(default_mutexattr);
     // default cond init
-    ScePthreadCondattr default_condattr = nullptr;
+    OrbisPthreadCondattr default_condattr = nullptr;
     scePthreadCondattrInit(&default_condattr);
     g_pthread_cxt->setDefaultCondattr(default_condattr);
     // default attr init
@@ -585,132 +585,6 @@ int PS4_SYSV_ABI scePthreadMutexattrDestroy(ScePthreadMutexattr* attr) {
     }
 }
 
-void* createCond(void* addr) {
-    if (addr == nullptr || *static_cast<ScePthreadCond*>(addr) != nullptr) {
-        return addr;
-    }
-    auto vaddr = reinterpret_cast<u64>(addr);
-
-    std::string name = fmt::format("cond{:#x}", vaddr);
-    scePthreadCondInit(static_cast<ScePthreadCond*>(addr), nullptr, name.c_str());
-    return addr;
-}
-
-int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr,
-                                    const char* name) {
-    if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-
-    if (attr == nullptr) {
-        attr = g_pthread_cxt->getDefaultCondattr();
-    }
-
-    *cond = new PthreadCondInternal{};
-
-    if (name != nullptr) {
-        (*cond)->name = name;
-    } else {
-        (*cond)->name = "nonameCond";
-    }
-
-    int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
-
-    if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
-    }
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
-    case EINVAL:
-        return SCE_KERNEL_ERROR_EINVAL;
-    case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
-int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
-    *attr = new PthreadCondAttrInternal{};
-
-    int result = pthread_condattr_init(&(*attr)->cond_attr);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
-int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread, "called");
-    cond = static_cast<ScePthreadCond*>(createCond(cond));
-
-    if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-
-    int result = pthread_cond_broadcast(&(*cond)->cond);
-
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
-
-    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
-}
-
-int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec) {
-    cond = static_cast<ScePthreadCond*>(createCond(cond));
-    if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    if (mutex == nullptr || *mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    timespec time{};
-    time.tv_sec = usec / 1000000;
-    time.tv_nsec = ((usec % 1000000) * 1000);
-    int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, &time);
-
-    LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case ETIMEDOUT:
-        return SCE_KERNEL_ERROR_ETIMEDOUT;
-    case EINTR:
-        return SCE_KERNEL_ERROR_EINTR;
-    case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
-int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
-    if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    int result = pthread_cond_destroy(&(*cond)->cond);
-
-    LOG_INFO(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case EBUSY:
-        return SCE_KERNEL_ERROR_EBUSY;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
@@ -750,27 +624,6 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(ScePthreadMutex* mutex) {
     int result = scePthreadMutexDestroy(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
-                     : POSIX_EOTHER;
-        return rt;
-    }
-    return result;
-}
-
-int PS4_SYSV_ABI posix_pthread_cond_wait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
-    int result = scePthreadCondWait(cond, mutex);
-    if (result < 0) {
-        UNREACHABLE();
-    }
-    return result;
-}
-
-int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast");
-    int result = scePthreadCondBroadcast(cond);
-    if (result != 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
                      ? result + -SCE_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
@@ -1009,67 +862,6 @@ ScePthread PS4_SYSV_ABI posix_pthread_self() {
     return g_pthread_self;
 }
 
-int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
-    if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-
-    int result = pthread_cond_signal(&(*cond)->cond);
-
-    LOG_INFO(Kernel_Pthread, "scePthreadCondSignal, result={}", result);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case EBUSY:
-        return SCE_KERNEL_ERROR_EBUSY;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
-int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
-    if (cond == nullptr || *cond == nullptr) {
-        // return SCE_KERNEL_ERROR_EINVAL;
-        cond = static_cast<ScePthreadCond*>(createCond(cond)); // check this. Kero Blaster.
-    }
-    if (mutex == nullptr || *mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    int result = pthread_cond_wait(&(*cond)->cond, &(*mutex)->pth_mutex);
-
-    LOG_INFO(Kernel_Pthread, "scePthreadCondWait, result={}", result);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case EINTR:
-        return SCE_KERNEL_ERROR_EINTR;
-    case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
-int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
-    if (attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-    int result = pthread_condattr_destroy(&(*attr)->cond_attr);
-
-    LOG_INFO(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
-
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
-    }
-}
-
 int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
 
     if (mutex == nullptr) {
@@ -1202,15 +994,6 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
-    // cond calls
-    LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
-    LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
-    LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", 1, 1, scePthreadCondBroadcast);
-    LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", 1, 1, scePthreadCondWait);
-    LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrDestroy);
-    LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", 1, 1, scePthreadCondSignal);
-    LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel", 1, 1, scePthreadCondTimedwait);
-    LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", 1, 1, scePthreadCondDestroy);
 
     // posix calls
     LIB_FUNCTION("wtkt-teR1so", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_attr_init);
@@ -1220,8 +1003,6 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("ltCfaGr2JGE", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_destroy);
-    LIB_FUNCTION("Op8TBGY5KHg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_wait);
-    LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
     LIB_FUNCTION("dQHWEsJtoE4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
     LIB_FUNCTION("mDmgMOGVUqg", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_mutexattr_settype);
@@ -1233,7 +1014,6 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
-    LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
     LIB_FUNCTION("K-jXhbt2gn4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_trylock);
     LIB_FUNCTION("E+tyo3lp5Lw", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_setdetachstate);
@@ -1243,6 +1023,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("m0iS6jNsXds", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_min);
     // libs
     ThreadsRwlockSymbolsRegister(sym);
+    ThreadsCondSymbolsRegister(sym);
 }
 
 } // namespace Libraries::Kernel

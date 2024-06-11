@@ -34,8 +34,8 @@ using ScePthread = PthreadInternal*;
 using ScePthreadAttr = PthreadAttrInternal*;
 using ScePthreadMutex = PthreadMutexInternal*;
 using ScePthreadMutexattr = PthreadMutexattrInternal*;
-using ScePthreadCond = PthreadCondInternal*;
-using ScePthreadCondattr = PthreadCondAttrInternal*;
+using OrbisPthreadCond = PthreadCondInternal*;
+using OrbisPthreadCondattr = PthreadCondAttrInternal*;
 using OrbisPthreadRwlock = PthreadRwInternal*;
 using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
 
@@ -114,10 +114,10 @@ public:
     void setDefaultMutexattr(ScePthreadMutexattr attr) {
         m_default_mutexattr = attr;
     }
-    ScePthreadCondattr* getDefaultCondattr() {
+    OrbisPthreadCondattr* getDefaultCondattr() {
         return &m_default_condattr;
     }
-    void setDefaultCondattr(ScePthreadCondattr attr) {
+    void setDefaultCondattr(OrbisPthreadCondattr attr) {
         m_default_condattr = attr;
     }
     ScePthreadAttr* GetDefaultAttr() {
@@ -141,7 +141,7 @@ public:
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
-    ScePthreadCondattr m_default_condattr = nullptr;
+    OrbisPthreadCondattr m_default_condattr = nullptr;
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
     OrbisPthreadRwlockattr m_default_Rwattr = nullptr;
@@ -174,20 +174,11 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 /****
- * Cond calls
- */
-int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr,
-                                    const char* name);
-int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
-int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
-int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex);
-/****
  * Posix calls
  */
 int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex);
-int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond);
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Kernel
