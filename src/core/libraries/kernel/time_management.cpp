@@ -48,7 +48,7 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 
 int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     if (microseconds < 1000u) {
-#if _WIN64
+#ifdef _WIN64
         LARGE_INTEGER interval{
             .QuadPart = -1 * (microseconds * 10u),
         };
