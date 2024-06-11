@@ -9,12 +9,12 @@
 #include "core/libraries/libs.h"
 
 #ifdef _WIN64
-#include <Windows.h>
 #include <pthread_time.h>
+#include <windows.h>
 
 // http://stackoverflow.com/a/31411628/4725495
 static u32(__stdcall* NtDelayExecution)(BOOL Alertable, PLARGE_INTEGER DelayInterval) =
-    (u32(__stdcall*)(BOOL, PLARGE_INTEGER))GetProcAddress(GetModuleHandle("ntdll.dll"),
+    (u32(__stdcall*)(BOOL, PLARGE_INTEGER))GetProcAddress(GetModuleHandleA("ntdll.dll"),
                                                           "NtDelayExecution");
 #else
 #include <time.h>
