@@ -46,16 +46,22 @@ void Scheduler::AllocateWorkerCommandBuffers() {
     current_cmdbuf = command_pool.Commit();
     current_cmdbuf.begin(begin_info);
 
-    static const auto scope_loc = GPU_SCOPE_LOCATION("Guest Frame", MarkersPallete::GpuMarkerColor);
-    new (profiler_scope)
-        tracy::VkCtxScope{instance.GetProfilerContext(), &scope_loc, current_cmdbuf, true};
+    auto* profiler_ctx = instance.GetProfilerContext();
+    if (profiler_ctx) {
+        static const auto scope_loc =
+            GPU_SCOPE_LOCATION("Guest Frame", MarkersPallete::GpuMarkerColor);
+        new (profiler_scope) tracy::VkCtxScope{profiler_ctx, &scope_loc, current_cmdbuf, true};
+    }
 }
 
 void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore) {
     const u64 signal_value = master_semaphore.NextTick();
 
-    profiler_scope->~VkCtxScope();
-    TracyVkCollect(instance.GetProfilerContext(), current_cmdbuf);
+    auto* profiler_ctx = instance.GetProfilerContext();
+    if (profiler_ctx) {
+        profiler_scope->~VkCtxScope();
+        TracyVkCollect(profiler_ctx, current_cmdbuf);
+    }
 
     std::scoped_lock lk{submit_mutex};
     master_semaphore.SubmitWork(current_cmdbuf, wait_semaphore, signal_semaphore, signal_value);

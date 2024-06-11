@@ -272,8 +272,9 @@ void RendererVulkan::Present(Frame* frame) {
     const vk::CommandBuffer cmdbuf = frame->cmdbuf;
     cmdbuf.begin(begin_info);
     {
-        TracyVkZoneC(instance.GetProfilerContext(), cmdbuf, "Host frame",
-                     MarkersPallete::GpuMarkerColor);
+        auto* profiler_ctx = instance.GetProfilerContext();
+        TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
+                          MarkersPallete::GpuMarkerColor, profiler_ctx != nullptr);
 
         const vk::Extent2D extent = swapchain.GetExtent();
         const std::array pre_barriers{
@@ -339,8 +340,11 @@ void RendererVulkan::Present(Frame* frame) {
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                                vk::PipelineStageFlagBits::eAllCommands,
                                vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+
+        if (profiler_ctx) {
+            TracyVkCollect(profiler_ctx, cmdbuf);
+        }
     }
-    TracyVkCollect(instance.GetProfilerContext(), cmdbuf);
     cmdbuf.end();
 
     static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
