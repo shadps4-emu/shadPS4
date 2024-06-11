@@ -429,8 +429,10 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
     for (u32 i = 0; i < num_buffers; ++i) {
         const auto& buffer = guest_buffers[i];
         const auto& host_buffer = std::ranges::find_if(
-            ranges_merged.cbegin(), ranges_merged.cend(),
-            [&](const BufferRange& range) { return (buffer.base_address >= range.base_address); });
+            ranges_merged.cbegin(), ranges_merged.cend(), [&](const BufferRange& range) {
+                return (buffer.base_address >= range.base_address &&
+                        buffer.base_address < range.end_address);
+            });
         assert(host_buffer != ranges_merged.cend());
 
         host_buffers[i] = staging.Handle();

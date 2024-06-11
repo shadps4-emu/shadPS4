@@ -9,9 +9,16 @@
 #include "core/libraries/libs.h"
 
 #ifdef _WIN64
+#include <Windows.h>
 #include <pthread_time.h>
+
+// http://stackoverflow.com/a/31411628/4725495
+static u32(__stdcall* NtDelayExecution)(BOOL Alertable, PLARGE_INTEGER DelayInterval) =
+    (u32(__stdcall*)(BOOL, PLARGE_INTEGER))GetProcAddress(GetModuleHandle("ntdll.dll"),
+                                                          "NtDelayExecution");
 #else
 #include <time.h>
+#include <unistd.h>
 #endif
 
 namespace Libraries::Kernel {
@@ -40,8 +47,18 @@ u64 PS4_SYSV_ABI sceKernelReadTsc() {
 }
 
 int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
-    ASSERT(microseconds >= 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    if (microseconds < 1000u) {
+#if _WIN64
+        LARGE_INTEGER interval{
+            .QuadPart = -1 * (microseconds * 10u),
+        };
+        NtDelayExecution(FALSE, &interval);
+    } else {
+        std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    }
+#else
+        usleep(microseconds);
+#endif
     return 0;
 }
 

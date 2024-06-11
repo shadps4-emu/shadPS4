@@ -232,8 +232,7 @@ void StreamBuffer::WaitPendingOperations(u64 requested_upper_bound) {
 }
 
 u64 StreamBuffer::Copy(VAddr src, size_t size, size_t alignment /*= 0*/) {
-    static const u64 MinUniformAlignment = instance.UniformMinAlignment();
-    const auto [data, offset, _] = Map(size, MinUniformAlignment);
+    const auto [data, offset, _] = Map(size, alignment);
     std::memcpy(data, reinterpret_cast<const void*>(src), size);
     Commit(size);
     return offset;
