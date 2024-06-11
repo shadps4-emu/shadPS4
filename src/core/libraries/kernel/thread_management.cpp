@@ -801,6 +801,20 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     }
 }
 
+int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
+                                      pthreadEntryFunc start_routine, void* arg) {
+    LOG_INFO(Kernel_Pthread, "posix pthread_create redirect to scePthreadCreate");
+
+    int result = scePthreadCreate(thread, attr, start_routine, arg, "");
+    if (result != 0) {
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
+        return rt;
+    }
+    return result;
+}
+
 ScePthread PThreadPool::Create() {
     std::scoped_lock lock{m_mutex};
 
@@ -853,6 +867,12 @@ int PS4_SYSV_ABI posix_pthread_join(ScePthread thread, void** res) {
 }
 
 int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
+    LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
+    thread->is_detached = true;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
     LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
     thread->is_detached = true;
     return ORBIS_OK;
@@ -969,6 +989,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_join);
+    LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_detach);
+    LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
 
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
