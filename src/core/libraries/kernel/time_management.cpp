@@ -63,9 +63,7 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 }
 
 int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
-    ASSERT(microseconds >= 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    return 0;
+    return sceKernelUsleep(microseconds);
 }
 
 u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
@@ -79,11 +77,15 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     }
     clockid_t pclock_id = CLOCK_REALTIME;
     switch (clock_id) {
-    case 0:
+    case ORBIS_CLOCK_REALTIME:
+    case ORBIS_CLOCK_REALTIME_PRECISE:
+    case ORBIS_CLOCK_REALTIME_FAST:
         pclock_id = CLOCK_REALTIME;
         break;
-    case 13:
-    case 4:
+    case ORBIS_CLOCK_SECOND:
+    case ORBIS_CLOCK_MONOTONIC:
+    case ORBIS_CLOCK_MONOTONIC_PRECISE:
+    case ORBIS_CLOCK_MONOTONIC_FAST:
         pclock_id = CLOCK_MONOTONIC;
         break;
     default:
@@ -167,6 +169,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);
+    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
     LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
