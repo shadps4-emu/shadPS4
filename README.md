@@ -36,13 +36,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
 
-To discuss shadPS4 development or suggest ideas, join the [Discord server](https://discord.gg/MyZRaBngxA)
+To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
 
-Check us on [X (twitter)](https://x.com/shadps4) or on our [website](https://shadps4.net/).
+Check us on [**X (twitter)**](https://x.com/shadps4) or on our [**website**](https://shadps4.net/).
 
 # Status
 
-In development, 2D games are working like [Sonic Mania](https://www.youtube.com/watch?v=AAHoNzhHyCU), Undertale, Momodora and others...
+In development, 2D games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), Undertale, Momodora and others...
 
 # Why?
 
@@ -52,11 +52,11 @@ The project started as a fun project. Due to limited free time, it will probably
 
 ## Windows
 
-Check the build instructions for [Windows](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
+Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
 
 ## Linux
 
-Check the build instructions for [Linux](https://github.com/shadps4-emu/shadPS4/blob/main/documents/linux_building.md).
+Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/linux_building.md).
 
 ## Build status
 
@@ -79,18 +79,20 @@ C:\Users\******\shadPS4.exe C:\******\game_eboot.bin
 
 # Main team
 
-- [georgemoralis](https://github.com/georgemoralis)
-- [raphaelthegreat](https://github.com/raphaelthegreat)
-- [psucien](https://github.com/psucien)
-- [skmp](https://github.com/skmp)
-- [wheremyfoodat](https://github.com/wheremyfoodat)
-- [raziel1000](https://github.com/raziel1000)
+- [**georgemoralis**](https://github.com/georgemoralis)
+- [**raphaelthegreat**](https://github.com/raphaelthegreat)
+- [**psucien**](https://github.com/psucien)
+- [**skmp**](https://github.com/skmp)
+- [**wheremyfoodat**](https://github.com/wheremyfoodat)
+- [**raziel1000**](https://github.com/raziel1000)
 
-Logo is done by [Xphalnos](https://github.com/Xphalnos)
+Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
-# Contribution
+# Contributing
 
-We currently accept any contribution, just open a PR and we will check it :)
+If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.
+
+Open a PR and we'll check it :)
 
 # Contributors
 
@@ -100,5 +102,5 @@ We currently accept any contribution, just open a PR and we will check it :)
 
 # Sister Projects
 
-- [Panda3DS](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
-- [hydra](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
+- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
+- [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
