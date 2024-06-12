@@ -1512,9 +1512,9 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         const auto& ccb_span = std::span<const u32>{ccb, ccb_size_dw};
 
         if (Config::dumpPM4()) {
-            static auto last_frame_num = frames_submitted;
+            static auto last_frame_num = -1LL;
             static u32 seq_num{};
-            if (last_frame_num && last_frame_num == frames_submitted) {
+            if (last_frame_num == frames_submitted) {
                 ++seq_num;
             } else {
                 last_frame_num = frames_submitted;
