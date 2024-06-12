@@ -5,8 +5,8 @@
 #include <boost/intrusive/list.hpp>
 #include <pthread.h>
 #include "common/assert.h"
-#include "common/scope_exit.h"
 #include "common/logging/log.h"
+#include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
@@ -18,9 +18,7 @@ using ListBaseHook =
 class Semaphore {
 public:
     Semaphore(s32 init_count, s32 max_count, bool is_fifo)
-        : token_count{init_count}, max_count{max_count}, is_fifo{is_fifo} {
-
-    }
+        : token_count{init_count}, max_count{max_count}, is_fifo{is_fifo} {}
 
     bool Wait(bool can_block, s32 need_count, u64* timeout) {
         if (HasAvailableTokens(need_count)) {
@@ -33,7 +31,9 @@ public:
         // Create waiting thread object and add it into the list of waiters.
         WaitingThread waiter{need_count, is_fifo};
         AddWaiter(waiter);
-        SCOPE_EXIT { PopWaiter(waiter); };
+        SCOPE_EXIT {
+            PopWaiter(waiter);
+        };
 
         // Perform the wait.
         return waiter.Wait(timeout);
@@ -87,7 +87,8 @@ private:
             const auto start = std::chrono::high_resolution_clock::now();
             const auto status = cv.wait_for(lk, std::chrono::microseconds(*timeout));
             const auto end = std::chrono::high_resolution_clock::now();
-            const auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            const auto time =
+                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             *timeout -= time;
             return status != std::cv_status::timeout;
         }
@@ -126,9 +127,9 @@ private:
         return false;
     }
 
-    using WaitingThreads = boost::intrusive::list<WaitingThread,
-                                        boost::intrusive::base_hook<ListBaseHook>,
-                                        boost::intrusive::constant_time_size<false>>;
+    using WaitingThreads =
+        boost::intrusive::list<WaitingThread, boost::intrusive::base_hook<ListBaseHook>,
+                               boost::intrusive::constant_time_size<false>>;
     WaitingThreads wait_list;
     std::atomic<s32> token_count;
     std::mutex mutex;
@@ -138,7 +139,7 @@ private:
 
 using OrbisKernelSema = Semaphore*;
 
-s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema *sem, const char *pName, u32 attr,
+s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema* sem, const char* pName, u32 attr,
                                      s32 initCount, s32 maxCount, const void* pOptParam) {
     if (!pName || attr > 2 || initCount < 0 || maxCount <= 0 || initCount > maxCount) {
         LOG_ERROR(Lib_Kernel, "Semaphore creation parameters are invalid!");
@@ -161,7 +162,9 @@ s32 PS4_SYSV_ABI sceKernelSignalSema(OrbisKernelSema sem, s32 signalCount) {
 }
 
 s32 PS4_SYSV_ABI sceKernelPollSema(OrbisKernelSema sem, s32 needCount) {
-    ASSERT(sem->Wait(false, needCount, nullptr));
+    if (!sem->Wait(false, needCount, nullptr)) {
+        return ORBIS_KERNEL_ERROR_EBUSY;
+    }
     return ORBIS_OK;
 }
 
@@ -169,6 +172,7 @@ void SemaphoreSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("188x57JYp0g", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateSema);
     LIB_FUNCTION("Zxa0VhQVTsk", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitSema);
     LIB_FUNCTION("4czppHBiriw", "libkernel", 1, "libkernel", 1, 1, sceKernelSignalSema);
+    LIB_FUNCTION("12wOHk8ywb0", "libkernel", 1, "libkernel", 1, 1, sceKernelPollSema);
 }
 
 } // namespace Libraries::Kernel
