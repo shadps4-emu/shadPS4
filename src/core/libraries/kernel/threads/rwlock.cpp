@@ -35,6 +35,9 @@ int PS4_SYSV_ABI posix_pthread_rwlock_init(OrbisPthreadRwlock* rwlock,
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(OrbisPthreadRwlock* rwlock) {
+    if (*rwlock == nullptr) {
+        posix_pthread_rwlock_init(rwlock, nullptr, nullptr);
+    }
     int result = pthread_rwlock_rdlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_rdlock: error = {}", result);

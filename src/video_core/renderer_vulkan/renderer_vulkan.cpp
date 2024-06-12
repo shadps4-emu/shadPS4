@@ -6,6 +6,7 @@
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
 #include "sdl_window.h"
+#include "video_core/texture_cache/image.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -195,6 +196,11 @@ Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGr
     // Request presentation image from the texture cache.
     const auto info = VideoCore::ImageInfo{attribute};
     auto& image = texture_cache.FindImage(info, cpu_address);
+    return PrepareFrameInternal(image);
+}
+
+Frame* RendererVulkan::PrepareBlankFrame() {
+    auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
     return PrepareFrameInternal(image);
 }
 

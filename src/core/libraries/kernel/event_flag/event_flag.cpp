@@ -73,7 +73,8 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
-    LOG_ERROR(Kernel_Event, "(STUBBED) called");
+    LOG_ERROR(Kernel_Event, "called");
+    ef->Clear(bitPattern);
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPattern,

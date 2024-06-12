@@ -253,7 +253,7 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
 }
 
 void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, void* fd) {
-    return impl->Map(virtual_addr, offset, size, PAGE_READWRITE, fd);
+    return impl->Map(virtual_addr, offset, size, fd ? PAGE_READONLY : PAGE_READWRITE, fd);
 }
 
 void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {

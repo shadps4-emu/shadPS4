@@ -121,7 +121,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         auto it = FindVMA(mapped_addr);
         // If the VMA is free and contains the requested mapping we are done.
         if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
-            mapped_addr = alignment > 0 ? Common::AlignUp(base, alignment) : base;
+            mapped_addr = virtual_addr;
         } else {
             // Search for the first free VMA that fits our mapping.
             while (it->second.type != VMAType::Free || it->second.size < size) {
@@ -142,20 +142,21 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
                            MemoryMapFlags flags, void* fd, size_t offset) {
     ASSERT(virtual_addr == 0);
     virtual_addr = impl.VirtualBase();
+    const size_t size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
     auto it = FindVMA(virtual_addr);
-    while (it->second.type != VMAType::Free || it->second.size < size) {
+    while (it->second.type != VMAType::Free || it->second.size < size_aligned) {
         it++;
     }
     ASSERT(it != vma_map.end());
 
     // Map the file.
     const VAddr mapped_addr = it->second.base;
-    impl.MapFile(mapped_addr, size, offset, fd);
+    impl.MapFile(mapped_addr, Common::AlignDown(size, 4_KB), offset, fd);
 
     // Add virtual memory area
-    auto& new_vma = AddMapping(mapped_addr, size);
+    auto& new_vma = AddMapping(mapped_addr, size_aligned);
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = "File";

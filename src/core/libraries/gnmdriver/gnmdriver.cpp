@@ -66,6 +66,9 @@ static inline u32* WriteTrailingNop(u32* cmdbuf) {
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
+    if (id != SceKernelEvent::Type::GfxEop) {
+        return ORBIS_OK;
+    }
     ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
 
     if (!eq) {

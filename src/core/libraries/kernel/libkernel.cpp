@@ -62,7 +62,7 @@ size_t PS4_SYSV_ABI _writev(int fd, const struct iovec* iov, int iovcn) {
     return total_written;
 }
 
-static thread_local int libc_error;
+static thread_local int libc_error{};
 int* PS4_SYSV_ABI __Error() {
     return &libc_error;
 }
@@ -77,18 +77,19 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
     if (fd == -1) {
         handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, len + offset, NULL);
     } else {
-        void* handle = h->GetFile(fd)->f.GetFileMapping();
+        handle = h->GetFile(fd)->f.GetFileMapping();
     }
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
     return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle, offset);
 }
 
-PS4_SYSV_ABI void* posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
+void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
     void* ptr;
     LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap\n");
     // posix call the difference is that there is a different behaviour when it doesn't return 0 or
     // SCE_OK
+    const VAddr ret_addr = (VAddr)__builtin_return_address(0);
     int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
     ASSERT(result == 0);
     return ptr;
@@ -172,11 +173,16 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path = mnt->GetHostFile(moduleFileName);
 
-    // Load PRX module.
+    // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     u32 handle = linker->LoadModule(path);
     auto* module = linker->GetModule(handle);
-    linker->Relocate(module);
+    linker->RelocateAnyImports(module);
+
+    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
+    if (module->tls.image_size != 0) {
+        linker->AdvanceGenerationCounter();
+    }
 
     // Retrieve and verify proc param according to libkernel.
     u64* param = module->GetProcParam<u64*>();
@@ -196,9 +202,63 @@ s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
     return ORBIS_OK;
 }
 
+static constexpr size_t ORBIS_DBG_MAX_NAME_LENGTH = 256;
+
+struct OrbisModuleInfoForUnwind {
+    u64 st_size;
+    std::array<char, ORBIS_DBG_MAX_NAME_LENGTH> name;
+    VAddr eh_frame_hdr_addr;
+    VAddr eh_frame_addr;
+    u64 eh_frame_size;
+    VAddr seg0_addr;
+    u64 seg0_size;
+};
+
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags, OrbisModuleInfoForUnwind* info) {
+    if (flags >= 3) {
+        std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (!info) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (info->st_size <= sizeof(OrbisModuleInfoForUnwind)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Find module that contains specified address.
+    LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->FindByAddress(addr);
+    const auto mod_info = module->GetModuleInfoEx();
+
+    // Fill in module info.
+    info->name = mod_info.name;
+    info->eh_frame_hdr_addr = mod_info.eh_frame_hdr_addr;
+    info->eh_frame_addr = mod_info.eh_frame_addr;
+    info->eh_frame_size = mod_info.eh_frame_size;
+    info->seg0_addr = mod_info.segments[0].address;
+    info->seg0_size = mod_info.segments[0].size;
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     UNREACHABLE();
     return 0;
+}
+
+char PS4_SYSV_ABI _is_signal_return(s64 *param_1) {
+    char cVar1;
+
+    if (((*param_1 != 0x48006a40247c8d48ULL) || (param_1[1] != 0x50f000001a1c0c7ULL)) ||
+        (cVar1 = '\x01', (param_1[2] & 0xffffffU) != 0xfdebf4)) {
+        cVar1 = ((*(u64*)((s64)param_1 + -5) & 0xffffffffff) == 0x50fca8949) * '\x02';
+    }
+    return cVar1;
+}
+
+int PS4_SYSV_ABI sceKernelGetCpumode() {
+    return 5;
 }
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
@@ -225,6 +285,8 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
                  _sceKernelRtldSetApplicationHeapAPI);
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", 1, 1, sceKernelLoadStartModule);
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
+    LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoForUnwind);
+    LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
 
     // equeue
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
@@ -232,6 +294,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEqueue);
     LIB_FUNCTION("vz+pg2zdopI", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventUserData);
     LIB_FUNCTION("4R6-OvI2cEA", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEvent);
+    LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEventEdge);
     LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", 1, 1, sceKernelTriggerUserEvent);
     LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteUserEvent);
 
@@ -240,11 +303,13 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
+    LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcParam);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
+    LIB_FUNCTION("crb5j7mkk1c", "libkernel", 1, "libkernel", 1, 1, _is_signal_return);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

@@ -84,6 +84,10 @@ struct SceVideoOutVblankStatus {
     u8 pad1[7] = {};
 };
 
+struct SceVideoOutDeviceCapabilityInfo {
+    u64 capability;
+};
+
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);

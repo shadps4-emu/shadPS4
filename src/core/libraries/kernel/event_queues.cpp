@@ -88,6 +88,24 @@ int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
     event.event.ident = id;
     event.event.filter = Kernel::EVFILT_USER;
     event.event.udata = 0;
+    event.event.flags = 1;
+    event.event.fflags = 0;
+    event.event.data = 0;
+
+    return eq->addEvent(event);
+}
+
+int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    Kernel::EqueueEvent event{};
+    event.isTriggered = false;
+    event.event.ident = id;
+    event.event.filter = Kernel::EVFILT_USER;
+    event.event.udata = 0;
+    event.event.flags = 0x21;
     event.event.fflags = 0;
     event.event.data = 0;
 
@@ -111,4 +129,5 @@ int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
     eq->removeEvent(id);
     return ORBIS_OK;
 }
+
 } // namespace Libraries::Kernel

@@ -105,8 +105,9 @@ set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
                src/core/libraries/kernel/event_flag/event_flag_obj.h
-               src/core/libraries/kernel/threads/kernel_threads.h
-               src/core/libraries/kernel/threads/kernel_threads_rwlock.cpp
+               src/core/libraries/kernel/threads/rwlock.cpp
+               src/core/libraries/kernel/threads/semaphore.cpp
+               src/core/libraries/kernel/threads/threads.h
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queue.cpp
@@ -491,6 +492,8 @@ else()
         src/emulator.h
         src/sdl_window.h
         src/sdl_window.cpp
+        src/core/loader/dwarf.h
+        src/core/loader/dwarf.cpp
     )
 endif()
 
