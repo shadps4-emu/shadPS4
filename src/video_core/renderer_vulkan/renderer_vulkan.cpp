@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "common/debug.h"
 #include "common/singleton.h"
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
@@ -270,14 +271,51 @@ void RendererVulkan::Present(Frame* frame) {
     };
     const vk::CommandBuffer cmdbuf = frame->cmdbuf;
     cmdbuf.begin(begin_info);
+    {
+        auto* profiler_ctx = instance.GetProfilerContext();
+        TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
+                          MarkersPallete::GpuMarkerColor, profiler_ctx != nullptr);
 
-    const vk::Extent2D extent = swapchain.GetExtent();
-    const std::array pre_barriers{
-        vk::ImageMemoryBarrier{
-            .srcAccessMask = vk::AccessFlagBits::eNone,
-            .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-            .oldLayout = vk::ImageLayout::eUndefined,
-            .newLayout = vk::ImageLayout::eTransferDstOptimal,
+        const vk::Extent2D extent = swapchain.GetExtent();
+        const std::array pre_barriers{
+            vk::ImageMemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eNone,
+                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .oldLayout = vk::ImageLayout::eUndefined,
+                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = swapchain_image,
+                .subresourceRange{
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+            },
+            vk::ImageMemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+                .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                .oldLayout = vk::ImageLayout::eGeneral,
+                .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = frame->image,
+                .subresourceRange{
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+            },
+        };
+        const vk::ImageMemoryBarrier post_barrier{
+            .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+            .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+            .newLayout = vk::ImageLayout::ePresentSrcKHR,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = swapchain_image,
@@ -288,54 +326,25 @@ void RendererVulkan::Present(Frame* frame) {
                 .baseArrayLayer = 0,
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
-        },
-        vk::ImageMemoryBarrier{
-            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-            .oldLayout = vk::ImageLayout::eGeneral,
-            .newLayout = vk::ImageLayout::eTransferSrcOptimal,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = frame->image,
-            .subresourceRange{
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-            },
-        },
-    };
-    const vk::ImageMemoryBarrier post_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
-        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-        .newLayout = vk::ImageLayout::ePresentSrcKHR,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = swapchain_image,
-        .subresourceRange{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        },
-    };
+        };
 
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
-                           {}, {}, pre_barriers);
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                               vk::PipelineStageFlagBits::eTransfer,
+                               vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
-    cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
-                     vk::ImageLayout::eTransferDstOptimal,
-                     MakeImageBlit(frame->width, frame->height, extent.width, extent.height),
-                     vk::Filter::eLinear);
+        cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
+                         vk::ImageLayout::eTransferDstOptimal,
+                         MakeImageBlit(frame->width, frame->height, extent.width, extent.height),
+                         vk::Filter::eLinear);
 
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
-                           vk::PipelineStageFlagBits::eAllCommands,
-                           vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                               vk::PipelineStageFlagBits::eAllCommands,
+                               vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
 
+        if (profiler_ctx) {
+            TracyVkCollect(profiler_ctx, cmdbuf);
+        }
+    }
     cmdbuf.end();
 
     static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {

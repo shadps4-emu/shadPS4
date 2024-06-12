@@ -54,10 +54,12 @@ private:
     void SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore);
 
 private:
+    const Instance& instance;
     MasterSemaphore master_semaphore;
     CommandPool command_pool;
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
+    tracy::VkCtxScope* profiler_scope{};
 };
 
 } // namespace Vulkan
