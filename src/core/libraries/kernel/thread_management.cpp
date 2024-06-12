@@ -9,8 +9,8 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #ifdef _WIN64
@@ -1122,7 +1122,7 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 int PS4_SYSV_ABI posix_pthread_mutex_trylock(ScePthreadMutex* mutex) {
     int result = scePthreadMutexTrylock(mutex);
     if (result < 0) {
-        //UNREACHABLE();
+        // UNREACHABLE();
     }
     return result;
 }
@@ -1166,17 +1166,17 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
 }
 
 int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
-                                pthreadEntryFunc start_routine, void* arg) {
+                                      pthreadEntryFunc start_routine, void* arg) {
     return posix_pthread_create_name_np(thread, attr, start_routine, arg, "NoName");
 }
 
-using Destructor = void(*)(void*);
+using Destructor = void (*)(void*);
 
 int PS4_SYSV_ABI posix_pthread_key_create(u32* key, Destructor func) {
     return pthread_key_create(key, func);
 }
 
-int PS4_SYSV_ABI posix_pthread_setspecific(int key, const void *value) {
+int PS4_SYSV_ABI posix_pthread_setspecific(int key, const void* value) {
     return pthread_setspecific(key, value);
 }
 
@@ -1217,11 +1217,13 @@ int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
     return sem_post(sem);
 }
 
-int PS4_SYSV_ABI scePthreadGetschedparam(ScePthread thread, int *policy, SceKernelSchedParam *param) {
+int PS4_SYSV_ABI scePthreadGetschedparam(ScePthread thread, int* policy,
+                                         SceKernelSchedParam* param) {
     return pthread_getschedparam(thread->pth, policy, param);
 }
 
-int PS4_SYSV_ABI scePthreadSetschedparam(ScePthread thread, int policy, const SceKernelSchedParam *param) {
+int PS4_SYSV_ABI scePthreadSetschedparam(ScePthread thread, int policy,
+                                         const SceKernelSchedParam* param) {
     return pthread_setschedparam(thread->pth, policy, param);
 }
 

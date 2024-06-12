@@ -256,7 +256,8 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(s32 handle, SceVideoOutDeviceCapabilityInfo *pDeviceCapabilityInfo) {
+s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
+    s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
     pDeviceCapabilityInfo->capability = 0;
     return ORBIS_OK;
 }

@@ -15,7 +15,8 @@ void Translator::V_SAD(const GcnInst& inst) {
 }
 
 void Translator::V_MAC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true), GetSrc(inst.dst[0], true)));
+    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true),
+                                 GetSrc(inst.dst[0], true)));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {

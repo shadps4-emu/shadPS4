@@ -120,7 +120,9 @@ Module* Linker::FindByAddress(VAddr address) {
 
 void Linker::Relocate(Module* module) {
     module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool isJmpRel) {
-        const u32 bit_idx = (isJmpRel ? module->dynamic_info.relocation_table_size / sizeof(elf_relocation) : 0) + i;
+        const u32 bit_idx =
+            (isJmpRel ? module->dynamic_info.relocation_table_size / sizeof(elf_relocation) : 0) +
+            i;
         if (module->TestRelaBit(bit_idx)) {
             return;
         }

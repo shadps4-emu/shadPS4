@@ -3,10 +3,10 @@
 
 #include <vector>
 
-#include "common/assert.h"
 #include "common/alignment.h"
-#include "common/io_file.h"
+#include "common/assert.h"
 #include "common/error.h"
+#include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 
@@ -224,7 +224,8 @@ void* IOFile::GetFileMapping() {
     }
     const int fd = fileno(file);
     HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-    file_mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL, NULL, 0);
+    file_mapping =
+        CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL, NULL, 0);
     ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
     return file_mapping;
 #endif

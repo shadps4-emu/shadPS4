@@ -71,10 +71,14 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DfivPArhucg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_memcmp);
     LIB_FUNCTION("8zsu04XNsZ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_expf);
-    LIB_FUNCTION("aesyjrHVWy4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_strncmp);
-    LIB_FUNCTION("j4ViWNHEgww", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_strlen);
-    LIB_FUNCTION("6sJWiWSRuqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_strncpy);
-    LIB_FUNCTION("gQX+4GDQjpM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_malloc);
+    LIB_FUNCTION("aesyjrHVWy4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strncmp);
+    LIB_FUNCTION("j4ViWNHEgww", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strncpy);
+    LIB_FUNCTION("gQX+4GDQjpM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_malloc);
 };
 
 } // namespace Libraries::LibcInternal

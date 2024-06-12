@@ -14,10 +14,9 @@ T get(uintptr_t addr) {
     return val;
 }
 
-static uintptr_t getEncodedP(uintptr_t& addr, uintptr_t end, u8 encoding,
-                             uintptr_t datarelBase) {
+static uintptr_t getEncodedP(uintptr_t& addr, uintptr_t end, u8 encoding, uintptr_t datarelBase) {
     const uintptr_t startAddr = addr;
-    const u8 *p = (u8*)addr;
+    const u8* p = (u8*)addr;
     uintptr_t result;
 
     // First get value
@@ -109,16 +108,17 @@ bool DecodeEHHdr(uintptr_t ehHdrStart, uintptr_t ehHdrEnd, EHHeaderInfo& ehHdrIn
         if (ehHdrEnd == ehHdrStart) {
             return false;
         }
-        LOG_ERROR(Core_Linker, "Unsupported .eh_frame_hdr at {:#x} "
-                               "need at least 4 bytes of data but only got {:#x}",
+        LOG_ERROR(Core_Linker,
+                  "Unsupported .eh_frame_hdr at {:#x} "
+                  "need at least 4 bytes of data but only got {:#x}",
                   ehHdrStart, ehHdrEnd - ehHdrStart);
         return false;
     }
 
     const u8 version = get<u8>(p++);
     if (version != 1) {
-        LOG_CRITICAL(Core_Linker, "Unsupported .eh_frame_hdr version: {:#x} at {:#x}",
-                     version, ehHdrStart);
+        LOG_CRITICAL(Core_Linker, "Unsupported .eh_frame_hdr version: {:#x} at {:#x}", version,
+                     ehHdrStart);
         return false;
     }
 
@@ -128,9 +128,7 @@ bool DecodeEHHdr(uintptr_t ehHdrStart, uintptr_t ehHdrEnd, EHHeaderInfo& ehHdrIn
 
     ehHdrInfo.eh_frame_ptr = getEncodedP(p, ehHdrEnd, eh_frame_ptr_enc, ehHdrStart);
     ehHdrInfo.fde_count =
-        fde_count_enc == DW_EH_PE_omit
-            ? 0
-            : getEncodedP(p, ehHdrEnd, fde_count_enc, ehHdrStart);
+        fde_count_enc == DW_EH_PE_omit ? 0 : getEncodedP(p, ehHdrEnd, fde_count_enc, ehHdrStart);
     ehHdrInfo.table = p;
 
     return true;

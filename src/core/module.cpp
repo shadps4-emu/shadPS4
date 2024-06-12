@@ -180,7 +180,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                 if (eh_frame_hdr_addr > eh_frame_addr) {
                     eh_frame_size = (eh_frame_hdr_addr - eh_frame_addr);
                 } else {
-                    eh_frame_size = (aligned_base_size-eh_frame_hdr_addr);
+                    eh_frame_size = (aligned_base_size - eh_frame_hdr_addr);
                 }
             }
             break;

@@ -117,8 +117,8 @@ struct AddressSpace::Impl {
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd ? fd : backing_handle;
-            ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                 phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+            ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr), phys_addr,
+                                 size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         } else {
             ptr =
                 VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,

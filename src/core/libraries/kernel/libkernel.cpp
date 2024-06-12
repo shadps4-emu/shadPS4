@@ -70,18 +70,20 @@ int* PS4_SYSV_ABI __Error() {
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
                                void** res) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",
-                         fmt::ptr(addr), len, prot, flags, fd, offset);
+             fmt::ptr(addr), len, prot, flags, fd, offset);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* memory = Core::Memory::Instance();
     void* handle = NULL;
     if (fd == -1) {
-        handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, len + offset, NULL);
+        handle =
+            CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, len + offset, NULL);
     } else {
         handle = h->GetFile(fd)->f.GetFileMapping();
     }
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
-    return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle, offset);
+    return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
+                           offset);
 }
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
@@ -214,7 +216,8 @@ struct OrbisModuleInfoForUnwind {
     u64 seg0_size;
 };
 
-s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags, OrbisModuleInfoForUnwind* info) {
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
+                                                 OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
         return SCE_KERNEL_ERROR_EINVAL;
@@ -247,7 +250,7 @@ int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     return 0;
 }
 
-char PS4_SYSV_ABI _is_signal_return(s64 *param_1) {
+char PS4_SYSV_ABI _is_signal_return(s64* param_1) {
     char cVar1;
 
     if (((*param_1 != 0x48006a40247c8d48ULL) || (param_1[1] != 0x50f000001a1c0c7ULL)) ||

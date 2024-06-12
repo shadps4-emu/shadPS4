@@ -6,9 +6,9 @@
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
 #include "sdl_window.h"
-#include "video_core/texture_cache/image.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/texture_cache/image.h"
 
 #include <vk_mem_alloc.h>
 
