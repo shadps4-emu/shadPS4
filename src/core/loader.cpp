@@ -7,7 +7,7 @@
 
 namespace Loader {
 
-FileTypes DetectFileType(const std::string& filepath) {
+FileTypes DetectFileType(const std::filesystem::path& filepath) {
     // No file loaded
     if (filepath.empty()) {
         return FileTypes::Unknown;

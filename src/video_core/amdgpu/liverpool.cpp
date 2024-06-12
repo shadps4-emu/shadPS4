@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/thread.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace AmdGpu {
+
+static const char* dcb_task_name{"DCB_TASK"};
+static const char* ccb_task_name{"CCB_TASK"};
+static const char* asc_task_name{"ACB_TASK"};
 
 std::array<u8, 48_KB> Liverpool::ConstantEngine::constants_heap;
 
@@ -69,12 +74,16 @@ void Liverpool::Process(std::stop_token stoken) {
 }
 
 void Liverpool::WaitGpuIdle() {
+    RENDERER_TRACE;
+
     while (const auto old = num_submits.load()) {
         num_submits.wait(old);
     }
 }
 
 Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
+    TracyFiberEnter(ccb_task_name);
+
     while (!ccb.empty()) {
         const auto* header = reinterpret_cast<const PM4Header*>(ccb.data());
         const u32 type = header->type;
@@ -109,7 +118,9 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         case PM4ItOpcode::WaitOnDeCounterDiff: {
             const auto diff = it_body[0];
             while ((cblock.de_count - cblock.ce_count) >= diff) {
+                TracyFiberLeave;
                 co_yield {};
+                TracyFiberEnter(ccb_task_name);
             }
             break;
         }
@@ -120,9 +131,13 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         ccb = ccb.subspan(header->type3.NumWords() + 1);
     }
+
+    TracyFiberLeave;
 }
 
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
+    TracyFiberEnter(dcb_task_name);
+
     cblock.Reset();
 
     // TODO: potentially, ASCs also can depend on CE and in this case the
@@ -132,7 +147,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     if (!ccb.empty()) {
         // In case of CCB provided kick off CE asap to have the constant heap ready to use
         ce_task = ProcessCeUpdate(ccb);
+        TracyFiberLeave;
         ce_task.handle.resume();
+        TracyFiberEnter(dcb_task_name);
     }
 
     while (!dcb.empty()) {
@@ -330,7 +347,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
             while (!wait_reg_mem->Test()) {
+                TracyFiberLeave;
                 co_yield {};
+                TracyFiberEnter(dcb_task_name);
             }
             break;
         }
@@ -340,7 +359,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
         case PM4ItOpcode::WaitOnCeCounter: {
             while (cblock.ce_count <= cblock.de_count) {
+                TracyFiberLeave;
                 ce_task.handle.resume();
+                TracyFiberEnter(dcb_task_name);
             }
             break;
         }
@@ -356,6 +377,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         ASSERT_MSG(ce_task.handle.done(), "Partially processed CCB");
         ce_task.handle.destroy();
     }
+
+    TracyFiberLeave;
 }
 
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {

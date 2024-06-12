@@ -45,26 +45,54 @@ PKG::PKG() = default;
 
 PKG::~PKG() = default;
 
-bool PKG::Open(const std::string& filepath) {
+bool PKG::Open(const std::filesystem::path& filepath) {
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
         return false;
     }
     pkgSize = file.GetSize();
 
-    PKGHeader pkgheader;
     file.Read(pkgheader);
+    if (pkgheader.magic != 0x7F434E54)
+        return false;
+
+    for (const auto& flag : flagNames) {
+        if (isFlagSet(pkgheader.pkg_content_flags, flag.first)) {
+            if (!pkgFlags.empty())
+                pkgFlags += (", ");
+            pkgFlags += (flag.second);
+        }
+    }
 
     // Find title id it is part of pkg_content_id starting at offset 0x40
     file.Seek(0x47); // skip first 7 characters of content_id
     file.Read(pkgTitleID);
 
+    file.Seek(0);
+    pkg.resize(pkgheader.pkg_promote_size);
+    file.Read(pkg);
+
+    u32 offset = pkgheader.pkg_table_entry_offset;
+    u32 n_files = pkgheader.pkg_table_entry_count;
+    for (int i = 0; i < n_files; i++) {
+        PKGEntry entry;
+        std::memcpy(&entry, &pkg[offset + i * 0x20], sizeof(entry));
+
+        // Try to figure out the name
+        const auto name = GetEntryNameByType(entry.id);
+        if (name == "param.sfo") {
+            sfo.clear();
+            file.Seek(entry.offset);
+            sfo.resize(entry.size);
+            file.ReadRaw<u8>(sfo.data(), entry.size);
+        }
+    }
     file.Close();
 
     return true;
 }
 
-bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extract,
+bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::path& extract,
                   std::string& failreason) {
     extract_path = extract;
     pkgpath = filepath;
@@ -74,6 +102,9 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     }
     pkgSize = file.GetSize();
     file.ReadRaw<u8>(&pkgheader, sizeof(PKGHeader));
+
+    if (pkgheader.magic != 0x7F434E54)
+        return false;
 
     if (pkgheader.pkg_size > pkgSize) {
         failreason = "PKG file size is different";
@@ -90,6 +121,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     u32 offset = pkgheader.pkg_table_entry_offset;
     u32 n_files = pkgheader.pkg_table_entry_count;
 
+    std::array<u8, 64> concatenated_ivkey_dk3;
     std::array<u8, 32> seed_digest;
     std::array<std::array<u8, 32>, 7> digest1;
     std::array<std::array<u8, 256>, 7> key1;
@@ -101,6 +133,9 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
 
         // Try to figure out the name
         const auto name = GetEntryNameByType(entry.id);
+        const auto filepath = extract_path / "sce_sys" / name;
+        std::filesystem::create_directories(filepath.parent_path());
+
         if (name.empty()) {
             // Just print with id
             Common::FS::IOFile out(extract_path / "sce_sys" / std::to_string(entry.id),
@@ -109,9 +144,6 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
             out.Close();
             continue;
         }
-
-        const auto filepath = extract_path / "sce_sys" / name;
-        std::filesystem::create_directories(filepath.parent_path());
 
         if (entry.id == 0x1) {         // DIGESTS, seek;
                                        // file.Seek(entry.offset, fsSeekSet);
@@ -133,7 +165,6 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
             file.Read(imgkeydata);
 
             // The Concatenated iv + dk3 imagekey for HASH256
-            std::array<CryptoPP::byte, 64> concatenated_ivkey_dk3;
             std::memcpy(concatenated_ivkey_dk3.data(), &entry, sizeof(entry));
             std::memcpy(concatenated_ivkey_dk3.data() + sizeof(entry), dk3_.data(), sizeof(dk3_));
 
@@ -150,10 +181,33 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
         Common::FS::IOFile out(extract_path / "sce_sys" / name, Common::FS::FileAccessMode::Write);
         out.WriteRaw<u8>(pkg.data() + entry.offset, entry.size);
         out.Close();
+
+        // Decrypt Np stuff and overwrite.
+        if (entry.id == 0x400 || entry.id == 0x401 || entry.id == 0x402 ||
+            entry.id == 0x403) { // somehow 0x401 is not decrypting
+            decNp.resize(entry.size);
+            std::span<u8> cipherNp(pkg.data() + entry.offset, entry.size);
+            std::array<u8, 64> concatenated_ivkey_dk3_;
+            std::memcpy(concatenated_ivkey_dk3_.data(), &entry, sizeof(entry));
+            std::memcpy(concatenated_ivkey_dk3_.data() + sizeof(entry), dk3_.data(), sizeof(dk3_));
+            PKG::crypto.ivKeyHASH256(concatenated_ivkey_dk3_, ivKey);
+            PKG::crypto.aesCbcCfb128DecryptEntry(ivKey, cipherNp, decNp);
+
+            Common::FS::IOFile out(extract_path / "sce_sys" / name,
+                                   Common::FS::FileAccessMode::Write);
+            out.Write(decNp);
+            out.Close();
+        }
+    }
+
+    // Extract trophy files
+    if (!trp.Extract(extract_path)) {
+        // Do nothing some pkg come with no trp file.
+        // return false;
     }
 
     // Read the seed
-    std::array<CryptoPP::byte, 16> seed;
+    std::array<u8, 16> seed;
     file.Seek(pkgheader.pfs_image_offset + 0x370);
     file.Read(seed);
 
@@ -165,7 +219,7 @@ bool PKG::Extract(const std::string& filepath, const std::filesystem::path& extr
     std::vector<u8> pfs_encrypted(length);
     file.Seek(pkgheader.pfs_image_offset);
     file.Read(pfs_encrypted);
-
+    file.Close();
     // Decrypt the pfs_image.
     std::vector<u8> pfs_decrypted(length);
     PKG::crypto.decryptPFS(dataKey, tweakKey, pfs_encrypted, pfs_decrypted, 0);

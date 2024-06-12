@@ -62,6 +62,7 @@ public:
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
+    void V_OR_B32(const GcnInst& inst);
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);

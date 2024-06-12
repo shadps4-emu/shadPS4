@@ -8,6 +8,7 @@
 #include <core/libraries/videoout/video_out.h>
 #include <fmt/core.h>
 #include "common/config.h"
+#include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
@@ -65,7 +66,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
             if (entry.path().filename() == "param.sfo") {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
-                param_sfo->open(sce_sys_folder.string() + "/param.sfo");
+                param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 std::string id(param_sfo->GetString("CONTENT_ID"), 7, 9);
                 std::string title(param_sfo->GetString("TITLE"));
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
@@ -126,6 +127,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::this_thread::sleep_for(FlipPeriod);
         Libraries::VideoOut::Flip(FlipPeriod);
         Libraries::VideoOut::Vblank();
+        FRAME_END;
     }
 
     std::exit(0);

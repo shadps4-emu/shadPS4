@@ -13,6 +13,7 @@
 
 #include "common/bounded_threadsafe_queue.h"
 #include "common/config.h"
+#include "common/debug.h"
 #include "common/io_file.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
@@ -167,6 +168,24 @@ public:
 
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
                    const char* function, std::string message) {
+        // Propagate important log messages to the profiler
+        if (IsProfilerConnected()) {
+            const auto& msg_str = std::format("[{}] {}", GetLogClassName(log_class), message);
+            switch (log_level) {
+            case Level::Warning:
+                TRACE_WARN(msg_str);
+                break;
+            case Level::Error:
+                TRACE_ERROR(msg_str);
+                break;
+            case Level::Critical:
+                TRACE_CRIT(msg_str);
+                break;
+            default:
+                break;
+            }
+        }
+
         if (!filter.CheckMessage(log_class, log_level)) {
             return;
         }

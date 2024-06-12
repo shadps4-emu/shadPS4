@@ -93,3 +93,11 @@ add_subdirectory(sirit EXCLUDE_FROM_ALL)
 if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
+
+# Tracy
+option(TRACY_ENABLE "" ON)
+option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
+option(TRACY_ON_DEMAND "" ON)
+option(TRACY_NO_FRAME_IMAGE "" ON)
+option(TRACY_FIBERS "" ON) # For AmdGpu frontend profiling
+add_subdirectory(tracy EXCLUDE_FROM_ALL)

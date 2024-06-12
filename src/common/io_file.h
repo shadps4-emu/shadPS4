@@ -203,6 +203,11 @@ public:
         return WriteSpan(string);
     }
 
+    static void WriteBytes(const std::filesystem::path path, std::span<u8> vec) {
+        IOFile out(path, FileAccessMode::Write);
+        out.Write(vec);
+    }
+
 private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};

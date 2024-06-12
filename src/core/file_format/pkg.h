@@ -12,6 +12,7 @@
 #include "common/endian.h"
 #include "core/crypto/crypto.h"
 #include "pfs.h"
+#include "trp.h"
 
 struct PKGHeader {
     u32_be magic; // Magic
@@ -103,10 +104,12 @@ public:
     PKG();
     ~PKG();
 
-    bool Open(const std::string& filepath);
+    bool Open(const std::filesystem::path& filepath);
     void ExtractFiles(const int& index);
-    bool Extract(const std::string& filepath, const std::filesystem::path& extract,
+    bool Extract(const std::filesystem::path& filepath, const std::filesystem::path& extract,
                  std::string& failreason);
+
+    std::vector<u8> sfo;
 
     u32 GetNumberOfFiles() {
         return fsTable.size();
@@ -116,16 +119,42 @@ public:
         return pkgSize;
     }
 
+    std::string GetPkgFlags() {
+        return pkgFlags;
+    }
+
     std::string_view GetTitleID() {
         return std::string_view(pkgTitleID, 9);
     }
 
+    PKGHeader GetPkgHeader() {
+        return pkgheader;
+    }
+
+    static bool isFlagSet(u32_be variable, PKGContentFlag flag) {
+        return (variable) & static_cast<u32>(flag);
+    }
+
+    static constexpr std::array<std::pair<PKGContentFlag, std::string_view>, 10> flagNames = {
+        {{PKGContentFlag::FIRST_PATCH, "FIRST_PATCH"},
+         {PKGContentFlag::PATCHGO, "PATCHGO"},
+         {PKGContentFlag::REMASTER, "REMASTER"},
+         {PKGContentFlag::PS_CLOUD, "PS_CLOUD"},
+         {PKGContentFlag::GD_AC, "GD_AC"},
+         {PKGContentFlag::NON_GAME, "NON_GAME"},
+         {PKGContentFlag::UNKNOWN_0x8000000, "UNKNOWN_0x8000000"},
+         {PKGContentFlag::SUBSEQUENT_PATCH, "SUBSEQUENT_PATCH"},
+         {PKGContentFlag::DELTA_PATCH, "DELTA_PATCH"},
+         {PKGContentFlag::CUMULATIVE_PATCH, "CUMULATIVE_PATCH"}}};
+
 private:
     Crypto crypto;
+    TRP trp;
     std::vector<u8> pkg;
     u64 pkgSize = 0;
     char pkgTitleID[9];
     PKGHeader pkgheader;
+    std::string pkgFlags;
 
     std::unordered_map<int, std::filesystem::path> extractPaths;
     std::vector<pfs_fs_table> fsTable;
@@ -133,12 +162,13 @@ private:
     std::vector<u64> sectorMap;
     u64 pfsc_offset;
 
-    std::array<CryptoPP::byte, 32> dk3_;
-    std::array<CryptoPP::byte, 32> ivKey;
-    std::array<CryptoPP::byte, 256> imgKey;
-    std::array<CryptoPP::byte, 32> ekpfsKey;
-    std::array<CryptoPP::byte, 16> dataKey;
-    std::array<CryptoPP::byte, 16> tweakKey;
+    std::array<u8, 32> dk3_;
+    std::array<u8, 32> ivKey;
+    std::array<u8, 256> imgKey;
+    std::array<u8, 32> ekpfsKey;
+    std::array<u8, 16> dataKey;
+    std::array<u8, 16> tweakKey;
+    std::vector<u8> decNp;
 
     std::filesystem::path pkgpath;
     std::filesystem::path current_dir;

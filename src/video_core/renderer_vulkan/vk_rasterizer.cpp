@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "common/debug.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -33,6 +34,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 Rasterizer::~Rasterizer() = default;
 
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
+    RENDERER_TRACE;
+
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
     const u32 num_indices = SetupIndexBuffer(is_indexed, index_offset);
@@ -104,6 +107,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 }
 
 void Rasterizer::DispatchDirect() {
+    RENDERER_TRACE;
+
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& cs_program = liverpool->regs.cs_program;
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();

@@ -55,3 +55,6 @@
 [submodule "externals/xxhash"]
 	path = externals/xxhash
 	url = https://github.com/Cyan4973/xxHash.git
+[submodule "externals/tracy"]
+	path = externals/tracy
+	url = https://github.com/shadps4-emu/tracy
