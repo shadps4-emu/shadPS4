@@ -56,7 +56,7 @@ Check the build instructions for [**Windows**](https://github.com/shadps4-emu/sh
 
 ## Linux
 
-Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/linux_building.md).
+Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
 
 ## Build status
 
