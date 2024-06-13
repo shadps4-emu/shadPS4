@@ -8,6 +8,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <pthread.h>
 #endif
 
 namespace Core {
@@ -53,9 +55,83 @@ Tcb* GetTcbBase() {
     return reinterpret_cast<Tcb*>(TlsGetValue(slot));
 }
 
-void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
-    using namespace Xbyak::util;
+static void AllocTcbKey() {
+    slot = TlsAlloc();
+}
 
+static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGenerator& c) {
+    using namespace Xbyak::util;
+    const auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
+
+    // Replace mov instruction with near jump to the trampoline.
+    static constexpr u32 NearJmpSize = 5;
+    auto patch = Xbyak::CodeGenerator(total_size, code);
+    patch.jmp(c.getCurr(), Xbyak::CodeGenerator::LabelType::T_NEAR);
+    patch.nop(total_size - NearJmpSize);
+
+    // Write the trampoline.
+    // The following logic is based on the wine implementation of TlsGetValue
+    // https://github.com/wine-mirror/wine/blob/a27b9551/dlls/kernelbase/thread.c#L719
+    static constexpr u32 TlsSlotsOffset = 0x1480;
+    static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
+    static constexpr u32 TlsMinimumAvailable = 64;
+    const u32 teb_offset = slot < TlsMinimumAvailable ? TlsSlotsOffset : TlsExpansionSlotsOffset;
+    const u32 tls_index = slot < TlsMinimumAvailable ? slot : slot - TlsMinimumAvailable;
+
+    const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
+    c.mov(target_reg, teb_offset);
+    c.putSeg(gs);
+    c.mov(target_reg, ptr[target_reg]); // Load the pointer to the table of tls slots.
+    c.mov(target_reg,
+          qword[target_reg + tls_index * sizeof(LPVOID)]); // Load the pointer to our buffer.
+    c.jmp(code + total_size); // Return to the instruction right after the mov.
+}
+
+#else
+
+static pthread_key_t slot = 0;
+
+void SetTcbBase(void* image_address) {
+    ASSERT(pthread_setspecific(slot, image_address) == 0);
+}
+
+Tcb* GetTcbBase() {
+    return reinterpret_cast<Tcb*>(pthread_getspecific(slot));
+}
+
+static void AllocTcbKey() {
+    slot = pthread_key_create(&slot, nullptr);
+}
+
+static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGenerator& c) {
+    using namespace Xbyak::util;
+    const auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
+
+    // Replace mov instruction with near jump to the trampoline.
+    static constexpr u32 NearJmpSize = 5;
+    auto patch = Xbyak::CodeGenerator(total_size, code);
+    patch.jmp(c.getCurr(), Xbyak::CodeGenerator::LabelType::T_NEAR);
+    patch.nop(total_size - NearJmpSize);
+
+    // Write the trampoline.
+    // The following logic is based on the glibc implementation of pthread_getspecific
+    // https://github.com/bminor/glibc/blob/29807a27/nptl/pthread_getspecific.c#L23
+    static constexpr u32 PthreadKeySecondLevelSize = 32;
+    static constexpr u32 SpecificFirstBlockOffset = 0x308;
+    static constexpr u32 SelfInTcbheadOffset = 16;
+    static constexpr u32 PthreadKeyDataSize = 16;
+    ASSERT(slot < PthreadKeySecondLevelSize);
+
+    const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
+    c.putSeg(fs);
+    c.mov(target_reg, qword[SelfInTcbheadOffset]); // Load self member pointer of tcbhead_t.
+    c.add(target_reg, SpecificFirstBlockOffset + sizeof(uintptr_t) + slot * PthreadKeyDataSize);
+    c.jmp(code + total_size); // Return to the instruction right after the mov.
+}
+
+#endif
+
+void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
     u8* code = reinterpret_cast<u8*>(segment_addr);
     auto remaining_size = segment_size;
 
@@ -89,7 +165,7 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
 
             // Allocate slot in the process if not done already.
             if (slot == 0) {
-                slot = TlsAlloc();
+                AllocTcbKey();
             }
 
             // Replace bogus instruction prefix with nops if it exists.
@@ -98,30 +174,8 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
                 patch.nop(BadPrefix.size());
             }
 
-            // Replace mov instruction with near jump to the trampoline.
-            static constexpr u32 NearJmpSize = 5;
-            auto patch = Xbyak::CodeGenerator(total_size, code);
-            patch.jmp(c.getCurr(), Xbyak::CodeGenerator::LabelType::T_NEAR);
-            patch.nop(total_size - NearJmpSize);
-
-            // Write the trampoline.
-            // The following logic is based on the wine implementation of TlsGetValue
-            // https://github.com/wine-mirror/wine/blob/a27b9551/dlls/kernelbase/thread.c#L719
-            static constexpr u32 TlsSlotsOffset = 0x1480;
-            static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
-            static constexpr u32 TlsMinimumAvailable = 64;
-            const u32 teb_offset =
-                slot < TlsMinimumAvailable ? TlsSlotsOffset : TlsExpansionSlotsOffset;
-            const u32 tls_index = slot < TlsMinimumAvailable ? slot : slot - TlsMinimumAvailable;
-
-            const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
-            c.mov(target_reg, teb_offset);
-            c.putSeg(gs);
-            c.mov(target_reg, ptr[target_reg]); // Load the pointer to the table of tls slots.
-            c.mov(
-                target_reg,
-                qword[target_reg + tls_index * sizeof(LPVOID)]); // Load the pointer to our buffer.
-            c.jmp(code + total_size); // Return to the instruction right after the mov.
+            // Patch access to FS register to a trampoline.
+            PatchFsAccess(code, tls_pattern, c);
 
             // Move ahead in module.
             code += total_size - 1;
@@ -132,21 +186,5 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
         remaining_size--;
     }
 }
-
-#else
-
-void SetTcbBase(void* image_address) {
-    UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
-}
-
-Tcb* GetTcbBase() {
-    UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
-}
-
-void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
-    UNREACHABLE_MSG("Thread local storage is unimplemented on posix platforms!");
-}
-
-#endif
 
 } // namespace Core

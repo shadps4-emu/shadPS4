@@ -124,7 +124,7 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_gettype_np() {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlockattr_init(OrbisPthreadRwlockattr* attr) {
-    *attr = new PthreadRwLockAttrInernal{};
+    *attr = new PthreadRwLockAttrInternal{};
     int result = pthread_rwlockattr_init(&(*attr)->attr_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlockattr_init: error = {}", result);
@@ -164,7 +164,7 @@ int PS4_SYSV_ABI scePthreadRwlockattrGettype() {
 }
 
 int PS4_SYSV_ABI scePthreadRwlockattrInit(OrbisPthreadRwlockattr* attr) {
-    *attr = new PthreadRwLockAttrInernal{};
+    *attr = new PthreadRwLockAttrInternal{};
     int result = pthread_rwlockattr_init(&(*attr)->attr_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "scePthreadRwlockattrInit: error = {}", result);

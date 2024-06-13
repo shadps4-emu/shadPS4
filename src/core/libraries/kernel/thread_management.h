@@ -28,7 +28,7 @@ struct PthreadMutexattrInternal;
 struct PthreadCondInternal;
 struct PthreadCondAttrInternal;
 struct PthreadRwInternal;
-struct PthreadRwLockAttrInernal;
+struct PthreadRwLockAttrInternal;
 class PthreadKeys;
 
 using SceKernelSchedParam = ::sched_param;
@@ -39,9 +39,8 @@ using ScePthreadMutexattr = PthreadMutexattrInternal*;
 using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using OrbisPthreadRwlock = PthreadRwInternal*;
-using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
+using OrbisPthreadRwlockattr = PthreadRwLockAttrInternal*;
 using OrbisPthreadKey = int;
-
 using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
@@ -91,7 +90,7 @@ struct PthreadCondAttrInternal {
     pthread_condattr_t cond_attr;
 };
 
-struct PthreadRwLockAttrInernal {
+struct PthreadRwLockAttrInternal {
     u8 reserved[64];
     pthread_rwlockattr_t attr_rwlock;
     int type;

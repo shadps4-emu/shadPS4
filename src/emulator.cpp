@@ -40,10 +40,6 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
     Common::Log::Initialize();
     Common::Log::Start();
 
-    // Start discord integration
-    discord_rpc.init();
-    discord_rpc.update(Discord::RPCStatus::Idling, "");
-
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());
@@ -52,7 +48,6 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
 Emulator::~Emulator() {
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
-    discord_rpc.stop();
 }
 
 void Emulator::Run(const std::filesystem::path& file) {
@@ -120,7 +115,11 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
 
     // Begin main window loop until the application exits
+<<<<<<< HEAD
     static constexpr std::chrono::milliseconds FlipPeriod{16};
+=======
+    static constexpr std::chrono::microseconds FlipPeriod{10};
+>>>>>>> 31bd502764f1ac975fc55bd2a788a7e08a9f34ec
 
     while (window.isOpen()) {
         window.waitEvent();
