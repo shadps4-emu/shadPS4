@@ -41,6 +41,7 @@ void init_pthreads() {
     scePthreadRwlockattrInit(&default_rwattr);
     g_pthread_cxt->setDefaultRwattr(default_rwattr);
 
+    g_pthread_cxt->setPthreadKeys(new PthreadKeys);
     g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
 
@@ -1322,5 +1323,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     RwlockSymbolsRegister(sym);
     SemaphoreSymbolsRegister(sym);
 }
+
+
 
 } // namespace Libraries::Kernel

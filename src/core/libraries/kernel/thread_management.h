@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include "common/types.h"
+#include <mutex>
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -28,6 +29,7 @@ struct PthreadCondInternal;
 struct PthreadCondAttrInternal;
 struct PthreadRwInternal;
 struct PthreadRwLockAttrInernal;
+class PthreadKeys;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthread = PthreadInternal*;
@@ -38,6 +40,9 @@ using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using OrbisPthreadRwlock = PthreadRwInternal*;
 using OrbisPthreadRwlockattr = PthreadRwLockAttrInernal*;
+using OrbisPthreadKey = int;
+
+using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
 
 using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
@@ -106,6 +111,30 @@ private:
     std::mutex m_mutex;
 };
 
+class PthreadKeys {
+public:
+    PthreadKeys() {}
+    virtual ~PthreadKeys() {}
+
+    bool CreateKey(int* key, PthreadKeyDestructor destructor);
+    bool GetKey(int key, int thread_id, void** data);
+    bool SetKey(int key, int thread_id, void* data);
+
+private:
+    struct Map {
+        int thread_id = -1;
+        void* data = nullptr;
+    };
+
+    struct Key {
+        bool used = false;
+        PthreadKeyDestructor destructor = nullptr;
+        std::vector<Map> specific_values;
+    };
+
+    std::mutex m_mutex;
+    Key m_keys[256];
+};
 class PThreadCxt {
 public:
     ScePthreadMutexattr* getDefaultMutexattr() {
@@ -138,6 +167,12 @@ public:
     void setDefaultRwattr(OrbisPthreadRwlockattr attr) {
         m_default_Rwattr = attr;
     }
+    PthreadKeys* getPthreadKeys() {
+        return m_pthread_keys;
+    }
+    void setPthreadKeys(PthreadKeys* keys) {
+        m_pthread_keys = keys;
+    }
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
@@ -145,6 +180,7 @@ private:
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
     OrbisPthreadRwlockattr m_default_Rwattr = nullptr;
+    PthreadKeys* m_pthread_keys = nullptr;
 };
 
 void init_pthreads();
