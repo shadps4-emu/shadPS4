@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
-#include <fstream>
-#include <iostream>
-
 #include "common/io_file.h"
-#include "psf.h"
+#include "core/file_format/psf.h"
 
 PSF::PSF() = default;
 

@@ -40,10 +40,6 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
     Common::Log::Initialize();
     Common::Log::Start();
 
-    // Start discord integration
-    discord_rpc.init();
-    discord_rpc.update(Discord::RPCStatus::Idling, "");
-
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());
@@ -52,7 +48,6 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
 Emulator::~Emulator() {
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
-    discord_rpc.stop();
 }
 
 void Emulator::Run(const std::filesystem::path& file) {

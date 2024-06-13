@@ -7,7 +7,6 @@
 #include <thread>
 
 #include <common/singleton.h>
-#include "common/discord.h"
 #include "core/linker.h"
 #include "input/controller.h"
 #include "sdl_window.h"
@@ -23,7 +22,6 @@ public:
 
 private:
     void LoadSystemModules(const std::filesystem::path& file);
-    Discord::RPC discord_rpc;
     Input::GameController* controller = Common::Singleton<Input::GameController>::Instance();
     Core::Linker* linker = Common::Singleton<Core::Linker>::Instance();
     Frontend::WindowSDL window;
