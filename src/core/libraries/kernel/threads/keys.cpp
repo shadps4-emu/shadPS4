@@ -65,14 +65,14 @@ bool PthreadKeys::SetKey(int key, int thread_id, void* data) {
 
 int PS4_SYSV_ABI scePthreadKeyCreate(OrbisPthreadKey* key, PthreadKeyDestructor destructor) {
     if (key == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (!g_pthread_cxt->getPthreadKeys()->CreateKey(key, destructor)) {
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     }
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 void* PS4_SYSV_ABI scePthreadGetspecific(OrbisPthreadKey key) {
@@ -93,10 +93,10 @@ int PS4_SYSV_ABI scePthreadSetspecific(OrbisPthreadKey key, /* const*/ void* val
     int thread_id = *(unsigned*)&id;
 
     if (!g_pthread_cxt->getPthreadKeys()->SetKey(key, thread_id, value)) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 } // namespace Libraries::Kernel
