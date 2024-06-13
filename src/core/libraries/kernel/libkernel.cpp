@@ -178,6 +178,9 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     u32 handle = linker->LoadModule(path);
+    if (handle == -1) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     auto* module = linker->GetModule(handle);
     linker->RelocateAnyImports(module);
 
