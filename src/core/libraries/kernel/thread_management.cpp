@@ -393,6 +393,8 @@ void* createMutex(void* addr) {
     if (addr == nullptr || *static_cast<ScePthreadMutex*>(addr) != nullptr) {
         return addr;
     }
+    static std::mutex mutex;
+    std::scoped_lock lk{mutex};
     auto vaddr = reinterpret_cast<u64>(addr);
 
     std::string name = fmt::format("mutex{:#x}", vaddr);
@@ -464,7 +466,7 @@ int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
 
     int result = pthread_mutexattr_init(&(*attr)->pth_mutex_attr);
 
-    result = (result == 0 ? scePthreadMutexattrSettype(attr, 1) : result);
+    result = (result == 0 ? scePthreadMutexattrSettype(attr, 2) : result);
     result = (result == 0 ? scePthreadMutexattrSetprotocol(attr, 0) : result);
 
     switch (result) {
@@ -1165,6 +1167,10 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
     return result;
 }
 
+int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
+    return pthread_once(reinterpret_cast<pthread_once_t*>(once_control), init_routine);
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1191,6 +1197,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);
     LIB_FUNCTION("-quPa4SEJUw", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstack);
+    LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", 1, 1, scePthreadOnce);
 
     // mutex calls
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);

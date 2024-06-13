@@ -10,10 +10,6 @@
 
 namespace Audio {
 
-int SDLAudio::AudioInit() {
-    return SDL_InitSubSystem(SDL_INIT_AUDIO);
-}
-
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParam format) {
     using Libraries::AudioOut::OrbisAudioOutParam;

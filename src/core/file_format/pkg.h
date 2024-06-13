@@ -4,7 +4,6 @@
 #pragma once
 
 #include <array>
-#include <cstdio>
 #include <filesystem>
 #include <string>
 #include <unordered_map>

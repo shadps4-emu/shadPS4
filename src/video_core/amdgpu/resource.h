@@ -32,7 +32,7 @@ struct Buffer {
     };
 
     u32 GetStride() const noexcept {
-        return stride == 0 ? 1U : stride;
+        return stride == 0 ? 1U : stride.Value();
     }
 
     u32 GetStrideElements(u32 element_size) const noexcept {

@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fstream>
 #include <zlib-ng.h>
 #include "common/io_file.h"
-#include "pkg.h"
-#include "pkg_type.h"
+#include "core/file_format/pkg.h"
+#include "core/file_format/pkg_type.h"
 
 static void DecompressPFSC(std::span<const char> compressed_data,
                            std::span<char> decompressed_data) {

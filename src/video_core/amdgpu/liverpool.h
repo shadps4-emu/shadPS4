@@ -695,7 +695,7 @@ struct Liverpool {
         NumberFormat NumFormat() const {
             // There is a small difference between T# and CB number types, account for it.
             return info.number_type == AmdGpu::NumberFormat::SnormNz ? AmdGpu::NumberFormat::Srgb
-                                                                     : info.number_type;
+                                                                     : info.number_type.Value();
         }
     };
 
