@@ -192,9 +192,8 @@ int PS4_SYSV_ABI sceAudioOutGetSystemState() {
 
 int PS4_SYSV_ABI sceAudioOutInit() {
     audio = std::make_unique<Audio::SDLAudio>();
-    u32 result = audio->AudioInit() == 0 ? ORBIS_OK : ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
-    LOG_INFO(Lib_AudioOut, "AudioInit returned {}", result);
-    return result;
+    LOG_INFO(Lib_AudioOut, "called");
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudioOutInitIpmiGetSession() {

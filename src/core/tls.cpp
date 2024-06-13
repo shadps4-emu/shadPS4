@@ -125,11 +125,11 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
     const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
     c.putSeg(fs);
     c.mov(target_reg, qword[SelfInTcbheadOffset]); // Load self member pointer of tcbhead_t.
-    c.lea(target_reg,
-          ptr[SpecificFirstBlockOffset + slot * PthreadKeyDataSize +
-              sizeof(uintptr_t)]); // Load the pointer to our data.
-    c.jmp(code + total_size);      // Return to the instruction right after the mov.
+    c.add(target_reg, SpecificFirstBlockOffset + sizeof(uintptr_t) + slot * PthreadKeyDataSize);
+    c.jmp(code + total_size); // Return to the instruction right after the mov.
 }
+
+#endif
 
 void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
     u8* code = reinterpret_cast<u8*>(segment_addr);
@@ -186,7 +186,5 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
         remaining_size--;
     }
 }
-
-#endif
 
 } // namespace Core
