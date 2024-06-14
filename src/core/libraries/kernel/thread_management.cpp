@@ -791,14 +791,16 @@ int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadC
 int PS4_SYSV_ABI posix_pthread_cond_signal(ScePthreadCond* cond) {
     int result = scePthreadCondSignal(cond);
     LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_signal redirect to scePthreadCondSignal, result = {}", result);
+             "posix posix_pthread_cond_signal redirect to scePthreadCondSignal, result = {}",
+             result);
     return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
     int result = scePthreadCondDestroy(cond);
     LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_destroy redirect to scePthreadCondDestroy, result = {}", result);
+             "posix posix_pthread_cond_destroy redirect to scePthreadCondDestroy, result = {}",
+             result);
     return result;
 }
 

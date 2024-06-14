@@ -93,7 +93,6 @@ int PS4_SYSV_ABI posix_close(int d) {
     return sceKernelClose(d);
 }
 
-
 size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
     if (buf == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
