@@ -21,6 +21,13 @@ struct OrbisAppContentBootParam {
     char reserved2[32];
 };
 
+typedef u32 OrbisAppContentTemporaryDataOption;
+constexpr int ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE = 16;
+typedef struct OrbisAppContentMountPoint {
+
+    char data[ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE];
+} OrbisAppContentMountPoint;
+
 int PS4_SYSV_ABI _Z5dummyv();
 int PS4_SYSV_ABI sceAppContentAddcontDelete();
 int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownload();
@@ -51,7 +58,8 @@ int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataFormat();
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb();
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount();
-int PS4_SYSV_ABI sceAppContentTemporaryDataMount2();
+int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
+                                                  OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount();
 int PS4_SYSV_ABI sceAppContentGetPftFlag();
 int PS4_SYSV_ABI Func_C59A36FF8D7C59DA();

@@ -56,13 +56,14 @@ void Emulator::Run(const std::filesystem::path& file) {
     mnt->Mount(file.parent_path(), "/app0");
 
     // Loading param.sfo file if exists
+    std::string id;
     std::filesystem::path sce_sys_folder = file.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
             if (entry.path().filename() == "param.sfo") {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
-                std::string id(param_sfo->GetString("CONTENT_ID"), 7, 9);
+                id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
                 std::string title(param_sfo->GetString("TITLE"));
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
@@ -80,6 +81,14 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
+
+    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
+    if (!std::filesystem::exists(mount_data_dir)) {
+        std::filesystem::create_directory(mount_data_dir);
+    }
+    mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
+    const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
 
     // Load the module with the linker
     linker->LoadModule(file);

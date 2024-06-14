@@ -1147,7 +1147,7 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 int PS4_SYSV_ABI posix_pthread_mutex_trylock(ScePthreadMutex* mutex) {
     int result = scePthreadMutexTrylock(mutex);
     if (result < 0) {
-        UNREACHABLE();
+        LOG_INFO(Kernel_Pthread, "posix_pthread_mutex_trylock: result = {}", result);
     }
     return result;
 }
