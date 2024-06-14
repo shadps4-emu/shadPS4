@@ -239,7 +239,7 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
         orbisUuid->node[i] = uuid.Data4[2 + i];
     }
 #else
-    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux", );
+    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux");
 #endif
     return 0;
 }
