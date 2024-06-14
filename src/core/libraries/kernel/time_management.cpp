@@ -63,9 +63,7 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 }
 
 int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
-    ASSERT(microseconds >= 1000);
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    return 0;
+    return sceKernelUsleep(microseconds);
 }
 
 u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
@@ -79,11 +77,15 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     }
     clockid_t pclock_id = CLOCK_REALTIME;
     switch (clock_id) {
-    case 0:
+    case ORBIS_CLOCK_REALTIME:
+    case ORBIS_CLOCK_REALTIME_PRECISE:
+    case ORBIS_CLOCK_REALTIME_FAST:
         pclock_id = CLOCK_REALTIME;
         break;
-    case 13:
-    case 4:
+    case ORBIS_CLOCK_SECOND:
+    case ORBIS_CLOCK_MONOTONIC:
+    case ORBIS_CLOCK_MONOTONIC_PRECISE:
+    case ORBIS_CLOCK_MONOTONIC_FAST:
         pclock_id = CLOCK_MONOTONIC;
         break;
     default:
@@ -100,7 +102,7 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
-int PS4_SYSV_ABI clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
+int PS4_SYSV_ABI posix_clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
     int result = sceKernelClockGettime(clock_id, time);
     if (result < 0) {
         UNREACHABLE(); // TODO return posix error code
@@ -151,6 +153,37 @@ int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone* tz) {
     return sceKernelGettimeofday(tp);
 }
 
+int PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
+    if (res == nullptr) {
+        return SCE_KERNEL_ERROR_EFAULT;
+    }
+    clockid_t pclock_id = CLOCK_REALTIME;
+    switch (clock_id) {
+    case ORBIS_CLOCK_REALTIME:
+    case ORBIS_CLOCK_REALTIME_PRECISE:
+    case ORBIS_CLOCK_REALTIME_FAST:
+        pclock_id = CLOCK_REALTIME;
+        break;
+    case ORBIS_CLOCK_SECOND:
+    case ORBIS_CLOCK_MONOTONIC:
+    case ORBIS_CLOCK_MONOTONIC_PRECISE:
+    case ORBIS_CLOCK_MONOTONIC_FAST:
+        pclock_id = CLOCK_MONOTONIC;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    timespec t{};
+    int result = clock_getres(pclock_id, &t);
+    res->tv_sec = t.tv_sec;
+    res->tv_nsec = t.tv_nsec;
+    if (result == 0) {
+        return SCE_OK;
+    }
+    return SCE_KERNEL_ERROR_EINVAL;
+}
+
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
@@ -163,6 +196,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, gettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, gettimeofday);
+    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
     LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
@@ -170,8 +204,9 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
     LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, posix_nanosleep);
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, clock_gettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, posix_clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, posix_clock_gettime);
+    LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, posix_clock_getres);
 }
 
 } // namespace Libraries::Kernel

@@ -679,7 +679,7 @@ int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* 
     time.tv_nsec = ((usec % 1000000) * 1000);
     int result = pthread_cond_timedwait(&(*cond)->cond, &(*mutex)->pth_mutex, &time);
 
-    LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
+    // LOG_INFO(Kernel_Pthread, "scePthreadCondTimedwait, result={}", result);
 
     switch (result) {
     case 0:
@@ -1018,7 +1018,7 @@ int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
 
     int result = pthread_cond_signal(&(*cond)->cond);
 
-    LOG_INFO(Kernel_Pthread, "scePthreadCondSignal, result={}", result);
+    // LOG_INFO(Kernel_Pthread, "scePthreadCondSignal, result={}", result);
 
     switch (result) {
     case 0:
@@ -1170,7 +1170,19 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
 int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
     return pthread_once(reinterpret_cast<pthread_once_t*>(once_control), init_routine);
 }
+int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
+                                      pthreadEntryFunc start_routine, void* arg) {
+    LOG_INFO(Kernel_Pthread, "posix pthread_create redirect to scePthreadCreate");
 
+    int result = scePthreadCreate(thread, attr, start_routine, arg, "");
+    if (result != 0) {
+        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                     : POSIX_EOTHER;
+        return rt;
+    }
+    return result;
+}
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetschedpolicy);
     LIB_FUNCTION("-Wreprtu0Qs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetdetachstate);
@@ -1192,7 +1204,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("x1X76arYMxU", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGet);
     LIB_FUNCTION("UTXzJbWhhTE", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstacksize);
     LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", 1, 1, __tls_get_addr);
-
+    LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_create);
+    LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);

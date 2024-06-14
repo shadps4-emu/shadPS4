@@ -71,6 +71,7 @@ enum class Class : u8 {
     Lib_AppContent,     ///< The LibSceAppContent implementation.
     Lib_Rtc,            ///< The LibSceRtc implementation.
     Lib_DiscMap,        ///< The LibSceDiscMap implementation.
+    Lib_Png,            ///< The LibScePng implementation.
     Frontend,           ///< Emulator UI
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend
