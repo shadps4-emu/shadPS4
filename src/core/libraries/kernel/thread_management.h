@@ -181,6 +181,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
 int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr);
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond);
 int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex);
+int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond);
 /****
  * Posix calls
  */

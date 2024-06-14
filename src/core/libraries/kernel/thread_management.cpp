@@ -781,6 +781,27 @@ int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
     return result;
 }
 
+int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadCondattr* attr) {
+    int result = scePthreadCondInit(cond, attr, "");
+    LOG_INFO(Kernel_Pthread,
+             "posix posix_pthread_cond_init redirect to scePthreadCondInit, result = {}", result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_signal(ScePthreadCond* cond) {
+    int result = scePthreadCondSignal(cond);
+    LOG_INFO(Kernel_Pthread,
+             "posix posix_pthread_cond_signal redirect to scePthreadCondSignal, result = {}", result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
+    int result = scePthreadCondDestroy(cond);
+    LOG_INFO(Kernel_Pthread,
+             "posix posix_pthread_cond_destroy redirect to scePthreadCondDestroy, result = {}", result);
+    return result;
+}
+
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutexattr_init redirect to scePthreadMutexattrInit");
     int result = scePthreadMutexattrInit(attr);
@@ -1240,7 +1261,10 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
     LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
     LIB_FUNCTION("ltCfaGr2JGE", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_destroy);
+    LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_signal);
     LIB_FUNCTION("Op8TBGY5KHg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_wait);
+    LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_destroy);
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_broadcast);
     LIB_FUNCTION("dQHWEsJtoE4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
     LIB_FUNCTION("mDmgMOGVUqg", "libScePosix", 1, "libkernel", 1, 1,
