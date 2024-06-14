@@ -21,6 +21,7 @@
 #include "core/memory.h"
 #ifdef _WIN64
 #include <io.h>
+#include <objbase.h>
 #include <windows.h>
 #else
 #include <sys/mman.h>
@@ -225,6 +226,24 @@ s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
+#ifdef _WIN64
+    UUID uuid;
+    UuidCreate(&uuid);
+    orbisUuid->timeLow = uuid.Data1;
+    orbisUuid->timeMid = uuid.Data2;
+    orbisUuid->timeHiAndVersion = uuid.Data3;
+    orbisUuid->clockSeqHiAndReserved = uuid.Data4[0];
+    orbisUuid->clockSeqLow = uuid.Data4[1];
+    for (int i = 0; i < 6; i++) {
+        orbisUuid->node[i] = uuid.Data4[2 + i];
+    }
+#else
+    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux", );
+#endif
+    return 0;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
@@ -248,6 +267,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
                  _sceKernelRtldSetApplicationHeapAPI);
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", 1, 1, sceKernelLoadStartModule);
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
+    LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
 
     // equeue
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
