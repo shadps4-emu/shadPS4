@@ -170,7 +170,7 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(mount_dir, mountPoint->data);
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
-              (option & 1), mountPoint->data);
+             (option & 1), mountPoint->data);
     return ORBIS_OK;
 }
 
