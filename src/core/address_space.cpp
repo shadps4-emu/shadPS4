@@ -10,6 +10,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <fcntl.h>
 #include <sys/mman.h>
 #endif
 
@@ -215,25 +216,96 @@ enum PosixPageProtection {
 
 struct AddressSpace::Impl {
     Impl() {
-        UNREACHABLE();
+        // Allocate virtual address placeholder for our address space.
+        void* hint_address = reinterpret_cast<void*>(SYSTEM_MANAGED_MIN);
+        virtual_size = SystemSize + UserSize;
+        virtual_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(hint_address), virtual_size, PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+        if (virtual_base == MAP_FAILED) {
+            LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+        madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
+
+        backing_fd = memfd_create("BackingDmem", 0);
+        if (backing_fd < 0) {
+            LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        // Defined to extend the file with zeros
+        int ret = ftruncate(backing_fd, BackingSize);
+        if (ret != 0) {
+            LOG_CRITICAL(Kernel_Vmm, "ftruncate failed with {}, are you out-of-memory?",
+                         strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        // Map backing dmem handle.
+        backing_base = static_cast<u8*>(
+            mmap(nullptr, BackingSize, PROT_READ | PROT_WRITE, MAP_SHARED, backing_fd, 0));
+        if (backing_base == MAP_FAILED) {
+            LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        const VAddr start_addr = reinterpret_cast<VAddr>(virtual_base);
+        m_free_regions.insert({start_addr, start_addr + virtual_size});
     }
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
-        UNREACHABLE();
-        return nullptr;
+        m_free_regions.subtract({virtual_addr, virtual_addr + size});
+        const int fd = phys_addr != -1 ? backing_fd : -1;
+        const int host_offset = phys_addr != -1 ? phys_addr : 0;
+        const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
+        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag, fd,
+                         host_offset);
+        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        return ret;
     }
 
     void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
-        UNREACHABLE();
+        // Check to see if we are adjacent to any regions.
+        auto start_address = virtual_addr;
+        auto end_address = start_address + size;
+        auto it = m_free_regions.find({start_address - 1, end_address + 1});
+
+        // If we are, join with them, ensuring we stay in bounds.
+        if (it != m_free_regions.end()) {
+            start_address = std::min(start_address, it->lower());
+            end_address = std::max(end_address, it->upper());
+        }
+
+        // Free the relevant region.
+        m_free_regions.insert({start_address, end_address});
+
+        // Return the adjusted pointers.
+        void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
+                         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
     }
 
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
-        UNREACHABLE();
+        int flags = PROT_NONE;
+        if (read) {
+            flags |= PROT_READ;
+        }
+        if (write) {
+            flags |= PROT_WRITE;
+        }
+        if (execute) {
+            flags |= PROT_EXEC;
+        }
+        int ret = mprotect(reinterpret_cast<void*>(virtual_addr), size, flags);
+        ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
 
+    int backing_fd;
     u8* backing_base{};
     u8* virtual_base{};
     size_t virtual_size{};
+    boost::icl::interval_set<VAddr> m_free_regions;
 };
 #endif
 

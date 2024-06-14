@@ -183,9 +183,8 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
 #endif
 
     if (!IsOpen()) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}",
+                  PathToUTF8String(file_path));
     }
 }
 
