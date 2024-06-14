@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/net.h"
@@ -19,6 +20,7 @@
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/playgo/playgo.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
@@ -29,8 +31,8 @@
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
+#include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videoout/video_out.h"
-#include "src/core/libraries/libpng/pngdec.h"
 
 namespace Libraries {
 
@@ -67,6 +69,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Rtc::RegisterlibSceRtc(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
+    Libraries::PlayGo::RegisterlibScePlayGo(sym);
+    Libraries::Usbd::RegisterlibSceUsbd(sym);
 }
 
 } // namespace Libraries

@@ -105,6 +105,8 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Rtc)                                                                                  \
     SUB(Lib, DiscMap)                                                                              \
     SUB(Lib, Png)                                                                                  \
+    SUB(Lib, PlayGo)                                                                               \
+    SUB(Lib, Usbd)                                                                                 \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
