@@ -400,7 +400,7 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
     };
 
     // Calculate buffers memory overlaps
-    std::vector<BufferRange> ranges{};
+    boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges{};
     for (const auto& input : vs_info.vs_inputs) {
         const auto& buffer = guest_buffers.emplace_back(
             vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset));
