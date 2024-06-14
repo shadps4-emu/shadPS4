@@ -30,6 +30,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/videoout/video_out.h"
+#include "src/core/libraries/libpng/pngdec.h"
 
 namespace Libraries {
 
@@ -65,6 +66,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::Rtc::RegisterlibSceRtc(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
+    Libraries::PngDec::RegisterlibScePngDec(sym);
 }
 
 } // namespace Libraries
