@@ -156,7 +156,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
     return pos;
 }
 
-s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence) {
+s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
     return sceKernelLseek(d, offset, whence);
 }
 
@@ -174,6 +174,10 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     u32 bytes_read = file->f.ReadRaw<u8>(buf, static_cast<u32>(nbytes));
     file->m_mutex.unlock();
     return bytes_read;
+}
+
+int PS4_SYSV_ABI posix_read(int d, void* buf, size_t nbytes) {
+    return sceKernelRead(d, buf, nbytes);
 }
 
 int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
@@ -195,6 +199,10 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
         return SCE_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
+    return sceKernelMkdir(path, mode);
 }
 
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
@@ -310,10 +318,13 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
-    LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, lseek);
+    LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, posix_lseek);
+    LIB_FUNCTION("Oy6IpwgtYOk", "libScePosix", 1, "libkernel", 1, 1, posix_lseek);
     LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
     LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
+    LIB_FUNCTION("AqBioC2vF3I", "libScePosix", 1, "libkernel", 1, 1, posix_read);
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
+    LIB_FUNCTION("JGMio+21L4c", "libScePosix", 1, "libkernel", 1, 1, posix_mkdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);

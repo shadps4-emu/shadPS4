@@ -196,6 +196,15 @@ set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
 )
 
+set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
+               src/core/libraries/playgo/playgo.h
+               src/core/libraries/playgo/playgo_types.h
+)
+
+set(USBD_LIB src/core/libraries/usbd/usbd.cpp
+             src/core/libraries/usbd/usbd.h
+)
+
 set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_manager/np_manager.h
             src/core/libraries/np_score/np_score.cpp
@@ -297,6 +306,8 @@ set(CORE src/core/aerolib/stubs.cpp
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
+         ${PLAYGO_LIB}
+         ${USBD_LIB}
          ${MISC_LIBS}
          src/core/linker.cpp
          src/core/linker.h

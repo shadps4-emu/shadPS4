@@ -21,6 +21,7 @@
 #include "core/memory.h"
 #ifdef _WIN64
 #include <io.h>
+#include <objbase.h>
 #include <windows.h>
 #else
 #include <sys/mman.h>
@@ -277,6 +278,24 @@ int PS4_SYSV_ABI sceKernelGetCpumode() {
 
 void PS4_SYSV_ABI sched_yield() {
     return std::this_thread::yield();
+}
+
+int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
+#ifdef _WIN64
+    UUID uuid;
+    UuidCreate(&uuid);
+    orbisUuid->timeLow = uuid.Data1;
+    orbisUuid->timeMid = uuid.Data2;
+    orbisUuid->timeHiAndVersion = uuid.Data3;
+    orbisUuid->clockSeqHiAndReserved = uuid.Data4[0];
+    orbisUuid->clockSeqLow = uuid.Data4[1];
+    for (int i = 0; i < 6; i++) {
+        orbisUuid->node[i] = uuid.Data4[2 + i];
+    }
+#else
+    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux");
+#endif
+    return 0;
 }
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
