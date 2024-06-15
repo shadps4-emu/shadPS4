@@ -25,7 +25,7 @@ struct wrapper_impl<name, PS4_SYSV_ABI R (*)(Args...), f> {
     static R PS4_SYSV_ABI wrap(Args... args) {
         if (std::string_view(name.value) != "scePthreadEqual" &&
             std::string_view(name.value) != "sceUserServiceGetEvent") {
-            //LOG_WARNING(Core_Linker, "Function {} called", name.value);
+            // LOG_WARNING(Core_Linker, "Function {} called", name.value);
         }
         if constexpr (std::is_same_v<R, s32> || std::is_same_v<R, u32>) {
             const u32 ret = f(args...);
@@ -42,7 +42,7 @@ struct wrapper_impl<name, PS4_SYSV_ABI R (*)(Args...), f> {
 template <StringLiteral name, class F, F f>
 constexpr auto wrapper = wrapper_impl<name, F, f>::wrap;
 
-//#define W(foo) wrapper<#foo, decltype(&foo), foo>
+// #define W(foo) wrapper<#foo, decltype(&foo), foo>
 #define W(foo) foo
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
