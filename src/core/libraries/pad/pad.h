@@ -266,8 +266,7 @@ int PS4_SYSV_ABI scePadIsMoveReproductionModel();
 int PS4_SYSV_ABI scePadIsValidHandle();
 int PS4_SYSV_ABI scePadMbusInit();
 int PS4_SYSV_ABI scePadMbusTerm();
-int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index,
-                            const OrbisPadOpenParam* pParam);
+int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam);
 int PS4_SYSV_ABI scePadOpenExt();
 int PS4_SYSV_ABI scePadOpenExt2();
 int PS4_SYSV_ABI scePadOutputReport();
