@@ -276,7 +276,13 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
     }
 }
 
-vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
+vk::Format SurfaceFormat(
+    AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format,
+    Liverpool::ColorBuffer::SwapMode comp_swap /*= Liverpool::ColorBuffer::SwapMode::Standard*/) {
+    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
+                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
+               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
+
     if (data_format == AmdGpu::DataFormat::Format32_32_32_32 &&
         num_format == AmdGpu::NumberFormat::Float) {
         return vk::Format::eR32G32B32A32Sfloat;
@@ -287,11 +293,14 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
-        return vk::Format::eR8G8B8A8Unorm;
+        return comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate
+                   ? vk::Format::eB8G8R8A8Unorm
+                   : vk::Format::eR8G8B8A8Unorm;
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Srgb) {
-        return vk::Format::eB8G8R8A8Srgb;
+        return comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate ? vk::Format::eB8G8R8A8Srgb
+                                                                        : vk::Format::eR8G8B8A8Srgb;
     }
     if (data_format == AmdGpu::DataFormat::Format32_32_32 &&
         num_format == AmdGpu::NumberFormat::Float) {

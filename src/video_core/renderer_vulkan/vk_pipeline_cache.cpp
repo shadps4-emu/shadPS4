@@ -129,8 +129,8 @@ void PipelineCache::RefreshGraphicsKey() {
         if (!col_buf) {
             continue;
         }
-        key.color_formats[remapped_cb] =
-            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
+        key.color_formats[remapped_cb] = LiverpoolToVK::SurfaceFormat(
+            col_buf.info.format, col_buf.NumFormat(), col_buf.info.comp_swap.Value());
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);

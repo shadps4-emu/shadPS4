@@ -178,7 +178,11 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
+    case vk::Format::eR8G8B8A8Srgb:
+        [[fallthrough]];
     case vk::Format::eB8G8R8A8Srgb:
+        [[fallthrough]];
+    case vk::Format::eB8G8R8A8Unorm:
         [[fallthrough]];
     case vk::Format::eR8G8B8A8Unorm:
         return vk::Format::eR32Uint;
