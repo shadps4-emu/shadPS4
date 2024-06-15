@@ -526,7 +526,11 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
         UNREACHABLE_MSG("Invalid protocol: {}", protocol);
     }
 
+#if _WIN64
+    int result = 0;
+#else
     int result = pthread_mutexattr_setprotocol(&(*attr)->pth_mutex_attr, pprotocol);
+#endif
     (*attr)->pprotocol = pprotocol;
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
