@@ -38,8 +38,21 @@ public:
     ~RendererVulkan();
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                        VAddr cpu_address);
-    Frame* PrepareBlankFrame();
+                        VAddr cpu_address) {
+        auto& image = RegisterVideoOutSurface(attribute, cpu_address);
+        return PrepareFrameInternal(image);
+    }
+
+    Frame* PrepareBlankFrame() {
+        auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
+        return PrepareFrameInternal(image);
+    }
+
+    VideoCore::Image& RegisterVideoOutSurface(
+        const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
+        const auto info = VideoCore::ImageInfo{attribute};
+        return texture_cache.FindImage(info, cpu_address);
+    }
 
     bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame);

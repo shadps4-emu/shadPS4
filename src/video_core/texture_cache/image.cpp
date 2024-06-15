@@ -22,7 +22,7 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     case VideoOutFormat::A8R8G8B8Srgb:
         return vk::Format::eB8G8R8A8Srgb;
     case VideoOutFormat::A8B8G8R8Srgb:
-        return vk::Format::eA8B8G8R8SrgbPack32;
+        return vk::Format::eR8G8B8A8Srgb;
     case VideoOutFormat::A2R10G10B10:
     case VideoOutFormat::A2R10G10B10Srgb:
         return vk::Format::eA2R10G10B10UnormPack32;
@@ -121,8 +121,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     size.width = attrib.width;
     size.height = attrib.height;
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) >> 7;
-    const bool is_32bpp = pixel_format == vk::Format::eB8G8R8A8Srgb ||
-                          pixel_format == vk::Format::eA8B8G8R8SrgbPack32;
+    const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
     ASSERT(is_32bpp);
     if (!is_tiled) {
         guest_size_bytes = pitch * size.height * 4;
