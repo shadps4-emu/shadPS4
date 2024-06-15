@@ -51,4 +51,7 @@ enum MarkersPallete : int {
 #define GPU_SCOPE_LOCATION(name, color)                                                            \
     tracy::SourceLocationData{name, TracyFunction, TracyFile, (uint32_t)TracyLine, color};
 
+#define MUTEX_LOCATION(name)                                                                       \
+    tracy::SourceLocationData{nullptr, name, TracyFile, (uint32_t)TracyLine, 0};
+
 #define FRAME_END FrameMark
