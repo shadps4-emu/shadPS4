@@ -211,7 +211,7 @@ void IOFile::Close() {
 
 #ifdef _WIN64
     if (file_mapping) {
-        CloseHandle(file_mapping);
+        CloseHandle(std::bit_cast<HANDLE>(file_mapping));
     }
 #endif
 }
@@ -223,8 +223,9 @@ uintptr_t IOFile::GetFileMapping() {
 #ifdef _WIN64
     const int fd = fileno(file);
     HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-    file_mapping =
+    HANDLE mapping =
         CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL, NULL, 0);
+    file_mapping = std::bit_cast<uintptr_t>(mapping);
     ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
     return file_mapping;
 #else
