@@ -13,7 +13,7 @@ namespace Core {
 
 union DtvEntry {
     size_t counter;
-    void* pointer;
+    u8* pointer;
 };
 
 struct Tcb {

@@ -34,6 +34,13 @@ constexpr s16 EVFILT_GPU_SYSTEM_EXCEPTION = -21;
 constexpr s16 EVFILT_GPU_DBGGC_EV = -22;
 constexpr s16 EVFILT_SYSCOUNT = 22;
 
+constexpr u16 EV_ONESHOT = 0x10;    // only report one occurrence
+constexpr u16 EV_CLEAR = 0x20;      // clear event state after reporting
+constexpr u16 EV_RECEIPT = 0x40;    // force EV_ERROR on success, data=0
+constexpr u16 EV_DISPATCH = 0x80;   // disable event after reporting
+constexpr u16 EV_SYSFLAGS = 0xF000; // reserved by system
+constexpr u16 EV_FLAG1 = 0x2000;    // filter-specific flag
+
 class EqueueInternal;
 struct EqueueEvent;
 

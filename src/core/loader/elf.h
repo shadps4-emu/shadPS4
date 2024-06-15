@@ -449,6 +449,15 @@ constexpr u32 R_X86_64_JUMP_SLOT = 7; // Create PLT entry
 constexpr u32 R_X86_64_RELATIVE = 8;  // Adjust by program base
 constexpr u32 R_X86_64_DTPMOD64 = 16;
 
+struct eh_frame_hdr {
+    uint8_t version;
+    uint8_t eh_frame_ptr_enc;
+    uint8_t fde_count_enc;
+    uint8_t table_enc;
+    uint32_t eh_frame_ptr;
+    uint32_t fde_count;
+};
+
 namespace Core::Loader {
 
 class Elf {

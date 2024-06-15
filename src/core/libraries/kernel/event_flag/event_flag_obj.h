@@ -25,6 +25,7 @@ public:
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros);
     int Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result);
     void Set(u64 bits);
+    void Clear(u64 bits);
 
 private:
     enum class Status { Set, Canceled, Deleted };

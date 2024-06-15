@@ -153,6 +153,26 @@ int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone* tz) {
     return sceKernelGettimeofday(tp);
 }
 
+s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
+#ifdef _WIN64
+    ASSERT(tz);
+    static int tzflag = 0;
+    if (!tzflag) {
+        _tzset();
+        tzflag++;
+    }
+    tz->tz_minuteswest = _timezone / 60;
+    tz->tz_dsttime = _daylight;
+#else
+    struct timezone tzz;
+    struct timeval tv;
+    gettimeofday(&tv, &tzz);
+    tz->tz_dsttime = tzz.tz_dsttime;
+    tz->tz_minuteswest = tzz.tz_minuteswest;
+#endif
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
     if (res == nullptr) {
         return SCE_KERNEL_ERROR_EFAULT;
@@ -198,12 +218,14 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, gettimeofday);
     LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libkernel", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
     LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, posix_nanosleep);
     LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
+    LIB_FUNCTION("kOcnerypnQA", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimezone);
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, posix_clock_gettime);
     LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, posix_clock_gettime);
     LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, posix_clock_getres);

@@ -3,6 +3,9 @@
 
 #include <vector>
 
+#include "common/alignment.h"
+#include "common/assert.h"
+#include "common/error.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -10,6 +13,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <share.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -204,6 +208,30 @@ void IOFile::Close() {
     }
 
     file = nullptr;
+
+#ifdef _WIN64
+    if (file_mapping) {
+        CloseHandle(std::bit_cast<HANDLE>(file_mapping));
+    }
+#endif
+}
+
+uintptr_t IOFile::GetFileMapping() {
+    if (file_mapping) {
+        return file_mapping;
+    }
+#ifdef _WIN64
+    const int fd = fileno(file);
+    HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    HANDLE mapping =
+        CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL, NULL, 0);
+    file_mapping = std::bit_cast<uintptr_t>(mapping);
+    ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
+    return file_mapping;
+#else
+    file_mapping = fileno(file);
+    return file_mapping;
+#endif
 }
 
 std::string IOFile::ReadString(size_t length) const {

@@ -15,7 +15,8 @@ void Translator::V_SAD(const GcnInst& inst) {
 }
 
 void Translator::V_MAC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0]), GetSrc(inst.src[1]), GetSrc(inst.dst[0])));
+    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true),
+                                 GetSrc(inst.dst[0], true)));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
@@ -134,13 +135,13 @@ void Translator::V_FLOOR_F32(const GcnInst& inst) {
 }
 
 void Translator::V_SUB_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
-    const IR::F32 src1{GetSrc(inst.src[1])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
     SetDst(inst.dst[0], ir.FPSub(src0, src1));
 }
 
 void Translator::V_RCP_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0])};
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.FPRecip(src0));
 }
 

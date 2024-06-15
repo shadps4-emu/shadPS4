@@ -62,7 +62,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
             .storeOp = vk::AttachmentStoreOp::eStore,
         });
     }
-    if (regs.depth_control.depth_enable && regs.depth_buffer.Address() != 0) {
+    if (pipeline->IsDepthEnabled() && regs.depth_buffer.Address() != 0) {
         const bool is_clear = regs.depth_render_control.depth_clear_enable;
         const auto& image_view =
             texture_cache.DepthTarget(regs.depth_buffer, liverpool->last_db_extent);

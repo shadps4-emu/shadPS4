@@ -46,17 +46,20 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
     }
 }
 
-ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image) noexcept {
+ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept
+    : is_storage{is_storage} {
     type = ConvertImageViewType(image.type);
     format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     range.base.level = 0;
     range.base.layer = 0;
     range.extent.levels = image.NumLevels();
     range.extent.layers = image.NumLayers();
-    mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-    mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-    mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-    mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+    if (!is_storage) {
+        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
+        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
+        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
+        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+    }
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
@@ -74,7 +77,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     }
 
     const vk::ImageViewCreateInfo image_view_ci = {
-        .pNext = usage_override.has_value() ? &usage_ci : nullptr,
+        .pNext = nullptr,
         .image = image.image,
         .viewType = info.type,
         .format = format,

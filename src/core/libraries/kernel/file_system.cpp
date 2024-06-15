@@ -31,6 +31,10 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
+    if (std::string_view{path} == "/dev/console" || std::string_view{path} == "/dev/deci_tty6") {
+        return ORBIS_OK;
+    }
+
     if (directory) {
         LOG_ERROR(Kernel_Fs, "called on directory");
     } else {
@@ -87,6 +91,11 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
     h->DeleteHandle(d);
     return SCE_OK;
+}
+
+int PS4_SYSV_ABI posix_close(int d) {
+    ASSERT(sceKernelClose(d) == 0);
+    return ORBIS_OK;
 }
 
 size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
@@ -282,10 +291,22 @@ int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI posix_fstat(int fd, OrbisKernelStat* sb) {
+    return sceKernelFStat(fd, sb);
+}
+
+s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    file->f.Flush();
+    return ORBIS_OK;
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
+    LIB_FUNCTION("bY-PO6JhzhQ", "libScePosix", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
@@ -295,10 +316,12 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
+    LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
 
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
+    LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,

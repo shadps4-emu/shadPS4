@@ -41,7 +41,7 @@ public:
     void S_AND_SAVEEXEC_B64(const GcnInst& inst);
     void S_MOV_B64(const GcnInst& inst);
     void S_OR_B64(bool negate, const GcnInst& inst);
-    void S_AND_B64(const GcnInst& inst);
+    void S_AND_B64(bool negate, const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_AND_B32(const GcnInst& inst);
     void S_LSHR_B32(const GcnInst& inst);

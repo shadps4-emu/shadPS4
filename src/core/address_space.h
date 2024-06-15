@@ -20,7 +20,7 @@ DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
 
 constexpr VAddr SYSTEM_RESERVED = 0x800000000ULL;
 constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
-constexpr VAddr SYSTEM_MANAGED_MIN = 0x0000040000ULL;
+constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
 constexpr VAddr USER_MIN = 0x1000000000ULL;
 constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
@@ -62,8 +62,11 @@ public:
     void* Map(VAddr virtual_addr, size_t size, u64 alignment = 0, PAddr phys_addr = -1,
               bool exec = false);
 
+    /// Memory maps a specified file descriptor.
+    void* MapFile(VAddr virtual_addr, size_t size, size_t offset, uintptr_t fd);
+
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, size_t size, PAddr phys_addr);
+    void Unmap(VAddr virtual_addr, size_t size, bool has_backing);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 

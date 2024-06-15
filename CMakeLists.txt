@@ -105,8 +105,10 @@ set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
                src/core/libraries/kernel/event_flag/event_flag_obj.h
-               src/core/libraries/kernel/threads/kernel_threads.h
-               src/core/libraries/kernel/threads/kernel_threads_rwlock.cpp
+               src/core/libraries/kernel/threads/rwlock.cpp
+               src/core/libraries/kernel/threads/semaphore.cpp
+               src/core/libraries/kernel/threads/keys.cpp
+               src/core/libraries/kernel/threads/threads.h
                src/core/libraries/kernel/cpu_management.cpp
                src/core/libraries/kernel/cpu_management.h
                src/core/libraries/kernel/event_queue.cpp
@@ -226,8 +228,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/disassembler.cpp
            src/common/disassembler.h
-           src/common/discord.cpp
-           src/common/discord.h
            src/common/endian.h
            src/common/enum.h
            src/common/io_file.cpp
@@ -278,6 +278,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/fs.h  
          src/core/loader.cpp
          src/core/loader.h
+         src/core/loader/dwarf.cpp
+         src/core/loader/dwarf.h
          src/core/loader/elf.cpp
          src/core/loader/elf.h
          src/core/loader/symbols_resolver.h
@@ -500,13 +502,17 @@ else()
         ${VIDEO_CORE}
         ${EMULATOR}
         src/main.cpp
+        src/emulator.cpp
+        src/emulator.h
+        src/sdl_window.h
+        src/sdl_window.cpp
     )
 endif()
 
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak Tracy::TracyClient)
-target_link_libraries(shadps4 PRIVATE discord-rpc boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
+target_link_libraries(shadps4 PRIVATE boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
 if (NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3-shared)

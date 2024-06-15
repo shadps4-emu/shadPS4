@@ -55,6 +55,11 @@ public:
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
 
+    /// Retrieves the image with the specified id.
+    [[nodiscard]] Image& GetImage(ImageId id) {
+        return slot_images[id];
+    }
+
 private:
     ImageView& RegisterImageView(Image& image, const ImageViewInfo& view_info);
 
