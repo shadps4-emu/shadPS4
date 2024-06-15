@@ -50,9 +50,29 @@ int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAppParamGetInt() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* value) {
+    if (value == nullptr)
+        return 0x80D90002;
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    switch (paramId) {
+    case ORBIS_APP_CONTENT_APPPARAM_ID_SKU_FLAG:
+        *value = ORBIS_APP_CONTENT_APPPARAM_SKU_FLAG_FULL;
+        break;
+    case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_1:
+        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_1");
+        break;
+    case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_2:
+        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_2");
+        break;
+    case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_3:
+        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_3");
+        break;
+    case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_4:
+        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
+        break;
+    }
+    LOG_ERROR(Lib_AppContent, " paramId = {}, value = {}", paramId, *value);
+    return *value == -1 ? 0x80D90005 : ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAppContentAppParamGetString() {
@@ -152,8 +172,10 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataFormat() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb() {
+int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
+    const OrbisAppContentMountPoint* mountPoint, size_t* availableSpaceKb) {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+    *availableSpaceKb = 1073741824;
     return ORBIS_OK;
 }
 
@@ -170,7 +192,7 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(mount_dir, mountPoint->data);
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
-             (option & 1), mountPoint->data);
+             option, mountPoint->data);
     return ORBIS_OK;
 }
 

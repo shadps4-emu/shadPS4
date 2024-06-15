@@ -56,7 +56,7 @@ std::string PSF::GetString(const std::string& key) {
 
 u32 PSF::GetInteger(const std::string& key) {
     if (map_integers.find(key) != map_integers.end()) {
-        return map_integers.at(key); // TODO std::invalid_argument exception if it fails?
+        return map_integers.at(key);
     }
-    return 0;
+    return -1;
 }

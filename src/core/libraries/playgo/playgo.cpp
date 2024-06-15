@@ -11,52 +11,63 @@ namespace Libraries::PlayGo {
 // this lib is used to play as the game is being installed.
 // can be skipped by just returning and assigning the correct values.
 
-int PS4_SYSV_ABI sceDbgPlayGoRequestNextChunk() {
+s32 PS4_SYSV_ABI sceDbgPlayGoRequestNextChunk() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceDbgPlayGoSnapshot() {
+s32 PS4_SYSV_ABI sceDbgPlayGoSnapshot() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoClose() {
+s32 PS4_SYSV_ABI scePlayGoClose() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetChunkId() {
+s32 PS4_SYSV_ABI scePlayGoGetChunkId() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetEta() {
+s32 PS4_SYSV_ABI scePlayGoGetEta() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetInstallSpeed() {
+s32 PS4_SYSV_ABI scePlayGoGetInstallSpeed() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetLanguageMask() {
+s32 PS4_SYSV_ABI scePlayGoGetLanguageMask(OrbisPlayGoHandle handle,
+                                          OrbisPlayGoLanguageMask* languageMask) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
+    *languageMask = 1; // En, todo;
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetLocus() {
-    LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
+s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,
+                                   uint32_t numberOfEntries, OrbisPlayGoLocus* outLoci) {
+    LOG_ERROR(Lib_PlayGo, "(STUBBED)called handle = {}, chunkIds = {}, numberOfEntries = {}",
+              handle, *chunkIds, numberOfEntries);
+    // assign all now so that scePlayGoGetLocus is not called again for every single entry
+    std::fill(outLoci, outLoci + numberOfEntries,
+              OrbisPlayGoLocusValue::ORBIS_PLAYGO_LOCUS_LOCAL_FAST);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoGetProgress() {
-    LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,
+                                      uint32_t numberOfEntries, OrbisPlayGoProgress* outProgress) {
+    LOG_ERROR(Lib_PlayGo, "(STUBBED)called handle = {}, chunkIds = {}, numberOfEntries = {}",
+              handle, *chunkIds, numberOfEntries);
+    outProgress->progressSize = 0x10000; // todo?
+    outProgress->totalSize = 0x10000;
+    return 0;
 }
 
-int PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo* outTodoList,
+s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo* outTodoList,
                                       u32 numberOfEntries, u32* outEntries) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     if (handle != shadMagic)
@@ -67,7 +78,7 @@ int PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo*
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
+s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     if (param->bufAddr == nullptr)
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
     if (param->bufSize < 0x200000)
@@ -76,33 +87,35 @@ int PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoOpen(OrbisPlayGoHandle* outHandle, const void* param) {
+s32 PS4_SYSV_ABI scePlayGoOpen(OrbisPlayGoHandle* outHandle, const void* param) {
     *outHandle = shadMagic;
     LOG_INFO(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoPrefetch() {
+s32 PS4_SYSV_ABI scePlayGoPrefetch() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoSetInstallSpeed() {
+s32 PS4_SYSV_ABI scePlayGoSetInstallSpeed() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoSetLanguageMask() {
+s32 PS4_SYSV_ABI scePlayGoSetLanguageMask(OrbisPlayGoHandle handle,
+                                          OrbisPlayGoLanguageMask languageMask) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoSetToDoList() {
+s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayGoToDo* todoList,
+                                      uint32_t numberOfEntries) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePlayGoTerminate() {
+s32 PS4_SYSV_ABI scePlayGoTerminate() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }
