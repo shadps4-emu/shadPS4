@@ -169,14 +169,14 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storag
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
     }
 
-    const ImageViewInfo view_info{desc};
+    const ImageViewInfo view_info{desc, is_storage};
     return RegisterImageView(image, view_info);
 }
 
 ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                       const AmdGpu::Liverpool::CbDbExtent& hint) {
     const ImageInfo info{buffer, hint};
-    auto& image = FindImage(info, buffer.Address());
+    auto& image = FindImage(info, buffer.Address(), false);
     image.flags &= ~ImageFlagBits::CpuModified;
 
     image.Transit(vk::ImageLayout::eColorAttachmentOptimal,

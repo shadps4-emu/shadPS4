@@ -18,12 +18,13 @@ namespace VideoCore {
 
 struct ImageViewInfo {
     explicit ImageViewInfo() = default;
-    explicit ImageViewInfo(const AmdGpu::Image& image) noexcept;
+    explicit ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
 
     vk::ImageViewType type = vk::ImageViewType::e2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
+    bool is_storage;
 
     auto operator<=>(const ImageViewInfo&) const = default;
 };

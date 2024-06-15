@@ -11,6 +11,46 @@
 
 namespace Core {
 
+static constexpr size_t SCE_DBG_MAX_NAME_LENGTH = 256;
+static constexpr size_t SCE_DBG_MAX_SEGMENTS = 4;
+static constexpr size_t SCE_DBG_NUM_FINGERPRINT = 20;
+
+struct OrbisKernelModuleSegmentInfo {
+    VAddr address;
+    u32 size;
+    s32 prot;
+};
+
+struct OrbisKernelModuleInfo {
+    u64 st_size = sizeof(OrbisKernelModuleInfo);
+    std::array<char, SCE_DBG_MAX_NAME_LENGTH> name;
+    std::array<OrbisKernelModuleSegmentInfo, SCE_DBG_MAX_SEGMENTS> segments;
+    u32 num_segments;
+    std::array<u8, SCE_DBG_NUM_FINGERPRINT> fingerprint;
+};
+
+struct OrbisKernelModuleInfoEx {
+    u64 st_size = sizeof(OrbisKernelModuleInfoEx);
+    std::array<char, SCE_DBG_MAX_NAME_LENGTH> name;
+    s32 id;
+    u32 tls_index;
+    VAddr tls_init_addr;
+    u32 tls_init_size;
+    u32 tls_size;
+    u32 tls_offset;
+    u32 tls_align;
+    VAddr init_proc_addr;
+    VAddr fini_proc_addr;
+    u64 reserved1;
+    u64 reserved2;
+    VAddr eh_frame_hdr_addr;
+    VAddr eh_frame_addr;
+    u32 eh_frame_hdr_size;
+    u32 eh_frame_size;
+    std::array<OrbisKernelModuleSegmentInfo, SCE_DBG_MAX_SEGMENTS> segments;
+    u32 segment_count;
+};
+
 struct ModuleInfo {
     bool operator==(const ModuleInfo& other) const {
         return version_major == other.version_major && version_minor == other.version_minor &&
@@ -46,12 +86,12 @@ struct LibraryInfo {
 };
 
 struct ThreadLocalImage {
-    u64 align;
-    u64 image_size;
-    u64 offset;
+    u32 align;
+    u32 image_size;
+    u32 offset;
     u32 modid;
     VAddr image_virtual_addr;
-    u64 init_image_size;
+    u32 init_image_size;
 };
 
 struct DynamicModuleInfo {
@@ -100,7 +140,7 @@ using ModuleFunc = int (*)(size_t, const void*);
 
 class Module {
 public:
-    explicit Module(const std::filesystem::path& file);
+    explicit Module(const std::filesystem::path& file, u32& max_tls_index);
     ~Module();
 
     VAddr GetBaseAddress() const noexcept {
@@ -109,6 +149,10 @@ public:
 
     VAddr GetEntryAddress() const noexcept {
         return base_virtual_addr + elf.GetElfEntry();
+    }
+
+    OrbisKernelModuleInfo GetModuleInfo() const noexcept {
+        return info;
     }
 
     bool IsValid() const noexcept {
@@ -151,33 +195,49 @@ public:
 
     void ForEachRelocation(auto&& func) {
         for (u32 i = 0; i < dynamic_info.relocation_table_size / sizeof(elf_relocation); i++) {
-            func(&dynamic_info.relocation_table[i], false);
+            func(&dynamic_info.relocation_table[i], i, false);
         }
         for (u32 i = 0; i < dynamic_info.jmp_relocation_table_size / sizeof(elf_relocation); i++) {
-            func(&dynamic_info.jmp_relocation_table[i], true);
+            func(&dynamic_info.jmp_relocation_table[i], i, true);
         }
     }
 
-    void Start(size_t args, const void* argp, void* param);
-    void LoadModuleToMemory();
+    void SetRelaBit(u32 index) {
+        rela_bits[index >> 3] |= (1 << (index & 7));
+    }
+
+    bool TestRelaBit(u32 index) const {
+        return (rela_bits[index >> 3] >> (index & 7)) & 1;
+    }
+
+    s32 Start(size_t args, const void* argp, void* param);
+    void LoadModuleToMemory(u32& max_tls_index);
     void LoadDynamicInfo();
     void LoadSymbols();
 
+    OrbisKernelModuleInfoEx GetModuleInfoEx() const;
     const ModuleInfo* FindModule(std::string_view id);
     const LibraryInfo* FindLibrary(std::string_view id);
 
 public:
     std::filesystem::path file;
+    std::string name;
     Loader::Elf elf;
     u64 aligned_base_size{};
     VAddr base_virtual_addr{};
     VAddr proc_param_virtual_addr{};
+    VAddr eh_frame_hdr_addr{};
+    VAddr eh_frame_addr{};
+    u32 eh_frame_hdr_size{};
+    u32 eh_frame_size{};
     DynamicModuleInfo dynamic_info{};
     std::vector<u8> m_dynamic;
     std::vector<u8> m_dynamic_data;
     Loader::SymbolsResolver export_sym;
     Loader::SymbolsResolver import_sym;
     ThreadLocalImage tls{};
+    OrbisKernelModuleInfo info{};
+    std::vector<u8> rela_bits;
 };
 
 } // namespace Core

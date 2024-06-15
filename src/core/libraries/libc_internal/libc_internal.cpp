@@ -39,8 +39,24 @@ int PS4_SYSV_ABI internal_memcmp(const void* s1, const void* s2, size_t n) {
     return std::memcmp(s1, s2, n);
 }
 
+int PS4_SYSV_ABI internal_strncmp(const char* str1, const char* str2, size_t num) {
+    return std::strncmp(str1, str2, num);
+}
+
+int PS4_SYSV_ABI internal_strlen(const char* str) {
+    return std::strlen(str);
+}
+
 float PS4_SYSV_ABI internal_expf(float x) {
     return expf(x);
+}
+
+void* PS4_SYSV_ABI internal_malloc(size_t size) {
+    return std::malloc(size);
+}
+
+char* PS4_SYSV_ABI internal_strncpy(char* dest, const char* src, std::size_t count) {
+    return std::strncpy(dest, src, count);
 }
 
 void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
@@ -55,6 +71,14 @@ void RegisterlibSceLibcInternal(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DfivPArhucg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
                  internal_memcmp);
     LIB_FUNCTION("8zsu04XNsZ4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1, internal_expf);
+    LIB_FUNCTION("aesyjrHVWy4", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strncmp);
+    LIB_FUNCTION("j4ViWNHEgww", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strlen);
+    LIB_FUNCTION("6sJWiWSRuqk", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_strncpy);
+    LIB_FUNCTION("gQX+4GDQjpM", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
+                 internal_malloc);
 };
 
 } // namespace Libraries::LibcInternal

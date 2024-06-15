@@ -281,7 +281,8 @@ struct Sampler {
     };
 
     float LodBias() const noexcept {
-        return static_cast<float>(lod_bias);
+        return static_cast<float>(static_cast<int16_t>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /
+               256.0f;
     }
 
     float MinLod() const noexcept {

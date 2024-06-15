@@ -463,10 +463,10 @@ void libcSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
 
     // stdio functions
     LIB_FUNCTION("xeYO4u7uyJ0", "libc", 1, "libc", 1, 1, ps4_fopen);
-    LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, ps4_printf);
+    // LIB_FUNCTION("hcuQgD53UxM", "libc", 1, "libc", 1, 1, ps4_printf);
     LIB_FUNCTION("Q2V+iqvjgC0", "libc", 1, "libc", 1, 1, ps4_vsnprintf);
     LIB_FUNCTION("YQ0navp+YIc", "libc", 1, "libc", 1, 1, ps4_puts);
-    LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, ps4_fprintf);
+    // LIB_FUNCTION("fffwELXNVFA", "libc", 1, "libc", 1, 1, ps4_fprintf);
     LIB_FUNCTION("QMFyLoqNxIg", "libc", 1, "libc", 1, 1, ps4_setvbuf);
     LIB_FUNCTION("uodLYyUip20", "libc", 1, "libc", 1, 1, ps4_fclose);
     LIB_FUNCTION("rQFVBXp-Cxg", "libc", 1, "libc", 1, 1, ps4_fseek);

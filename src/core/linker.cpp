@@ -57,9 +57,6 @@ void Linker::Execute() {
 
     // Calculate static TLS size.
     for (const auto& module : m_modules) {
-        if (module->tls.image_size != 0) {
-            module->tls.modid = ++max_tls_index;
-        }
         static_tls_size += module->tls.image_size;
         module->tls.offset = static_tls_size;
     }
@@ -101,7 +98,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
         return -1;
     }
 
-    auto module = std::make_unique<Module>(elf_name);
+    auto module = std::make_unique<Module>(elf_name, max_tls_index);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;
@@ -111,8 +108,24 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
     return m_modules.size() - 1;
 }
 
+Module* Linker::FindByAddress(VAddr address) {
+    for (auto& module : m_modules) {
+        const VAddr base = module->GetBaseAddress();
+        if (address >= base && address < base + module->aligned_base_size) {
+            return module.get();
+        }
+    }
+    return nullptr;
+}
+
 void Linker::Relocate(Module* module) {
-    module->ForEachRelocation([&](elf_relocation* rel, bool isJmpRel) {
+    module->ForEachRelocation([&](elf_relocation* rel, u32 i, bool isJmpRel) {
+        const u32 bit_idx =
+            (isJmpRel ? module->dynamic_info.relocation_table_size / sizeof(elf_relocation) : 0) +
+            i;
+        if (module->TestRelaBit(bit_idx)) {
+            return;
+        }
         auto type = rel->GetType();
         auto symbol = rel->GetSymbol();
         auto addend = rel->rel_addend;
@@ -167,11 +180,15 @@ void Linker::Relocate(Module* module) {
             switch (sym_bind) {
             case STB_LOCAL:
                 symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                module->SetRelaBit(bit_idx);
                 break;
             case STB_GLOBAL:
             case STB_WEAK: {
                 rel_name = namesTlb + sym.st_name;
-                Resolve(rel_name, rel_sym_type, module, &symrec);
+                if (Resolve(rel_name, rel_sym_type, module, &symrec)) {
+                    // Only set the rela bit if the symbol was actually resolved and not stubbed.
+                    module->SetRelaBit(bit_idx);
+                }
                 symbol_vitrual_addr = symrec.virtual_address;
                 break;
             }
@@ -203,14 +220,14 @@ const Module* Linker::FindExportedModule(const ModuleInfo& module, const Library
     return it == m_modules.end() ? nullptr : it->get();
 }
 
-void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
+bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
     if (ids.size() != 3) {
         return_info->virtual_address = 0;
         return_info->name = name;
         LOG_ERROR(Core_Linker, "Not Resolved {}", name);
-        return;
+        return false;
     }
 
     const LibraryInfo* library = m->FindLibrary(ids[1]);
@@ -236,7 +253,7 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
     if (record) {
         *return_info = *record;
-        return;
+        return true;
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
@@ -249,18 +266,42 @@ void Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
     LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
               return_info->name, library->name, module->name);
+    return false;
 }
 
 void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     std::scoped_lock lk{mutex};
 
     DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
-    ASSERT_MSG(dtv_table[0].counter == dtv_generation_counter,
-               "Reallocation of DTV table is not supported");
+    if (dtv_table[0].counter != dtv_generation_counter) {
+        // Generation counter changed, a dynamic module was either loaded or unloaded.
+        const u32 old_num_dtvs = dtv_table[1].counter;
+        ASSERT_MSG(max_tls_index > old_num_dtvs, "Module unloading unsupported");
+        // Module was loaded, increase DTV table size.
+        DtvEntry* new_dtv_table = new DtvEntry[max_tls_index + 2];
+        std::memcpy(new_dtv_table + 2, dtv_table + 2, old_num_dtvs * sizeof(DtvEntry));
+        new_dtv_table[0].counter = dtv_generation_counter;
+        new_dtv_table[1].counter = max_tls_index;
+        delete[] dtv_table;
 
-    void* module = (u8*)dtv_table[module_index + 1].pointer + offset;
-    ASSERT_MSG(module, "DTV allocation is not supported");
-    return module;
+        // Update TCB pointer.
+        GetTcbBase()->tcb_dtv = new_dtv_table;
+        dtv_table = new_dtv_table;
+    }
+
+    u8* addr = dtv_table[module_index + 1].pointer;
+    if (!addr) {
+        // Module was just loaded by above code. Allocate TLS block for it.
+        Module* module = m_modules[module_index - 1].get();
+        const u32 init_image_size = module->tls.init_image_size;
+        u8* dest = reinterpret_cast<u8*>(heap_api_func(module->tls.image_size));
+        const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
+        std::memcpy(dest, src, init_image_size);
+        std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
+        dtv_table[module_index + 1].pointer = dest;
+        addr = dest;
+    }
+    return addr + offset;
 }
 
 void Linker::InitTlsForThread(bool is_primary) {

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <mutex>
 #include <vector>
 #include "core/module.h"
@@ -37,17 +38,32 @@ public:
         return m_modules.at(index).get();
     }
 
+    void RelocateAnyImports(Module* m) {
+        Relocate(m);
+        for (auto& module : m_modules) {
+            const auto imports = module->GetImportModules();
+            if (std::ranges::contains(imports, m->name, &ModuleInfo::name)) {
+                Relocate(module.get());
+            }
+        }
+    }
+
     void SetHeapApiFunc(void* func) {
         heap_api_func = *reinterpret_cast<HeapApiFunc*>(func);
+    }
+
+    void AdvanceGenerationCounter() noexcept {
+        dtv_generation_counter++;
     }
 
     void* TlsGetAddr(u64 module_index, u64 offset);
     void InitTlsForThread(bool is_primary = false);
 
     s32 LoadModule(const std::filesystem::path& elf_name);
+    Module* FindByAddress(VAddr address);
 
     void Relocate(Module* module);
-    void Resolve(const std::string& name, Loader::SymbolType type, Module* module,
+    bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
     void Execute();
     void DebugDump();
@@ -58,7 +74,7 @@ private:
     std::mutex mutex;
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};
-    size_t max_tls_index{};
+    u32 max_tls_index{};
     HeapApiFunc heap_api_func{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

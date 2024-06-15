@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
+#include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
 #include "core/tls.h"
@@ -54,10 +55,11 @@ static std::string EncodeId(u64 nVal) {
     return enc;
 }
 
-Module::Module(const std::filesystem::path& file_) : file{file_} {
+Module::Module(const std::filesystem::path& file_, u32& max_tls_index)
+    : file{file_}, name{file.stem().string()} {
     elf.Open(file);
     if (elf.IsElfFile()) {
-        LoadModuleToMemory();
+        LoadModuleToMemory(max_tls_index);
         LoadDynamicInfo();
         LoadSymbols();
     }
@@ -65,13 +67,13 @@ Module::Module(const std::filesystem::path& file_) : file{file_} {
 
 Module::~Module() = default;
 
-void Module::Start(size_t args, const void* argp, void* param) {
-    LOG_INFO(Core_Linker, "Module started : {}", file.filename().string());
+s32 Module::Start(size_t args, const void* argp, void* param) {
+    LOG_INFO(Core_Linker, "Module started : {}", name);
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
-    reinterpret_cast<EntryFunc>(addr)(args, argp, param);
+    return reinterpret_cast<EntryFunc>(addr)(args, argp, param);
 }
 
-void Module::LoadModuleToMemory() {
+void Module::LoadModuleToMemory(u32& max_tls_index) {
     static constexpr size_t BlockAlign = 0x1000;
     static constexpr u64 TrampolineSize = 8_MB;
 
@@ -84,7 +86,6 @@ void Module::LoadModuleToMemory() {
     // Map module segments (and possible TLS trampolines)
     auto* memory = Core::Memory::Instance();
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    const auto name = file.filename().string();
     memory->MapMemory(out_addr, LoadAddress, aligned_base_size + TrampolineSize,
                       MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadAddress += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
@@ -97,6 +98,17 @@ void Module::LoadModuleToMemory() {
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", base_virtual_addr);
     LOG_INFO(Core_Linker, "base_size ..............: {:#018x}", base_size);
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", aligned_base_size);
+
+    const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
+        const VAddr segment_addr = base_virtual_addr + phdr.p_vaddr;
+        if (do_map) {
+            elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
+        }
+        auto& segment = info.segments[info.num_segments++];
+        segment.address = segment_addr;
+        segment.prot = phdr.p_flags;
+        segment.size = GetAlignedSize(phdr);
+    };
 
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
         const auto header_type = elf.ElfPheaderTypeStr(elf_pheader[i].p_type);
@@ -118,13 +130,14 @@ void Module::LoadModuleToMemory() {
             LOG_INFO(Core_Linker, "segment_memory_size ...: {}", segment_memory_size);
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
-            elf.LoadSegment(segment_addr, elf_pheader[i].p_offset, segment_file_size);
+            add_segment(elf_pheader[i]);
             if (elf_pheader[i].p_flags & PF_EXEC) {
-                PatchTLS(segment_addr, segment_memory_size, c);
+                PatchTLS(segment_addr, segment_file_size, c);
             }
             break;
         }
         case PT_DYNAMIC:
+            add_segment(elf_pheader[i], false);
             if (elf_pheader[i].p_filesz != 0) {
                 m_dynamic.resize(elf_pheader[i].p_filesz);
                 const VAddr segment_addr = std::bit_cast<VAddr>(m_dynamic.data());
@@ -147,12 +160,31 @@ void Module::LoadModuleToMemory() {
             tls.align = elf_pheader[i].p_align;
             tls.image_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             tls.image_size = GetAlignedSize(elf_pheader[i]);
+            if (tls.image_size != 0) {
+                tls.modid = ++max_tls_index;
+            }
             LOG_INFO(Core_Linker, "TLS virtual address = {:#x}", tls.image_virtual_addr);
             LOG_INFO(Core_Linker, "TLS image size      = {}", tls.image_size);
             break;
         case PT_SCE_PROCPARAM:
             proc_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             break;
+        case PT_GNU_EH_FRAME: {
+            eh_frame_hdr_addr = elf_pheader[i].p_vaddr;
+            eh_frame_hdr_size = elf_pheader[i].p_memsz;
+            const VAddr eh_hdr_start = base_virtual_addr + eh_frame_hdr_addr;
+            const VAddr eh_hdr_end = eh_hdr_start + eh_frame_hdr_size;
+            Dwarf::EHHeaderInfo hdr_info;
+            if (Dwarf::DecodeEHHdr(eh_hdr_start, eh_hdr_end, hdr_info)) {
+                eh_frame_addr = hdr_info.eh_frame_ptr - base_virtual_addr;
+                if (eh_frame_hdr_addr > eh_frame_addr) {
+                    eh_frame_size = (eh_frame_hdr_addr - eh_frame_addr);
+                } else {
+                    eh_frame_size = (aligned_base_size - eh_frame_hdr_addr);
+                }
+            }
+            break;
+        }
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }
@@ -287,8 +319,8 @@ void Module::LoadDynamicInfo() {
             // the given app. How exactly this is generated isn't known, however it is not necessary
             // to have a valid fingerprint. While an invalid fingerprint will cause a warning to be
             // printed to the kernel log, the ELF will still load and run.
-            LOG_INFO(Core_Linker, "unsupported DT_SCE_FINGERPRINT value = ..........: {:#018x}",
-                     dyn->d_un.d_val);
+            LOG_INFO(Core_Linker, "DT_SCE_FINGERPRINT value = {:#018x}", dyn->d_un.d_val);
+            std::memcpy(info.fingerprint.data(), &dyn->d_un.d_val, sizeof(SCE_DBG_NUM_FINGERPRINT));
             break;
         case DT_SCE_IMPORT_LIB_ATTR:
             // The upper 32-bits should contain the module index multiplied by 0x10000. The lower
@@ -304,6 +336,8 @@ void Module::LoadDynamicInfo() {
             info.value = dyn->d_un.d_val;
             info.name = dynamic_info.str_table + info.name_offset;
             info.enc_id = EncodeId(info.id);
+            const std::string full_name = info.name + ".sprx";
+            full_name.copy(this->info.name.data(), full_name.size());
             break;
         };
         case DT_SCE_MODULE_ATTR:
@@ -321,6 +355,9 @@ void Module::LoadDynamicInfo() {
             LOG_INFO(Core_Linker, "unsupported dynamic tag ..........: {:#018x}", dyn->d_tag);
         }
     }
+    const u32 relabits_num = dynamic_info.relocation_table_size / sizeof(elf_relocation) +
+                             dynamic_info.jmp_relocation_table_size / sizeof(elf_relocation);
+    rela_bits.resize((relabits_num + 7) / 8);
 }
 
 void Module::LoadSymbols() {
@@ -382,6 +419,26 @@ void Module::LoadSymbols() {
     };
     symbol_database(export_sym, true);
     symbol_database(import_sym, false);
+}
+
+OrbisKernelModuleInfoEx Module::GetModuleInfoEx() const {
+    return OrbisKernelModuleInfoEx{
+        .name = info.name,
+        .tls_index = tls.modid,
+        .tls_init_addr = tls.image_virtual_addr,
+        .tls_init_size = tls.init_image_size,
+        .tls_size = tls.image_size,
+        .tls_offset = tls.offset,
+        .tls_align = tls.align,
+        .init_proc_addr = base_virtual_addr + dynamic_info.init_virtual_addr,
+        .fini_proc_addr = base_virtual_addr + dynamic_info.fini_virtual_addr,
+        .eh_frame_hdr_addr = eh_frame_hdr_addr,
+        .eh_frame_addr = eh_frame_addr,
+        .eh_frame_hdr_size = eh_frame_hdr_size,
+        .eh_frame_size = eh_frame_size,
+        .segments = info.segments,
+        .segment_count = info.num_segments,
+    };
 }
 
 const ModuleInfo* Module::FindModule(std::string_view id) {

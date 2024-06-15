@@ -6,6 +6,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
+#include "shader_recompiler/exception.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -88,6 +89,8 @@ void PipelineCache::RefreshGraphicsKey() {
     auto& key = graphics_key;
 
     key.depth = regs.depth_control;
+    key.depth.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
+                                        !regs.depth_render_control.depth_clear_enable);
     key.depth_bounds_min = regs.depth_bounds_min;
     key.depth_bounds_max = regs.depth_bounds_max;
     key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
@@ -111,9 +114,10 @@ void PipelineCache::RefreshGraphicsKey() {
     key.front_face = regs.polygon_control.front_face;
 
     const auto& db = regs.depth_buffer;
-    key.depth_format = key.depth.depth_enable
-                           ? LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format)
-                           : vk::Format::eUndefined;
+    if (key.depth.depth_enable) {
+        key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+        key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
+    }
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
     // We need to do some arrays compaction at this stage
@@ -180,6 +184,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         inst_pool.ReleaseContents();
 
         // Recompile shader to IR.
+        LOG_INFO(Render_Vulkan, "Compiling {} shader {:#X}", stage, hash);
         const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
         programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 

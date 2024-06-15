@@ -124,14 +124,12 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         LOG_WARNING(Lib_VideoOut, "flipmode = {}", flipMode);
     }
 
-    ASSERT_MSG(bufferIndex != -1, "Blank output not supported");
-
     if (bufferIndex < -1 || bufferIndex > 15) {
         LOG_ERROR(Lib_VideoOut, "Invalid bufferIndex = {}", bufferIndex);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
 
-    if (port->buffer_slots[bufferIndex].group_index < 0) {
+    if (bufferIndex != -1 && port->buffer_slots[bufferIndex].group_index < 0) {
         LOG_ERROR(Lib_VideoOut, "Slot in bufferIndex = {} is not registered", bufferIndex);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
@@ -196,7 +194,6 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 i
     LOG_INFO(Lib_VideoOut, "called");
     ASSERT(userId == UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || userId == 0);
     ASSERT(busType == SCE_VIDEO_OUT_BUS_TYPE_MAIN);
-    ASSERT(param == nullptr);
 
     if (index != 0) {
         LOG_ERROR(Lib_VideoOut, "Index != 0");
@@ -259,6 +256,12 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
+    s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
+    pDeviceCapabilityInfo->capability = 0;
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
@@ -299,6 +302,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutSubmitFlip);
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 1, 1,
                  sceVideoOutGetFlipStatus);
+    LIB_FUNCTION("kGVLc3htQE8", "libSceVideoOut", 1, "libSceVideoOut", 1, 1,
+                 sceVideoOutGetDeviceCapabilityInfo);
 }
 
 } // namespace Libraries::VideoOut

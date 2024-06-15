@@ -347,6 +347,9 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8G8Unorm;
     }
+    if (data_format == AmdGpu::DataFormat::FormatBc2 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc2UnormBlock;
+    }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }
 
@@ -366,6 +369,10 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
     if (z_format == DepthBuffer::ZFormat::Z16 &&
         stencil_format == DepthBuffer::StencilFormat::Stencil8) {
         return vk::Format::eD16UnormS8Uint;
+    }
+    if (z_format == DepthBuffer::ZFormat::Invald &&
+        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+        return vk::Format::eUndefined;
     }
     UNREACHABLE();
 }

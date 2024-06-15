@@ -10,6 +10,7 @@
 #include "video_core/amdgpu/pixel_format.h"
 
 #include <array>
+#include <condition_variable>
 #include <coroutine>
 #include <mutex>
 #include <span>
@@ -479,9 +480,9 @@ struct Liverpool {
     };
 
     struct Scissor {
-        union {
-            BitField<0, 16, s32> top_left_x;
-            BitField<16, 16, s32> top_left_y;
+        struct {
+            s16 top_left_x;
+            s16 top_left_y;
         };
         union {
             BitField<0, 15, u32> bottom_right_x;
@@ -865,13 +866,15 @@ public:
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
     void WaitGpuIdle();
+
     bool IsGpuIdle() const {
         return num_submits == 0;
     }
 
     void NotifySubmitDone() {
+        std::scoped_lock lk{submit_mutex};
         submit_done = true;
-        num_submits.notify_all();
+        submit_cv.notify_all();
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -939,7 +942,9 @@ private:
 
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
-    std::atomic<u32> num_submits{};
+    u32 num_submits{};
+    std::mutex submit_mutex;
+    std::condition_variable_any submit_cv;
     std::atomic<bool> submit_done{};
 };
 

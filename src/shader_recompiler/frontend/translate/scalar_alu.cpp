@@ -160,7 +160,7 @@ void Translator::S_OR_B64(bool negate, const GcnInst& inst) {
     }
 }
 
-void Translator::S_AND_B64(const GcnInst& inst) {
+void Translator::S_AND_B64(bool negate, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
         case OperandField::VccLo:
@@ -175,7 +175,10 @@ void Translator::S_AND_B64(const GcnInst& inst) {
     };
     const IR::U1 src0{get_src(inst.src[0])};
     const IR::U1 src1{get_src(inst.src[1])};
-    const IR::U1 result = ir.LogicalAnd(src0, src1);
+    IR::U1 result = ir.LogicalAnd(src0, src1);
+    if (negate) {
+        result = ir.LogicalNot(result);
+    }
     ir.SetScc(result);
     switch (inst.dst[0].field) {
     case OperandField::VccLo:

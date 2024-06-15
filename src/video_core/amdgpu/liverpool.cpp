@@ -22,8 +22,6 @@ Liverpool::Liverpool() {
 
 Liverpool::~Liverpool() {
     process_thread.request_stop();
-    num_submits = -1;
-    num_submits.notify_one();
     process_thread.join();
 }
 
@@ -31,8 +29,10 @@ void Liverpool::Process(std::stop_token stoken) {
     Common::SetCurrentThreadName("GPU_CommandProcessor");
 
     while (!stoken.stop_requested()) {
-        num_submits.wait(0);
-
+        {
+            std::unique_lock lk{submit_mutex};
+            submit_cv.wait(lk, stoken, [this] { return num_submits != 0; });
+        }
         if (stoken.stop_requested()) {
             break;
         }
@@ -67,7 +67,8 @@ void Liverpool::Process(std::stop_token stoken) {
         }
 
         if (submit_done) {
-            num_submits.notify_all();
+            std::scoped_lock lk{submit_mutex};
+            submit_cv.notify_all();
             submit_done = false;
         }
     }
@@ -76,9 +77,8 @@ void Liverpool::Process(std::stop_token stoken) {
 void Liverpool::WaitGpuIdle() {
     RENDERER_TRACE;
 
-    while (const auto old = num_submits.load()) {
-        num_submits.wait(old);
-    }
+    std::unique_lock lk{submit_mutex};
+    submit_cv.wait(lk, [this] { return num_submits == 0; });
 }
 
 Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
@@ -369,7 +369,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
         }
-
         dcb = dcb.subspan(header->type3.NumWords() + 1);
     }
 
@@ -415,8 +414,9 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
         queue.submits.emplace(task.handle);
     }
 
+    std::scoped_lock lk{submit_mutex};
     ++num_submits;
-    num_submits.notify_one();
+    submit_cv.notify_one();
 }
 
 void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
@@ -429,8 +429,9 @@ void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
         queue.submits.emplace(task.handle);
     }
 
+    std::scoped_lock lk{submit_mutex};
     ++num_submits;
-    num_submits.notify_one();
+    submit_cv.notify_one();
 }
 
 } // namespace AmdGpu

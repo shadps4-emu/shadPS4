@@ -97,4 +97,5 @@ File* HandleTable::getFile(const std::string& host_name) {
     }
     return nullptr;
 }
+
 } // namespace Core::FileSys

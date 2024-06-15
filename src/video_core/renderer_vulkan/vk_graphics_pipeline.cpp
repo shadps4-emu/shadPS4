@@ -78,7 +78,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
+        .cullMode = vk::CullModeFlagBits::eNone /*LiverpoolToVK::CullMode(key.cull_mode)*/,
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
@@ -289,7 +289,8 @@ void GraphicsPipeline::BuildDescSetLayout() {
         for (const auto& image : stage.images) {
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = vk::DescriptorType::eSampledImage,
+                .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
+                                                   : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
@@ -316,8 +317,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
     BindVertexBuffers(staging);
 
     // Bind resource buffers and textures.
-    boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 8> image_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     u32 binding{};
 

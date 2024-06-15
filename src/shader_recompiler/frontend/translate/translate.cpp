@@ -121,6 +121,9 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     case OperandField::ConstFloatNeg_2_0:
         value = ir.Imm32(-2.0f);
         break;
+    case OperandField::ConstFloatNeg_4_0:
+        value = ir.Imm32(-4.0f);
+        break;
     case OperandField::VccLo:
         if (force_flt) {
             value = ir.BitCast<IR::F32>(ir.GetVccLo());
@@ -304,6 +307,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MADAK_F32: // Yes these can share the opcode
             translator.V_FMA_F32(inst);
             break;
+        case Opcode::IMAGE_SAMPLE_LZ_O:
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
@@ -371,6 +375,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CMP_NLE_F32:
             translator.V_CMP_F32(ConditionOp::GT, false, inst);
+            break;
+        case Opcode::V_CMP_NLT_F32:
+            translator.V_CMP_F32(ConditionOp::GE, false, inst);
             break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
@@ -563,7 +570,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.S_OR_B64(true, inst);
             break;
         case Opcode::S_AND_B64:
-            translator.S_AND_B64(inst);
+            translator.S_AND_B64(false, inst);
+            break;
+        case Opcode::S_NAND_B64:
+            translator.S_AND_B64(true, inst);
             break;
         case Opcode::V_LSHRREV_B32:
             translator.V_LSHRREV_B32(inst);

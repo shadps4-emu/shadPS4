@@ -28,6 +28,7 @@ struct PthreadCondInternal;
 struct PthreadCondAttrInternal;
 struct PthreadRwInternal;
 struct PthreadRwLockAttrInternal;
+class PthreadKeys;
 
 using SceKernelSchedParam = ::sched_param;
 using ScePthread = PthreadInternal*;
@@ -38,20 +39,24 @@ using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using OrbisPthreadRwlock = PthreadRwInternal*;
 using OrbisPthreadRwlockattr = PthreadRwLockAttrInternal*;
+using OrbisPthreadKey = u32;
 
-using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
+using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
+using PthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
 struct PthreadInternal {
     u8 reserved[4096];
     std::string name;
     pthread_t pth;
     ScePthreadAttr attr;
-    pthreadEntryFunc entry;
+    PthreadEntryFunc entry;
     void* arg;
     std::atomic_bool is_started;
     std::atomic_bool is_detached;
     std::atomic_bool is_almost_done;
     std::atomic_bool is_free;
+    using Destructor = std::pair<OrbisPthreadKey, PthreadKeyDestructor>;
+    std::vector<Destructor> key_destructors;
 };
 
 struct PthreadAttrInternal {
@@ -106,6 +111,30 @@ private:
     std::mutex m_mutex;
 };
 
+class PthreadKeys {
+public:
+    PthreadKeys() {}
+    virtual ~PthreadKeys() {}
+
+    bool CreateKey(int* key, PthreadKeyDestructor destructor);
+    bool GetKey(int key, int thread_id, void** data);
+    bool SetKey(int key, int thread_id, void* data);
+
+private:
+    struct Map {
+        int thread_id = -1;
+        void* data = nullptr;
+    };
+
+    struct Key {
+        bool used = false;
+        PthreadKeyDestructor destructor = nullptr;
+        std::vector<Map> specific_values;
+    };
+
+    std::mutex m_mutex;
+    Key m_keys[256];
+};
 class PThreadCxt {
 public:
     ScePthreadMutexattr* getDefaultMutexattr() {
@@ -138,6 +167,12 @@ public:
     void setDefaultRwattr(OrbisPthreadRwlockattr attr) {
         m_default_Rwattr = attr;
     }
+    PthreadKeys* getPthreadKeys() {
+        return m_pthread_keys;
+    }
+    void setPthreadKeys(PthreadKeys* keys) {
+        m_pthread_keys = keys;
+    }
 
 private:
     ScePthreadMutexattr m_default_mutexattr = nullptr;
@@ -145,6 +180,7 @@ private:
     ScePthreadAttr m_default_attr = nullptr;
     PThreadPool* m_pthread_pool = nullptr;
     OrbisPthreadRwlockattr m_default_Rwattr = nullptr;
+    PthreadKeys* m_pthread_keys = nullptr;
 };
 
 void init_pthreads();
@@ -161,7 +197,7 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
-                                  pthreadEntryFunc start_routine, void* arg, const char* name);
+                                  PthreadEntryFunc start_routine, void* arg, const char* name);
 
 /***
  * Mutex calls

@@ -125,7 +125,8 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
     const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
     c.putSeg(fs);
     c.mov(target_reg, qword[SelfInTcbheadOffset]); // Load self member pointer of tcbhead_t.
-    c.add(target_reg, SpecificFirstBlockOffset + sizeof(uintptr_t) + slot * PthreadKeyDataSize);
+    c.add(target_reg, SpecificFirstBlockOffset + sizeof(uintptr_t) * 2 + slot * PthreadKeyDataSize);
+    c.mov(target_reg, qword[target_reg]);
     c.jmp(code + total_size); // Return to the instruction right after the mov.
 }
 

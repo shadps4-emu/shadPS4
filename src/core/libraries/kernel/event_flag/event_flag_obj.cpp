@@ -90,4 +90,15 @@ void EventFlagInternal::Set(u64 bits) {
     m_cond_var.notify_all();
 }
 
+void EventFlagInternal::Clear(u64 bits) {
+    std::unique_lock lock{m_mutex};
+    while (m_status != Status::Set) {
+        m_mutex.unlock();
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        m_mutex.lock();
+    }
+
+    m_bits &= bits;
+}
+
 } // namespace Libraries::Kernel

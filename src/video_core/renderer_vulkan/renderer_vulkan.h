@@ -39,6 +39,7 @@ public:
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address);
+    Frame* PrepareBlankFrame();
 
     bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame);

@@ -66,6 +66,9 @@ static inline u32* WriteTrailingNop(u32* cmdbuf) {
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
+    if (id != SceKernelEvent::Type::GfxEop) {
+        return ORBIS_OK;
+    }
     ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
 
     if (!eq) {
@@ -986,7 +989,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
     // a check for zero in the upper part of shader address. In our case, the address is a
     // pointer to a stack memory, so the check will likely fail. To workaround it we will
     // repeat set shader functionality here as it is trivial.
-    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], 0u); // SPI_SHADER_PGM_LO_VS
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], vs_regs[1]); // SPI_SHADER_PGM_LO_VS
     cmdbuf =
         PM4CmdSetData::SetShReg(cmdbuf, 0x4au, vs_regs[2], vs_regs[3]); // SPI_SHADER_PGM_RSRC1_VS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x207u, vs_regs[6]);  // PA_CL_VS_OUT_CNTL
