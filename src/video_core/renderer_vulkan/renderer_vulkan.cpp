@@ -192,19 +192,6 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
     return true;
 }
 
-Frame* RendererVulkan::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                                    VAddr cpu_address) {
-    // Request presentation image from the texture cache.
-    const auto info = VideoCore::ImageInfo{attribute};
-    auto& image = texture_cache.FindImage(info, cpu_address);
-    return PrepareFrameInternal(image);
-}
-
-Frame* RendererVulkan::PrepareBlankFrame() {
-    auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
-    return PrepareFrameInternal(image);
-}
-
 Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();

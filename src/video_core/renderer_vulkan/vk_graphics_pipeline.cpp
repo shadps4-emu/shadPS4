@@ -327,7 +327,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
             const u32 size = vsharp.GetSize();
             const u32 offset = staging.Copy(vsharp.base_address.Value(), size,
-                                            buffer.is_storage ? 4 : instance.UniformMinAlignment());
+                                            buffer.is_storage ? instance.StorageMinAlignment()
+                                                              : instance.UniformMinAlignment());
             buffer_infos.emplace_back(staging.Handle(), offset, size);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -399,7 +400,7 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
     };
 
     // Calculate buffers memory overlaps
-    std::vector<BufferRange> ranges{};
+    boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges{};
     for (const auto& input : vs_info.vs_inputs) {
         const auto& buffer = guest_buffers.emplace_back(
             vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset));

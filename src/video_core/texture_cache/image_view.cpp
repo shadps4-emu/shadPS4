@@ -62,6 +62,14 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexce
     }
 }
 
+ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
+                             bool is_vo_surface) noexcept {
+    const auto base_format =
+        Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
+    format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(
+        base_format, col_buffer.info.comp_swap.Value(), is_vo_surface);
+}
+
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
                      std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
     : info{info_} {

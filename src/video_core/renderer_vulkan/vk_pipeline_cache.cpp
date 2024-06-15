@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <xxhash.h>
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -9,10 +8,13 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+
+extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 
 namespace Vulkan {
 
@@ -74,8 +76,8 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
 const ComputePipeline* PipelineCache::GetComputePipeline() {
     const auto& cs_pgm = liverpool->regs.cs_program;
     ASSERT(cs_pgm.Address() != nullptr);
-    const auto code = cs_pgm.Code();
-    compute_key = XXH3_64bits(code.data(), code.size_bytes());
+    const auto* bininfo = Liverpool::GetBinaryInfo(cs_pgm);
+    compute_key = bininfo->shader_hash;
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
         it.value() = CreateComputePipeline();
@@ -130,8 +132,11 @@ void PipelineCache::RefreshGraphicsKey() {
         if (!col_buf) {
             continue;
         }
-        key.color_formats[remapped_cb] =
+        const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
+        const auto is_vo_surface = renderer->IsVideoOutSurface(col_buf);
+        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
+            base_format, col_buf.info.comp_swap.Value(), is_vo_surface);
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);
@@ -147,8 +152,8 @@ void PipelineCache::RefreshGraphicsKey() {
             key.stage_hashes[i] = 0;
             continue;
         }
-        const auto code = pgm->Code();
-        key.stage_hashes[i] = XXH3_64bits(code.data(), code.size_bytes());
+        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        key.stage_hashes[i] = bininfo->shader_hash;
     }
 }
 
@@ -243,7 +248,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#X}.{}", stage, hash, ext);
+    const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
 }

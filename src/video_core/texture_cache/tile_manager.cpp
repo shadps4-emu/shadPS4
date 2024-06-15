@@ -178,7 +178,11 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     switch (format) {
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
+    case vk::Format::eR8G8B8A8Srgb:
+        [[fallthrough]];
     case vk::Format::eB8G8R8A8Srgb:
+        [[fallthrough]];
+    case vk::Format::eB8G8R8A8Unorm:
         [[fallthrough]];
     case vk::Format::eR8G8B8A8Unorm:
         return vk::Format::eR32Uint;
@@ -315,7 +319,8 @@ bool TileManager::TryDetile(Image& image) {
         return false;
     }
 
-    const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
+    const auto offset =
+        staging.Copy(image.cpu_addr, image.info.guest_size_bytes, instance.StorageMinAlignment());
     image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
 
     auto cmdbuf = scheduler.CommandBuffer();

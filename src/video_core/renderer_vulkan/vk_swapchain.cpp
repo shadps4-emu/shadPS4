@@ -124,9 +124,9 @@ void Swapchain::FindPresentFormat() {
     const auto formats = instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
-    // RGBA.
+    // RGBA sRGB.
     if (formats[0].format == vk::Format::eUndefined) {
-        surface_format.format = vk::Format::eR8G8B8A8Unorm;
+        surface_format.format = vk::Format::eR8G8B8A8Srgb;
         surface_format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
         return;
     }
@@ -134,7 +134,7 @@ void Swapchain::FindPresentFormat() {
     // Try to find a suitable format.
     for (const vk::SurfaceFormatKHR& sformat : formats) {
         vk::Format format = sformat.format;
-        if (format != vk::Format::eR8G8B8A8Unorm && format != vk::Format::eB8G8R8A8Unorm) {
+        if (format != vk::Format::eR8G8B8A8Srgb && format != vk::Format::eB8G8R8A8Srgb) {
             continue;
         }
 

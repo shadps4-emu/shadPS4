@@ -22,7 +22,7 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     case VideoOutFormat::A8R8G8B8Srgb:
         return vk::Format::eB8G8R8A8Srgb;
     case VideoOutFormat::A8B8G8R8Srgb:
-        return vk::Format::eA8B8G8R8SrgbPack32;
+        return vk::Format::eR8G8B8A8Srgb;
     case VideoOutFormat::A2R10G10B10:
     case VideoOutFormat::A2R10G10B10Srgb:
         return vk::Format::eA2R10G10B10UnormPack32;
@@ -57,6 +57,17 @@ bool ImageInfo::IsBlockCoded() const {
     }
 }
 
+bool ImageInfo::IsPacked() const {
+    switch (pixel_format) {
+    case vk::Format::eB5G5R5A1UnormPack16:
+        [[fallthrough]];
+    case vk::Format::eB5G6R5UnormPack16:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool ImageInfo::IsDepthStencil() const {
     switch (pixel_format) {
     case vk::Format::eD16Unorm:
@@ -76,7 +87,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     if (info.IsDepthStencil()) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        if (!info.IsBlockCoded()) {
+        if (!info.IsBlockCoded() && !info.IsPacked()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
     }
@@ -110,8 +121,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     size.width = attrib.width;
     size.height = attrib.height;
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) >> 7;
-    const bool is_32bpp = pixel_format == vk::Format::eB8G8R8A8Srgb ||
-                          pixel_format == vk::Format::eA8B8G8R8SrgbPack32;
+    const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
     ASSERT(is_32bpp);
     if (!is_tiled) {
         guest_size_bytes = pitch * size.height * 4;
@@ -122,6 +132,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     } else {
         guest_size_bytes = pitch * 128 * ((size.height + 63) & (~63)) * 4;
     }
+    is_vo_surface = true;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,

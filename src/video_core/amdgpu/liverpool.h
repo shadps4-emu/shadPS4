@@ -49,7 +49,9 @@ struct Liverpool {
     using UserData = std::array<u32, NumShaderUserData>;
 
     struct BinaryInfo {
-        u8 signature[7];
+        static constexpr u8 signature_ref[] = {0x4f, 0x72, 0x62, 0x53, 0x68, 0x64, 0x72}; // OrbShdr
+
+        std::array<u8, sizeof(signature_ref)> signature;
         u8 version;
         u32 pssl_or_cg : 1;
         u32 cached : 1;
@@ -65,6 +67,11 @@ struct Liverpool {
         u8 reserved3;
         u64 shader_hash;
         u32 crc32;
+
+        bool Valid() const {
+            return shader_hash && crc32 &&
+                   (std::memcmp(signature.data(), signature_ref, sizeof(signature_ref)) == 0);
+        }
     };
 
     struct ShaderProgram {
@@ -133,6 +140,14 @@ struct Liverpool {
             return std::span{code, num_dwords};
         }
     };
+
+    template <typename Shader>
+    static constexpr auto* GetBinaryInfo(const Shader& sh) {
+        const auto* code = sh.template Address<u32>();
+        const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
+        ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
+        return bininfo;
+    }
 
     union PsInputControl {
         u32 raw;

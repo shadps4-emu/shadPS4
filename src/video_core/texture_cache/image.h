@@ -43,10 +43,12 @@ struct ImageInfo {
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool IsBlockCoded() const;
+    bool IsPacked() const;
     bool IsDepthStencil() const;
 
     bool is_tiled = false;
     bool is_storage = false;
+    bool is_vo_surface = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
     vk::ImageUsageFlags usage;

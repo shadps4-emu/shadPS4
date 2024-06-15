@@ -95,8 +95,9 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         const u32 size = vsharp.GetSize();
         const VAddr addr = vsharp.base_address.Value();
         texture_cache.OnCpuWrite(addr);
-        const u32 offset =
-            staging.Copy(addr, size, buffer.is_storage ? 4 : instance.UniformMinAlignment());
+        const u32 offset = staging.Copy(addr, size,
+                                        buffer.is_storage ? instance.StorageMinAlignment()
+                                                          : instance.UniformMinAlignment());
         // const auto [vk_buffer, offset] = memory->GetVulkanBuffer(addr);
         buffer_infos.emplace_back(staging.Handle(), offset, size);
         set_writes.push_back({
