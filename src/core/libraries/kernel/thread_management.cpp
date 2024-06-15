@@ -1245,7 +1245,8 @@ int PS4_SYSV_ABI scePthreadGetschedparam(ScePthread thread, int* policy,
 
 int PS4_SYSV_ABI scePthreadSetschedparam(ScePthread thread, int policy,
                                          const SceKernelSchedParam* param) {
-    return pthread_setschedparam(thread->pth, policy, param);
+    LOG_ERROR(Kernel_Pthread, "(STUBBED) called policy={}, sched_priority={}", policy, param->sched_priority);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
