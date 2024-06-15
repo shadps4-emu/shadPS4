@@ -42,7 +42,6 @@ void init_pthreads() {
     scePthreadRwlockattrInit(&default_rwattr);
     g_pthread_cxt->setDefaultRwattr(default_rwattr);
 
-    g_pthread_cxt->setPthreadKeys(new PthreadKeys);
     g_pthread_cxt->SetPthreadPool(new PThreadPool);
 }
 
@@ -237,8 +236,9 @@ int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
         pparam.sched_priority = 0;
     }
 
-    int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
-
+    // We always use SCHED_OTHER for now, so don't call this for now.
+    //int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
+    int result = 0;
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
@@ -271,19 +271,9 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int ppolicy = SCHED_OTHER;
-    switch (policy) {
-    case 0:
-        ppolicy = SCHED_OTHER;
-        break;
-    case 1:
-        ppolicy = SCHED_FIFO;
-        break;
-    case 3:
-        ppolicy = SCHED_OTHER;
-        break;
-    default:
-        UNREACHABLE();
+    int ppolicy = SCHED_OTHER; // winpthreads only supports SCHED_OTHER
+    if (policy != SCHED_OTHER) {
+        LOG_ERROR(Kernel_Pthread, "policy={} not supported by winpthreads", policy);
     }
 
     (*attr)->policy = policy;
