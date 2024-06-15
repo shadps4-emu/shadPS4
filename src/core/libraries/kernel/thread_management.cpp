@@ -1208,10 +1208,9 @@ void* PS4_SYSV_ABI posix_pthread_getspecific(int key) {
     return pthread_getspecific(key);
 }
 
-int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadCondattr* attr,
-                                         const char* name) {
+int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadCondattr* attr) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
-    int result = scePthreadCondInit(cond, attr, name);
+    int result = scePthreadCondInit(cond, attr, "NoName");
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
                      ? result + -SCE_KERNEL_ERROR_UNKNOWN
