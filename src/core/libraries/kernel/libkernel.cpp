@@ -262,18 +262,8 @@ int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     return 0;
 }
 
-char PS4_SYSV_ABI _is_signal_return(s64* param_1) {
-    char cVar1;
-
-    if (((*param_1 != 0x48006a40247c8d48ULL) || (param_1[1] != 0x50f000001a1c0c7ULL)) ||
-        (cVar1 = '\x01', (param_1[2] & 0xffffffU) != 0xfdebf4)) {
-        cVar1 = ((*(u64*)((s64)param_1 + -5) & 0xffffffffff) == 0x50fca8949) * '\x02';
-    }
-    return cVar1;
-}
-
 int PS4_SYSV_ABI sceKernelGetCpumode() {
-    return 5;
+    return 0;
 }
 
 void PS4_SYSV_ABI sched_yield() {
@@ -347,7 +337,6 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
-    LIB_FUNCTION("crb5j7mkk1c", "libkernel", 1, "libkernel", 1, 1, _is_signal_return);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

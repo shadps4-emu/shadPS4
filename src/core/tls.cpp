@@ -100,7 +100,7 @@ Tcb* GetTcbBase() {
 }
 
 static void AllocTcbKey() {
-    slot = pthread_key_create(&slot, nullptr);
+    ASSERT(pthread_key_create(&slot, nullptr) == 0);
 }
 
 static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGenerator& c) {
@@ -117,17 +117,19 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
     // The following logic is based on the glibc implementation of pthread_getspecific
     // https://github.com/bminor/glibc/blob/29807a27/nptl/pthread_getspecific.c#L23
     static constexpr u32 PthreadKeySecondLevelSize = 32;
-    static constexpr u32 SpecificFirstBlockOffset = 0x308;
-    static constexpr u32 SelfInTcbheadOffset = 16;
+    static constexpr u32 PthreadSpecificOffset = 0x510;
     static constexpr u32 PthreadKeyDataSize = 16;
-    ASSERT(slot < PthreadKeySecondLevelSize);
+    ASSERT(slot >= PthreadKeySecondLevelSize);
 
+    const u32 idx1st = slot / PthreadKeySecondLevelSize;
+    const u32 idx2nd = slot % PthreadKeySecondLevelSize;
     const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
     c.putSeg(fs);
-    c.mov(target_reg, qword[SelfInTcbheadOffset]); // Load self member pointer of tcbhead_t.
-    c.add(target_reg, SpecificFirstBlockOffset + sizeof(uintptr_t) * 2 + slot * PthreadKeyDataSize);
-    c.mov(target_reg, qword[target_reg]);
-    c.jmp(code + total_size); // Return to the instruction right after the mov.
+    c.mov(target_reg,
+          qword[PthreadSpecificOffset + idx1st * 8]); // Load first level specific array.
+    c.mov(target_reg, qword[target_reg + idx2nd * 16 +
+                            8]); // Load data member of pthread_key_data our slot specifies.
+    c.jmp(code + total_size);    // Return to the instruction right after the mov.
 }
 
 #endif

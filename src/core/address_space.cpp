@@ -267,7 +267,7 @@ struct AddressSpace::Impl {
         return ret;
     }
 
-    void Unmap(VAddr virtual_addr, PAddr phys_addr, size_t size) {
+    void Unmap(VAddr virtual_addr, size_t size, bool) {
         // Check to see if we are adjacent to any regions.
         auto start_address = virtual_addr;
         auto end_address = start_address + size;
