@@ -881,6 +881,11 @@ int PS4_SYSV_ABI scePthreadAttrGet(ScePthread thread, ScePthreadAttr* attr) {
 
 static void cleanup_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
+    for (const auto& [key, destructor] : thread->key_destructors) {
+        if (void* value = pthread_getspecific(key); value != nullptr) {
+            destructor(value);
+        }
+    }
     thread->is_almost_done = true;
 }
 
@@ -899,7 +904,7 @@ static void* run_thread(void* arg) {
 }
 
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
-                                  pthreadEntryFunc start_routine, void* arg, const char* name) {
+                                  PthreadEntryFunc start_routine, void* arg, const char* name) {
     if (thread == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -1161,7 +1166,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setdetachstate(ScePthreadAttr* attr, int det
 }
 
 int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthreadAttr* attr,
-                                              pthreadEntryFunc start_routine, void* arg,
+                                              PthreadEntryFunc start_routine, void* arg,
                                               const char* name) {
     LOG_INFO(Kernel_Pthread, "posix pthread_create redirect to scePthreadCreate: name = {}", name);
 
@@ -1176,7 +1181,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
 }
 
 int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
-                                      pthreadEntryFunc start_routine, void* arg) {
+                                      PthreadEntryFunc start_routine, void* arg) {
     return posix_pthread_create_name_np(thread, attr, start_routine, arg, "NoName");
 }
 
@@ -1240,19 +1245,7 @@ int PS4_SYSV_ABI scePthreadSetschedparam(ScePthread thread, int policy,
 int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
     return pthread_once(reinterpret_cast<pthread_once_t*>(once_control), init_routine);
 }
-int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* attr,
-                                      pthreadEntryFunc start_routine, void* arg) {
-    LOG_INFO(Kernel_Pthread, "posix pthread_create redirect to scePthreadCreate");
 
-    int result = scePthreadCreate(thread, attr, start_routine, arg, "");
-    if (result != 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
-                     : POSIX_EOTHER;
-        return rt;
-    }
-    return result;
-}
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
@@ -1349,6 +1342,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     // libs
     RwlockSymbolsRegister(sym);
     SemaphoreSymbolsRegister(sym);
+    KeySymbolsRegister(sym);
 }
 
 } // namespace Libraries::Kernel

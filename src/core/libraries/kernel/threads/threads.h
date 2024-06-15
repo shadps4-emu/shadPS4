@@ -15,5 +15,6 @@ int PS4_SYSV_ABI scePthreadRwlockattrInit(OrbisPthreadRwlockattr* attr);
 
 void SemaphoreSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 void RwlockSymbolsRegister(Core::Loader::SymbolsResolver* sym);
+void KeySymbolsRegister(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

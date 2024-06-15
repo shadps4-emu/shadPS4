@@ -39,22 +39,24 @@ using ScePthreadCond = PthreadCondInternal*;
 using ScePthreadCondattr = PthreadCondAttrInternal*;
 using OrbisPthreadRwlock = PthreadRwInternal*;
 using OrbisPthreadRwlockattr = PthreadRwLockAttrInternal*;
-using OrbisPthreadKey = int;
-using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
+using OrbisPthreadKey = u32;
 
-using pthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
+using PthreadKeyDestructor = PS4_SYSV_ABI void (*)(void*);
+using PthreadEntryFunc = PS4_SYSV_ABI void* (*)(void*);
 
 struct PthreadInternal {
     u8 reserved[4096];
     std::string name;
     pthread_t pth;
     ScePthreadAttr attr;
-    pthreadEntryFunc entry;
+    PthreadEntryFunc entry;
     void* arg;
     std::atomic_bool is_started;
     std::atomic_bool is_detached;
     std::atomic_bool is_almost_done;
     std::atomic_bool is_free;
+    using Destructor = std::pair<OrbisPthreadKey, PthreadKeyDestructor>;
+    std::vector<Destructor> key_destructors;
 };
 
 struct PthreadAttrInternal {
@@ -195,7 +197,7 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
-                                  pthreadEntryFunc start_routine, void* arg, const char* name);
+                                  PthreadEntryFunc start_routine, void* arg, const char* name);
 
 /***
  * Mutex calls

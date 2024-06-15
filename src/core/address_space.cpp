@@ -85,7 +85,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot, HANDLE fd = nullptr) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot, uintptr_t fd = 0) {
         const auto it = placeholders.find(virtual_addr);
         ASSERT_MSG(it != placeholders.end(), "Cannot map already mapped region");
         ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + size <= it->upper(),
@@ -117,7 +117,7 @@ struct AddressSpace::Impl {
         // Perform the map.
         void* ptr = nullptr;
         if (phys_addr != -1) {
-            HANDLE backing = fd ? fd : backing_handle;
+            HANDLE backing = fd ? reinterpret_cast<HANDLE>(fd) : backing_handle;
             ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr), phys_addr,
                                  size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         } else {
