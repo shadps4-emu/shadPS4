@@ -315,7 +315,8 @@ bool TileManager::TryDetile(Image& image) {
         return false;
     }
 
-    const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
+    const auto offset =
+        staging.Copy(image.cpu_addr, image.info.guest_size_bytes, instance.StorageMinAlignment());
     image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
 
     auto cmdbuf = scheduler.CommandBuffer();

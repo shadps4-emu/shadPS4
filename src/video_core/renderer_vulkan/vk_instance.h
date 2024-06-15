@@ -169,6 +169,11 @@ public:
         return properties.limits.minUniformBufferOffsetAlignment;
     }
 
+    /// Returns the minimum required alignment for storage buffers
+    vk::DeviceSize StorageMinAlignment() const {
+        return properties.limits.minStorageBufferOffsetAlignment;
+    }
+
     /// Returns the minimum alignemt required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;

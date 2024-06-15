@@ -213,6 +213,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceVulkan12Features{
             .scalarBlockLayout = true,
+            .uniformBufferStandardLayout = true,
             .hostQueryReset = true,
             .timelineSemaphore = true,
         },

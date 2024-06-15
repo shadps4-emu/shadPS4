@@ -327,7 +327,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
             const u32 size = vsharp.GetSize();
             const u32 offset = staging.Copy(vsharp.base_address.Value(), size,
-                                            buffer.is_storage ? 4 : instance.UniformMinAlignment());
+                                            buffer.is_storage ? instance.StorageMinAlignment()
+                                                              : instance.UniformMinAlignment());
             buffer_infos.emplace_back(staging.Handle(), offset, size);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
