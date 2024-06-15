@@ -34,10 +34,23 @@ int PS4_SYSV_ABI posix_pthread_rwlock_init(OrbisPthreadRwlock* rwlock,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(OrbisPthreadRwlock* rwlock) {
-    if (*rwlock == nullptr) {
-        posix_pthread_rwlock_init(rwlock, nullptr, nullptr);
+OrbisPthreadRwlock* createRwlock(OrbisPthreadRwlock* rwlock) {
+    if (rwlock == nullptr || *rwlock != nullptr) {
+        return rwlock;
     }
+    static std::mutex mutex;
+    std::scoped_lock lk{mutex};
+    if (*rwlock != nullptr) {
+        return rwlock;
+    }
+    const VAddr addr = std::bit_cast<VAddr>(rwlock);
+    const auto name = fmt::format("rwlock{:#x}", addr);
+    posix_pthread_rwlock_init(rwlock, nullptr, name.c_str());
+    return rwlock;
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_rdlock(OrbisPthreadRwlock* rwlock) {
+    rwlock = createRwlock(rwlock);
     int result = pthread_rwlock_rdlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_rdlock: error = {}", result);
@@ -72,6 +85,10 @@ int PS4_SYSV_ABI posix_pthread_rwlock_timedwrlock() {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(OrbisPthreadRwlock* rwlock) {
+    rwlock = createRwlock(rwlock);
+    if (rwlock == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_rwlock_tryrdlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_tryrdlock: error = {}", result);
@@ -80,6 +97,10 @@ int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(OrbisPthreadRwlock* rwlock) {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_trywrlock(OrbisPthreadRwlock* rwlock) {
+    rwlock = createRwlock(rwlock);
+    if (rwlock == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_rwlock_trywrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_trywrlock: error = {}", result);
@@ -88,6 +109,10 @@ int PS4_SYSV_ABI posix_pthread_rwlock_trywrlock(OrbisPthreadRwlock* rwlock) {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_unlock(OrbisPthreadRwlock* rwlock) {
+    rwlock = createRwlock(rwlock);
+    if (rwlock == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_rwlock_unlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_unlock: error = {}", result);
@@ -96,6 +121,10 @@ int PS4_SYSV_ABI posix_pthread_rwlock_unlock(OrbisPthreadRwlock* rwlock) {
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_wrlock(OrbisPthreadRwlock* rwlock) {
+    rwlock = createRwlock(rwlock);
+    if (rwlock == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_rwlock_wrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "posix_pthread_rwlock_wrlock: error = {}", result);
@@ -274,9 +303,7 @@ int PS4_SYSV_ABI scePthreadRwlockUnlock(OrbisPthreadRwlock* rwlock) {
 }
 
 int PS4_SYSV_ABI scePthreadRwlockWrlock(OrbisPthreadRwlock* rwlock) {
-    if (rwlock == nullptr || *rwlock == nullptr) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
+    rwlock = createRwlock(rwlock);
     int result = pthread_rwlock_wrlock(&(*rwlock)->pth_rwlock);
     if (result != 0) {
         LOG_ERROR(Kernel_Pthread, "scePthreadRwlockWrlock: error = {}", result);

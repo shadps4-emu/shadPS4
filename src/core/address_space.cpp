@@ -255,13 +255,14 @@ struct AddressSpace::Impl {
         m_free_regions.insert({start_addr, start_addr + virtual_size});
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot,
+              int fd = -1) {
         m_free_regions.subtract({virtual_addr, virtual_addr + size});
-        const int fd = phys_addr != -1 ? backing_fd : -1;
-        const int host_offset = phys_addr != -1 ? phys_addr : 0;
+        const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
+        const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
         const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
-        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag, fd,
-                         host_offset);
+        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
+                         handle, host_offset);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
         return ret;
     }
@@ -324,7 +325,7 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
                      is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 }
 
-void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, void* fd) {
+void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, uintptr_t fd) {
     return impl->Map(virtual_addr, offset, size, fd ? PAGE_READONLY : PAGE_READWRITE, fd);
 }
 

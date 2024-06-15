@@ -86,7 +86,7 @@ struct VirtualMemoryArea {
     MemoryProt prot = MemoryProt::NoAccess;
     bool disallow_merge = false;
     std::string name = "";
-    void* fd = nullptr;
+    uintptr_t fd = 0;
 
     bool Contains(VAddr addr, size_t size) const {
         return addr >= base && (addr + size) < (base + this->size);
@@ -134,7 +134,7 @@ public:
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                MemoryMapFlags flags, void* fd, size_t offset);
+                MemoryMapFlags flags, uintptr_t fd, size_t offset);
 
     void UnmapMemory(VAddr virtual_addr, size_t size);
 

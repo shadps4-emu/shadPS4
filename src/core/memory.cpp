@@ -91,6 +91,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
     // flag so we will take the branch that searches for free (or reserved) mappings.
     virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
+    alignment = alignment > 0 ? alignment : 16_KB;
 
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
     SCOPE_EXIT {
@@ -141,7 +142,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 }
 
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                           MemoryMapFlags flags, void* fd, size_t offset) {
+                           MemoryMapFlags flags, uintptr_t fd, size_t offset) {
     ASSERT(virtual_addr == 0);
     virtual_addr = impl.VirtualBase();
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
@@ -155,7 +156,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Map the file.
     const VAddr mapped_addr = it->second.base;
-    impl.MapFile(mapped_addr, Common::AlignDown(size, 4_KB), offset, fd);
+    impl.MapFile(mapped_addr, size, offset, fd);
 
     // Add virtual memory area
     auto& new_vma = AddMapping(mapped_addr, size_aligned);

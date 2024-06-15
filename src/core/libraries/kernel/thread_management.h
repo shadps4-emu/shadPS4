@@ -10,7 +10,6 @@
 #include <pthread.h>
 #include <sched.h>
 #include "common/types.h"
-#include <mutex>
 
 namespace Core::Loader {
 class SymbolsResolver;

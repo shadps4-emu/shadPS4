@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <condition_variable>
+#include <mutex>
 #include <boost/intrusive/list.hpp>
 #include <pthread.h>
 #include "common/assert.h"
@@ -17,8 +18,8 @@ using ListBaseHook =
 
 class Semaphore {
 public:
-    Semaphore(s32 init_count, s32 max_count, bool is_fifo)
-        : token_count{init_count}, max_count{max_count}, is_fifo{is_fifo} {}
+    Semaphore(s32 init_count, s32 max_count, const char* name, bool is_fifo)
+        : name{name}, token_count{init_count}, max_count{max_count}, is_fifo{is_fifo} {}
 
     bool Wait(bool can_block, s32 need_count, u64* timeout) {
         if (HasAvailableTokens(need_count)) {
@@ -131,6 +132,7 @@ private:
         boost::intrusive::list<WaitingThread, boost::intrusive::base_hook<ListBaseHook>,
                                boost::intrusive::constant_time_size<false>>;
     WaitingThreads wait_list;
+    std::string name;
     std::atomic<s32> token_count;
     std::mutex mutex;
     s32 max_count;
@@ -145,7 +147,7 @@ s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema* sem, const char* pName, u3
         LOG_ERROR(Lib_Kernel, "Semaphore creation parameters are invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    *sem = new Semaphore(initCount, maxCount, attr == 1);
+    *sem = new Semaphore(initCount, maxCount, pName, attr == 1);
     return ORBIS_OK;
 }
 

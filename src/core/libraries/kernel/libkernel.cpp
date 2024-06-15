@@ -73,17 +73,16 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
              fmt::ptr(addr), len, prot, flags, fd, offset);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* memory = Core::Memory::Instance();
-    void* handle = NULL;
-    if (fd == -1) {
-        handle =
-            CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, len + offset, NULL);
-    } else {
-        handle = h->GetFile(fd)->f.GetFileMapping();
-    }
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
-    return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
-                           offset);
+    if (fd == -1) {
+        return memory->MapMemory(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                 Core::VMAType::Flexible);
+    } else {
+        const uintptr_t handle = h->GetFile(fd)->f.GetFileMapping();
+        return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
+                               offset);
+    }
 }
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
@@ -248,6 +247,15 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, int flags,
+                                                Core::OrbisKernelModuleInfoEx* info) {
+    LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->FindByAddress(addr);
+    *info = module->GetModuleInfoEx();
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     UNREACHABLE();
     return 0;
@@ -265,6 +273,10 @@ char PS4_SYSV_ABI _is_signal_return(s64* param_1) {
 
 int PS4_SYSV_ABI sceKernelGetCpumode() {
     return 5;
+}
+
+void PS4_SYSV_ABI sched_yield() {
+    return std::this_thread::yield();
 }
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
@@ -292,6 +304,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", 1, 1, sceKernelLoadStartModule);
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
     LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoForUnwind);
+    LIB_FUNCTION("f7KBOafysXo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoFromAddr);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
 
     // equeue
@@ -326,6 +339,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
+    LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
 }
 
 } // namespace Libraries::Kernel

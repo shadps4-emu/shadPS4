@@ -216,16 +216,19 @@ void IOFile::Close() {
 #endif
 }
 
-void* IOFile::GetFileMapping() {
-#ifdef _WIN64
+uintptr_t IOFile::GetFileMapping() {
     if (file_mapping) {
         return file_mapping;
     }
+#ifdef _WIN64
     const int fd = fileno(file);
     HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
     file_mapping =
         CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL, NULL, 0);
     ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
+    return file_mapping;
+#else
+    file_mapping = fileno(file);
     return file_mapping;
 #endif
 }

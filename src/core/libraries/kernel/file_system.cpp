@@ -31,6 +31,10 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
+    if (std::string_view{path} == "/dev/console" || std::string_view{path} == "/dev/deci_tty6") {
+        return ORBIS_OK;
+    }
+
     if (directory) {
         LOG_ERROR(Kernel_Fs, "called on directory");
     } else {

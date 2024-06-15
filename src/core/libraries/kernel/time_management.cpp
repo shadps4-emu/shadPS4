@@ -63,9 +63,13 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 }
 
 int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
-    ASSERT(microseconds >= 1000);
+#ifdef _WIN64
+    ASSERT(microseconds >= 1000 || microseconds == 0);
     std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
     return 0;
+#else
+    return usleep(microseconds);
+#endif
 }
 
 u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
@@ -152,6 +156,7 @@ int PS4_SYSV_ABI gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone* tz) {
 }
 
 s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
+#ifdef _WIN64
     ASSERT(tz);
     static int tzflag = 0;
     if (!tzflag) {
@@ -160,6 +165,13 @@ s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
     }
     tz->tz_minuteswest = _timezone / 60;
     tz->tz_dsttime = _daylight;
+#else
+    struct timezone tzz;
+    struct timeval tv;
+    gettimeofday(&tv, &tzz);
+    tz->tz_dsttime = tzz.tz_dsttime;
+    tz->tz_minuteswest = tzz.tz_minuteswest;
+#endif
     return ORBIS_OK;
 }
 
@@ -176,6 +188,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, gettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, gettimeofday);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libkernel", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
     LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, sceKernelSleep);

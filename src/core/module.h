@@ -17,7 +17,7 @@ static constexpr size_t SCE_DBG_NUM_FINGERPRINT = 20;
 
 struct OrbisKernelModuleSegmentInfo {
     VAddr address;
-    u64 size;
+    u32 size;
     s32 prot;
 };
 

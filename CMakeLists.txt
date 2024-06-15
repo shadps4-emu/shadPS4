@@ -224,8 +224,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/disassembler.cpp
            src/common/disassembler.h
-           src/common/discord.cpp
-           src/common/discord.h
            src/common/endian.h
            src/common/enum.h
            src/common/io_file.cpp
@@ -509,7 +507,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak Tracy::TracyClient)
-target_link_libraries(shadps4 PRIVATE discord-rpc boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
+target_link_libraries(shadps4 PRIVATE boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
 
 if (NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3-shared)
