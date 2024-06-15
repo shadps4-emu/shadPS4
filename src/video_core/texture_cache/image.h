@@ -43,6 +43,7 @@ struct ImageInfo {
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool IsBlockCoded() const;
+    bool IsPacked() const;
     bool IsDepthStencil() const;
 
     bool is_tiled = false;

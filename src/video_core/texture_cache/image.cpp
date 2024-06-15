@@ -57,6 +57,17 @@ bool ImageInfo::IsBlockCoded() const {
     }
 }
 
+bool ImageInfo::IsPacked() const {
+    switch (pixel_format) {
+    case vk::Format::eB5G5R5A1UnormPack16:
+        [[fallthrough]];
+    case vk::Format::eB5G6R5UnormPack16:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool ImageInfo::IsDepthStencil() const {
     switch (pixel_format) {
     case vk::Format::eD16Unorm:
@@ -76,7 +87,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     if (info.IsDepthStencil()) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        if (!info.IsBlockCoded()) {
+        if (!info.IsBlockCoded() && !info.IsPacked()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
     }
