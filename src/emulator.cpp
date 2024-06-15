@@ -106,7 +106,6 @@ void Emulator::Run(const std::filesystem::path& file) {
                     entry.path().filename() == "libSceFios2.prx" ||
                     entry.path().filename() == "libSceAudioLatencyEstimation.prx" ||
                     entry.path().filename() == "libSceJobManager.prx" ||
-                    entry.path().filename() == "libSceNpToolkit2.prx" ||
                     entry.path().filename() == "libSceS3DConversion.prx") {
                     found = true;
                     LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
