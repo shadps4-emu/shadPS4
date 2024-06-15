@@ -183,7 +183,7 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
-    ImageViewInfo view_info{buffer};
+    ImageViewInfo view_info{buffer, image.info.is_vo_surface};
     return RegisterImageView(image, view_info);
 }
 

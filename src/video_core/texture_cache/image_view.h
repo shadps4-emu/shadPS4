@@ -20,7 +20,8 @@ namespace VideoCore {
 struct ImageViewInfo {
     explicit ImageViewInfo() = default;
     explicit ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
-    explicit ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept;
+    explicit ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
+                           bool is_vo_surface) noexcept;
 
     vk::ImageViewType type = vk::ImageViewType::e2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;

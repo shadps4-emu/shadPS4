@@ -8,10 +8,13 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+
+extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 
 namespace Vulkan {
 
@@ -129,8 +132,11 @@ void PipelineCache::RefreshGraphicsKey() {
         if (!col_buf) {
             continue;
         }
-        key.color_formats[remapped_cb] = LiverpoolToVK::SurfaceFormat(
-            col_buf.info.format, col_buf.NumFormat(), col_buf.info.comp_swap.Value());
+        const auto base_format =
+            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
+        const auto is_vo_surface = renderer->IsVideoOutSurface(col_buf);
+        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
+            base_format, col_buf.info.comp_swap.Value(), is_vo_surface);
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);

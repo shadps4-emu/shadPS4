@@ -276,12 +276,7 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
     }
 }
 
-vk::Format SurfaceFormat(
-    AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format,
-    Liverpool::ColorBuffer::SwapMode comp_swap /*= Liverpool::ColorBuffer::SwapMode::Standard*/) {
-    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
-                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
-               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
+vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
 
     if (data_format == AmdGpu::DataFormat::Format32_32_32_32 &&
         num_format == AmdGpu::NumberFormat::Float) {
@@ -293,14 +288,11 @@ vk::Format SurfaceFormat(
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
-        return comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate
-                   ? vk::Format::eB8G8R8A8Unorm
-                   : vk::Format::eR8G8B8A8Unorm;
+        return vk::Format::eR8G8B8A8Unorm;
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Srgb) {
-        return comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate ? vk::Format::eB8G8R8A8Srgb
-                                                                        : vk::Format::eR8G8B8A8Srgb;
+        return vk::Format::eR8G8B8A8Srgb;
     }
     if (data_format == AmdGpu::DataFormat::Format32_32_32 &&
         num_format == AmdGpu::NumberFormat::Float) {
@@ -360,6 +352,31 @@ vk::Format SurfaceFormat(
         return vk::Format::eBc2UnormBlock;
     }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
+}
+
+vk::Format AdjustColorBufferFormat(vk::Format base_format,
+                                   Liverpool::ColorBuffer::SwapMode comp_swap, bool is_vo_surface) {
+    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
+                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
+               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
+
+    const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
+
+    switch (base_format) {
+    case vk::Format::eR8G8B8A8Unorm:
+        return comp_swap_alt ? vk::Format::eB8G8R8A8Unorm : base_format;
+    case vk::Format::eB8G8R8A8Unorm:
+        return comp_swap_alt ? vk::Format::eR8G8B8A8Unorm : base_format;
+    case vk::Format::eR8G8B8A8Srgb:
+        return comp_swap_alt   ? vk::Format::eB8G8R8A8Unorm
+               : is_vo_surface ? vk::Format::eR8G8B8A8Unorm
+                               : base_format;
+    case vk::Format::eB8G8R8A8Srgb:
+        return comp_swap_alt   ? vk::Format::eR8G8B8A8Unorm
+               : is_vo_surface ? vk::Format::eB8G8R8A8Unorm
+                               : base_format;
+    }
+    UNREACHABLE_MSG("Unsupported base format {}", vk::to_string(base_format));
 }
 
 vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat stencil_format) {

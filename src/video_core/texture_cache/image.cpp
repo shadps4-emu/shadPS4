@@ -132,6 +132,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     } else {
         guest_size_bytes = pitch * 128 * ((size.height + 63) & (~63)) * 4;
     }
+    is_vo_surface = true;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,

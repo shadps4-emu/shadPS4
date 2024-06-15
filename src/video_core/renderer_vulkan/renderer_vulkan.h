@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -50,8 +51,15 @@ public:
 
     VideoCore::Image& RegisterVideoOutSurface(
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
+        vo_buffers_addr.emplace_back(cpu_address);
         const auto info = VideoCore::ImageInfo{attribute};
         return texture_cache.FindImage(info, cpu_address);
+    }
+
+    bool IsVideoOutSurface(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
+        return std::find_if(vo_buffers_addr.cbegin(), vo_buffers_addr.cend(), [&](VAddr vo_buffer) {
+                   return vo_buffer == color_buffer.Address();
+               }) != vo_buffers_addr.cend();
     }
 
     bool ShowSplash(Frame* frame = nullptr);
@@ -76,6 +84,7 @@ private:
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;
     std::optional<VideoCore::Image> splash_img;
+    std::vector<VAddr> vo_buffers_addr;
 };
 
 } // namespace Vulkan
