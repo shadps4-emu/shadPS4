@@ -622,7 +622,6 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
 
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    // Actual virtual buffer address is hardcoded in the driver to 0xff00'000
     return tessellation_factors_ring_addr;
 }
 
@@ -964,15 +963,16 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
         0x4a0202c1u,              // v_add_i32     v1, vcc, -1, v1
         0x4a0000c1u,              // v_add_i32     v0, vcc, -1, v0
         0x7e020b01u,              // v_cvt_f32_i32 v1, v1
-        0x7E000B00U,
-        0x7e040280u,              // v_cvt_f32_i32 v0, v0
+        0x7e000b00U,              // v_cvt_f32_i32 v0, v0
+        0x7e040280u,              // v_mov_b32     v2, 0
         0x7e0602f2u,              // v_mov_b32     v3, 1.0
         0xf80008cfu, 0x03020001u, // exp           pos0, v1, v0, v2, v3 done
         0xf800020fu, 0x03030303u, // exp           param0, v3, v3, v3, v3
         0xbf810000u,              // s_endpgm
 
-        // OrbShdr header
+        // Binary header
         0x5362724fu, 0x07726468u, 0x00004047u, 0u, 0x47f8c29fu, 0x9b2da5cfu, 0xff7c5b7du,
+        // VS regs
         0x00000017u, 0x0fe000f1u, 0u, 0x000c0000u, 4u, 0u, 4u, 0u, 7u,
     };
     // clang-format on

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <xxhash.h>
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -74,8 +73,8 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
 const ComputePipeline* PipelineCache::GetComputePipeline() {
     const auto& cs_pgm = liverpool->regs.cs_program;
     ASSERT(cs_pgm.Address() != nullptr);
-    const auto code = cs_pgm.Code();
-    compute_key = XXH3_64bits(code.data(), code.size_bytes());
+    const auto* bininfo = Liverpool::GetBinaryInfo(cs_pgm);
+    compute_key = bininfo->shader_hash;
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
         it.value() = CreateComputePipeline();
@@ -147,8 +146,8 @@ void PipelineCache::RefreshGraphicsKey() {
             key.stage_hashes[i] = 0;
             continue;
         }
-        const auto code = pgm->Code();
-        key.stage_hashes[i] = XXH3_64bits(code.data(), code.size_bytes());
+        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        key.stage_hashes[i] = bininfo->shader_hash;
     }
 }
 
@@ -243,7 +242,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#X}.{}", stage, hash, ext);
+    const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
 }

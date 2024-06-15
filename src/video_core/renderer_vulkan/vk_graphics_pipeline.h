@@ -71,7 +71,7 @@ public:
     }
 
     [[nodiscard]] bool IsEmbeddedVs() const noexcept {
-        static constexpr size_t EmbeddedVsHash = 0x59c556606a027efd;
+        static constexpr size_t EmbeddedVsHash = 0x9b2da5cf47f8c29f;
         return key.stage_hashes[0] == EmbeddedVsHash;
     }
 
