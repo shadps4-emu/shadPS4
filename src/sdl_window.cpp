@@ -96,36 +96,36 @@ void WindowSDL::onResize() {
 }
 
 void WindowSDL::onKeyPress(const SDL_Event* event) {
-    using Libraries::LibPad::ScePadButton;
+    using Libraries::Pad::OrbisPadButtonDataOffset;
 
     u32 button = 0;
     switch (event->key.keysym.sym) {
     case SDLK_UP:
-        button = ScePadButton::UP;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
         break;
     case SDLK_DOWN:
-        button = ScePadButton::DOWN;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
         break;
     case SDLK_LEFT:
-        button = ScePadButton::LEFT;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
         break;
     case SDLK_RIGHT:
-        button = ScePadButton::RIGHT;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
         break;
     case SDLK_KP_8:
-        button = ScePadButton::TRIANGLE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
         break;
     case SDLK_KP_6:
-        button = ScePadButton::CIRCLE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
         break;
     case SDLK_KP_2:
-        button = ScePadButton::CROSS;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
         break;
     case SDLK_KP_4:
-        button = ScePadButton::SQUARE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
         break;
     case SDLK_RETURN:
-        button = ScePadButton::OPTIONS;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
         break;
     default:
         break;
