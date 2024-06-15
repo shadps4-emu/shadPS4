@@ -15,6 +15,8 @@ enum class PathType {
     ShaderDir,      // Where shaders are stored.
     PM4Dir,         // Where command lists are stored.
     SaveDataDir,    // Where guest save data is stored.
+    TempDataDir,    // Where game temp data is stored.
+    GameDataDir,    // Where game data is stored.
     SysModuleDir,   // Where system modules are stored.
 };
 
@@ -26,6 +28,8 @@ constexpr auto SCREENSHOTS_DIR = "screenshots";
 constexpr auto SHADER_DIR = "shader";
 constexpr auto PM4_DIR = "pm4";
 constexpr auto SAVEDATA_DIR = "savedata";
+constexpr auto GAMEDATA_DIR = "data";
+constexpr auto TEMPDATA_DIR = "temp";
 constexpr auto SYSMODULES_DIR = "sys_modules";
 
 // Filenames

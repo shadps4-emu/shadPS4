@@ -18,6 +18,15 @@ struct OrbisTimesec {
     u32 dst_sec;
 };
 
+typedef struct {
+    uint32_t timeLow;
+    uint16_t timeMid;
+    uint16_t timeHiAndVersion;
+    uint8_t clockSeqHiAndReserved;
+    uint8_t clockSeqLow;
+    uint8_t node[6];
+} OrbisKernelUuid;
+
 int* PS4_SYSV_ABI __Error();
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);

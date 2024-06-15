@@ -1212,6 +1212,22 @@ int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadC
     return result;
 }
 
+int PS4_SYSV_ABI posix_pthread_cond_signal(ScePthreadCond* cond) {
+    int result = scePthreadCondSignal(cond);
+    LOG_INFO(Kernel_Pthread,
+             "posix posix_pthread_cond_signal redirect to scePthreadCondSignal, result = {}",
+             result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
+    int result = scePthreadCondDestroy(cond);
+    LOG_INFO(Kernel_Pthread,
+             "posix posix_pthread_cond_destroy redirect to scePthreadCondDestroy, result = {}",
+             result);
+    return result;
+}
+
 int PS4_SYSV_ABI posix_pthread_setcancelstate(int state, int* oldstate) {
     return pthread_setcancelstate(state, oldstate);
 }
@@ -1249,6 +1265,8 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_signal);
+    LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_destroy);
     LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
     LIB_FUNCTION("0-KXaS70xy4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getspecific);
     LIB_FUNCTION("WrOLvHU0yQM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setspecific);
