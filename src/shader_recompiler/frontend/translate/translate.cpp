@@ -673,7 +673,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         default:
             const u32 opcode = u32(inst.opcode);
-            UNREACHABLE_MSG("Unknown opcode {} ({})", magic_enum::enum_name(inst.opcode), opcode);
+            LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({})",
+                      magic_enum::enum_name(inst.opcode), opcode);
+            info.translation_failed = true;
         }
     }
 }
