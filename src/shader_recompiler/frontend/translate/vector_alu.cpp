@@ -197,6 +197,12 @@ void Translator::V_MAX_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(src0, src1));
 }
 
+void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.IMax(src0, src1, is_signed));
+}
+
 void Translator::V_RSQ_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
