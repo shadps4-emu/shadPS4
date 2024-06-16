@@ -5,6 +5,15 @@
 
 namespace Shader::Gcn {
 
+void Translator::S_MOVK(const GcnInst& inst) {
+    const auto simm16 = inst.control.sopk.simm.Value();
+    if (simm16 & (1 << 15)) {
+        // TODO: need to verify the case of imm sign extension
+        UNREACHABLE();
+    }
+    SetDst(inst.dst[0], ir.Imm32(simm16));
+}
+
 void Translator::S_MOV(const GcnInst& inst) {
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }

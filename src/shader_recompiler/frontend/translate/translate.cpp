@@ -210,6 +210,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
     Translator translator{block, info};
     for (const auto& inst : inst_list) {
         switch (inst.opcode) {
+        case Opcode::S_MOVK_I32:
+            translator.S_MOVK(inst);
+            break;
         case Opcode::S_MOV_B32:
             translator.S_MOV(inst);
             break;

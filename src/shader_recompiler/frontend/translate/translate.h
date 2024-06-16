@@ -34,6 +34,7 @@ public:
     void EmitFetch(const GcnInst& inst);
 
     // Scalar ALU
+    void S_MOVK(const GcnInst& inst);
     void S_MOV(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
