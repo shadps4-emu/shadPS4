@@ -425,4 +425,9 @@ void Translator::V_MUL_LO_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IMul(src0, src1));
 }
 
+void Translator::V_TRUNC_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPTrunc(src0));
+}
+
 } // namespace Shader::Gcn
