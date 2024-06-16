@@ -14,6 +14,9 @@ namespace Libraries::Pad {
 constexpr int ORBIS_PAD_MAX_TOUCH_NUM = 2;
 constexpr int ORBIS_PAD_MAX_DEVICE_UNIQUE_DATA_SIZE = 12;
 
+constexpr int ORBIS_PAD_PORT_TYPE_STANDARD = 0;
+constexpr int ORBIS_PAD_PORT_TYPE_SPECIAL = 2;
+
 enum OrbisPadDeviceClass {
     ORBIS_PAD_DEVICE_CLASS_INVALID = -1,
     ORBIS_PAD_DEVICE_CLASS_STANDARD = 0,
@@ -189,8 +192,8 @@ struct OrbisPadData {
 struct OrbisPadTouchPadInformation {
     float pixelDensity;
     struct {
-        u8 x;
-        u8 y;
+        u16 x;
+        u16 y;
     } resolution;
 };
 
