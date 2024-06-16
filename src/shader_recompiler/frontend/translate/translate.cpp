@@ -7,6 +7,10 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
+#define MAGIC_ENUM_RANGE_MIN 0
+#define MAGIC_ENUM_RANGE_MAX 1515
+#include "magic_enum.hpp"
+
 namespace Shader::Gcn {
 
 std::array<bool, IR::NumScalarRegs> Translator::exec_contexts{};
@@ -666,7 +670,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         default:
             const u32 opcode = u32(inst.opcode);
-            UNREACHABLE_MSG("Unknown opcode {}", opcode);
+            UNREACHABLE_MSG("Unknown opcode {} ({})", magic_enum::enum_name(inst.opcode), opcode);
         }
     }
 }
