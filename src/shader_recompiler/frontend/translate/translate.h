@@ -97,7 +97,7 @@ public:
     void V_SUBREV_I32(const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_LSHRREV_B32(const GcnInst& inst);
-    void V_MUL_LO_I32(const GcnInst& inst);
+    void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_BFE_U32(const GcnInst& inst);
     void V_MAD_I32_I24(const GcnInst& inst);

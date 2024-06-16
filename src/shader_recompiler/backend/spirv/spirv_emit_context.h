@@ -138,6 +138,9 @@ public:
     VectorIds U32{};
     VectorIds U1{};
 
+    Id full_result_i32x2;
+    Id full_result_u32x2;
+
     Id true_value{};
     Id false_value{};
     Id u32_one_value{};

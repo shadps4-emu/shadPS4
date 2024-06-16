@@ -584,8 +584,11 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ADD_I32:
             translator.S_ADD_I32(inst);
             break;
+        case Opcode::V_MUL_HI_U32:
+            translator.V_MUL_HI_U32(false, inst);
+            break;
         case Opcode::V_MUL_LO_I32:
-            translator.V_MUL_LO_I32(inst);
+            translator.V_MUL_LO_U32(inst);
             break;
         case Opcode::V_SAD_U32:
             translator.V_SAD_U32(inst);
