@@ -125,8 +125,9 @@ int PS4_SYSV_ABI sceGnmQueryResourceRegistrationUserMemoryRequirements();
 int PS4_SYSV_ABI sceGnmRaiseUserExceptionEvent();
 int PS4_SYSV_ABI sceGnmRegisterGdsResource();
 int PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig();
-int PS4_SYSV_ABI sceGnmRegisterOwner();
-int PS4_SYSV_ABI sceGnmRegisterResource();
+s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name);
+s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
+                                        size_t size, const char* name, int res_type, u64 user_data);
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone();
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload();
 int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset();

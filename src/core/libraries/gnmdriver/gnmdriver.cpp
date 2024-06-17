@@ -814,14 +814,16 @@ int PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmRegisterOwner() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
 }
 
-int PS4_SYSV_ABI sceGnmRegisterResource() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
+                                        size_t size, const char* name, int res_type,
+                                        u64 user_data) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
 }
 
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone() {
