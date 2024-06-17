@@ -132,42 +132,74 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         break;
     case SDLK_a:
         axis = Input::Axis::LeftX;
-        axisvalue += -127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }      
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_d:
         axis = Input::Axis::LeftX;
-        axisvalue += 127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }         
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_w:
         axis = Input::Axis::LeftY;
-        axisvalue += -127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_s:
         axis = Input::Axis::LeftY;
-        axisvalue += 127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_j:
         axis = Input::Axis::RightX;
-        axisvalue += -127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_l:
         axis = Input::Axis::RightX;
-        axisvalue += 127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_i:
         axis = Input::Axis::RightY;
-        axisvalue += -127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_k:
         axis = Input::Axis::RightY;
-        axisvalue += 127;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }  
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     default:
@@ -176,7 +208,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     if (button != 0) {
         controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
     }
-    if (axis != Input::Axis::AxisMax&& event->type == SDL_EVENT_KEY_DOWN) {
+    if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
     }
 }
