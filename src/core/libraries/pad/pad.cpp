@@ -250,12 +250,12 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
 
     for (int i = 0; i < ret_num; i++) {
         pData[i].buttons = states[i].buttonsState;
-        pData[i].leftStick.x = 128;    // dummy
-        pData[i].leftStick.y = 128;    // dummy
-        pData[i].rightStick.x = 0;     // dummy
-        pData[i].rightStick.y = 0;     // dummy
-        pData[i].analogButtons.l2 = 0; // dummy
-        pData[i].analogButtons.r2 = 0; // dummy
+        pData[i].leftStick.x = states[i].axes[static_cast<int>(Input::Axis::LeftX)];
+        pData[i].leftStick.y = states[i].axes[static_cast<int>(Input::Axis::LeftY)];
+        pData[i].rightStick.x = states[i].axes[static_cast<int>(Input::Axis::RightX)];
+        pData[i].rightStick.y = states[i].axes[static_cast<int>(Input::Axis::RightY)];
+        pData[i].analogButtons.l2 = states[i].axes[static_cast<int>(Input::Axis::TriggerLeft)];
+        pData[i].analogButtons.r2 = states[i].axes[static_cast<int>(Input::Axis::TriggerRight)];
         pData[i].orientation.x = 0.0f;
         pData[i].orientation.y = 0.0f;
         pData[i].orientation.z = 0.0f;
@@ -309,14 +309,14 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     bool isConnected = false;
     Input::State state;
 
-    controller->readState(&state, &isConnected, &connectedCount);
+    controller->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
-    pData->leftStick.x = 128;    // dummy
-    pData->leftStick.y = 128;    // dummy
-    pData->rightStick.x = 0;     // dummy
-    pData->rightStick.y = 0;     // dummy
-    pData->analogButtons.r2 = 0; // dummy
-    pData->analogButtons.l2 = 0; // dummy
+    pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
+    pData->leftStick.y = state.axes[static_cast<int>(Input::Axis::LeftY)];
+    pData->rightStick.x = state.axes[static_cast<int>(Input::Axis::RightX)];
+    pData->rightStick.y = state.axes[static_cast<int>(Input::Axis::RightY)];
+    pData->analogButtons.l2 = state.axes[static_cast<int>(Input::Axis::TriggerLeft)];
+    pData->analogButtons.r2 = state.axes[static_cast<int>(Input::Axis::TriggerRight)];
     pData->orientation.x = 0;
     pData->orientation.y = 0;
     pData->orientation.z = 0;

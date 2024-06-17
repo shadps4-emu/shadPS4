@@ -131,7 +131,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         break;
     }
     if (button != 0) {
-        controller->checkButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
+        controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
     }
 }
 

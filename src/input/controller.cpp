@@ -3,7 +3,7 @@
 
 #include "core/libraries/kernel/time_management.h"
 #include "input/controller.h"
-
+#include "core/libraries/pad/pad.h"
 namespace Input {
 
 GameController::GameController() {
@@ -11,12 +11,12 @@ GameController::GameController() {
     m_last_state = State();
 }
 
-void GameController::readState(State* state, bool* isConnected, int* connectedCount) {
+void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
     std::scoped_lock lock{m_mutex};
 
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
-    *state = getLastState();
+    *state = GetLastState();
 }
 
 int GameController::ReadStates(State* states, int states_num, bool* isConnected,
@@ -50,7 +50,7 @@ int GameController::ReadStates(State* states, int states_num, bool* isConnected,
     return ret_num;
 }
 
-State GameController::getLastState() const {
+State GameController::GetLastState() const {
     if (m_states_num == 0) {
         return m_last_state;
     }
@@ -60,7 +60,7 @@ State GameController::getLastState() const {
     return m_states[last];
 }
 
-void GameController::addState(const State& state) {
+void GameController::AddState(const State& state) {
     if (m_states_num >= MAX_STATES) {
         m_states_num = MAX_STATES - 1;
         m_first_state = (m_first_state + 1) % MAX_STATES;
@@ -74,9 +74,9 @@ void GameController::addState(const State& state) {
     m_states_num++;
 }
 
-void GameController::checkButton(int id, u32 button, bool isPressed) {
+void GameController::CheckButton(int id, u32 button, bool isPressed) {
     std::scoped_lock lock{m_mutex};
-    auto state = getLastState();
+    auto state = GetLastState();
     state.time = Libraries::Kernel::sceKernelGetProcessTime();
     if (isPressed) {
         state.buttonsState |= button;
@@ -84,7 +84,36 @@ void GameController::checkButton(int id, u32 button, bool isPressed) {
         state.buttonsState &= ~button;
     }
 
-    addState(state);
+    AddState(state);
+}
+
+void GameController::Axis(int id, Input::Axis axis, int value) {
+    std::scoped_lock lock{m_mutex};
+    auto state = GetLastState();
+
+    state.time = Libraries::Kernel::sceKernelGetProcessTime();
+
+    int axis_id = static_cast<int>(axis);
+
+    state.axes[axis_id] = value;
+
+    if (axis == Input::Axis::TriggerLeft) {
+        if (value > 0) {
+            state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        } else {
+            state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        }
+    }
+
+    if (axis == Input::Axis::TriggerRight) {
+        if (value > 0) {
+            state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
+        } else {
+            state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
+        }
+    }
+
+    AddState(state);
 }
 
 } // namespace Input
