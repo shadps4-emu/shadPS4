@@ -7,6 +7,10 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
+#define MAGIC_ENUM_RANGE_MIN 0
+#define MAGIC_ENUM_RANGE_MAX 1515
+#include "magic_enum.hpp"
+
 namespace Shader::Gcn {
 
 std::array<bool, IR::NumScalarRegs> Translator::exec_contexts{};
@@ -210,6 +214,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
     Translator translator{block, info};
     for (const auto& inst : inst_list) {
         switch (inst.opcode) {
+        case Opcode::S_MOVK_I32:
+            translator.S_MOVK(inst);
+            break;
         case Opcode::S_MOV_B32:
             translator.S_MOV(inst);
             break;
@@ -421,6 +428,12 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_MAX_F32:
             translator.V_MAX_F32(inst);
             break;
+        case Opcode::V_MAX_I32:
+            translator.V_MAX_U32(true, inst);
+            break;
+        case Opcode::V_MAX_U32:
+            translator.V_MAX_U32(false, inst);
+            break;
         case Opcode::V_RSQ_F32:
             translator.V_RSQ_F32(inst);
             break;
@@ -581,8 +594,11 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ADD_I32:
             translator.S_ADD_I32(inst);
             break;
+        case Opcode::V_MUL_HI_U32:
+            translator.V_MUL_HI_U32(false, inst);
+            break;
         case Opcode::V_MUL_LO_I32:
-            translator.V_MUL_LO_I32(inst);
+            translator.V_MUL_LO_U32(inst);
             break;
         case Opcode::V_SAD_U32:
             translator.V_SAD_U32(inst);
@@ -641,6 +657,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_BFM_B32:
             translator.S_BFM_B32(inst);
             break;
+        case Opcode::V_TRUNC_F32:
+            translator.V_TRUNC_F32(inst);
+            break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:
@@ -654,7 +673,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         default:
             const u32 opcode = u32(inst.opcode);
-            UNREACHABLE_MSG("Unknown opcode {}", opcode);
+            LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({})",
+                      magic_enum::enum_name(inst.opcode), opcode);
+            info.translation_failed = true;
         }
     }
 }

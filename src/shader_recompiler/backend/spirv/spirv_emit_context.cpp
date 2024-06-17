@@ -104,6 +104,9 @@ void EmitContext::DefineArithmeticTypes() {
 
     output_f32 = Name(TypePointer(spv::StorageClass::Output, F32[1]), "output_f32");
     output_u32 = Name(TypePointer(spv::StorageClass::Output, U32[1]), "output_u32");
+
+    full_result_i32x2 = Name(TypeStruct(S32[1], S32[1]), "full_result_i32x2");
+    full_result_u32x2 = Name(TypeStruct(U32[1], U32[1]), "full_result_u32x2");
 }
 
 void EmitContext::DefineInterfaces(const IR::Program& program) {

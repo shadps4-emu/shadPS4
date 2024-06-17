@@ -34,6 +34,7 @@ public:
     void EmitFetch(const GcnInst& inst);
 
     // Scalar ALU
+    void S_MOVK(const GcnInst& inst);
     void S_MOV(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
@@ -79,6 +80,7 @@ public:
     void V_FMA_F32(const GcnInst& inst);
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_MAX_F32(const GcnInst& inst);
+    void V_MAX_U32(bool is_signed, const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
@@ -96,7 +98,7 @@ public:
     void V_SUBREV_I32(const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_LSHRREV_B32(const GcnInst& inst);
-    void V_MUL_LO_I32(const GcnInst& inst);
+    void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_BFE_U32(const GcnInst& inst);
     void V_MAD_I32_I24(const GcnInst& inst);
@@ -112,6 +114,7 @@ public:
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
+    void V_TRUNC_F32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);

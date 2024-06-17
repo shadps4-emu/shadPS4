@@ -240,6 +240,8 @@ Id EmitIAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitIAdd64(EmitContext& ctx, Id a, Id b);
 Id EmitISub32(EmitContext& ctx, Id a, Id b);
 Id EmitISub64(EmitContext& ctx, Id a, Id b);
+Id EmitSMulExt(EmitContext& ctx, Id a, Id b);
+Id EmitUMulExt(EmitContext& ctx, Id a, Id b);
 Id EmitIMul32(EmitContext& ctx, Id a, Id b);
 Id EmitSDiv32(EmitContext& ctx, Id a, Id b);
 Id EmitUDiv32(EmitContext& ctx, Id a, Id b);

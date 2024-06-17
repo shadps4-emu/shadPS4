@@ -189,7 +189,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         inst_pool.ReleaseContents();
 
         // Recompile shader to IR.
-        LOG_INFO(Render_Vulkan, "Compiling {} shader {:#X}", stage, hash);
+        LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
         const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
         programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
@@ -224,6 +224,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
     inst_pool.ReleaseContents();
 
     // Recompile shader to IR.
+    LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
     const Shader::Info info =
         MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
     auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));

@@ -312,6 +312,12 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::FormatBc3 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc3SrgbBlock;
     }
+    if (data_format == AmdGpu::DataFormat::FormatBc3 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc3UnormBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc4 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc4UnormBlock;
+    }
     if (data_format == AmdGpu::DataFormat::Format16_16_16_16 &&
         num_format == AmdGpu::NumberFormat::Sint) {
         return vk::Format::eR16G16B16A16Sint;
@@ -321,9 +327,6 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::FormatBc1 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc1RgbaUnormBlock;
-    }
-    if (data_format == AmdGpu::DataFormat::FormatBc3 && num_format == AmdGpu::NumberFormat::Unorm) {
-        return vk::Format::eBc3UnormBlock;
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Uint) {
@@ -361,22 +364,19 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
                "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
 
     const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
-
-    switch (base_format) {
-    case vk::Format::eR8G8B8A8Unorm:
-        return comp_swap_alt ? vk::Format::eB8G8R8A8Unorm : base_format;
-    case vk::Format::eB8G8R8A8Unorm:
-        return comp_swap_alt ? vk::Format::eR8G8B8A8Unorm : base_format;
-    case vk::Format::eR8G8B8A8Srgb:
-        return comp_swap_alt   ? vk::Format::eB8G8R8A8Unorm
-               : is_vo_surface ? vk::Format::eR8G8B8A8Unorm
-                               : base_format;
-    case vk::Format::eB8G8R8A8Srgb:
-        return comp_swap_alt   ? vk::Format::eR8G8B8A8Unorm
-               : is_vo_surface ? vk::Format::eB8G8R8A8Unorm
-                               : base_format;
+    if (comp_swap_alt) {
+        switch (base_format) {
+        case vk::Format::eR8G8B8A8Unorm:
+            return vk::Format::eB8G8R8A8Unorm;
+        case vk::Format::eB8G8R8A8Unorm:
+            return vk::Format::eR8G8B8A8Unorm;
+        case vk::Format::eR8G8B8A8Srgb:
+            return is_vo_surface ? vk::Format::eB8G8R8A8Unorm : vk::Format::eB8G8R8A8Srgb;
+        case vk::Format::eB8G8R8A8Srgb:
+            return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
+        }
     }
-    UNREACHABLE_MSG("Unsupported base format {}", vk::to_string(base_format));
+    return base_format;
 }
 
 vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat stencil_format) {

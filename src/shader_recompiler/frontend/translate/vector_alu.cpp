@@ -197,6 +197,12 @@ void Translator::V_MAX_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(src0, src1));
 }
 
+void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.IMax(src0, src1, is_signed));
+}
+
 void Translator::V_RSQ_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
@@ -320,10 +326,11 @@ void Translator::V_LSHRREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.ShiftRightLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
-void Translator::V_MUL_LO_I32(const GcnInst& inst) {
+void Translator::V_MUL_HI_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IMul(src0, src1));
+    const IR::U32 hi{ir.CompositeExtract(ir.IMulExt(src0, src1, is_signed), 1)};
+    SetDst(inst.dst[0], hi);
 }
 
 void Translator::V_SAD_U32(const GcnInst& inst) {
@@ -416,6 +423,11 @@ void Translator::V_MUL_LO_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IMul(src0, src1));
+}
+
+void Translator::V_TRUNC_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.FPTrunc(src0));
 }
 
 } // namespace Shader::Gcn

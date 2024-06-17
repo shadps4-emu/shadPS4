@@ -127,6 +127,7 @@ struct Info {
     Stage stage;
 
     bool uses_group_quad{};
+    bool translation_failed{}; // indicates that shader has unsupported instructions
 
     template <typename T>
     T ReadUd(u32 ptr_index, u32 dword_offset) const noexcept {

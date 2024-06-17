@@ -85,7 +85,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     }
 
     const vk::ImageViewCreateInfo image_view_ci = {
-        .pNext = nullptr,
+        .pNext = usage_override ? &usage_ci : nullptr,
         .image = image.image,
         .viewType = info.type,
         .format = format,

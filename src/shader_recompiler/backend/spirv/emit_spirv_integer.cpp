@@ -68,6 +68,14 @@ Id EmitISub64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpISub(ctx.U64, a, b);
 }
 
+Id EmitSMulExt(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpSMulExtended(ctx.full_result_i32x2, a, b);
+}
+
+Id EmitUMulExt(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpUMulExtended(ctx.full_result_u32x2, a, b);
+}
+
 Id EmitIMul32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIMul(ctx.U32[1], a, b);
 }

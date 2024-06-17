@@ -216,18 +216,22 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnIns
     const IR::VectorReg src_reg{inst.src[1].code};
     switch (num_dwords) {
     case 1:
-        value = ir.GetVectorReg(src_reg);
+        value = ir.GetVectorReg<Shader::IR::F32>(src_reg);
         break;
     case 2:
-        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1));
+        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1));
         break;
     case 3:
-        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
-                                      ir.GetVectorReg(src_reg + 2));
+        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 2));
         break;
     case 4:
-        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
-                                      ir.GetVectorReg(src_reg + 2), ir.GetVectorReg(src_reg + 3));
+        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 2),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 3));
         break;
     }
     ir.StoreBuffer(num_dwords, ir.GetScalarReg(sharp), address, value, info);
