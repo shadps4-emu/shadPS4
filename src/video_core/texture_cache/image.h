@@ -100,7 +100,7 @@ private:
     vk::Image image{};
 };
 
-constexpr SlotId NULL_IMAGE_ID{0};
+constexpr Common::SlotId NULL_IMAGE_ID{0};
 
 struct Image {
     explicit Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
