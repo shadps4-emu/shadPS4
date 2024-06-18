@@ -764,10 +764,12 @@ int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_bas
     }
 
     auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw);
+    // We need to offset index as `dingDong` assumes it to be from the range [1..64]
+    const auto gnm_vqid = vqid.index + 1;
     LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
-             vqid.index);
+             gnm_vqid);
 
-    return vqid.index;
+    return gnm_vqid;
 }
 
 int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
