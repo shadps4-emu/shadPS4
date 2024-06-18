@@ -34,6 +34,16 @@ struct OrbisAudioOutOutputParam {
     const void* ptr;
 };
 
+struct OrbisAudioOutPortState {
+    u16 output;
+    u8 channel;
+    u8 reserved8_1[1];
+    s16 volume;
+    u16 rerouteCounter;
+    u64 flag;
+    u64 reserved64[2];
+};
+
 int PS4_SYSV_ABI sceAudioOutDeviceIdOpen();
 int PS4_SYSV_ABI sceAudioDeviceControlGet();
 int PS4_SYSV_ABI sceAudioDeviceControlSet();
@@ -55,7 +65,7 @@ int PS4_SYSV_ABI sceAudioOutGetHandleStatusInfo();
 int PS4_SYSV_ABI sceAudioOutGetInfo();
 int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum();
 int PS4_SYSV_ABI sceAudioOutGetLastOutputTime();
-int PS4_SYSV_ABI sceAudioOutGetPortState();
+int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state);
 int PS4_SYSV_ABI sceAudioOutGetSimulatedBusUsableStatusByBusType();
 int PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo();
 int PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo2();

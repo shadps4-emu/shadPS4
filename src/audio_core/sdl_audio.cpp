@@ -145,4 +145,13 @@ bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
     return true;
 }
 
+bool SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
+    std::scoped_lock lock{m_mutex};
+    auto& port = portsOut[handle - 1];
+    *type = port.type;
+    *channels_num = port.channels_num;
+
+    return true;
+}
+
 } // namespace Audio
