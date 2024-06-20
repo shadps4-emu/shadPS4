@@ -21,9 +21,7 @@ std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::string& path
     for (const auto& entry : std::filesystem::directory_iterator(curpath)) {
         Core::FileSys::DirEntry e = {};
         if (std::filesystem::is_directory(entry.path().string())) {
-            Core::FileSys::DirEntry e = {};
-            e.name = entry.path().filename().string() +
-                     "/"; // hmmm not sure if it has to be like this...
+            e.name = entry.path().filename().string();
             e.isFile = false;
         } else {
             e.name = entry.path().filename().string();
