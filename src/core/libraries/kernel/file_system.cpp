@@ -20,14 +20,14 @@ std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::string& path
 
     for (const auto& entry : std::filesystem::directory_iterator(curpath)) {
         Core::FileSys::DirEntry e = {};
-        if (std::filesystem::is_regular_file(entry.path().string())) {
-            e.name = entry.path().filename().string();
-            e.isFile = true;
-        } else {
+        if (std::filesystem::is_directory(entry.path().string())) {
             Core::FileSys::DirEntry e = {};
             e.name = entry.path().filename().string() +
                      "/"; // hmmm not sure if it has to be like this...
             e.isFile = false;
+        } else {
+            e.name = entry.path().filename().string();
+            e.isFile = true;
         }
         files.push_back(e);
     }
@@ -343,8 +343,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     // TODO error codes
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
@@ -366,37 +365,19 @@ int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
     strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
     sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
 
-    return sizeof(OrbisKernelDirent);
-}
-
-int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
-
-    // TODO error codes
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
     if (basep != nullptr) {
         *basep = file->dirents_index;
     }
 
-    if (file->dirents_index == file->dirents.size()) {
-        return 0;
-    }
-
-    const auto& entry = file->dirents.at(file->dirents_index++);
-    auto str = entry.name;
-    auto str_size = str.size() - 1;
-    static int fileno = 1000; // random
-    OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
-    sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
-                                  // hash or something?
-    sce_ent->d_reclen = sizeof(OrbisKernelDirent);
-    sce_ent->d_type = (entry.isFile ? 8 : 4);
-    sce_ent->d_namlen = str_size;
-    strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
-    sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
-
     return sizeof(OrbisKernelDirent);
+}
+
+int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
+    return GetDents(fd, buf, nbytes, nullptr);
+}
+
+int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
+    return GetDents(fd, buf, nbytes, basep);
 }
 
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
