@@ -32,13 +32,18 @@ private:
     std::mutex m_mutex;
 };
 
+struct DirEntry {
+    std::string name;
+    bool isFile;
+};
+
 struct File {
     std::atomic_bool is_opened{};
     std::atomic_bool is_directory{};
     std::string m_host_name;
     std::string m_guest_name;
     Common::FS::IOFile f;
-    // std::vector<Common::FS::DirEntry> dirents;
+    std::vector<DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;
 };

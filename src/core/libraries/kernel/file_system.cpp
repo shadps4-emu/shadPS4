@@ -11,6 +11,29 @@
 
 namespace Libraries::Kernel {
 
+std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::string& path) {
+    std::string curpath = path;
+    if (!curpath.ends_with("/")) {
+        curpath = std::string(curpath + "/");
+    }
+    std::vector<Core::FileSys::DirEntry> files;
+
+    for (const auto& entry : std::filesystem::directory_iterator(curpath)) {
+        Core::FileSys::DirEntry e = {};
+        if (std::filesystem::is_regular_file(entry.path().string())) {
+            e.name = entry.path().filename().string();
+            e.isFile = true;
+        } else {
+            Core::FileSys::DirEntry e = {};
+            e.name = entry.path().filename().string() +
+                     "/"; // hmmm not sure if it has to be like this...
+            e.isFile = false;
+        }
+        files.push_back(e);
+    }
+
+    return files;
+}
 int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", path, flags, mode);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
@@ -34,12 +57,23 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     if (std::string_view{path} == "/dev/console" || std::string_view{path} == "/dev/deci_tty6") {
         return ORBIS_OK;
     }
-
+    u32 handle = h->CreateHandle();
+    auto* file = h->GetFile(handle);
     if (directory) {
-        LOG_ERROR(Kernel_Fs, "called on directory");
+        file->is_directory = true;
+        file->m_guest_name = path;
+        file->m_host_name = mnt->GetHostDirectory(file->m_guest_name);
+        if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
+            UNREACHABLE();                                       // not supported yet
+        } else {
+            if (create) {
+                return handle; // dir already exists
+            } else {
+                file->dirents = GetDirectoryEntries(file->m_host_name);
+                file->dirents_index = 0;
+            }
+        }
     } else {
-        u32 handle = h->CreateHandle();
-        auto* file = h->GetFile(handle);
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostFile(file->m_guest_name);
         if (read) {
@@ -61,10 +95,9 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
             h->DeleteHandle(handle);
             return SCE_KERNEL_ERROR_EACCES;
         }
-        file->is_opened = true;
-        return handle;
     }
-    return -1; // dummy
+    file->is_opened = true;
+    return handle;
 }
 
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode) {
@@ -310,6 +343,62 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    // TODO error codes
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+
+    if (file->dirents_index == file->dirents.size()) {
+        return 0;
+    }
+
+    const auto& entry = file->dirents.at(file->dirents_index++);
+    auto str = entry.name;
+    auto str_size = str.size() - 1;
+    static int fileno = 1000; // random
+    OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
+    sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
+                                  // hash or something?
+    sce_ent->d_reclen = sizeof(OrbisKernelDirent);
+    sce_ent->d_type = (entry.isFile ? 8 : 4);
+    sce_ent->d_namlen = str_size;
+    strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
+    sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+    return sizeof(OrbisKernelDirent);
+}
+
+int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+
+    // TODO error codes
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (basep != nullptr) {
+        *basep = file->dirents_index;
+    }
+
+    if (file->dirents_index == file->dirents.size()) {
+        return 0;
+    }
+
+    const auto& entry = file->dirents.at(file->dirents_index++);
+    auto str = entry.name;
+    auto str_size = str.size() - 1;
+    static int fileno = 1000; // random
+    OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
+    sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
+                                  // hash or something?
+    sce_ent->d_reclen = sizeof(OrbisKernelDirent);
+    sce_ent->d_type = (entry.isFile ? 8 : 4);
+    sce_ent->d_namlen = str_size;
+    strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
+    sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+    return sizeof(OrbisKernelDirent);
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -333,6 +422,8 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
+    LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
+    LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,

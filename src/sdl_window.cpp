@@ -136,7 +136,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += -127;
         } else {
             axisvalue = 0;
-        }      
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_d:
@@ -145,7 +145,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += 127;
         } else {
             axisvalue = 0;
-        }         
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_w:
@@ -154,7 +154,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += -127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_s:
@@ -163,7 +163,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += 127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_j:
@@ -172,7 +172,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += -127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_l:
@@ -181,7 +181,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += 127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_i:
@@ -190,7 +190,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += -127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_k:
@@ -199,7 +199,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
             axisvalue += 127;
         } else {
             axisvalue = 0;
-        }  
+        }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     default:
