@@ -128,8 +128,8 @@ int PS4_SYSV_ABI scePadGetFeatureReport() {
 }
 
 int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Pad, "(DUMMY) called");
+    return 1;
 }
 
 int PS4_SYSV_ABI scePadGetIdleCount() {

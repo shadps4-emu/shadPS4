@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/kernel/time_management.h"
-#include "input/controller.h"
 #include "core/libraries/pad/pad.h"
+#include "input/controller.h"
 namespace Input {
 
 GameController::GameController() {
