@@ -52,8 +52,14 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
-    if (std::string_view{path} == "/dev/console" || std::string_view{path} == "/dev/deci_tty6") {
-        return ORBIS_OK;
+    if (std::string_view{path} == "/dev/console") {
+        return 2000;
+    }
+    if (std::string_view{path} == "/dev/deci_tty6") {
+        return 2001;
+    }
+    if (std::string_view{path} == "/dev/stdout") {
+        return 2002;
     }
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);

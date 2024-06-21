@@ -202,6 +202,41 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         }
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
+    case SDLK_x:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+        break;
+    case SDLK_m:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+        break;
+    case SDLK_q:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+        break;
+    case SDLK_u:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+        break;
+    case SDLK_e:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        axis = Input::Axis::TriggerLeft;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 255;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(0, 0x80, axisvalue);
+        break;
+    case SDLK_o:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
+        axis = Input::Axis::TriggerRight;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 255;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(0, 0x80, axisvalue);
+        break;
+    case SDLK_SPACE:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+        break;
     default:
         break;
     }
