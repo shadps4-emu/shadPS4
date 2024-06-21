@@ -96,7 +96,7 @@ void Linker::Execute() {
     }
 }
 
-s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
+s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
 
     if (!std::filesystem::exists(elf_name)) {
@@ -110,6 +110,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
         return -1;
     }
 
+    num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
     return m_modules.size() - 1;
 }
@@ -349,7 +350,8 @@ void Linker::InitTlsForThread(bool is_primary) {
     dtv_table[1].counter = num_dtvs;
 
     // Copy init images to TLS thread blocks and map them to DTV slots.
-    for (const auto& module : m_modules) {
+    for (u32 i = 0; i < num_static_modules; i++) {
+        auto* module = m_modules[i].get();
         if (module->tls.image_size == 0) {
             continue;
         }

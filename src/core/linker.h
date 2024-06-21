@@ -86,7 +86,7 @@ public:
     void* TlsGetAddr(u64 module_index, u64 offset);
     void InitTlsForThread(bool is_primary = false);
 
-    s32 LoadModule(const std::filesystem::path& elf_name);
+    s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
     Module* FindByAddress(VAddr address);
 
     void Relocate(Module* module);
@@ -103,6 +103,7 @@ private:
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};
     u32 max_tls_index{};
+    u32 num_static_modules{};
     HeapApiFunc heap_api_func{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
