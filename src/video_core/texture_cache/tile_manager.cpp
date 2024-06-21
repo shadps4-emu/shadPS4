@@ -191,6 +191,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc3SrgbBlock:
         [[fallthrough]];
     case vk::Format::eBc3UnormBlock:
+    case vk::Format::eBc7SrgbBlock:
         return vk::Format::eR32G32B32A32Uint;
     default:
         break;
