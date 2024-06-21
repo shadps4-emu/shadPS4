@@ -470,4 +470,12 @@ void Translator::V_CMP_NE_U64(const GcnInst& inst) {
     }
 }
 
+void Translator::V_BFI_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+    SetDst(inst.dst[0], ir.BitwiseOr(ir.BitwiseAnd(src0, src1),
+                                     ir.BitwiseAnd(ir.BitwiseNot(src0), src2)));
+}
+
 } // namespace Shader::Gcn

@@ -53,6 +53,7 @@ public:
     void S_LSHL_B32(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
     void S_NOT_B64(const GcnInst& inst);
+    void S_BREV_B32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -120,6 +121,7 @@ public:
     void V_CEIL_F32(const GcnInst& inst);
     void V_MIN_U32(const GcnInst& inst);
     void V_CMP_NE_U64(const GcnInst& inst);
+    void V_BFI_B32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);

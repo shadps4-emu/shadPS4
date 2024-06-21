@@ -684,6 +684,12 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CEIL_F32:
             translator.V_CEIL_F32(inst);
             break;
+        case Opcode::V_BFI_B32:
+            translator.V_BFI_B32(inst);
+            break;
+        case Opcode::S_BREV_B32:
+            translator.S_BREV_B32(inst);
+            break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
             break;

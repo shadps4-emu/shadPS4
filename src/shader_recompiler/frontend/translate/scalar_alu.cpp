@@ -321,4 +321,8 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
     }
 }
 
+void Translator::S_BREV_B32(const GcnInst& inst) {
+    SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
+}
+
 } // namespace Shader::Gcn
