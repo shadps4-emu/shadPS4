@@ -48,7 +48,7 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept
     : is_storage{is_storage} {
-    type = ConvertImageViewType(image.type);
+    type = ConvertImageViewType(image.GetType());
     format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     range.base.level = 0;
     range.base.layer = 0;

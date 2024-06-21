@@ -108,36 +108,39 @@ constexpr std::string_view NameOf(TilingMode type) {
 }
 
 struct Image {
-    union {
-        BitField<0, 38, u64> base_address;
-        BitField<40, 12, u64> min_lod;
-        BitField<52, 6, u64> data_format;
-        BitField<58, 4, u64> num_format;
-        BitField<62, 2, u64> mtype;
-    };
-    union {
-        BitField<0, 14, u64> width;
-        BitField<14, 14, u64> height;
-        BitField<28, 3, u64> perf_modulation;
-        BitField<31, 1, u64> interlaced;
-        BitField<32, 3, u64> dst_sel_x;
-        BitField<35, 3, u64> dst_sel_y;
-        BitField<38, 3, u64> dst_sel_z;
-        BitField<41, 3, u64> dst_sel_w;
-        BitField<44, 4, u64> base_level;
-        BitField<48, 4, u64> last_level;
-        BitField<52, 5, u64> tiling_index;
-        BitField<57, 1, u64> pow2pad;
-        BitField<58, 1, u64> mtype2;
-        BitField<59, 1, u64> atc;
-        BitField<60, 4, ImageType> type;
-    };
-    union {
-        BitField<0, 13, u64> depth;
-        BitField<13, 14, u64> pitch;
-        BitField<32, 13, u64> base_array;
-        BitField<45, 13, u64> last_array;
-    };
+    u64 base_address : 38;
+    u64 mtype_l2 : 2;
+    u64 min_lod : 12;
+    u64 data_format : 6;
+    u64 num_format : 4;
+    u64 mtype : 2;
+
+    u64 width : 14;
+    u64 height : 14;
+    u64 perf_modulation : 3;
+    u64 interlaced : 1;
+    u64 dst_sel_x : 3;
+    u64 dst_sel_y : 3;
+    u64 dst_sel_z : 3;
+    u64 dst_sel_w : 3;
+    u64 base_level : 4;
+    u64 last_level : 4;
+    u64 tiling_index : 5;
+    u64 pow2pad : 1;
+    u64 mtype2 : 1;
+    u64 atc : 1;
+    u64 type : 4;
+
+    u64 depth : 13;
+    u64 pitch : 14;
+    u64 : 5;
+    u64 base_array : 13;
+    u64 last_array : 13;
+    u64 : 6;
+    u64 min_lod_warn : 12;
+    u64 counter_bank_id : 8;
+    u64 lod_hw_cnt_en : 1;
+    u64 : 43;
 
     VAddr Address() const {
         return base_address << 8;
@@ -148,8 +151,8 @@ struct Image {
     }
 
     u32 NumLayers() const {
-        u32 slices = type == ImageType::Color3D ? 1 : depth.Value() + 1;
-        if (type == ImageType::Cube) {
+        u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
+        if (GetType() == ImageType::Cube) {
             slices *= 6;
         }
         if (pow2pad) {
@@ -159,33 +162,38 @@ struct Image {
     }
 
     u32 NumLevels() const {
-        if (type == ImageType::Color2DMsaa || type == ImageType::Color2DMsaaArray) {
+        if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
             return 1;
         }
         return last_level + 1;
     }
 
+    ImageType GetType() const noexcept {
+        return static_cast<ImageType>(type);
+    }
+
     DataFormat GetDataFmt() const noexcept {
-        return static_cast<DataFormat>(data_format.Value());
+        return static_cast<DataFormat>(data_format);
     }
 
     NumberFormat GetNumberFmt() const noexcept {
-        return static_cast<NumberFormat>(num_format.Value());
+        return static_cast<NumberFormat>(num_format);
     }
 
-    [[nodiscard]] TilingMode GetTilingMode() const {
-        return static_cast<TilingMode>(tiling_index.Value());
+    TilingMode GetTilingMode() const {
+        return static_cast<TilingMode>(tiling_index);
     }
 
-    [[nodiscard]] bool IsTiled() const {
+    bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
     }
 
-    [[nodiscard]] size_t GetSizeAligned() const {
+    size_t GetSizeAligned() const {
         // TODO: Derive this properly from tiling params
-        return (width + 1) * (height + 1) * NumComponents(GetDataFmt());
+        return Pitch() * (height + 1) * NumComponents(GetDataFmt());
     }
 };
+static_assert(sizeof(Image) == 32); // 256bits
 
 // 8.2.7. Image Sampler [RDNA 2 Instruction Set Architecture]
 enum class ClampMode : u64 {
