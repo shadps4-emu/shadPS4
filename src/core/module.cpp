@@ -55,8 +55,9 @@ static std::string EncodeId(u64 nVal) {
     return enc;
 }
 
-Module::Module(const std::filesystem::path& file_, u32& max_tls_index)
-    : file{file_}, name{file.stem().string()} {
+Module::Module(Core::MemoryManager* memory_,
+               const std::filesystem::path& file_, u32& max_tls_index)
+    : memory{memory_}, file{file_}, name{file.stem().string()} {
     elf.Open(file);
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
@@ -84,7 +85,6 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
     // Map module segments (and possible TLS trampolines)
-    auto* memory = Core::Memory::Instance();
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
     memory->MapMemory(out_addr, LoadAddress, aligned_base_size + TrampolineSize,
                       MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);

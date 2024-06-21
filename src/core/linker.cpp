@@ -13,6 +13,7 @@
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
+#include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
 
@@ -46,7 +47,7 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  : "rax", "rsi", "rdi");
 }
 
-Linker::Linker() = default;
+Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
@@ -64,6 +65,11 @@ void Linker::Execute() {
     // Relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
+    }
+
+    // Configure used flexible memory size.
+    if (u64* flexible_size = GetProcParam()->mem_param->flexible_memory_size) {
+        memory->SetTotalFlexibleSize(*flexible_size);
     }
 
     // Init primary thread.
@@ -98,7 +104,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
         return -1;
     }
 
-    auto module = std::make_unique<Module>(elf_name, max_tls_index);
+    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;
