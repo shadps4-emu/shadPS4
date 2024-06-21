@@ -1276,7 +1276,7 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
     return pthread_once(reinterpret_cast<pthread_once_t*>(once_control), init_routine);
 }
 
-void PS4_SYSV_ABI scePthreadExit(void *value_ptr) {
+[[noreturn]] void PS4_SYSV_ABI scePthreadExit(void *value_ptr) {
     pthread_exit(value_ptr);
 }
 
