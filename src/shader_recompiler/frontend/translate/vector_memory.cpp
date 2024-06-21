@@ -31,7 +31,9 @@ void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
 
 void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
-    ASSERT(!mimg.da);
+    if (mimg.da) {
+        LOG_WARNING(Render_Vulkan, "Image instruction declares an array");
+    }
 
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg dest_reg{inst.dst[0].code};
@@ -107,7 +109,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     }
 }
 
-void Translator::IMAGE_LOAD_MIP(const GcnInst& inst) {
+void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg dest_reg{inst.dst[0].code};
@@ -119,7 +121,7 @@ void Translator::IMAGE_LOAD_MIP(const GcnInst& inst) {
                               ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
 
     IR::TextureInstInfo info{};
-    info.explicit_lod.Assign(1);
+    info.explicit_lod.Assign(has_mip);
     const IR::Value texel = ir.ImageFetch(handle, body, {}, {}, {}, info);
 
     for (u32 i = 0; i < 4; i++) {

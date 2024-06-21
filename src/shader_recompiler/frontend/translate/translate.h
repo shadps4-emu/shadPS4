@@ -45,12 +45,14 @@ public:
     void S_AND_B64(bool negate, const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_AND_B32(const GcnInst& inst);
+    void S_OR_B32(const GcnInst& inst);
     void S_LSHR_B32(const GcnInst& inst);
     void S_CSELECT_B32(const GcnInst& inst);
     void S_CSELECT_B64(const GcnInst& inst);
     void S_BFE_U32(const GcnInst& inst);
     void S_LSHL_B32(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
+    void S_NOT_B64(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -115,6 +117,9 @@ public:
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
     void V_TRUNC_F32(const GcnInst& inst);
+    void V_CEIL_F32(const GcnInst& inst);
+    void V_MIN_U32(const GcnInst& inst);
+    void V_CMP_NE_U64(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
@@ -132,7 +137,7 @@ public:
     void IMAGE_GET_RESINFO(const GcnInst& inst);
     void IMAGE_SAMPLE(const GcnInst& inst);
     void IMAGE_STORE(const GcnInst& inst);
-    void IMAGE_LOAD_MIP(const GcnInst& inst);
+    void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);

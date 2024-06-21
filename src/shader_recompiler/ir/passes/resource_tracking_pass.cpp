@@ -251,7 +251,8 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     IR::Inst* producer = inst.Arg(0).InstRecursive();
-    ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
+    ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+           producer->GetOpcode() == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
            producer->GetOpcode() == IR::Opcode::GetUserData);
     const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
         if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
