@@ -53,7 +53,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         bindings.push_back({
             .binding = input.binding,
             .stride = buffer.GetStride(),
-            .inputRate = vk::VertexInputRate::eVertex,
+            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+                             ? vk::VertexInputRate::eVertex
+                             : vk::VertexInputRate::eInstance,
         });
     }
 

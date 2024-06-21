@@ -194,6 +194,11 @@ void Translator::EmitFetch(const GcnInst& inst) {
             ir.SetVectorReg(dst_reg++, ir.GetAttribute(attr, i));
         }
 
+        if (attrib.instance_data == 2 || attrib.instance_data == 3) {
+            LOG_WARNING(Render_Recompiler, "Unsupported instance step rate = {}",
+                        attrib.instance_data);
+        }
+
         // Read the V# of the attribute to figure out component number and type.
         const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
         const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
@@ -203,6 +208,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
             .num_components = std::min<u16>(attrib.num_elements, num_components),
             .sgpr_base = attrib.sgpr_base,
             .dword_offset = attrib.dword_offset,
+            .instance_step_rate = static_cast<Info::VsInput::InstanceIdType>(attrib.instance_data),
         });
     }
 }
