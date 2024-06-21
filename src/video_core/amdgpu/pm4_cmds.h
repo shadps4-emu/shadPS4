@@ -265,6 +265,7 @@ enum class InterruptSelect : u32 {
     None = 0,
     IrqOnly = 1,
     IrqWhenWriteConfirm = 2,
+    IrqUndocumented = 3,
 };
 
 struct PM4CmdEventWriteEop {
@@ -299,6 +300,9 @@ struct PM4CmdEventWriteEop {
 
     void SignalFence() const {
         switch (data_sel.Value()) {
+        case DataSelect::None: {
+            break;
+        }
         case DataSelect::Data32Low: {
             *Address<u32>() = DataDWord();
             break;
@@ -321,6 +325,9 @@ struct PM4CmdEventWriteEop {
             // No interrupt
             break;
         }
+        case InterruptSelect::IrqOnly:
+            ASSERT(data_sel == DataSelect::None);
+            [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
             Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
             break;
@@ -557,6 +564,107 @@ struct PM4CmdDrawIndexBase {
     PM4Type3Header header;
     u32 addr_lo;
     u32 addr_hi;
+};
+
+struct PM4CmdIndirectBuffer {
+    PM4Type3Header header;
+    u32 ibase_lo; ///< Indirect buffer base address, must be 4 byte aligned
+    union {
+        BitField<0, 16, u32> ibase_hi; ///< Indirect buffer base address
+        u32 dw1;
+    };
+    union {
+        BitField<0, 20, u32> ib_size; ///< Indirect buffer size
+        BitField<20, 1, u32> chain;   ///< set to chain to IB allocations
+        BitField<24, 8, u32> vmid;    ///< Virtual memory domain ID for command buffer
+        u32 dw2;
+    };
+
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>((u64(ibase_hi) << 32u) | ibase_lo);
+    }
+};
+
+struct PM4CmdReleaseMem {
+    PM4Type3Header header;
+    union {
+        BitField<0, 6, u32> event_type;  ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, u32> event_index; ///< Event index
+        BitField<12, 1, u32> tcl1_vol_action_ena;
+        BitField<13, 1, u32> tc_vol_action_ena;
+        BitField<15, 1, u32> tc_wb_action_ena;
+        BitField<16, 1, u32> tcl1__action_ena;
+        BitField<17, 1, u32> tc_action_ena;
+        BitField<25, 2, u32> cache_policy; ///< Cache Policy setting used for writing fences and
+                                           ///< timestamps to the TCL2
+        u32 dw1;
+    };
+    union {
+        BitField<16, 2, u32> dst_sel;             ///< destination select
+        BitField<24, 3, InterruptSelect> int_sel; ///< selects interrupt action for end-of-pipe
+        BitField<29, 3, DataSelect> data_sel;     ///< selects source of data
+        u32 dw2;
+    };
+    u32 address_lo; ///< low bits of address
+    u32 address_hi; ///< high bits of address
+    union {
+        struct {
+            u16 gds_index; ///< Byte offset into GDS to copy from
+            u16 num_dw;    ///< Number of DWORDS of GDS to copy
+        };
+        u32 data_lo; ///< value that will be written to memory when event occurs
+    };
+    u32 data_hi;
+
+    template <typename T>
+    T* Address() const {
+        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+    }
+
+    u32 DataDWord() const {
+        return data_lo;
+    }
+
+    u64 DataQWord() const {
+        return data_lo | u64(data_hi) << 32;
+    }
+
+    void SignalFence(Platform::InterruptId irq_id) const {
+        switch (data_sel.Value()) {
+        case DataSelect::Data32Low: {
+            *Address<u32>() = DataDWord();
+            break;
+        }
+        case DataSelect::Data64: {
+            *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::PerfCounter: {
+            *Address<u64>() = Common::FencedRDTSC();
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+
+        switch (int_sel.Value()) {
+        case InterruptSelect::None: {
+            // No interrupt
+            break;
+        }
+        case InterruptSelect::IrqUndocumented:
+            [[fallthrough]];
+        case InterruptSelect::IrqWhenWriteConfirm: {
+            Platform::IrqC::Instance()->Signal(irq_id);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+    }
 };
 
 } // namespace AmdGpu
