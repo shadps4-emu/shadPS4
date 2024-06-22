@@ -8,10 +8,27 @@
 
 namespace Input {
 
+enum class Axis {
+    LeftX = 0,
+    LeftY = 1,
+    RightX = 2,
+    RightY = 3,
+    TriggerLeft = 4,
+    TriggerRight = 5,
+
+    AxisMax
+};
+
 struct State {
     u32 buttonsState = 0;
     u64 time = 0;
+    int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
 };
+
+inline int GetAxis(int min, int max, int value) {
+    int v = (255 * (value - min)) / (max - min);
+    return (v < 0 ? 0 : (v > 255 ? 255 : v));
+}
 
 constexpr u32 MAX_STATES = 64;
 
@@ -20,11 +37,12 @@ public:
     GameController();
     virtual ~GameController() = default;
 
-    void readState(State* state, bool* isConnected, int* connectedCount);
+    void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
-    State getLastState() const;
-    void checkButton(int id, u32 button, bool isPressed);
-    void addState(const State& state);
+    State GetLastState() const;
+    void CheckButton(int id, u32 button, bool isPressed);
+    void AddState(const State& state);
+    void Axis(int id, Input::Axis axis, int value);
 
 private:
     struct StateInternal {

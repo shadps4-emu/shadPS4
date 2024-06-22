@@ -995,6 +995,10 @@ void PS4_SYSV_ABI scePthreadYield() {
     sched_yield();
 }
 
+void PS4_SYSV_ABI posix_pthread_yield() {
+    sched_yield();
+}
+
 int PS4_SYSV_ABI scePthreadAttrGetstack(ScePthreadAttr* attr, void** addr, size_t* size) {
 
     int result = pthread_attr_getstack(&(*attr)->pth_attr, addr, size);
@@ -1308,6 +1312,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);
+    LIB_FUNCTION("B5GmVDKwpn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_yield);
+
     LIB_FUNCTION("-quPa4SEJUw", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstack);
     LIB_FUNCTION("Ru36fiTtJzA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstackaddr);
     LIB_FUNCTION("-fA+7ZlGDQs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstacksize);

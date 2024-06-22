@@ -28,15 +28,13 @@ void MntPoints::UnmountAll() {
 std::string MntPoints::GetHostDirectory(const std::string& guest_directory) {
     std::scoped_lock lock{m_mutex};
     for (auto& pair : m_mnt_pairs) {
-        if (pair.guest_path.starts_with(guest_directory)) {
-            return pair.host_path + guest_directory;
-        }
-    }
-    // hack for relative path , get app0 and assuming it goes from there
-    for (auto& pair : m_mnt_pairs) {
-        if (pair.guest_path.starts_with("/app0")) {
+        // horrible code but it works :D
+        int find = guest_directory.find(pair.guest_path);
+        if (find == 0) {
+            std::string npath =
+                guest_directory.substr(pair.guest_path.size(), guest_directory.size() - 1);
             std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
-            return pair.host_path + guest_directory;
+            return pair.host_path + npath;
         }
     }
     return "";

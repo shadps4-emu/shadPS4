@@ -40,7 +40,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::LibKernel_Register(sym);
     Libraries::VideoOut::RegisterLib(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
-    Libraries::LibPad::padSymbolsRegister(sym);
     if (!Config::isLleLibc()) {
         Libraries::LibC::libcSymbolsRegister(sym);
     }
@@ -71,6 +70,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::PngDec::RegisterlibScePngDec(sym);
     Libraries::PlayGo::RegisterlibScePlayGo(sym);
     Libraries::Usbd::RegisterlibSceUsbd(sym);
+    Libraries::Pad::RegisterlibScePad(sym);
 }
 
 } // namespace Libraries

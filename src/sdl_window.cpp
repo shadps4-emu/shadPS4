@@ -96,42 +96,155 @@ void WindowSDL::onResize() {
 }
 
 void WindowSDL::onKeyPress(const SDL_Event* event) {
-    using Libraries::LibPad::ScePadButton;
+    using Libraries::Pad::OrbisPadButtonDataOffset;
 
     u32 button = 0;
+    Input::Axis axis = Input::Axis::AxisMax;
+    int axisvalue = 0;
+    int ax = 0;
     switch (event->key.keysym.sym) {
     case SDLK_UP:
-        button = ScePadButton::UP;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
         break;
     case SDLK_DOWN:
-        button = ScePadButton::DOWN;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
         break;
     case SDLK_LEFT:
-        button = ScePadButton::LEFT;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
         break;
     case SDLK_RIGHT:
-        button = ScePadButton::RIGHT;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
         break;
     case SDLK_KP_8:
-        button = ScePadButton::TRIANGLE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
         break;
     case SDLK_KP_6:
-        button = ScePadButton::CIRCLE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
         break;
     case SDLK_KP_2:
-        button = ScePadButton::CROSS;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
         break;
     case SDLK_KP_4:
-        button = ScePadButton::SQUARE;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
         break;
     case SDLK_RETURN:
-        button = ScePadButton::OPTIONS;
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
+        break;
+    case SDLK_a:
+        axis = Input::Axis::LeftX;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_d:
+        axis = Input::Axis::LeftX;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_w:
+        axis = Input::Axis::LeftY;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_s:
+        axis = Input::Axis::LeftY;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_j:
+        axis = Input::Axis::RightX;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_l:
+        axis = Input::Axis::RightX;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_i:
+        axis = Input::Axis::RightY;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += -127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_k:
+        axis = Input::Axis::RightY;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 127;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+        break;
+    case SDLK_x:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+        break;
+    case SDLK_m:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+        break;
+    case SDLK_q:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+        break;
+    case SDLK_u:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+        break;
+    case SDLK_e:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        axis = Input::Axis::TriggerLeft;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 255;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(0, 0x80, axisvalue);
+        break;
+    case SDLK_o:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
+        axis = Input::Axis::TriggerRight;
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            axisvalue += 255;
+        } else {
+            axisvalue = 0;
+        }
+        ax = Input::GetAxis(0, 0x80, axisvalue);
+        break;
+    case SDLK_SPACE:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
         break;
     default:
         break;
     }
     if (button != 0) {
-        controller->checkButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
+        controller->CheckButton(0, button, event->type == SDL_EVENT_KEY_DOWN);
+    }
+    if (axis != Input::Axis::AxisMax) {
+        controller->Axis(0, axis, ax);
     }
 }
 
