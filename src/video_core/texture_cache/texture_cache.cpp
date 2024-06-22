@@ -151,7 +151,7 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
     if (!image.info.is_storage) {
-        usage_override = image.info.usage & ~vk::ImageUsageFlagBits::eStorage;
+        usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
     const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, usage_override);
@@ -183,7 +183,7 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
-    ImageViewInfo view_info{buffer, image.info.is_vo_surface};
+    ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image, view_info);
 }
 
