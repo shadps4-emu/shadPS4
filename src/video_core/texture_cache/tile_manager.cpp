@@ -191,6 +191,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc3SrgbBlock:
         [[fallthrough]];
     case vk::Format::eBc3UnormBlock:
+    case vk::Format::eBc7SrgbBlock:
         return vk::Format::eR32G32B32A32Uint;
     default:
         break;
@@ -225,7 +226,8 @@ static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eT
                                                      vk::BufferUsageFlagBits::eStorageBuffer;
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
-    : instance{instance}, scheduler{scheduler}, staging{instance, scheduler, StagingFlags, 64_MB} {
+    : instance{instance}, scheduler{scheduler},
+      staging{instance, scheduler, StagingFlags, 64_MB, Vulkan::BufferType::Upload} {
 
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,

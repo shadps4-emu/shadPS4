@@ -12,6 +12,33 @@ namespace Core {
 
 struct DynamicModuleInfo;
 class Linker;
+class MemoryManager;
+
+struct OrbisKernelMemParam {
+    u64 size;
+    u64* extended_page_table;
+    u64* flexible_memory_size;
+    u8* extended_memory_1;
+    u64* extended_gpu_page_table;
+    u8* extended_memory_2;
+    u64* exnteded_cpu_page_table;
+};
+
+struct OrbisProcParam {
+    u64 size;
+    u32 magic;
+    u32 entry_count;
+    u64 sdk_version;
+    char* process_name;
+    char* main_thread_name;
+    u32* main_thread_prio;
+    u32* main_thread_stack_size;
+    void* libc_param;
+    OrbisKernelMemParam* mem_param;
+    void* fs_param;
+    u32* process_preload_enable;
+    u64 unknown1;
+};
 
 struct EntryParams {
     int argc;
@@ -30,8 +57,8 @@ public:
         return m_hle_symbols;
     }
 
-    VAddr GetProcParam() const {
-        return m_modules[0]->GetProcParam();
+    OrbisProcParam* GetProcParam() const {
+        return m_modules[0]->GetProcParam<OrbisProcParam*>();
     }
 
     Module* GetModule(s32 index) const {
@@ -59,7 +86,7 @@ public:
     void* TlsGetAddr(u64 module_index, u64 offset);
     void InitTlsForThread(bool is_primary = false);
 
-    s32 LoadModule(const std::filesystem::path& elf_name);
+    s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
     Module* FindByAddress(VAddr address);
 
     void Relocate(Module* module);
@@ -71,10 +98,12 @@ public:
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
+    MemoryManager* memory;
     std::mutex mutex;
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};
     u32 max_tls_index{};
+    u32 num_static_modules{};
     HeapApiFunc heap_api_func{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};

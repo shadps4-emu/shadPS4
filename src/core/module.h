@@ -137,10 +137,12 @@ struct DynamicModuleInfo {
 };
 
 using ModuleFunc = int (*)(size_t, const void*);
+class MemoryManager;
 
 class Module {
 public:
-    explicit Module(const std::filesystem::path& file, u32& max_tls_index);
+    explicit Module(Core::MemoryManager* memory, const std::filesystem::path& file,
+                    u32& max_tls_index);
     ~Module();
 
     VAddr GetBaseAddress() const noexcept {
@@ -220,6 +222,7 @@ public:
     const LibraryInfo* FindLibrary(std::string_view id);
 
 public:
+    Core::MemoryManager* memory;
     std::filesystem::path file;
     std::string name;
     Loader::Elf elf;

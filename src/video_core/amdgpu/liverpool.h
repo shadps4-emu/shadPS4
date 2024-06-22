@@ -827,7 +827,8 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA29E - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA29E - 0xA207 - 2);
+            u32 index_size;
             u32 max_index_size;
             IndexBufferType index_buffer_type;
             INSERT_PADDING_WORDS(0xA2A1 - 0xA29E - 2);
@@ -993,6 +994,7 @@ static_assert(GFX6_3D_REG_INDEX(depth_control) == 0xA200);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);

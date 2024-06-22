@@ -13,6 +13,7 @@
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
+#include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
 
@@ -46,7 +47,7 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  : "rax", "rsi", "rdi");
 }
 
-Linker::Linker() = default;
+Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
@@ -64,6 +65,11 @@ void Linker::Execute() {
     // Relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
+    }
+
+    // Configure used flexible memory size.
+    if (u64* flexible_size = GetProcParam()->mem_param->flexible_memory_size) {
+        memory->SetTotalFlexibleSize(*flexible_size);
     }
 
     // Init primary thread.
@@ -90,7 +96,7 @@ void Linker::Execute() {
     }
 }
 
-s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
+s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
 
     if (!std::filesystem::exists(elf_name)) {
@@ -98,12 +104,13 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name) {
         return -1;
     }
 
-    auto module = std::make_unique<Module>(elf_name, max_tls_index);
+    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;
     }
 
+    num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
     return m_modules.size() - 1;
 }
@@ -143,11 +150,13 @@ void Linker::Relocate(Module* module) {
         case R_X86_64_RELATIVE:
             rel_value = rel_base_virtual_addr + addend;
             rel_is_resolved = true;
+            module->SetRelaBit(bit_idx);
             break;
         case R_X86_64_DTPMOD64:
             rel_value = static_cast<u64>(module->tls.modid);
             rel_is_resolved = true;
             rel_sym_type = Loader::SymbolType::Tls;
+            module->SetRelaBit(bit_idx);
             break;
         case R_X86_64_GLOB_DAT:
         case R_X86_64_JUMP_SLOT:
@@ -343,7 +352,8 @@ void Linker::InitTlsForThread(bool is_primary) {
     dtv_table[1].counter = num_dtvs;
 
     // Copy init images to TLS thread blocks and map them to DTV slots.
-    for (const auto& module : m_modules) {
+    for (u32 i = 0; i < num_static_modules; i++) {
+        auto* module = m_modules[i].get();
         if (module->tls.image_size == 0) {
             continue;
         }

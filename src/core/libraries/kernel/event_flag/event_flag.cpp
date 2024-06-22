@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
-    LOG_ERROR(Kernel_Event, "called");
+    LOG_INFO(Kernel_Event, "called");
     ef->Clear(bitPattern);
     return ORBIS_OK;
 }
@@ -177,10 +177,10 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
         UNREACHABLE();
     }
 
-    auto result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
+    u32 result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
 
     if (result != ORBIS_OK) {
-        LOG_ERROR(Kernel_Event, "returned {}", result);
+        LOG_ERROR(Kernel_Event, "returned {:#x}", result);
     }
 
     return result;

@@ -216,6 +216,14 @@ void Translator::S_AND_B32(const GcnInst& inst) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
+void Translator::S_OR_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result{ir.BitwiseOr(src0, src1)};
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
 void Translator::S_LSHR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
@@ -283,6 +291,38 @@ void Translator::S_BFM_B32(const GcnInst& inst) {
     const IR::U32 src1{ir.BitwiseAnd(GetSrc(inst.src[1]), ir.Imm32(0x1F))};
     const IR::U32 mask{ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1u), src0), ir.Imm32(1))};
     SetDst(inst.dst[0], ir.ShiftLeftLogical(mask, src1));
+}
+
+void Translator::S_NOT_B64(const GcnInst& inst) {
+    const auto get_src = [&](const InstOperand& operand) {
+        switch (operand.field) {
+        case OperandField::VccLo:
+            return ir.GetVcc();
+        case OperandField::ExecLo:
+            return ir.GetExec();
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+        default:
+            UNREACHABLE();
+        }
+    };
+    const IR::U1 src0{get_src(inst.src[0])};
+    const IR::U1 result = ir.LogicalNot(src0);
+    ir.SetScc(result);
+    switch (inst.dst[0].field) {
+    case OperandField::VccLo:
+        ir.SetVcc(result);
+        break;
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
+void Translator::S_BREV_B32(const GcnInst& inst) {
+    SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
 }
 
 } // namespace Shader::Gcn

@@ -84,7 +84,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
     std::scoped_lock lk{mutex};
-    if (type == VMAType::Flexible && total_flexible_usage + size > 448_MB) {
+    if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
         return SCE_KERNEL_ERROR_ENOMEM;
     }
 
@@ -106,7 +106,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
             MapVulkanMemory(mapped_addr, size);
         }
         if (type == VMAType::Flexible) {
-            total_flexible_usage += size;
+            flexible_usage += size;
         }
     };
 
@@ -184,7 +184,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
         UnmapVulkanMemory(virtual_addr, size);
     }
     if (type == VMAType::Flexible) {
-        total_flexible_usage -= size;
+        flexible_usage -= size;
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.

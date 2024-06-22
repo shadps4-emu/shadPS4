@@ -54,7 +54,11 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id of
                   Id ms) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
-    return ctx.OpImageFetch(ctx.F32[4], image, coords, spv::ImageOperandsMask::Lod, lod);
+    if (Sirit::ValidId(lod)) {
+        return ctx.OpImageFetch(ctx.F32[4], image, coords, spv::ImageOperandsMask::Lod, lod);
+    } else {
+        return ctx.OpImageFetch(ctx.F32[4], image, coords);
+    }
 }
 
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id lod,

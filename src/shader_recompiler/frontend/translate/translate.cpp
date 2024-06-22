@@ -324,7 +324,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.IMAGE_STORE(inst);
             break;
         case Opcode::IMAGE_LOAD_MIP:
-            translator.IMAGE_LOAD_MIP(inst);
+            translator.IMAGE_LOAD(true, inst);
+            break;
+        case Opcode::IMAGE_LOAD:
+            translator.IMAGE_LOAD(false, inst);
             break;
         case Opcode::V_CMP_GE_I32:
             translator.V_CMP_U32(ConditionOp::GE, true, false, inst);
@@ -334,6 +337,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CMP_LE_I32:
             translator.V_CMP_U32(ConditionOp::LE, true, false, inst);
+            break;
+        case Opcode::V_CMP_NE_I32:
+            translator.V_CMP_U32(ConditionOp::LG, true, false, inst);
             break;
         case Opcode::V_CMP_NE_U32:
             translator.V_CMP_U32(ConditionOp::LG, false, false, inst);
@@ -385,6 +391,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CMP_NLT_F32:
             translator.V_CMP_F32(ConditionOp::GE, false, inst);
+            break;
+        case Opcode::S_CMP_LT_U32:
+            translator.S_CMP(ConditionOp::LT, false, inst);
             break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
@@ -585,6 +594,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_AND_B64:
             translator.S_AND_B64(false, inst);
             break;
+        case Opcode::S_NOT_B64:
+            translator.S_NOT_B64(inst);
+            break;
         case Opcode::S_NAND_B64:
             translator.S_AND_B64(true, inst);
             break;
@@ -627,6 +639,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_AND_B32:
             translator.S_AND_B32(inst);
             break;
+        case Opcode::S_OR_B32:
+            translator.S_OR_B32(inst);
+            break;
         case Opcode::S_LSHR_B32:
             translator.S_LSHR_B32(inst);
             break;
@@ -657,8 +672,26 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_BFM_B32:
             translator.S_BFM_B32(inst);
             break;
+        case Opcode::V_MIN_U32:
+            translator.V_MIN_U32(inst);
+            break;
+        case Opcode::V_CMP_NE_U64:
+            translator.V_CMP_NE_U64(inst);
+            break;
         case Opcode::V_TRUNC_F32:
             translator.V_TRUNC_F32(inst);
+            break;
+        case Opcode::V_CEIL_F32:
+            translator.V_CEIL_F32(inst);
+            break;
+        case Opcode::V_BFI_B32:
+            translator.V_BFI_B32(inst);
+            break;
+        case Opcode::S_BREV_B32:
+            translator.S_BREV_B32(inst);
+            break;
+        case Opcode::S_TTRACEDATA:
+            LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

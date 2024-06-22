@@ -124,6 +124,14 @@ public:
         instance = instance_;
     }
 
+    void SetTotalFlexibleSize(u64 size) {
+        total_flexible_size = size;
+    }
+
+    u64 GetAvailableFlexibleSize() const {
+        return total_flexible_size - flexible_usage;
+    }
+
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
 
@@ -195,7 +203,8 @@ private:
     DMemMap dmem_map;
     VMAMap vma_map;
     std::recursive_mutex mutex;
-    size_t total_flexible_usage{};
+    size_t total_flexible_size = 448_MB;
+    size_t flexible_usage{};
 
     struct MappedMemory {
         vk::UniqueBuffer buffer;

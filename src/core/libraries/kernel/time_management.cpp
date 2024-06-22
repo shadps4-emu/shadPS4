@@ -56,10 +56,20 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
     } else {
         std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
     }
-#else
-    usleep(microseconds);
-#endif
     return 0;
+#else
+    timespec start;
+    timespec remain;
+    start.tv_sec = microseconds / 1000000;
+    start.tv_nsec = (microseconds % 1000000) * 1000;
+    timespec* requested = &start;
+    int ret = 0;
+    do {
+        ret = nanosleep(requested, &remain);
+        requested = &remain;
+    } while (ret != 0);
+    return ret;
+#endif
 }
 
 int PS4_SYSV_ABI posix_usleep(u32 microseconds) {
