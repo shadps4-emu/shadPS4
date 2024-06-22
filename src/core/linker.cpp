@@ -150,11 +150,13 @@ void Linker::Relocate(Module* module) {
         case R_X86_64_RELATIVE:
             rel_value = rel_base_virtual_addr + addend;
             rel_is_resolved = true;
+            module->SetRelaBit(bit_idx);
             break;
         case R_X86_64_DTPMOD64:
             rel_value = static_cast<u64>(module->tls.modid);
             rel_is_resolved = true;
             rel_sym_type = Loader::SymbolType::Tls;
+            module->SetRelaBit(bit_idx);
             break;
         case R_X86_64_GLOB_DAT:
         case R_X86_64_JUMP_SLOT:
