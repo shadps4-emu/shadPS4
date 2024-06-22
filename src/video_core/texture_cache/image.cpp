@@ -116,11 +116,13 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept {
     const auto& attrib = group.attrib;
     is_tiled = attrib.tiling_mode == TilingMode::Tile;
+    tiling_mode =
+        is_tiled ? AmdGpu::TilingMode::Display_MacroTiled : AmdGpu::TilingMode::Display_Linear;
     pixel_format = ConvertPixelFormat(attrib.pixel_format);
     type = vk::ImageType::e2D;
     size.width = attrib.width;
     size.height = attrib.height;
-    pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) >> 7;
+    pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) & (~127);
     const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
     ASSERT(is_32bpp);
     if (!is_tiled) {
@@ -128,11 +130,11 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
         return;
     }
     if (Config::isNeoMode()) {
-        guest_size_bytes = pitch * 128 * ((size.height + 127) & (~127)) * 4;
+        guest_size_bytes = pitch * ((size.height + 127) & (~127)) * 4;
     } else {
-        guest_size_bytes = pitch * 128 * ((size.height + 63) & (~63)) * 4;
+        guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
     }
-    is_vo_surface = true;
+    usage.vo_buffer = true;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
@@ -140,12 +142,14 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     is_tiled = buffer.IsTiled();
     tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
+    num_samples = 1 << buffer.attrib.num_fragments_log2;
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    usage.render_target = true;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
@@ -153,18 +157,20 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
     is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
+    num_samples = 1 << buffer.z_info.num_samples; // spec doesn't say it is a log2
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    usage.depth_target = true;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     is_tiled = image.IsTiled();
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
-    type = ConvertImageType(image.type);
+    type = ConvertImageType(image.GetType());
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = 1;
@@ -222,7 +228,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         }
     }
 
-    info.usage = ImageUsageFlags(info);
+    usage = ImageUsageFlags(info);
 
     if (info.pixel_format == vk::Format::eD32Sfloat) {
         aspect_mask = vk::ImageAspectFlagBits::eDepth;
@@ -243,7 +249,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = info.usage,
+        .usage = usage,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
@@ -294,6 +300,31 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
     layout = dst_layout;
     access_mask = dst_mask;
     pl_stage = dst_pl_stage;
+}
+
+void Image::Upload(vk::Buffer buffer, u64 offset) {
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+    // Copy to the image.
+    const vk::BufferImageCopy image_copy = {
+        .bufferOffset = offset,
+        .bufferRowLength = info.pitch,
+        .bufferImageHeight = info.size.height,
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {info.size.width, info.size.height, 1},
+    };
+
+    const auto cmdbuf = scheduler->CommandBuffer();
+    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
 }
 
 Image::~Image() = default;

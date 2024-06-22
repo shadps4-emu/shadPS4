@@ -270,8 +270,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
-        .type = image.type,
-        .nfmt = static_cast<AmdGpu::NumberFormat>(image.num_format.Value()),
+        .type = image.GetType(),
+        .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
         .is_storage = IsImageStorageInstruction(inst),
         .is_depth = bool(inst_info.is_depth),
     });
@@ -293,7 +293,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     // Now that we know the image type, adjust texture coordinate vector.
     const IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
-        switch (image.type) {
+        switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D:
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray:
@@ -305,7 +305,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Cube:
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
-            UNREACHABLE_MSG("Unknown image type {}", image.type.Value());
+            UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
     }();
     inst.SetArg(1, coords);

@@ -72,6 +72,9 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code) {
             attrib.sgpr_base = it->base_sgpr;
             attrib.dword_offset = it->dword_offset;
 
+            // Store instance id rate
+            attrib.instance_data = inst.src[0].code;
+
             // Mark load as used.
             it->dst_reg = -1;
         }

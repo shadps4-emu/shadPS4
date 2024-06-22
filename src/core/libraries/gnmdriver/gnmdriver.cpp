@@ -31,6 +31,7 @@ static constexpr bool g_fair_hw_init = false;
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
+static std::mutex m_submission{};
 static u64 frames_submitted{}; // frame counter
 
 struct AscQueueInfo {
@@ -211,9 +212,32 @@ int PS4_SYSV_ABI sceGnmDestroyWorkloadStream() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDingDong() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
+    LOG_INFO(Lib_GnmDriver, "vqid {}, offset_dw {}", gnm_vqid, next_offs_dw);
+
+    if (gnm_vqid == 0) {
+        return;
+    }
+
+    std::unique_lock lock{m_submission};
+    if (submission_lock != 0) {
+        liverpool->WaitGpuIdle();
+
+        // Suspend logic goes here
+
+        submission_lock = 0;
+    }
+
+    auto vqid = gnm_vqid - 1;
+    auto& asc_queue = asc_queues[{vqid}];
+    const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr + *asc_queue.read_addr);
+    const auto acb_size = next_offs_dw ? (next_offs_dw << 2u) - *asc_queue.read_addr
+                                       : (asc_queue.ring_size_dw << 2u) - *asc_queue.read_addr;
+
+    liverpool->SubmitAsc(vqid, {acb_ptr, acb_size >> 2u});
+
+    *asc_queue.read_addr += acb_size;
+    *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
 int PS4_SYSV_ABI sceGnmDingDongForWorkload() {
@@ -764,10 +788,12 @@ int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_bas
     }
 
     auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw);
+    // We need to offset index as `dingDong` assumes it to be from the range [1..64]
+    const auto gnm_vqid = vqid.index + 1;
     LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
-             vqid.index);
+             gnm_vqid);
 
-    return vqid.index;
+    return gnm_vqid;
 }
 
 int PS4_SYSV_ABI sceGnmMapComputeQueueWithPriority(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
@@ -814,14 +840,16 @@ int PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmRegisterOwner() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
 }
 
-int PS4_SYSV_ABI sceGnmRegisterResource() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
+                                        size_t size, const char* name, int res_type,
+                                        u64 user_data) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // PA Debug is always disabled in retail FW
 }
 
 int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone() {

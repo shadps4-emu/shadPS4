@@ -151,7 +151,7 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
     if (!image.info.is_storage) {
-        usage_override = image.info.usage & ~vk::ImageUsageFlagBits::eStorage;
+        usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
     const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, usage_override);
@@ -183,7 +183,7 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
-    ImageViewInfo view_info{buffer, image.info.is_vo_surface};
+    ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image, view_info);
 }
 
@@ -210,26 +210,8 @@ void TextureCache::RefreshImage(Image& image) {
         if (!tile_manager.TryDetile(image)) {
             // Upload data to the staging buffer.
             const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
-            image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
             // Copy to the image.
-            const vk::BufferImageCopy image_copy = {
-                .bufferOffset = offset,
-                .bufferRowLength = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1,
-                },
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {image.info.size.width, image.info.size.height, 1},
-            };
-
-            const auto cmdbuf = scheduler.CommandBuffer();
-            cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                     vk::ImageLayout::eTransferDstOptimal, image_copy);
+            image.Upload(staging.Handle(), offset);
         }
 
         image.Transit(vk::ImageLayout::eGeneral,

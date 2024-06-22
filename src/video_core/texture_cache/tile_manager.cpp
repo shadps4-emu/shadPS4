@@ -15,7 +15,6 @@
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum.hpp>
-#include <vulkan/vulkan_to_string.hpp>
 
 namespace VideoCore {
 

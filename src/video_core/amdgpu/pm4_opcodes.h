@@ -46,6 +46,7 @@ enum class PM4ItOpcode : u32 {
     EventWrite = 0x46,
     EventWriteEop = 0x47,
     EventWriteEos = 0x48,
+    ReleaseMem = 0x49,
     PremableCntl = 0x4A,
     DmaData = 0x50,
     ContextRegRmw = 0x51,

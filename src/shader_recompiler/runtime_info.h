@@ -72,11 +72,19 @@ using SamplerResourceList = boost::container::static_vector<SamplerResource, 8>;
 
 struct Info {
     struct VsInput {
+        enum InstanceIdType : u8 {
+            None = 0,
+            OverStepRate0 = 1,
+            OverStepRate1 = 2,
+            Plain = 3,
+        };
+
         AmdGpu::NumberFormat fmt;
         u16 binding;
         u16 num_components;
         u8 sgpr_base;
         u8 dword_offset;
+        InstanceIdType instance_step_rate;
     };
     boost::container::static_vector<VsInput, 32> vs_inputs{};
 

@@ -42,18 +42,28 @@ struct ImageInfo {
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
+    bool IsTiled() const {
+        return tiling_mode != AmdGpu::TilingMode::Display_Linear;
+    }
     bool IsBlockCoded() const;
     bool IsPacked() const;
     bool IsDepthStencil() const;
 
+    struct {
+        u32 texture : 1;
+        u32 storage : 1;
+        u32 render_target : 1;
+        u32 depth_target : 1;
+        u32 vo_buffer : 1;
+    } usage; // Usage data tracked during image lifetime
+
     bool is_tiled = false;
     bool is_storage = false;
-    bool is_vo_surface = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
-    vk::ImageUsageFlags usage;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
+    u32 num_samples = 1;
     u32 pitch = 0;
     u32 guest_size_bytes = 0;
     AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
@@ -117,6 +127,7 @@ struct Image {
     }
 
     void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);
+    void Upload(vk::Buffer buffer, u64 offset);
 
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
@@ -131,6 +142,7 @@ struct Image {
     std::optional<ImageView> view_for_detiler;
 
     // Resource state tracking
+    vk::ImageUsageFlags usage;
     vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;
     vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;

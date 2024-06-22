@@ -12,7 +12,7 @@ namespace AmdGpu {
 
 static const char* dcb_task_name{"DCB_TASK"};
 static const char* ccb_task_name{"CCB_TASK"};
-static const char* asc_task_name{"ACB_TASK"};
+static const char* acb_task_name{"ACB_TASK"};
 
 std::array<u8, 48_KB> Liverpool::ConstantEngine::constants_heap;
 
@@ -381,6 +381,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 }
 
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
+    TracyFiberEnter(acb_task_name);
+
     while (!acb.empty()) {
         const auto* header = reinterpret_cast<const PM4Header*>(acb.data());
         const u32 type = header->type;
@@ -393,6 +395,69 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
         const PM4ItOpcode opcode = header->type3.opcode;
         const auto* it_body = reinterpret_cast<const u32*>(header) + 1;
         switch (opcode) {
+        case PM4ItOpcode::Nop: {
+            const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
+            break;
+        }
+        case PM4ItOpcode::IndirectBuffer: {
+            const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            auto task =
+                ProcessCompute({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            while (!task.handle.done()) {
+                task.handle.resume();
+
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(acb_task_name);
+            };
+            break;
+        }
+        case PM4ItOpcode::AcquireMem: {
+            break;
+        }
+        case PM4ItOpcode::SetShReg: {
+            const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
+            std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
+                        (count - 1) * sizeof(u32));
+            break;
+        }
+        case PM4ItOpcode::DispatchDirect: {
+            const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
+            regs.cs_program.dim_x = dispatch_direct->dim_x;
+            regs.cs_program.dim_y = dispatch_direct->dim_y;
+            regs.cs_program.dim_z = dispatch_direct->dim_z;
+            regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
+            if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                rasterizer->DispatchDirect();
+            }
+            break;
+        }
+        case PM4ItOpcode::WriteData: {
+            const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
+            ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
+            const u32 data_size = (header->type3.count.Value() - 2) * 4;
+            if (!write_data->wr_one_addr.Value()) {
+                std::memcpy(write_data->Address<void*>(), write_data->data, data_size);
+            } else {
+                UNREACHABLE();
+            }
+            break;
+        }
+        case PM4ItOpcode::WaitRegMem: {
+            const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
+            ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+            while (!wait_reg_mem->Test()) {
+                TracyFiberLeave;
+                co_yield {};
+                TracyFiberEnter(acb_task_name);
+            }
+            break;
+        }
+        case PM4ItOpcode::ReleaseMem: {
+            const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
+            release_mem->SignalFence(Platform::InterruptId::Compute0RelMem); // <---
+            break;
+        }
         default:
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
@@ -401,7 +466,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
         acb = acb.subspan(header->type3.NumWords() + 1);
     }
 
-    return {}; // Not a coroutine yet
+    TracyFiberLeave;
 }
 
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
