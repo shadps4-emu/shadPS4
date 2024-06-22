@@ -55,8 +55,7 @@ static std::string EncodeId(u64 nVal) {
     return enc;
 }
 
-Module::Module(Core::MemoryManager* memory_,
-               const std::filesystem::path& file_, u32& max_tls_index)
+Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
     : memory{memory_}, file{file_}, name{file.stem().string()} {
     elf.Open(file);
     if (elf.IsElfFile()) {
