@@ -31,6 +31,7 @@ static constexpr bool g_fair_hw_init = false;
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
+static std::mutex m_submission{};
 static u64 frames_submitted{}; // frame counter
 
 struct AscQueueInfo {
@@ -211,9 +212,32 @@ int PS4_SYSV_ABI sceGnmDestroyWorkloadStream() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDingDong() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
+    LOG_INFO(Lib_GnmDriver, "vqid {}, offset_dw {}", gnm_vqid, next_offs_dw);
+
+    if (gnm_vqid == 0) {
+        return;
+    }
+
+    std::unique_lock lock{m_submission};
+    if (submission_lock != 0) {
+        liverpool->WaitGpuIdle();
+
+        // Suspend logic goes here
+
+        submission_lock = 0;
+    }
+
+    auto vqid = gnm_vqid - 1;
+    auto& asc_queue = asc_queues[{vqid}];
+    const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr + *asc_queue.read_addr);
+    const auto acb_size = next_offs_dw ? (next_offs_dw << 2u) - *asc_queue.read_addr
+                                       : (asc_queue.ring_size_dw << 2u) - *asc_queue.read_addr;
+
+    liverpool->SubmitAsc(vqid, {acb_ptr, acb_size >> 2u});
+
+    *asc_queue.read_addr += acb_size;
+    *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
 int PS4_SYSV_ABI sceGnmDingDongForWorkload() {
