@@ -210,26 +210,8 @@ void TextureCache::RefreshImage(Image& image) {
         if (!tile_manager.TryDetile(image)) {
             // Upload data to the staging buffer.
             const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
-            image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
             // Copy to the image.
-            const vk::BufferImageCopy image_copy = {
-                .bufferOffset = offset,
-                .bufferRowLength = 0,
-                .bufferImageHeight = 0,
-                .imageSubresource{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1,
-                },
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {image.info.size.width, image.info.size.height, 1},
-            };
-
-            const auto cmdbuf = scheduler.CommandBuffer();
-            cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                     vk::ImageLayout::eTransferDstOptimal, image_copy);
+            image.Upload(staging.Handle(), offset);
         }
 
         image.Transit(vk::ImageLayout::eGeneral,

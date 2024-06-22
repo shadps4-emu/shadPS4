@@ -117,6 +117,7 @@ struct Image {
     }
 
     void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);
+    void Upload(vk::Buffer buffer, u64 offset);
 
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;

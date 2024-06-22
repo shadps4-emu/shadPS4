@@ -296,6 +296,31 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
     pl_stage = dst_pl_stage;
 }
 
+void Image::Upload(vk::Buffer buffer, u64 offset) {
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+    // Copy to the image.
+    const vk::BufferImageCopy image_copy = {
+        .bufferOffset = offset,
+        .bufferRowLength = info.pitch,
+        .bufferImageHeight = info.size.height,
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {info.size.width, info.size.height, 1},
+    };
+
+    const auto cmdbuf = scheduler->CommandBuffer();
+    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+}
+
 Image::~Image() = default;
 
 } // namespace VideoCore
