@@ -489,7 +489,7 @@ int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pP
         auto* controller = Common::Singleton<Input::GameController>::Instance();
         u16 smallFreq = (u16)(((float)pParam->smallMotor / 255.0f) * 65535.0f);
         u16 bigFreq = (u16)(((float)pParam->largeMotor / 255.0f) * 65535.0f);
-        result = controller->GetRumble(smallFreq, bigFreq);
+        result = (Config::getControllerType() == 1) ? controller->GetRumble(smallFreq, bigFreq) : 0;
     }
     return result;
 }
