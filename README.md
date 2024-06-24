@@ -36,6 +36,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
 
+If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
+
 To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
 
 Check us on [**X (twitter)**](https://x.com/shadps4) or on our [**website**](https://shadps4.net/).
@@ -69,13 +71,6 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 |--------|------------|
 |Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
 |Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
-
-# Executing a program
-
-You can copy and paste the path to the CMD or drag the executable file to the application.
-```
-C:\Users\******\shadPS4.exe C:\******\game_eboot.bin
-```
 
 # Main team
 
