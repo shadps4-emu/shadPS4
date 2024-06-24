@@ -143,7 +143,8 @@ int PS4_SYSV_ABI sceGnmSdmaOpen();
 s32 PS4_SYSV_ABI sceGnmSetCsShader(u32* cmdbuf, u32 size, const u32* cs_regs);
 s32 PS4_SYSV_ABI sceGnmSetCsShaderWithModifier(u32* cmdbuf, u32 size, const u32* cs_regs,
                                                u32 modifier);
-int PS4_SYSV_ABI sceGnmSetEmbeddedPsShader();
+s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
+                                           u32 shader_modifier);
 s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier);
 int PS4_SYSV_ABI sceGnmSetEsShader();
 int PS4_SYSV_ABI sceGnmSetGsRingSizes();
