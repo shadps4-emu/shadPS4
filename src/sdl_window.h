@@ -63,6 +63,8 @@ public:
 private:
     void onResize();
     void onKeyPress(const SDL_Event* event);
+    void onGamePadPress(const SDL_Event* event);
+    void onGamePadAxisMotion(const SDL_Event* event);
 
 private:
     s32 width;

@@ -123,68 +123,6 @@ void GameController::InitGamePad() {
     gamepad = SDL_OpenGamepad(instance_id);
 }
 
-u32 GameController::GetGamepadButtons() {
-    u32 buttons = 0;
-    if (gamepad) {
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_STICK) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_STICK) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_START) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1)
-                       : 0;
-        buttons |= SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1)
-                       : 0;
-        buttons |= SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_NORTH) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_EAST) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_SOUTH) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS)
-                       : 0;
-        buttons |= SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_WEST) == SDL_PRESSED
-                       ? (Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE)
-                       : 0;
-    }
-    return buttons;
-}
-
-State GameController::GetGamePadAxis() {
-    u8 lx = static_cast<u8>((SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX) + 32768) / 257);
-    u8 ly = static_cast<u8>((SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY) + 32768) / 257);
-    u8 rx = static_cast<u8>((SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTX) + 32768) / 257);
-    u8 ry = static_cast<u8>((SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTY) + 32768) / 257);
-    u8 lt = static_cast<u8>(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER));
-    u8 rt = static_cast<u8>(SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER));
-    return {0, 0, {lx, ly, rx, ry, lt, rt}};
-}
-
 int GameController::GetRumble(u16 smallFreq, u16 bigFreq) {
     return SDL_RumbleGamepad(gamepad, smallFreq, bigFreq, -1);
 }

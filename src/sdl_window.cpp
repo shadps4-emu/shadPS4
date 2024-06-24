@@ -82,6 +82,15 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_KEY_UP:
         onKeyPress(&event);
         break;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP: {
+        onGamePadPress(&event);
+        break;
+    }
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
+        onGamePadAxisMotion(&event);
+        break;
+    }
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
@@ -244,6 +253,97 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     }
     if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
+    }
+}
+
+void WindowSDL::onGamePadPress(const SDL_Event* event) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    u32 button = 0;
+    switch (event->gbutton.button) {
+    case SDL_GAMEPAD_BUTTON_DPAD_UP:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
+        break;
+    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
+        break;
+    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
+        break;
+    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
+        break;
+    case SDL_GAMEPAD_BUTTON_NORTH:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
+        break;
+    case SDL_GAMEPAD_BUTTON_SOUTH:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
+        break;
+    case SDL_GAMEPAD_BUTTON_EAST:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
+        break;
+    case SDL_GAMEPAD_BUTTON_WEST:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
+        break;
+    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+        break;
+    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+        break;
+    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+        break;
+    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+        break;
+    }
+
+    if (button != 0) {
+        controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+    }
+}
+
+void WindowSDL::onGamePadAxisMotion(const SDL_Event* event) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+    u32 button = 0;
+    Input::Axis axis = Input::Axis::AxisMax;
+    int ax = 0;
+    switch (event->gaxis.axis) {
+    case SDL_GAMEPAD_AXIS_LEFTX:
+        axis = Input::Axis::LeftX;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    case SDL_GAMEPAD_AXIS_LEFTY:
+        axis = Input::Axis::LeftY;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    case SDL_GAMEPAD_AXIS_RIGHTX:
+        axis = Input::Axis::RightX;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    case SDL_GAMEPAD_AXIS_RIGHTY:
+        axis = Input::Axis::RightY;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        axis = Input::Axis::TriggerLeft;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+        button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
+        axis = Input::Axis::TriggerRight;
+        ax = ((event->gaxis.value + 32768) / 257);
+        break;
+    }
+
+    if (axis != Input::Axis::AxisMax) {
+        controller->Axis(0, axis, ax);
+    }
+
+    if (button != 0) {
+        controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION);
     }
 }
 

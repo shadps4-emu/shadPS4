@@ -47,8 +47,6 @@ public:
     void Axis(int id, Input::Axis axis, int value);
 
     void InitGamePad();
-    u32 GetGamepadButtons();
-    State GetGamePadAxis();
     int GetRumble(u16 smallFreq, u16 bigFreq);
 
 private:
