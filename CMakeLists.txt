@@ -77,6 +77,23 @@ if (CLANG_FORMAT)
     unset(CCOMMENT)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+find_package(Boost 1.83.0 CONFIG)
+find_package(cryptopp 8.9.0 MODULE)
+find_package(fmt 10.2.0 CONFIG)
+find_package(glslang 14.2.0 CONFIG)
+find_package(magic_enum 0.9.5 CONFIG)
+find_package(SDL3 3.1.2 CONFIG)
+find_package(toml11 3.8.1 CONFIG)
+find_package(tsl-robin-map 1.3.0 CONFIG)
+find_package(VulkanHeaders 1.3.288 CONFIG)
+find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
+find_package(xbyak 7.07 CONFIG)
+find_package(xxHash 0.8.2 MODULE)
+find_package(zlib-ng 2.1.6 MODULE)
+find_package(Zydis 4.1.0 CONFIG)
+
 add_subdirectory(externals)
 include_directories(src)
 
@@ -522,17 +539,17 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak Tracy::TracyClient)
-target_link_libraries(shadps4 PRIVATE boost vma sirit vulkan-headers xxhash Zydis SPIRV glslang SDL3-shared)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (NOT ENABLE_QT_GUI)
-  target_link_libraries(shadps4 PRIVATE SDL3-shared)
+  target_link_libraries(shadps4 PRIVATE SDL3::SDL3)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
-    target_link_libraries(shadps4 PRIVATE cryptoppwin zlib)
+    target_link_libraries(shadps4 PRIVATE cryptoppwin zlib-ng::zlib)
 else()
-    target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib)
+    target_link_libraries(shadps4 PRIVATE cryptopp::cryptopp zlib-ng::zlib)
 endif()
 
 if (ENABLE_QT_GUI)
@@ -577,13 +594,3 @@ if (ENABLE_QT_GUI)
 #        WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON)
 endif()
-
-add_custom_command(TARGET shadps4 POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     $<TARGET_FILE:zlib>
-     $<TARGET_FILE_DIR:shadps4>)
-
-add_custom_command(TARGET shadps4 POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-     $<TARGET_FILE:SDL3-shared>
-     $<TARGET_FILE_DIR:shadps4>)
