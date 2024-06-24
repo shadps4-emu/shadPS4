@@ -12,6 +12,7 @@
 #ifndef MAIN_WINDOW_UI_H
 #define MAIN_WINDOW_UI_H
 
+#include <QComboBox>
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QtWidgets/QApplication>
@@ -56,6 +57,7 @@ public:
     QPushButton* stopButton;
     QPushButton* settingsButton;
     QPushButton* controllerButton;
+    QComboBox* padBox;
 
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
@@ -167,6 +169,11 @@ public:
         mw_searchbar->setFocusPolicy(Qt::ClickFocus);
         mw_searchbar->setFrame(false);
         mw_searchbar->setClearButtonEnabled(false);
+
+        padBox = new QComboBox(centralWidget);
+        padBox->setObjectName("padBox");
+        padBox->addItem("Keyboard");
+        padBox->addItem("Gamepad");
 
         playButton = new QPushButton(centralWidget);
         playButton->setFlat(true);

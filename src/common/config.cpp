@@ -24,6 +24,7 @@ static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
+static u32 controller = 0;
 // Gui
 std::string settings_install_dir = "";
 u32 main_window_geometry_x = 400;
@@ -100,6 +101,15 @@ bool vkValidationEnabled() {
 
 bool vkValidationSyncEnabled() {
     return vkValidationSync;
+}
+
+// 0: keyboard, 1: gamepad
+void setControllerType(u32 type) {
+    controller = type;
+}
+
+u32 getControllerType() {
+    return controller;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -224,6 +234,7 @@ void load(const std::filesystem::path& path) {
             logFilter = toml::find_or<toml::string>(general, "logFilter", "");
             logType = toml::find_or<toml::string>(general, "logType", "sync");
             isShowSplash = toml::find_or<toml::boolean>(general, "showSplash", true);
+            controller = toml::find_or<toml::integer>(general, "controller", 0);
         }
     }
     if (data.contains("GPU")) {
@@ -312,6 +323,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["showSplash"] = isShowSplash;
+    data["General"]["controller"] = controller;
     data["GPU"]["gpuId"] = gpuId;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;

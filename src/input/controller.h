@@ -4,6 +4,8 @@
 #pragma once
 
 #include <mutex>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_init.h>
 #include "common/types.h"
 
 namespace Input {
@@ -44,10 +46,16 @@ public:
     void AddState(const State& state);
     void Axis(int id, Input::Axis axis, int value);
 
+    void InitGamePad();
+    u32 GetGamepadButtons();
+    State GetGamePadAxis();
+    int GetRumble(u16 smallFreq, u16 bigFreq);
+
 private:
     struct StateInternal {
         bool obtained = false;
     };
+    SDL_Gamepad* gamepad;
 
     std::mutex m_mutex;
     bool m_connected = true;

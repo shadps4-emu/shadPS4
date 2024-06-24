@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QComboBox>
 #include <QDir>
 #include <QDockWidget>
 #include <QFileDialog>
@@ -93,6 +94,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(line);
     ui->toolBar->addWidget(ui->sizeSliderContainer);
     ui->toolBar->addWidget(ui->mw_searchbar);
+    ui->toolBar->addWidget(ui->padBox);
 }
 
 void MainWindow::CreateDockWindows() {
@@ -133,7 +135,7 @@ void MainWindow::CreateDockWindows() {
         m_dock_widget->setWidget(m_elf_viewer.data());
         isTableList = false;
     }
-
+    ui->padBox->setCurrentIndex(Config::getControllerType());
     m_dock_widget->setAllowedAreas(Qt::AllDockWidgetAreas);
     m_dock_widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_dock_widget->resize(this->width(), this->height());
@@ -203,6 +205,15 @@ void MainWindow::CreateConnects() {
             Core::Emulator emulator;
             emulator.Run(gamePath.toUtf8().constData());
         }
+    });
+
+    connect(ui->padBox, &QComboBox::currentTextChanged, this, [&](QString item) {
+        if (item == "Keyboard")
+            Config::setControllerType(0);
+        else if (item == "Gamepad")
+            Config::setControllerType(1);
+        const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+        Config::save(config_dir / "config.toml");
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {

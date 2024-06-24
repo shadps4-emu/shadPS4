@@ -30,6 +30,8 @@ bool dumpPM4();
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 
+void setControllerType(u32 type);
+u32 getControllerType();
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
 void setGameInstallDir(const std::string& dir);
