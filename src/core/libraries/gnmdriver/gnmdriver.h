@@ -44,13 +44,16 @@ u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr_t index_addr,
                                  u32 flags, u32 type);
 s32 PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32 flags);
-int PS4_SYSV_ABI sceGnmDrawIndexIndirect();
+s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
+                                         u32 vertex_sgpr_offset, u32 instance_vgpr_offset,
+                                         u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti();
 int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced();
 s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, u32 index_count,
                                        u32 flags);
-int PS4_SYSV_ABI sceGnmDrawIndirect();
+s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
+                                    u32 vertex_sgpr_offset, u32 instance_vgpr_offset, u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
 int PS4_SYSV_ABI sceGnmDrawIndirectMulti();
 int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState();

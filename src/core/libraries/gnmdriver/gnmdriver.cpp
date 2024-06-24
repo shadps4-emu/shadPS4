@@ -24,6 +24,20 @@ using namespace AmdGpu;
 
 static std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
+enum ShaderStages : u32 {
+    Cs,
+    Ps,
+    Vs,
+    Gs,
+    Es,
+    Hs,
+    Ls,
+
+    Max
+};
+
+static constexpr std::array indirect_sgpr_offsets{0u, 0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
+
 // In case of precise gnm driver emulation we need to send a bunch of HW-specific
 // initialization commands. It may slowdown development at early stage as their
 // support is not important and can be ignored for a while.
@@ -347,9 +361,29 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexAuto(u32* cmdbuf, u32 size, u32 index_count, u32
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmDrawIndexIndirect() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
+                                         u32 vertex_sgpr_offset, u32 instance_vgpr_offset,
+                                         u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && (size == 9) && (shader_stage < ShaderStages::Max) &&
+        (vertex_sgpr_offset < 0x10u) && (instance_vgpr_offset < 0x10u)) {
+
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexIndirect>(
+            cmdbuf, 4, PM4ShaderType::ShaderGraphics, predicate);
+
+        const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
+
+        cmdbuf[0] = data_offset;
+        cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[3] = 0;
+
+        WriteTrailingNop<3>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti() {
@@ -383,9 +417,28 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, 
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmDrawIndirect() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
+                                    u32 vertex_sgpr_offset, u32 instance_vgpr_offset, u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && (size == 9) && (shader_stage < ShaderStages::Max) &&
+        (vertex_sgpr_offset < 0x10u) && (instance_vgpr_offset < 0x10u)) {
+
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteHeader<PM4ItOpcode::DrawIndirect>(cmdbuf, 4, PM4ShaderType::ShaderGraphics,
+                                                        predicate);
+
+        const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
+
+        cmdbuf[0] = data_offset;
+        cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[3] = 2; // auto index
+
+        WriteTrailingNop<3>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti() {
