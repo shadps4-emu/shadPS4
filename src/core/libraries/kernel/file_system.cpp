@@ -384,6 +384,37 @@ int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* base
     return GetDents(fd, buf, nbytes, basep);
 }
 
+s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
+    if (d < 3) {
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
+
+    if (buf == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    if (offset < 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(d);
+
+    if (file == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    file->m_mutex.lock();
+
+    auto pos = file->f.Tell();
+    file->f.Seek(offset);
+    u32 bytes_write = file->f.WriteRaw<u8>(buf, static_cast<u32>(nbytes));
+    file->f.Seek(pos);
+    file->m_mutex.unlock();
+
+    return bytes_write;
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -409,6 +440,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
+    LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
