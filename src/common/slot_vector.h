@@ -54,6 +54,10 @@ public:
         return values[id.index].object;
     }
 
+    bool is_allocated(SlotId id) const {
+        return ReadStorageBit(id.index);
+    }
+
     template <typename... Args>
     [[nodiscard]] SlotId insert(Args&&... args) noexcept {
         const u32 index = FreeValueIndex();
@@ -107,7 +111,7 @@ private:
         stored_bitset[index / 64] &= ~(u64(1) << (index % 64));
     }
 
-    bool ReadStorageBit(u32 index) noexcept {
+    bool ReadStorageBit(u32 index) const noexcept {
         return ((stored_bitset[index / 64] >> (index % 64)) & 1) != 0;
     }
 
