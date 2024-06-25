@@ -29,7 +29,7 @@ static Common::SlotVector<u32> trophy_handles{};
 static Common::SlotVector<ContextKey> trophy_contexts{};
 static std::unordered_map<ContextKey, TrophyContext, ContextKeyHash> contexts_internal{};
 
-static int PS4_SYSV_ABI sceNpTrophyAbortHandle() {
+int PS4_SYSV_ABI sceNpTrophyAbortHandle() {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
