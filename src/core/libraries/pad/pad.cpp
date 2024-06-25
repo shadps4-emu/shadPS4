@@ -85,6 +85,7 @@ int PS4_SYSV_ABI scePadGetCapability() {
 
 int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerInformation* pInfo) {
     LOG_INFO(Lib_Pad, "called handle = {}", handle);
+    std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
@@ -238,6 +239,7 @@ int PS4_SYSV_ABI scePadOutputReport() {
 }
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
+    std::memset(pData, 0, sizeof(OrbisPadData));
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
@@ -308,7 +310,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;
-
+    std::memset(pData, 0, sizeof(OrbisPadData));
     controller->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
     pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
@@ -321,6 +323,19 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->orientation.y = 0;
     pData->orientation.z = 0;
     pData->orientation.w = 0;
+    pData->acceleration.x = 0.0f;
+    pData->acceleration.y = 0.0f;
+    pData->acceleration.z = 0.0f;
+    pData->angularVelocity.x = 0.0f;
+    pData->angularVelocity.y = 0.0f;
+    pData->angularVelocity.z = 0.0f;
+    pData->touchData.touchNum = 0;
+    pData->touchData.touch[0].x = 0;
+    pData->touchData.touch[0].y = 0;
+    pData->touchData.touch[0].id = 1;
+    pData->touchData.touch[1].x = 0;
+    pData->touchData.touch[1].y = 0;
+    pData->touchData.touch[1].id = 2;
     pData->timestamp = state.time;
     pData->connected = true;   // isConnected; //TODO fix me proper
     pData->connectedCount = 1; // connectedCount;
