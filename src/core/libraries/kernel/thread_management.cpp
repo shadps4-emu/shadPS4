@@ -1278,6 +1278,7 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 
 [[noreturn]] void PS4_SYSV_ABI scePthreadExit(void* value_ptr) {
     pthread_exit(value_ptr);
+    UNREACHABLE();
 }
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
