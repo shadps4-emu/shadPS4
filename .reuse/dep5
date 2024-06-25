@@ -8,6 +8,8 @@ Files: CMakeSettings.json
        .gitmodules
        documents/changelog.txt
        documents/readme.txt
+       documents/Quickstart/1.png
+       documents/Quickstart/2.png
        documents/Screenshots/screenshot.png
        documents/Screenshots/Sonic Mania.png
        documents/Screenshots/Undertale.png

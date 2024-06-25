@@ -9,40 +9,34 @@ SPDX-License-Identifier: GPL-2.0-or-later
   <br>
   <b>shadPS4</b>
   <br>
+</h1>
 
-<p align="center">
-
+<h1 align="center">
  <a href="https://discord.gg/MyZRaBngxA">
         <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4 Discord&logo=Discord&logoColor=white" width="240">
-
  <a href="https://github.com/shadps4-emu/shadPS4/releases/latest">
         <img src="https://img.shields.io/github/downloads/shadps4-emu/shadPS4/total.svg" width="140">
-
  <a href="https://shadps4.net/">
         <img src="https://img.shields.io/badge/shadPS4-website-8A2BE2" width="150">
-
  <a href="https://x.com/shadps4">
         <img src="https://img.shields.io/badge/-Join%20us-black?logo=X&logoColor=white" width="100">
-
  <a href="https://github.com/shadps4-emu/shadPS4/stargazers">
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
+</h1>
 
 <p align="center">
   <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="500">
-
-  <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/screenshot.png" width="500">
-
-  <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="500">
-
-  <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="500">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/screenshot.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
+</p>
 
 # shadPS4
 
 shadPS4 is an early PS4 emulator for Windows and Linux written in C++
+
+If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
 
 To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
 
@@ -50,7 +44,7 @@ Check us on [**X (twitter)**](https://x.com/shadps4) or on our [**website**](htt
 
 # Status
 
-In development, 2D games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), Undertale, Momodora and others...
+In development, small games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) and others...
 
 # Why?
 
@@ -77,13 +71,6 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 |--------|------------|
 |Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
 |Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
-
-# Executing a program
-
-You can copy and paste the path to the CMD or drag the executable file to the application.
-```
-C:\Users\******\shadPS4.exe C:\******\game_eboot.bin
-```
 
 # Main team
 
