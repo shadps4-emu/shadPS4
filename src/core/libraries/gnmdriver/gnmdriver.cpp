@@ -53,7 +53,7 @@ struct AscQueueInfo {
     u32* read_addr;
     u32 ring_size_dw;
 };
-static VideoCore::SlotVector<AscQueueInfo> asc_queues{};
+static Common::SlotVector<AscQueueInfo> asc_queues{};
 static constexpr VAddr tessellation_factors_ring_addr = 0xFF0000000ULL;
 
 static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {

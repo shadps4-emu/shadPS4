@@ -140,8 +140,8 @@ private:
     Vulkan::Scheduler& scheduler;
     Vulkan::StreamBuffer staging;
     TileManager tile_manager;
-    SlotVector<Image> slot_images;
-    SlotVector<ImageView> slot_image_views;
+    Common::SlotVector<Image> slot_images;
+    Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;

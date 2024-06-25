@@ -12,7 +12,7 @@
 #include "common/assert.h"
 #include "common/types.h"
 
-namespace VideoCore {
+namespace Common {
 
 struct SlotId {
     static constexpr u32 INVALID_INDEX = std::numeric_limits<u32>::max();
@@ -52,6 +52,10 @@ public:
     [[nodiscard]] const T& operator[](SlotId id) const noexcept {
         ValidateIndex(id);
         return values[id.index].object;
+    }
+
+    bool is_allocated(SlotId id) const {
+        return ReadStorageBit(id.index);
     }
 
     template <typename... Args>
@@ -107,7 +111,7 @@ private:
         stored_bitset[index / 64] &= ~(u64(1) << (index % 64));
     }
 
-    bool ReadStorageBit(u32 index) noexcept {
+    bool ReadStorageBit(u32 index) const noexcept {
         return ((stored_bitset[index / 64] >> (index % 64)) & 1) != 0;
     }
 
@@ -162,11 +166,11 @@ private:
     std::vector<u32> free_list;
 };
 
-} // namespace VideoCore
+} // namespace Common
 
 template <>
-struct std::hash<VideoCore::SlotId> {
-    std::size_t operator()(const VideoCore::SlotId& id) const noexcept {
+struct std::hash<Common::SlotId> {
+    std::size_t operator()(const Common::SlotId& id) const noexcept {
         return std::hash<u32>{}(id.index);
     }
 };
