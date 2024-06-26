@@ -150,7 +150,7 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     // impossible to use. However, during view creation, if an image isn't used as storage we can
     // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
-    if (!image.info.is_storage) {
+    if (!image.info.usage.storage) {
         usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
@@ -161,12 +161,15 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
 }
 
 ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
-    Image& image = FindImage(ImageInfo{desc}, desc.Address());
+    const ImageInfo info{desc};
+    Image& image = FindImage(info, desc.Address());
 
     if (is_storage) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+        image.info.usage.storage = true;
     } else {
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
+        image.info.usage.texture = true;
     }
 
     const ImageViewInfo view_info{desc, is_storage};
@@ -183,6 +186,8 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
+    image.info.usage.render_target = true;
+
     ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image, view_info);
 }
@@ -196,6 +201,8 @@ ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffe
     image.Transit(vk::ImageLayout::eDepthStencilAttachmentOptimal,
                   vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                       vk::AccessFlagBits::eDepthStencilAttachmentRead);
+
+    image.info.usage.depth_target = true;
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;

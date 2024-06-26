@@ -91,7 +91,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
     }
-    if (info.is_tiled || info.is_storage) {
+    if (info.is_tiled || info.usage.storage) {
         usage |= vk::ImageUsageFlagBits::eStorage;
     }
     return usage;
@@ -178,6 +178,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
     guest_size_bytes = image.GetSizeAligned();
+    usage.texture = true;
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
