@@ -26,6 +26,12 @@ enum class ConditionOp : u32 {
     TRU,
 };
 
+enum class NegateMode : u32 {
+    None,
+    Src1,
+    Result,
+};
+
 class Translator {
 public:
     explicit Translator(IR::Block* block_, Info& info);
@@ -38,11 +44,10 @@ public:
     void S_MOV(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
-    void S_ANDN2_B64(const GcnInst& inst);
     void S_AND_SAVEEXEC_B64(const GcnInst& inst);
     void S_MOV_B64(const GcnInst& inst);
-    void S_OR_B64(bool negate, const GcnInst& inst);
-    void S_AND_B64(bool negate, const GcnInst& inst);
+    void S_OR_B64(NegateMode negate, const GcnInst& inst);
+    void S_AND_B64(NegateMode negate, const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_AND_B32(const GcnInst& inst);
     void S_OR_B32(const GcnInst& inst);

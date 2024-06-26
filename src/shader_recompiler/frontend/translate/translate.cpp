@@ -469,7 +469,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_RSQ_F32(inst);
             break;
         case Opcode::S_ANDN2_B64:
-            translator.S_ANDN2_B64(inst);
+            translator.S_AND_B64(NegateMode::Src1, inst);
+            break;
+        case Opcode::S_ORN2_B64:
+            translator.S_OR_B64(NegateMode::Src1, inst);
             break;
         case Opcode::V_SIN_F32:
             translator.V_SIN_F32(inst);
@@ -608,19 +611,19 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_CMP_U32(ConditionOp::TRU, false, true, inst);
             break;
         case Opcode::S_OR_B64:
-            translator.S_OR_B64(false, inst);
+            translator.S_OR_B64(NegateMode::None, inst);
             break;
         case Opcode::S_NOR_B64:
-            translator.S_OR_B64(true, inst);
+            translator.S_OR_B64(NegateMode::Result, inst);
             break;
         case Opcode::S_AND_B64:
-            translator.S_AND_B64(false, inst);
+            translator.S_AND_B64(NegateMode::None, inst);
             break;
         case Opcode::S_NOT_B64:
             translator.S_NOT_B64(inst);
             break;
         case Opcode::S_NAND_B64:
-            translator.S_AND_B64(true, inst);
+            translator.S_AND_B64(NegateMode::Result, inst);
             break;
         case Opcode::V_LSHRREV_B32:
             translator.V_LSHRREV_B32(inst);
