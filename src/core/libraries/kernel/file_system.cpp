@@ -126,7 +126,7 @@ int PS4_SYSV_ABI posix_close(int d) {
     return ORBIS_OK;
 }
 
-size_t PS4_SYSV_ABI sceKernelWrite(int d, void* buf, size_t nbytes) {
+size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
     if (d <= 2) { // stdin,stdout,stderr
         char* str = strdup((const char*)buf);
         if (str[nbytes - 1] == '\n')

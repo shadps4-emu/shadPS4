@@ -181,7 +181,7 @@ public:
     }
 
     template <typename T>
-    size_t WriteRaw(void* data, size_t size) const {
+    size_t WriteRaw(const void* data, size_t size) const {
         return std::fwrite(data, sizeof(T), size, file);
     }
 

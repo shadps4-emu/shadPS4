@@ -331,6 +331,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
+        case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::IMAGE_STORE:
