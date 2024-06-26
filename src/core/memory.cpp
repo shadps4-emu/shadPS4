@@ -206,9 +206,15 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
     const auto& vma = it->second;
     ASSERT_MSG(vma.type != VMAType::Free, "Provided address is not mapped");
 
-    *start = reinterpret_cast<void*>(vma.base);
-    *end = reinterpret_cast<void*>(vma.base + vma.size);
-    *prot = static_cast<u32>(vma.prot);
+    if (start != nullptr) {
+        *start = reinterpret_cast<void*>(vma.base);
+    }
+    if (end != nullptr) {
+        *end = reinterpret_cast<void*>(vma.base + vma.size);
+    }
+    if (prot != nullptr) {
+        *prot = static_cast<u32>(vma.prot);
+    }
     return ORBIS_OK;
 }
 
