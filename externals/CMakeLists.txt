@@ -28,9 +28,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     target_include_directories(cryptoppwin INTERFACE cryptoppwin/include)
 else()
     # CryptoPP
+    set(CRYPTOPP_INSTALL OFF)
     set(CRYPTOPP_BUILD_TESTING OFF)
     set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp/)
     add_subdirectory(cryptopp-cmake EXCLUDE_FROM_ALL)
+    file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
+    target_include_directories(cryptopp INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
 endif()
 
 # Zlib-Ng
@@ -60,6 +63,8 @@ set(ENABLE_HLSL OFF CACHE BOOL "")
 set(BUILD_EXTERNAL OFF CACHE BOOL "")
 set(ENABLE_OPT OFF CACHE BOOL "")
 add_subdirectory(glslang)
+file(COPY glslang/SPIRV DESTINATION glslang/glslang FILES_MATCHING PATTERN "*.h")
+target_include_directories(SPIRV INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/glslang")
 
 # Robin-map
 add_subdirectory(robin-map EXCLUDE_FROM_ALL)
