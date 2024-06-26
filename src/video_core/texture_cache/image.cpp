@@ -149,6 +149,8 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
+    meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
     usage.render_target = true;
 }
 

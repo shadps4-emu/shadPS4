@@ -352,7 +352,7 @@ struct Liverpool {
             return u64(z_read_base) << 8;
         }
 
-        [[nodiscard]] size_t GetSizeAligned() const {
+        size_t GetSizeAligned() const {
             return depth_slice.tile_max * 8;
         }
     };
@@ -688,11 +688,15 @@ struct Liverpool {
             return u64(base_address) << 8;
         }
 
-        u64 CmaskAddress() const {
-            return u64(cmask_base_address) << 8;
+        VAddr CmaskAddress() const {
+            return VAddr(cmask_base_address) << 8;
         }
 
-        [[nodiscard]] size_t GetSizeAligned() const {
+        VAddr FmaskAddress() const {
+            return VAddr(fmask_base_address) << 8;
+        }
+
+        size_t GetSizeAligned() const {
             const auto num_bytes_per_element = NumBits(info.format) / 8u;
             const auto slice_size = (slice.tile_max + 1) * 64u;
             const auto total_size = slice_size * (view.slice_max + 1) * num_bytes_per_element;
@@ -700,11 +704,11 @@ struct Liverpool {
             return total_size;
         }
 
-        [[nodiscard]] TilingMode GetTilingMode() const {
+        TilingMode GetTilingMode() const {
             return attrib.tile_mode_index;
         }
 
-        [[nodiscard]] bool IsTiled() const {
+        bool IsTiled() const {
             return !info.linear_general;
         }
 

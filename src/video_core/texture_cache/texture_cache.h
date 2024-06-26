@@ -29,6 +29,17 @@ class TextureCache {
     static constexpr u64 PageBits = 20;
     static constexpr u64 PageMask = (1ULL << PageBits) - 1;
 
+    struct MetaDataInfo {
+        enum class Type {
+            CMask,
+            FMask,
+            HTile,
+        };
+
+        Type type;
+        bool is_cleared;
+    };
+
 public:
     explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~TextureCache();
@@ -58,6 +69,25 @@ public:
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
         return slot_images[id];
+    }
+
+    bool IsMeta(VAddr address) const {
+        return surface_metas.contains(address);
+    }
+
+    bool IsMetaCleared(VAddr address) const {
+        const auto& it = surface_metas.find(address);
+        if (it != surface_metas.end()) {
+            return it.value().is_cleared;
+        }
+        return false;
+    }
+
+    void TouchMeta(VAddr address, bool is_clear) {
+        auto it = surface_metas.find(address);
+        if (it != surface_metas.end()) {
+            it.value().is_cleared = is_clear;
+        }
     }
 
 private:
@@ -123,6 +153,9 @@ private:
     /// Register image in the page table
     void RegisterImage(ImageId image);
 
+    /// Register meta data surfaces attached to the image
+    void RegisterMeta(const ImageInfo& info, ImageId image);
+
     /// Unregister image from the page table
     void UnregisterImage(ImageId image);
 
@@ -145,6 +178,7 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
+    tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
     std::mutex mutex;
 #ifdef _WIN64
     void* veh_handle{};
