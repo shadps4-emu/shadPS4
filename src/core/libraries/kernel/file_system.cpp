@@ -277,9 +277,9 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     }
 
     std::scoped_lock lk{file->m_mutex};
-    if (file->f.Tell() != offset) {
-        file->f.Seek(offset);
-    }
+    const s64 pos = file->f.Tell();
+    SCOPE_EXIT { file->f.Seek(pos); };
+    file->f.Seek(offset);
     return file->f.ReadRaw<u8>(buf, nbytes);
 }
 
@@ -371,7 +371,8 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
     std::scoped_lock lk{file->m_mutex};
     const s64 pos = file->f.Tell();
     SCOPE_EXIT { file->f.Seek(pos); };
-    return file->f.Seek(offset) && file->f.WriteRaw<u8>(buf, nbytes);
+    file->f.Seek(offset);
+    return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
