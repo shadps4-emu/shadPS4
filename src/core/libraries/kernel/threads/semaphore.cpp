@@ -9,8 +9,8 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
@@ -20,8 +20,8 @@ using ListBaseHook =
 class Semaphore {
 public:
     Semaphore(s32 init_count, s32 max_count, std::string_view name, bool is_fifo)
-        : name{name}, token_count{init_count}, max_count{max_count},
-          init_count{init_count}, is_fifo{is_fifo} {}
+        : name{name}, token_count{init_count}, max_count{max_count}, init_count{init_count},
+          is_fifo{is_fifo} {}
     ~Semaphore() {
         ASSERT(wait_list.empty());
     }
@@ -187,7 +187,7 @@ s32 PS4_SYSV_ABI sceKernelPollSema(OrbisKernelSema sem, s32 needCount) {
     return sem->Wait(false, needCount, nullptr);
 }
 
-int PS4_SYSV_ABI sceKernelCancelSema(OrbisKernelSema sem, s32 setCount, s32 *pNumWaitThreads) {
+int PS4_SYSV_ABI sceKernelCancelSema(OrbisKernelSema sem, s32 setCount, s32* pNumWaitThreads) {
     return sem->Cancel(setCount, pNumWaitThreads);
 }
 

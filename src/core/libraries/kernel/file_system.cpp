@@ -3,8 +3,8 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "common/scope_exit.h"
+#include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
@@ -148,7 +148,7 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
-    size_t total_read = 0;    
+    size_t total_read = 0;
     std::scoped_lock lk{file->m_mutex};
     for (int i = 0; i < iovcnt; i++) {
         total_read += file->f.ReadRaw<u8>(iov[i].iov_base, iov[i].iov_len);
@@ -278,7 +278,9 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
 
     std::scoped_lock lk{file->m_mutex};
     const s64 pos = file->f.Tell();
-    SCOPE_EXIT { file->f.Seek(pos); };
+    SCOPE_EXIT {
+        file->f.Seek(pos);
+    };
     file->f.Seek(offset);
     return file->f.ReadRaw<u8>(buf, nbytes);
 }
@@ -370,7 +372,9 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
 
     std::scoped_lock lk{file->m_mutex};
     const s64 pos = file->f.Tell();
-    SCOPE_EXIT { file->f.Seek(pos); };
+    SCOPE_EXIT {
+        file->f.Seek(pos);
+    };
     file->f.Seek(offset);
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
