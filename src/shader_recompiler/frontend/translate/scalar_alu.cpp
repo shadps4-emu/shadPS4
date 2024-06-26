@@ -46,40 +46,6 @@ void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
     ir.SetScc(result);
 }
 
-void Translator::S_ANDN2_B64(const GcnInst& inst) {
-    // TODO: What if this is used for something other than EXEC masking?
-    const auto get_src = [&](const InstOperand& operand) {
-        switch (operand.field) {
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        case OperandField::ExecLo:
-            return ir.GetExec();
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
-        default:
-            UNREACHABLE();
-        }
-    };
-
-    const IR::U1 src0{get_src(inst.src[0])};
-    const IR::U1 src1{get_src(inst.src[1])};
-    const IR::U1 result{ir.LogicalAnd(src0, ir.LogicalNot(src1))};
-    ir.SetScc(result);
-    switch (inst.dst[0].field) {
-    case OperandField::VccLo:
-        ir.SetVcc(result);
-        break;
-    case OperandField::ExecLo:
-        ir.SetExec(result);
-        break;
-    case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
-        break;
-    default:
-        UNREACHABLE();
-    }
-}
-
 void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
     // This instruction normally operates on 64-bit data (EXEC, VCC, SGPRs)
     // However here we flatten it to 1-bit EXEC and 1-bit VCC. For the destination
@@ -138,7 +104,7 @@ void Translator::S_MOV_B64(const GcnInst& inst) {
     }
 }
 
-void Translator::S_OR_B64(bool negate, const GcnInst& inst) {
+void Translator::S_OR_B64(NegateMode negate, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
         case OperandField::VccLo:
@@ -151,9 +117,12 @@ void Translator::S_OR_B64(bool negate, const GcnInst& inst) {
     };
 
     const IR::U1 src0{get_src(inst.src[0])};
-    const IR::U1 src1{get_src(inst.src[1])};
+    IR::U1 src1{get_src(inst.src[1])};
+    if (negate == NegateMode::Src1) {
+        src1 = ir.LogicalNot(src1);
+    }
     IR::U1 result = ir.LogicalOr(src0, src1);
-    if (negate) {
+    if (negate == NegateMode::Result) {
         result = ir.LogicalNot(result);
     }
     ir.SetScc(result);
@@ -169,7 +138,7 @@ void Translator::S_OR_B64(bool negate, const GcnInst& inst) {
     }
 }
 
-void Translator::S_AND_B64(bool negate, const GcnInst& inst) {
+void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
         case OperandField::VccLo:
@@ -183,9 +152,12 @@ void Translator::S_AND_B64(bool negate, const GcnInst& inst) {
         }
     };
     const IR::U1 src0{get_src(inst.src[0])};
-    const IR::U1 src1{get_src(inst.src[1])};
+    IR::U1 src1{get_src(inst.src[1])};
+    if (negate == NegateMode::Src1) {
+        src1 = ir.LogicalNot(src1);
+    }
     IR::U1 result = ir.LogicalAnd(src0, src1);
-    if (negate) {
+    if (negate == NegateMode::Result) {
         result = ir.LogicalNot(result);
     }
     ir.SetScc(result);
@@ -195,6 +167,9 @@ void Translator::S_AND_B64(bool negate, const GcnInst& inst) {
         break;
     case OperandField::ScalarGPR:
         ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(result);
         break;
     default:
         UNREACHABLE();
@@ -323,6 +298,22 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
 
 void Translator::S_BREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
+}
+
+void Translator::S_ADD_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.IAdd(src0, src1));
+    // TODO: Carry out
+    ir.SetScc(ir.Imm1(false));
+}
+
+void Translator::S_SUB_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.ISub(src0, src1));
+    // TODO: Carry out
+    ir.SetScc(ir.Imm1(false));
 }
 
 } // namespace Shader::Gcn

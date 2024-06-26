@@ -11,7 +11,6 @@
 #include "core/memory.h"
 #include "core/module.h"
 #include "core/tls.h"
-#include "core/virtual_memory.h"
 
 namespace Core {
 

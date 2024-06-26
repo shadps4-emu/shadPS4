@@ -105,7 +105,11 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::ConstFloatPos_1_0:
-        value = ir.Imm32(1.f);
+        if (force_flt) {
+            value = ir.Imm32(1.f);
+        } else {
+            value = ir.Imm32(std::bit_cast<u32>(1.f));
+        }
         break;
     case OperandField::ConstFloatPos_0_5:
         value = ir.Imm32(0.5f);
@@ -274,6 +278,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_LOAD_DWORDX8:
             translator.S_LOAD_DWORD(8, inst);
             break;
+        case Opcode::S_LOAD_DWORDX16:
+            translator.S_LOAD_DWORD(16, inst);
+            break;
         case Opcode::S_BUFFER_LOAD_DWORD:
             translator.S_BUFFER_LOAD_DWORD(1, inst);
             break;
@@ -324,6 +331,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
+        case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::IMAGE_STORE:
@@ -437,8 +445,17 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::BUFFER_LOAD_FORMAT_X:
             translator.BUFFER_LOAD_FORMAT(1, false, inst);
             break;
+        case Opcode::BUFFER_LOAD_FORMAT_XYZ:
+            translator.BUFFER_LOAD_FORMAT(3, false, inst);
+            break;
+        case Opcode::BUFFER_LOAD_FORMAT_XYZW:
+            translator.BUFFER_LOAD_FORMAT(4, false, inst);
+            break;
         case Opcode::BUFFER_STORE_FORMAT_X:
             translator.BUFFER_STORE_FORMAT(1, false, inst);
+            break;
+        case Opcode::BUFFER_STORE_FORMAT_XYZW:
+            translator.BUFFER_STORE_FORMAT(4, false, inst);
             break;
         case Opcode::V_MAX_F32:
             translator.V_MAX_F32(inst);
@@ -453,7 +470,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_RSQ_F32(inst);
             break;
         case Opcode::S_ANDN2_B64:
-            translator.S_ANDN2_B64(inst);
+            translator.S_AND_B64(NegateMode::Src1, inst);
+            break;
+        case Opcode::S_ORN2_B64:
+            translator.S_OR_B64(NegateMode::Src1, inst);
             break;
         case Opcode::V_SIN_F32:
             translator.V_SIN_F32(inst);
@@ -592,19 +612,19 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_CMP_U32(ConditionOp::TRU, false, true, inst);
             break;
         case Opcode::S_OR_B64:
-            translator.S_OR_B64(false, inst);
+            translator.S_OR_B64(NegateMode::None, inst);
             break;
         case Opcode::S_NOR_B64:
-            translator.S_OR_B64(true, inst);
+            translator.S_OR_B64(NegateMode::Result, inst);
             break;
         case Opcode::S_AND_B64:
-            translator.S_AND_B64(false, inst);
+            translator.S_AND_B64(NegateMode::None, inst);
             break;
         case Opcode::S_NOT_B64:
             translator.S_NOT_B64(inst);
             break;
         case Opcode::S_NAND_B64:
-            translator.S_AND_B64(true, inst);
+            translator.S_AND_B64(NegateMode::Result, inst);
             break;
         case Opcode::V_LSHRREV_B32:
             translator.V_LSHRREV_B32(inst);
@@ -695,6 +715,29 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::S_BREV_B32:
             translator.S_BREV_B32(inst);
+            break;
+        case Opcode::S_ADD_U32:
+            translator.S_ADD_U32(inst);
+            break;
+        case Opcode::S_SUB_U32:
+            translator.S_SUB_U32(inst);
+            break;
+        // TODO: Separate implementation for legacy variants.
+        case Opcode::V_MUL_LEGACY_F32:
+            translator.V_MUL_F32(inst);
+            break;
+        case Opcode::V_MAC_LEGACY_F32:
+            translator.V_MAC_F32(inst);
+            break;
+        case Opcode::V_MAD_LEGACY_F32:
+            translator.V_MAD_F32(inst);
+            break;
+        case Opcode::V_RSQ_LEGACY_F32:
+        case Opcode::V_RSQ_CLAMP_F32:
+            translator.V_RSQ_F32(inst);
+            break;
+        case Opcode::V_RCP_IFLAG_F32:
+            translator.V_RCP_F32(inst);
             break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");

@@ -485,7 +485,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
 }
 
 void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
-    ASSERT_MSG(vqid > 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
+    ASSERT_MSG(vqid >= 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
     auto& queue = mapped_queues[vqid];
 
     const auto& task = ProcessCompute(acb);
