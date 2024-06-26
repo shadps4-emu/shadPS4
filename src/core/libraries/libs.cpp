@@ -63,10 +63,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
-    Libraries::LibcInternal::RegisterlibSceLibcInternal(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
-    Libraries::Rtc::RegisterlibSceRtc(sym);
-    Libraries::DiscMap::RegisterlibSceDiscMap(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
     Libraries::PlayGo::RegisterlibScePlayGo(sym);
     Libraries::Usbd::RegisterlibSceUsbd(sym);

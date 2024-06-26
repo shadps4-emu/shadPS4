@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
+#include <common/assert.h>
 #include <magic_enum.hpp>
 #include "audio_core/sdl_audio.h"
 #include "common/logging/log.h"
@@ -160,8 +161,38 @@ int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioOutGetPortState() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
+
+    int type = 0;
+    int channels_num = 0;
+
+    if (!audio->AudioOutGetStatus(handle, &type, &channels_num)) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+
+    state->rerouteCounter = 0;
+    state->volume = 127; // max volume
+
+    switch (type) {
+    case ORBIS_AUDIO_OUT_PORT_TYPE_MAIN:
+    case ORBIS_AUDIO_OUT_PORT_TYPE_BGM:
+    case ORBIS_AUDIO_OUT_PORT_TYPE_VOICE:
+        state->output = 1;
+        state->channel = (channels_num > 2 ? 2 : channels_num);
+        break;
+    case ORBIS_AUDIO_OUT_PORT_TYPE_PERSONAL:
+    case ORBIS_AUDIO_OUT_PORT_TYPE_PADSPK:
+        state->output = 4;
+        state->channel = 1;
+        break;
+    case ORBIS_AUDIO_OUT_PORT_TYPE_AUX:
+        state->output = 0;
+        state->channel = 0;
+        break;
+    default:
+        UNREACHABLE();
+    }
+
     return ORBIS_OK;
 }
 
