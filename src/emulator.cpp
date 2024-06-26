@@ -4,7 +4,10 @@
 #include <common/logging/log.h>
 #include <core/file_format/psf.h>
 #include <core/file_format/splash.h>
+#include <core/libraries/disc_map/disc_map.h>
 #include <core/libraries/libc/libc.h>
+#include <core/libraries/libc_internal/libc_internal.h>
+#include <core/libraries/rtc/rtc.h>
 #include <core/libraries/videoout/video_out.h>
 #include <fmt/core.h>
 #include "common/config.h"
@@ -136,12 +139,38 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
+
+    constexpr std::array<SysModules, 4> ModulesToLoad{
+        {{"libSceNgs2.sprx", nullptr},
+         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
+         {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc}}};
+
+    std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
-        if (entry.path().filename() == "libSceNgs2.sprx" ||
-            entry.path().filename() == "libSceLibcInternal.sprx") {
-            LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
-            linker->LoadModule(entry.path());
+        found_modules.push_back(entry.path());
+    }
+    for (auto it : ModulesToLoad) {
+        bool found = false;
+        std::filesystem::path foundpath;
+        for (auto f : found_modules) {
+            if (f.filename().string() == it.module_name) {
+                found = true;
+                foundpath = f;
+                break;
+            }
+        }
+        if (found) {
+            LOG_INFO(Loader, "Loading {}", foundpath.string().c_str());
+            linker->LoadModule(foundpath);
+        } else {
+            if (it.callback != nullptr) {
+                LOG_INFO(Loader, "Can't Load {} switching to HLE", it.module_name);
+                it.callback(&linker->GetHLESymbols());
+            } else {
+                LOG_INFO(Loader, "No HLE available for {} module", it.module_name);
+            }
         }
     }
 }
