@@ -44,8 +44,6 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
         color_attachments{};
-    vk::RenderingAttachmentInfo depth_attachment{};
-    u32 num_depth_attachments{};
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
@@ -55,13 +53,20 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
 
+        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
         color_attachments.push_back({
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue =
+                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
         });
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
+
+    vk::RenderingAttachmentInfo depth_attachment{};
+    u32 num_depth_attachments{};
     if (pipeline->IsDepthEnabled() && regs.depth_buffer.Address() != 0) {
         const bool is_clear = regs.depth_render_control.depth_clear_enable;
         const auto& image_view =

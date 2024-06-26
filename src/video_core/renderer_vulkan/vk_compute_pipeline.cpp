@@ -109,6 +109,15 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
                                                 : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
+
+        if (buffer.is_storage) {
+            // In most of the cases we can skip the whole dispatch when meta is written
+            texture_cache.TouchMeta(addr, true);
+        } else {
+            if (texture_cache.IsMeta(addr)) {
+                LOG_WARNING(Render_Vulkan, "Unexpected meta data read by a CS shader");
+            }
+        }
     }
 
     for (const auto& image : info.images) {
