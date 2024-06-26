@@ -196,6 +196,9 @@ void Translator::S_AND_B64(bool negate, const GcnInst& inst) {
     case OperandField::ScalarGPR:
         ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
         break;
+    case OperandField::ExecLo:
+        ir.SetExec(result);
+        break;
     default:
         UNREACHABLE();
     }
@@ -323,6 +326,22 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
 
 void Translator::S_BREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(GetSrc(inst.src[0])));
+}
+
+void Translator::S_ADD_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.IAdd(src0, src1));
+    // TODO: Carry out
+    ir.SetScc(ir.Imm1(false));
+}
+
+void Translator::S_SUB_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.ISub(src0, src1));
+    // TODO: Carry out
+    ir.SetScc(ir.Imm1(false));
 }
 
 } // namespace Shader::Gcn
