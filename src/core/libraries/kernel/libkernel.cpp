@@ -88,7 +88,7 @@ int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd,
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
     void* ptr;
-    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap\n");
+    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap");
     // posix call the difference is that there is a different behaviour when it doesn't return 0 or
     // SCE_OK
     const VAddr ret_addr = (VAddr)__builtin_return_address(0);
@@ -288,9 +288,21 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
     return 0;
 }
 
+char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
+    char* path = "sys";
+    return path;
+}
+
+int PS4_SYSV_ABI posix_connect() {
+    return -1;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
+    // misc
+    LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
+    LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     // memory
     LIB_FUNCTION("OMDRKKAZ8I4", "libkernel", 1, "libkernel", 1, 1, sceKernelDebugRaiseException);
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
