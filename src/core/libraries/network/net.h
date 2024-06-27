@@ -9,7 +9,17 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+// Define our own htonll and ntohll because its not available in some systems/platforms
+#define HTONLL(x) (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
+#define NTOHLL(x) (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
+
 namespace Libraries::Net {
+
+struct OrbisNetSockaddr {
+    u8 sa_len;
+    u8 sa_family;
+    char sa_data[14];
+};
 
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
@@ -31,7 +41,7 @@ int PS4_SYSV_ABI sceNetBandwidthControlGetPolicy();
 int PS4_SYSV_ABI sceNetBandwidthControlSetDefaultParam();
 int PS4_SYSV_ABI sceNetBandwidthControlSetIfParam();
 int PS4_SYSV_ABI sceNetBandwidthControlSetPolicy();
-int PS4_SYSV_ABI sceNetBind();
+int PS4_SYSV_ABI sceNetBind(int sid, const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetClearDnsCache();
 int PS4_SYSV_ABI sceNetConfigAddArp();
 int PS4_SYSV_ABI sceNetConfigAddArpWithInterface();
@@ -148,10 +158,10 @@ int PS4_SYSV_ABI sceNetGetsockopt();
 int PS4_SYSV_ABI sceNetGetStatisticsInfo();
 int PS4_SYSV_ABI sceNetGetStatisticsInfoInternal();
 int PS4_SYSV_ABI sceNetGetSystemTime();
-int PS4_SYSV_ABI sceNetHtonl();
-int PS4_SYSV_ABI sceNetHtonll();
-int PS4_SYSV_ABI sceNetHtons();
-int PS4_SYSV_ABI sceNetInetNtop();
+u32 PS4_SYSV_ABI sceNetHtonl(u32 host32);
+u64 PS4_SYSV_ABI sceNetHtonll(u64 host64);
+u16 PS4_SYSV_ABI sceNetHtons(u16 host16);
+const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size);
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId();
 int PS4_SYSV_ABI sceNetInetPton();
 int PS4_SYSV_ABI sceNetInetPtonEx();
@@ -213,7 +223,7 @@ int PS4_SYSV_ABI sceNetShowRoute6WithMemory();
 int PS4_SYSV_ABI sceNetShowRouteForBuffer();
 int PS4_SYSV_ABI sceNetShowRouteWithMemory();
 int PS4_SYSV_ABI sceNetShutdown();
-int PS4_SYSV_ABI sceNetSocket();
+int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol);
 int PS4_SYSV_ABI sceNetSocketAbort();
 int PS4_SYSV_ABI sceNetSocketClose();
 int PS4_SYSV_ABI sceNetSyncCreate();

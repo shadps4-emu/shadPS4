@@ -1,6 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <Ws2tcpip.h>
+#include <iphlpapi.h>
+#include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
+
+#include <common/assert.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -108,7 +118,7 @@ int PS4_SYSV_ABI sceNetBandwidthControlSetPolicy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetBind() {
+int PS4_SYSV_ABI sceNetBind(int sid, const OrbisNetSockaddr* addr, u32 addrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -693,24 +703,28 @@ int PS4_SYSV_ABI sceNetGetSystemTime() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetHtonl() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceNetHtonl(u32 host32) {
+    return htonl(host32);
 }
 
-int PS4_SYSV_ABI sceNetHtonll() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+u64 PS4_SYSV_ABI sceNetHtonll(u64 host64) {
+    return HTONLL(host64);
 }
 
-int PS4_SYSV_ABI sceNetHtons() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+u16 PS4_SYSV_ABI sceNetHtons(u16 host16) {
+    return htons(host16);
 }
 
-int PS4_SYSV_ABI sceNetInetNtop() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size) {
+#ifdef WIN32
+    const char* res = InetNtopA(af, src, dst, size);
+#else
+    const char* res = inet_ntop(af, src, dst, size);
+#endif
+    if (res == nullptr) {
+        UNREACHABLE();
+    }
+    return dst;
 }
 
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
@@ -1018,7 +1032,7 @@ int PS4_SYSV_ABI sceNetShutdown() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetSocket() {
+int PS4_SYSV_ABI sceNetSocket(const char* name, int family, int type, int protocol) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
