@@ -40,6 +40,10 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto& regs = liverpool->regs;
     const u32 num_indices = SetupIndexBuffer(is_indexed, index_offset);
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
+    if (!pipeline) {
+        return;
+    }
+
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
@@ -117,6 +121,10 @@ void Rasterizer::DispatchDirect() {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& cs_program = liverpool->regs.cs_program;
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
+    if (!pipeline) {
+        return;
+    }
+
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());

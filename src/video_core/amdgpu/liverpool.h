@@ -606,6 +606,20 @@ struct Liverpool {
         BitField<30, 1, u32> enable;
     };
 
+    union ColorControl {
+        enum class OperationMode : u32 {
+            Disable = 0u,
+            Normal = 1u,
+            EliminateFastClear = 2u,
+            Resolve = 3u,
+            FmaskDecompress = 5u,
+        };
+
+        BitField<3, 1, u32> degamma_enable;
+        BitField<4, 3, OperationMode> mode;
+        BitField<16, 8, u32> rop3;
+    };
+
     struct ColorBuffer {
         enum class EndianSwap : u32 {
             None = 0,
@@ -825,7 +839,8 @@ struct Liverpool {
             u32 draw_initiator;
             INSERT_PADDING_WORDS(0xA200 - 0xA1F9 - 4);
             DepthControl depth_control;
-            INSERT_PADDING_WORDS(2);
+            INSERT_PADDING_WORDS(1);
+            ColorControl color_control;
             DepthBufferControl depth_buffer_control;
             ClipperControl clipper_control;
             PolygonControl polygon_control;
@@ -995,6 +1010,7 @@ static_assert(GFX6_3D_REG_INDEX(blend_control) == 0xA1E0);
 static_assert(GFX6_3D_REG_INDEX(index_base_address) == 0xA1F9);
 static_assert(GFX6_3D_REG_INDEX(draw_initiator) == 0xA1FC);
 static_assert(GFX6_3D_REG_INDEX(depth_control) == 0xA200);
+static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
