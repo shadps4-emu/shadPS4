@@ -74,6 +74,7 @@ enum class Class : u8 {
     Lib_Png,            ///< The LibScePng implementation.
     Lib_PlayGo,         ///< The LibScePlayGo implementation.
     Lib_Usbd,           ///< The LibSceUsbd implementation.
+    Lib_Ajm,            ///< The LibSceAjm implementation.
     Frontend,           ///< Emulator UI
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend

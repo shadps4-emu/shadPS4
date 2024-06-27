@@ -78,7 +78,7 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             fmt.channels = port.channels_num;
             fmt.freq = 48000;
             port.stream =
-                SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_OUTPUT, &fmt, NULL, NULL);
+                SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, NULL, NULL);
             SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
             return id + 1;
         }

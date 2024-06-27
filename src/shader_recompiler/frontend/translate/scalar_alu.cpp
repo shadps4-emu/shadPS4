@@ -107,6 +107,8 @@ void Translator::S_MOV_B64(const GcnInst& inst) {
 void Translator::S_OR_B64(NegateMode negate, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
+        case OperandField::ExecLo:
+            return ir.GetExec();
         case OperandField::VccLo:
             return ir.GetVcc();
         case OperandField::ScalarGPR:

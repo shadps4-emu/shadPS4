@@ -32,6 +32,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videoout/video_out.h"
+#include "src/core/libraries/ajm/ajm.h"
 #include "src/core/libraries/libpng/pngdec.h"
 
 namespace Libraries {
@@ -68,6 +69,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::PlayGo::RegisterlibScePlayGo(sym);
     Libraries::Usbd::RegisterlibSceUsbd(sym);
     Libraries::Pad::RegisterlibScePad(sym);
+    Libraries::Ajm::RegisterlibSceAjm(sym);
 }
 
 } // namespace Libraries
