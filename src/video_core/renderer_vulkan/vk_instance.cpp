@@ -205,6 +205,7 @@ bool Instance::CreateDevice() {
                 .logicOp = features.logicOp,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
+                .shaderStorageImageMultisample = true,
                 .shaderClipDistance = features.shaderClipDistance,
             },
         },

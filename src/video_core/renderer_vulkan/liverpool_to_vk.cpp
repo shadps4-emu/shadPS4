@@ -482,4 +482,17 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     return {.color = color};
 }
 
+vk::SampleCountFlagBits NumSamples(u32 num_samples) {
+    switch (num_samples) {
+    case 1:
+        return vk::SampleCountFlagBits::e1;
+    case 2:
+        return vk::SampleCountFlagBits::e2;
+    case 4:
+        return vk::SampleCountFlagBits::e4;
+    default:
+        UNREACHABLE();
+    }
+}
+
 } // namespace Vulkan::LiverpoolToVK

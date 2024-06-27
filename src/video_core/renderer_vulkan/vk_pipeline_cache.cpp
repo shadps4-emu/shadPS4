@@ -114,6 +114,7 @@ void PipelineCache::RefreshGraphicsKey() {
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
     key.front_face = regs.polygon_control.front_face;
+    key.num_samples = regs.aa_config.NumSamples();
 
     const auto& db = regs.depth_buffer;
     if (key.depth.depth_enable) {

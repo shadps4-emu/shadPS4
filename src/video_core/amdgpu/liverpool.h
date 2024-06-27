@@ -791,6 +791,18 @@ struct Liverpool {
         BitField<1, 1, u32> stencil_clear_enable;
     };
 
+    union AaConfig {
+        BitField<0, 3, u32> msaa_num_samples;
+        BitField<4, 1, u32> aa_mask_centroid_dtmn;
+        BitField<13, 4, u32> max_sample_dst;
+        BitField<20, 3, u32> msaa_exposed_samples;
+        BitField<24, 2, u32> detail_to_exposed_mode;
+
+        u32 NumSamples() const {
+            return 1 << msaa_num_samples;
+        }
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -858,7 +870,9 @@ struct Liverpool {
             u32 enable_primitive_id;
             INSERT_PADDING_WORDS(0xA2DF - 0xA2A1 - 1);
             PolygonOffset poly_offset;
-            INSERT_PADDING_WORDS(0xA318 - 0xA2DF - 5);
+            INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
+            AaConfig aa_config;
+            INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
             INSERT_PADDING_WORDS(0xC242 - 0xA390);
             PrimitiveType primitive_type;
@@ -1022,6 +1036,7 @@ static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
+static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);
