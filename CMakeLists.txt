@@ -111,6 +111,8 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
+              src/core/libraries/ajm/ajm.cpp
+              src/core/libraries/ajm/ajm.h
 )
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
