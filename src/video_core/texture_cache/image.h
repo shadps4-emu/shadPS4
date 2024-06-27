@@ -39,7 +39,7 @@ struct ImageInfo {
     explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
     explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
+    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
@@ -51,10 +51,10 @@ struct ImageInfo {
     bool IsDepthStencil() const;
 
     struct {
-        VAddr cmask_addr{};
-        VAddr fmask_addr{};
-        VAddr htile_addr{};
-    } meta_info;
+        VAddr cmask_addr;
+        VAddr fmask_addr;
+        VAddr htile_addr;
+    } meta_info{};
 
     struct {
         u32 texture : 1;
@@ -62,7 +62,7 @@ struct ImageInfo {
         u32 render_target : 1;
         u32 depth_target : 1;
         u32 vo_buffer : 1;
-    } usage; // Usage data tracked during image lifetime
+    } usage{}; // Usage data tracked during image lifetime
 
     bool is_tiled = false;
     vk::Format pixel_format = vk::Format::eUndefined;

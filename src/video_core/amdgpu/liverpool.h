@@ -324,6 +324,10 @@ struct Liverpool {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
+            BitField<27, 1, u32> allow_expclear;
+            BitField<28, 1, u32> read_size;
+            BitField<29, 1, u32> tile_surface_en;
+            BitField<31, 1, u32> zrange_precision;
         } z_info;
         union {
             BitField<0, 1, StencilFormat> format;

@@ -72,9 +72,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     vk::RenderingAttachmentInfo depth_attachment{};
     u32 num_depth_attachments{};
     if (pipeline->IsDepthEnabled() && regs.depth_buffer.Address() != 0) {
-        const bool is_clear = regs.depth_render_control.depth_clear_enable;
+        const auto htile_address = regs.depth_htile_data_base.GetAddress();
+        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
+                              texture_cache.IsMetaCleared(htile_address);
         const auto& image_view =
-            texture_cache.DepthTarget(regs.depth_buffer, liverpool->last_db_extent);
+            texture_cache.DepthTarget(regs.depth_buffer, htile_address, liverpool->last_db_extent);
         depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
@@ -83,6 +85,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
                                                           .stencil = regs.stencil_clear}},
         };
+        texture_cache.TouchMeta(htile_address, false);
         num_depth_attachments++;
     }
 

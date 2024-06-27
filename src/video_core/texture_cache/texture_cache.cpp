@@ -195,8 +195,9 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
 }
 
 ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                     VAddr htile_address,
                                      const AmdGpu::Liverpool::CbDbExtent& hint) {
-    const ImageInfo info{buffer, hint};
+    const ImageInfo info{buffer, htile_address, hint};
     auto& image = FindImage(info, buffer.Address(), false);
     image.flags &= ~ImageFlagBits::CpuModified;
 

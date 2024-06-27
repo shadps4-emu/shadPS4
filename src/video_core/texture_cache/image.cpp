@@ -154,7 +154,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     usage.render_target = true;
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
                      const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
     is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
@@ -165,6 +165,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
     usage.depth_target = true;
 }
 

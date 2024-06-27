@@ -58,6 +58,7 @@ public:
     [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                           const AmdGpu::Liverpool::CbDbExtent& hint);
     [[nodiscard]] ImageView& DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                         VAddr htile_address,
                                          const AmdGpu::Liverpool::CbDbExtent& hint);
 
     /// Reuploads image contents.
