@@ -181,6 +181,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             break;
         }
+        case PM4ItOpcode::ContextControl: {
+            break;
+        }
+        case PM4ItOpcode::ClearState: {
+            break;
+        }
         case PM4ItOpcode::SetContextReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
             const auto reg_addr = ContextRegWordOffset + set_data->reg_offset;

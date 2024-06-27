@@ -38,10 +38,181 @@ enum ShaderStages : u32 {
 
 static constexpr std::array indirect_sgpr_offsets{0u, 0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
 
-// In case of precise gnm driver emulation we need to send a bunch of HW-specific
-// initialization commands. It may slowdown development at early stage as their
-// support is not important and can be ignored for a while.
-static constexpr bool g_fair_hw_init = false;
+static constexpr auto HwInitPacketSize = 0x100u;
+
+// clang-format off
+static constexpr std::array InitSequence{
+    0xc0017600u, 0x216u, 0xffffffffu,
+    0xc0017600u, 0x217u, 0xffffffffu,
+    0xc0017600u, 0x215u, 0u,
+    0xc0016900u, 0x2f9u, 0x2du,
+    0xc0016900u, 0x282u, 8u,
+    0xc0016900u, 0x280u, 0x80008u,
+    0xc0016900u, 0x281u, 0xffff0000u,
+    0xc0016900u, 0x204u, 0u,
+    0xc0016900u, 0x206u, 0x43fu,
+    0xc0016900u, 0x83u,  0xffffu,
+    0xc0016900u, 0x317u, 0x10u,
+    0xc0016900u, 0x2fau, 0x3f800000u,
+    0xc0016900u, 0x2fcu, 0x3f800000u,
+    0xc0016900u, 0x2fbu, 0x3f800000u,
+    0xc0016900u, 0x2fdu, 0x3f800000u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0016900u, 0x30eu, 0xffffffffu,
+    0xc0016900u, 0x30fu, 0xffffffffu,
+    0xc0002f00u, 1u,
+    0xc0017600u, 7u,     0x1ffu,
+    0xc0017600u, 0x46u,  0x1ffu,
+    0xc0017600u, 0x87u,  0x1ffu,
+    0xc0017600u, 0xc7u,  0x1ffu,
+    0xc0017600u, 0x107u, 0u,
+    0xc0017600u, 0x147u, 0x1ffu,
+    0xc0016900u, 0x1b1u, 2u,
+    0xc0016900u, 0x101u, 0u,
+    0xc0016900u, 0x100u, 0xffffffffu,
+    0xc0016900u, 0x103u, 0u,
+    0xc0016900u, 0x284u, 0u,
+    0xc0016900u, 0x290u, 0u,
+    0xc0016900u, 0x2aeu, 0u,
+    0xc0016900u, 0x292u, 0u,
+    0xc0016900u, 0x293u, 0x6000000u,
+    0xc0016900u, 0x2f8u, 0u,
+    0xc0016900u, 0x2deu, 0x1e9u,
+    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
+    0xc0017900u, 0x200u, 0xe0000000u,
+};
+static_assert(InitSequence.size() == 0x73);
+
+static constexpr std::array InitSequence175{
+    0xc0017600u, 0x216u, 0xffffffffu,
+    0xc0017600u, 0x217u, 0xffffffffu,
+    0xc0017600u, 0x215u, 0u,
+    0xc0016900u, 0x2f9u, 0x2du,
+    0xc0016900u, 0x282u, 8u,
+    0xc0016900u, 0x280u, 0x80008u,
+    0xc0016900u, 0x281u, 0xffff0000u,
+    0xc0016900u, 0x204u, 0u,
+    0xc0016900u, 0x206u, 0x43fu,
+    0xc0016900u, 0x83u,  0xffffu,
+    0xc0016900u, 0x317u, 0x10u,
+    0xc0016900u, 0x2fau, 0x3f800000u,
+    0xc0016900u, 0x2fcu, 0x3f800000u,
+    0xc0016900u, 0x2fbu, 0x3f800000u,
+    0xc0016900u, 0x2fdu, 0x3f800000u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0016900u, 0x30eu, 0xffffffffu,
+    0xc0016900u, 0x30fu, 0xffffffffu,
+    0xc0002f00u, 1u,
+    0xc0017600u, 7u,     0x1ffu,
+    0xc0017600u, 0x46u,  0x1ffu,
+    0xc0017600u, 0x87u,  0x1ffu,
+    0xc0017600u, 0xc7u,  0x1ffu,
+    0xc0017600u, 0x107u, 0u,
+    0xc0017600u, 0x147u, 0x1ffu,
+    0xc0016900u, 0x1b1u, 2u,
+    0xc0016900u, 0x101u, 0u,
+    0xc0016900u, 0x100u, 0xffffffffu,
+    0xc0016900u, 0x103u, 0u,
+    0xc0016900u, 0x284u, 0u,
+    0xc0016900u, 0x290u, 0u,
+    0xc0016900u, 0x2aeu, 0u,
+    0xc0016900u, 0x292u, 0u,
+    0xc0016900u, 0x293u, 0x6020000u,
+    0xc0016900u, 0x2f8u, 0u,
+    0xc0016900u, 0x2deu, 0x1e9u,
+    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
+    0xc0017900u, 0x200u, 0xe0000000u,
+};
+static_assert(InitSequence175.size() == 0x73);
+
+static constexpr std::array InitSequence200{
+    0xc0017600u, 0x216u, 0xffffffffu,
+    0xc0017600u, 0x217u, 0xffffffffu,
+    0xc0017600u, 0x215u, 0u,
+    0xc0016900u, 0x2f9u, 0x2du,
+    0xc0016900u, 0x282u, 8u,
+    0xc0016900u, 0x280u, 0x80008u,
+    0xc0016900u, 0x281u, 0xffff0000u,
+    0xc0016900u, 0x204u, 0u,
+    0xc0016900u, 0x206u, 0x43fu,
+    0xc0016900u, 0x83u,  0xffffu,
+    0xc0016900u, 0x317u, 0x10u,
+    0xc0016900u, 0x2fau, 0x3f800000u,
+    0xc0016900u, 0x2fcu, 0x3f800000u,
+    0xc0016900u, 0x2fbu, 0x3f800000u,
+    0xc0016900u, 0x2fdu, 0x3f800000u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0016900u, 0x30eu, 0xffffffffu,
+    0xc0016900u, 0x30fu, 0xffffffffu,
+    0xc0002f00u, 1u,
+    0xc0017600u, 7u,     0x1701ffu,
+    0xc0017600u, 0x46u,  0x1701fdu,
+    0xc0017600u, 0x87u,  0x1701ffu,
+    0xc0017600u, 0xc7u,  0x1701fdu,
+    0xc0017600u, 0x107u, 0x17u,
+    0xc0017600u, 0x147u, 0x1701fdu,
+    0xc0017600u, 0x47u,  0x1cu,
+    0xc0016900u, 0x1b1u, 2u,
+    0xc0016900u, 0x101u, 0u,
+    0xc0016900u, 0x100u, 0xffffffffu,
+    0xc0016900u, 0x103u, 0u,
+    0xc0016900u, 0x284u, 0u,
+    0xc0016900u, 0x290u, 0u,
+    0xc0016900u, 0x2aeu, 0u,
+    0xc0016900u, 0x292u, 0u,
+    0xc0016900u, 0x293u, 0x6020000u,
+    0xc0016900u, 0x2f8u, 0u,
+    0xc0016900u, 0x2deu, 0x1e9u,
+    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
+    0xc0017900u, 0x200u, 0xe0000000u,
+};
+static_assert(InitSequence200.size() == 0x76);
+
+static constexpr std::array InitSequence350{
+    0xc0017600u, 0x216u, 0xffffffffu,
+    0xc0017600u, 0x217u, 0xffffffffu,
+    0xc0017600u, 0x215u, 0u,
+    0xc0016900u, 0x2f9u, 0x2du,
+    0xc0016900u, 0x282u, 8u,
+    0xc0016900u, 0x280u, 0x80008u,
+    0xc0016900u, 0x281u, 0xffff0000u,
+    0xc0016900u, 0x204u, 0u,
+    0xc0016900u, 0x206u, 0x43fu,
+    0xc0016900u, 0x83u,  0xffffu,
+    0xc0016900u, 0x317u, 0x10u,
+    0xc0016900u, 0x2fau, 0x3f800000u,
+    0xc0016900u, 0x2fcu, 0x3f800000u,
+    0xc0016900u, 0x2fbu, 0x3f800000u,
+    0xc0016900u, 0x2fdu, 0x3f800000u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0016900u, 0x30eu, 0xffffffffu,
+    0xc0016900u, 0x30fu, 0xffffffffu,
+    0xc0002f00u, 1u,
+    0xc0017600u, 7u,    0x1701ffu,
+    0xc0017600u, 0x46u,  0x1701fdu,
+    0xc0017600u, 0x87u,  0x1701ffu,
+    0xc0017600u, 0xc7u,  0x1701fdu,
+    0xc0017600u, 0x107u, 0x17u,
+    0xc0017600u, 0x147u, 0x1701fdu,
+    0xc0017600u, 0x47u,  0x1cu,
+    0xc0016900u, 0x1b1u, 2u,
+    0xc0016900u, 0x101u, 0u,
+    0xc0016900u, 0x100u, 0xffffffffu,
+    0xc0016900u, 0x103u, 0u,
+    0xc0016900u, 0x284u, 0u,
+    0xc0016900u, 0x290u, 0u,
+    0xc0016900u, 0x2aeu, 0u,
+    0xc0016900u, 0x102u, 0u,
+    0xc0016900u, 0x292u, 0u,
+    0xc0016900u, 0x293u, 0x6020000u,
+    0xc0016900u, 0x2f8u, 0u,
+    0xc0016900u, 0x2deu, 0x1e9u,
+    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
+    0xc0017900u, 0x200u, 0xe0000000u,
+    0xc0016900u, 0x2aau, 0xffu,
+};
+static_assert(InitSequence350.size() == 0x7c);
+// clang-format on
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
@@ -77,6 +248,17 @@ static inline u32* WriteTrailingNop(u32* cmdbuf) {
     nop->header = PM4Type3Header{PM4ItOpcode::Nop, data_block_size - 1};
     nop->data_block[0] = 0u; // only one out of `data_block_size` is initialized
     return cmdbuf + data_block_size + 1 /* header */;
+}
+
+static inline u32* ClearContextState(u32* cmdbuf) {
+    static constexpr std::array ClearStateSequence{
+        0xc0012800u, 0x80000000u, 0x80000000u, 0xc0001200u, 0u, 0xc0055800u,
+        0x2ec47fc0u, 0xffffffffu, 0u,          0u,          0u, 10u,
+    };
+    static_assert(ClearStateSequence.size() == 0xc);
+
+    std::memcpy(cmdbuf, ClearStateSequence.data(), ClearStateSequence.size() * 4);
+    return cmdbuf + ClearStateSequence.size();
 }
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
@@ -305,26 +487,22 @@ int PS4_SYSV_ABI sceGnmDispatchIndirectOnMec() {
 u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x216u,
-                                             0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x217u,
-                                             0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE1
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
-
-            cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(
-                cmdbuf, 6); // for some reason the packet indicates larger size
-            cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u);
-
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
-            cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
-        } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x216u,
+                                     0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x217u,
+                                     0xffffffffu);            // COMPUTE_STATIC_THREAD_MGMT_SE1
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
+
+    cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(cmdbuf, 6);
+    cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u, 0u);
+
+    cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
+    cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
+    return HwInitPacketSize;
 }
 
 s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr_t index_addr,
@@ -451,51 +629,98 @@ int PS4_SYSV_ABI sceGnmDrawIndirectMulti() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (size < HwInitPacketSize) {
+        return 0;
+    }
+
+    const auto& SetupContext = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        std::memcpy(cmdbuf, InitSequence.data(), InitSequence.size() * 4);
+        cmdbuf += InitSequence.size();
+
+        const auto cmdbuf_left =
+            HwInitPacketSize - InitSequence.size() - (clear_state ? 0xc : 0) - 1;
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext(cmdbuf, size, true);
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    cmdbuf = ClearContextState(cmdbuf);
+    std::memcpy(cmdbuf, InitSequence175.data(), InitSequence175.size() * 4);
+
+    cmdbuf[0x7f] = 0xc07f1000;
+    cmdbuf[0x80] = 0;
+
+    return HwInitPacketSize;
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    const auto& SetupContext200 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        std::memcpy(cmdbuf, InitSequence200.data(), InitSequence200.size() * 4);
+        cmdbuf += InitSequence200.size();
+
+        const auto cmdbuf_left =
+            HwInitPacketSize - InitSequence200.size() - (clear_state ? 0xc : 0) - 1;
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext200(cmdbuf, size, true);
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    const auto& SetupContext350 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        std::memcpy(cmdbuf, InitSequence350.data(), InitSequence350.size() * 4);
+        cmdbuf += InitSequence350.size();
+
+        const auto cmdbuf_left =
+            HwInitPacketSize - InitSequence350.size() - (clear_state ? 0xc : 0) - 1;
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext350(cmdbuf, size, true);
 }
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState() {
