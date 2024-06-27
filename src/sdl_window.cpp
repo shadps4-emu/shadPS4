@@ -102,7 +102,7 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     Input::Axis axis = Input::Axis::AxisMax;
     int axisvalue = 0;
     int ax = 0;
-    switch (event->key.keysym.sym) {
+    switch (event->key.key) {
     case SDLK_UP:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
         break;
