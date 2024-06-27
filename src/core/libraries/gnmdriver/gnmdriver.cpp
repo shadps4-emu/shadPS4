@@ -38,10 +38,7 @@ enum ShaderStages : u32 {
 
 static constexpr std::array indirect_sgpr_offsets{0u, 0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
 
-// In case of precise gnm driver emulation we need to send a bunch of HW-specific
-// initialization commands. It may slowdown development at early stage as their
-// support is not important and can be ignored for a while.
-static constexpr bool g_fair_hw_init = false;
+static constexpr auto HwInitPacketSize = 0x100u;
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
@@ -77,6 +74,25 @@ static inline u32* WriteTrailingNop(u32* cmdbuf) {
     nop->header = PM4Type3Header{PM4ItOpcode::Nop, data_block_size - 1};
     nop->data_block[0] = 0u; // only one out of `data_block_size` is initialized
     return cmdbuf + data_block_size + 1 /* header */;
+}
+
+static inline u32* ClearContextState(u32* cmdbuf) {
+    cmdbuf[0x00] = 0xc0012800;
+    cmdbuf[0x01] = 0x80000000;
+    cmdbuf[0x02] = 0x80000000;
+
+    cmdbuf[0x03] = 0xc0001200;
+    cmdbuf[0x04] = 0;
+
+    cmdbuf[0x05] = 0xc0055800;
+    cmdbuf[0x06] = 0x2ec47fc0;
+    cmdbuf[0x07] = 0xffffffff;
+    cmdbuf[0x08] = 0;
+    cmdbuf[0x09] = 0;
+    cmdbuf[0x0a] = 0;
+    cmdbuf[0x0b] = 10;
+
+    return cmdbuf + 0xc;
 }
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
@@ -305,26 +321,22 @@ int PS4_SYSV_ABI sceGnmDispatchIndirectOnMec() {
 u32 PS4_SYSV_ABI sceGnmDispatchInitDefaultHardwareState(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x216u,
-                                             0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x217u,
-                                             0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE1
-            cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
-
-            cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(
-                cmdbuf, 6); // for some reason the packet indicates larger size
-            cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u);
-
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
-            cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
-        } else {
-            cmdbuf = cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x216u,
+                                     0xffffffffu); // COMPUTE_STATIC_THREAD_MGMT_SE0
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x217u,
+                                     0xffffffffu);            // COMPUTE_STATIC_THREAD_MGMT_SE1
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x215u, 0x170u); // COMPUTE_RESOURCE_LIMITS
+
+    cmdbuf = WriteHeader<PM4ItOpcode::AcquireMem>(cmdbuf, 6);
+    cmdbuf = WriteBody(cmdbuf, 0x28000000u, 0u, 0u, 0u, 0u, 0u);
+
+    cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xef);
+    cmdbuf = WriteBody(cmdbuf, 0xau, 0u);
+    return HwInitPacketSize;
 }
 
 s32 PS4_SYSV_ABI sceGnmDrawIndex(u32* cmdbuf, u32 size, u32 index_count, uintptr_t index_addr,
@@ -451,51 +463,713 @@ int PS4_SYSV_ABI sceGnmDrawIndirectMulti() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (size < HwInitPacketSize) {
+        return 0;
+    }
+
+    const auto& SetupContext = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        cmdbuf[0x00] = 0xc0017600;
+        cmdbuf[0x01] = 0x216;
+        cmdbuf[0x02] = 0xffffffff;
+
+        cmdbuf[0x03] = 0xc0017600;
+        cmdbuf[0x04] = 0x217;
+        cmdbuf[0x05] = 0xffffffff;
+
+        cmdbuf[0x06] = 0xc0017600;
+        cmdbuf[0x07] = 0x215;
+        cmdbuf[0x08] = 0;
+
+        cmdbuf[0x09] = 0xc0016900;
+        cmdbuf[0x0a] = 0x2f9;
+        cmdbuf[0x0b] = 0x2d;
+
+        cmdbuf[0x0c] = 0xc0016900;
+        cmdbuf[0x0d] = 0x282;
+        cmdbuf[0x0e] = 8;
+
+        cmdbuf[0x0f] = 0xc0016900;
+        cmdbuf[0x10] = 0x280;
+        cmdbuf[0x11] = 0x80008;
+
+        cmdbuf[0x12] = 0xc0016900;
+        cmdbuf[0x13] = 0x281;
+        cmdbuf[0x14] = 0xffff0000;
+
+        cmdbuf[0x15] = 0xc0016900;
+        cmdbuf[0x16] = 0x204;
+        cmdbuf[0x17] = 0;
+
+        cmdbuf[0x18] = 0xc0016900;
+        cmdbuf[0x19] = 0x206;
+        cmdbuf[0x1a] = 0x43f;
+
+        cmdbuf[0x1b] = 0xc0016900;
+        cmdbuf[0x1c] = 0x83;
+        cmdbuf[0x1d] = 0xffff;
+
+        cmdbuf[0x1e] = 0xc0016900;
+        cmdbuf[0x1f] = 0x317;
+        cmdbuf[0x20] = 0x10;
+
+        cmdbuf[0x21] = 0xc0016900;
+        cmdbuf[0x22] = 0x2fa;
+        cmdbuf[0x23] = 0x3f800000;
+
+        cmdbuf[0x24] = 0xc0016900;
+        cmdbuf[0x25] = 0x2fc;
+        cmdbuf[0x26] = 0x3f800000;
+
+        cmdbuf[0x27] = 0xc0016900;
+        cmdbuf[0x28] = 0x2fb;
+        cmdbuf[0x29] = 0x3f800000;
+
+        cmdbuf[0x2a] = 0xc0016900;
+        cmdbuf[0x2b] = 0x2fd;
+        cmdbuf[0x2c] = 0x3f800000;
+
+        cmdbuf[0x2d] = 0xc0016900;
+        cmdbuf[0x2e] = 0x202;
+        cmdbuf[0x2f] = 0xcc0010;
+
+        cmdbuf[0x30] = 0xc0016900;
+        cmdbuf[0x31] = 0x30e;
+        cmdbuf[0x32] = 0xffffffff;
+
+        cmdbuf[0x33] = 0xc0016900;
+        cmdbuf[0x34] = 0x30f;
+        cmdbuf[0x35] = 0xffffffff;
+
+        cmdbuf[0x36] = 0xc0002f00;
+        cmdbuf[0x37] = 1;
+
+        cmdbuf[0x38] = 0xc0017600;
+        cmdbuf[0x39] = 7;
+        cmdbuf[0x3a] = 0x1ff;
+
+        cmdbuf[0x3b] = 0xc0017600;
+        cmdbuf[0x3c] = 0x46;
+        cmdbuf[0x3d] = 0x1ff;
+
+        cmdbuf[0x3e] = 0xc0017600;
+        cmdbuf[0x3f] = 0x87;
+        cmdbuf[0x40] = 0x1ff;
+
+        cmdbuf[0x41] = 0xc0017600;
+        cmdbuf[0x42] = 199;
+        cmdbuf[0x43] = 0x1ff;
+
+        cmdbuf[0x44] = 0xc0017600;
+        cmdbuf[0x45] = 0x107;
+        cmdbuf[0x46] = 0;
+
+        cmdbuf[0x47] = 0xc0017600;
+        cmdbuf[0x48] = 0x147;
+        cmdbuf[0x49] = 0x1ff;
+
+        cmdbuf[0x4a] = 0xc0016900;
+        cmdbuf[0x4b] = 0x1b1;
+        cmdbuf[0x4c] = 2;
+
+        cmdbuf[0x4d] = 0xc0016900;
+        cmdbuf[0x4e] = 0x101;
+        cmdbuf[0x4f] = 0;
+
+        cmdbuf[0x50] = 0xc0016900;
+        cmdbuf[0x51] = 0x100;
+        cmdbuf[0x52] = 0xffffffff;
+
+        cmdbuf[0x53] = 0xc0016900;
+        cmdbuf[0x54] = 0x103;
+        cmdbuf[0x55] = 0;
+
+        cmdbuf[0x56] = 0xc0016900;
+        cmdbuf[0x57] = 0x284;
+        cmdbuf[0x58] = 0;
+
+        cmdbuf[0x59] = 0xc0016900;
+        cmdbuf[0x5a] = 0x290;
+        cmdbuf[0x5b] = 0;
+
+        cmdbuf[0x5c] = 0xc0016900;
+        cmdbuf[0x5d] = 0x2ae;
+        cmdbuf[0x5e] = 0;
+
+        cmdbuf[0x5f] = 0xc0016900;
+        cmdbuf[0x60] = 0x292;
+        cmdbuf[0x61] = 0;
+
+        cmdbuf[0x62] = 0xc0016900;
+        cmdbuf[0x63] = 0x293;
+        cmdbuf[0x64] = 0x6000000;
+
+        cmdbuf[0x65] = 0xc0016900;
+        cmdbuf[0x66] = 0x2f8;
+        cmdbuf[0x67] = 0;
+
+        cmdbuf[0x68] = 0xc0016900;
+        cmdbuf[0x69] = 0x2de;
+        cmdbuf[0x6a] = 0x1e9;
+
+        cmdbuf[0x6b] = 0xc0036900;
+        cmdbuf[0x6c] = 0x295;
+        cmdbuf[0x6d] = 0x100;
+        cmdbuf[0x6e] = 0x100;
+        cmdbuf[0x6f] = 4;
+
+        cmdbuf[0x70] = 0xc0017900;
+        cmdbuf[0x71] = 0x200;
+        cmdbuf[0x72] = 0xe0000000;
+
+        const auto cmdbuf_left = 0x100 - 0x74 - (clear_state ? 0xc : 0);
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf + 0x73, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext(cmdbuf, size, true);
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    ClearContextState(cmdbuf);
+
+    cmdbuf[0x0c] = 0xc0017600;
+    cmdbuf[0x0d] = 0x216;
+    cmdbuf[0x0e] = 0xffffffff;
+
+    cmdbuf[0x0f] = 0xc0017600;
+    cmdbuf[0x10] = 0x217;
+    cmdbuf[0x11] = 0xffffffff;
+
+    cmdbuf[0x12] = 0xc0017600;
+    cmdbuf[0x13] = 0x215;
+    cmdbuf[0x14] = 0;
+
+    cmdbuf[0x15] = 0xc0016900;
+    cmdbuf[0x16] = 0x2f9;
+    cmdbuf[0x17] = 0x2d;
+
+    cmdbuf[0x18] = 0xc0016900;
+    cmdbuf[0x19] = 0x282;
+    cmdbuf[0x1a] = 8;
+
+    cmdbuf[0x1b] = 0xc0016900;
+    cmdbuf[0x1c] = 0x280;
+    cmdbuf[0x1d] = 0x80008;
+
+    cmdbuf[0x1e] = 0xc0016900;
+    cmdbuf[0x1f] = 0x281;
+    cmdbuf[0x20] = 0xffff0000;
+
+    cmdbuf[0x21] = 0xc0016900;
+    cmdbuf[0x22] = 0x204;
+    cmdbuf[0x23] = 0;
+
+    cmdbuf[0x24] = 0xc0016900;
+    cmdbuf[0x25] = 0x206;
+    cmdbuf[0x26] = 0x43f;
+
+    cmdbuf[0x27] = 0xc0016900;
+    cmdbuf[0x28] = 0x83;
+    cmdbuf[0x29] = 0xffff;
+
+    cmdbuf[0x2a] = 0xc0016900;
+    cmdbuf[0x2b] = 0x317;
+    cmdbuf[0x2c] = 0x10;
+
+    cmdbuf[0x2d] = 0xc0016900;
+    cmdbuf[0x2e] = 0x2fa;
+    cmdbuf[0x2f] = 0x3f800000;
+
+    cmdbuf[0x30] = 0xc0016900;
+    cmdbuf[0x31] = 0x2fc;
+    cmdbuf[0x32] = 0x3f800000;
+
+    cmdbuf[0x33] = 0xc0016900;
+    cmdbuf[0x34] = 0x2fb;
+    cmdbuf[0x35] = 0x3f800000;
+
+    cmdbuf[0x36] = 0xc0016900;
+    cmdbuf[0x37] = 0x2fd;
+    cmdbuf[0x38] = 0x3f800000;
+
+    cmdbuf[0x39] = 0xc0016900;
+    cmdbuf[0x3a] = 0x202;
+    cmdbuf[0x3b] = 0xcc0010;
+
+    cmdbuf[0x3c] = 0xc0016900;
+    cmdbuf[0x3d] = 0x30e;
+    cmdbuf[0x3e] = 0xffffffff;
+
+    cmdbuf[0x3f] = 0xc0016900;
+    cmdbuf[0x40] = 0x30f;
+    cmdbuf[0x41] = 0xffffffff;
+
+    cmdbuf[0x42] = 0xc0002f00;
+    cmdbuf[0x43] = 1;
+
+    cmdbuf[0x44] = 0xc0017600;
+    cmdbuf[0x45] = 7;
+    cmdbuf[0x46] = 0x1ff;
+
+    cmdbuf[0x47] = 0xc0017600;
+    cmdbuf[0x48] = 0x46;
+    cmdbuf[0x49] = 0x1ff;
+
+    cmdbuf[0x4a] = 0xc0017600;
+    cmdbuf[0x4b] = 0x87;
+    cmdbuf[0x4c] = 0x1ff;
+
+    cmdbuf[0x4d] = 0xc0017600;
+    cmdbuf[0x4e] = 199;
+    cmdbuf[0x4f] = 0x1ff;
+
+    cmdbuf[0x50] = 0xc0017600;
+    cmdbuf[0x51] = 0x107;
+    cmdbuf[0x52] = 0;
+
+    cmdbuf[0x53] = 0xc0017600;
+    cmdbuf[0x54] = 0x147;
+    cmdbuf[0x55] = 0x1ff;
+
+    cmdbuf[0x56] = 0xc0016900;
+    cmdbuf[0x57] = 0x1b1;
+    cmdbuf[0x58] = 2;
+
+    cmdbuf[0x59] = 0xc0016900;
+    cmdbuf[0x5a] = 0x101;
+    cmdbuf[0x5b] = 0;
+
+    cmdbuf[0x5c] = 0xc0016900;
+    cmdbuf[0x5d] = 0x100;
+    cmdbuf[0x5e] = 0xffffffff;
+
+    cmdbuf[0x5f] = 0xc0016900;
+    cmdbuf[0x60] = 0x103;
+    cmdbuf[0x61] = 0;
+
+    cmdbuf[0x62] = 0xc0016900;
+    cmdbuf[0x63] = 0x284;
+    cmdbuf[0x64] = 0;
+
+    cmdbuf[0x65] = 0xc0016900;
+    cmdbuf[0x66] = 0x290;
+    cmdbuf[0x67] = 0;
+
+    cmdbuf[0x68] = 0xc0016900;
+    cmdbuf[0x69] = 0x2ae;
+    cmdbuf[0x6a] = 0;
+
+    cmdbuf[0x6b] = 0xc0016900;
+    cmdbuf[0x6c] = 0x292;
+    cmdbuf[0x6d] = 0;
+
+    cmdbuf[0x6e] = 0xc0016900;
+    cmdbuf[0x6f] = 0x293;
+    cmdbuf[0x70] = 0x6020000;
+
+    cmdbuf[0x71] = 0xc0016900;
+    cmdbuf[0x72] = 0x2f8;
+    cmdbuf[0x73] = 0;
+
+    cmdbuf[0x74] = 0xc0016900;
+    cmdbuf[0x75] = 0x2de;
+    cmdbuf[0x76] = 0x1e9;
+
+    cmdbuf[0x77] = 0xc0036900;
+    cmdbuf[0x78] = 0x295;
+    cmdbuf[0x79] = 0x100;
+    cmdbuf[0x7a] = 0x100;
+    cmdbuf[0x7b] = 4;
+
+    cmdbuf[0x7c] = 0xc0017900;
+    cmdbuf[0x7d] = 0x200;
+    cmdbuf[0x7e] = 0xe0000000;
+
+    cmdbuf[0x7f] = 0xc07f1000;
+    cmdbuf[0x80] = 0;
+
+    return HwInitPacketSize;
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    const auto& SetupContext200 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        cmdbuf[0x00] = 0xc0017600;
+        cmdbuf[0x01] = 0x216;
+        cmdbuf[0x02] = 0xffffffff;
+
+        cmdbuf[0x03] = 0xc0017600;
+        cmdbuf[0x04] = 0x217;
+        cmdbuf[0x05] = 0xffffffff;
+
+        cmdbuf[0x06] = 0xc0017600;
+        cmdbuf[0x07] = 0x215;
+        cmdbuf[0x08] = 0;
+
+        cmdbuf[0x09] = 0xc0016900;
+        cmdbuf[0x0a] = 0x2f9;
+        cmdbuf[0x0b] = 0x2d;
+
+        cmdbuf[0x0c] = 0xc0016900;
+        cmdbuf[0x0d] = 0x282;
+        cmdbuf[0x0e] = 8;
+
+        cmdbuf[0x0f] = 0xc0016900;
+        cmdbuf[0x10] = 0x280;
+        cmdbuf[0x11] = 0x80008;
+
+        cmdbuf[0x12] = 0xc0016900;
+        cmdbuf[0x13] = 0x281;
+        cmdbuf[0x14] = 0xffff0000;
+
+        cmdbuf[0x15] = 0xc0016900;
+        cmdbuf[0x16] = 0x204;
+        cmdbuf[0x17] = 0;
+
+        cmdbuf[0x18] = 0xc0016900;
+        cmdbuf[0x19] = 0x206;
+        cmdbuf[0x1a] = 0x43f;
+
+        cmdbuf[0x1b] = 0xc0016900;
+        cmdbuf[0x1c] = 0x83;
+        cmdbuf[0x1d] = 0xffff;
+
+        cmdbuf[0x1e] = 0xc0016900;
+        cmdbuf[0x1f] = 0x317;
+        cmdbuf[0x20] = 0x10;
+
+        cmdbuf[0x21] = 0xc0016900;
+        cmdbuf[0x22] = 0x2fa;
+        cmdbuf[0x23] = 0x3f800000;
+
+        cmdbuf[0x24] = 0xc0016900;
+        cmdbuf[0x25] = 0x2fc;
+        cmdbuf[0x26] = 0x3f800000;
+
+        cmdbuf[0x27] = 0xc0016900;
+        cmdbuf[0x28] = 0x2fb;
+        cmdbuf[0x29] = 0x3f800000;
+
+        cmdbuf[0x2a] = 0xc0016900;
+        cmdbuf[0x2b] = 0x2fd;
+        cmdbuf[0x2c] = 0x3f800000;
+
+        cmdbuf[0x2d] = 0xc0016900;
+        cmdbuf[0x2e] = 0x202;
+        cmdbuf[0x2f] = 0xcc0010;
+
+        cmdbuf[0x30] = 0xc0016900;
+        cmdbuf[0x31] = 0x30e;
+        cmdbuf[0x32] = 0xffffffff;
+
+        cmdbuf[0x33] = 0xc0016900;
+        cmdbuf[0x34] = 0x30f;
+        cmdbuf[0x35] = 0xffffffff;
+
+        cmdbuf[0x36] = 0xc0002f00;
+        cmdbuf[0x37] = 1;
+
+        cmdbuf[0x38] = 0xc0017600;
+        cmdbuf[0x39] = 7;
+        cmdbuf[0x3a] = 0x1701ff;
+
+        cmdbuf[0x3b] = 0xc0017600;
+        cmdbuf[0x3c] = 0x46;
+        cmdbuf[0x3d] = 0x1701fd;
+
+        cmdbuf[0x3e] = 0xc0017600;
+        cmdbuf[0x3f] = 0x87;
+        cmdbuf[0x40] = 0x1701ff;
+
+        cmdbuf[0x41] = 0xc0017600;
+        cmdbuf[0x42] = 199;
+        cmdbuf[0x43] = 0x1701fd;
+
+        cmdbuf[0x44] = 0xc0017600;
+        cmdbuf[0x45] = 0x107;
+        cmdbuf[0x46] = 0x17;
+
+        cmdbuf[0x47] = 0xc0017600;
+        cmdbuf[0x48] = 0x147;
+        cmdbuf[0x49] = 0x1701fd;
+
+        cmdbuf[0x4a] = 0xc0017600;
+        cmdbuf[0x4b] = 0x47;
+        cmdbuf[0x4c] = 0x1c;
+
+        cmdbuf[0x4d] = 0xc0016900;
+        cmdbuf[0x4e] = 0x1b1;
+        cmdbuf[0x4f] = 2;
+
+        cmdbuf[0x50] = 0xc0016900;
+        cmdbuf[0x51] = 0x101;
+        cmdbuf[0x52] = 0;
+
+        cmdbuf[0x53] = 0xc0016900;
+        cmdbuf[0x54] = 0x100;
+        cmdbuf[0x55] = 0xffffffff;
+
+        cmdbuf[0x56] = 0xc0016900;
+        cmdbuf[0x57] = 0x103;
+        cmdbuf[0x58] = 0;
+
+        cmdbuf[0x59] = 0xc0016900;
+        cmdbuf[0x5a] = 0x284;
+        cmdbuf[0x5b] = 0;
+
+        cmdbuf[0x5c] = 0xc0016900;
+        cmdbuf[0x5d] = 0x290;
+        cmdbuf[0x5e] = 0;
+
+        cmdbuf[0x5f] = 0xc0016900;
+        cmdbuf[0x60] = 0x2ae;
+        cmdbuf[0x61] = 0;
+
+        cmdbuf[0x62] = 0xc0016900;
+        cmdbuf[0x63] = 0x292;
+        cmdbuf[0x64] = 0;
+
+        cmdbuf[0x65] = 0xc0016900;
+        cmdbuf[0x66] = 0x293;
+        cmdbuf[0x67] = 0x6020000;
+
+        cmdbuf[0x68] = 0xc0016900;
+        cmdbuf[0x69] = 0x2f8;
+        cmdbuf[0x6a] = 0;
+
+        cmdbuf[0x6b] = 0xc0016900;
+        cmdbuf[0x6c] = 0x2de;
+        cmdbuf[0x6d] = 0x1e9;
+
+        cmdbuf[0x6e] = 0xc0036900;
+        cmdbuf[0x6f] = 0x295;
+        cmdbuf[0x70] = 0x100;
+        cmdbuf[0x71] = 0x100;
+        cmdbuf[0x72] = 4;
+
+        cmdbuf[0x73] = 0xc0017900;
+        cmdbuf[0x74] = 0xe0000000;
+        cmdbuf[0x75] = 0x200;
+
+        const auto cmdbuf_left = 0x100 - 0x77 - (clear_state ? 0xc : 0);
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf + 0x76, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext200(cmdbuf, size, true);
 }
 
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (size > 0xff) {
-        if constexpr (g_fair_hw_init) {
-            ASSERT_MSG(0, "Not implemented");
-        } else {
-            cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 0xff);
-        }
-        return 0x100; // it is a size, not a retcode
+    if (size < HwInitPacketSize) {
+        return 0;
     }
-    return 0;
+
+    const auto& SetupContext350 = [](u32* cmdbuf, u32 size, bool clear_state) {
+        if (clear_state) {
+            cmdbuf = ClearContextState(cmdbuf);
+        }
+
+        cmdbuf[0x00] = 0xc0017600;
+        cmdbuf[0x01] = 0x216;
+        cmdbuf[0x02] = 0xffffffff;
+
+        cmdbuf[0x03] = 0xc0017600;
+        cmdbuf[0x04] = 0x217;
+        cmdbuf[0x05] = 0xffffffff;
+
+        cmdbuf[0x06] = 0xc0017600;
+        cmdbuf[0x07] = 0x215;
+        cmdbuf[0x08] = 0;
+
+        cmdbuf[0x09] = 0xc0016900;
+        cmdbuf[0x0a] = 0x2f9;
+        cmdbuf[0x0b] = 0x2d;
+
+        cmdbuf[0x0c] = 0xc0016900;
+        cmdbuf[0x0d] = 0x282;
+        cmdbuf[0x0e] = 8;
+
+        cmdbuf[0x0f] = 0xc0016900;
+        cmdbuf[0x10] = 0x280;
+        cmdbuf[0x11] = 0x80008;
+
+        cmdbuf[0x12] = 0xc0016900;
+        cmdbuf[0x13] = 0x281;
+        cmdbuf[0x14] = 0xffff0000;
+
+        cmdbuf[0x15] = 0xc0016900;
+        cmdbuf[0x16] = 0x204;
+        cmdbuf[0x17] = 0;
+
+        cmdbuf[0x18] = 0xc0016900;
+        cmdbuf[0x19] = 0x206;
+        cmdbuf[0x1a] = 0x43f;
+
+        cmdbuf[0x1b] = 0xc0016900;
+        cmdbuf[0x1c] = 0x83;
+        cmdbuf[0x1d] = 0xffff;
+
+        cmdbuf[0x1e] = 0xc0016900;
+        cmdbuf[0x1f] = 0x317;
+        cmdbuf[0x20] = 0x10;
+
+        cmdbuf[0x21] = 0xc0016900;
+        cmdbuf[0x22] = 0x2fa;
+        cmdbuf[0x23] = 0x3f800000;
+
+        cmdbuf[0x24] = 0xc0016900;
+        cmdbuf[0x25] = 0x2fc;
+        cmdbuf[0x26] = 0x3f800000;
+
+        cmdbuf[0x27] = 0xc0016900;
+        cmdbuf[0x28] = 0x2fb;
+        cmdbuf[0x29] = 0x3f800000;
+
+        cmdbuf[0x2a] = 0xc0016900;
+        cmdbuf[0x2b] = 0x2fd;
+        cmdbuf[0x2c] = 0x3f800000;
+
+        cmdbuf[0x2d] = 0xc0016900;
+        cmdbuf[0x2e] = 0x202;
+        cmdbuf[0x2f] = 0xcc0010;
+
+        cmdbuf[0x30] = 0xc0016900;
+        cmdbuf[0x31] = 0x30e;
+        cmdbuf[0x32] = 0xffffffff;
+
+        cmdbuf[0x33] = 0xc0016900;
+        cmdbuf[0x34] = 0x30f;
+        cmdbuf[0x35] = 0xffffffff;
+
+        cmdbuf[0x36] = 0xc0002f00;
+        cmdbuf[0x37] = 1;
+
+        cmdbuf[0x38] = 0xc0017600;
+        cmdbuf[0x39] = 7;
+        cmdbuf[0x3a] = 0x1701ff;
+
+        cmdbuf[0x3b] = 0xc0017600;
+        cmdbuf[0x3c] = 0x46;
+        cmdbuf[0x3d] = 0x1701fd;
+
+        cmdbuf[0x3e] = 0xc0017600;
+        cmdbuf[0x3f] = 0x87;
+        cmdbuf[0x40] = 0x1701ff;
+
+        cmdbuf[0x41] = 0xc0017600;
+        cmdbuf[0x42] = 199;
+        cmdbuf[0x43] = 0x1701fd;
+
+        cmdbuf[0x44] = 0xc0017600;
+        cmdbuf[0x45] = 0x107;
+        cmdbuf[0x46] = 0x17;
+
+        cmdbuf[0x47] = 0xc0017600;
+        cmdbuf[0x48] = 0x147;
+        cmdbuf[0x49] = 0x1701fd;
+
+        cmdbuf[0x4a] = 0xc0017600;
+        cmdbuf[0x4b] = 0x47;
+        cmdbuf[0x4c] = 0x1c;
+
+        cmdbuf[0x4d] = 0xc0016900;
+        cmdbuf[0x4e] = 0x1b1;
+        cmdbuf[0x4f] = 2;
+
+        cmdbuf[0x50] = 0xc0016900;
+        cmdbuf[0x51] = 0x101;
+        cmdbuf[0x52] = 0;
+
+        cmdbuf[0x53] = 0xc0016900;
+        cmdbuf[0x54] = 0x100;
+        cmdbuf[0x55] = 0xffffffff;
+
+        cmdbuf[0x56] = 0xc0016900;
+        cmdbuf[0x57] = 0x103;
+        cmdbuf[0x58] = 0;
+
+        cmdbuf[0x59] = 0xc0016900;
+        cmdbuf[0x5a] = 0x284;
+        cmdbuf[0x5b] = 0;
+
+        cmdbuf[0x5c] = 0xc0016900;
+        cmdbuf[0x5d] = 0x290;
+        cmdbuf[0x5e] = 0;
+
+        cmdbuf[0x5f] = 0xc0016900;
+        cmdbuf[0x60] = 0x2ae;
+        cmdbuf[0x61] = 0;
+
+        cmdbuf[0x62] = 0xc0016900;
+        cmdbuf[0x63] = 0x102;
+        cmdbuf[0x64] = 0;
+
+        cmdbuf[0x65] = 0xc0016900;
+        cmdbuf[0x66] = 0x292;
+        cmdbuf[0x67] = 0;
+
+        cmdbuf[0x68] = 0xc0016900;
+        cmdbuf[0x69] = 0x293;
+        cmdbuf[0x6a] = 0x6020000;
+
+        cmdbuf[0x6b] = 0xc0016900;
+        cmdbuf[0x6c] = 0x2f8;
+        cmdbuf[0x6d] = 0;
+
+        cmdbuf[0x6e] = 0xc0016900;
+        cmdbuf[0x6f] = 0x2de;
+        cmdbuf[0x70] = 0x1e9;
+
+        cmdbuf[0x71] = 0xc0036900;
+        cmdbuf[0x72] = 0x295;
+        cmdbuf[0x73] = 0x100;
+        cmdbuf[0x74] = 0x100;
+        cmdbuf[0x75] = 4;
+
+        cmdbuf[0x76] = 0xc0017900;
+        cmdbuf[0x77] = 0x200;
+        cmdbuf[0x78] = 0xe0000000;
+
+        cmdbuf[0x79] = 0xc0016900;
+        cmdbuf[0x7a] = 0x000002aa;
+        cmdbuf[0x7b] = 0xff;
+
+        const auto cmdbuf_left = 0x100 - 0x7d - (clear_state ? 0xc : 0);
+        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf + 0x7c, cmdbuf_left);
+        cmdbuf = WriteBody(cmdbuf, 0u);
+
+        return HwInitPacketSize;
+    };
+
+    return SetupContext350(cmdbuf, size, true);
 }
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState() {
