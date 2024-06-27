@@ -40,7 +40,8 @@ public:
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address) {
-        auto& image = RegisterVideoOutSurface(attribute, cpu_address);
+        const auto info = VideoCore::ImageInfo{attribute};
+        auto& image = texture_cache.FindImage(info, cpu_address);
         return PrepareFrameInternal(image);
     }
 
