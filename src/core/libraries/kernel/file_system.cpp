@@ -59,7 +59,8 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostDirectory(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
-            UNREACHABLE();                                       // not supported yet
+            h->DeleteHandle(handle);
+            return ORBIS_KERNEL_ERROR_ENOTDIR;
         } else {
             if (create) {
                 return handle; // dir already exists
