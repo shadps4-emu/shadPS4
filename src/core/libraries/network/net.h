@@ -15,6 +15,8 @@ class SymbolsResolver;
 
 namespace Libraries::Net {
 
+using OrbisNetId = s32;
+
 struct OrbisNetSockaddr {
     u8 sa_len;
     u8 sa_family;
@@ -29,7 +31,7 @@ int PS4_SYSV_ABI sce_net_in6addr_linklocal_allnodes();
 int PS4_SYSV_ABI sce_net_in6addr_linklocal_allrouters();
 int PS4_SYSV_ABI sce_net_in6addr_loopback();
 int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes();
-int PS4_SYSV_ABI sceNetAccept();
+OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetAddrConfig6GetInfo();
 int PS4_SYSV_ABI sceNetAddrConfig6Start();
 int PS4_SYSV_ABI sceNetAddrConfig6Stop();
@@ -41,7 +43,7 @@ int PS4_SYSV_ABI sceNetBandwidthControlGetPolicy();
 int PS4_SYSV_ABI sceNetBandwidthControlSetDefaultParam();
 int PS4_SYSV_ABI sceNetBandwidthControlSetIfParam();
 int PS4_SYSV_ABI sceNetBandwidthControlSetPolicy();
-int PS4_SYSV_ABI sceNetBind(int sid, const OrbisNetSockaddr* addr, u32 addrlen);
+int PS4_SYSV_ABI sceNetBind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetClearDnsCache();
 int PS4_SYSV_ABI sceNetConfigAddArp();
 int PS4_SYSV_ABI sceNetConfigAddArpWithInterface();
@@ -153,8 +155,8 @@ int PS4_SYSV_ABI sceNetGetRandom();
 int PS4_SYSV_ABI sceNetGetRouteInfo();
 int PS4_SYSV_ABI sceNetGetSockInfo();
 int PS4_SYSV_ABI sceNetGetSockInfo6();
-int PS4_SYSV_ABI sceNetGetsockname();
-int PS4_SYSV_ABI sceNetGetsockopt();
+int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
+int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen);
 int PS4_SYSV_ABI sceNetGetStatisticsInfo();
 int PS4_SYSV_ABI sceNetGetStatisticsInfoInternal();
 int PS4_SYSV_ABI sceNetGetSystemTime();
@@ -174,15 +176,16 @@ int PS4_SYSV_ABI sceNetIoctl();
 int PS4_SYSV_ABI sceNetListen();
 int PS4_SYSV_ABI sceNetMemoryAllocate();
 int PS4_SYSV_ABI sceNetMemoryFree();
-int PS4_SYSV_ABI sceNetNtohl();
+u32 PS4_SYSV_ABI sceNetNtohl(u32 net32);
 int PS4_SYSV_ABI sceNetNtohll();
-int PS4_SYSV_ABI sceNetNtohs();
+u16 PS4_SYSV_ABI sceNetNtohs(u16 net16);
 int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags);
 int PS4_SYSV_ABI sceNetPoolDestroy();
 int PS4_SYSV_ABI sceNetPppoeStart();
 int PS4_SYSV_ABI sceNetPppoeStop();
 int PS4_SYSV_ABI sceNetRecv();
-int PS4_SYSV_ABI sceNetRecvfrom();
+int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
+                                OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetRecvmsg();
 int PS4_SYSV_ABI sceNetResolverAbort();
 int PS4_SYSV_ABI sceNetResolverConnect();

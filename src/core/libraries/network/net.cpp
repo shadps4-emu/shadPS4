@@ -58,7 +58,7 @@ int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetAccept() {
+OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -118,7 +118,7 @@ int PS4_SYSV_ABI sceNetBandwidthControlSetPolicy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetBind(int sid, const OrbisNetSockaddr* addr, u32 addrlen) {
+int PS4_SYSV_ABI sceNetBind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -678,12 +678,12 @@ int PS4_SYSV_ABI sceNetGetSockInfo6() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetsockname() {
+int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetsockopt() {
+int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -787,9 +787,8 @@ int PS4_SYSV_ABI sceNetMemoryFree() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetNtohl() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceNetNtohl(u32 net32) {
+    return ntohl(net32);
 }
 
 int PS4_SYSV_ABI sceNetNtohll() {
@@ -797,9 +796,8 @@ int PS4_SYSV_ABI sceNetNtohll() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetNtohs() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+u16 PS4_SYSV_ABI sceNetNtohs(u16 net16) {
+    return ntohs(net16);
 }
 
 int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags) {
@@ -827,7 +825,8 @@ int PS4_SYSV_ABI sceNetRecv() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetRecvfrom() {
+int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
+                                OrbisNetSockaddr* addr, u32* paddrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
