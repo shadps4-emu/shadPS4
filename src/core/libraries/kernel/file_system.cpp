@@ -100,7 +100,9 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     LOG_INFO(Kernel_Fs, "posix open redirect to sceKernelOpen");
     int result = sceKernelOpen(path, flags, mode);
     // Posix calls different only for their return values
-    ASSERT(result >= 0);
+    if (result < 0) {
+        return -1;
+    }
     return result;
 }
 
