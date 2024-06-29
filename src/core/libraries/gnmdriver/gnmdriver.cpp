@@ -664,9 +664,10 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
 
     cmdbuf = ClearContextState(cmdbuf);
     std::memcpy(cmdbuf, InitSequence175.data(), InitSequence175.size() * 4);
+    cmdbuf += InitSequence175.size();
 
-    cmdbuf[0x7f] = 0xc07f1000;
-    cmdbuf[0x80] = 0;
+    constexpr auto cmdbuf_left = HwInitPacketSize - InitSequence175.size() - 0xc - 1;
+    WriteTrailingNop<cmdbuf_left>(cmdbuf);
 
     return HwInitPacketSize;
 }
