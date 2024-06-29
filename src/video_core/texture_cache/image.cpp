@@ -104,9 +104,9 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
 static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
+    case AmdGpu::ImageType::Color1DArray:
         return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
-    case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageType::e2D;
