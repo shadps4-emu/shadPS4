@@ -129,6 +129,7 @@ public:
     void V_MIN_U32(const GcnInst& inst);
     void V_CMP_NE_U64(const GcnInst& inst);
     void V_BFI_B32(const GcnInst& inst);
+    void V_NOT_B32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
