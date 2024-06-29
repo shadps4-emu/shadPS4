@@ -25,11 +25,12 @@ VK_DEFINE_HANDLE(VmaAllocator)
 namespace VideoCore {
 
 enum ImageFlagBits : u32 {
-    CpuModified = 1 << 2, ///< Contents have been modified from the CPU
-    GpuModified = 1 << 3, ///< Contents have been modified from the GPU
-    Tracked = 1 << 4,     ///< Writes and reads are being hooked from the CPU
-    Registered = 1 << 6,  ///< True when the image is registered
-    Picked = 1 << 7,      ///< Temporary flag to mark the image as picked
+    CpuModified = 1 << 2,    ///< Contents have been modified from the CPU
+    GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
+    Tracked = 1 << 4,        ///< Writes and reads are being hooked from the CPU
+    Registered = 1 << 6,     ///< True when the image is registered
+    Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
+    MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
@@ -38,7 +39,7 @@ struct ImageInfo {
     explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
     explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
+    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
                        const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     explicit ImageInfo(const AmdGpu::Image& image) noexcept;
 
@@ -50,15 +51,20 @@ struct ImageInfo {
     bool IsDepthStencil() const;
 
     struct {
+        VAddr cmask_addr;
+        VAddr fmask_addr;
+        VAddr htile_addr;
+    } meta_info{};
+
+    struct {
         u32 texture : 1;
         u32 storage : 1;
         u32 render_target : 1;
         u32 depth_target : 1;
         u32 vo_buffer : 1;
-    } usage; // Usage data tracked during image lifetime
+    } usage{}; // Usage data tracked during image lifetime
 
     bool is_tiled = false;
-    bool is_storage = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
     SubresourceExtent resources;

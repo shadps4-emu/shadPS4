@@ -92,7 +92,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = vk::SampleCountFlagBits::e1,
+        .rasterizationSamples = LiverpoolToVK::NumSamples(key.num_samples),
         .sampleShadingEnable = false,
     };
 
@@ -327,8 +327,9 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
             const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
+            const VAddr address = vsharp.base_address.Value();
             const u32 size = vsharp.GetSize();
-            const u32 offset = staging.Copy(vsharp.base_address.Value(), size,
+            const u32 offset = staging.Copy(address, size,
                                             buffer.is_storage ? instance.StorageMinAlignment()
                                                               : instance.UniformMinAlignment());
             buffer_infos.emplace_back(staging.Handle(), offset, size);
@@ -341,6 +342,10 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
                                                     : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
+
+            if (texture_cache.IsMeta(address)) {
+                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
+            }
         }
 
         for (const auto& image : stage.images) {
@@ -357,6 +362,10 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
                                                    : vk::DescriptorType::eSampledImage,
                 .pImageInfo = &image_infos.back(),
             });
+
+            if (texture_cache.IsMeta(tsharp.Address())) {
+                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (texture)");
+            }
         }
         for (const auto& sampler : stage.samplers) {
             const auto ssharp =

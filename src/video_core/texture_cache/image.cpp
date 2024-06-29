@@ -91,7 +91,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
     }
-    if (info.is_tiled || info.is_storage) {
+    if (info.is_tiled || info.usage.storage) {
         usage |= vk::ImageUsageFlagBits::eStorage;
     }
     return usage;
@@ -149,10 +149,12 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
+    meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
     usage.render_target = true;
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
                      const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
     is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
@@ -163,6 +165,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer,
     size.depth = 1;
     pitch = size.width;
     guest_size_bytes = buffer.GetSizeAligned();
+    meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
     usage.depth_target = true;
 }
 
@@ -178,6 +181,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
     guest_size_bytes = image.GetSizeAligned();
+    usage.texture = true;
 }
 
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
@@ -248,6 +252,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         },
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
+        .samples = LiverpoolToVK::NumSamples(info.num_samples),
         .tiling = vk::ImageTiling::eOptimal,
         .usage = usage,
         .initialLayout = vk::ImageLayout::eUndefined,

@@ -294,15 +294,19 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     const IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (image.GetType()) {
-        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color1D: // x
             return {body->Arg(0), body->Arg(1)};
-        case AmdGpu::ImageType::Color1DArray:
-        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color1DArray: // x, slice
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2D: // x, y
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
-        case AmdGpu::ImageType::Color2DArray:
-        case AmdGpu::ImageType::Color3D:
+        case AmdGpu::ImageType::Color2DArray: // x, y, slice
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
+            [[fallthrough]];
+        case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
-        case AmdGpu::ImageType::Cube:
+        case AmdGpu::ImageType::Cube: // x, y, face
             return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());

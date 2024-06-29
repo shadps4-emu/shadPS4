@@ -40,12 +40,14 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto& regs = liverpool->regs;
     const u32 num_indices = SetupIndexBuffer(is_indexed, index_offset);
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
+    if (!pipeline) {
+        return;
+    }
+
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
         color_attachments{};
-    vk::RenderingAttachmentInfo depth_attachment{};
-    u32 num_depth_attachments{};
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
@@ -55,17 +57,26 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
 
+        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
         color_attachments.push_back({
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
-            .loadOp = vk::AttachmentLoadOp::eLoad,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue =
+                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
         });
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
+
+    vk::RenderingAttachmentInfo depth_attachment{};
+    u32 num_depth_attachments{};
     if (pipeline->IsDepthEnabled() && regs.depth_buffer.Address() != 0) {
-        const bool is_clear = regs.depth_render_control.depth_clear_enable;
+        const auto htile_address = regs.depth_htile_data_base.GetAddress();
+        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
+                              texture_cache.IsMetaCleared(htile_address);
         const auto& image_view =
-            texture_cache.DepthTarget(regs.depth_buffer, liverpool->last_db_extent);
+            texture_cache.DepthTarget(regs.depth_buffer, htile_address, liverpool->last_db_extent);
         depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
@@ -74,6 +85,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
                                                           .stencil = regs.stencil_clear}},
         };
+        texture_cache.TouchMeta(htile_address, false);
         num_depth_attachments++;
     }
 
@@ -112,7 +124,14 @@ void Rasterizer::DispatchDirect() {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& cs_program = liverpool->regs.cs_program;
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
-    pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    if (!pipeline) {
+        return;
+    }
+
+    const auto has_resources = pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    if (!has_resources) {
+        return;
+    }
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);

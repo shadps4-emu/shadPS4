@@ -324,6 +324,10 @@ struct Liverpool {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
+            BitField<27, 1, u32> allow_expclear;
+            BitField<28, 1, u32> read_size;
+            BitField<29, 1, u32> tile_surface_en;
+            BitField<31, 1, u32> zrange_precision;
         } z_info;
         union {
             BitField<0, 1, StencilFormat> format;
@@ -352,7 +356,7 @@ struct Liverpool {
             return u64(z_read_base) << 8;
         }
 
-        [[nodiscard]] size_t GetSizeAligned() const {
+        size_t GetSizeAligned() const {
             return depth_slice.tile_max * 8;
         }
     };
@@ -606,6 +610,20 @@ struct Liverpool {
         BitField<30, 1, u32> enable;
     };
 
+    union ColorControl {
+        enum class OperationMode : u32 {
+            Disable = 0u,
+            Normal = 1u,
+            EliminateFastClear = 2u,
+            Resolve = 3u,
+            FmaskDecompress = 5u,
+        };
+
+        BitField<3, 1, u32> degamma_enable;
+        BitField<4, 3, OperationMode> mode;
+        BitField<16, 8, u32> rop3;
+    };
+
     struct ColorBuffer {
         enum class EndianSwap : u32 {
             None = 0,
@@ -688,11 +706,15 @@ struct Liverpool {
             return u64(base_address) << 8;
         }
 
-        u64 CmaskAddress() const {
-            return u64(cmask_base_address) << 8;
+        VAddr CmaskAddress() const {
+            return VAddr(cmask_base_address) << 8;
         }
 
-        [[nodiscard]] size_t GetSizeAligned() const {
+        VAddr FmaskAddress() const {
+            return VAddr(fmask_base_address) << 8;
+        }
+
+        size_t GetSizeAligned() const {
             const auto num_bytes_per_element = NumBits(info.format) / 8u;
             const auto slice_size = (slice.tile_max + 1) * 64u;
             const auto total_size = slice_size * (view.slice_max + 1) * num_bytes_per_element;
@@ -700,11 +722,11 @@ struct Liverpool {
             return total_size;
         }
 
-        [[nodiscard]] TilingMode GetTilingMode() const {
+        TilingMode GetTilingMode() const {
             return attrib.tile_mode_index;
         }
 
-        [[nodiscard]] bool IsTiled() const {
+        bool IsTiled() const {
             return !info.linear_general;
         }
 
@@ -769,6 +791,18 @@ struct Liverpool {
         BitField<1, 1, u32> stencil_clear_enable;
     };
 
+    union AaConfig {
+        BitField<0, 3, u32> msaa_num_samples;
+        BitField<4, 1, u32> aa_mask_centroid_dtmn;
+        BitField<13, 4, u32> max_sample_dst;
+        BitField<20, 3, u32> msaa_exposed_samples;
+        BitField<24, 2, u32> detail_to_exposed_mode;
+
+        u32 NumSamples() const {
+            return 1 << msaa_num_samples;
+        }
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -821,7 +855,8 @@ struct Liverpool {
             u32 draw_initiator;
             INSERT_PADDING_WORDS(0xA200 - 0xA1F9 - 4);
             DepthControl depth_control;
-            INSERT_PADDING_WORDS(2);
+            INSERT_PADDING_WORDS(1);
+            ColorControl color_control;
             DepthBufferControl depth_buffer_control;
             ClipperControl clipper_control;
             PolygonControl polygon_control;
@@ -835,7 +870,9 @@ struct Liverpool {
             u32 enable_primitive_id;
             INSERT_PADDING_WORDS(0xA2DF - 0xA2A1 - 1);
             PolygonOffset poly_offset;
-            INSERT_PADDING_WORDS(0xA318 - 0xA2DF - 5);
+            INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
+            AaConfig aa_config;
+            INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
             INSERT_PADDING_WORDS(0xC242 - 0xA390);
             PrimitiveType primitive_type;
@@ -991,6 +1028,7 @@ static_assert(GFX6_3D_REG_INDEX(blend_control) == 0xA1E0);
 static_assert(GFX6_3D_REG_INDEX(index_base_address) == 0xA1F9);
 static_assert(GFX6_3D_REG_INDEX(draw_initiator) == 0xA1FC);
 static_assert(GFX6_3D_REG_INDEX(depth_control) == 0xA200);
+static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
@@ -998,6 +1036,7 @@ static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
+static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);

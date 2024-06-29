@@ -114,12 +114,18 @@ void PipelineCache::RefreshGraphicsKey() {
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
     key.front_face = regs.polygon_control.front_face;
+    key.num_samples = regs.aa_config.NumSamples();
 
     const auto& db = regs.depth_buffer;
     if (key.depth.depth_enable) {
         key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
         key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
     }
+
+    // TODO: Should be a check for `OperationMode::Disable` once we emulate HW state init packet
+    // sent by system software.
+    const auto skip_cb_binding = false;
+
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
     // We need to do some arrays compaction at this stage
@@ -129,7 +135,7 @@ void PipelineCache::RefreshGraphicsKey() {
     int remapped_cb{};
     for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (!col_buf) {
+        if (!col_buf || skip_cb_binding) {
             continue;
         }
         const auto base_format =
@@ -159,6 +165,19 @@ void PipelineCache::RefreshGraphicsKey() {
 
 std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
     const auto& regs = liverpool->regs;
+
+    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
+    // actual draw hence can skip pipeline creation.
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
+        return {};
+    }
+
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
+        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
+        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
+        return {};
+    }
 
     u32 binding{};
     std::array<Shader::IR::Program, MaxShaderStages> programs;

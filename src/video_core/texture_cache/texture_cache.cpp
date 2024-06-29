@@ -131,6 +131,8 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool re
         image_id = image_ids[0];
     }
 
+    RegisterMeta(info, image_id);
+
     Image& image = slot_images[image_id];
     if (True(image.flags & ImageFlagBits::CpuModified) &&
         (!image_ids.empty() || refresh_on_create)) {
@@ -150,7 +152,7 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     // impossible to use. However, during view creation, if an image isn't used as storage we can
     // temporary remove its storage bit.
     std::optional<vk::ImageUsageFlags> usage_override;
-    if (!image.info.is_storage) {
+    if (!image.info.usage.storage) {
         usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
@@ -161,12 +163,15 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
 }
 
 ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
-    Image& image = FindImage(ImageInfo{desc}, desc.Address());
+    const ImageInfo info{desc};
+    Image& image = FindImage(info, desc.Address());
 
     if (is_storage) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+        image.info.usage.storage = true;
     } else {
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
+        image.info.usage.texture = true;
     }
 
     const ImageViewInfo view_info{desc, is_storage};
@@ -183,19 +188,24 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
+    image.info.usage.render_target = true;
+
     ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image, view_info);
 }
 
 ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                     VAddr htile_address,
                                      const AmdGpu::Liverpool::CbDbExtent& hint) {
-    const ImageInfo info{buffer, hint};
+    const ImageInfo info{buffer, htile_address, hint};
     auto& image = FindImage(info, buffer.Address(), false);
     image.flags &= ~ImageFlagBits::CpuModified;
 
     image.Transit(vk::ImageLayout::eDepthStencilAttachmentOptimal,
                   vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                       vk::AccessFlagBits::eDepthStencilAttachmentRead);
+
+    image.info.usage.depth_target = true;
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;
@@ -274,6 +284,47 @@ void TextureCache::RegisterImage(ImageId image_id) {
     image.flags |= ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
+}
+
+void TextureCache::RegisterMeta(const ImageInfo& info, ImageId image_id) {
+    Image& image = slot_images[image_id];
+
+    if (image.flags & ImageFlagBits::MetaRegistered) {
+        return;
+    }
+
+    bool registered = true;
+    // Current resource tracking implementation allows us to detect usage of meta only in the last
+    // moment, so we likely will miss its first clear. To avoid this and make first frame, where
+    // the meta is encountered, looks correct we set its state to "cleared" at registrations time.
+    if (info.usage.render_target) {
+        if (info.meta_info.cmask_addr) {
+            surface_metas.emplace(
+                info.meta_info.cmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
+            image.info.meta_info.cmask_addr = info.meta_info.cmask_addr;
+        }
+
+        if (info.meta_info.fmask_addr) {
+            surface_metas.emplace(
+                info.meta_info.fmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
+            image.info.meta_info.fmask_addr = info.meta_info.fmask_addr;
+        }
+    } else if (info.usage.depth_target) {
+        if (info.meta_info.htile_addr) {
+            surface_metas.emplace(
+                info.meta_info.htile_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
+            image.info.meta_info.htile_addr = info.meta_info.htile_addr;
+        }
+    } else {
+        registered = false;
+    }
+
+    if (registered) {
+        image.flags |= ImageFlagBits::MetaRegistered;
+    }
 }
 
 void TextureCache::UnregisterImage(ImageId image_id) {

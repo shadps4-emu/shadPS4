@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
 namespace Vulkan::LiverpoolToVK {
@@ -381,6 +382,13 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         case vk::Format::eB8G8R8A8Srgb:
             return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
         }
+    } else {
+        if (is_vo_surface && base_format == vk::Format::eR8G8B8A8Srgb) {
+            return vk::Format::eR8G8B8A8Unorm;
+        }
+        if (is_vo_surface && base_format == vk::Format::eB8G8R8A8Srgb) {
+            return vk::Format::eB8G8R8A8Unorm;
+        }
     }
     return base_format;
 }
@@ -419,6 +427,71 @@ void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
         *out_data++ = i + 2;
         *out_data++ = i;
         *out_data++ = i + 3;
+    }
+}
+
+static constexpr float U8ToUnorm(u8 v) {
+    static constexpr auto c = 1.0f / 255.0f;
+    return float(v * c);
+}
+
+vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
+    const auto comp_swap = color_buffer.info.comp_swap.Value();
+    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
+                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
+               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
+
+    const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
+
+    const auto& c0 = color_buffer.clear_word0;
+    const auto& c1 = color_buffer.clear_word1;
+    const auto num_bits = AmdGpu::NumBits(color_buffer.info.format);
+
+    vk::ClearColorValue color{};
+    switch (color_buffer.info.number_type) {
+    case AmdGpu::NumberFormat::Snorm:
+        [[fallthrough]];
+    case AmdGpu::NumberFormat::SnormNz:
+        [[fallthrough]];
+    case AmdGpu::NumberFormat::Unorm:
+        [[fallthrough]];
+    case AmdGpu::NumberFormat::Srgb: {
+        switch (num_bits) {
+        case 32: {
+            color.float32 = std::array{
+                U8ToUnorm((c0 >> (comp_swap_alt ? 16 : 0)) & 0xff),
+                U8ToUnorm((c0 >> 8) & 0xff),
+                U8ToUnorm((c0 >> (comp_swap_alt ? 0 : 16)) & 0xff),
+                U8ToUnorm((c0 >> 24) & 0xff),
+            };
+            break;
+        }
+        default: {
+            LOG_ERROR(Render_Vulkan, "Missing clear color conversion for bits {}", num_bits);
+            break;
+        }
+        }
+        break;
+    }
+    default: {
+        LOG_ERROR(Render_Vulkan, "Missing clear color conversion for type {}",
+                  color_buffer.info.number_type.Value());
+        break;
+    }
+    }
+    return {.color = color};
+}
+
+vk::SampleCountFlagBits NumSamples(u32 num_samples) {
+    switch (num_samples) {
+    case 1:
+        return vk::SampleCountFlagBits::e1;
+    case 2:
+        return vk::SampleCountFlagBits::e2;
+    case 4:
+        return vk::SampleCountFlagBits::e4;
+    default:
+        UNREACHABLE();
     }
 }
 

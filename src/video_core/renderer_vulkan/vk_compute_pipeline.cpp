@@ -82,7 +82,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
 ComputePipeline::~ComputePipeline() = default;
 
-void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                     VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
@@ -93,12 +93,11 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
     for (const auto& buffer : info.buffers) {
         const auto vsharp = info.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
         const u32 size = vsharp.GetSize();
-        const VAddr addr = vsharp.base_address.Value();
-        texture_cache.OnCpuWrite(addr);
-        const u32 offset = staging.Copy(addr, size,
+        const VAddr address = vsharp.base_address.Value();
+        texture_cache.OnCpuWrite(address);
+        const u32 offset = staging.Copy(address, size,
                                         buffer.is_storage ? instance.StorageMinAlignment()
                                                           : instance.UniformMinAlignment());
-        // const auto [vk_buffer, offset] = memory->GetVulkanBuffer(addr);
         buffer_infos.emplace_back(staging.Handle(), offset, size);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
@@ -109,6 +108,21 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
                                                 : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
+
+        // Most of the time when a metadata is updated with a shader it gets cleared. It means we
+        // can skip the whole dispatch and update the tracked state instead. Also, it is not
+        // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
+        // need its full emulation anyways. For cases of metadata read a warning will be logged.
+        if (buffer.is_storage) {
+            if (texture_cache.TouchMeta(address, true)) {
+                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                return false;
+            }
+        } else {
+            if (texture_cache.IsMeta(address)) {
+                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
+            }
+        }
     }
 
     for (const auto& image : info.images) {
@@ -124,6 +138,10 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
                                                : vk::DescriptorType::eSampledImage,
             .pImageInfo = &image_infos.back(),
         });
+
+        if (texture_cache.IsMeta(tsharp.Address())) {
+            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (texture)");
+        }
     }
     for (const auto& sampler : info.samplers) {
         const auto ssharp = info.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
@@ -139,11 +157,13 @@ void ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         });
     }
 
-    if (!set_writes.empty()) {
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0,
-                                    set_writes);
+    if (set_writes.empty()) {
+        return false;
     }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, set_writes);
+    return true;
 }
 
 } // namespace Vulkan

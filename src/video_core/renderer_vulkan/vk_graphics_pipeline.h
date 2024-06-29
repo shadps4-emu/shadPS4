@@ -38,6 +38,7 @@ struct GraphicsPipelineKey {
     float depth_bias_slope_factor;
     float depth_bias_clamp;
     u32 depth_bias_enable;
+    u32 num_samples = 1;
     Liverpool::StencilControl stencil;
     Liverpool::StencilRefMask stencil_ref_front;
     Liverpool::StencilRefMask stencil_ref_back;
