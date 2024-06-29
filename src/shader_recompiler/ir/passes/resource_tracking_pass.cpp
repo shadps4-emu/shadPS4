@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <deque>
 #include <boost/container/small_vector.hpp>
+
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
@@ -250,11 +252,25 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    IR::Inst* producer = inst.Arg(0).InstRecursive();
-    ASSERT(producer->GetOpcode() ==
-               IR::Opcode::CompositeConstructU32x2 ||        // IMAGE_SAMPLE (image+sampler)
-           producer->GetOpcode() == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
-           producer->GetOpcode() == IR::Opcode::GetUserData);
+    std::deque<IR::Inst*> insts{&inst};
+    const auto& pred = [](auto opcode) -> bool {
+        return (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+                opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+                opcode == IR::Opcode::GetUserData);
+    };
+
+    IR::Inst* producer{};
+    while (!insts.empty() && (producer = insts.front(), !pred(producer->GetOpcode()))) {
+        for (auto arg_idx = 0u; arg_idx < producer->NumArgs(); ++arg_idx) {
+            const auto arg = producer->Arg(arg_idx);
+            if (arg.TryInstRecursive()) {
+                insts.push_back(arg.InstRecursive());
+            }
+        }
+        insts.pop_front();
+    }
+
+    ASSERT(pred(producer->GetOpcode()));
     const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
         if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
             return std::make_pair(producer->Arg(0).InstRecursive(),
