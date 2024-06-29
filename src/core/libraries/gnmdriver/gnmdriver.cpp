@@ -212,6 +212,53 @@ static constexpr std::array InitSequence350{
     0xc0016900u, 0x2aau, 0xffu,
 };
 static_assert(InitSequence350.size() == 0x7c);
+
+static constexpr std::array CtxInitSequence{
+    0xc0012800u, 0x80000000u, 0x80000000u,
+    0xc0001200u, 0u,
+    0xc0002f00u, 1u,
+    0xc0016900u, 0x102u, 0u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0111000u, 0u
+};
+static_assert(CtxInitSequence.size() == 0x0f);
+
+static constexpr std::array CtxInitSequence400{
+    0xc0012800u, 0x80000000u, 0x80000000u,
+    0xc0001200u, 0u,
+    0xc0016900u, 0x2f9u, 0x2du,
+    0xc0016900u, 0x282u, 8u,
+    0xc0016900u, 0x280u, 0x80008u,
+    0xc0016900u, 0x281u, 0xffff0000u,
+    0xc0016900u, 0x204u, 0u,
+    0xc0016900u, 0x206u, 0x43fu,
+    0xc0016900u, 0x83u,  0xffffu,
+    0xc0016900u, 0x317u, 0x10u,
+    0xc0016900u, 0x2fau, 0x3f800000u,
+    0xc0016900u, 0x2fcu, 0x3f800000u,
+    0xc0016900u, 0x2fbu, 0x3f800000u,
+    0xc0016900u, 0x2fdu, 0x3f800000u,
+    0xc0016900u, 0x202u, 0xcc0010u,
+    0xc0016900u, 0x30eu, 0xffffffffu,
+    0xc0016900u, 0x30fu, 0xffffffffu,
+    0xc0002f00u, 1u,
+    0xc0016900u, 0x1b1u, 2u,
+    0xc0016900u, 0x101u, 0u,
+    0xc0016900u, 0x100u, 0xffffffffu,
+    0xc0016900u, 0x103u, 0u,
+    0xc0016900u, 0x284u, 0u,
+    0xc0016900u, 0x290u, 0u,
+    0xc0016900u, 0x2aeu, 0u,
+    0xc0016900u, 0x102u, 0u,
+    0xc0016900u, 0x292u, 0u,
+    0xc0016900u, 0x293u, 0x6020000u,
+    0xc0016900u, 0x2f8u, 0u,
+    0xc0016900u, 0x2deu, 0x1e9u,
+    0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
+    0xc0016900u, 0x2aau, 0xffu,
+    0xc09e1000u,
+};
+static_assert(CtxInitSequence400.size() == 0x61);
 // clang-format on
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
@@ -724,14 +771,28 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
     return SetupContext350(cmdbuf, size, true);
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    constexpr auto CtxInitPacketSize = 0x20u;
+    if (size != CtxInitPacketSize) {
+        return 0;
+    }
+
+    std::memcpy(cmdbuf, CtxInitSequence.data(), CtxInitSequence.size() * 4);
+    return CtxInitPacketSize;
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    constexpr auto CtxInitPacketSize = 0x100u;
+    if (size != CtxInitPacketSize) {
+        return 0;
+    }
+
+    std::memcpy(cmdbuf, CtxInitSequence400.data(), CtxInitSequence400.size() * 4);
+    return CtxInitPacketSize;
 }
 
 int PS4_SYSV_ABI sceGnmDrawOpaqueAuto() {
