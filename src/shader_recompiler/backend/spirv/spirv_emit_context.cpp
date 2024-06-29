@@ -187,6 +187,7 @@ void EmitContext::DefineInputs(const Info& info) {
             Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
         }
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+        frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : info.ps_inputs) {
             const u32 semantic = input.param_index;

@@ -406,6 +406,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CMP_NLT_F32:
             translator.V_CMP_F32(ConditionOp::GE, false, inst);
             break;
+        case Opcode::V_CMP_NGT_F32:
+            translator.V_CMP_F32(ConditionOp::LE, false, inst);
+            break;
         case Opcode::S_CMP_LT_U32:
             translator.S_CMP(ConditionOp::LT, false, inst);
             break;
@@ -473,7 +476,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.S_AND_B64(NegateMode::Src1, inst);
             break;
         case Opcode::S_ORN2_B64:
-            translator.S_OR_B64(NegateMode::Src1, inst);
+            translator.S_OR_B64(NegateMode::Src1, false, inst);
             break;
         case Opcode::V_SIN_F32:
             translator.V_SIN_F32(inst);
@@ -612,10 +615,13 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_CMP_U32(ConditionOp::TRU, false, true, inst);
             break;
         case Opcode::S_OR_B64:
-            translator.S_OR_B64(NegateMode::None, inst);
+            translator.S_OR_B64(NegateMode::None, false, inst);
             break;
         case Opcode::S_NOR_B64:
-            translator.S_OR_B64(NegateMode::Result, inst);
+            translator.S_OR_B64(NegateMode::Result, false, inst);
+            break;
+        case Opcode::S_XOR_B64:
+            translator.S_OR_B64(NegateMode::None, true, inst);
             break;
         case Opcode::S_AND_B64:
             translator.S_AND_B64(NegateMode::None, inst);
@@ -738,6 +744,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_RCP_IFLAG_F32:
             translator.V_RCP_F32(inst);
+            break;
+        case Opcode::IMAGE_GET_RESINFO:
+            translator.IMAGE_GET_RESINFO(inst);
             break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");

@@ -31,6 +31,8 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
         return arg.U32();
     } else if constexpr (std::is_same_v<ArgType, u64>) {
         return arg.U64();
+    } else if constexpr (std::is_same_v<ArgType, bool>) {
+        return arg.U1();
     } else if constexpr (std::is_same_v<ArgType, IR::Attribute>) {
         return arg.Attribute();
     } else if constexpr (std::is_same_v<ArgType, IR::ScalarReg>) {

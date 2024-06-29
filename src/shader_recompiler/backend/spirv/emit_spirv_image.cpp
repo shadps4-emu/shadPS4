@@ -61,9 +61,30 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id of
     }
 }
 
-Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id lod,
-                            const IR::Value& skip_mips_val) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    const auto type = ctx.info.images[handle & 0xFFFF].type;
+    const Id zero = ctx.u32_zero_value;
+    const auto mips{[&] { return skip_mips ? zero : ctx.OpImageQueryLevels(ctx.U32[1], image); }};
+    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa && type != AmdGpu::ImageType::Buffer};
+    const auto query{[&](Id type) {
+        return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
+                        : ctx.OpImageQuerySize(type, image);
+    }};
+    switch (type) {
+    case AmdGpu::ImageType::Color1D:
+        return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[1]), zero, zero, mips());
+    case AmdGpu::ImageType::Color1DArray:
+    case AmdGpu::ImageType::Color2D:
+    case AmdGpu::ImageType::Cube:
+        return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
+    case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Color3D:
+        return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
+    default:
+        throw NotImplementedException("SPIR-V Instruction");
+    }
 }
 
 Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords) {
