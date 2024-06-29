@@ -116,7 +116,8 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool re
     std::unique_lock lock{m_page_table};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
-        if (image.cpu_addr == cpu_address && image.info.size.width == info.size.width) {
+        if (image.cpu_addr == cpu_address && image.info.size.width == info.size.width &&
+            image.info.IsDepthStencil() == info.IsDepthStencil()) {
             image_ids.push_back(image_id);
         }
     });

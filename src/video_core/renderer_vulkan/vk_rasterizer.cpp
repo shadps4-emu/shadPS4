@@ -91,7 +91,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     // TODO: Don't restart renderpass every draw
     const auto& scissor = regs.screen_scissor;
-    const vk::RenderingInfo rendering_info = {
+    vk::RenderingInfo rendering_info = {
         .renderArea =
             {
                 .offset = {scissor.top_left_x, scissor.top_left_y},
@@ -102,6 +102,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         .pColorAttachments = color_attachments.data(),
         .pDepthAttachment = num_depth_attachments ? &depth_attachment : nullptr,
     };
+    auto& area = rendering_info.renderArea.extent;
+    if (area.width == 2048) {
+        area.width = 1920;
+        area.height = 1080;
+    }
 
     UpdateDynamicState(*pipeline);
 

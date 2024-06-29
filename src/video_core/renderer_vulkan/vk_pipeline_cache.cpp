@@ -207,22 +207,26 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         inst_pool.ReleaseContents();
 
         // Recompile shader to IR.
-        LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
-        const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
-        programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
+        try {
+            LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
+            const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
+            programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
-        // Compile IR to SPIR-V
-        auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
-        stages[i] = CompileSPV(spv_code, instance.GetDevice());
-        infos[i] = &programs[i].info;
+            // Compile IR to SPIR-V
+            auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
+            stages[i] = CompileSPV(spv_code, instance.GetDevice());
+            infos[i] = &programs[i].info;
+
+            if (Config::dumpShaders()) {
+                DumpShader(spv_code, hash, stage, "spv");
+            }
+        } catch (const Shader::Exception& e) {
+            UNREACHABLE_MSG("{}", e.what());
+        }
 
         // Set module name to hash in renderdoc
         const auto name = fmt::format("{}_{:#x}", stage, hash);
         Vulkan::SetObjectName(instance.GetDevice(), stages[i], name);
-
-        if (Config::dumpShaders()) {
-            DumpShader(spv_code, hash, stage, "spv");
-        }
     }
 
     return std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key, *pipeline_cache,

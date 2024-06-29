@@ -1260,6 +1260,10 @@ int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
     return sem_post(sem);
 }
 
+int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
+    return sem_getvalue(sem, sval);
+}
+
 int PS4_SYSV_ABI scePthreadGetschedparam(ScePthread thread, int* policy,
                                          SceKernelSchedParam* param) {
     return pthread_getschedparam(thread->pth, policy, param);
@@ -1379,6 +1383,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pDuPEf3m4fI", "libScePosix", 1, "libkernel", 1, 1, posix_sem_init);
     LIB_FUNCTION("YCV5dGGBcCo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_wait);
     LIB_FUNCTION("IKP8typ0QUk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_post);
+    LIB_FUNCTION("Bq+LRV-N6Hk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_getvalue);
     // libs
     RwlockSymbolsRegister(sym);
     SemaphoreSymbolsRegister(sym);

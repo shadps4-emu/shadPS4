@@ -306,8 +306,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(image_binding));
 
+    // No need to patch coordinates if we are just querying.
+    if (inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
+        return;
+    }
+
     // Now that we know the image type, adjust texture coordinate vector.
-    const IR::Inst* body = inst.Arg(1).InstRecursive();
+    IR::Inst* body = inst.Arg(1).InstRecursive();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (image.GetType()) {
         case AmdGpu::ImageType::Color1D: // x

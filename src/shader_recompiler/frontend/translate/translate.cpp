@@ -328,6 +328,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_FMA_F32(inst);
             break;
         case Opcode::IMAGE_SAMPLE_LZ_O:
+        case Opcode::IMAGE_SAMPLE_O:
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
@@ -455,6 +456,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.BUFFER_LOAD_FORMAT(4, false, inst);
             break;
         case Opcode::BUFFER_STORE_FORMAT_X:
+        case Opcode::BUFFER_STORE_DWORD:
             translator.BUFFER_STORE_FORMAT(1, false, inst);
             break;
         case Opcode::BUFFER_STORE_FORMAT_XYZW:
@@ -468,6 +470,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_MAX_U32:
             translator.V_MAX_U32(false, inst);
+            break;
+        case Opcode::V_NOT_B32:
+            translator.V_NOT_B32(inst);
             break;
         case Opcode::V_RSQ_F32:
             translator.V_RSQ_F32(inst);
