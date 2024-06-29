@@ -268,7 +268,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
 
     Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
-} // namespace VideoCore
+}
 
 void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask) {
     if (dst_layout == layout && dst_mask == access_mask) {

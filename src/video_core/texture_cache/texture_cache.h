@@ -84,11 +84,13 @@ public:
         return false;
     }
 
-    void TouchMeta(VAddr address, bool is_clear) {
+    bool TouchMeta(VAddr address, bool is_clear) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
             it.value().is_cleared = is_clear;
+            return true;
         }
+        return false;
     }
 
 private:
@@ -154,7 +156,7 @@ private:
     /// Register image in the page table
     void RegisterImage(ImageId image);
 
-    /// Register meta data surfaces attached to the image
+    /// Register metadata surfaces attached to the image
     void RegisterMeta(const ImageInfo& info, ImageId image);
 
     /// Unregister image from the page table

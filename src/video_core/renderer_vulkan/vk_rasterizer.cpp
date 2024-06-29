@@ -128,7 +128,10 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
-    pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    const auto has_resources = pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    if (!has_resources) {
+        return;
+    }
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
