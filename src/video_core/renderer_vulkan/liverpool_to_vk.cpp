@@ -325,6 +325,18 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Sint) {
         return vk::Format::eR16G16B16A16Sint;
     }
+    if (data_format == AmdGpu::DataFormat::Format16_16 &&
+        num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eR16G16Sfloat;
+    }
+    if (data_format == AmdGpu::DataFormat::Format10_11_11 &&
+        num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eB10G11R11UfloatPack32;
+    }
+    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eA2B10G10R10UnormPack32;
+    }
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc7SrgbBlock;
     }
@@ -490,6 +502,8 @@ vk::SampleCountFlagBits NumSamples(u32 num_samples) {
         return vk::SampleCountFlagBits::e2;
     case 4:
         return vk::SampleCountFlagBits::e4;
+    case 8:
+        return vk::SampleCountFlagBits::e8;
     default:
         UNREACHABLE();
     }
