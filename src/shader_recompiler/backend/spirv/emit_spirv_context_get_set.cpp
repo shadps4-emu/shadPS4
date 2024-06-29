@@ -31,6 +31,8 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
             return ctx.frag_color[index];
         }
     }
+    case IR::Attribute::Depth:
+        return ctx.frag_depth;
     default:
         throw NotImplementedException("Read attribute {}", attr);
     }

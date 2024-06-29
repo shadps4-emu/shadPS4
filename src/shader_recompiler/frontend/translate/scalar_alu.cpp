@@ -104,7 +104,7 @@ void Translator::S_MOV_B64(const GcnInst& inst) {
     }
 }
 
-void Translator::S_OR_B64(NegateMode negate, const GcnInst& inst) {
+void Translator::S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
         case OperandField::ExecLo:
@@ -123,7 +123,7 @@ void Translator::S_OR_B64(NegateMode negate, const GcnInst& inst) {
     if (negate == NegateMode::Src1) {
         src1 = ir.LogicalNot(src1);
     }
-    IR::U1 result = ir.LogicalOr(src0, src1);
+    IR::U1 result = is_xor ? ir.LogicalXor(src0, src1) : ir.LogicalOr(src0, src1);
     if (negate == NegateMode::Result) {
         result = ir.LogicalNot(result);
     }

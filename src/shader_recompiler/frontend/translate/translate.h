@@ -46,7 +46,7 @@ public:
     void S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst);
     void S_AND_SAVEEXEC_B64(const GcnInst& inst);
     void S_MOV_B64(const GcnInst& inst);
-    void S_OR_B64(NegateMode negate, const GcnInst& inst);
+    void S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst);
     void S_AND_B64(NegateMode negate, const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_AND_B32(const GcnInst& inst);

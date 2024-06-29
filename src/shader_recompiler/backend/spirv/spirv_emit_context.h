@@ -160,6 +160,7 @@ public:
     Id base_vertex{};
     Id frag_coord{};
     Id front_facing{};
+    Id frag_depth{};
     std::array<Id, 8> frag_color{};
     std::array<u32, 8> frag_num_comp{};
 
