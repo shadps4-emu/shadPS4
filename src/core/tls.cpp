@@ -124,9 +124,9 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
     const u32 idx1st = slot / PthreadKeySecondLevelSize;
     const u32 idx2nd = slot % PthreadKeySecondLevelSize;
     const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
+    c.mov(target_reg, PthreadSpecificOffset);
     c.putSeg(fs);
-    c.mov(target_reg,
-          qword[PthreadSpecificOffset + idx1st * 8]); // Load first level specific array.
+    c.mov(target_reg, qword[target_reg + idx1st * 8]); // Load first level specific array.
     c.mov(target_reg, qword[target_reg + idx2nd * 16 +
                             8]); // Load data member of pthread_key_data our slot specifies.
     c.jmp(code + total_size);    // Return to the instruction right after the mov.
