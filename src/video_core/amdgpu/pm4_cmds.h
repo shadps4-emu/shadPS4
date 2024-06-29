@@ -518,13 +518,14 @@ struct PM4CmdEventWriteEos {
 struct PM4WriteConstRam {
     PM4Type3Header header;
     union {
-        BitField<0, 16, u32> offset; // in DWs
+        BitField<0, 16, u32> offset; ///< Starting DW granularity offset into the constant RAM.
+                                     ///< Thus, bits[1:0] are zero.
         u32 dw1;
     };
     u32 data[0];
 
     [[nodiscard]] u32 Offset() const {
-        return offset.Value() << 2u;
+        return offset.Value();
     }
 
     [[nodiscard]] u32 Size() const {
