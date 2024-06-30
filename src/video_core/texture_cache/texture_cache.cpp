@@ -116,10 +116,15 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool re
     std::unique_lock lock{m_page_table};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
-        if (image.cpu_addr == cpu_address && image.info.size.width == info.size.width &&
-            image.info.IsDepthStencil() == info.IsDepthStencil()) {
-            image_ids.push_back(image_id);
+        // Address and width must match.
+        if (image.cpu_addr != cpu_address || image.info.size.width != info.size.width) {
+            return;
         }
+        if (info.IsDepthStencil() != image.info.IsDepthStencil() &&
+            info.pixel_format != vk::Format::eR32Sfloat) {
+            return;
+        }
+        image_ids.push_back(image_id);
     });
 
     ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
@@ -129,7 +134,7 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool re
         image_id = slot_images.insert(instance, scheduler, info, cpu_address);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids[0];
+        image_id = image_ids.size() > 1 ? image_ids[1] : image_ids[0];
     }
 
     RegisterMeta(info, image_id);
@@ -163,11 +168,11 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
+ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage, bool is_depth) {
     const ImageInfo info{desc};
     Image& image = FindImage(info, desc.Address());
 
-    if (is_storage) {
+    if (is_storage || is_depth) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
         image.info.usage.storage = true;
     } else {
@@ -202,7 +207,7 @@ ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffe
     auto& image = FindImage(info, buffer.Address(), false);
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    image.Transit(vk::ImageLayout::eDepthStencilAttachmentOptimal,
+    image.Transit(vk::ImageLayout::eGeneral,
                   vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                       vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
@@ -260,6 +265,8 @@ void TextureCache::RefreshImage(Image& image) {
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, 1},
         };
+
+        scheduler.EndRendering();
 
         const auto cmdbuf = scheduler.CommandBuffer();
         image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);

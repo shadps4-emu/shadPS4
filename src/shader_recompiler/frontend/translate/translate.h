@@ -146,6 +146,7 @@ public:
     // MIMG
     void IMAGE_GET_RESINFO(const GcnInst& inst);
     void IMAGE_SAMPLE(const GcnInst& inst);
+    void IMAGE_GATHER(const GcnInst& inst);
     void IMAGE_STORE(const GcnInst& inst);
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
 

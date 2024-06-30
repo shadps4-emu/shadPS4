@@ -329,11 +329,15 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::IMAGE_SAMPLE_LZ_O:
         case Opcode::IMAGE_SAMPLE_O:
+        case Opcode::IMAGE_SAMPLE_C:
         case Opcode::IMAGE_SAMPLE_C_LZ:
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
+            break;
+        case Opcode::IMAGE_GATHER4_C:
+            translator.IMAGE_GATHER(inst);
             break;
         case Opcode::IMAGE_STORE:
             translator.IMAGE_STORE(inst);
@@ -450,16 +454,22 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.BUFFER_LOAD_FORMAT(1, false, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_XYZ:
+        case Opcode::BUFFER_LOAD_DWORDX3:
             translator.BUFFER_LOAD_FORMAT(3, false, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_XYZW:
+        case Opcode::BUFFER_LOAD_DWORDX4:
             translator.BUFFER_LOAD_FORMAT(4, false, inst);
             break;
         case Opcode::BUFFER_STORE_FORMAT_X:
         case Opcode::BUFFER_STORE_DWORD:
             translator.BUFFER_STORE_FORMAT(1, false, inst);
             break;
+        case Opcode::BUFFER_STORE_DWORDX3:
+            translator.BUFFER_STORE_FORMAT(3, false, inst);
+            break;
         case Opcode::BUFFER_STORE_FORMAT_XYZW:
+        case Opcode::BUFFER_STORE_DWORDX4:
             translator.BUFFER_STORE_FORMAT(4, false, inst);
             break;
         case Opcode::V_MAX_F32:

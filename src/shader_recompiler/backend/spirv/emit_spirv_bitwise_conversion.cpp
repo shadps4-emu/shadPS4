@@ -7,7 +7,7 @@
 namespace Shader::Backend::SPIRV {
 
 void EmitBitCastU16F16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitBitCastU32F32(EmitContext& ctx, Id value) {
@@ -15,11 +15,11 @@ Id EmitBitCastU32F32(EmitContext& ctx, Id value) {
 }
 
 void EmitBitCastU64F64(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 void EmitBitCastF16U16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitBitCastF32U32(EmitContext& ctx, Id value) {
@@ -27,7 +27,7 @@ Id EmitBitCastF32U32(EmitContext& ctx, Id value) {
 }
 
 void EmitBitCastF64U64(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitPackUint2x32(EmitContext& ctx, Id value) {

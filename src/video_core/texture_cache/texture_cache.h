@@ -52,7 +52,8 @@ public:
                                    bool refresh_on_create = true);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
-    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image, bool is_storage);
+    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image, bool is_storage,
+                                           bool is_depth);
 
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,

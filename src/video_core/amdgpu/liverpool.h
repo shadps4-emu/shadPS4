@@ -43,6 +43,7 @@ struct Liverpool {
     static constexpr u32 NumShaderUserData = 16;
     static constexpr u32 UconfigRegWordOffset = 0xC000;
     static constexpr u32 ContextRegWordOffset = 0xA000;
+    static constexpr u32 ConfigRegWordOffset = 0x2000;
     static constexpr u32 ShRegWordOffset = 0x2C00;
     static constexpr u32 NumRegs = 0xD000;
 
@@ -789,6 +790,7 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<6, 1, u32> depth_compress_disable;
     };
 
     union AaConfig {

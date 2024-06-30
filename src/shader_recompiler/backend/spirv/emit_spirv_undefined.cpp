@@ -11,11 +11,11 @@ Id EmitUndefU1(EmitContext& ctx) {
 }
 
 Id EmitUndefU8(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitUndefU16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitUndefU32(EmitContext& ctx) {
@@ -23,7 +23,7 @@ Id EmitUndefU32(EmitContext& ctx) {
 }
 
 Id EmitUndefU64(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

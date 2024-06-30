@@ -52,7 +52,7 @@ struct BufferResource {
 
     auto operator<=>(const BufferResource&) const = default;
 };
-using BufferResourceList = boost::container::static_vector<BufferResource, 8>;
+using BufferResourceList = boost::container::static_vector<BufferResource, 16>;
 
 struct ImageResource {
     u32 sgpr_base;
@@ -62,13 +62,13 @@ struct ImageResource {
     bool is_storage;
     bool is_depth;
 };
-using ImageResourceList = boost::container::static_vector<ImageResource, 8>;
+using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
 
 struct SamplerResource {
     u32 sgpr_base;
     u32 dword_offset;
 };
-using SamplerResourceList = boost::container::static_vector<SamplerResource, 8>;
+using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
 
 struct Info {
     struct VsInput {

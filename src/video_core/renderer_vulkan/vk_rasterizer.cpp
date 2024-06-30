@@ -23,7 +23,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 128_MB} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 512_MB, BufferType::Upload} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -46,71 +46,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
-    boost::container::static_vector<vk::RenderingAttachmentInfo, Liverpool::NumColorBuffers>
-        color_attachments{};
-    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
-        const auto& col_buf = regs.color_buffers[col_buf_id];
-        if (!col_buf) {
-            continue;
-        }
-
-        const auto& hint = liverpool->last_cb_extent[col_buf_id];
-        const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
-
-        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
-        color_attachments.push_back({
-            .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eGeneral,
-            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-            .clearValue =
-                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
-        });
-        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
-    }
-
-    vk::RenderingAttachmentInfo depth_attachment{};
-    u32 num_depth_attachments{};
-    if (pipeline->IsDepthEnabled() && regs.depth_buffer.Address() != 0) {
-        const auto htile_address = regs.depth_htile_data_base.GetAddress();
-        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
-                              texture_cache.IsMetaCleared(htile_address);
-        const auto& image_view =
-            texture_cache.DepthTarget(regs.depth_buffer, htile_address, liverpool->last_db_extent);
-        depth_attachment = {
-            .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eGeneral,
-            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
-            .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
-            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
-                                                          .stencil = regs.stencil_clear}},
-        };
-        texture_cache.TouchMeta(htile_address, false);
-        num_depth_attachments++;
-    }
-
-    // TODO: Don't restart renderpass every draw
-    const auto& scissor = regs.screen_scissor;
-    vk::RenderingInfo rendering_info = {
-        .renderArea =
-            {
-                .offset = {scissor.top_left_x, scissor.top_left_y},
-                .extent = {scissor.GetWidth(), scissor.GetHeight()},
-            },
-        .layerCount = 1,
-        .colorAttachmentCount = static_cast<u32>(color_attachments.size()),
-        .pColorAttachments = color_attachments.data(),
-        .pDepthAttachment = num_depth_attachments ? &depth_attachment : nullptr,
-    };
-    auto& area = rendering_info.renderArea.extent;
-    if (area.width == 2048) {
-        area.width = 1920;
-        area.height = 1080;
-    }
-
+    BeginRendering();
     UpdateDynamicState(*pipeline);
 
-    cmdbuf.beginRendering(rendering_info);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
@@ -120,7 +58,6 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
                                      : regs.num_indices;
         cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
     }
-    cmdbuf.endRendering();
 }
 
 void Rasterizer::DispatchDirect() {
@@ -138,15 +75,66 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    scheduler.EndRendering();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+}
+
+void Rasterizer::BeginRendering() {
+    const auto& regs = liverpool->regs;
+    RenderState state;
+
+    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
+        const auto& col_buf = regs.color_buffers[col_buf_id];
+        if (!col_buf) {
+            continue;
+        }
+
+        const auto& hint = liverpool->last_cb_extent[col_buf_id];
+        const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
+        state.width = std::min<u32>(state.width, hint.width);
+        state.height = std::min<u32>(state.height, hint.height);
+
+        const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
+        state.color_attachments[state.num_color_attachments++] = {
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue =
+            is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
+        };
+        texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
+    }
+
+    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invald &&
+        regs.depth_buffer.Address() != 0) {
+        const auto htile_address = regs.depth_htile_data_base.GetAddress();
+        const bool is_clear = regs.depth_render_control.depth_clear_enable ||
+                              texture_cache.IsMetaCleared(htile_address);
+        const auto& hint = liverpool->last_db_extent;
+        const auto& image_view = texture_cache.DepthTarget(regs.depth_buffer, htile_address, hint);
+        state.width = std::min<u32>(state.width, hint.width);
+        state.height = std::min<u32>(state.height, hint.height);
+        state.depth_attachment = {
+            .imageView = *image_view.image_view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+            .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
+                                                          .stencil = regs.stencil_clear}},
+        };
+        texture_cache.TouchMeta(htile_address, false);
+        state.num_depth_attachments++;
+    }
+    scheduler.BeginRendering(state);
 }
 
 u32 Rasterizer::SetupIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
     if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::QuadList) {
-        ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
+        //ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
         is_indexed = true;
 
         // Emit indices.
