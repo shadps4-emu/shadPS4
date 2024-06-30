@@ -54,8 +54,9 @@ int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* 
         UNREACHABLE();
     }
 
-    ASSERT_MSG(queue_mode == EventFlagInternal::QueueMode::Fifo,
-               "ThreadPriority attr is not supported!");
+    if (queue_mode == EventFlagInternal::QueueMode::ThreadPrio) {
+        LOG_ERROR(Kernel_Event, "ThreadPriority attr is not supported!");
+    }
 
     *ef = new EventFlagInternal(std::string(pName), thread_mode, queue_mode, initPattern);
     return ORBIS_OK;
