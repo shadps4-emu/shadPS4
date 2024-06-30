@@ -9,6 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
+#include "libkernel.h"
 
 namespace Libraries::Kernel {
 
@@ -59,7 +60,8 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostDirectory(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
-            UNREACHABLE();                                       // not supported yet
+            h->DeleteHandle(handle);
+            return ORBIS_KERNEL_ERROR_ENOTDIR;
         } else {
             if (create) {
                 return handle; // dir already exists
@@ -99,7 +101,10 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     LOG_INFO(Kernel_Fs, "posix open redirect to sceKernelOpen");
     int result = sceKernelOpen(path, flags, mode);
     // Posix calls different only for their return values
-    ASSERT(result >= 0);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
+    }
     return result;
 }
 
@@ -122,7 +127,13 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
 }
 
 int PS4_SYSV_ABI posix_close(int d) {
-    ASSERT(sceKernelClose(d) == 0);
+    int result = sceKernelClose(d);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_close: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
     return ORBIS_OK;
 }
 
@@ -175,7 +186,13 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
 }
 
 s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
-    return sceKernelLseek(d, offset, whence);
+    int result = sceKernelLseek(d, offset, whence);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_lseek: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
@@ -190,7 +207,13 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
 }
 
 int PS4_SYSV_ABI posix_read(int d, void* buf, size_t nbytes) {
-    return sceKernelRead(d, buf, nbytes);
+    int result = sceKernelRead(d, buf, nbytes);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_read: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
@@ -215,7 +238,13 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
 }
 
 int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    return sceKernelMkdir(path, mode);
+    int result = sceKernelMkdir(path, mode);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_mkdir: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
@@ -246,9 +275,10 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 
 int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     int result = sceKernelStat(path, sb);
-    if (result != 0) {
+    if (result < 0) {
         LOG_ERROR(Kernel_Pthread, "posix_stat: error = {}", result);
-        result += ORBIS_KERNEL_ERROR_UNKNOWN;
+        ErrSceToPosix(result);
+        return -1;
     }
     return result;
 }
@@ -308,7 +338,13 @@ int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
 }
 
 int PS4_SYSV_ABI posix_fstat(int fd, OrbisKernelStat* sb) {
-    return sceKernelFStat(fd, sb);
+    int result = sceKernelFStat(fd, sb);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_fstat: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelFsync(int fd) {

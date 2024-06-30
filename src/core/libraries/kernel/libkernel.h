@@ -12,6 +12,8 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+void ErrSceToPosix(int result);
+
 struct OrbisTimesec {
     time_t t;
     u32 west_sec;
