@@ -200,6 +200,8 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
             ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
         }
         ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
+        ctx.AddCapability(spv::Capability::ImageGatherExtended);
+        ctx.AddCapability(spv::Capability::ImageQuery);
         // if (program.info.stores_frag_depth) {
         //     ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         // }

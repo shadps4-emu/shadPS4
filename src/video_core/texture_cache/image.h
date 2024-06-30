@@ -132,7 +132,8 @@ struct Image {
         return image_view_ids[std::distance(image_view_infos.begin(), it)];
     }
 
-    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask);
+    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,
+                 vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
     const Vulkan::Instance* instance;

@@ -221,6 +221,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{cpu_addr},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
+    ASSERT(info.pixel_format != vk::Format::eUndefined);
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.type == vk::ImageType::e2D && info.resources.layers >= 6 &&
@@ -272,7 +273,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }
 
-void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask) {
+void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,
+                    vk::CommandBuffer cmdbuf) {
     if (dst_layout == layout && dst_mask == access_mask) {
         return;
     }
@@ -300,7 +302,12 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
          dst_mask == vk::AccessFlagBits::eTransferWrite)
             ? vk::PipelineStageFlagBits::eTransfer
             : vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eComputeShader;
-    const auto cmdbuf = scheduler->CommandBuffer();
+
+    if (!cmdbuf) {
+        // When using external cmdbuf you are responsible for ending rp.
+        scheduler->EndRendering();
+        cmdbuf = scheduler->CommandBuffer();
+    }
     cmdbuf.pipelineBarrier(pl_stage, dst_pl_stage, vk::DependencyFlagBits::eByRegion, {}, {},
                            barrier);
 
@@ -310,6 +317,7 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> ds
 }
 
 void Image::Upload(vk::Buffer buffer, u64 offset) {
+    scheduler->EndRendering();
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
 
     // Copy to the image.
@@ -318,7 +326,7 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
         .bufferRowLength = info.pitch,
         .bufferImageHeight = info.size.height,
         .imageSubresource{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .aspectMask = aspect_mask,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,

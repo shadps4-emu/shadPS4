@@ -11,7 +11,7 @@ Id EmitSelectU1(EmitContext& ctx, Id cond, Id true_value, Id false_value) {
 }
 
 Id EmitSelectU8(EmitContext&, Id, Id, Id) {
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitSelectU16(EmitContext& ctx, Id cond, Id true_value, Id false_value) {

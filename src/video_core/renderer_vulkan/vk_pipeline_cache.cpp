@@ -117,8 +117,8 @@ void PipelineCache::RefreshGraphicsKey() {
     key.num_samples = regs.aa_config.NumSamples();
 
     const auto& db = regs.depth_buffer;
+    key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
     if (key.depth.depth_enable) {
-        key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
         key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
     }
 
@@ -206,6 +206,10 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
+        if (hash == 0xa34c48f8) {
+            printf("bad\n");
+        }
+
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
@@ -214,12 +218,11 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
 
             // Compile IR to SPIR-V
             auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
-            stages[i] = CompileSPV(spv_code, instance.GetDevice());
-            infos[i] = &programs[i].info;
-
             if (Config::dumpShaders()) {
                 DumpShader(spv_code, hash, stage, "spv");
             }
+            stages[i] = CompileSPV(spv_code, instance.GetDevice());
+            infos[i] = &programs[i].info;
         } catch (const Shader::Exception& e) {
             UNREACHABLE_MSG("{}", e.what());
         }
@@ -246,22 +249,25 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
     inst_pool.ReleaseContents();
 
     // Recompile shader to IR.
-    LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
-    const Shader::Info info =
-        MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
-    auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
+    try {
+        LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
+        const Shader::Info info =
+            MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
+        auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
-    // Compile IR to SPIR-V
-    u32 binding{};
-    const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
-    const auto module = CompileSPV(spv_code, instance.GetDevice());
-
-    if (Config::dumpShaders()) {
-        DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
+        // Compile IR to SPIR-V
+        u32 binding{};
+        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
+        if (Config::dumpShaders()) {
+            DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
+        }
+        const auto module = CompileSPV(spv_code, instance.GetDevice());
+        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, &program.info,
+                                                 module);
+    } catch (const Shader::Exception& e) {
+        UNREACHABLE_MSG("{}", e.what());
+        return nullptr;
     }
-
-    return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, &program.info,
-                                             module);
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,

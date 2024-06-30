@@ -198,6 +198,7 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
 
 void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                             Descriptors& descriptors) {
+    static constexpr size_t MaxUboSize = 65536;
     IR::Inst* producer = inst.Arg(0).InstRecursive();
     const auto sharp = TrackSharp(producer);
     const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
@@ -207,7 +208,7 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         .stride = buffer.GetStride(),
         .num_records = u32(buffer.num_records),
         .used_types = BufferDataType(inst),
-        .is_storage = IsBufferStore(inst),
+        .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
     });
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -252,25 +253,14 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    std::deque<IR::Inst*> insts{&inst};
-    const auto& pred = [](auto opcode) -> bool {
-        return (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
-                opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
-                opcode == IR::Opcode::GetUserData);
-    };
-
-    IR::Inst* producer{};
-    while (!insts.empty() && (producer = insts.front(), !pred(producer->GetOpcode()))) {
-        for (auto arg_idx = 0u; arg_idx < producer->NumArgs(); ++arg_idx) {
-            const auto arg = producer->Arg(arg_idx);
-            if (arg.TryInstRecursive()) {
-                insts.push_back(arg.InstRecursive());
-            }
-        }
-        insts.pop_front();
+    IR::Inst* producer = inst.Arg(0).InstRecursive();
+    while (producer->GetOpcode() == IR::Opcode::Phi) {
+        producer = producer->Arg(0).InstRecursive();
     }
-
-    ASSERT(pred(producer->GetOpcode()));
+    ASSERT(producer->GetOpcode() ==
+               IR::Opcode::CompositeConstructU32x2 ||        // IMAGE_SAMPLE (image+sampler)
+           producer->GetOpcode() == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
+           producer->GetOpcode() == IR::Opcode::GetUserData);
     const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
         if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
             return std::make_pair(producer->Arg(0).InstRecursive(),
@@ -334,6 +324,22 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }();
     inst.SetArg(1, coords);
+
+    if (inst_info.has_offset) {
+        // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
+        const u32 arg_pos = inst_info.is_depth ? 4 : 3;
+        const IR::Value arg = inst.Arg(arg_pos);
+        ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
+        const auto sign_ext = [&](u32 value) { return ir.Imm32(s32(value << 24) >> 24); };
+        union {
+            u32 raw;
+            BitField<0, 6, u32> x;
+            BitField<8, 6, u32> y;
+            BitField<16, 6, u32> z;
+        } offset{arg.U32()};
+        const IR::Value value = ir.CompositeConstruct(sign_ext(offset.x), sign_ext(offset.y));
+        inst.SetArg(arg_pos, value);
+    }
 
     if (inst_info.has_lod_clamp) {
         // Final argument contains lod_clamp

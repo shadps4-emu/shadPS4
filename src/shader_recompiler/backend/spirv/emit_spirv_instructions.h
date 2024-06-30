@@ -338,13 +338,13 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
                               Id offset);
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
                               Id offset);
-Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index,
+Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle,
                                   Id coords, Id dref, Id bias_lc, const IR::Value& offset);
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
                                   Id bias_lc, Id offset);
 Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
                    const IR::Value& offset, const IR::Value& offset2);
-Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
+Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                        const IR::Value& offset, const IR::Value& offset2, Id dref);
 Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
                   Id ms);

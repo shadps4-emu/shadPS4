@@ -242,7 +242,7 @@ void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
 s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** unk) {
     auto* port = driver->GetPort(handle);
     if (!port) {
-        return 0x8029000b;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
     Platform::IrqC::Instance()->RegisterOnce(

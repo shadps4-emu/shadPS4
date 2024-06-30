@@ -187,7 +187,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
         .colorAttachmentCount = num_color_formats,
         .pColorAttachmentFormats = key.color_formats.data(),
-        .depthAttachmentFormat = key.depth.depth_enable ? key.depth_format : vk::Format::eUndefined,
+        .depthAttachmentFormat = key.depth_format,
         .stencilAttachmentFormat = vk::Format::eUndefined,
     };
 
@@ -320,7 +320,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     u32 binding{};
 
@@ -350,9 +350,10 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
         for (const auto& image : stage.images) {
             const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-            const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage);
+            const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage, image.is_depth);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     vk::ImageLayout::eShaderReadOnlyOptimal);
+                                     (image.is_storage || image.is_depth) ? vk::ImageLayout::eGeneral
+                                                      : vk::ImageLayout::eShaderReadOnlyOptimal);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,

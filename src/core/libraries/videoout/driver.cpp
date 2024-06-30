@@ -209,6 +209,8 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
+    std::scoped_lock lock{mutex};
+
     Vulkan::Frame* frame;
     if (index == -1) {
         frame = renderer->PrepareBlankFrame();
@@ -217,8 +219,6 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         const auto& group = port->groups[buffer.group_index];
         frame = renderer->PrepareFrame(group, buffer.address_left);
     }
-
-    std::scoped_lock lock{mutex};
 
     if (index != -1 && requests.size() >= port->NumRegisteredBuffers()) {
         LOG_ERROR(Lib_VideoOut, "Flip queue is full");

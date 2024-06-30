@@ -381,6 +381,7 @@ Frame* RendererVulkan::GetRenderFrame() {
     {
         std::unique_lock lock{free_mutex};
         free_cv.wait(lock, [this] { return !free_queue.empty(); });
+        LOG_INFO(Render_Vulkan, "Got render frame, remaining {}", free_queue.size() - 1);
 
         // Take the frame from the queue
         frame = free_queue.front();

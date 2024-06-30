@@ -18,6 +18,37 @@ Scheduler::~Scheduler() {
     std::free(profiler_scope);
 }
 
+void Scheduler::BeginRendering(const RenderState& new_state) {
+    if (is_rendering && render_state == new_state) {
+        return;
+    }
+    EndRendering();
+    is_rendering = true;
+    render_state = new_state;
+
+    const vk::RenderingInfo rendering_info = {
+        .renderArea = {
+            .offset = {0, 0},
+            .extent = {render_state.width, render_state.height},
+        },
+        .layerCount = 1,
+        .colorAttachmentCount = static_cast<u32>(render_state.color_attachments.size()),
+        .pColorAttachments = render_state.color_attachments.data(),
+        .pDepthAttachment = render_state.num_depth_attachments ?
+                                &render_state.depth_attachment : nullptr,
+    };
+
+    current_cmdbuf.beginRendering(rendering_info);
+}
+
+void Scheduler::EndRendering() {
+    if (!is_rendering) {
+        return;
+    }
+    is_rendering = false;
+    current_cmdbuf.endRendering();
+}
+
 void Scheduler::Flush(vk::Semaphore signal, vk::Semaphore wait) {
     // When flushing, we only send data to the worker thread; no waiting is necessary.
     SubmitExecution(signal, wait);
@@ -55,6 +86,7 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 }
 
 void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore) {
+    std::scoped_lock lk{submit_mutex};
     const u64 signal_value = master_semaphore.NextTick();
 
     auto* profiler_ctx = instance.GetProfilerContext();
@@ -63,7 +95,7 @@ void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wa
         TracyVkCollect(profiler_ctx, current_cmdbuf);
     }
 
-    std::scoped_lock lk{submit_mutex};
+    EndRendering();
     master_semaphore.SubmitWork(current_cmdbuf, wait_semaphore, signal_semaphore, signal_value);
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();

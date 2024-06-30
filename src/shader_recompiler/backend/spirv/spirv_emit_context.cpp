@@ -118,6 +118,7 @@ Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     switch (fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
+    case AmdGpu::NumberFormat::Snorm:
         return ctx.F32[4];
     case AmdGpu::NumberFormat::Sint:
         return ctx.S32[4];
@@ -137,6 +138,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     switch (fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
+    case AmdGpu::NumberFormat::Snorm:
         return {id, input_f32, F32[1], 4};
     case AmdGpu::NumberFormat::Uint:
         return {id, input_u32, U32[1], 4};
@@ -253,6 +255,7 @@ void EmitContext::DefineOutputs(const Info& info) {
 }
 
 void EmitContext::DefineBuffers(const Info& info) {
+    boost::container::small_vector<Id, 8> type_ids;
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
@@ -260,13 +263,15 @@ void EmitContext::DefineBuffers(const Info& info) {
         const u32 num_elements = stride * buffer.num_records;
         const Id record_array_type{TypeArray(data_type, ConstU32(num_elements))};
         const Id struct_type{TypeStruct(record_array_type)};
-        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-
-        const auto name = fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
-        Name(struct_type, name);
-        Decorate(struct_type, spv::Decoration::Block);
-        MemberName(struct_type, 0, "data");
-        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
+            Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
+            const auto name = fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
+            Name(struct_type, name);
+            Decorate(struct_type, spv::Decoration::Block);
+            MemberName(struct_type, 0, "data");
+            MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+        }
+        type_ids.push_back(record_array_type);
 
         const auto storage_class =
             buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;

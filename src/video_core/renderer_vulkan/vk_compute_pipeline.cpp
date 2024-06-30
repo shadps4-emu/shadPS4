@@ -85,7 +85,7 @@ ComputePipeline::~ComputePipeline() = default;
 bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                     VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
-    boost::container::static_vector<vk::DescriptorBufferInfo, 4> buffer_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 8> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 8> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     u32 binding{};
@@ -115,7 +115,7 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         // need its full emulation anyways. For cases of metadata read a warning will be logged.
         if (buffer.is_storage) {
             if (texture_cache.TouchMeta(address, true)) {
-                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                LOG_WARNING(Render_Vulkan, "Metadata update skipped");
                 return false;
             }
         } else {
@@ -127,7 +127,7 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
 
     for (const auto& image : info.images) {
         const auto tsharp = info.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-        const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage);
+        const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage, image.is_depth);
         image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, vk::ImageLayout::eGeneral);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,

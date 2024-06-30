@@ -126,7 +126,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
 
     // Begin main window loop until the application exits
-    static constexpr std::chrono::microseconds FlipPeriod{10};
+    static constexpr std::chrono::milliseconds FlipPeriod{16};
 
     while (window.isOpen()) {
         window.waitEvent();
