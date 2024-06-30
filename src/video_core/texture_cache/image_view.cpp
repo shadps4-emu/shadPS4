@@ -71,8 +71,9 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
+                     ImageId image_id_,
                      std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
-    : info{info_} {
+    : info{info_}, image_id{image_id_} {
     vk::ImageViewUsageCreateInfo usage_ci{};
     if (usage_override) {
         usage_ci.usage = usage_override.value();

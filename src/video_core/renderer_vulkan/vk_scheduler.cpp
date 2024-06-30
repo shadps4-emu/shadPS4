@@ -32,7 +32,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
             .extent = {render_state.width, render_state.height},
         },
         .layerCount = 1,
-        .colorAttachmentCount = static_cast<u32>(render_state.color_attachments.size()),
+        .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.color_attachments.data(),
         .pDepthAttachment = render_state.num_depth_attachments ?
                                 &render_state.depth_attachment : nullptr,

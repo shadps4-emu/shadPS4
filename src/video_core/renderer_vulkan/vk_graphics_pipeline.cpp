@@ -348,19 +348,18 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             }
         }
 
-        for (const auto& image : stage.images) {
-            const auto tsharp = stage.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-            const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage, image.is_depth);
-            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     (image.is_storage || image.is_depth) ? vk::ImageLayout::eGeneral
-                                                      : vk::ImageLayout::eShaderReadOnlyOptimal);
+        for (const auto& image_desc : stage.images) {
+            const auto tsharp = stage.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            const auto& image_view = texture_cache.FindImageView(tsharp, image_desc.is_storage);
+            const auto& image = texture_cache.GetImage(image_view.image_id);
+            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
-                                                   : vk::DescriptorType::eSampledImage,
+                .descriptorType = image_desc.is_storage ? vk::DescriptorType::eStorageImage
+                                                        : vk::DescriptorType::eSampledImage,
                 .pImageInfo = &image_infos.back(),
             });
 

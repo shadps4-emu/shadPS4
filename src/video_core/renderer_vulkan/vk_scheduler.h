@@ -23,7 +23,7 @@ struct RenderState {
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
-    }
+    }    
 };
 
 class Scheduler {
@@ -45,6 +45,11 @@ public:
 
     /// Ends current rendering scope.
     void EndRendering();
+
+    /// Returns the current render state.
+    const RenderState& GetRenderState() const {
+        return render_state;
+    }
 
     /// Returns the current command buffer.
     vk::CommandBuffer CommandBuffer() const {

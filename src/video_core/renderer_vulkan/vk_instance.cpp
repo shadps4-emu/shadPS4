@@ -203,6 +203,7 @@ bool Instance::CreateDevice() {
                 .independentBlend = true,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
+                .multiViewport = true,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
                 .shaderImageGatherExtended = true,

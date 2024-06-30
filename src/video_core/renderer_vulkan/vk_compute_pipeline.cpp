@@ -125,17 +125,18 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         }
     }
 
-    for (const auto& image : info.images) {
-        const auto tsharp = info.ReadUd<AmdGpu::Image>(image.sgpr_base, image.dword_offset);
-        const auto& image_view = texture_cache.FindImageView(tsharp, image.is_storage, image.is_depth);
-        image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, vk::ImageLayout::eGeneral);
+    for (const auto& image_desc : info.images) {
+        const auto tsharp = info.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+        const auto& image_view = texture_cache.FindImageView(tsharp, image_desc.is_storage);
+        const auto& image = texture_cache.GetImage(image_view.image_id);
+        image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = binding++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
-                                               : vk::DescriptorType::eSampledImage,
+            .descriptorType = image_desc.is_storage ? vk::DescriptorType::eStorageImage
+                                                    : vk::DescriptorType::eSampledImage,
             .pImageInfo = &image_infos.back(),
         });
 

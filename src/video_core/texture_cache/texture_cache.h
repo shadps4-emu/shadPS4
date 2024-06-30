@@ -48,19 +48,19 @@ public:
     void OnCpuWrite(VAddr address);
 
     /// Retrieves the image handle of the image with the provided attributes and address.
-    [[nodiscard]] Image& FindImage(const ImageInfo& info, VAddr cpu_address,
-                                   bool refresh_on_create = true);
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info, VAddr cpu_address,
+                                    bool refresh_on_create = true);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
-    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image, bool is_storage,
-                                           bool is_depth);
+    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image, bool is_storage);
 
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                           const AmdGpu::Liverpool::CbDbExtent& hint);
     [[nodiscard]] ImageView& DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
                                          VAddr htile_address,
-                                         const AmdGpu::Liverpool::CbDbExtent& hint);
+                                         const AmdGpu::Liverpool::CbDbExtent& hint,
+                                         bool write_enabled);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
@@ -95,7 +95,7 @@ public:
     }
 
 private:
-    ImageView& RegisterImageView(Image& image, const ImageViewInfo& view_info);
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Iterate over all page indices in a range
     template <typename Func>
