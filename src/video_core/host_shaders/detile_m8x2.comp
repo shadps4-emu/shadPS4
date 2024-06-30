@@ -1,0 +1,61 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+// NOTE: Current subgroup utilization is subotimal on most GPUs, so
+// it will be nice to process two tiles at once here.
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf {
+    uint in_data[];
+};
+layout(rg8ui, binding = 1) uniform writeonly uimage2D output_img;
+
+layout(push_constant) uniform image_info {
+    uint pitch;
+} info;
+
+#define MICRO_TILE_DIM      8
+#define TEXELS_PER_ELEMENT  2
+
+// Inverse morton LUT, small enough to fit into K$
+uint rmort[16] = {
+    0x11011000, 0x31213020,
+    0x13031202, 0x33233222,
+    0x51415040, 0x71617060,
+    0x53435242, 0x73637262,
+
+    0x15051404, 0x35253424,
+    0x17071606, 0x37273626,
+    0x55455444, 0x75657464,
+    0x57475646, 0x77677666,
+};
+
+void main() {
+    uint src_tx = in_data[gl_GlobalInvocationID.x];
+    uint p[TEXELS_PER_ELEMENT] = {
+        (src_tx >> 16) & 0xffff,
+         src_tx        & 0xffff
+    };
+
+    uint bit_ofs = 8 * TEXELS_PER_ELEMENT * (gl_LocalInvocationID.x % 4);
+    uint packed_pos = rmort[gl_LocalInvocationID.x >> 1] >> bit_ofs;
+    uint col = bitfieldExtract(packed_pos, 4, 4);
+    uint row = bitfieldExtract(packed_pos, 0, 4);
+
+    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
+    uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
+    uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
+    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + col;
+    uint dw_ofs_y = target_tile_y * MICRO_TILE_DIM + row;
+
+    ivec2 img_pos = ivec2(dw_ofs_x, dw_ofs_y);
+
+    #pragma unroll
+    for (int ofs = 0; ofs < TEXELS_PER_ELEMENT; ++ofs) {
+        uint p0 = (p[ofs] >> 8) & 0xff;
+        uint p1 =  p[ofs]       & 0xff;
+        imageStore(output_img, img_pos + ivec2(ofs, 0), uvec4(p0, p1, 0, 0));
+    }
+}
