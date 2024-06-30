@@ -68,7 +68,7 @@ int* PS4_SYSV_ABI __Error() {
     return &g_posix_errno;
 }
 
-void err_sce_to_posix(int result) {
+void ErrSceToPosix(int result) {
     int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
                  ? result + -SCE_KERNEL_ERROR_UNKNOWN
                  : POSIX_EOTHER;
