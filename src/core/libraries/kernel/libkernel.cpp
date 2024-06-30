@@ -63,9 +63,16 @@ size_t PS4_SYSV_ABI _writev(int fd, const struct iovec* iov, int iovcn) {
     return total_written;
 }
 
-static thread_local int libc_error{};
+static thread_local int g_posix_errno = 0;
 int* PS4_SYSV_ABI __Error() {
-    return &libc_error;
+    return &g_posix_errno;
+}
+
+void err_sce_to_posix(int result) {
+    int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                 ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                 : POSIX_EOTHER;
+    g_posix_errno = rt;
 }
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
