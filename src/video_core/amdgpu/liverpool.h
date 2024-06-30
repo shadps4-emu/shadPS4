@@ -528,6 +528,14 @@ struct Liverpool {
             BitField<0, 15, s32> bottom_right_x;
             BitField<15, 15, s32> bottom_right_y;
         };
+
+        u32 GetWidth() const {
+            return bottom_right_x - top_left_x;
+        }
+
+        u32 GetHeight() const {
+            return bottom_right_y - top_left_y;
+        }
     };
 
     struct ViewportDepth {

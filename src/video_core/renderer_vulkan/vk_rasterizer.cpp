@@ -44,10 +44,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
+    UpdateDynamicState(*pipeline);
+
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     BeginRendering();
-    UpdateDynamicState(*pipeline);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
     if (is_indexed) {
@@ -113,12 +114,14 @@ void Rasterizer::BeginRendering() {
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
         const auto& hint = liverpool->last_db_extent;
-        const auto& image_view = texture_cache.DepthTarget(regs.depth_buffer, htile_address, hint);
+        const auto& image_view = texture_cache.DepthTarget(regs.depth_buffer, htile_address, hint,
+                                                           regs.depth_control.depth_write_enable);
+        const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, hint.width);
         state.height = std::min<u32>(state.height, hint.height);
         state.depth_attachment = {
             .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eGeneral,
+            .imageLayout = image.layout,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
@@ -192,23 +195,34 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
 void Rasterizer::UpdateViewportScissorState() {
     auto& regs = liverpool->regs;
 
+    boost::container::static_vector<vk::Viewport, Liverpool::NumViewports> viewports;
+    boost::container::static_vector<vk::Rect2D, Liverpool::NumViewports> scissors;
+
     const float reduce_z =
         regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
+    for (u32 i = 0; i < Liverpool::NumViewports; i++) {
+        const auto& vp = regs.viewports[i];
+        const auto& vp_d = regs.viewport_depths[i];
+        if (vp.xscale == 0) {
+            continue;
+        }
+        viewports.push_back({
+            .x = vp.xoffset - vp.xscale,
+            .y = vp.yoffset - vp.yscale,
+            .width = vp.xscale * 2.0f,
+            .height = vp.yscale * 2.0f,
+            .minDepth = vp.zoffset - vp.zscale * reduce_z,
+            .maxDepth = vp.zscale + vp.zoffset,
+        });
+    }
+    const auto& sc = regs.screen_scissor;
+    scissors.push_back({
+        .offset = {sc.top_left_x, sc.top_left_y},
+        .extent = {sc.GetWidth(), sc.GetHeight()},
+    });
     const auto cmdbuf = scheduler.CommandBuffer();
-    const vk::Viewport viewport{
-        .x = regs.viewports[0].xoffset - regs.viewports[0].xscale,
-        .y = regs.viewports[0].yoffset - regs.viewports[0].yscale,
-        .width = regs.viewports[0].xscale * 2.0f,
-        .height = regs.viewports[0].yscale * 2.0f,
-        .minDepth = regs.viewports[0].zoffset - regs.viewports[0].zscale * reduce_z,
-        .maxDepth = regs.viewports[0].zscale + regs.viewports[0].zoffset,
-    };
-    const vk::Rect2D scissor{
-        .offset = {regs.screen_scissor.top_left_x, regs.screen_scissor.top_left_y},
-        .extent = {regs.screen_scissor.GetWidth(), regs.screen_scissor.GetHeight()},
-    };
-    cmdbuf.setViewport(0, viewport);
-    cmdbuf.setScissor(0, scissor);
+    cmdbuf.setViewport(0, viewports);
+    cmdbuf.setScissor(0, scissors);
 }
 
 void Rasterizer::UpdateDepthStencilState() {

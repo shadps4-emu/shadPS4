@@ -36,6 +36,7 @@ struct Image;
 
 struct ImageView {
     explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
+                       ImageId image_id,
                        std::optional<vk::ImageUsageFlags> usage_override = {});
     ~ImageView();
 

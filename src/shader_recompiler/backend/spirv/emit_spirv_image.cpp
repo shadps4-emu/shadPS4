@@ -26,7 +26,7 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
     if (Sirit::ValidId(offset)) {
-        operands.Add(spv::ImageOperandsMask::Offset, offset);
+        operands.Add(spv::ImageOperandsMask::ConstOffset, offset);
     }
     return ctx.OpImageSampleImplicitLod(ctx.F32[4], sampled_image, coords, operands.mask, operands.operands);
 }

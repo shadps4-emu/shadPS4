@@ -93,7 +93,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     ASSERT(null_id.index == 0);
 
     ImageViewInfo view_info;
-    void(slot_image_views.insert(instance, view_info, slot_images[null_id]));
+    void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
 }
 
 TextureCache::~TextureCache() {
@@ -112,7 +112,7 @@ void TextureCache::OnCpuWrite(VAddr address) {
     });
 }
 
-Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool refresh_on_create) {
+ImageId TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool refresh_on_create) {
     std::unique_lock lock{m_page_table};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
@@ -140,16 +140,16 @@ Image& TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool re
     RegisterMeta(info, image_id);
 
     Image& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::CpuModified) &&
-        (!image_ids.empty() || refresh_on_create)) {
+    if (True(image.flags & ImageFlagBits::CpuModified) && refresh_on_create) {
         RefreshImage(image);
         TrackImage(image, image_id);
     }
 
-    return image;
+    return image_id;
 }
 
-ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& view_info) {
+ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo& view_info) {
+    Image& image = slot_images[image_id];
     if (const ImageViewId view_id = image.FindView(view_info); view_id) {
         return slot_image_views[view_id];
     }
@@ -162,32 +162,37 @@ ImageView& TextureCache::RegisterImageView(Image& image, const ImageViewInfo& vi
         usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
-    const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, usage_override);
+    const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, image_id, usage_override);
     image.image_view_infos.emplace_back(view_info);
     image.image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage, bool is_depth) {
+ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
     const ImageInfo info{desc};
-    Image& image = FindImage(info, desc.Address());
+    const ImageId image_id = FindImage(info, desc.Address());
+    Image& image = slot_images[image_id];
+    auto& usage = image.info.usage;
 
-    if (is_storage || is_depth) {
+    if (is_storage) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
-        image.info.usage.storage = true;
+        usage.storage = true;
     } else {
-        image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eShaderRead);
-        image.info.usage.texture = true;
+        const auto new_layout = image.info.IsDepthStencil() ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                                            : vk::ImageLayout::eShaderReadOnlyOptimal;
+        image.Transit(new_layout, vk::AccessFlagBits::eShaderRead);
+        usage.texture = true;
     }
 
     const ImageViewInfo view_info{desc, is_storage};
-    return RegisterImageView(image, view_info);
+    return RegisterImageView(image_id, view_info);
 }
 
 ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                       const AmdGpu::Liverpool::CbDbExtent& hint) {
     const ImageInfo info{buffer, hint};
-    auto& image = FindImage(info, buffer.Address(), false);
+    const ImageId image_id = FindImage(info, buffer.Address(), false);
+    Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
     image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
@@ -197,17 +202,21 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
     image.info.usage.render_target = true;
 
     ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
-    return RegisterImageView(image, view_info);
+    return RegisterImageView(image_id, view_info);
 }
 
 ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
                                      VAddr htile_address,
-                                     const AmdGpu::Liverpool::CbDbExtent& hint) {
+                                     const AmdGpu::Liverpool::CbDbExtent& hint,
+                                     bool write_enabled) {
     const ImageInfo info{buffer, htile_address, hint};
-    auto& image = FindImage(info, buffer.Address(), false);
+    const ImageId image_id = FindImage(info, buffer.Address(), false);
+    Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    image.Transit(vk::ImageLayout::eGeneral,
+    const auto new_layout = write_enabled ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                          : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    image.Transit(new_layout,
                   vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                       vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
@@ -215,7 +224,7 @@ ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffe
 
     ImageViewInfo view_info;
     view_info.format = info.pixel_format;
-    return RegisterImageView(image, view_info);
+    return RegisterImageView(image_id, view_info);
 }
 
 void TextureCache::RefreshImage(Image& image) {
