@@ -122,9 +122,8 @@ void PipelineCache::RefreshGraphicsKey() {
         key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
     }
 
-    // TODO: Should be a check for `OperationMode::Disable` once we emulate HW state init packet
-    // sent by system software.
-    const auto skip_cb_binding = false;
+    const auto skip_cb_binding =
+        regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
 
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.

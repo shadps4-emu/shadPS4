@@ -42,10 +42,6 @@ Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
     // Start logger.
     Common::Log::Initialize();
     Common::Log::Start();
-
-    // Initialize kernel and library facilities.
-    Libraries::Kernel::init_pthreads();
-    Libraries::InitHLELibs(&linker->GetHLESymbols());
 }
 
 Emulator::~Emulator() {
@@ -92,6 +88,10 @@ void Emulator::Run(const std::filesystem::path& file) {
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
+
+    // Initialize kernel and library facilities.
+    Libraries::Kernel::init_pthreads();
+    Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
     linker->LoadModule(file);

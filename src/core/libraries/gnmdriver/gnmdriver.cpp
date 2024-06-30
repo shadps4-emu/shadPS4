@@ -8,6 +8,7 @@
 #include "common/slot_vector.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/platform.h"
@@ -264,7 +265,9 @@ static_assert(CtxInitSequence400.size() == 0x61);
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
 static std::mutex m_submission{};
-static u64 frames_submitted{}; // frame counter
+static u64 frames_submitted{};      // frame counter
+static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
+static int sdk_version{0};
 
 struct AscQueueInfo {
     VAddr map_addr;
@@ -1935,6 +1938,17 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         submission_lock = 0;
     }
 
+    if (send_init_packet) {
+        if (sdk_version <= 0x1ffffffu) {
+            liverpool->SubmitGfx(InitSequence, {});
+        } else if (sdk_version <= 0x3ffffffu) {
+            liverpool->SubmitGfx(InitSequence200, {});
+        } else {
+            liverpool->SubmitGfx(InitSequence350, {});
+        }
+        send_init_packet = false;
+    }
+
     for (auto cbpair = 0u; cbpair < count; ++cbpair) {
         const auto* ccb = ccb_gpu_addrs ? ccb_gpu_addrs[cbpair] : nullptr;
         const auto ccb_size_in_bytes = ccb_sizes_in_bytes ? ccb_sizes_in_bytes[cbpair] : 0;
@@ -1977,6 +1991,7 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
         submission_lock = true;
     }
     liverpool->NotifySubmitDone();
+    send_init_packet = true;
     ++frames_submitted;
     return ORBIS_OK;
 }
@@ -2449,6 +2464,11 @@ int PS4_SYSV_ABI Func_F916890425496553() {
 void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
     liverpool = std::make_unique<AmdGpu::Liverpool>();
     renderer = std::make_unique<Vulkan::RendererVulkan>(*g_window, liverpool.get());
+
+    const int result = sceKernelGetCompiledSdkVersion(&sdk_version);
+    if (result != ORBIS_OK) {
+        sdk_version = 0;
+    }
 
     LIB_FUNCTION("b0xyllnVY-I", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmAddEqEvent);
     LIB_FUNCTION("b08AgtPlHPg", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1,

@@ -154,7 +154,7 @@ int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
     int version = param_sfo->GetInteger("SYSTEM_VER");
     LOG_INFO(Kernel, "returned system version = {:#x}", version);
     *ver = version;
-    return ORBIS_OK;
+    return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
