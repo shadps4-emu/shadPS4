@@ -382,6 +382,33 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_ATOMIC_ADD:
             translator.IMAGE_ATOMIC(AtomicOp::Add, inst);
             break;
+        case Opcode::IMAGE_ATOMIC_AND:
+            translator.IMAGE_ATOMIC(AtomicOp::And, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_OR:
+            translator.IMAGE_ATOMIC(AtomicOp::Or, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_XOR:
+            translator.IMAGE_ATOMIC(AtomicOp::Xor, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Umax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Smax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Umin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Smin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_INC:
+            translator.IMAGE_ATOMIC(AtomicOp::Inc, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_DEC:
+            translator.IMAGE_ATOMIC(AtomicOp::Dec, inst);
+            break;
         case Opcode::IMAGE_GET_LOD:
             translator.IMAGE_GET_LOD(inst);
             break;
@@ -589,6 +616,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CVT_I32_F32:
             translator.V_CVT_I32_F32(inst);
+            break;
+        case Opcode::V_CVT_FLR_I32_F32:
+            translator.V_CVT_FLR_I32_F32(inst);
             break;
         case Opcode::V_SUBREV_F32:
             translator.V_SUBREV_F32(inst);

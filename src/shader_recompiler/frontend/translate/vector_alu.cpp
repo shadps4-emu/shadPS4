@@ -508,4 +508,9 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPLdexp(src0, src1));
 }
 
+void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    SetDst(inst.dst[0], ir.ConvertFToI(32, true, ir.FPFloor(src0)));
+}
+
 } // namespace Shader::Gcn

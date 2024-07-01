@@ -322,7 +322,17 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 
 void EmitContext::DefineImagesAndSamplers(const Info& info) {
     for (const auto& image_desc : info.images) {
-        const Id sampled_type{image_desc.nfmt == AmdGpu::NumberFormat::Uint ? U32[1] : F32[1]};
+        const VectorIds* data_types = [&] {
+            switch (image_desc.nfmt) {
+            case AmdGpu::NumberFormat::Uint:
+                return &U32;
+            case AmdGpu::NumberFormat::Sint:
+                return &S32;
+            default:
+                return &F32;
+            }
+        }();
+        const Id sampled_type = data_types->Get(1);
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
@@ -332,6 +342,7 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
                              image_desc.dword_offset));
         images.push_back({
             .id = id,
+            .data_types = data_types,
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,

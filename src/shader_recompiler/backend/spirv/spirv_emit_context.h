@@ -185,6 +185,7 @@ public:
 
     struct TextureDefinition {
         Id id;
+        const VectorIds* data_types;
         Id sampled_type;
         Id pointer_type;
         Id image_type;
