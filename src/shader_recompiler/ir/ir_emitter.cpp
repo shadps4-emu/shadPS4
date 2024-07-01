@@ -391,8 +391,8 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
 Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Value& e3,
                                     const Value& e4) {
     if (e1.Type() != e2.Type() || e1.Type() != e3.Type() || e1.Type() != e4.Type()) {
-        UNREACHABLE_MSG("Mismatching types {}, {}, {}, and {}", e1.Type(), e2.Type(),
-                              e3.Type(), e4.Type());
+        UNREACHABLE_MSG("Mismatching types {}, {}, {}, and {}", e1.Type(), e2.Type(), e3.Type(),
+                        e4.Type());
     }
     switch (e1.Type()) {
     case Type::U32:
@@ -647,7 +647,7 @@ F32F64 IREmitter::FPSaturate(const F32F64& value) {
 F32F64 IREmitter::FPClamp(const F32F64& value, const F32F64& min_value, const F32F64& max_value) {
     if (value.Type() != min_value.Type() || value.Type() != max_value.Type()) {
         UNREACHABLE_MSG("Mismatching types {}, {}, and {}", value.Type(), min_value.Type(),
-                              max_value.Type());
+                        max_value.Type());
     }
     switch (value.Type()) {
     case Type::F32:

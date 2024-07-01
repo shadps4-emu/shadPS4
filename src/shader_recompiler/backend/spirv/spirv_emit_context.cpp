@@ -265,7 +265,8 @@ void EmitContext::DefineBuffers(const Info& info) {
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-            const auto name = fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
+            const auto name =
+                fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
             Name(struct_type, name);
             Decorate(struct_type, spv::Decoration::Block);
             MemberName(struct_type, 0, "data");

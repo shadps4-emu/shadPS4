@@ -162,7 +162,8 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
         usage_override = image.usage & ~vk::ImageUsageFlagBits::eStorage;
     }
 
-    const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, image_id, usage_override);
+    const ImageViewId view_id =
+        slot_image_views.insert(instance, view_info, image, image_id, usage_override);
     image.image_view_infos.emplace_back(view_info);
     image.image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];
@@ -178,8 +179,9 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storag
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
-        const auto new_layout = image.info.IsDepthStencil() ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                                                            : vk::ImageLayout::eShaderReadOnlyOptimal;
+        const auto new_layout = image.info.IsDepthStencil()
+                                    ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                    : vk::ImageLayout::eShaderReadOnlyOptimal;
         image.Transit(new_layout, vk::AccessFlagBits::eShaderRead);
         usage.texture = true;
     }
@@ -206,8 +208,7 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
 }
 
 ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                                     VAddr htile_address,
-                                     const AmdGpu::Liverpool::CbDbExtent& hint,
+                                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
                                      bool write_enabled) {
     const ImageInfo info{buffer, htile_address, hint};
     const ImageId image_id = FindImage(info, buffer.Address(), false);
@@ -216,9 +217,8 @@ ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffe
 
     const auto new_layout = write_enabled ? vk::ImageLayout::eDepthStencilAttachmentOptimal
                                           : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-    image.Transit(new_layout,
-                  vk::AccessFlagBits::eDepthStencilAttachmentWrite |
-                      vk::AccessFlagBits::eDepthStencilAttachmentRead);
+    image.Transit(new_layout, vk::AccessFlagBits::eDepthStencilAttachmentWrite |
+                                  vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
     image.info.usage.depth_target = true;
 

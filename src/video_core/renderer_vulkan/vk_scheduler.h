@@ -23,7 +23,7 @@ struct RenderState {
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
-    }    
+    }
 };
 
 class Scheduler {

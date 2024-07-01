@@ -203,7 +203,7 @@ void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
         for (u32 i = 0; i < 3; i++) {
             const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
             const Id ptr{
-                         ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
             ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
         }
         return;
@@ -220,7 +220,7 @@ void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
         for (u32 i = 0; i < 4; i++) {
             const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
             const Id ptr{
-                         ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
             ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
         }
         return;
