@@ -156,12 +156,12 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
             u64 offset = 0;
             if (tls_pattern.imm_size == 4) {
                 std::memcpy(&offset, code + tls_pattern.pattern_size, sizeof(u32));
-                LOG_INFO(Core_Linker, "PATTERN32 FOUND at {}, reg: {} offset: {:#x}",
-                         fmt::ptr(code), tls_pattern.target_reg, offset);
+                LOG_TRACE(Core_Linker, "PATTERN32 FOUND at {}, reg: {} offset: {:#x}",
+                          fmt::ptr(code), tls_pattern.target_reg, offset);
             } else {
                 std::memcpy(&offset, code + tls_pattern.pattern_size, sizeof(u64));
-                LOG_INFO(Core_Linker, "PATTERN64 FOUND at {}, reg: {} offset: {:#x}",
-                         fmt::ptr(code), tls_pattern.target_reg, offset);
+                LOG_ERROR(Core_Linker, "PATTERN64 FOUND at {}, reg: {} offset: {:#x}",
+                          fmt::ptr(code), tls_pattern.target_reg, offset);
                 continue;
             }
             ASSERT(offset == 0);
