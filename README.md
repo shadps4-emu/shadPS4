@@ -72,6 +72,35 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 |Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
 |Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
 
+# Keyboard Mapping
+
+| Controller button | Keyboard |
+| ------------- | ------------- |
+LEFT AXIS UP | W |
+LEFT AXIS DOWN | S |
+LEFT AXIS LEFT | A |
+LEFT AXIS RIGHT | D |
+RIGHT AXIS UP | I |
+RIGHT AXIS DOWN | K |
+RIGHT AXIS LEFT | J |
+RIGHT AXIS RIGHT | L |
+TRIANGLE | Numpad 8 |
+CIRCLE | Numpad 6 |
+CROSS | Numpad 2 |
+SQUARE | Numpad 4 |
+PAD UP | UP |
+PAD DOWN | DOWN |
+PAD LEFT | LEFT |
+PAD RIGHT | RIGHT |
+OPTIONS | RETURN |
+TOUCH PAD | SPACE |
+L1 | Q |
+R1 | U |
+L2 | E |
+R2 | O |
+L3 | X |
+R3 | M |
+
 # Main team
 
 - [**georgemoralis**](https://github.com/georgemoralis)
