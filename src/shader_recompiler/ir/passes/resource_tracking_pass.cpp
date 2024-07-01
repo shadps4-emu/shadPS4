@@ -348,8 +348,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     if (inst_info.explicit_lod) {
         ASSERT(inst.GetOpcode() == IR::Opcode::ImageFetch ||
-               inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod);
-        const u32 pos = inst.GetOpcode() == IR::Opcode::ImageFetch ? 3 : 2;
+               inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ||
+               inst.GetOpcode() == IR::Opcode::ImageSampleDrefExplicitLod);
+        const u32 pos = inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ? 2 : 3;
         inst.SetArg(pos, arg);
     }
 }

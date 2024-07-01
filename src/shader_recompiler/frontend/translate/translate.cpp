@@ -197,8 +197,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
         // Read the V# of the attribute to figure out component number and type.
         const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
-        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
-        for (u32 i = 0; i < num_components; i++) {
+        for (u32 i = 0; i < 4; i++) {
             const IR::F32 comp = [&] {
                 switch (buffer.GetSwizzle(i)) {
                 case AmdGpu::CompSwizzle::One:
@@ -225,6 +224,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
                         attrib.instance_data);
         }
 
+        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
         info.vs_inputs.push_back({
             .fmt = buffer.num_format,
             .binding = attrib.semantic,
