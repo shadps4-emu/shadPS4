@@ -56,6 +56,6 @@ void main() {
     for (int ofs = 0; ofs < TEXELS_PER_ELEMENT; ++ofs) {
         uint p0 = (p[ofs] >> 8) & 0xff;
         uint p1 =  p[ofs]       & 0xff;
-        imageStore(output_img, img_pos + ivec2(ofs, 0), uvec4(p0, p1, 0, 0));
+        imageStore(output_img, img_pos + ivec2(ofs, 0), uvec4(p1, p0, 0, 0));
     }
 }
