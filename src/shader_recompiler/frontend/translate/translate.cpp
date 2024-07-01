@@ -194,8 +194,30 @@ void Translator::EmitFetch(const GcnInst& inst) {
     for (const auto& attrib : attribs) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
-        for (u32 i = 0; i < attrib.num_elements; i++) {
-            ir.SetVectorReg(dst_reg++, ir.GetAttribute(attr, i));
+
+        // Read the V# of the attribute to figure out component number and type.
+        const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
+        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
+        for (u32 i = 0; i < num_components; i++) {
+            const IR::F32 comp = [&] {
+                switch (buffer.GetSwizzle(i)) {
+                case AmdGpu::CompSwizzle::One:
+                    return ir.Imm32(1.f);
+                case AmdGpu::CompSwizzle::Zero:
+                    return ir.Imm32(0.f);
+                case AmdGpu::CompSwizzle::Red:
+                    return ir.GetAttribute(attr, 0);
+                case AmdGpu::CompSwizzle::Green:
+                    return ir.GetAttribute(attr, 1);
+                case AmdGpu::CompSwizzle::Blue:
+                    return ir.GetAttribute(attr, 2);
+                case AmdGpu::CompSwizzle::Alpha:
+                    return ir.GetAttribute(attr, 3);
+                default:
+                    UNREACHABLE();
+                }
+            }();
+            ir.SetVectorReg(dst_reg++, comp);
         }
 
         if (attrib.instance_data == 2 || attrib.instance_data == 3) {
@@ -203,9 +225,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
                         attrib.instance_data);
         }
 
-        // Read the V# of the attribute to figure out component number and type.
-        const auto buffer = info.ReadUd<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
-        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
         info.vs_inputs.push_back({
             .fmt = buffer.num_format,
             .binding = attrib.semantic,

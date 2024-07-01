@@ -206,10 +206,6 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
-        if (hash == 0xa34c48f8) {
-            printf("bad\n");
-        }
-
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
