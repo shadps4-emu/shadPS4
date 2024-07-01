@@ -30,7 +30,7 @@ std::pair<Id, Id> ExtractArgs(EmitContext& ctx, Id offset, u32 mask, u32 count) 
 Id EmitLoadSharedU8(EmitContext& ctx, Id offset) {
     if (ctx.profile.support_explicit_workgroup_layout) {
         const Id pointer{
-                         ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
+            ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
         return ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U8, pointer));
     } else {
         const auto [bit, count]{ExtractArgs(ctx, offset, 24, 8)};
@@ -41,7 +41,7 @@ Id EmitLoadSharedU8(EmitContext& ctx, Id offset) {
 Id EmitLoadSharedS8(EmitContext& ctx, Id offset) {
     if (ctx.profile.support_explicit_workgroup_layout) {
         const Id pointer{
-                         ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
+            ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
         return ctx.OpSConvert(ctx.U32[1], ctx.OpLoad(ctx.U8, pointer));
     } else {
         const auto [bit, count]{ExtractArgs(ctx, offset, 24, 8)};
@@ -111,7 +111,7 @@ Id EmitLoadSharedU128(EmitContext& ctx, Id offset) {
 
 void EmitWriteSharedU8(EmitContext& ctx, Id offset, Id value) {
     const Id pointer{
-                     ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
+        ctx.OpAccessChain(ctx.shared_u8, ctx.shared_memory_u8, ctx.u32_zero_value, offset)};
     ctx.OpStore(pointer, ctx.OpUConvert(ctx.U8, value));
 }
 

@@ -44,11 +44,10 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    UpdateDynamicState(*pipeline);
-
     pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
 
     BeginRendering();
+    UpdateDynamicState(*pipeline);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
     if (is_indexed) {

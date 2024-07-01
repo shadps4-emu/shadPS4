@@ -8,10 +8,11 @@ namespace Shader::Backend::SPIRV {
 namespace {
 void MemoryBarrier(EmitContext& ctx, spv::Scope scope) {
     const auto semantics{
-                         spv::MemorySemanticsMask::AcquireRelease | spv::MemorySemanticsMask::UniformMemory |
-                         spv::MemorySemanticsMask::WorkgroupMemory | spv::MemorySemanticsMask::AtomicCounterMemory |
-                         spv::MemorySemanticsMask::ImageMemory};
-    ctx.OpMemoryBarrier(ctx.ConstU32(static_cast<u32>(scope)), ctx.ConstU32(static_cast<u32>(semantics)));
+        spv::MemorySemanticsMask::AcquireRelease | spv::MemorySemanticsMask::UniformMemory |
+        spv::MemorySemanticsMask::WorkgroupMemory | spv::MemorySemanticsMask::AtomicCounterMemory |
+        spv::MemorySemanticsMask::ImageMemory};
+    ctx.OpMemoryBarrier(ctx.ConstU32(static_cast<u32>(scope)),
+                        ctx.ConstU32(static_cast<u32>(semantics)));
 }
 } // Anonymous namespace
 

@@ -360,28 +360,17 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, I
 Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords);
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color);
 
-Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                         Id value);
-Id EmitImageAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                         Id value);
-Id EmitImageAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                         Id value);
-Id EmitImageAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                         Id value);
-Id EmitImageAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                         Id value);
-Id EmitImageAtomicInc32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                        Id value);
-Id EmitImageAtomicDec32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                        Id value);
-Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                        Id value);
-Id EmitImageAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                       Id value);
-Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                        Id value);
-Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                             Id value);
+Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicInc32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicDec32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 
 Id EmitLaneId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
