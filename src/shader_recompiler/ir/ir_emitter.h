@@ -200,6 +200,33 @@ public:
     [[nodiscard]] U16U32U64 UConvert(size_t result_bitsize, const U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
+    [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMin(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMax(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicDec(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicAnd(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicOr(const Value& handle, const Value& coords, const Value& value,
+                                      TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicXor(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
+                                            const Value& value, TextureInstInfo info);
+
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& coords,
                                                const F32& bias, const Value& offset,
                                                const F32& lod_clamp, TextureInstInfo info);

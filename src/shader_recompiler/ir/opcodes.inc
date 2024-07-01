@@ -274,6 +274,19 @@ OPCODE(ImageGradient,                                       F32x4,          Opaq
 OPCODE(ImageRead,                                           U32x4,          Opaque,         Opaque,                                                         )
 OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32x4,                                          )
 
+// Image atomic operations
+OPCODE(ImageAtomicIAdd32,                                   U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicSMin32,                                   U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicUMin32,                                   U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicSMax32,                                   U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicUMax32,                                   U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicInc32,                                    U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicDec32,                                    U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicAnd32,                                    U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicOr32,                                     U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicXor32,                                    U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicExchange32,                               U32,            Opaque,            Opaque,            U32,                                      )
+
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )

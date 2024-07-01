@@ -26,6 +26,25 @@ enum class ConditionOp : u32 {
     TRU,
 };
 
+enum class AtomicOp : u32 {
+    Swap,
+    CmpSwap,
+    Add,
+    Sub,
+    Smin,
+    Umin,
+    Smax,
+    Umax,
+    And,
+    Or,
+    Xor,
+    Inc,
+    Dec,
+    FCmpSwap,
+    Fmin,
+    Fmax,
+};
+
 enum class NegateMode : u32 {
     None,
     Src1,
@@ -154,6 +173,7 @@ public:
     void IMAGE_STORE(const GcnInst& inst);
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
+    void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);

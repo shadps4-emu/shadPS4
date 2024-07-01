@@ -379,6 +379,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
             break;
+        case Opcode::IMAGE_ATOMIC_ADD:
+            translator.IMAGE_ATOMIC(AtomicOp::Add, inst);
+            break;
         case Opcode::IMAGE_GET_LOD:
             translator.IMAGE_GET_LOD(inst);
             break;
@@ -718,6 +721,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_MAD_I32_I24(inst);
             break;
         case Opcode::V_MUL_I32_I24:
+        case Opcode::V_MUL_U32_U24:
             translator.V_MUL_I32_I24(inst);
             break;
         case Opcode::V_SUB_I32:

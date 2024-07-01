@@ -1167,6 +1167,73 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
+Value IREmitter::ImageAtomicIAdd(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicIAdd32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicSMin(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicSMin32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicUMin(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicUMin32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicIMin(const Value& handle, const Value& coords, const Value& value,
+                                 bool is_signed, TextureInstInfo info) {
+    return is_signed ? ImageAtomicSMin(handle, coords, value, info)
+                     : ImageAtomicUMin(handle, coords, value, info);
+}
+
+Value IREmitter::ImageAtomicSMax(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicSMax32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicUMax(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicUMax32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicIMax(const Value& handle, const Value& coords, const Value& value,
+                                 bool is_signed, TextureInstInfo info) {
+    return is_signed ? ImageAtomicSMax(handle, coords, value, info)
+                     : ImageAtomicUMax(handle, coords, value, info);
+}
+
+Value IREmitter::ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicInc32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicDec(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicDec32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicAnd(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicAnd32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicOr(const Value& handle, const Value& coords, const Value& value,
+                               TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicOr32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicXor(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicXor32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, const Value& value,
+                                     TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
+}
+
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
                                         const Value& offset, const F32& lod_clamp,
                                         TextureInstInfo info) {

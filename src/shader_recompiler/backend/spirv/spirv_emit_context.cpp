@@ -338,6 +338,8 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
         ++binding;
     }
 
+    image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
+
     if (info.samplers.empty()) {
         return;
     }
