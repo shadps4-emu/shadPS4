@@ -10,6 +10,15 @@
 
 namespace AmdGpu {
 
+enum class CompSwizzle : u32 {
+    Zero = 0,
+    One = 1,
+    Red = 4,
+    Green = 5,
+    Blue = 6,
+    Alpha = 7,
+};
+
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     union {
@@ -24,12 +33,17 @@ struct Buffer {
         BitField<3, 3, u32> dst_sel_y;
         BitField<6, 3, u32> dst_sel_z;
         BitField<9, 3, u32> dst_sel_w;
+        BitField<0, 12, u32> dst_sel;
         BitField<12, 3, NumberFormat> num_format;
         BitField<15, 4, DataFormat> data_format;
         BitField<19, 2, u32> element_size;
         BitField<21, 2, u32> index_stride;
         BitField<23, 1, u32> add_tid_enable;
     };
+
+    CompSwizzle GetSwizzle(u32 comp) const noexcept {
+        return static_cast<CompSwizzle>((dst_sel.Value() >> (comp * 3)) & 0x7);
+    }
 
     u32 GetStride() const noexcept {
         return stride == 0 ? 1U : stride.Value();
