@@ -603,6 +603,10 @@ F32 IREmitter::FPExp2(const F32& value) {
     return Inst<F32>(Opcode::FPExp2, value);
 }
 
+F32 IREmitter::FPLdexp(const F32& value, const U32& exp) {
+    return Inst<F32>(Opcode::FPLdexp, value, exp);
+}
+
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
 }

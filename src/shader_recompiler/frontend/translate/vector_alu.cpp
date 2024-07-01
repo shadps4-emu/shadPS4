@@ -502,4 +502,10 @@ void Translator::V_BFREV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitReverse(src0));
 }
 
+void Translator::V_LDEXP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.FPLdexp(src0, src1));
+}
+
 } // namespace Shader::Gcn

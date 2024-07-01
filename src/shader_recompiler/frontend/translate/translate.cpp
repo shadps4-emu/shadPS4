@@ -345,6 +345,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_BFREV_B32:
             translator.V_BFREV_B32(inst);
             break;
+        case Opcode::V_LDEXP_F32:
+            translator.V_LDEXP_F32(inst);
+            break;
         case Opcode::V_FRACT_F32:
             translator.V_FRACT_F32(inst);
             break;

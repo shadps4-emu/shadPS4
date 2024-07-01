@@ -203,6 +203,10 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             DumpShader(code, hash, stage, "bin");
         }
 
+        if (hash == 0xcafe3773 || hash == 0xc6602df2) {
+            return nullptr;
+        }
+
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 

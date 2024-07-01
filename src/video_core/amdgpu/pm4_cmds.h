@@ -581,6 +581,11 @@ struct PM4CmdDrawIndexBase {
     u32 addr_hi;
 };
 
+struct PM4CmdDrawIndexBufferSize {
+    PM4Type3Header header;
+    u32 num_indices;
+};
+
 struct PM4CmdIndirectBuffer {
     PM4Type3Header header;
     u32 ibase_lo; ///< Indirect buffer base address, must be 4 byte aligned
