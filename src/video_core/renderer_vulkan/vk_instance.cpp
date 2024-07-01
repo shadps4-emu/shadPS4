@@ -49,6 +49,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     }
     const std::size_t num_physical_devices = static_cast<u16>(physical_devices.size());
     ASSERT_MSG(num_physical_devices > 0, "No physical devices found");
+    LOG_INFO(Render_Vulkan, "Found {} physical devices", num_physical_devices);
 
     if (physical_device_index < 0) {
         std::vector<std::pair<size_t, vk::PhysicalDeviceProperties2>> properties2{};
@@ -73,12 +74,10 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     available_extensions = GetSupportedExtensions(physical_device);
     properties = physical_device.getProperties();
-    if (properties.apiVersion < TargetVulkanApiVersion) {
-        throw std::runtime_error(fmt::format(
-            "Vulkan {}.{} is required, but only {}.{} is supported by device!",
-            VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
-            VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion)));
-    }
+    ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
+               "Vulkan {}.{} is required, but only {}.{} is supported by device!",
+               VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
+               VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
 
     CollectDeviceParameters();
     CreateDevice();

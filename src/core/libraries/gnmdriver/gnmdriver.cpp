@@ -2462,6 +2462,7 @@ int PS4_SYSV_ABI Func_F916890425496553() {
 }
 
 void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
+    LOG_INFO(Lib_GnmDriver, "Initializing renderer");
     liverpool = std::make_unique<AmdGpu::Liverpool>();
     renderer = std::make_unique<Vulkan::RendererVulkan>(*g_window, liverpool.get());
 

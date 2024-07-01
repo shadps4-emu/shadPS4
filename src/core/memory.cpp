@@ -20,6 +20,9 @@ MemoryManager::MemoryManager() {
     const VAddr virtual_base = impl.VirtualBase();
     const size_t virtual_size = impl.VirtualSize();
     vma_map.emplace(virtual_base, VirtualMemoryArea{virtual_base, virtual_size});
+
+    // Log initialization.
+    LOG_INFO(Kernel_Vmm, "Usable memory address space {}_GB", virtual_size >> 30);
 }
 
 MemoryManager::~MemoryManager() = default;
