@@ -93,8 +93,9 @@ void Rasterizer::BeginRendering() {
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
-        state.width = std::min<u32>(state.width, hint.width);
-        state.height = std::min<u32>(state.height, hint.height);
+        const auto& image = texture_cache.GetImage(image_view.image_id);
+        state.width = std::min<u32>(state.width, image.info.size.width);
+        state.height = std::min<u32>(state.height, image.info.size.height);
 
         const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
         state.color_attachments[state.num_color_attachments++] = {
@@ -117,8 +118,8 @@ void Rasterizer::BeginRendering() {
         const auto& image_view = texture_cache.DepthTarget(regs.depth_buffer, htile_address, hint,
                                                            regs.depth_control.depth_write_enable);
         const auto& image = texture_cache.GetImage(image_view.image_id);
-        state.width = std::min<u32>(state.width, hint.width);
-        state.height = std::min<u32>(state.height, hint.height);
+        state.width = std::min<u32>(state.width, image.info.size.width);
+        state.height = std::min<u32>(state.height, image.info.size.height);
         state.depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = image.layout,

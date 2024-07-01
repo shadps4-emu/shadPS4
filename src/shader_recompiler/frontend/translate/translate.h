@@ -71,9 +71,10 @@ public:
     void V_SAD(const GcnInst& inst);
     void V_MAC_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
+    void V_CVT_F32_F16(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
-    void V_OR_B32(const GcnInst& inst);
+    void V_OR_B32(bool is_xor, const GcnInst& inst);
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
@@ -110,7 +111,7 @@ public:
     void V_LSHRREV_B32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
-    void V_BFE_U32(const GcnInst& inst);
+    void V_BFE_U32(bool is_signed, const GcnInst& inst);
     void V_MAD_I32_I24(const GcnInst& inst);
     void V_MUL_I32_I24(const GcnInst& inst);
     void V_SUB_I32(const GcnInst& inst);
@@ -130,6 +131,8 @@ public:
     void V_CMP_NE_U64(const GcnInst& inst);
     void V_BFI_B32(const GcnInst& inst);
     void V_NOT_B32(const GcnInst& inst);
+    void V_CVT_F32_UBYTE(u32 index, const GcnInst& inst);
+    void V_BFREV_B32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
@@ -149,6 +152,7 @@ public:
     void IMAGE_GATHER(const GcnInst& inst);
     void IMAGE_STORE(const GcnInst& inst);
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
+    void IMAGE_GET_LOD(const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);

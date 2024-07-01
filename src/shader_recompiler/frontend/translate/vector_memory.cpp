@@ -307,4 +307,19 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnIns
     ir.StoreBuffer(num_dwords, ir.GetScalarReg(sharp), address, value, info);
 }
 
+void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
+    const auto& mimg = inst.control.mimg;
+    IR::VectorReg dst_reg{inst.dst[0].code};
+    IR::VectorReg addr_reg{inst.src[0].code};
+    const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
+
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value body = ir.CompositeConstruct(
+        ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
+        ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
+    const IR::Value lod = ir.ImageQueryLod(handle, body, {});
+    ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
+    ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 1)});
+}
+
 } // namespace Shader::Gcn

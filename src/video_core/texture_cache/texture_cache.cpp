@@ -140,7 +140,7 @@ ImageId TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool r
     RegisterMeta(info, image_id);
 
     Image& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::CpuModified) && refresh_on_create) {
+    if (True(image.flags & ImageFlagBits::CpuModified)) {
         RefreshImage(image);
         TrackImage(image, image_id);
     }

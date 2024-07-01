@@ -683,8 +683,8 @@ struct Liverpool {
             BitField<0, 5, TilingMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
             BitField<12, 3, u32> num_samples_log2;
-            BitField<15, 3, u32> num_fragments_log2;
-            BitField<18, 1, u32> force_dst_alpha_1;
+            BitField<15, 2, u32> num_fragments_log2;
+            BitField<17, 1, u32> force_dst_alpha_1;
         } attrib;
         INSERT_PADDING_WORDS(1);
         u32 cmask_base_address;

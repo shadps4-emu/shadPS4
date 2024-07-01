@@ -257,6 +257,7 @@ OPCODE(ConvertF32S32,                                       F32,            U32,
 OPCODE(ConvertF32U32,                                       F32,            U32,                                                                            )
 OPCODE(ConvertF64S32,                                       F64,            U32,                                                                            )
 OPCODE(ConvertF64U32,                                       F64,            U32,                                                                            )
+OPCODE(ConvertF32U16,                                       F32,            U16,                                                                            )
 
 // Image operations
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )

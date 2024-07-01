@@ -221,8 +221,8 @@ struct AddressSpace::Impl {
         void* hint_address = reinterpret_cast<void*>(SYSTEM_MANAGED_MIN);
         virtual_size = SystemSize + UserSize;
         virtual_base = reinterpret_cast<u8*>(
-            mmap(reinterpret_cast<void*>(hint_address), virtual_size, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+            mmap(hint_address, virtual_size, PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0));
         if (virtual_base == MAP_FAILED) {
             LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
             throw std::bad_alloc{};

@@ -26,6 +26,11 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_f32));
 }
 
+void Translator::V_CVT_F32_F16(const GcnInst& inst) {
+    const IR::U32 src0 = GetSrc(inst.src[0]);
+    SetDst(inst.dst[0], ir.ConvertUToF(32, 16, src0));
+}
+
 void Translator::V_MUL_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMul(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true)));
 }
@@ -54,11 +59,11 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, IR::U32F32{result});
 }
 
-void Translator::V_OR_B32(const GcnInst& inst) {
+void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.BitwiseOr(src0, src1));
+    ir.SetVectorReg(dst_reg, is_xor ? ir.BitwiseXor(src0, src1) : ir.BitwiseOr(src0, src1));
 }
 
 void Translator::V_AND_B32(const GcnInst& inst) {
@@ -345,11 +350,11 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(ir.ISub(max, min), src2));
 }
 
-void Translator::V_BFE_U32(const GcnInst& inst) {
+void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.BitwiseAnd(GetSrc(inst.src[1]), ir.Imm32(0x1F))};
     const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
-    SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2));
+    SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 
 void Translator::V_MAD_I32_I24(const GcnInst& inst) {
@@ -484,6 +489,17 @@ void Translator::V_BFI_B32(const GcnInst& inst) {
 void Translator::V_NOT_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.BitwiseNot(src0));
+}
+
+void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 byte = ir.BitFieldExtract(src0, ir.Imm32(8 * index), ir.Imm32(8));
+    SetDst(inst.dst[0], ir.ConvertUToF(32, 32, byte));
+}
+
+void Translator::V_BFREV_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    SetDst(inst.dst[0], ir.BitReverse(src0));
 }
 
 } // namespace Shader::Gcn
