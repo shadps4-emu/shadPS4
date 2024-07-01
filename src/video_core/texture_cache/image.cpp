@@ -91,9 +91,13 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
     }
-    if (info.is_tiled || info.usage.storage) {
-        usage |= vk::ImageUsageFlagBits::eStorage;
-    }
+
+    // In cases where an image is created as a render/depth target and cleared with compute,
+    // we cannot predict whether it will be used as a storage image. A proper solution would
+    // involve re-creating the resource with a new configuration and copying previous content into
+    // it. However, for now, we will set storage usage for all images (if the format allows),
+    // sacrificing a bit of performance. Note use of ExtendedUsage flag set by default.
+    usage |= vk::ImageUsageFlagBits::eStorage;
     return usage;
 }
 
@@ -217,7 +221,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{cpu_addr},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
-    vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat};
+    vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
+                               vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.type == vk::ImageType::e2D && info.resources.layers >= 6 &&
         info.size.width == info.size.height) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;
@@ -225,11 +230,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.type == vk::ImageType::e3D) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
-    if (info.is_tiled) {
-        flags |= vk::ImageCreateFlagBits::eExtendedUsage;
-        if (info.IsBlockCoded()) {
-            flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
-        }
+    if (info.IsBlockCoded()) {
+        flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 
     usage = ImageUsageFlags(info);
