@@ -468,7 +468,6 @@ public:
     void Open(const std::filesystem::path& file_name);
     bool IsSelfFile() const;
     bool IsElfFile() const;
-    void DebugDump();
 
     [[nodiscard]] self_header GetSElfHeader() const {
         return m_self;
@@ -503,6 +502,10 @@ public:
 
     void LoadSegment(u64 virtual_addr, u64 file_offset, u64 size);
     bool IsSharedLib();
+    void ElfHeaderDebugDump(const std::filesystem::path& file_name);
+    void SelfHeaderDebugDump(const std::filesystem::path& file_name);
+    void SelfSegHeaderDebugDump(const std::filesystem::path& file_name);
+    void PHeaderDebugDump(const std::filesystem::path& file_name);
 
 private:
     Common::FS::IOFile m_f{};

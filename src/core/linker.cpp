@@ -379,6 +379,12 @@ void Linker::DebugDump() {
         std::filesystem::create_directory(filepath);
         m.get()->import_sym.DebugDump(filepath / "imports.txt");
         m.get()->export_sym.DebugDump(filepath / "exports.txt");
+        if (m.get()->elf.IsSelfFile()) {
+            m.get()->elf.SelfHeaderDebugDump(filepath / "selfHeader.txt");
+            m.get()->elf.SelfSegHeaderDebugDump(filepath / "selfSegHeaders.txt");
+        }
+        m.get()->elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
+        m.get()->elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
     }
 }
 
