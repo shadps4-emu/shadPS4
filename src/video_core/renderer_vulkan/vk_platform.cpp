@@ -168,6 +168,8 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
 
 vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemType window_type,
                                   bool enable_validation, bool dump_command_buffers) {
+    LOG_INFO(Render_Vulkan, "Creating vulkan instance");
+
     auto vkGetInstanceProcAddr =
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
@@ -176,12 +178,10 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
                                       ? vk::enumerateInstanceVersion()
                                       : VK_API_VERSION_1_0;
 
-    if (available_version < TargetVulkanApiVersion) {
-        throw std::runtime_error(fmt::format(
-            "Vulkan {}.{} is required, but only {}.{} is supported by instance!",
-            VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
-            VK_VERSION_MAJOR(available_version), VK_VERSION_MINOR(available_version)));
-    }
+    ASSERT_MSG(available_version >= TargetVulkanApiVersion,
+               "Vulkan {}.{} is required, but only {}.{} is supported by instance!",
+               VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
+               VK_VERSION_MAJOR(available_version), VK_VERSION_MINOR(available_version));
 
     const auto extensions = GetInstanceExtensions(window_type, true);
 

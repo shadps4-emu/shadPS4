@@ -29,11 +29,9 @@ namespace Core {
 static constexpr s32 WindowWidth = 1280;
 static constexpr s32 WindowHeight = 720;
 
-Emulator::Emulator() : window{WindowWidth, WindowHeight, controller} {
+Emulator::Emulator() : memory{Core::Memory::Instance()},
+      window{WindowWidth, WindowHeight, controller} {
     g_window = &window;
-
-    // Initialize memory system as early as possible to reserve mappings.
-    [[maybe_unused]] const auto* memory = Core::Memory::Instance();
 
     // Read configuration file.
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
