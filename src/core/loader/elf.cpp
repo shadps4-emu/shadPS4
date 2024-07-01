@@ -226,8 +226,6 @@ void Elf::Open(const std::filesystem::path& file_name) {
             m_f.ReadObject(m_self_id_header);
         }
     }
-
-    DebugDump();
 }
 
 bool Elf::IsSelfFile() const {
@@ -324,54 +322,6 @@ bool Elf::IsElfFile() const {
     }
 
     return true;
-}
-
-void Elf::DebugDump() {
-    if (is_self) { // If we load elf instead
-        LOG_INFO(Loader, "{}", SElfHeaderStr());
-        for (u16 i = 0; i < m_self.segment_count; i++) {
-            LOG_INFO(Loader, "{}", SELFSegHeader(i));
-        }
-    }
-
-    LOG_INFO(Loader, "{}", ElfHeaderStr());
-
-    if (m_elf_header.e_phentsize > 0) {
-        LOG_INFO(Loader, "Program headers:");
-        for (u16 i = 0; i < m_elf_header.e_phnum; i++) {
-            LOG_INFO(Loader, "{}", ElfPHeaderStr(i));
-        }
-    }
-    if (m_elf_header.e_shentsize > 0) {
-        LOG_INFO(Loader, "Section headers:");
-        for (u16 i = 0; i < m_elf_header.e_shnum; i++) {
-            LOG_INFO(Loader, "--- shdr {} --", i);
-            LOG_INFO(Loader, "sh_name ........: {}", m_elf_shdr[i].sh_name);
-            LOG_INFO(Loader, "sh_type ........: {:#010x}", m_elf_shdr[i].sh_type);
-            LOG_INFO(Loader, "sh_flags .......: {:#018x}", m_elf_shdr[i].sh_flags);
-            LOG_INFO(Loader, "sh_addr ........: {:#018x}", m_elf_shdr[i].sh_addr);
-            LOG_INFO(Loader, "sh_offset ......: {:#018x}", m_elf_shdr[i].sh_offset);
-            LOG_INFO(Loader, "sh_size ........: {:#018x}", m_elf_shdr[i].sh_size);
-            LOG_INFO(Loader, "sh_link ........: {:#010x}", m_elf_shdr[i].sh_link);
-            LOG_INFO(Loader, "sh_info ........: {:#010x}", m_elf_shdr[i].sh_info);
-            LOG_INFO(Loader, "sh_addralign ...: {:#018x}", m_elf_shdr[i].sh_addralign);
-            LOG_INFO(Loader, "sh_entsize .....: {:#018x}", m_elf_shdr[i].sh_entsize);
-        }
-    }
-
-    if (is_self) {
-        LOG_INFO(Loader, "SELF info:");
-        LOG_INFO(Loader, "auth id ............: {:#018x}", m_self_id_header.authid);
-        LOG_INFO(Loader, "program type .......: {}",
-                 GetProgramTypeName(m_self_id_header.program_type));
-        LOG_INFO(Loader, "app version ........: {:#018x}", m_self_id_header.appver);
-        LOG_INFO(Loader, "fw version .........: {:#018x}", m_self_id_header.firmver);
-        std::string digest;
-        for (int i = 0; i < 32; i++) {
-            digest += fmt::format("{:02X}", m_self_id_header.digest[i]);
-        }
-        LOG_INFO(Loader, "digest..............: 0x{}", digest);
-    }
 }
 
 std::string Elf::SElfHeaderStr() {
@@ -540,6 +490,36 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
 
 bool Elf::IsSharedLib() {
     return m_elf_header.e_type == ET_SCE_DYNAMIC;
+}
+
+void Elf::ElfHeaderDebugDump(const std::filesystem::path& file_name) {
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
+                         Common::FS::FileType::TextFile};
+    f.WriteString(ElfHeaderStr());
+}
+
+void Elf::SelfHeaderDebugDump(const std::filesystem::path& file_name) {
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
+                         Common::FS::FileType::TextFile};
+    f.WriteString(SElfHeaderStr());
+}
+
+void Elf::SelfSegHeaderDebugDump(const std::filesystem::path& file_name) {
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
+                         Common::FS::FileType::TextFile};
+    for (u16 i = 0; i < m_self.segment_count; i++) {
+        f.WriteString(SELFSegHeader(i));
+    }
+}
+
+void Elf::PHeaderDebugDump(const std::filesystem::path& file_name) {
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
+                         Common::FS::FileType::TextFile};
+    if (m_elf_header.e_phentsize > 0) {
+        for (u16 i = 0; i < m_elf_header.e_phnum; i++) {
+            f.WriteString(ElfPHeaderStr(i));
+        }
+    }
 }
 
 } // namespace Core::Loader
