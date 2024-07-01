@@ -126,7 +126,8 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
     }
 
     for (const auto& image_desc : info.images) {
-        const auto tsharp = info.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+        const auto tsharp =
+            info.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
         const auto& image_view = texture_cache.FindImageView(tsharp, image_desc.is_storage);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);

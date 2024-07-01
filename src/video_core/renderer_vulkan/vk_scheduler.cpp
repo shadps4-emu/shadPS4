@@ -27,15 +27,16 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     render_state = new_state;
 
     const vk::RenderingInfo rendering_info = {
-        .renderArea = {
-            .offset = {0, 0},
-            .extent = {render_state.width, render_state.height},
-        },
+        .renderArea =
+            {
+                .offset = {0, 0},
+                .extent = {render_state.width, render_state.height},
+            },
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.color_attachments.data(),
-        .pDepthAttachment = render_state.num_depth_attachments ?
-                                &render_state.depth_attachment : nullptr,
+        .pDepthAttachment =
+            render_state.num_depth_attachments ? &render_state.depth_attachment : nullptr,
     };
 
     current_cmdbuf.beginRendering(rendering_info);

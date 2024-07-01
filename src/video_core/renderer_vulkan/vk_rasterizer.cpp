@@ -103,7 +103,7 @@ void Rasterizer::BeginRendering() {
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .clearValue =
-            is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
+                is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
         };
         texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
@@ -137,7 +137,7 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed, u32 index_offset) {
     // Emulate QuadList primitive type with CPU made index buffer.
     const auto& regs = liverpool->regs;
     if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::QuadList) {
-        //ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
+        // ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
         is_indexed = true;
 
         // Emit indices.

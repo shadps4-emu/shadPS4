@@ -29,8 +29,8 @@ namespace Core {
 static constexpr s32 WindowWidth = 1280;
 static constexpr s32 WindowHeight = 720;
 
-Emulator::Emulator() : memory{Core::Memory::Instance()},
-      window{WindowWidth, WindowHeight, controller} {
+Emulator::Emulator()
+    : memory{Core::Memory::Instance()}, window{WindowWidth, WindowHeight, controller} {
     g_window = &window;
 
     // Read configuration file.
