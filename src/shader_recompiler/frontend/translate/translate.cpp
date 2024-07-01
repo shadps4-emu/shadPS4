@@ -268,7 +268,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_AND_B32(inst);
             break;
         case Opcode::V_OR_B32:
-            translator.V_OR_B32(inst);
+            translator.V_OR_B32(false, inst);
+            break;
+        case Opcode::V_XOR_B32:
+            translator.V_OR_B32(true, inst);
             break;
         case Opcode::V_LSHLREV_B32:
             translator.V_LSHLREV_B32(inst);
@@ -324,6 +327,24 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CVT_PKRTZ_F16_F32:
             translator.V_CVT_PKRTZ_F16_F32(inst);
             break;
+        case Opcode::V_CVT_F32_F16:
+            translator.V_CVT_F32_F16(inst);
+            break;
+        case Opcode::V_CVT_F32_UBYTE0:
+            translator.V_CVT_F32_UBYTE(0, inst);
+            break;
+        case Opcode::V_CVT_F32_UBYTE1:
+            translator.V_CVT_F32_UBYTE(1, inst);
+            break;
+        case Opcode::V_CVT_F32_UBYTE2:
+            translator.V_CVT_F32_UBYTE(2, inst);
+            break;
+        case Opcode::V_CVT_F32_UBYTE3:
+            translator.V_CVT_F32_UBYTE(3, inst);
+            break;
+        case Opcode::V_BFREV_B32:
+            translator.V_BFREV_B32(inst);
+            break;
         case Opcode::V_FRACT_F32:
             translator.V_FRACT_F32(inst);
             break;
@@ -354,6 +375,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
+            break;
+        case Opcode::IMAGE_GET_LOD:
+            translator.IMAGE_GET_LOD(inst);
             break;
         case Opcode::IMAGE_GATHER4_C:
             translator.IMAGE_GATHER(inst);
@@ -682,7 +706,10 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_SAD_U32(inst);
             break;
         case Opcode::V_BFE_U32:
-            translator.V_BFE_U32(inst);
+            translator.V_BFE_U32(false, inst);
+            break;
+        case Opcode::V_BFE_I32:
+            translator.V_BFE_U32(true, inst);
             break;
         case Opcode::V_MAD_I32_I24:
             translator.V_MAD_I32_I24(inst);

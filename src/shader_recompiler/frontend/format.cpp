@@ -1826,17 +1826,17 @@ constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
      ScalarType::Float64},
     // 17 = V_CVT_F32_UBYTE0
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 18 = V_CVT_F32_UBYTE1
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 19 = V_CVT_F32_UBYTE2
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 20 = V_CVT_F32_UBYTE3
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 21 = V_CVT_U32_F64
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64, ScalarType::Uint32},
     // 22 = V_CVT_F64_U32
