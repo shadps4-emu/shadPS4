@@ -3,6 +3,7 @@
 
 set(SHADER_FILES
     detile_m8x1.comp
+    detile_m8x2.comp
     detile_m32x1.comp
     detile_m32x2.comp
     detile_m32x4.comp

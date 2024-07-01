@@ -30,6 +30,7 @@ typedef struct {
 } OrbisKernelUuid;
 
 int* PS4_SYSV_ABI __Error();
+int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);
 
