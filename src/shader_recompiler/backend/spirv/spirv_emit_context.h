@@ -147,6 +147,12 @@ public:
     Id u32_zero_value{};
     Id f32_zero_value{};
 
+    Id shared_u8{};
+    Id shared_u16{};
+    Id shared_u32{};
+    Id shared_u32x2{};
+    Id shared_u32x4{};
+
     Id input_u32{};
     Id input_f32{};
     Id input_s32{};
@@ -168,6 +174,14 @@ public:
     Id local_invocation_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
+
+    Id shared_memory_u8{};
+    Id shared_memory_u16{};
+    Id shared_memory_u32{};
+    Id shared_memory_u32x2{};
+    Id shared_memory_u32x4{};
+
+    Id shared_memory_u32_type{};
 
     struct TextureDefinition {
         Id id;
@@ -206,6 +220,7 @@ private:
     void DefineOutputs(const Info& info);
     void DefineBuffers(const Info& info);
     void DefineImagesAndSamplers(const Info& info);
+    void DefineSharedMemory(const Info& info);
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

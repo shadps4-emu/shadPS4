@@ -19,6 +19,25 @@ OPCODE(ReadConst,                                           U32,            U32x
 OPCODE(ReadConstBuffer,                                     F32,            Opaque,         U32,                                                            )
 OPCODE(ReadConstBufferU32,                                  U32,            Opaque,         U32,                                                            )
 
+// Barriers
+OPCODE(Barrier,                                             Void,                                                                                           )
+OPCODE(WorkgroupMemoryBarrier,                              Void,                                                                                           )
+OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
+
+// Shared memory operations
+OPCODE(LoadSharedU8,                                        U32,            U32,                                                                            )
+OPCODE(LoadSharedS8,                                        U32,            U32,                                                                            )
+OPCODE(LoadSharedU16,                                       U32,            U32,                                                                            )
+OPCODE(LoadSharedS16,                                       U32,            U32,                                                                            )
+OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
+OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
+OPCODE(LoadSharedU128,                                      U32x4,          U32,                                                                            )
+OPCODE(WriteSharedU8,                                       Void,           U32,            U32,                                                            )
+OPCODE(WriteSharedU16,                                      Void,           U32,            U32,                                                            )
+OPCODE(WriteSharedU32,                                      Void,           U32,            U32,                                                            )
+OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
+OPCODE(WriteSharedU128,                                     Void,           U32,            U32x4,                                                          )
+
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
 OPCODE(GetThreadBitScalarReg,                               U1,             ScalarReg,                                                                      )

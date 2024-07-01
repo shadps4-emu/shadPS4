@@ -466,6 +466,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_CMP_LT_U32:
             translator.S_CMP(ConditionOp::LT, false, inst);
             break;
+        case Opcode::S_CMP_LE_U32:
+            translator.S_CMP(ConditionOp::LE, false, inst);
+            break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
             break;
@@ -816,8 +819,23 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_GET_RESINFO:
             translator.IMAGE_GET_RESINFO(inst);
             break;
+        case Opcode::S_BARRIER:
+            translator.S_BARRIER();
+            break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
+            break;
+        case Opcode::DS_READ_B32:
+            translator.DS_READ(32, false, false, inst);
+            break;
+        case Opcode::DS_READ2_B32:
+            translator.DS_READ(32, false, true, inst);
+            break;
+        case Opcode::DS_WRITE_B32:
+            translator.DS_WRITE(32, false, false, inst);
+            break;
+        case Opcode::DS_WRITE2_B32:
+            translator.DS_WRITE(32, false, true, inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

@@ -43,6 +43,10 @@ public:
     void Epilogue();
     void Discard();
 
+    void Barrier();
+    void WorkgroupMemoryBarrier();
+    void DeviceMemoryBarrier();
+
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
     void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
@@ -74,7 +78,7 @@ public:
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
-    [[nodiscard]] U32U64 ReadShared(int bit_size, bool is_signed, const U32& offset);
+    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);

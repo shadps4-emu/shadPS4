@@ -115,6 +115,18 @@ void IREmitter::Discard() {
     Inst(Opcode::Discard);
 }
 
+void IREmitter::Barrier() {
+    Inst(Opcode::Barrier);
+}
+
+void IREmitter::WorkgroupMemoryBarrier() {
+    Inst(Opcode::WorkgroupMemoryBarrier);
+}
+
+void IREmitter::DeviceMemoryBarrier() {
+    Inst(Opcode::DeviceMemoryBarrier);
+}
+
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetUserData, reg);
 }
@@ -240,22 +252,24 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
     Inst(Opcode::SetAttribute, attribute, value, Imm32(comp));
 }
 
-U32U64 IREmitter::ReadShared(int bit_size, bool is_signed, const U32& offset) {
-    /*switch (bit_size) {
+Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
+    switch (bit_size) {
     case 8:
-        return Inst<U32>(is_signed ? Opcode::ReadSharedS8 : Opcode::ReadSharedU8, offset);
+        return Inst<U32>(is_signed ? Opcode::LoadSharedS8 : Opcode::LoadSharedU8, offset);
     case 16:
-        return Inst<U32>(is_signed ? Opcode::ReadSharedS16 : Opcode::ReadSharedU16, offset);
+        return Inst<U32>(is_signed ? Opcode::LoadSharedS16 : Opcode::LoadSharedU16, offset);
     case 32:
-        return Inst<U32>(Opcode::ReadSharedU32, offset);
+        return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst<U64>(Opcode::ReadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, offset);
+    case 128:
+        return Inst(Opcode::LoadSharedU128, offset);
     }
-    UNREACHABLE_MSG("Invalid bit size {}", bit_size);*/
+    UNREACHABLE_MSG("Invalid bit size {}", bit_size);
 }
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
-    /*switch (bit_size) {
+    switch (bit_size) {
     case 8:
         Inst(Opcode::WriteSharedU8, offset, value);
         break;
@@ -268,9 +282,12 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     case 64:
         Inst(Opcode::WriteSharedU64, offset, value);
         break;
+    case 128:
+        Inst(Opcode::WriteSharedU128, offset, value);
+        break;
     default:
-        UNREACHABLE_MSG("Invalid bit size {}", bit_size);
-    }*/
+        throw InvalidArgument("Invalid bit size {}", bit_size);
+    }
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {

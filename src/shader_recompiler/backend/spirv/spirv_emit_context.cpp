@@ -3,6 +3,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
 namespace Shader::Backend::SPIRV {
@@ -41,8 +42,9 @@ EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& bin
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces(program);
-    DefineBuffers(program.info);
-    DefineImagesAndSamplers(program.info);
+    DefineBuffers(info);
+    DefineImagesAndSamplers(info);
+    DefineSharedMemory(info);
 }
 
 EmitContext::~EmitContext() = default;
@@ -356,6 +358,52 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
         interfaces.push_back(id);
         ++binding;
     }
+}
+
+void EmitContext::DefineSharedMemory(const Info& info) {
+    if (info.shared_memory_size == 0) {
+        return;
+    }
+    const auto make{[&](Id element_type, u32 element_size) {
+        const u32 num_elements{Common::DivCeil(info.shared_memory_size, element_size)};
+        const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
+        Decorate(array_type, spv::Decoration::ArrayStride, element_size);
+
+        const Id struct_type{TypeStruct(array_type)};
+        MemberDecorate(struct_type, 0U, spv::Decoration::Offset, 0U);
+        Decorate(struct_type, spv::Decoration::Block);
+
+        const Id pointer{TypePointer(spv::StorageClass::Workgroup, struct_type)};
+        const Id element_pointer{TypePointer(spv::StorageClass::Workgroup, element_type)};
+        const Id variable{AddGlobalVariable(pointer, spv::StorageClass::Workgroup)};
+        Decorate(variable, spv::Decoration::Aliased);
+        interfaces.push_back(variable);
+
+        return std::make_tuple(variable, element_pointer, pointer);
+    }};
+    if (profile.support_explicit_workgroup_layout) {
+        AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        if (info.uses_shared_u8) {
+            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout8BitAccessKHR);
+            std::tie(shared_memory_u8, shared_u8, std::ignore) = make(U8, 1);
+        }
+        if (info.uses_shared_u16) {
+            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
+            std::tie(shared_memory_u16, shared_u16, std::ignore) = make(U16, 2);
+        }
+        std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make(U32[1], 4);
+        std::tie(shared_memory_u32x2, shared_u32x2, std::ignore) = make(U32[2], 8);
+        std::tie(shared_memory_u32x4, shared_u32x4, std::ignore) = make(U32[4], 16);
+        return;
+    }
+    const u32 num_elements{Common::DivCeil(info.shared_memory_size, 4U)};
+    const Id type{TypeArray(U32[1], ConstU32(num_elements))};
+    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+
+    shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
+    shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
+    interfaces.push_back(shared_memory_u32);
 }
 
 } // namespace Shader::Backend::SPIRV
