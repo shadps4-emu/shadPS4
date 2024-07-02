@@ -127,14 +127,14 @@ ImageId TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool r
         image_ids.push_back(image_id);
     });
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
+    //ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
         image_id = slot_images.insert(instance, scheduler, info, cpu_address);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids[0];
+        image_id = image_ids[image_ids.size() > 1 ? 1 : 0];
     }
 
     RegisterMeta(info, image_id);

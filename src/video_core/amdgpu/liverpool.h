@@ -214,6 +214,10 @@ struct Liverpool {
         BitField<18, 1, u32> use_vtx_render_target_idx;
         BitField<19, 1, u32> use_vtx_viewport_idx;
         BitField<20, 1, u32> use_vtx_kill_flag;
+        BitField<21, 1, u32> vs_out_misc_enable;
+        BitField<22, 1, u32> vs_out_ccdist0_enable;
+        BitField<23, 1, u32> vs_out_ccdist1_enable;
+        BitField<25, 1, u32> use_vtx_gs_cut_flag;
 
         bool IsClipDistEnabled(u32 index) const {
             return (clip_distance_enable.Value() >> index) & 1;
@@ -1027,6 +1031,7 @@ static_assert(GFX6_3D_REG_INDEX(cs_program.user_data) == 0x2E40);
 static_assert(GFX6_3D_REG_INDEX(depth_render_control) == 0xA000);
 static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
+static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);

@@ -50,10 +50,13 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     };
     const bool has_flt_source =
         is_float_const(inst.src[0].field) || is_float_const(inst.src[1].field);
-    const IR::U32F32 src0 = GetSrc(inst.src[0], has_flt_source);
+    IR::U32F32 src0 = GetSrc(inst.src[0], has_flt_source);
     IR::U32F32 src1 = GetSrc(inst.src[1], has_flt_source);
     if (src0.Type() == IR::Type::F32 && src1.Type() == IR::Type::U32) {
         src1 = ir.BitCast<IR::F32, IR::U32>(src1);
+    }
+    if (src1.Type() == IR::Type::F32 && src0.Type() == IR::Type::U32) {
+        src0 = ir.BitCast<IR::F32, IR::U32>(src0);
     }
     const IR::Value result = ir.Select(flag, src1, src0);
     ir.SetVectorReg(dst_reg, IR::U32F32{result});
@@ -511,6 +514,13 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
 void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.ConvertFToI(32, true, ir.FPFloor(src0)));
+}
+
+void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    ir.SetVcc(ir.Imm1(false));
+    // TODO
 }
 
 } // namespace Shader::Gcn

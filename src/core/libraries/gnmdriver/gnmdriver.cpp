@@ -912,9 +912,9 @@ int PS4_SYSV_ABI sceGnmGetGpuBlockStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
+u64 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
     LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x800000000;
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuInfoStatus() {

@@ -831,6 +831,17 @@ U1 IREmitter::FPIsNan(const F32F64& value) {
     }
 }
 
+U1 IREmitter::FPIsInf(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<U1>(Opcode::FPIsInf32, value);
+    case Type::F64:
+        return Inst<U1>(Opcode::FPIsInf64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
 U1 IREmitter::FPOrdered(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());

@@ -7,6 +7,37 @@
 namespace Shader::Backend::SPIRV {
 namespace {
 
+Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
+    switch (output) {
+    case VsOutput::ClipDist0:
+    case VsOutput::ClipDist1:
+    case VsOutput::ClipDist2:
+    case VsOutput::ClipDist3:
+    case VsOutput::ClipDist4:
+    case VsOutput::ClipDist5:
+    case VsOutput::ClipDist6:
+    case VsOutput::ClipDist7: {
+        const u32 index = u32(output) - u32(VsOutput::ClipDist0);
+        const Id clip_num{ctx.ConstU32(index)};
+        return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
+    }
+    case VsOutput::CullDist0:
+    case VsOutput::CullDist1:
+    case VsOutput::CullDist2:
+    case VsOutput::CullDist3:
+    case VsOutput::CullDist4:
+    case VsOutput::CullDist5:
+    case VsOutput::CullDist6:
+    case VsOutput::CullDist7: {
+        const u32 index = u32(output) - u32(VsOutput::CullDist0);
+        const Id cull_num{ctx.ConstU32(index)};
+        return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
+    }
+    default:
+        UNREACHABLE();
+    }
+}
+
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
@@ -20,6 +51,12 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     switch (attr) {
     case IR::Attribute::Position0: {
         return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
+    case IR::Attribute::Position1:
+    case IR::Attribute::Position2:
+    case IR::Attribute::Position3: {
+        const u32 index = u32(attr) - u32(IR::Attribute::Position1);
+        return VsOutputAttrPointer(ctx, ctx.info.vs_outputs[index][element]);
+    }
     case IR::Attribute::RenderTarget0:
     case IR::Attribute::RenderTarget1:
     case IR::Attribute::RenderTarget2:

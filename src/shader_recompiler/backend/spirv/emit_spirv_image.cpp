@@ -140,7 +140,8 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id co
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
-    ctx.OpImageWrite(image, ctx.OpBitcast(ctx.S32[2], coords), color);
+    const Id color_type = texture.data_types->Get(4);
+    ctx.OpImageWrite(image, ctx.OpBitcast(ctx.S32[2], coords), ctx.OpBitcast(color_type, color));
 }
 
 } // namespace Shader::Backend::SPIRV

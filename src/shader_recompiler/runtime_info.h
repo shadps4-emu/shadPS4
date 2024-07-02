@@ -42,6 +42,33 @@ enum class TextureType : u32 {
 };
 constexpr u32 NUM_TEXTURE_TYPES = 7;
 
+enum class VsOutput : u32 {
+    None,
+    PointSprite,
+    EdgeFlag,
+    KillFlag,
+    GsCutFlag,
+    GsMrtIndex,
+    GsVpIndex,
+    CullDist0,
+    CullDist1,
+    CullDist2,
+    CullDist3,
+    CullDist4,
+    CullDist5,
+    CullDist6,
+    CullDist7,
+    ClipDist0,
+    ClipDist1,
+    ClipDist2,
+    ClipDist3,
+    ClipDist4,
+    ClipDist5,
+    ClipDist6,
+    ClipDist7,
+};
+using VsOutputMap = std::array<VsOutput, 4>;
+
 struct BufferResource {
     u32 sgpr_base;
     u32 dword_offset;
@@ -123,6 +150,7 @@ struct Info {
     };
     AttributeFlags loads{};
     AttributeFlags stores{};
+    boost::container::static_vector<VsOutputMap, 3> vs_outputs;
 
     BufferResourceList buffers;
     ImageResourceList images;

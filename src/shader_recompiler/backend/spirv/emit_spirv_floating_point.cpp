@@ -364,4 +364,12 @@ Id EmitFPIsNan64(EmitContext& ctx, Id value) {
     return ctx.OpIsNan(ctx.U1[1], value);
 }
 
+Id EmitFPIsInf32(EmitContext& ctx, Id value) {
+    return ctx.OpIsInf(ctx.U1[1], value);
+}
+
+Id EmitFPIsInf64(EmitContext& ctx, Id value) {
+    return ctx.OpIsInf(ctx.U1[1], value);
+}
+
 } // namespace Shader::Backend::SPIRV

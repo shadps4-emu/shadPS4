@@ -224,8 +224,17 @@ void EmitContext::DefineInputs(const Info& info) {
 
 void EmitContext::DefineOutputs(const Info& info) {
     switch (stage) {
-    case Stage::Vertex:
+    case Stage::Vertex: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+        const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value};
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance,
+                                        spv::StorageClass::Output, initializer);
+        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance,
+                                        spv::StorageClass::Output, initializer);
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -238,6 +247,7 @@ void EmitContext::DefineOutputs(const Info& info) {
             interfaces.push_back(id);
         }
         break;
+    }
     case Stage::Fragment:
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
@@ -319,11 +329,19 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
-        return spv::ImageFormat::Rg8Snorm;
+        return spv::ImageFormat::Rg8;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rgba16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format8 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::R8;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::Rgba8;
     }
     UNREACHABLE();
 }

@@ -241,6 +241,8 @@ Id EmitFPUnordGreaterThanEqual64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitFPIsNan16(EmitContext& ctx, Id value);
 Id EmitFPIsNan32(EmitContext& ctx, Id value);
 Id EmitFPIsNan64(EmitContext& ctx, Id value);
+Id EmitFPIsInf32(EmitContext& ctx, Id value);
+Id EmitFPIsInf64(EmitContext& ctx, Id value);
 Id EmitIAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitIAdd64(EmitContext& ctx, Id a, Id b);
 Id EmitISub32(EmitContext& ctx, Id a, Id b);

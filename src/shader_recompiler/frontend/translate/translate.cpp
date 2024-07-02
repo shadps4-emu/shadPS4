@@ -377,6 +377,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
+        case Opcode::IMAGE_SAMPLE_C_O:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::IMAGE_ATOMIC_ADD:
@@ -489,6 +490,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CMP_NGT_F32:
             translator.V_CMP_F32(ConditionOp::LE, false, inst);
+            break;
+        case Opcode::V_CMP_NGE_F32:
+            translator.V_CMP_F32(ConditionOp::LT, false, inst);
             break;
         case Opcode::S_CMP_LT_U32:
             translator.S_CMP(ConditionOp::LT, false, inst);
@@ -811,6 +815,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CMP_NE_U64:
             translator.V_CMP_NE_U64(inst);
             break;
+        case Opcode::V_CMP_CLASS_F32:
+            translator.V_CMP_CLASS_F32(inst);
+            break;
         case Opcode::V_TRUNC_F32:
             translator.V_TRUNC_F32(inst);
             break;
@@ -827,6 +834,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.S_ADD_U32(inst);
             break;
         case Opcode::S_SUB_U32:
+        case Opcode::S_SUB_I32:
             translator.S_SUB_U32(inst);
             break;
         // TODO: Separate implementation for legacy variants.

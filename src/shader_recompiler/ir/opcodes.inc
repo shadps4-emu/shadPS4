@@ -210,6 +210,8 @@ OPCODE(FPUnordGreaterThanEqual32,                           U1,             F32,
 OPCODE(FPUnordGreaterThanEqual64,                           U1,             F64,            F64,                                                            )
 OPCODE(FPIsNan32,                                           U1,             F32,                                                                            )
 OPCODE(FPIsNan64,                                           U1,             F64,                                                                            )
+OPCODE(FPIsInf32,                                           U1,             F32,                                                                            )
+OPCODE(FPIsInf64,                                           U1,             F64,                                                                            )
 
 // Integer operations
 OPCODE(IAdd32,                                              U32,            U32,            U32,                                                            )

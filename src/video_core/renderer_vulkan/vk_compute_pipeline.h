@@ -40,6 +40,7 @@ private:
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
+    u64 compute_key;
     Shader::Info info{};
 };
 
