@@ -324,7 +324,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::BitFieldUExtract:
         FoldWhenAllImmediates(inst, [](u32 base, u32 shift, u32 count) {
             if (static_cast<size_t>(shift) + static_cast<size_t>(count) > 32) {
-                throw LogicError("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldUExtract,
+                UNREACHABLE_MSG("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldUExtract,
                                  base, shift, count);
             }
             return (base >> shift) & ((1U << count) - 1);
@@ -336,7 +336,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
             const size_t left_shift{32 - back_shift};
             const size_t right_shift{static_cast<size_t>(32 - count)};
             if (back_shift > 32 || left_shift >= 32 || right_shift >= 32) {
-                throw LogicError("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldSExtract,
+                UNREACHABLE_MSG("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldSExtract,
                                  base, shift, count);
             }
             return static_cast<u32>((base << left_shift) >> right_shift);
@@ -345,7 +345,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::BitFieldInsert:
         FoldWhenAllImmediates(inst, [](u32 base, u32 insert, u32 offset, u32 bits) {
             if (bits >= 32 || offset >= 32) {
-                throw LogicError("Undefined result in {}({}, {}, {}, {})",
+                UNREACHABLE_MSG("Undefined result in {}({}, {}, {}, {})",
                                  IR::Opcode::BitFieldInsert, base, insert, offset, bits);
             }
             return (base & ~(~(~0u << bits) << offset)) | (insert << offset);

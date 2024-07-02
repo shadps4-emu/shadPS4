@@ -296,8 +296,41 @@ void EmitContext::DefineBuffers(const Info& info) {
     }
 }
 
+spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::R32ui;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::R32f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rg32f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::R16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rg16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::Rg8Snorm;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rgba16f;
+    }
+    UNREACHABLE();
+}
+
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto format = spv::ImageFormat::Unknown;
+    const auto image = ctx.info.ReadUd<AmdGpu::Image>(desc.sgpr_base, desc.dword_offset);
+    const auto format = desc.is_storage ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
     case AmdGpu::ImageType::Color1D:

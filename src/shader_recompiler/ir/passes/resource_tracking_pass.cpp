@@ -82,6 +82,7 @@ bool IsImageInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageSampleDrefExplicitLod:
     case IR::Opcode::ImageSampleDrefImplicitLod:
     case IR::Opcode::ImageFetch:
+    case IR::Opcode::ImageFetchU32:
     case IR::Opcode::ImageGather:
     case IR::Opcode::ImageGatherDref:
     case IR::Opcode::ImageQueryDimensions:
@@ -89,6 +90,17 @@ bool IsImageInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageGradient:
     case IR::Opcode::ImageRead:
     case IR::Opcode::ImageWrite:
+    case IR::Opcode::ImageAtomicIAdd32:
+    case IR::Opcode::ImageAtomicSMin32:
+    case IR::Opcode::ImageAtomicUMin32:
+    case IR::Opcode::ImageAtomicSMax32:
+    case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicInc32:
+    case IR::Opcode::ImageAtomicDec32:
+    case IR::Opcode::ImageAtomicAnd32:
+    case IR::Opcode::ImageAtomicOr32:
+    case IR::Opcode::ImageAtomicXor32:
+    case IR::Opcode::ImageAtomicExchange32:
         return true;
     default:
         return false;
@@ -99,6 +111,17 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::ImageWrite:
     case IR::Opcode::ImageRead:
+    case IR::Opcode::ImageAtomicIAdd32:
+    case IR::Opcode::ImageAtomicSMin32:
+    case IR::Opcode::ImageAtomicUMin32:
+    case IR::Opcode::ImageAtomicSMax32:
+    case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicInc32:
+    case IR::Opcode::ImageAtomicDec32:
+    case IR::Opcode::ImageAtomicAnd32:
+    case IR::Opcode::ImageAtomicOr32:
+    case IR::Opcode::ImageAtomicXor32:
+    case IR::Opcode::ImageAtomicExchange32:
         return true;
     default:
         return false;

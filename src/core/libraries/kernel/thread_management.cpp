@@ -63,6 +63,7 @@ int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
     SceKernelSchedParam param{};
     param.sched_priority = 700;
 
+    result = pthread_attr_setstacksize(&(*attr)->pth_attr, 2_MB);
     result = (result == 0 ? scePthreadAttrSetinheritsched(attr, 4) : result);
     result = (result == 0 ? scePthreadAttrSetschedparam(attr, &param) : result);
     result = (result == 0 ? scePthreadAttrSetschedpolicy(attr, SCHED_OTHER) : result);
@@ -921,36 +922,34 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
         attr = g_pthread_cxt->GetDefaultAttr();
     }
 
+    if (name != nullptr && std::string_view(name) == "RenderMixThread") {
+        printf("bad\n");
+    }
+
     *thread = pthread_pool->Create();
 
     if ((*thread)->attr != nullptr) {
         scePthreadAttrDestroy(&(*thread)->attr);
     }
-
     scePthreadAttrInit(&(*thread)->attr);
 
     int result = pthread_copy_attributes(&(*thread)->attr, attr);
+    ASSERT(result == 0);
 
-    if (result == 0) {
-        if (name != NULL) {
-            (*thread)->name = name;
-        } else {
-            (*thread)->name = "no-name";
-        }
-        (*thread)->entry = start_routine;
-        (*thread)->arg = arg;
-        (*thread)->is_almost_done = false;
-        (*thread)->is_detached = (*attr)->detached;
-        (*thread)->is_started = false;
-
-        result = pthread_create(&(*thread)->pth, &(*attr)->pth_attr, run_thread, *thread);
+    if (name != NULL) {
+        (*thread)->name = name;
+    } else {
+        (*thread)->name = "no-name";
     }
+    (*thread)->entry = start_routine;
+    (*thread)->arg = arg;
+    (*thread)->is_almost_done = false;
+    (*thread)->is_detached = (*attr)->detached;
+    (*thread)->is_started = false;
 
-    if (result == 0) {
-        while (!(*thread)->is_started) {
-            std::this_thread::sleep_for(std::chrono::microseconds(1000));
-        }
-    }
+    pthread_attr_setstacksize(&(*attr)->pth_attr, 2_MB);
+    result = pthread_create(&(*thread)->pth, &(*attr)->pth_attr, run_thread, *thread);
+
     LOG_INFO(Kernel_Pthread, "thread create name = {}", (*thread)->name);
 
     switch (result) {

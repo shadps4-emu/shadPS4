@@ -402,7 +402,7 @@ void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
         const u32 interval_size = interval_end_addr - interval_start_addr;
         void* addr = reinterpret_cast<void*>(interval_start_addr);
         if (delta > 0 && count == delta) {
-            mprotect(addr, interval_size, PAGE_READONLY);
+            //mprotect(addr, interval_size, PAGE_READONLY);
         } else if (delta < 0 && count == -delta) {
             mprotect(addr, interval_size, PAGE_READWRITE);
         } else {

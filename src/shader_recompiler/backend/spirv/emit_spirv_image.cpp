@@ -81,10 +81,15 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id of
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id result_type = texture.data_types->Get(4);
     if (Sirit::ValidId(lod)) {
-        return ctx.OpImageFetch(ctx.F32[4], image, coords, spv::ImageOperandsMask::Lod, lod);
+        return ctx.OpBitcast(ctx.F32[4], ctx.OpImageFetch(result_type, image, coords, spv::ImageOperandsMask::Lod, lod));
     } else {
-        return ctx.OpImageFetch(ctx.F32[4], image, coords);
+        return ctx.OpBitcast(ctx.F32[4], ctx.OpImageFetch(result_type, image, coords));
     }
+}
+
+Id EmitImageFetchU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
+                  Id ms) {
+    return Id{};
 }
 
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips) {

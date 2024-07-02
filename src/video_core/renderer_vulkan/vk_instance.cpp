@@ -156,6 +156,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
+    add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
@@ -237,6 +238,12 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR{
+            .workgroupMemoryExplicitLayout = true,
+            .workgroupMemoryExplicitLayoutScalarBlockLayout = true,
+            .workgroupMemoryExplicitLayout8BitAccess = true,
+            .workgroupMemoryExplicitLayout16BitAccess = true,
+        }
     };
 
     if (!color_write_en) {

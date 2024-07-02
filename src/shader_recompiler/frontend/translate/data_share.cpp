@@ -61,4 +61,9 @@ void Translator::S_BARRIER() {
     ir.Barrier();
 }
 
+void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    SetDst(inst.dst[0], src0);
+}
+
 } // namespace Shader::Gcn

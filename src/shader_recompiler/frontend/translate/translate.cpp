@@ -867,6 +867,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::DS_WRITE2_B32:
             translator.DS_WRITE(32, false, true, inst);
             break;
+        case Opcode::V_READFIRSTLANE_B32:
+            translator.V_READFIRSTLANE_B32(inst);
+            break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:

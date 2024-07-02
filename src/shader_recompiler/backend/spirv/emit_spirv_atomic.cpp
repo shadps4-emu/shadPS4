@@ -15,8 +15,7 @@ std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id image = ctx.OpLoad(texture.image_type, texture.id);
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, image, coords, ctx.ConstU32(0U))};
+    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
