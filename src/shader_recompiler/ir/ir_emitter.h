@@ -43,6 +43,10 @@ public:
     void Epilogue();
     void Discard();
 
+    void Barrier();
+    void WorkgroupMemoryBarrier();
+    void DeviceMemoryBarrier();
+
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
     void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
@@ -74,7 +78,7 @@ public:
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
-    [[nodiscard]] U32U64 ReadShared(int bit_size, bool is_signed, const U32& offset);
+    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
@@ -120,6 +124,7 @@ public:
     [[nodiscard]] F32 FPSin(const F32& value);
     [[nodiscard]] F32 FPExp2(const F32& value);
     [[nodiscard]] F32 FPLog2(const F32& value);
+    [[nodiscard]] F32 FPLdexp(const F32& value, const U32& exp);
     [[nodiscard]] F32F64 FPRecip(const F32F64& value);
     [[nodiscard]] F32F64 FPRecipSqrt(const F32F64& value);
     [[nodiscard]] F32 FPSqrt(const F32& value);
@@ -198,6 +203,33 @@ public:
 
     [[nodiscard]] U16U32U64 UConvert(size_t result_bitsize, const U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
+
+    [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMin(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMax(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicDec(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicAnd(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicOr(const Value& handle, const Value& coords, const Value& value,
+                                      TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicXor(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
+                                            const Value& value, TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& coords,
                                                const F32& bias, const Value& offset,

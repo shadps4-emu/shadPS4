@@ -121,6 +121,7 @@ struct Liverpool {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
             BitField<33, 5, u64> num_user_regs;
+            BitField<47, 9, u64> lds_dwords;
         } settings;
         INSERT_PADDING_WORDS(1);
         u32 resource_limits;
@@ -131,6 +132,11 @@ struct Liverpool {
         const T* Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
             return reinterpret_cast<const T*>(addr);
+        }
+
+        u32 SharedMemSize() const noexcept {
+            // lds_dwords is in units of 128 dwords. We return bytes.
+            return settings.lds_dwords.Value() * 128 * 4;
         }
 
         std::span<const u32> Code() const {

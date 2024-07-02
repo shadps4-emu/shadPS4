@@ -53,6 +53,17 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferU32:
     case Opcode::ImageWrite:
+    case Opcode::ImageAtomicIAdd32:
+    case Opcode::ImageAtomicSMin32:
+    case Opcode::ImageAtomicUMin32:
+    case Opcode::ImageAtomicSMax32:
+    case Opcode::ImageAtomicUMax32:
+    case Opcode::ImageAtomicInc32:
+    case Opcode::ImageAtomicDec32:
+    case Opcode::ImageAtomicAnd32:
+    case Opcode::ImageAtomicOr32:
+    case Opcode::ImageAtomicXor32:
+    case Opcode::ImageAtomicExchange32:
         return true;
     default:
         return false;
@@ -61,7 +72,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
 
 bool Inst::AreAllArgsImmediates() const {
     if (op == Opcode::Phi) {
-        throw LogicError("Testing for all arguments are immediates on phi instruction");
+        UNREACHABLE_MSG("Testing for all arguments are immediates on phi instruction");
     }
     return std::all_of(args.begin(), args.begin() + NumArgs(),
                        [](const IR::Value& value) { return value.IsImmediate(); });
@@ -91,7 +102,7 @@ void Inst::SetArg(size_t index, Value value) {
 
 Block* Inst::PhiBlock(size_t index) const {
     if (op != Opcode::Phi) {
-        throw LogicError("{} is not a Phi instruction", op);
+        UNREACHABLE_MSG("{} is not a Phi instruction", op);
     }
     if (index >= phi_args.size()) {
         throw InvalidArgument("Out of bounds argument index {} in phi instruction");
@@ -143,7 +154,7 @@ void Inst::ReplaceUsesWith(Value replacement) {
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {
     if (opcode == IR::Opcode::Phi) {
-        throw LogicError("Cannot transition into Phi");
+        UNREACHABLE_MSG("Cannot transition into Phi");
     }
     if (op == Opcode::Phi) {
         // Transition out of phi arguments into non-phi

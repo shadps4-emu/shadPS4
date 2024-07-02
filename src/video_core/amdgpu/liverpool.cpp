@@ -323,6 +323,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.index_base_address.base_addr_hi.Assign(index_base->addr_hi);
             break;
         }
+        case PM4ItOpcode::IndexBufferSize: {
+            const auto* index_size = reinterpret_cast<const PM4CmdDrawIndexBufferSize*>(header);
+            regs.num_indices = index_size->num_indices;
+            break;
+        }
         case PM4ItOpcode::EventWrite: {
             // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;

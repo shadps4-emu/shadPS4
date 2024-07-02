@@ -98,6 +98,10 @@ Id EmitFPExp2(EmitContext& ctx, Id value) {
     return ctx.OpExp2(ctx.F32[1], value);
 }
 
+Id EmitFPLdexp(EmitContext& ctx, Id value, Id exp) {
+    return ctx.OpLdexp(ctx.F32[1], value, exp);
+}
+
 Id EmitFPLog2(EmitContext& ctx, Id value) {
     return ctx.OpLog2(ctx.F32[1], value);
 }

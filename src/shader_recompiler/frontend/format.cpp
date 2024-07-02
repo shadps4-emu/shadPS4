@@ -3429,48 +3429,48 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
     // 17 = IMAGE_ATOMIC_ADD
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 18 = IMAGE_ATOMIC_SUB
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     {},
     // 20 = IMAGE_ATOMIC_SMIN
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Sint32,
+     ScalarType::Sint32},
     // 21 = IMAGE_ATOMIC_UMIN
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 22 = IMAGE_ATOMIC_SMAX
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Sint32,
+     ScalarType::Sint32},
     // 23 = IMAGE_ATOMIC_UMAX
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 24 = IMAGE_ATOMIC_AND
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 25 = IMAGE_ATOMIC_OR
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 26 = IMAGE_ATOMIC_XOR
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 27 = IMAGE_ATOMIC_INC
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 28 = IMAGE_ATOMIC_DEC
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 29 = IMAGE_ATOMIC_FCMPSWAP
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
     // 30 = IMAGE_ATOMIC_FMIN
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
     // 31 = IMAGE_ATOMIC_FMAX
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
     // 32 = IMAGE_SAMPLE
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
      ScalarType::Float32},

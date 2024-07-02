@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
-#include "shader_recompiler/exception.h"
 #include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
@@ -428,10 +428,10 @@ template <RegT Reg>
 [[nodiscard]] constexpr Reg operator+(Reg reg, int num) {
     const int result{static_cast<int>(reg) + num};
     if (result >= static_cast<int>(Reg::Max)) {
-        throw LogicError("Overflow on register arithmetic");
+        UNREACHABLE_MSG("Overflow on register arithmetic");
     }
     if (result < 0) {
-        throw LogicError("Underflow on register arithmetic");
+        UNREACHABLE_MSG("Underflow on register arithmetic");
     }
     return static_cast<Reg>(result);
 }

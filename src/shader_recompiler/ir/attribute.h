@@ -4,8 +4,8 @@
 #pragma once
 
 #include <fmt/format.h>
+#include "common/assert.h"
 #include "common/types.h"
-#include "shader_recompiler/exception.h"
 
 namespace Shader::IR {
 
@@ -88,10 +88,10 @@ constexpr size_t NumParams = 32;
 [[nodiscard]] constexpr Attribute operator+(Attribute attr, int num) {
     const int result{static_cast<int>(attr) + num};
     if (result > static_cast<int>(Attribute::Param31)) {
-        throw LogicError("Overflow on register arithmetic");
+        UNREACHABLE_MSG("Overflow on register arithmetic");
     }
     if (result < static_cast<int>(Attribute::RenderTarget0)) {
-        throw LogicError("Underflow on register arithmetic");
+        UNREACHABLE_MSG("Underflow on register arithmetic");
     }
     return static_cast<Attribute>(result);
 }

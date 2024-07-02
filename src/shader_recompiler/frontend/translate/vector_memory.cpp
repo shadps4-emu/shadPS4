@@ -212,10 +212,15 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
         ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
                               ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
 
-    ASSERT(mimg.dmask == 0xF);
-    const IR::Value value = ir.CompositeConstruct(
-        ir.GetVectorReg<IR::F32>(data_reg), ir.GetVectorReg<IR::F32>(data_reg + 1),
-        ir.GetVectorReg<IR::F32>(data_reg + 2), ir.GetVectorReg<IR::F32>(data_reg + 3));
+    boost::container::static_vector<IR::F32, 4> comps;
+    for (u32 i = 0; i < 4; i++) {
+        if (((mimg.dmask >> i) & 1) == 0) {
+            comps.push_back(ir.Imm32(0.f));
+            continue;
+        }
+        comps.push_back(ir.GetVectorReg<IR::F32>(data_reg++));
+    }
+    const IR::Value value = ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
     ir.ImageWrite(handle, body, value, {});
 }
 
@@ -320,6 +325,50 @@ void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
     const IR::Value lod = ir.ImageQueryLod(handle, body, {});
     ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
     ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 1)});
+}
+
+void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
+    const auto& mimg = inst.control.mimg;
+    IR::VectorReg val_reg{inst.dst[0].code};
+    IR::VectorReg addr_reg{inst.src[0].code};
+    const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
+
+    const IR::Value value = ir.GetVectorReg(val_reg);
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value body =
+        ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1),
+                              ir.GetVectorReg(addr_reg + 2), ir.GetVectorReg(addr_reg + 3));
+    const IR::Value prev = [&] {
+        switch (op) {
+        case AtomicOp::Swap:
+            return ir.ImageAtomicExchange(handle, body, value, {});
+        case AtomicOp::Add:
+            return ir.ImageAtomicIAdd(handle, body, value, {});
+        case AtomicOp::Smin:
+            return ir.ImageAtomicIMin(handle, body, value, true, {});
+        case AtomicOp::Umin:
+            return ir.ImageAtomicUMin(handle, body, value, {});
+        case AtomicOp::Smax:
+            return ir.ImageAtomicIMax(handle, body, value, true, {});
+        case AtomicOp::Umax:
+            return ir.ImageAtomicUMax(handle, body, value, {});
+        case AtomicOp::And:
+            return ir.ImageAtomicAnd(handle, body, value, {});
+        case AtomicOp::Or:
+            return ir.ImageAtomicOr(handle, body, value, {});
+        case AtomicOp::Xor:
+            return ir.ImageAtomicXor(handle, body, value, {});
+        case AtomicOp::Inc:
+            return ir.ImageAtomicInc(handle, body, value, {});
+        case AtomicOp::Dec:
+            return ir.ImageAtomicDec(handle, body, value, {});
+        default:
+            UNREACHABLE();
+        }
+    }();
+    if (mimg.glc) {
+        ir.SetVectorReg(val_reg, IR::U32{prev});
+    }
 }
 
 } // namespace Shader::Gcn

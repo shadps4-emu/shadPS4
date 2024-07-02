@@ -85,7 +85,7 @@ void EmitInst(EmitContext& ctx, IR::Inst* inst) {
 #include "shader_recompiler/ir/opcodes.inc"
 #undef OPCODE
     }
-    throw LogicError("Invalid opcode {}", inst->GetOpcode());
+    UNREACHABLE_MSG("Invalid opcode {}", inst->GetOpcode());
 }
 
 Id TypeId(const EmitContext& ctx, IR::Type type) {
@@ -177,6 +177,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
     ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
+    ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
@@ -272,47 +273,47 @@ Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
 void EmitReference(EmitContext&) {}
 
 void EmitPhiMove(EmitContext&) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetScc(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetExec(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetVcc(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetVccLo(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetVccHi(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetScc(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetExec(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetVcc(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetVccLo(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetVccHi(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

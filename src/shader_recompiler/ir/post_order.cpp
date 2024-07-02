@@ -14,7 +14,7 @@ BlockList PostOrder(const AbstractSyntaxNode& root) {
     BlockList post_order_blocks;
 
     if (root.type != AbstractSyntaxNode::Type::Block) {
-        throw LogicError("First node in abstract syntax list root is not a block");
+        UNREACHABLE_MSG("First node in abstract syntax list root is not a block");
     }
     Block* const first_block{root.data.block};
     visited.insert(first_block);

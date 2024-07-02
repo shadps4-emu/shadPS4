@@ -345,6 +345,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_BFREV_B32:
             translator.V_BFREV_B32(inst);
             break;
+        case Opcode::V_LDEXP_F32:
+            translator.V_LDEXP_F32(inst);
+            break;
         case Opcode::V_FRACT_F32:
             translator.V_FRACT_F32(inst);
             break;
@@ -375,6 +378,36 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
             translator.IMAGE_SAMPLE(inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_ADD:
+            translator.IMAGE_ATOMIC(AtomicOp::Add, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_AND:
+            translator.IMAGE_ATOMIC(AtomicOp::And, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_OR:
+            translator.IMAGE_ATOMIC(AtomicOp::Or, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_XOR:
+            translator.IMAGE_ATOMIC(AtomicOp::Xor, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Umax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Smax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Umin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Smin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_INC:
+            translator.IMAGE_ATOMIC(AtomicOp::Inc, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_DEC:
+            translator.IMAGE_ATOMIC(AtomicOp::Dec, inst);
             break;
         case Opcode::IMAGE_GET_LOD:
             translator.IMAGE_GET_LOD(inst);
@@ -459,6 +492,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::S_CMP_LT_U32:
             translator.S_CMP(ConditionOp::LT, false, inst);
+            break;
+        case Opcode::S_CMP_LE_U32:
+            translator.S_CMP(ConditionOp::LE, false, inst);
             break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
@@ -580,6 +616,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CVT_I32_F32:
             translator.V_CVT_I32_F32(inst);
+            break;
+        case Opcode::V_CVT_FLR_I32_F32:
+            translator.V_CVT_FLR_I32_F32(inst);
             break;
         case Opcode::V_SUBREV_F32:
             translator.V_SUBREV_F32(inst);
@@ -715,6 +754,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_MAD_I32_I24(inst);
             break;
         case Opcode::V_MUL_I32_I24:
+        case Opcode::V_MUL_U32_U24:
             translator.V_MUL_I32_I24(inst);
             break;
         case Opcode::V_SUB_I32:
@@ -809,8 +849,26 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_GET_RESINFO:
             translator.IMAGE_GET_RESINFO(inst);
             break;
+        case Opcode::S_BARRIER:
+            translator.S_BARRIER();
+            break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
+            break;
+        case Opcode::DS_READ_B32:
+            translator.DS_READ(32, false, false, inst);
+            break;
+        case Opcode::DS_READ2_B32:
+            translator.DS_READ(32, false, true, inst);
+            break;
+        case Opcode::DS_WRITE_B32:
+            translator.DS_WRITE(32, false, false, inst);
+            break;
+        case Opcode::DS_WRITE2_B32:
+            translator.DS_WRITE(32, false, true, inst);
+            break;
+        case Opcode::V_READFIRSTLANE_B32:
+            translator.V_READFIRSTLANE_B32(inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

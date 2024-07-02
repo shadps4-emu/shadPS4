@@ -61,7 +61,12 @@ int PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceImeDialogGetStatus() {
+    return 1;
+}
+
 void RegisterlibSceMsgDialog(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("IADmD4tScBY", "libSceImeDialog", 1, "libSceImeDialog", 1, 1, sceImeDialogGetStatus);
     LIB_FUNCTION("HTrcDKlFKuM", "libSceMsgDialog", 1, "libSceMsgDialog", 1, 1, sceMsgDialogClose);
     LIB_FUNCTION("Lr8ovHH9l6A", "libSceMsgDialog", 1, "libSceMsgDialog", 1, 1,
                  sceMsgDialogGetResult);

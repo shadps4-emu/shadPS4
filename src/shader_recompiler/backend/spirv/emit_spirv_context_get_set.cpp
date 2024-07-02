@@ -45,39 +45,39 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 }
 
 void EmitGetThreadBitScalarReg(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetThreadBitScalarReg(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetScalarRegister(EmitContext&) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetScalarRegister(EmitContext&) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetVectorRegister(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetVectorRegister(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitSetGotoVariable(EmitContext&) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 void EmitGetGotoVariable(EmitContext&) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 Id EmitReadConst(EmitContext& ctx) {
-    throw LogicError("Unreachable instruction");
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {

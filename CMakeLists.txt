@@ -349,6 +349,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/runtime_info.h
                       src/shader_recompiler/backend/spirv/emit_spirv.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv.h
+                      src/shader_recompiler/backend/spirv/emit_spirv_atomic.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_barriers.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_bitwise_conversion.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_composite.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
@@ -359,6 +361,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/backend/spirv/emit_spirv_integer.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_logical.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_select.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_shared_memory.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_special.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_undefined.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_warp.cpp

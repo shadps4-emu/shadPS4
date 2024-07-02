@@ -3,6 +3,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
 namespace Shader::Backend::SPIRV {
@@ -41,8 +42,9 @@ EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& bin
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces(program);
-    DefineBuffers(program.info);
-    DefineImagesAndSamplers(program.info);
+    DefineBuffers(info);
+    DefineImagesAndSamplers(info);
+    DefineSharedMemory(info);
 }
 
 EmitContext::~EmitContext() = default;
@@ -294,8 +296,41 @@ void EmitContext::DefineBuffers(const Info& info) {
     }
 }
 
+spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::R32ui;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::R32f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rg32f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::R16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rg16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::Rg8Snorm;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rgba16f;
+    }
+    UNREACHABLE();
+}
+
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto format = spv::ImageFormat::Unknown;
+    const auto image = ctx.info.ReadUd<AmdGpu::Image>(desc.sgpr_base, desc.dword_offset);
+    const auto format = desc.is_storage ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
     case AmdGpu::ImageType::Color1D:
@@ -320,7 +355,17 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 
 void EmitContext::DefineImagesAndSamplers(const Info& info) {
     for (const auto& image_desc : info.images) {
-        const Id sampled_type{image_desc.nfmt == AmdGpu::NumberFormat::Uint ? U32[1] : F32[1]};
+        const VectorIds* data_types = [&] {
+            switch (image_desc.nfmt) {
+            case AmdGpu::NumberFormat::Uint:
+                return &U32;
+            case AmdGpu::NumberFormat::Sint:
+                return &S32;
+            default:
+                return &F32;
+            }
+        }();
+        const Id sampled_type = data_types->Get(1);
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
@@ -330,6 +375,7 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
                              image_desc.dword_offset));
         images.push_back({
             .id = id,
+            .data_types = data_types,
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
@@ -337,6 +383,8 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
         interfaces.push_back(id);
         ++binding;
     }
+
+    image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
 
     if (info.samplers.empty()) {
         return;
@@ -354,6 +402,52 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
         interfaces.push_back(id);
         ++binding;
     }
+}
+
+void EmitContext::DefineSharedMemory(const Info& info) {
+    if (info.shared_memory_size == 0) {
+        return;
+    }
+    const auto make{[&](Id element_type, u32 element_size) {
+        const u32 num_elements{Common::DivCeil(info.shared_memory_size, element_size)};
+        const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
+        Decorate(array_type, spv::Decoration::ArrayStride, element_size);
+
+        const Id struct_type{TypeStruct(array_type)};
+        MemberDecorate(struct_type, 0U, spv::Decoration::Offset, 0U);
+        Decorate(struct_type, spv::Decoration::Block);
+
+        const Id pointer{TypePointer(spv::StorageClass::Workgroup, struct_type)};
+        const Id element_pointer{TypePointer(spv::StorageClass::Workgroup, element_type)};
+        const Id variable{AddGlobalVariable(pointer, spv::StorageClass::Workgroup)};
+        Decorate(variable, spv::Decoration::Aliased);
+        interfaces.push_back(variable);
+
+        return std::make_tuple(variable, element_pointer, pointer);
+    }};
+    if (profile.support_explicit_workgroup_layout) {
+        AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        if (info.uses_shared_u8) {
+            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout8BitAccessKHR);
+            std::tie(shared_memory_u8, shared_u8, std::ignore) = make(U8, 1);
+        }
+        if (info.uses_shared_u16) {
+            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
+            std::tie(shared_memory_u16, shared_u16, std::ignore) = make(U16, 2);
+        }
+        std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make(U32[1], 4);
+        std::tie(shared_memory_u32x2, shared_u32x2, std::ignore) = make(U32[2], 8);
+        std::tie(shared_memory_u32x4, shared_u32x4, std::ignore) = make(U32[4], 16);
+        return;
+    }
+    const u32 num_elements{Common::DivCeil(info.shared_memory_size, 4U)};
+    const Id type{TypeArray(U32[1], ConstU32(num_elements))};
+    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+
+    shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
+    shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
+    interfaces.push_back(shared_memory_u32);
 }
 
 } // namespace Shader::Backend::SPIRV

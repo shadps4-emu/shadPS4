@@ -134,7 +134,10 @@ struct Info {
     std::span<const u32> user_data;
     Stage stage;
 
+    u32 shared_memory_size{};
     bool uses_group_quad{};
+    bool uses_shared_u8{};
+    bool uses_shared_u16{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
 
     template <typename T>

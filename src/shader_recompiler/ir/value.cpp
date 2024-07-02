@@ -83,7 +83,7 @@ bool Value::operator==(const Value& other) const {
     case Type::F64x4:
         break;
     }
-    throw LogicError("Invalid type {}", type);
+    UNREACHABLE_MSG("Invalid type {}", type);
 }
 
 bool Value::operator!=(const Value& other) const {
