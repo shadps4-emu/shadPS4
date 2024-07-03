@@ -226,7 +226,7 @@ void StreamBuffer::WaitPendingOperations(u64 requested_upper_bound) {
     while (requested_upper_bound > wait_bound && wait_cursor < *invalidation_mark) {
         auto& watch = previous_watches[wait_cursor];
         wait_bound = watch.upper_bound;
-        // scheduler.Wait(watch.tick);
+        scheduler.Wait(watch.tick);
         ++wait_cursor;
     }
 }

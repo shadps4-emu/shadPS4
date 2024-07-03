@@ -291,11 +291,11 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
-        return vk::Format::eR8G8B8A8Unorm;
+        return vk::Format::eB8G8R8A8Unorm;
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Srgb) {
-        return vk::Format::eR8G8B8A8Srgb;
+        return vk::Format::eB8G8R8A8Srgb;
     }
     if (data_format == AmdGpu::DataFormat::Format32_32_32 &&
         num_format == AmdGpu::NumberFormat::Float) {

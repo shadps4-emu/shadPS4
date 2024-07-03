@@ -40,6 +40,9 @@ Inst::~Inst() {
 
 bool Inst::MayHaveSideEffects() const noexcept {
     switch (op) {
+    case Opcode::Barrier:
+    case Opcode::WorkgroupMemoryBarrier:
+    case Opcode::DeviceMemoryBarrier:
     case Opcode::ConditionRef:
     case Opcode::Reference:
     case Opcode::PhiMove:
@@ -52,6 +55,11 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferF32x3:
     case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferU32:
+    case Opcode::WriteSharedU128:
+    case Opcode::WriteSharedU64:
+    case Opcode::WriteSharedU32:
+    case Opcode::WriteSharedU16:
+    case Opcode::WriteSharedU8:
     case Opcode::ImageWrite:
     case Opcode::ImageAtomicIAdd32:
     case Opcode::ImageAtomicSMin32:
