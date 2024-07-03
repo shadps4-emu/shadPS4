@@ -31,21 +31,28 @@ struct OrbisAppContentBootParam {
 };
 
 typedef u32 OrbisAppContentTemporaryDataOption;
-constexpr int ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE = 16;
-typedef struct OrbisAppContentMountPoint {
 
+constexpr int ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE = 16;
+
+struct OrbisAppContentMountPoint {
     char data[ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE];
-} OrbisAppContentMountPoint;
+};
 
 constexpr int ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_NONE = 0;
 constexpr int ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT = (1 << 0);
 constexpr int ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE = 17;
-typedef struct OrbisNpUnifiedEntitlementLabel {
 
+struct OrbisNpUnifiedEntitlementLabel {
     char data[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
-} OrbisNpUnifiedEntitlementLabel;
+    char padding[3];
+};
 
 typedef u32 OrbisAppContentAppParamId;
+
+struct OrbisAppContentAddcontInfo {
+    OrbisNpUnifiedEntitlementLabel entitlement_label;
+    u32 status;
+};
 
 int PS4_SYSV_ABI _Z5dummyv();
 int PS4_SYSV_ABI sceAppContentAddcontDelete();
@@ -64,7 +71,9 @@ int PS4_SYSV_ABI sceAppContentDownloadDataFormat();
 int PS4_SYSV_ABI sceAppContentDownloadDataGetAvailableSpaceKb();
 int PS4_SYSV_ABI sceAppContentGetAddcontDownloadProgress();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfo();
-int PS4_SYSV_ABI sceAppContentGetAddcontInfoList();
+int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
+                                                 OrbisAppContentAddcontInfo* list, u32 list_num,
+                                                 u32* hit_num);
 int PS4_SYSV_ABI sceAppContentGetEntitlementKey();
 int PS4_SYSV_ABI sceAppContentGetRegion();
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,

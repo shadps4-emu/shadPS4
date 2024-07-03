@@ -120,8 +120,11 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfo() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentGetAddcontInfoList() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
+                                                 OrbisAppContentAddcontInfo* list, u32 list_num,
+                                                 u32* hit_num) {
+    *hit_num = 0;
+    LOG_ERROR(Lib_AppContent, "(DUMMY) called");
     return ORBIS_OK;
 }
 
