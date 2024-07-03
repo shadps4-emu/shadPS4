@@ -305,6 +305,9 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
             DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
         }
         const auto module = CompileSPV(spv_code, instance.GetDevice());
+        // Set module name to hash in renderdoc
+        const auto name = fmt::format("cs_{:#x}", compute_key);
+        Vulkan::SetObjectName(instance.GetDevice(), module, name);
         return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
                                                  &program.info, module);
     } catch (const Shader::Exception& e) {
