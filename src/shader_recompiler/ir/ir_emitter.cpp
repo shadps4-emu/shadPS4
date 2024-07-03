@@ -212,6 +212,10 @@ U1 IREmitter::GetVcc() {
     return Inst<U1>(Opcode::GetVcc);
 }
 
+U32 IREmitter::GetSccLo() {
+    return Inst<U32>(Opcode::GetSccLo);
+}
+
 U32 IREmitter::GetVccLo() {
     return Inst<U32>(Opcode::GetVccLo);
 }
@@ -230,6 +234,10 @@ void IREmitter::SetExec(const U1& value) {
 
 void IREmitter::SetVcc(const U1& value) {
     Inst(Opcode::SetVcc, value);
+}
+
+void IREmitter::SetSccLo(const U32& value) {
+    Inst(Opcode::SetSccLo, value);
 }
 
 void IREmitter::SetVccLo(const U32& value) {
@@ -893,6 +901,18 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
         return Inst<U32>(Opcode::IAdd32, a, b);
     case Type::U64:
         return Inst<U64>(Opcode::IAdd64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
+Value IREmitter::IAddCary(const U32& a, const U32& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::IAddCary32, a, b);
     default:
         ThrowInvalidType(a.Type());
     }

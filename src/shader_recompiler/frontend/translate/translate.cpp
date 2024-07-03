@@ -236,7 +236,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     }
 }
 
-void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info) {
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info) {
     if (inst_list.empty()) {
         return;
     }
@@ -833,6 +833,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ADD_U32:
             translator.S_ADD_U32(inst);
             break;
+        case Opcode::S_ADDC_U32:
+            translator.S_ADDC_U32(inst);
+            break;
         case Opcode::S_SUB_U32:
         case Opcode::S_SUB_I32:
             translator.S_SUB_U32(inst);
@@ -878,6 +881,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_READFIRSTLANE_B32:
             translator.V_READFIRSTLANE_B32(inst);
             break;
+        case Opcode::S_GETPC_B64:
+            translator.S_GETPC_B64(block_base, inst);
+            break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:
         case Opcode::S_CBRANCH_SCC0:
@@ -895,6 +901,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
                       magic_enum::enum_name(inst.opcode), opcode);
             info.translation_failed = true;
         }
+        block_base += inst.length;
     }
 }
 

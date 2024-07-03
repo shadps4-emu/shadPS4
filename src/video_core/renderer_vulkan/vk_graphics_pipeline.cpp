@@ -326,7 +326,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
-            const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
+            const auto vsharp = buffer.GetVsharp(stage);
             const VAddr address = vsharp.base_address.Value();
             const u32 size = vsharp.GetSize();
             const u32 offset = staging.Copy(address, size,

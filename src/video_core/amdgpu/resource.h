@@ -22,6 +22,7 @@ enum class CompSwizzle : u32 {
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
     union {
+        u64 raw0;
         BitField<0, 44, u64> base_address;
         BitField<48, 14, u64> stride;
         BitField<62, 1, u64> cache_swizzle;
@@ -29,6 +30,7 @@ struct Buffer {
     };
     u32 num_records;
     union {
+        u32 raw11;
         BitField<0, 3, u32> dst_sel_x;
         BitField<3, 3, u32> dst_sel_y;
         BitField<6, 3, u32> dst_sel_z;
@@ -40,6 +42,14 @@ struct Buffer {
         BitField<21, 2, u32> index_stride;
         BitField<23, 1, u32> add_tid_enable;
     };
+
+    operator bool() const noexcept {
+        return base_address != 0;
+    }
+
+    bool operator==(const Buffer& other) const noexcept {
+        return std::memcmp(this, &other, sizeof(Buffer)) == 0;
+    }
 
     CompSwizzle GetSwizzle(u32 comp) const noexcept {
         return static_cast<CompSwizzle>((dst_sel.Value() >> (comp * 3)) & 0x7);

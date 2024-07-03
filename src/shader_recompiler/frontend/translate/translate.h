@@ -80,6 +80,8 @@ public:
     void S_BREV_B32(const GcnInst& inst);
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
+    void S_GETPC_B64(u32 pc, const GcnInst& inst);
+    void S_ADDC_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -192,6 +194,6 @@ private:
     static std::array<bool, IR::NumScalarRegs> exec_contexts;
 };
 
-void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info);
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info);
 
 } // namespace Shader::Gcn

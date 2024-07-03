@@ -288,6 +288,10 @@ void EmitGetVcc(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitGetSccLo(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitGetVccLo(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
@@ -305,6 +309,10 @@ void EmitSetExec(EmitContext& ctx) {
 }
 
 void EmitSetVcc(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetSccLo(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

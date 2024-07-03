@@ -85,14 +85,14 @@ struct Liverpool {
         } settings;
         UserData user_data;
 
-        template <typename T = u8>
-        const T* Address() const {
+        template <typename T = u8*>
+        const T Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
-            return reinterpret_cast<const T*>(addr);
+            return reinterpret_cast<const T>(addr);
         }
 
         std::span<const u32> Code() const {
-            const u32* code = Address<u32>();
+            const u32* code = Address<u32*>();
             BinaryInfo bininfo;
             std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
             const u32 num_dwords = bininfo.length / sizeof(u32);
@@ -128,10 +128,10 @@ struct Liverpool {
         INSERT_PADDING_WORDS(0x2A);
         UserData user_data;
 
-        template <typename T = u8>
-        const T* Address() const {
+        template <typename T = u8*>
+        const T Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
-            return reinterpret_cast<const T*>(addr);
+            return reinterpret_cast<const T>(addr);
         }
 
         u32 SharedMemSize() const noexcept {
@@ -140,7 +140,7 @@ struct Liverpool {
         }
 
         std::span<const u32> Code() const {
-            const u32* code = Address<u32>();
+            const u32* code = Address<u32*>();
             BinaryInfo bininfo;
             std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
             const u32 num_dwords = bininfo.length / sizeof(u32);
@@ -150,7 +150,7 @@ struct Liverpool {
 
     template <typename Shader>
     static constexpr auto* GetBinaryInfo(const Shader& sh) {
-        const auto* code = sh.template Address<u32>();
+        const auto* code = sh.template Address<u32*>();
         const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
         ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
         return bininfo;

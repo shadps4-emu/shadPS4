@@ -138,7 +138,8 @@ public:
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
             return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+                   desc.dword_offset == existing.dword_offset &&
+                   desc.inline_cbuf == existing.inline_cbuf;
         })};
         auto& buffer = buffer_resources[index];
         ASSERT(buffer.stride == desc.stride && buffer.num_records == desc.num_records);
@@ -219,20 +220,64 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     };
 }
 
+static constexpr size_t MaxUboSize = 65536;
+
+s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors, AmdGpu::Buffer& cbuf) {
+    /**
+     * Assert for the following pattern
+     * s_getpc_b64     s[32:33]
+     * s_add_u32       s32, <const>, s32
+     * s_addc_u32      s33, 0, s33
+     * s_mov_b32       s35, <const>
+     * s_movk_i32      s34, <const>
+     * buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
+     **/
+    IR::Inst* handle = inst.Arg(0).InstRecursive();
+    IR::Inst* p0 = handle->Arg(0).InstRecursive();
+    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate()) {
+        return -1;
+    }
+    IR::Inst* p1 = handle->Arg(1).InstRecursive();
+    if (p1->GetOpcode() != IR::Opcode::IAdd32) {
+        return -1;
+    }
+    if (!handle->Arg(3).IsImmediate() || !handle->Arg(2).IsImmediate()) {
+        return -1;
+    }
+    // We have found this pattern. Build the sharp and assign a binding to it.
+    cbuf.raw0 = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
+    cbuf.num_records = handle->Arg(2).U32();
+    cbuf.raw11 = handle->Arg(3).U32();
+    return descriptors.Add(BufferResource{
+        .sgpr_base = std::numeric_limits<u32>::max(),
+        .dword_offset = 0,
+        .stride = cbuf.GetStride(),
+        .num_records = u32(cbuf.num_records),
+        .used_types = BufferDataType(inst),
+        .inline_cbuf = cbuf,
+        .is_storage = IsBufferStore(inst) || cbuf.GetSize() > MaxUboSize,
+    });
+}
+
 void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                             Descriptors& descriptors) {
-    static constexpr size_t MaxUboSize = 65536;
-    IR::Inst* producer = inst.Arg(0).InstRecursive();
-    const auto sharp = TrackSharp(producer);
-    const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
-    const u32 binding = descriptors.Add(BufferResource{
-        .sgpr_base = sharp.sgpr_base,
-        .dword_offset = sharp.dword_offset,
-        .stride = buffer.GetStride(),
-        .num_records = u32(buffer.num_records),
-        .used_types = BufferDataType(inst),
-        .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
-    });
+    s32 binding{};
+    AmdGpu::Buffer buffer;
+    if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
+        IR::Inst* handle = inst.Arg(0).InstRecursive();
+        IR::Inst* producer = handle->Arg(0).InstRecursive();
+        const auto sharp = TrackSharp(producer);
+        buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+        binding = descriptors.Add(BufferResource{
+            .sgpr_base = sharp.sgpr_base,
+            .dword_offset = sharp.dword_offset,
+            .stride = buffer.GetStride(),
+            .num_records = u32(buffer.num_records),
+            .used_types = BufferDataType(inst),
+            .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
+        });
+    }
+
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     // Replace handle with binding index in buffer resource list.
@@ -240,7 +285,8 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
     if (inst_info.is_typed) {
         ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
-               inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32);
+               (inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32));
     }
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
         inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {

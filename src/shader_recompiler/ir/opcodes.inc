@@ -56,11 +56,13 @@ OPCODE(SetAttribute,                                        Void,           Attr
 OPCODE(GetScc,                                             U1,             Void,                                                                            )
 OPCODE(GetExec,                                            U1,             Void,                                                                            )
 OPCODE(GetVcc,                                             U1,             Void,                                                                            )
+OPCODE(GetSccLo,                                           U32,            Void,                                                                            )
 OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
 OPCODE(GetVccHi,                                           U32,            Void,                                                                            )
 OPCODE(SetScc,                                             Void,           U1,                                                                              )
 OPCODE(SetExec,                                            Void,           U1,                                                                              )
 OPCODE(SetVcc,                                             Void,           U1,                                                                              )
+OPCODE(SetSccLo,                                           Void,           U32,                                                                             )
 OPCODE(SetVccLo,                                           Void,           U32,                                                                             )
 OPCODE(SetVccHi,                                           Void,           U32,                                                                             )
 
@@ -216,6 +218,7 @@ OPCODE(FPIsInf64,                                           U1,             F64,
 // Integer operations
 OPCODE(IAdd32,                                              U32,            U32,            U32,                                                            )
 OPCODE(IAdd64,                                              U64,            U64,            U64,                                                            )
+OPCODE(IAddCary32,                                          U32x2,          U32,            U32,                                                            )
 OPCODE(ISub32,                                              U32,            U32,            U32,                                                            )
 OPCODE(ISub64,                                              U64,            U64,            U64,                                                            )
 OPCODE(IMul32,                                              U32,            U32,            U32,                                                            )

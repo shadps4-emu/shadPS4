@@ -91,7 +91,7 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
     u32 binding{};
 
     for (const auto& buffer : info.buffers) {
-        const auto vsharp = info.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
+        const auto vsharp = buffer.GetVsharp(info);
         const u32 size = vsharp.GetSize();
         const VAddr address = vsharp.base_address.Value();
         texture_cache.OnCpuWrite(address);

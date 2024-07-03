@@ -64,11 +64,13 @@ public:
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
+    [[nodiscard]] U32 GetSccLo();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
     void SetVcc(const U1& value);
+    void SetSccLo(const U32& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
 
@@ -151,8 +153,9 @@ public:
     [[nodiscard]] F32F64 FPMin(const F32F64& lhs, const F32F64& rhs);
 
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
+    [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
-    [[nodiscard]] IR::Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
+    [[nodiscard]] Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32 IMul(const U32& a, const U32& b);
     [[nodiscard]] U32 IDiv(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 INeg(const U32U64& value);

@@ -198,7 +198,7 @@ void PipelineCache::RefreshGraphicsKey() {
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
         auto* pgm = regs.ProgramForStage(i);
-        if (!pgm || !pgm->Address<u32>()) {
+        if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
             continue;
         }
@@ -248,17 +248,14 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             DumpShader(code, hash, stage, "bin");
         }
 
-        if (hash == 0xcafe3773 || hash == 0xc6602df2) {
-            return nullptr;
-        }
-
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
-            const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
+            Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
+            info.pgm_base = pgm->Address<uintptr_t>();
             programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
             // Compile IR to SPIR-V
@@ -296,8 +293,9 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
     // Recompile shader to IR.
     try {
         LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
-        const Shader::Info info =
+        Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
+        info.pgm_base = cs_pgm.Address<uintptr_t>();
         auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
         // Compile IR to SPIR-V
