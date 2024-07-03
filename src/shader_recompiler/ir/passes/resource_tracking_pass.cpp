@@ -159,6 +159,50 @@ private:
 
 } // Anonymous namespace
 
+std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
+    std::pair not_found{inst, false};
+
+    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
+    // The next pattern:
+    //  s_bfe_u32     s0, s7,  $0x0008000c
+    //  s_and_b32     s1, s12, $0xfffff1ff
+    //  s_cmp_eq_u32  s0, 0
+    //  s_cselect_b32 s0, s1, s12
+    // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
+
+    if (inst->GetOpcode() != IR::Opcode::SelectU32) {
+        return not_found;
+    }
+
+    // Select should be based on zero check
+    const auto* prod0 = inst->Arg(0).InstRecursive();
+    if (prod0->GetOpcode() != IR::Opcode::IEqual ||
+        !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
+        return not_found;
+    }
+
+    // The bits range is for lods
+    const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
+    if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
+        prod0_arg0->Arg(1).InstRecursive()->Arg(0).U32() != 0x0008000cu) {
+        return not_found;
+    }
+
+    // Make sure mask is masking out anisotropy
+    const auto* prod1 = inst->Arg(1).InstRecursive();
+    if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
+        return not_found;
+    }
+
+    // We're working on the first dword of s#
+    const auto* prod2 = inst->Arg(2).InstRecursive();
+    if (prod2->GetOpcode() != IR::Opcode::GetUserData) {
+        return not_found;
+    }
+
+    return {prod2, true};
+}
+
 SharpLocation TrackSharp(const IR::Inst* inst) {
     while (inst->GetOpcode() == IR::Opcode::Phi) {
         inst = inst->Arg(0).InstRecursive();
@@ -294,10 +338,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
     if (ssharp_handle) {
-        const auto ssharp = TrackSharp(ssharp_handle);
+        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+        const auto ssharp = TrackSharp(ssharp_ud);
         const u32 sampler_binding = descriptors.Add(SamplerResource{
             .sgpr_base = ssharp.sgpr_base,
             .dword_offset = ssharp.dword_offset,
+            .associated_image = image_binding,
+            .disable_aniso = disable_aniso,
         });
         image_binding |= (sampler_binding << 16);
     }
