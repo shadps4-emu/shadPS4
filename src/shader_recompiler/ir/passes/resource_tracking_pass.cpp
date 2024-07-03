@@ -253,15 +253,25 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    IR::Inst* producer = inst.Arg(0).InstRecursive();
-    while (producer->GetOpcode() == IR::Opcode::Phi) {
-        producer = producer->Arg(0).InstRecursive();
+    std::deque<IR::Inst*> insts{&inst};
+    const auto& pred = [](auto opcode) -> bool {
+        return (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+                opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+                opcode == IR::Opcode::GetUserData);
+    };
+
+    IR::Inst* producer{};
+    while (!insts.empty() && (producer = insts.front(), !pred(producer->GetOpcode()))) {
+        for (auto arg_idx = 0u; arg_idx < producer->NumArgs(); ++arg_idx) {
+            const auto arg = producer->Arg(arg_idx);
+            if (arg.TryInstRecursive()) {
+                insts.push_back(arg.InstRecursive());
+            }
+        }
+        insts.pop_front();
     }
-    ASSERT(producer->GetOpcode() ==
-               IR::Opcode::CompositeConstructU32x2 ||        // IMAGE_SAMPLE (image+sampler)
-           producer->GetOpcode() == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
-           producer->GetOpcode() == IR::Opcode::GetUserData);
-    const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
+    ASSERT(pred(producer->GetOpcode()));
+    auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
         if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
             return std::make_pair(producer->Arg(0).InstRecursive(),
                                   producer->Arg(1).InstRecursive());
