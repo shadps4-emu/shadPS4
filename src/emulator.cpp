@@ -85,6 +85,9 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    if (!std::filesystem::exists(mount_temp_dir)) {
+        std::filesystem::create_directory(mount_temp_dir);
+    }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
 
     // Initialize kernel and library facilities.
