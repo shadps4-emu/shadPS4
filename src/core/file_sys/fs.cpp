@@ -19,9 +19,8 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
 }
 
 void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
-        return pair.guest_path == guest_folder;
-    });
+    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(),
+                             [&](const MntPair& pair) { return pair.guest_path == guest_folder; });
     m_mnt_pairs.erase(it, m_mnt_pairs.end());
 }
 
