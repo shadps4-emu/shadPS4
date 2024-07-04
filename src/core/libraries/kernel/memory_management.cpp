@@ -110,13 +110,10 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
         }
     }
 
-    VAddr in_addr = reinterpret_cast<VAddr>(*addr);
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
-    if (False(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
-        //in_addr = 0x880000000;
-    }
     return memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "",
                              false, directMemoryStart, alignment);
 }
@@ -146,13 +143,10 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
-    VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
-    if (False(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
-        //in_addr = 0x880000000;
-    }
     const int ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                                       Core::VMAType::Flexible, name);
 

@@ -250,8 +250,9 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst
         info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
     }
 
-    const IR::Value handle = ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
-                                                   ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
     const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
@@ -311,8 +312,9 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnIns
                                       ir.GetVectorReg<Shader::IR::F32>(src_reg + 3));
         break;
     }
-    const IR::Value handle = ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
-                                                   ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
     ir.StoreBuffer(num_dwords, handle, address, value, info);
 }
 

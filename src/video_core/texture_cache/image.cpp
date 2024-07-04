@@ -221,9 +221,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     : instance{&instance_}, scheduler{&scheduler_}, info{info_},
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{cpu_addr},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
-    if (cpu_addr == 2990538752ULL) {
-        printf("bad\n");
-    }
     ASSERT(info.pixel_format != vk::Format::eUndefined);
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};

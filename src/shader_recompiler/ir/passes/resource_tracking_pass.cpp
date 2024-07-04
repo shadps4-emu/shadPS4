@@ -82,7 +82,6 @@ bool IsImageInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageSampleDrefExplicitLod:
     case IR::Opcode::ImageSampleDrefImplicitLod:
     case IR::Opcode::ImageFetch:
-    case IR::Opcode::ImageFetchU32:
     case IR::Opcode::ImageGather:
     case IR::Opcode::ImageGatherDref:
     case IR::Opcode::ImageQueryDimensions:
@@ -222,19 +221,23 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
 
 static constexpr size_t MaxUboSize = 65536;
 
-s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors, AmdGpu::Buffer& cbuf) {
-    /**
-     * Assert for the following pattern
-     * s_getpc_b64     s[32:33]
-     * s_add_u32       s32, <const>, s32
-     * s_addc_u32      s33, 0, s33
-     * s_mov_b32       s35, <const>
-     * s_movk_i32      s34, <const>
-     * buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
-     **/
+s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
+                        AmdGpu::Buffer& cbuf) {
+
+    // Assuming V# is in UD s[32:35]
+    // The next pattern:
+    // s_getpc_b64     s[32:33]
+    // s_add_u32       s32, <const>, s32
+    // s_addc_u32      s33, 0, s33
+    // s_mov_b32       s35, <const>
+    // s_movk_i32      s34, <const>
+    // buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
+    // is used to define an inline constant buffer
+
     IR::Inst* handle = inst.Arg(0).InstRecursive();
     IR::Inst* p0 = handle->Arg(0).InstRecursive();
-    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate() || !p0->Arg(1).IsImmediate()) {
+    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate() ||
+        !p0->Arg(1).IsImmediate()) {
         return -1;
     }
     IR::Inst* p1 = handle->Arg(1).InstRecursive();
@@ -244,10 +247,12 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors, Am
     if (!handle->Arg(3).IsImmediate() || !handle->Arg(2).IsImmediate()) {
         return -1;
     }
-    // We have found this pattern. Build the sharp and assign a binding to it.
-    cbuf.raw0 = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
-    cbuf.num_records = handle->Arg(2).U32();
-    cbuf.raw11 = handle->Arg(3).U32();
+    // We have found this pattern. Build the sharp.
+    std::array<u64, 2> buffer;
+    buffer[0] = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
+    buffer[1] = handle->Arg(2).U32() | handle->Arg(3).U64() << 32;
+    cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
+    // Assign a binding to this sharp.
     return descriptors.Add(BufferResource{
         .sgpr_base = std::numeric_limits<u32>::max(),
         .dword_offset = 0,

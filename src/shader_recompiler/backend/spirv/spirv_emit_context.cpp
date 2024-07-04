@@ -231,10 +231,10 @@ void EmitContext::DefineOutputs(const Info& info) {
                                      f32_zero_value, f32_zero_value};
         const Id type{TypeArray(F32[1], ConstU32(8U))};
         const Id initializer{ConstantComposite(type, zero)};
-        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance,
-                                        spv::StorageClass::Output, initializer);
-        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance,
-                                        spv::StorageClass::Output, initializer);
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
+        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
+                                        initializer);
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {

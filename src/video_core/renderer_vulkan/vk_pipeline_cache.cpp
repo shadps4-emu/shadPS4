@@ -22,42 +22,46 @@ using Shader::VsOutput;
 
 void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
-        if (x != VsOutput::None || y != VsOutput::None ||
-            z != VsOutput::None || w != VsOutput::None) {
+        if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
+            w != VsOutput::None) {
             info.vs_outputs.emplace_back(Shader::VsOutputMap{x, y, z, w});
         }
     };
     // VS_OUT_MISC_VEC
-    add_output(
-        ctl.use_vtx_point_size ? VsOutput::PointSprite : VsOutput::None,
-        ctl.use_vtx_edge_flag ? VsOutput::EdgeFlag :
-            (ctl.use_vtx_gs_cut_flag ? VsOutput::GsCutFlag : VsOutput::None),
-        ctl.use_vtx_kill_flag ? VsOutput::KillFlag :
-            (ctl.use_vtx_render_target_idx ? VsOutput::GsMrtIndex : VsOutput::None),
-        ctl.use_vtx_viewport_idx ? VsOutput::GsVpIndex : VsOutput::None
-    );
+    add_output(ctl.use_vtx_point_size ? VsOutput::PointSprite : VsOutput::None,
+               ctl.use_vtx_edge_flag
+                   ? VsOutput::EdgeFlag
+                   : (ctl.use_vtx_gs_cut_flag ? VsOutput::GsCutFlag : VsOutput::None),
+               ctl.use_vtx_kill_flag
+                   ? VsOutput::KillFlag
+                   : (ctl.use_vtx_render_target_idx ? VsOutput::GsMrtIndex : VsOutput::None),
+               ctl.use_vtx_viewport_idx ? VsOutput::GsVpIndex : VsOutput::None);
     // VS_OUT_CCDIST0
-    add_output(
-        ctl.IsClipDistEnabled(0) ? VsOutput::ClipDist0 :
-            (ctl.IsCullDistEnabled(0) ? VsOutput::CullDist0 : VsOutput::None),
-        ctl.IsClipDistEnabled(1) ? VsOutput::ClipDist1 :
-            (ctl.IsCullDistEnabled(1) ? VsOutput::CullDist1 : VsOutput::None),
-        ctl.IsClipDistEnabled(2) ? VsOutput::ClipDist2 :
-            (ctl.IsCullDistEnabled(2) ? VsOutput::CullDist2 : VsOutput::None),
-        ctl.IsClipDistEnabled(3) ? VsOutput::ClipDist3 :
-            (ctl.IsCullDistEnabled(3) ? VsOutput::CullDist3 : VsOutput::None)
-    );
+    add_output(ctl.IsClipDistEnabled(0)
+                   ? VsOutput::ClipDist0
+                   : (ctl.IsCullDistEnabled(0) ? VsOutput::CullDist0 : VsOutput::None),
+               ctl.IsClipDistEnabled(1)
+                   ? VsOutput::ClipDist1
+                   : (ctl.IsCullDistEnabled(1) ? VsOutput::CullDist1 : VsOutput::None),
+               ctl.IsClipDistEnabled(2)
+                   ? VsOutput::ClipDist2
+                   : (ctl.IsCullDistEnabled(2) ? VsOutput::CullDist2 : VsOutput::None),
+               ctl.IsClipDistEnabled(3)
+                   ? VsOutput::ClipDist3
+                   : (ctl.IsCullDistEnabled(3) ? VsOutput::CullDist3 : VsOutput::None));
     // VS_OUT_CCDIST1
-    add_output(
-        ctl.IsClipDistEnabled(4) ? VsOutput::ClipDist4 :
-            (ctl.IsCullDistEnabled(4) ? VsOutput::CullDist4 : VsOutput::None),
-        ctl.IsClipDistEnabled(5) ? VsOutput::ClipDist5 :
-            (ctl.IsCullDistEnabled(5) ? VsOutput::CullDist5 : VsOutput::None),
-        ctl.IsClipDistEnabled(6) ? VsOutput::ClipDist6 :
-            (ctl.IsCullDistEnabled(6) ? VsOutput::CullDist6 : VsOutput::None),
-        ctl.IsClipDistEnabled(7) ? VsOutput::ClipDist7 :
-            (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None)
-    );
+    add_output(ctl.IsClipDistEnabled(4)
+                   ? VsOutput::ClipDist4
+                   : (ctl.IsCullDistEnabled(4) ? VsOutput::CullDist4 : VsOutput::None),
+               ctl.IsClipDistEnabled(5)
+                   ? VsOutput::ClipDist5
+                   : (ctl.IsCullDistEnabled(5) ? VsOutput::CullDist5 : VsOutput::None),
+               ctl.IsClipDistEnabled(6)
+                   ? VsOutput::ClipDist6
+                   : (ctl.IsCullDistEnabled(6) ? VsOutput::CullDist6 : VsOutput::None),
+               ctl.IsClipDistEnabled(7)
+                   ? VsOutput::ClipDist7
+                   : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
 }
 
 Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data,
@@ -214,13 +218,13 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
     // actual draw hence can skip pipeline creation.
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
         LOG_TRACE(Render_Vulkan, "FCE pass skipped");
-        //return {};
+        return {};
     }
 
     if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
         // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
-        //return {};
+        return {};
     }
 
     u32 binding{};
@@ -250,10 +254,6 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
 
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
-
-        if (hash == 0x43ade46898f820e2 || hash == 0xbcf2be6c546ad35a) {
-            return nullptr;
-        }
 
         // Recompile shader to IR.
         try {
@@ -314,7 +314,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
         const auto name = fmt::format("cs_{:#x}", compute_key);
         Vulkan::SetObjectName(instance.GetDevice(), module, name);
         return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
-                                                 &program.info, module);
+                                                 &program.info, compute_key, module);
     } catch (const Shader::Exception& e) {
         UNREACHABLE_MSG("{}", e.what());
         return nullptr;

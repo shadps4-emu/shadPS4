@@ -14,8 +14,8 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  vk::PipelineCache pipeline_cache, const Shader::Info* info_,
-                                 vk::ShaderModule module)
-    : instance{instance_}, scheduler{scheduler_}, info{*info_} {
+                                 u64 compute_key_, vk::ShaderModule module)
+    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_}, info{*info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
@@ -93,7 +93,7 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
     for (const auto& buffer : info.buffers) {
         const auto vsharp = buffer.GetVsharp(info);
         const u32 size = vsharp.GetSize();
-        const VAddr address = vsharp.base_address.Value();
+        const VAddr address = vsharp.base_address;
         texture_cache.OnCpuWrite(address);
         const u32 offset = staging.Copy(address, size,
                                         buffer.is_storage ? instance.StorageMinAlignment()

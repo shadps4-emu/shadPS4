@@ -75,7 +75,8 @@ void Rasterizer::DispatchDirect() {
     }
 
     try {
-        const auto has_resources = pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+        const auto has_resources =
+            pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
         if (!has_resources) {
             return;
         }
@@ -137,10 +138,6 @@ void Rasterizer::BeginRendering() {
         };
         texture_cache.TouchMeta(htile_address, false);
         state.num_depth_attachments++;
-    } else {
-        if (regs.depth_render_control.depth_compress_disable) {
-            LOG_WARNING(Render_Vulkan, "No depth buffer bound with dcc");
-        }
     }
     scheduler.BeginRendering(state);
 }

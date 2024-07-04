@@ -75,7 +75,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         file->m_host_name = mnt->GetHostFile(file->m_guest_name);
         if (read) {
             file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write && create) {
+        } else if (write && create && truncate) {
             file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
         } else if (write && create && append) { // CUSA04729 (appends app0/shaderlist.txt)
             file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
@@ -90,7 +90,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         }
         if (!file->f.IsOpen()) {
             h->DeleteHandle(handle);
-            return SCE_KERNEL_ERROR_ENOENT;
+            return SCE_KERNEL_ERROR_EACCES;
         }
     }
     file->is_opened = true;

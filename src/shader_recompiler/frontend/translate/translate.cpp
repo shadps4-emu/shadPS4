@@ -240,9 +240,9 @@ void Translator::EmitFetch(const GcnInst& inst) {
                         attrib.instance_data);
         }
 
-        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
+        const u32 num_components = AmdGpu::NumComponents(buffer.GetDataFmt());
         info.vs_inputs.push_back({
-            .fmt = buffer.num_format,
+            .fmt = buffer.GetNumberFmt(),
             .binding = attrib.semantic,
             .num_components = std::min<u16>(attrib.num_elements, num_components),
             .sgpr_base = attrib.sgpr_base,

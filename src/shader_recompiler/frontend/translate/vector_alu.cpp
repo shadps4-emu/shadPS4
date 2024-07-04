@@ -518,10 +518,7 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    ir.SetVcc(ir.FPIsInf(src0));
-    // TODO
+    UNREACHABLE();
 }
 
 } // namespace Shader::Gcn

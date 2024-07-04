@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/string_util.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
@@ -41,12 +42,6 @@ std::string MntPoints::GetHostDirectory(const std::string& guest_directory) {
     return "";
 }
 
-std::string ToLower(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return str;
-}
-
 std::string MntPoints::GetHostFile(const std::string& guest_file) {
     std::scoped_lock lock{m_mutex};
 
@@ -61,9 +56,9 @@ std::string MntPoints::GetHostFile(const std::string& guest_file) {
 #ifndef _WIN64
         const std::filesystem::path path{host_path};
         if (!std::filesystem::exists(path)) {
-            const auto filename = ToLower(path.filename());
+            const auto filename = Common::ToLower(path.filename());
             for (const auto& file : std::filesystem::directory_iterator(path.parent_path())) {
-                const auto exist_filename = ToLower(file.path().filename());
+                const auto exist_filename = Common::ToLower(file.path().filename());
                 if (filename == exist_filename) {
                     return file.path();
                 }

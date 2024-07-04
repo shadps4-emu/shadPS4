@@ -74,7 +74,8 @@ public:
     }
 
     [[nodiscard]] Id DefineVariable(Id type, std::optional<spv::BuiltIn> builtin,
-                                    spv::StorageClass storage_class, std::optional<Id> initializer = std::nullopt) {
+                                    spv::StorageClass storage_class,
+                                    std::optional<Id> initializer = std::nullopt) {
         const Id id{DefineVar(type, storage_class, initializer)};
         if (builtin) {
             Decorate(id, spv::Decoration::BuiltIn, *builtin);

@@ -293,7 +293,6 @@ OPCODE(ImageSampleDrefExplicitLod,                          F32,            Opaq
 OPCODE(ImageGather,                                         F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
 OPCODE(ImageGatherDref,                                     F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         F32,            )
 OPCODE(ImageFetch,                                          F32x4,          Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
-OPCODE(ImageFetchU32,                                       U32x4,          Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
 OPCODE(ImageQueryDimensions,                                U32x4,          Opaque,         U32,            U1,                                             )
 OPCODE(ImageQueryLod,                                       F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(ImageGradient,                                       F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         Opaque,         )

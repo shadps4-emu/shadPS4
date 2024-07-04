@@ -329,10 +329,6 @@ struct PM4CmdEventWriteEop {
             *Address<u64>() = Common::FencedRDTSC();
             break;
         }
-        case DataSelect::GpuClock64: {
-            *Address<u64>() = 0;
-            break;
-        }
         default: {
             UNREACHABLE();
         }

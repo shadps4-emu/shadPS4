@@ -74,12 +74,12 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     available_extensions = GetSupportedExtensions(physical_device);
     properties = physical_device.getProperties();
+    CollectDeviceParameters();
     ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by device!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
                VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
 
-    CollectDeviceParameters();
     CreateDevice();
     CollectToolingInfo();
 }
@@ -245,8 +245,7 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayoutScalarBlockLayout = true,
             .workgroupMemoryExplicitLayout8BitAccess = true,
             .workgroupMemoryExplicitLayout16BitAccess = true,
-        }
-    };
+        }};
 
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();

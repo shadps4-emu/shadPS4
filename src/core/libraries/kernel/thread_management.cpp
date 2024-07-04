@@ -4,8 +4,8 @@
 #include <mutex>
 #include <thread>
 #include <semaphore.h>
-#include "common/assert.h"
 #include "common/alignment.h"
+#include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -67,7 +67,6 @@ int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
     SceKernelSchedParam param{};
     param.sched_priority = 700;
 
-    result = pthread_attr_setstacksize(&(*attr)->pth_attr, 2_MB);
     result = (result == 0 ? scePthreadAttrSetinheritsched(attr, 4) : result);
     result = (result == 0 ? scePthreadAttrSetschedparam(attr, &param) : result);
     result = (result == 0 ? scePthreadAttrSetschedpolicy(attr, SCHED_OTHER) : result);
@@ -926,10 +925,6 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
         attr = g_pthread_cxt->GetDefaultAttr();
     }
 
-    if (name != nullptr && std::string_view(name) == "RenderMixThread") {
-        printf("bad\n");
-    }
-
     *thread = pthread_pool->Create();
 
     if ((*thread)->attr != nullptr) {
@@ -986,8 +981,9 @@ ScePthread PThreadPool::Create() {
     auto* ret = new PthreadInternal{};
 #else
     static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
-    auto* ret = reinterpret_cast<PthreadInternal*>(mmap(hint_address, sizeof(PthreadInternal),
-                                                        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
+    auto* ret = reinterpret_cast<PthreadInternal*>(
+        mmap(hint_address, sizeof(PthreadInternal), PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
     hint_address += Common::AlignUp(sizeof(PthreadInternal), 4_KB);
 #endif
 

@@ -39,8 +39,9 @@ void Translator::S_BUFFER_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
         }
         return ir.ShiftRightLogical(ir.GetScalarReg(IR::ScalarReg(smrd.offset)), ir.Imm32(2));
     }();
-    const IR::Value vsharp = ir.CompositeConstruct(ir.GetScalarReg(sbase), ir.GetScalarReg(sbase + 1),
-                                                   ir.GetScalarReg(sbase + 2), ir.GetScalarReg(sbase + 3));
+    const IR::Value vsharp =
+        ir.CompositeConstruct(ir.GetScalarReg(sbase), ir.GetScalarReg(sbase + 1),
+                              ir.GetScalarReg(sbase + 2), ir.GetScalarReg(sbase + 3));
     IR::ScalarReg dst_reg{inst.dst[0].code};
     for (u32 i = 0; i < num_dwords; i++) {
         const IR::U32 index = ir.IAdd(dword_offset, ir.Imm32(i));

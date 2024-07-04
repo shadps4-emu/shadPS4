@@ -633,7 +633,8 @@ private:
                 if (!stmt.block->is_dummy) {
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
-                    Translate(current_block, stmt.block->begin, inst_list.subspan(start, size), info);
+                    Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),
+                              info);
                 }
                 break;
             }
