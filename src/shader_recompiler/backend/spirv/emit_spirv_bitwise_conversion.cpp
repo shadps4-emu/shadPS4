@@ -18,8 +18,8 @@ void EmitBitCastU64F64(EmitContext&) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-void EmitBitCastF16U16(EmitContext&) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+Id EmitBitCastF16U16(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.F16[1], value);
 }
 
 Id EmitBitCastF32U32(EmitContext& ctx, Id value) {

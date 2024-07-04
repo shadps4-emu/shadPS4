@@ -66,15 +66,17 @@ public:
     }
 
     template <bool global = true>
-    [[nodiscard]] Id DefineVar(Id type, spv::StorageClass storage_class) {
+    [[nodiscard]] Id DefineVar(Id type, spv::StorageClass storage_class,
+                               std::optional<Id> initializer = std::nullopt) {
         const Id pointer_type_id{TypePointer(storage_class, type)};
-        return global ? AddGlobalVariable(pointer_type_id, storage_class)
-                      : AddLocalVariable(pointer_type_id, storage_class);
+        return global ? AddGlobalVariable(pointer_type_id, storage_class, initializer)
+                      : AddLocalVariable(pointer_type_id, storage_class, initializer);
     }
 
     [[nodiscard]] Id DefineVariable(Id type, std::optional<spv::BuiltIn> builtin,
-                                    spv::StorageClass storage_class) {
-        const Id id{DefineVar(type, storage_class)};
+                                    spv::StorageClass storage_class,
+                                    std::optional<Id> initializer = std::nullopt) {
+        const Id id{DefineVar(type, storage_class, initializer)};
         if (builtin) {
             Decorate(id, spv::Decoration::BuiltIn, *builtin);
         }
@@ -147,6 +149,12 @@ public:
     Id u32_zero_value{};
     Id f32_zero_value{};
 
+    Id shared_u8{};
+    Id shared_u16{};
+    Id shared_u32{};
+    Id shared_u32x2{};
+    Id shared_u32x4{};
+
     Id input_u32{};
     Id input_f32{};
     Id input_s32{};
@@ -163,13 +171,25 @@ public:
     Id frag_depth{};
     std::array<Id, 8> frag_color{};
     std::array<u32, 8> frag_num_comp{};
+    Id clip_distances{};
+    Id cull_distances{};
 
     Id workgroup_id{};
     Id local_invocation_id{};
     Id subgroup_local_invocation_id{};
+    Id image_u32{};
+
+    Id shared_memory_u8{};
+    Id shared_memory_u16{};
+    Id shared_memory_u32{};
+    Id shared_memory_u32x2{};
+    Id shared_memory_u32x4{};
+
+    Id shared_memory_u32_type{};
 
     struct TextureDefinition {
         Id id;
+        const VectorIds* data_types;
         Id sampled_type;
         Id pointer_type;
         Id image_type;
@@ -205,6 +225,7 @@ private:
     void DefineOutputs(const Info& info);
     void DefineBuffers(const Info& info);
     void DefineImagesAndSamplers(const Info& info);
+    void DefineSharedMemory(const Info& info);
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

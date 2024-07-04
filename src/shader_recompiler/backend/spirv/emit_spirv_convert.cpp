@@ -68,11 +68,7 @@ Id EmitConvertS32F16(EmitContext& ctx, Id value) {
 }
 
 Id EmitConvertS32F32(EmitContext& ctx, Id value) {
-    if (ctx.profile.has_broken_signed_operations) {
-        return ctx.OpBitcast(ctx.U32[1], ctx.OpConvertFToS(ctx.S32[1], value));
-    } else {
-        return ctx.OpConvertFToS(ctx.U32[1], value);
-    }
+    return ctx.OpConvertFToS(ctx.U32[1], value);
 }
 
 Id EmitConvertS32F64(EmitContext& ctx, Id value) {
@@ -257,6 +253,10 @@ Id EmitConvertF64U32(EmitContext& ctx, Id value) {
 
 Id EmitConvertF64U64(EmitContext& ctx, Id value) {
     return ctx.OpConvertUToF(ctx.F64[1], value);
+}
+
+Id EmitConvertU16U32(EmitContext& ctx, Id value) {
+    return ctx.OpUConvert(ctx.U16, value);
 }
 
 } // namespace Shader::Backend::SPIRV

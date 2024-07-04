@@ -549,8 +549,8 @@ struct PM4DumpConstRam {
     u32 addr_hi;
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>((u64(addr_hi) << 32u) | addr_lo);
+    T Address() const {
+        return reinterpret_cast<T>((u64(addr_hi) << 32u) | addr_lo);
     }
 
     [[nodiscard]] u32 Offset() const {
@@ -579,6 +579,11 @@ struct PM4CmdDrawIndexBase {
     PM4Type3Header header;
     u32 addr_lo;
     u32 addr_hi;
+};
+
+struct PM4CmdDrawIndexBufferSize {
+    PM4Type3Header header;
+    u32 num_indices;
 };
 
 struct PM4CmdIndirectBuffer {

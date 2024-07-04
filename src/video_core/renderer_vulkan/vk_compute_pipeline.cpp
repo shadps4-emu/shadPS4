@@ -14,8 +14,8 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  vk::PipelineCache pipeline_cache, const Shader::Info* info_,
-                                 vk::ShaderModule module)
-    : instance{instance_}, scheduler{scheduler_}, info{*info_} {
+                                 u64 compute_key_, vk::ShaderModule module)
+    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_}, info{*info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
@@ -85,15 +85,15 @@ ComputePipeline::~ComputePipeline() = default;
 bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                                     VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
-    boost::container::static_vector<vk::DescriptorBufferInfo, 8> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 8> image_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     u32 binding{};
 
     for (const auto& buffer : info.buffers) {
-        const auto vsharp = info.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
+        const auto vsharp = buffer.GetVsharp(info);
         const u32 size = vsharp.GetSize();
-        const VAddr address = vsharp.base_address.Value();
+        const VAddr address = vsharp.base_address;
         texture_cache.OnCpuWrite(address);
         const u32 offset = staging.Copy(address, size,
                                         buffer.is_storage ? instance.StorageMinAlignment()

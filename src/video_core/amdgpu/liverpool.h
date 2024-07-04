@@ -85,14 +85,14 @@ struct Liverpool {
         } settings;
         UserData user_data;
 
-        template <typename T = u8>
-        const T* Address() const {
+        template <typename T = u8*>
+        const T Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
-            return reinterpret_cast<const T*>(addr);
+            return reinterpret_cast<const T>(addr);
         }
 
         std::span<const u32> Code() const {
-            const u32* code = Address<u32>();
+            const u32* code = Address<u32*>();
             BinaryInfo bininfo;
             std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
             const u32 num_dwords = bininfo.length / sizeof(u32);
@@ -121,20 +121,26 @@ struct Liverpool {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
             BitField<33, 5, u64> num_user_regs;
+            BitField<47, 9, u64> lds_dwords;
         } settings;
         INSERT_PADDING_WORDS(1);
         u32 resource_limits;
         INSERT_PADDING_WORDS(0x2A);
         UserData user_data;
 
-        template <typename T = u8>
-        const T* Address() const {
+        template <typename T = u8*>
+        const T Address() const {
             const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
-            return reinterpret_cast<const T*>(addr);
+            return reinterpret_cast<const T>(addr);
+        }
+
+        u32 SharedMemSize() const noexcept {
+            // lds_dwords is in units of 128 dwords. We return bytes.
+            return settings.lds_dwords.Value() * 128 * 4;
         }
 
         std::span<const u32> Code() const {
-            const u32* code = Address<u32>();
+            const u32* code = Address<u32*>();
             BinaryInfo bininfo;
             std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
             const u32 num_dwords = bininfo.length / sizeof(u32);
@@ -144,7 +150,7 @@ struct Liverpool {
 
     template <typename Shader>
     static constexpr auto* GetBinaryInfo(const Shader& sh) {
-        const auto* code = sh.template Address<u32>();
+        const auto* code = sh.template Address<u32*>();
         const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
         ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
         return bininfo;
@@ -208,6 +214,10 @@ struct Liverpool {
         BitField<18, 1, u32> use_vtx_render_target_idx;
         BitField<19, 1, u32> use_vtx_viewport_idx;
         BitField<20, 1, u32> use_vtx_kill_flag;
+        BitField<21, 1, u32> vs_out_misc_enable;
+        BitField<22, 1, u32> vs_out_ccdist0_enable;
+        BitField<23, 1, u32> vs_out_ccdist1_enable;
+        BitField<25, 1, u32> use_vtx_gs_cut_flag;
 
         bool IsClipDistEnabled(u32 index) const {
             return (clip_distance_enable.Value() >> index) & 1;
@@ -469,7 +479,7 @@ struct Liverpool {
 
         template <typename T = VAddr>
         T Address() const {
-            return reinterpret_cast<T>(base_addr_lo | u64(base_addr_hi) << 32);
+            return reinterpret_cast<T>((base_addr_lo & ~1U) | u64(base_addr_hi) << 32);
         }
     };
 
@@ -1021,6 +1031,7 @@ static_assert(GFX6_3D_REG_INDEX(cs_program.user_data) == 0x2E40);
 static_assert(GFX6_3D_REG_INDEX(depth_render_control) == 0xA000);
 static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
+static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);

@@ -161,7 +161,6 @@ s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len,
 }
 
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot) {
-    LOG_WARNING(Kernel_Vmm, "called");
     auto* memory = Core::Memory::Instance();
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }

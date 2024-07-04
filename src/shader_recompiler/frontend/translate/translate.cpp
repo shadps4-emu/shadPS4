@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -190,7 +193,20 @@ void Translator::EmitFetch(const GcnInst& inst) {
     std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
 
     // Parse the assembly to generate a list of attributes.
-    const auto attribs = ParseFetchShader(code);
+    u32 fetch_size{};
+    const auto attribs = ParseFetchShader(code, &fetch_size);
+
+    if (Config::dumpShaders()) {
+        using namespace Common::FS;
+        const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+        if (!std::filesystem::exists(dump_dir)) {
+            std::filesystem::create_directories(dump_dir);
+        }
+        const auto filename = fmt::format("vs_fetch_{:#018x}.bin", info.pgm_hash);
+        const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+        file.WriteRaw<u8>(code, fetch_size);
+    }
+
     for (const auto& attrib : attribs) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
@@ -224,9 +240,9 @@ void Translator::EmitFetch(const GcnInst& inst) {
                         attrib.instance_data);
         }
 
-        const u32 num_components = AmdGpu::NumComponents(buffer.data_format);
+        const u32 num_components = AmdGpu::NumComponents(buffer.GetDataFmt());
         info.vs_inputs.push_back({
-            .fmt = buffer.num_format,
+            .fmt = buffer.GetNumberFmt(),
             .binding = attrib.semantic,
             .num_components = std::min<u16>(attrib.num_elements, num_components),
             .sgpr_base = attrib.sgpr_base,
@@ -236,12 +252,13 @@ void Translator::EmitFetch(const GcnInst& inst) {
     }
 }
 
-void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info) {
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info) {
     if (inst_list.empty()) {
         return;
     }
     Translator translator{block, info};
     for (const auto& inst : inst_list) {
+        block_base += inst.length;
         switch (inst.opcode) {
         case Opcode::S_MOVK_I32:
             translator.S_MOVK(inst);
@@ -345,6 +362,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_BFREV_B32:
             translator.V_BFREV_B32(inst);
             break;
+        case Opcode::V_LDEXP_F32:
+            translator.V_LDEXP_F32(inst);
+            break;
         case Opcode::V_FRACT_F32:
             translator.V_FRACT_F32(inst);
             break;
@@ -374,7 +394,39 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_SAMPLE_LZ:
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
+        case Opcode::IMAGE_SAMPLE_C_O:
+        case Opcode::IMAGE_SAMPLE_B:
             translator.IMAGE_SAMPLE(inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_ADD:
+            translator.IMAGE_ATOMIC(AtomicOp::Add, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_AND:
+            translator.IMAGE_ATOMIC(AtomicOp::And, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_OR:
+            translator.IMAGE_ATOMIC(AtomicOp::Or, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_XOR:
+            translator.IMAGE_ATOMIC(AtomicOp::Xor, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Umax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMAX:
+            translator.IMAGE_ATOMIC(AtomicOp::Smax, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_UMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Umin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_SMIN:
+            translator.IMAGE_ATOMIC(AtomicOp::Smin, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_INC:
+            translator.IMAGE_ATOMIC(AtomicOp::Inc, inst);
+            break;
+        case Opcode::IMAGE_ATOMIC_DEC:
+            translator.IMAGE_ATOMIC(AtomicOp::Dec, inst);
             break;
         case Opcode::IMAGE_GET_LOD:
             translator.IMAGE_GET_LOD(inst);
@@ -457,8 +509,14 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CMP_NGT_F32:
             translator.V_CMP_F32(ConditionOp::LE, false, inst);
             break;
+        case Opcode::V_CMP_NGE_F32:
+            translator.V_CMP_F32(ConditionOp::LT, false, inst);
+            break;
         case Opcode::S_CMP_LT_U32:
             translator.S_CMP(ConditionOp::LT, false, inst);
+            break;
+        case Opcode::S_CMP_LE_U32:
+            translator.S_CMP(ConditionOp::LE, false, inst);
             break;
         case Opcode::S_CMP_LG_U32:
             translator.S_CMP(ConditionOp::LG, false, inst);
@@ -486,6 +544,12 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_X:
+            translator.BUFFER_LOAD_FORMAT(1, true, inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_XY:
+            translator.BUFFER_LOAD_FORMAT(2, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
             translator.BUFFER_LOAD_FORMAT(3, true, inst);
@@ -580,6 +644,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             break;
         case Opcode::V_CVT_I32_F32:
             translator.V_CVT_I32_F32(inst);
+            break;
+        case Opcode::V_CVT_FLR_I32_F32:
+            translator.V_CVT_FLR_I32_F32(inst);
             break;
         case Opcode::V_SUBREV_F32:
             translator.V_SUBREV_F32(inst);
@@ -715,6 +782,7 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
             translator.V_MAD_I32_I24(inst);
             break;
         case Opcode::V_MUL_I32_I24:
+        case Opcode::V_MUL_U32_U24:
             translator.V_MUL_I32_I24(inst);
             break;
         case Opcode::V_SUB_I32:
@@ -771,6 +839,9 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::V_CMP_NE_U64:
             translator.V_CMP_NE_U64(inst);
             break;
+        case Opcode::V_CMP_CLASS_F32:
+            translator.V_CMP_CLASS_F32(inst);
+            break;
         case Opcode::V_TRUNC_F32:
             translator.V_TRUNC_F32(inst);
             break;
@@ -786,7 +857,11 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::S_ADD_U32:
             translator.S_ADD_U32(inst);
             break;
+        case Opcode::S_ADDC_U32:
+            translator.S_ADDC_U32(inst);
+            break;
         case Opcode::S_SUB_U32:
+        case Opcode::S_SUB_I32:
             translator.S_SUB_U32(inst);
             break;
         // TODO: Separate implementation for legacy variants.
@@ -809,8 +884,29 @@ void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info)
         case Opcode::IMAGE_GET_RESINFO:
             translator.IMAGE_GET_RESINFO(inst);
             break;
+        case Opcode::S_BARRIER:
+            translator.S_BARRIER();
+            break;
         case Opcode::S_TTRACEDATA:
             LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
+            break;
+        case Opcode::DS_READ_B32:
+            translator.DS_READ(32, false, false, inst);
+            break;
+        case Opcode::DS_READ2_B32:
+            translator.DS_READ(32, false, true, inst);
+            break;
+        case Opcode::DS_WRITE_B32:
+            translator.DS_WRITE(32, false, false, inst);
+            break;
+        case Opcode::DS_WRITE2_B32:
+            translator.DS_WRITE(32, false, true, inst);
+            break;
+        case Opcode::V_READFIRSTLANE_B32:
+            translator.V_READFIRSTLANE_B32(inst);
+            break;
+        case Opcode::S_GETPC_B64:
+            translator.S_GETPC_B64(block_base, inst);
             break;
         case Opcode::S_NOP:
         case Opcode::S_CBRANCH_EXECZ:

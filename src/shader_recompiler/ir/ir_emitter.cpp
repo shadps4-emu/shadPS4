@@ -115,6 +115,18 @@ void IREmitter::Discard() {
     Inst(Opcode::Discard);
 }
 
+void IREmitter::Barrier() {
+    Inst(Opcode::Barrier);
+}
+
+void IREmitter::WorkgroupMemoryBarrier() {
+    Inst(Opcode::WorkgroupMemoryBarrier);
+}
+
+void IREmitter::DeviceMemoryBarrier() {
+    Inst(Opcode::DeviceMemoryBarrier);
+}
+
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetUserData, reg);
 }
@@ -200,6 +212,10 @@ U1 IREmitter::GetVcc() {
     return Inst<U1>(Opcode::GetVcc);
 }
 
+U32 IREmitter::GetSccLo() {
+    return Inst<U32>(Opcode::GetSccLo);
+}
+
 U32 IREmitter::GetVccLo() {
     return Inst<U32>(Opcode::GetVccLo);
 }
@@ -218,6 +234,10 @@ void IREmitter::SetExec(const U1& value) {
 
 void IREmitter::SetVcc(const U1& value) {
     Inst(Opcode::SetVcc, value);
+}
+
+void IREmitter::SetSccLo(const U32& value) {
+    Inst(Opcode::SetSccLo, value);
 }
 
 void IREmitter::SetVccLo(const U32& value) {
@@ -240,22 +260,25 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
     Inst(Opcode::SetAttribute, attribute, value, Imm32(comp));
 }
 
-U32U64 IREmitter::ReadShared(int bit_size, bool is_signed, const U32& offset) {
-    /*switch (bit_size) {
+Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
+    switch (bit_size) {
     case 8:
-        return Inst<U32>(is_signed ? Opcode::ReadSharedS8 : Opcode::ReadSharedU8, offset);
+        return Inst<U32>(is_signed ? Opcode::LoadSharedS8 : Opcode::LoadSharedU8, offset);
     case 16:
-        return Inst<U32>(is_signed ? Opcode::ReadSharedS16 : Opcode::ReadSharedU16, offset);
+        return Inst<U32>(is_signed ? Opcode::LoadSharedS16 : Opcode::LoadSharedU16, offset);
     case 32:
-        return Inst<U32>(Opcode::ReadSharedU32, offset);
+        return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst<U64>(Opcode::ReadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, offset);
+    case 128:
+        return Inst(Opcode::LoadSharedU128, offset);
+    default:
+        UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
-    UNREACHABLE_MSG("Invalid bit size {}", bit_size);*/
 }
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
-    /*switch (bit_size) {
+    switch (bit_size) {
     case 8:
         Inst(Opcode::WriteSharedU8, offset, value);
         break;
@@ -268,9 +291,12 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     case 64:
         Inst(Opcode::WriteSharedU64, offset, value);
         break;
+    case 128:
+        Inst(Opcode::WriteSharedU128, offset, value);
+        break;
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
-    }*/
+    }
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
@@ -603,6 +629,10 @@ F32 IREmitter::FPExp2(const F32& value) {
     return Inst<F32>(Opcode::FPExp2, value);
 }
 
+F32 IREmitter::FPLdexp(const F32& value, const U32& exp) {
+    return Inst<F32>(Opcode::FPLdexp, value, exp);
+}
+
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
 }
@@ -810,6 +840,17 @@ U1 IREmitter::FPIsNan(const F32F64& value) {
     }
 }
 
+U1 IREmitter::FPIsInf(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32:
+        return Inst<U1>(Opcode::FPIsInf32, value);
+    case Type::F64:
+        return Inst<U1>(Opcode::FPIsInf64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
 U1 IREmitter::FPOrdered(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
@@ -861,6 +902,18 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
         return Inst<U32>(Opcode::IAdd32, a, b);
     case Type::U64:
         return Inst<U64>(Opcode::IAdd64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
+Value IREmitter::IAddCary(const U32& a, const U32& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::IAddCary32, a, b);
     default:
         ThrowInvalidType(a.Type());
     }
@@ -1142,6 +1195,13 @@ F32F64 IREmitter::ConvertIToF(size_t dest_bitsize, size_t src_bitsize, bool is_s
 }
 
 U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
+    switch (result_bitsize) {
+    case 16:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U16>(Opcode::ConvertU16U32, value);
+        }
+    }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
@@ -1161,6 +1221,73 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         break;
     }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
+}
+
+Value IREmitter::ImageAtomicIAdd(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicIAdd32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicSMin(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicSMin32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicUMin(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicUMin32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicIMin(const Value& handle, const Value& coords, const Value& value,
+                                 bool is_signed, TextureInstInfo info) {
+    return is_signed ? ImageAtomicSMin(handle, coords, value, info)
+                     : ImageAtomicUMin(handle, coords, value, info);
+}
+
+Value IREmitter::ImageAtomicSMax(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicSMax32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicUMax(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicUMax32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicIMax(const Value& handle, const Value& coords, const Value& value,
+                                 bool is_signed, TextureInstInfo info) {
+    return is_signed ? ImageAtomicSMax(handle, coords, value, info)
+                     : ImageAtomicUMax(handle, coords, value, info);
+}
+
+Value IREmitter::ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicInc32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicDec(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicDec32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicAnd(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicAnd32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicOr(const Value& handle, const Value& coords, const Value& value,
+                               TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicOr32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicXor(const Value& handle, const Value& coords, const Value& value,
+                                TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicXor32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, const Value& value,
+                                     TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,

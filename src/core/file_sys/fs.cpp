@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/string_util.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
@@ -13,6 +14,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
 
     MntPair pair;
     pair.host_path = host_folder.string();
+    std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
     pair.guest_path = guest_folder;
 
     m_mnt_pairs.push_back(pair);
@@ -46,11 +48,24 @@ std::string MntPoints::GetHostFile(const std::string& guest_file) {
     for (auto& pair : m_mnt_pairs) {
         // horrible code but it works :D
         int find = guest_file.find(pair.guest_path);
-        if (find == 0) {
-            std::string npath = guest_file.substr(pair.guest_path.size(), guest_file.size() - 1);
-            std::replace(pair.host_path.begin(), pair.host_path.end(), '\\', '/');
-            return pair.host_path + npath;
+        if (find != 0) {
+            continue;
         }
+        std::string npath = guest_file.substr(pair.guest_path.size(), guest_file.size() - 1);
+        const auto host_path = pair.host_path + npath;
+#ifndef _WIN64
+        const std::filesystem::path path{host_path};
+        if (!std::filesystem::exists(path)) {
+            const auto filename = Common::ToLower(path.filename());
+            for (const auto& file : std::filesystem::directory_iterator(path.parent_path())) {
+                const auto exist_filename = Common::ToLower(file.path().filename());
+                if (filename == exist_filename) {
+                    return file.path();
+                }
+            }
+        }
+#endif
+        return host_path;
     }
     return "";
 }

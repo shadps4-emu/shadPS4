@@ -4,7 +4,6 @@
 #pragma once
 
 #include <span>
-#include <vector>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
@@ -42,15 +41,45 @@ enum class TextureType : u32 {
 };
 constexpr u32 NUM_TEXTURE_TYPES = 7;
 
+enum class VsOutput : u32 {
+    None,
+    PointSprite,
+    EdgeFlag,
+    KillFlag,
+    GsCutFlag,
+    GsMrtIndex,
+    GsVpIndex,
+    CullDist0,
+    CullDist1,
+    CullDist2,
+    CullDist3,
+    CullDist4,
+    CullDist5,
+    CullDist6,
+    CullDist7,
+    ClipDist0,
+    ClipDist1,
+    ClipDist2,
+    ClipDist3,
+    ClipDist4,
+    ClipDist5,
+    ClipDist6,
+    ClipDist7,
+};
+using VsOutputMap = std::array<VsOutput, 4>;
+
+struct Info;
+
 struct BufferResource {
     u32 sgpr_base;
     u32 dword_offset;
     u32 stride;
     u32 num_records;
     IR::Type used_types;
+    AmdGpu::Buffer inline_cbuf;
     bool is_storage;
 
-    auto operator<=>(const BufferResource&) const = default;
+    constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
 };
 using BufferResourceList = boost::container::static_vector<BufferResource, 16>;
 
@@ -123,6 +152,7 @@ struct Info {
     };
     AttributeFlags loads{};
     AttributeFlags stores{};
+    boost::container::static_vector<VsOutputMap, 3> vs_outputs;
 
     BufferResourceList buffers;
     ImageResourceList images;
@@ -134,7 +164,12 @@ struct Info {
     std::span<const u32> user_data;
     Stage stage;
 
+    uintptr_t pgm_base{};
+    u64 pgm_hash{};
+    u32 shared_memory_size{};
     bool uses_group_quad{};
+    bool uses_shared_u8{};
+    bool uses_shared_u16{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
 
     template <typename T>
@@ -148,6 +183,10 @@ struct Info {
         return data;
     }
 };
+
+constexpr AmdGpu::Buffer BufferResource::GetVsharp(const Info& info) const noexcept {
+    return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+}
 
 } // namespace Shader
 

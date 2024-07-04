@@ -14,6 +14,12 @@
 
 namespace Common {
 
+std::string ToLower(std::string str) {
+    std::transform(str.begin(), str.end(), str.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return str;
+}
+
 std::vector<std::string> SplitString(const std::string& str, char delimiter) {
     std::istringstream iss(str);
     std::vector<std::string> output(1);

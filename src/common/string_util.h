@@ -9,6 +9,9 @@
 
 namespace Common {
 
+/// Make a string lowercase
+[[nodiscard]] std::string ToLower(std::string str);
+
 std::vector<std::string> SplitString(const std::string& str, char delimiter);
 
 #ifdef _WIN32

@@ -17,6 +17,6 @@ struct VertexAttribute {
     u8 instance_data; ///< Indicates that the buffer will be accessed in instance rate
 };
 
-std::vector<VertexAttribute> ParseFetchShader(const u32* code);
+std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size);
 
 } // namespace Shader::Gcn

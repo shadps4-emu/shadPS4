@@ -47,7 +47,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
-            .format = LiverpoolToVK::SurfaceFormat(buffer.data_format, buffer.num_format),
+            .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back({
@@ -326,8 +326,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
-            const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
-            const VAddr address = vsharp.base_address.Value();
+            const auto vsharp = buffer.GetVsharp(stage);
+            const VAddr address = vsharp.base_address;
             const u32 size = vsharp.GetSize();
             const u32 offset = staging.Copy(address, size,
                                             buffer.is_storage ? instance.StorageMinAlignment()
@@ -419,8 +419,7 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
             continue;
         }
         guest_buffers.emplace_back(buffer);
-        ranges.emplace_back(buffer.base_address.Value(),
-                            buffer.base_address.Value() + buffer.GetSize());
+        ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
     }
     std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
         return lhv.base_address < rhv.base_address;

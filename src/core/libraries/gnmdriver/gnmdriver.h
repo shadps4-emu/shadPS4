@@ -63,7 +63,7 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawOpaqueAuto();
-int PS4_SYSV_ABI sceGnmDriverCaptureInProgress();
+bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress();
 int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface();
 int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuDebugger();
 int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuException();
