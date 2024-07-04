@@ -977,9 +977,10 @@ ScePthread PThreadPool::Create() {
         }
     }
 
-#ifndef _WIN64
+#ifdef _WIN64
     auto* ret = new PthreadInternal{};
 #else
+    // TODO: Linux specific hack
     static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
     auto* ret = reinterpret_cast<PthreadInternal*>(
         mmap(hint_address, sizeof(PthreadInternal), PROT_READ | PROT_WRITE,
