@@ -5,20 +5,29 @@
 
 namespace Shader::Gcn {
 
+static constexpr u32 SQ_SRC_LITERAL = 0xFF;
+
 void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     const auto& smrd = inst.control.smrd;
-    ASSERT_MSG(smrd.imm, "Bindless texture loads unsupported");
+    const u32 dword_offset = [&] -> u32 {
+        if (smrd.imm) {
+            return smrd.offset;
+        }
+        if (smrd.offset == SQ_SRC_LITERAL) {
+            return inst.src[1].code;
+        }
+        UNREACHABLE();
+    }();
     const IR::ScalarReg sbase{inst.src[0].code * 2};
     const IR::Value base =
         ir.CompositeConstruct(ir.GetScalarReg(sbase), ir.GetScalarReg(sbase + 1));
     IR::ScalarReg dst_reg{inst.dst[0].code};
     for (u32 i = 0; i < num_dwords; i++) {
-        ir.SetScalarReg(dst_reg++, ir.ReadConst(base, ir.Imm32(smrd.offset + i)));
+        ir.SetScalarReg(dst_reg++, ir.ReadConst(base, ir.Imm32(dword_offset + i)));
     }
 }
 
 void Translator::S_BUFFER_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
-    static constexpr u32 SQ_SRC_LITERAL = 0xFF;
     const auto& smrd = inst.control.smrd;
     const IR::ScalarReg sbase{inst.src[0].code * 2};
     const IR::U32 dword_offset = [&] -> IR::U32 {

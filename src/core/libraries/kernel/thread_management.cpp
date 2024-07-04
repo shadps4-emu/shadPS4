@@ -5,6 +5,7 @@
 #include <thread>
 #include <semaphore.h>
 #include "common/assert.h"
+#include "common/alignment.h"
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -16,6 +17,8 @@
 #include "core/linker.h"
 #ifdef _WIN64
 #include <windows.h>
+#else
+#include <sys/mman.h>
 #endif
 
 namespace Libraries::Kernel {
@@ -46,7 +49,8 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
-    g_pthread_self = new PthreadInternal{};
+    auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
+    g_pthread_self = pthread_pool->Create();
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
     g_pthread_self->name = "Main_Thread";
@@ -978,7 +982,14 @@ ScePthread PThreadPool::Create() {
         }
     }
 
+#ifndef _WIN64
     auto* ret = new PthreadInternal{};
+#else
+    static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
+    auto* ret = reinterpret_cast<PthreadInternal*>(mmap(hint_address, sizeof(PthreadInternal),
+                                                        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
+    hint_address += Common::AlignUp(sizeof(PthreadInternal), 4_KB);
+#endif
 
     ret->is_free = false;
     ret->is_detached = false;

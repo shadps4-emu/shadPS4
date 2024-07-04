@@ -234,7 +234,7 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors, Am
      **/
     IR::Inst* handle = inst.Arg(0).InstRecursive();
     IR::Inst* p0 = handle->Arg(0).InstRecursive();
-    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate()) {
+    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate() || !p0->Arg(1).IsImmediate()) {
         return -1;
     }
     IR::Inst* p1 = handle->Arg(1).InstRecursive();
@@ -286,7 +286,9 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     if (inst_info.is_typed) {
         ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
                (inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
-                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32));
+                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32));
     }
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
         inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {

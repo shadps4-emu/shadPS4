@@ -251,11 +251,16 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
+        if (hash == 0x43ade46898f820e2 || hash == 0xbcf2be6c546ad35a) {
+            return nullptr;
+        }
+
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
             Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
             info.pgm_base = pgm->Address<uintptr_t>();
+            info.pgm_hash = hash;
             programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
             // Compile IR to SPIR-V

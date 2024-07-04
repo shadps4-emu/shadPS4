@@ -141,7 +141,7 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id color_type = texture.data_types->Get(4);
-    ctx.OpImageWrite(image, ctx.OpBitcast(ctx.S32[2], coords), ctx.OpBitcast(color_type, color));
+    ctx.OpImageWrite(image, coords, ctx.OpBitcast(color_type, color));
 }
 
 } // namespace Shader::Backend::SPIRV

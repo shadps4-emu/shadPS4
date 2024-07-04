@@ -176,6 +176,10 @@ Id DefineMain(EmitContext& ctx, IR::Program& program) {
 void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
+    ctx.AddCapability(spv::Capability::Image1D);
+    ctx.AddCapability(spv::Capability::Sampled1D);
+    ctx.AddCapability(spv::Capability::Float16);
+    ctx.AddCapability(spv::Capability::Int16);
     ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
     ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
     switch (program.info.stage) {

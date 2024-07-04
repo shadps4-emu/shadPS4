@@ -165,6 +165,7 @@ struct Info {
     Stage stage;
 
     uintptr_t pgm_base{};
+    u64 pgm_hash{};
     u32 shared_memory_size{};
     bool uses_group_quad{};
     bool uses_shared_u8{};

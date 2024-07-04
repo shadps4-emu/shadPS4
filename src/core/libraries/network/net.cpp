@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include <thread>
 #include <common/assert.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -59,6 +60,7 @@ int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    std::this_thread::sleep_for(std::chrono::seconds(60));
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -559,7 +561,7 @@ int PS4_SYSV_ABI sceNetEpollDestroy() {
 }
 
 int PS4_SYSV_ABI sceNetEpollWait() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    //LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 

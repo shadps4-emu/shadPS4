@@ -344,8 +344,8 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
 }
 
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed() {
-    LOG_TRACE(Lib_GnmDriver, "called");
-    return submission_lock == 0;
+    LOG_TRACE(Lib_GnmDriver, "called submission_lock = {}", submission_lock);
+    return liverpool->IsGpuIdle();
 }
 
 int PS4_SYSV_ABI sceGnmBeginWorkload() {
@@ -803,9 +803,9 @@ int PS4_SYSV_ABI sceGnmDrawOpaqueAuto() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return false;
 }
 
 int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface() {
@@ -1930,8 +1930,10 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         }
     }
 
+    LOG_INFO(Lib_GnmDriver, "called submission_lock = {}", submission_lock);
     if (submission_lock != 0) {
         liverpool->WaitGpuIdle();
+        LOG_INFO(Lib_GnmDriver, "Done waiting for GPU");
 
         // Suspend logic goes here
 

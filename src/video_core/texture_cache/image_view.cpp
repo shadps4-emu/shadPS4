@@ -77,8 +77,8 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (usage_override) {
         usage_ci.usage = usage_override.value();
     }
-    if (info.format == vk::Format::eR32Sfloat) {
-        printf("stop\n");
+    if (image.info.type == vk::ImageType::e1D) {
+        printf("bad\n");
     }
     // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
     vk::Format format = info.format;

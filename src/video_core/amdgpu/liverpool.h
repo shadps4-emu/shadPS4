@@ -479,7 +479,7 @@ struct Liverpool {
 
         template <typename T = VAddr>
         T Address() const {
-            return reinterpret_cast<T>(base_addr_lo | u64(base_addr_hi) << 32);
+            return reinterpret_cast<T>((base_addr_lo & ~1U) | u64(base_addr_hi) << 32);
         }
     };
 

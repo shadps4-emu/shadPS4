@@ -329,6 +329,10 @@ struct PM4CmdEventWriteEop {
             *Address<u64>() = Common::FencedRDTSC();
             break;
         }
+        case DataSelect::GpuClock64: {
+            *Address<u64>() = 0;
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -549,8 +553,8 @@ struct PM4DumpConstRam {
     u32 addr_hi;
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>((u64(addr_hi) << 32u) | addr_lo);
+    T Address() const {
+        return reinterpret_cast<T>((u64(addr_hi) << 32u) | addr_lo);
     }
 
     [[nodiscard]] u32 Offset() const {

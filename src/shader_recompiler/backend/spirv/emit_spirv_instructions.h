@@ -146,7 +146,7 @@ Id EmitSelectF64(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 void EmitBitCastU16F16(EmitContext& ctx);
 Id EmitBitCastU32F32(EmitContext& ctx, Id value);
 void EmitBitCastU64F64(EmitContext& ctx);
-void EmitBitCastF16U16(EmitContext&);
+Id EmitBitCastF16U16(EmitContext& ctx, Id value);
 Id EmitBitCastF32U32(EmitContext& ctx, Id value);
 void EmitBitCastF64U64(EmitContext& ctx);
 Id EmitPackUint2x32(EmitContext& ctx, Id value);
@@ -343,6 +343,7 @@ Id EmitConvertF64U8(EmitContext& ctx, Id value);
 Id EmitConvertF64U16(EmitContext& ctx, Id value);
 Id EmitConvertF64U32(EmitContext& ctx, Id value);
 Id EmitConvertF64U64(EmitContext& ctx, Id value);
+Id EmitConvertU16U32(EmitContext& ctx, Id value);
 
 Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
                               Id offset);

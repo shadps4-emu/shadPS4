@@ -209,12 +209,14 @@ bool Instance::CreateDevice() {
                 .shaderImageGatherExtended = true,
                 .shaderStorageImageMultisample = true,
                 .shaderClipDistance = features.shaderClipDistance,
+                .shaderInt16 = true,
             },
         },
         vk::PhysicalDeviceVulkan11Features{
             .shaderDrawParameters = true,
         },
         vk::PhysicalDeviceVulkan12Features{
+            .shaderFloat16 = true,
             .scalarBlockLayout = true,
             .uniformBufferStandardLayout = true,
             .hostQueryReset = true,

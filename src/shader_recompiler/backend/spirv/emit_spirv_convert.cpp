@@ -255,4 +255,8 @@ Id EmitConvertF64U64(EmitContext& ctx, Id value) {
     return ctx.OpConvertUToF(ctx.F64[1], value);
 }
 
+Id EmitConvertU16U32(EmitContext& ctx, Id value) {
+    return ctx.OpUConvert(ctx.U16, value);
+}
+
 } // namespace Shader::Backend::SPIRV

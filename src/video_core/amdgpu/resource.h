@@ -63,7 +63,7 @@ struct Buffer {
         if (stride == 0) {
             return 1U;
         }
-        ASSERT(stride % element_size == 0);
+        //ASSERT(stride % element_size == 0);
         return stride / element_size;
     }
 

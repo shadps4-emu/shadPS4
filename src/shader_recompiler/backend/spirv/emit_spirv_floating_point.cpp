@@ -6,6 +6,11 @@
 
 namespace Shader::Backend::SPIRV {
 
+Id Decorate(EmitContext& ctx, IR::Inst* inst, Id op) {
+    ctx.Decorate(op, spv::Decoration::NoContraction);
+    return op;
+}
+
 Id EmitFPAbs16(EmitContext& ctx, Id value) {
     return ctx.OpFAbs(ctx.F16[1], value);
 }
@@ -19,31 +24,31 @@ Id EmitFPAbs64(EmitContext& ctx, Id value) {
 }
 
 Id EmitFPAdd16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFAdd(ctx.F16[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F16[1], a, b));
 }
 
 Id EmitFPAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFAdd(ctx.F32[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F32[1], a, b));
 }
 
 Id EmitFPAdd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFAdd(ctx.F64[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F64[1], a, b));
 }
 
 Id EmitFPSub32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFSub(ctx.F32[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFSub(ctx.F32[1], a, b));
 }
 
 Id EmitFPFma16(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return ctx.OpFma(ctx.F16[1], a, b, c);
+    return Decorate(ctx, inst, ctx.OpFma(ctx.F16[1], a, b, c));
 }
 
 Id EmitFPFma32(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return ctx.OpFma(ctx.F32[1], a, b, c);
+    return Decorate(ctx, inst, ctx.OpFma(ctx.F32[1], a, b, c));
 }
 
 Id EmitFPFma64(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return ctx.OpFma(ctx.F64[1], a, b, c);
+    return Decorate(ctx, inst, ctx.OpFma(ctx.F64[1], a, b, c));
 }
 
 Id EmitFPMax32(EmitContext& ctx, Id a, Id b) {
@@ -63,15 +68,15 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b) {
 }
 
 Id EmitFPMul16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFMul(ctx.F16[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFMul(ctx.F16[1], a, b));
 }
 
 Id EmitFPMul32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFMul(ctx.F32[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFMul(ctx.F32[1], a, b));
 }
 
 Id EmitFPMul64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return ctx.OpFMul(ctx.F64[1], a, b);
+    return Decorate(ctx, inst, ctx.OpFMul(ctx.F64[1], a, b));
 }
 
 Id EmitFPNeg16(EmitContext& ctx, Id value) {

@@ -28,7 +28,8 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
 
 void Translator::V_CVT_F32_F16(const GcnInst& inst) {
     const IR::U32 src0 = GetSrc(inst.src[0]);
-    SetDst(inst.dst[0], ir.ConvertUToF(32, 16, src0));
+    const IR::U16 src0l = ir.UConvert(16, src0);
+    SetDst(inst.dst[0], ir.FPConvert(32, ir.BitCast<IR::F16>(src0l)));
 }
 
 void Translator::V_MUL_F32(const GcnInst& inst) {
@@ -519,7 +520,7 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    ir.SetVcc(ir.Imm1(false));
+    ir.SetVcc(ir.FPIsInf(src0));
     // TODO
 }
 

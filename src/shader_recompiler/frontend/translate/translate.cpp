@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -190,7 +193,20 @@ void Translator::EmitFetch(const GcnInst& inst) {
     std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
 
     // Parse the assembly to generate a list of attributes.
-    const auto attribs = ParseFetchShader(code);
+    u32 fetch_size{};
+    const auto attribs = ParseFetchShader(code, &fetch_size);
+
+    if (Config::dumpShaders()) {
+        using namespace Common::FS;
+        const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+        if (!std::filesystem::exists(dump_dir)) {
+            std::filesystem::create_directories(dump_dir);
+        }
+        const auto filename = fmt::format("vs_fetch_{:#018x}.bin", info.pgm_hash);
+        const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+        file.WriteRaw<u8>(code, fetch_size);
+    }
+
     for (const auto& attrib : attribs) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
@@ -242,6 +258,7 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
     }
     Translator translator{block, info};
     for (const auto& inst : inst_list) {
+        block_base += inst.length;
         switch (inst.opcode) {
         case Opcode::S_MOVK_I32:
             translator.S_MOVK(inst);
@@ -378,6 +395,7 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::IMAGE_SAMPLE:
         case Opcode::IMAGE_SAMPLE_L:
         case Opcode::IMAGE_SAMPLE_C_O:
+        case Opcode::IMAGE_SAMPLE_B:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::IMAGE_ATOMIC_ADD:
@@ -526,6 +544,12 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             break;
         case Opcode::V_CNDMASK_B32:
             translator.V_CNDMASK_B32(inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_X:
+            translator.BUFFER_LOAD_FORMAT(1, true, inst);
+            break;
+        case Opcode::TBUFFER_LOAD_FORMAT_XY:
+            translator.BUFFER_LOAD_FORMAT(2, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
             translator.BUFFER_LOAD_FORMAT(3, true, inst);
@@ -901,7 +925,6 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
                       magic_enum::enum_name(inst.opcode), opcode);
             info.translation_failed = true;
         }
-        block_base += inst.length;
     }
 }
 

@@ -60,7 +60,11 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::RenderTarget0:
     case IR::Attribute::RenderTarget1:
     case IR::Attribute::RenderTarget2:
-    case IR::Attribute::RenderTarget3: {
+    case IR::Attribute::RenderTarget3:
+    case IR::Attribute::RenderTarget4:
+    case IR::Attribute::RenderTarget5:
+    case IR::Attribute::RenderTarget6:
+    case IR::Attribute::RenderTarget7: {
         const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
         if (ctx.frag_num_comp[index] > 1) {
             return ctx.OpAccessChain(ctx.output_f32, ctx.frag_color[index], ctx.ConstU32(element));
@@ -196,7 +200,15 @@ Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
 }
 
 Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    UNREACHABLE();
+    const auto info = inst->Flags<IR::BufferInstInfo>();
+    const auto& buffer = ctx.buffers[handle];
+    boost::container::static_vector<Id, 2> ids;
+    for (u32 i = 0; i < 2; i++) {
+        const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
+        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
+    }
+    return ctx.OpCompositeConstruct(buffer.data_types->Get(2), ids);
 }
 
 Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
