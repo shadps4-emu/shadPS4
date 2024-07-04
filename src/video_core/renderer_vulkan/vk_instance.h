@@ -231,6 +231,7 @@ private:
     bool fragment_shader_barycentric{};
     bool shader_stencil_export{};
     bool external_memory_host{};
+    bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
     u64 min_imported_host_pointer_alignment{};
     bool tooling_info{};
