@@ -90,7 +90,11 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         }
         if (!file->f.IsOpen()) {
             h->DeleteHandle(handle);
-            return SCE_KERNEL_ERROR_EACCES;
+            if (create) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            } else {
+                return ORBIS_KERNEL_ERROR_ENOENT;
+            }
         }
     }
     file->is_opened = true;
