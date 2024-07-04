@@ -181,7 +181,7 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
             info.type = vk::ImageType::e2D;
             info.size =
                 VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
-            info.pitch = splash->GetImageInfo().width * 4;
+            info.pitch = splash->GetImageInfo().width;
             info.guest_size_bytes = splash->GetImageData().size();
             splash_img.emplace(instance, scheduler, info, VAddr(splash->GetImageData().data()));
             texture_cache.RefreshImage(*splash_img);
