@@ -96,6 +96,8 @@ using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
 struct SamplerResource {
     u32 sgpr_base;
     u32 dword_offset;
+    u32 associated_image : 4;
+    u32 disable_aniso : 1;
 };
 using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
 
