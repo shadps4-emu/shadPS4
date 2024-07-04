@@ -1286,7 +1286,7 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 }
 
 int PS4_SYSV_ABI scePthreadGetthreadid() {
-    return (int)g_pthread_self;
+    return (int)(size_t)g_pthread_self;
 }
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
