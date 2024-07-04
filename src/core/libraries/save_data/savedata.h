@@ -240,7 +240,6 @@ struct OrbisSaveDataMemorySync {
     u32 slotId;
     OrbisSaveDataMemorySyncOption option;
     u8 reserved[28];
-
 };
 
 int PS4_SYSV_ABI sceSaveDataAbort();
