@@ -58,3 +58,6 @@
 [submodule "externals/tracy"]
 	path = externals/tracy
 	url = https://github.com/shadps4-emu/tracy.git
+[submodule "externals/hwinfo"]
+	path = externals/hwinfo
+	url = https://github.com/shadps4-emu/ext-hwinfo.git

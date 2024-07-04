@@ -15,12 +15,14 @@
 #include "common/logging/backend.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "common/version.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
+#include "hwinfo/hwinfo.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -40,6 +42,8 @@ Emulator::Emulator()
     // Start logger.
     Common::Log::Initialize();
     Common::Log::Start();
+    LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
+    PrintSystemInfo();
 }
 
 Emulator::~Emulator() {
@@ -174,6 +178,19 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
                 LOG_INFO(Loader, "No HLE available for {} module", it.module_name);
             }
         }
+    }
+}
+
+void Emulator::PrintSystemInfo() {
+    auto cpus = hwinfo::getAllCPUs();
+    for (const auto& cpu : cpus) {
+        LOG_INFO(Loader, "CPU #{} {}", cpu.id(), cpu.modelName());
+    }
+    hwinfo::OS os;
+    LOG_INFO(Loader, "{}", os.name());
+    auto gpus = hwinfo::getAllGPUs();
+    for (auto& gpu : gpus) {
+        LOG_INFO(Loader, "GPU #{} {}", gpu.id(), gpu.name());
     }
 }
 
