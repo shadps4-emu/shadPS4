@@ -3,12 +3,6 @@
 
 #pragma once
 
-#include "common/assert.h"
-#include "common/bit_field.h"
-#include "common/types.h"
-#include "resource.h"
-#include "video_core/amdgpu/pixel_format.h"
-
 #include <array>
 #include <condition_variable>
 #include <coroutine>
@@ -16,6 +10,11 @@
 #include <span>
 #include <thread>
 #include <queue>
+#include "common/assert.h"
+#include "common/bit_field.h"
+#include "common/types.h"
+#include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/resource.h"
 
 namespace Vulkan {
 class Rasterizer;

@@ -114,6 +114,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
         vk::PhysicalDeviceColorWriteEnableFeaturesEXT, vk::PhysicalDeviceVulkan12Features,
+        vk::PhysicalDeviceVulkan13Features,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
         vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
     const vk::StructureChain properties_chain =
@@ -189,6 +190,7 @@ bool Instance::CreateDevice() {
     };
 
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
+    const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
             .queueCreateInfoCount = 1u,
@@ -223,9 +225,9 @@ bool Instance::CreateDevice() {
             .timelineSemaphore = vk12_features.timelineSemaphore,
         },
         vk::PhysicalDeviceVulkan13Features{
-            .shaderDemoteToHelperInvocation = true,
-            .dynamicRendering = true,
-            .maintenance4 = true,
+            .shaderDemoteToHelperInvocation = vk13_features.shaderDemoteToHelperInvocation,
+            .dynamicRendering = vk13_features.dynamicRendering,
+            .maintenance4 = vk13_features.maintenance4,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,

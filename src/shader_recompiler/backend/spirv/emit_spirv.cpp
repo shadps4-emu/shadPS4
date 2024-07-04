@@ -174,14 +174,18 @@ Id DefineMain(EmitContext& ctx, IR::Program& program) {
 }
 
 void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
+    const auto& info = program.info;
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
-    ctx.AddCapability(spv::Capability::Float16);
-    ctx.AddCapability(spv::Capability::Int16);
-    ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
-    ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
+    if (info.uses_fp16) {
+        ctx.AddCapability(spv::Capability::Float16);
+        ctx.AddCapability(spv::Capability::Int16);
+    }
+    if (info.has_storage_images) {
+        ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
+    }
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
@@ -200,13 +204,19 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
-        if (program.info.uses_group_quad) {
+        if (info.uses_group_quad) {
             ctx.AddCapability(spv::Capability::GroupNonUniform);
             ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
         }
-        ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
-        ctx.AddCapability(spv::Capability::ImageGatherExtended);
-        ctx.AddCapability(spv::Capability::ImageQuery);
+        if (info.has_discard) {
+            ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
+        }
+        if (info.has_image_gather) {
+            ctx.AddCapability(spv::Capability::ImageGatherExtended);
+        }
+        if (info.has_image_query) {
+            ctx.AddCapability(spv::Capability::ImageQuery);
+        }
         // if (program.info.stores_frag_depth) {
         //     ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         // }
