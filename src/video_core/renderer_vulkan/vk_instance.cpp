@@ -74,12 +74,12 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     available_extensions = GetSupportedExtensions(physical_device);
     properties = physical_device.getProperties();
+    CollectDeviceParameters();
     ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by device!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
                VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
 
-    CollectDeviceParameters();
     CreateDevice();
     CollectToolingInfo();
 }
@@ -156,6 +156,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
+    add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
@@ -208,12 +209,14 @@ bool Instance::CreateDevice() {
                 .shaderImageGatherExtended = true,
                 .shaderStorageImageMultisample = true,
                 .shaderClipDistance = features.shaderClipDistance,
+                .shaderInt16 = true,
             },
         },
         vk::PhysicalDeviceVulkan11Features{
             .shaderDrawParameters = true,
         },
         vk::PhysicalDeviceVulkan12Features{
+            .shaderFloat16 = true,
             .scalarBlockLayout = true,
             .uniformBufferStandardLayout = true,
             .hostQueryReset = true,
@@ -237,7 +240,12 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
-    };
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR{
+            .workgroupMemoryExplicitLayout = true,
+            .workgroupMemoryExplicitLayoutScalarBlockLayout = true,
+            .workgroupMemoryExplicitLayout8BitAccess = true,
+            .workgroupMemoryExplicitLayout16BitAccess = true,
+        }};
 
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();

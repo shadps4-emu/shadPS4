@@ -129,7 +129,11 @@ public:
             const auto end = std::chrono::high_resolution_clock::now();
             const auto time =
                 std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-            *timeout -= time;
+            if (status == std::cv_status::timeout) {
+                *timeout = 0;
+            } else {
+                *timeout -= time;
+            }
             return GetResult(status == std::cv_status::timeout);
         }
     };

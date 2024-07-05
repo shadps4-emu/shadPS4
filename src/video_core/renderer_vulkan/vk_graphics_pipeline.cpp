@@ -47,7 +47,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
-            .format = LiverpoolToVK::SurfaceFormat(buffer.data_format, buffer.num_format),
+            .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back({
@@ -326,8 +326,8 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
 
     for (const auto& stage : stages) {
         for (const auto& buffer : stage.buffers) {
-            const auto vsharp = stage.ReadUd<AmdGpu::Buffer>(buffer.sgpr_base, buffer.dword_offset);
-            const VAddr address = vsharp.base_address.Value();
+            const auto vsharp = buffer.GetVsharp(stage);
+            const VAddr address = vsharp.base_address;
             const u32 size = vsharp.GetSize();
             const u32 offset = staging.Copy(address, size,
                                             buffer.is_storage ? instance.StorageMinAlignment()
@@ -348,9 +348,10 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             }
         }
 
+        boost::container::static_vector<AmdGpu::Image, 16> tsharps;
         for (const auto& image_desc : stage.images) {
-            const auto tsharp =
-                stage.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            const auto& tsharp = tsharps.emplace_back(
+                stage.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset));
             const auto& image_view = texture_cache.FindImageView(tsharp, image_desc.is_storage);
             const auto& image = texture_cache.GetImage(image_view.image_id);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
@@ -369,8 +370,13 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             }
         }
         for (const auto& sampler : stage.samplers) {
-            const auto ssharp =
-                stage.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+            auto ssharp = stage.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+            if (sampler.disable_aniso) {
+                const auto& tsharp = tsharps[sampler.associated_image];
+                if (tsharp.base_level == 0 && tsharp.last_level == 0) {
+                    ssharp.max_aniso.Assign(AmdGpu::AnisoRatio::One);
+                }
+            }
             const auto vk_sampler = texture_cache.GetSampler(ssharp);
             image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             set_writes.push_back({
@@ -419,8 +425,7 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
             continue;
         }
         guest_buffers.emplace_back(buffer);
-        ranges.emplace_back(buffer.base_address.Value(),
-                            buffer.base_address.Value() + buffer.GetSize());
+        ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
     }
     std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
         return lhv.base_address < rhv.base_address;

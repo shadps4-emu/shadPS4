@@ -18,6 +18,52 @@ extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 
 namespace Vulkan {
 
+using Shader::VsOutput;
+
+void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
+    const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
+        if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
+            w != VsOutput::None) {
+            info.vs_outputs.emplace_back(Shader::VsOutputMap{x, y, z, w});
+        }
+    };
+    // VS_OUT_MISC_VEC
+    add_output(ctl.use_vtx_point_size ? VsOutput::PointSprite : VsOutput::None,
+               ctl.use_vtx_edge_flag
+                   ? VsOutput::EdgeFlag
+                   : (ctl.use_vtx_gs_cut_flag ? VsOutput::GsCutFlag : VsOutput::None),
+               ctl.use_vtx_kill_flag
+                   ? VsOutput::KillFlag
+                   : (ctl.use_vtx_render_target_idx ? VsOutput::GsMrtIndex : VsOutput::None),
+               ctl.use_vtx_viewport_idx ? VsOutput::GsVpIndex : VsOutput::None);
+    // VS_OUT_CCDIST0
+    add_output(ctl.IsClipDistEnabled(0)
+                   ? VsOutput::ClipDist0
+                   : (ctl.IsCullDistEnabled(0) ? VsOutput::CullDist0 : VsOutput::None),
+               ctl.IsClipDistEnabled(1)
+                   ? VsOutput::ClipDist1
+                   : (ctl.IsCullDistEnabled(1) ? VsOutput::CullDist1 : VsOutput::None),
+               ctl.IsClipDistEnabled(2)
+                   ? VsOutput::ClipDist2
+                   : (ctl.IsCullDistEnabled(2) ? VsOutput::CullDist2 : VsOutput::None),
+               ctl.IsClipDistEnabled(3)
+                   ? VsOutput::ClipDist3
+                   : (ctl.IsCullDistEnabled(3) ? VsOutput::CullDist3 : VsOutput::None));
+    // VS_OUT_CCDIST1
+    add_output(ctl.IsClipDistEnabled(4)
+                   ? VsOutput::ClipDist4
+                   : (ctl.IsCullDistEnabled(4) ? VsOutput::CullDist4 : VsOutput::None),
+               ctl.IsClipDistEnabled(5)
+                   ? VsOutput::ClipDist5
+                   : (ctl.IsCullDistEnabled(5) ? VsOutput::CullDist5 : VsOutput::None),
+               ctl.IsClipDistEnabled(6)
+                   ? VsOutput::ClipDist6
+                   : (ctl.IsCullDistEnabled(6) ? VsOutput::CullDist6 : VsOutput::None),
+               ctl.IsClipDistEnabled(7)
+                   ? VsOutput::ClipDist7
+                   : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
+}
+
 Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data,
                             const AmdGpu::Liverpool::Regs& regs) {
     Shader::Info info{};
@@ -26,6 +72,7 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
     switch (stage) {
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
+        BuildVsOutputs(info, regs.vs_output_control);
         break;
     }
     case Shader::Stage::Fragment: {
@@ -45,6 +92,7 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
         info.num_user_data = cs_pgm.settings.num_user_regs;
         info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                cs_pgm.num_thread_z.full};
+        info.shared_memory_size = cs_pgm.SharedMemSize();
         break;
     }
     default:
@@ -60,6 +108,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     pipeline_cache = instance.GetDevice().createPipelineCacheUnique({});
     profile = Shader::Profile{
         .supported_spirv = 0x00010600U,
+        .support_explicit_workgroup_layout = true,
     };
 }
 
@@ -153,7 +202,7 @@ void PipelineCache::RefreshGraphicsKey() {
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
         auto* pgm = regs.ProgramForStage(i);
-        if (!pgm || !pgm->Address<u32>()) {
+        if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
             continue;
         }
@@ -209,7 +258,9 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
-            const Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
+            Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
+            info.pgm_base = pgm->Address<uintptr_t>();
+            info.pgm_hash = hash;
             programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
             // Compile IR to SPIR-V
@@ -247,8 +298,9 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
     // Recompile shader to IR.
     try {
         LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
-        const Shader::Info info =
+        Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
+        info.pgm_base = cs_pgm.Address<uintptr_t>();
         auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
 
         // Compile IR to SPIR-V
@@ -258,8 +310,11 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
             DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
         }
         const auto module = CompileSPV(spv_code, instance.GetDevice());
+        // Set module name to hash in renderdoc
+        const auto name = fmt::format("cs_{:#x}", compute_key);
+        Vulkan::SetObjectName(instance.GetDevice(), module, name);
         return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
-                                                 &program.info, module);
+                                                 &program.info, compute_key, module);
     } catch (const Shader::Exception& e) {
         UNREACHABLE_MSG("{}", e.what());
         return nullptr;

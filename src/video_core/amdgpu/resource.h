@@ -21,32 +21,45 @@ enum class CompSwizzle : u32 {
 
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
-    union {
-        BitField<0, 44, u64> base_address;
-        BitField<48, 14, u64> stride;
-        BitField<62, 1, u64> cache_swizzle;
-        BitField<63, 1, u64> swizzle_enable;
-    };
+    u64 base_address : 44;
+    u64 : 4;
+    u64 stride : 14;
+    u64 cache_swizzle : 1;
+    u64 swizzle_enable : 1;
     u32 num_records;
-    union {
-        BitField<0, 3, u32> dst_sel_x;
-        BitField<3, 3, u32> dst_sel_y;
-        BitField<6, 3, u32> dst_sel_z;
-        BitField<9, 3, u32> dst_sel_w;
-        BitField<0, 12, u32> dst_sel;
-        BitField<12, 3, NumberFormat> num_format;
-        BitField<15, 4, DataFormat> data_format;
-        BitField<19, 2, u32> element_size;
-        BitField<21, 2, u32> index_stride;
-        BitField<23, 1, u32> add_tid_enable;
-    };
+    u32 dst_sel_x : 3;
+    u32 dst_sel_y : 3;
+    u32 dst_sel_z : 3;
+    u32 dst_sel_w : 3;
+    u32 num_format : 3;
+    u32 data_format : 4;
+    u32 element_size : 2;
+    u32 index_stride : 2;
+    u32 add_tid_enable : 1;
+
+    operator bool() const noexcept {
+        return base_address != 0;
+    }
+
+    bool operator==(const Buffer& other) const noexcept {
+        return std::memcmp(this, &other, sizeof(Buffer)) == 0;
+    }
 
     CompSwizzle GetSwizzle(u32 comp) const noexcept {
-        return static_cast<CompSwizzle>((dst_sel.Value() >> (comp * 3)) & 0x7);
+        const std::array select{dst_sel_x, dst_sel_y, dst_sel_z, dst_sel_w};
+        return static_cast<CompSwizzle>(select[comp]);
+    }
+
+    NumberFormat GetNumberFmt() const noexcept {
+        return static_cast<NumberFormat>(num_format);
+    }
+
+    DataFormat GetDataFmt() const noexcept {
+        return static_cast<DataFormat>(data_format);
     }
 
     u32 GetStride() const noexcept {
-        return stride == 0 ? 1U : stride.Value();
+        return stride == 0 ? 1U : stride;
     }
 
     u32 GetStrideElements(u32 element_size) const noexcept {
@@ -61,6 +74,7 @@ struct Buffer {
         return GetStride() * num_records;
     }
 };
+static_assert(sizeof(Buffer) == 16); // 128bits
 
 enum class ImageType : u64 {
     Buffer = 0,

@@ -803,9 +803,9 @@ int PS4_SYSV_ABI sceGnmDrawOpaqueAuto() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return false;
 }
 
 int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface() {
@@ -1962,7 +1962,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         if (Config::dumpPM4()) {
             static auto last_frame_num = -1LL;
             static u32 seq_num{};
-            if (last_frame_num == frames_submitted) {
+            if (last_frame_num == frames_submitted && cbpair == 0) {
                 ++seq_num;
             } else {
                 last_frame_num = frames_submitted;

@@ -4,6 +4,7 @@
 #include <mutex>
 #include <thread>
 #include <semaphore.h>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
@@ -16,6 +17,8 @@
 #include "core/linker.h"
 #ifdef _WIN64
 #include <windows.h>
+#else
+#include <sys/mman.h>
 #endif
 
 namespace Libraries::Kernel {
@@ -46,7 +49,8 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
-    g_pthread_self = new PthreadInternal{};
+    auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
+    g_pthread_self = pthread_pool->Create();
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
     g_pthread_self->name = "Main_Thread";
@@ -926,31 +930,25 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     if ((*thread)->attr != nullptr) {
         scePthreadAttrDestroy(&(*thread)->attr);
     }
-
     scePthreadAttrInit(&(*thread)->attr);
 
     int result = pthread_copy_attributes(&(*thread)->attr, attr);
+    ASSERT(result == 0);
 
-    if (result == 0) {
-        if (name != NULL) {
-            (*thread)->name = name;
-        } else {
-            (*thread)->name = "no-name";
-        }
-        (*thread)->entry = start_routine;
-        (*thread)->arg = arg;
-        (*thread)->is_almost_done = false;
-        (*thread)->is_detached = (*attr)->detached;
-        (*thread)->is_started = false;
-
-        result = pthread_create(&(*thread)->pth, &(*attr)->pth_attr, run_thread, *thread);
+    if (name != NULL) {
+        (*thread)->name = name;
+    } else {
+        (*thread)->name = "no-name";
     }
+    (*thread)->entry = start_routine;
+    (*thread)->arg = arg;
+    (*thread)->is_almost_done = false;
+    (*thread)->is_detached = (*attr)->detached;
+    (*thread)->is_started = false;
 
-    if (result == 0) {
-        while (!(*thread)->is_started) {
-            std::this_thread::sleep_for(std::chrono::microseconds(1000));
-        }
-    }
+    pthread_attr_setstacksize(&(*attr)->pth_attr, 2_MB);
+    result = pthread_create(&(*thread)->pth, &(*attr)->pth_attr, run_thread, *thread);
+
     LOG_INFO(Kernel_Pthread, "thread create name = {}", (*thread)->name);
 
     switch (result) {
@@ -979,7 +977,16 @@ ScePthread PThreadPool::Create() {
         }
     }
 
+#ifdef _WIN64
     auto* ret = new PthreadInternal{};
+#else
+    // TODO: Linux specific hack
+    static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
+    auto* ret = reinterpret_cast<PthreadInternal*>(
+        mmap(hint_address, sizeof(PthreadInternal), PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
+    hint_address += Common::AlignUp(sizeof(PthreadInternal), 4_KB);
+#endif
 
     ret->is_free = false;
     ret->is_detached = false;

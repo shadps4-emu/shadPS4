@@ -89,6 +89,17 @@ bool IsImageInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageGradient:
     case IR::Opcode::ImageRead:
     case IR::Opcode::ImageWrite:
+    case IR::Opcode::ImageAtomicIAdd32:
+    case IR::Opcode::ImageAtomicSMin32:
+    case IR::Opcode::ImageAtomicUMin32:
+    case IR::Opcode::ImageAtomicSMax32:
+    case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicInc32:
+    case IR::Opcode::ImageAtomicDec32:
+    case IR::Opcode::ImageAtomicAnd32:
+    case IR::Opcode::ImageAtomicOr32:
+    case IR::Opcode::ImageAtomicXor32:
+    case IR::Opcode::ImageAtomicExchange32:
         return true;
     default:
         return false;
@@ -99,6 +110,17 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::ImageWrite:
     case IR::Opcode::ImageRead:
+    case IR::Opcode::ImageAtomicIAdd32:
+    case IR::Opcode::ImageAtomicSMin32:
+    case IR::Opcode::ImageAtomicUMin32:
+    case IR::Opcode::ImageAtomicSMax32:
+    case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicInc32:
+    case IR::Opcode::ImageAtomicDec32:
+    case IR::Opcode::ImageAtomicAnd32:
+    case IR::Opcode::ImageAtomicOr32:
+    case IR::Opcode::ImageAtomicXor32:
+    case IR::Opcode::ImageAtomicExchange32:
         return true;
     default:
         return false;
@@ -115,7 +137,8 @@ public:
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
             return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+                   desc.dword_offset == existing.dword_offset &&
+                   desc.inline_cbuf == existing.inline_cbuf;
         })};
         auto& buffer = buffer_resources[index];
         ASSERT(buffer.stride == desc.stride && buffer.num_records == desc.num_records);
@@ -159,6 +182,51 @@ private:
 
 } // Anonymous namespace
 
+std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
+    std::pair not_found{inst, false};
+
+    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
+    // The next pattern:
+    //  s_bfe_u32     s0, s7,  $0x0008000c
+    //  s_and_b32     s1, s12, $0xfffff1ff
+    //  s_cmp_eq_u32  s0, 0
+    //  s_cselect_b32 s0, s1, s12
+    // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
+
+    if (inst->GetOpcode() != IR::Opcode::SelectU32) {
+        return not_found;
+    }
+
+    // Select should be based on zero check
+    const auto* prod0 = inst->Arg(0).InstRecursive();
+    if (prod0->GetOpcode() != IR::Opcode::IEqual ||
+        !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
+        return not_found;
+    }
+
+    // The bits range is for lods
+    const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
+    if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
+        prod0_arg0->Arg(1).InstRecursive()->Arg(0).U32() != 0x0008000cu) {
+        return not_found;
+    }
+
+    // Make sure mask is masking out anisotropy
+    const auto* prod1 = inst->Arg(1).InstRecursive();
+    if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
+        return not_found;
+    }
+
+    // We're working on the first dword of s#
+    const auto* prod2 = inst->Arg(2).InstRecursive();
+    if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
+        prod2->GetOpcode() != IR::Opcode::ReadConst) {
+        return not_found;
+    }
+
+    return {prod2, true};
+}
+
 SharpLocation TrackSharp(const IR::Inst* inst) {
     while (inst->GetOpcode() == IR::Opcode::Phi) {
         inst = inst->Arg(0).InstRecursive();
@@ -196,20 +264,70 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     };
 }
 
+static constexpr size_t MaxUboSize = 65536;
+
+s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
+                        AmdGpu::Buffer& cbuf) {
+
+    // Assuming V# is in UD s[32:35]
+    // The next pattern:
+    // s_getpc_b64     s[32:33]
+    // s_add_u32       s32, <const>, s32
+    // s_addc_u32      s33, 0, s33
+    // s_mov_b32       s35, <const>
+    // s_movk_i32      s34, <const>
+    // buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
+    // is used to define an inline constant buffer
+
+    IR::Inst* handle = inst.Arg(0).InstRecursive();
+    IR::Inst* p0 = handle->Arg(0).InstRecursive();
+    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate() ||
+        !p0->Arg(1).IsImmediate()) {
+        return -1;
+    }
+    IR::Inst* p1 = handle->Arg(1).InstRecursive();
+    if (p1->GetOpcode() != IR::Opcode::IAdd32) {
+        return -1;
+    }
+    if (!handle->Arg(3).IsImmediate() || !handle->Arg(2).IsImmediate()) {
+        return -1;
+    }
+    // We have found this pattern. Build the sharp.
+    std::array<u64, 2> buffer;
+    buffer[0] = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
+    buffer[1] = handle->Arg(2).U32() | handle->Arg(3).U64() << 32;
+    cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
+    // Assign a binding to this sharp.
+    return descriptors.Add(BufferResource{
+        .sgpr_base = std::numeric_limits<u32>::max(),
+        .dword_offset = 0,
+        .stride = cbuf.GetStride(),
+        .num_records = u32(cbuf.num_records),
+        .used_types = BufferDataType(inst),
+        .inline_cbuf = cbuf,
+        .is_storage = IsBufferStore(inst) || cbuf.GetSize() > MaxUboSize,
+    });
+}
+
 void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
                             Descriptors& descriptors) {
-    static constexpr size_t MaxUboSize = 65536;
-    IR::Inst* producer = inst.Arg(0).InstRecursive();
-    const auto sharp = TrackSharp(producer);
-    const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
-    const u32 binding = descriptors.Add(BufferResource{
-        .sgpr_base = sharp.sgpr_base,
-        .dword_offset = sharp.dword_offset,
-        .stride = buffer.GetStride(),
-        .num_records = u32(buffer.num_records),
-        .used_types = BufferDataType(inst),
-        .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
-    });
+    s32 binding{};
+    AmdGpu::Buffer buffer;
+    if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
+        IR::Inst* handle = inst.Arg(0).InstRecursive();
+        IR::Inst* producer = handle->Arg(0).InstRecursive();
+        const auto sharp = TrackSharp(producer);
+        buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+        binding = descriptors.Add(BufferResource{
+            .sgpr_base = sharp.sgpr_base,
+            .dword_offset = sharp.dword_offset,
+            .stride = buffer.GetStride(),
+            .num_records = u32(buffer.num_records),
+            .used_types = BufferDataType(inst),
+            .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
+        });
+    }
+
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     // Replace handle with binding index in buffer resource list.
@@ -217,7 +335,10 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
     if (inst_info.is_typed) {
         ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
-               inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32);
+               (inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32_32 ||
+                inst_info.dmft == AmdGpu::DataFormat::Format32));
     }
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
         inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {
@@ -253,15 +374,25 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    IR::Inst* producer = inst.Arg(0).InstRecursive();
-    while (producer->GetOpcode() == IR::Opcode::Phi) {
-        producer = producer->Arg(0).InstRecursive();
+    std::deque<IR::Inst*> insts{&inst};
+    const auto& pred = [](auto opcode) -> bool {
+        return (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+                opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+                opcode == IR::Opcode::GetUserData);
+    };
+
+    IR::Inst* producer{};
+    while (!insts.empty() && (producer = insts.front(), !pred(producer->GetOpcode()))) {
+        for (auto arg_idx = 0u; arg_idx < producer->NumArgs(); ++arg_idx) {
+            const auto arg = producer->Arg(arg_idx);
+            if (arg.TryInstRecursive()) {
+                insts.push_back(arg.InstRecursive());
+            }
+        }
+        insts.pop_front();
     }
-    ASSERT(producer->GetOpcode() ==
-               IR::Opcode::CompositeConstructU32x2 ||        // IMAGE_SAMPLE (image+sampler)
-           producer->GetOpcode() == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
-           producer->GetOpcode() == IR::Opcode::GetUserData);
-    const auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
+    ASSERT(pred(producer->GetOpcode()));
+    auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
         if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
             return std::make_pair(producer->Arg(0).InstRecursive(),
                                   producer->Arg(1).InstRecursive());
@@ -284,10 +415,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
     if (ssharp_handle) {
-        const auto ssharp = TrackSharp(ssharp_handle);
+        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+        const auto ssharp = TrackSharp(ssharp_ud);
         const u32 sampler_binding = descriptors.Add(SamplerResource{
             .sgpr_base = ssharp.sgpr_base,
             .dword_offset = ssharp.dword_offset,
+            .associated_image = image_binding,
+            .disable_aniso = disable_aniso,
         });
         image_binding |= (sampler_binding << 16);
     }

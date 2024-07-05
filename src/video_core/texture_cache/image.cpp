@@ -321,12 +321,15 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
 
     // Copy to the image.
+    const auto aspect = aspect_mask & vk::ImageAspectFlagBits::eStencil
+                            ? vk::ImageAspectFlagBits::eDepth
+                            : aspect_mask;
     const vk::BufferImageCopy image_copy = {
         .bufferOffset = offset,
         .bufferRowLength = info.pitch,
         .bufferImageHeight = info.size.height,
         .imageSubresource{
-            .aspectMask = aspect_mask,
+            .aspectMask = aspect,
             .mipLevel = 0,
             .baseArrayLayer = 0,
             .layerCount = 1,

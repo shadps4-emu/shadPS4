@@ -23,7 +23,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 512_MB, BufferType::Upload} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 3_GB, BufferType::Upload} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -44,11 +44,14 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    UpdateDynamicState(*pipeline);
-
-    pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    try {
+        pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+    } catch (...) {
+        UNREACHABLE();
+    }
 
     BeginRendering();
+    UpdateDynamicState(*pipeline);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
     if (is_indexed) {
@@ -71,9 +74,14 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
-    const auto has_resources = pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
-    if (!has_resources) {
-        return;
+    try {
+        const auto has_resources =
+            pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+        if (!has_resources) {
+            return;
+        }
+    } catch (...) {
+        UNREACHABLE();
     }
 
     scheduler.EndRendering();
@@ -163,7 +171,7 @@ u32 Rasterizer::SetupIndexBuffer(bool& is_indexed, u32 index_offset) {
 
     // Upload index data to stream buffer.
     const auto index_address = regs.index_base_address.Address<const void*>();
-    const u32 index_buffer_size = regs.num_indices * index_size;
+    const u32 index_buffer_size = (index_offset + regs.num_indices) * index_size;
     const auto [data, offset, _] = vertex_index_buffer.Map(index_buffer_size);
     std::memcpy(data, index_address, index_buffer_size);
     vertex_index_buffer.Commit(index_buffer_size);

@@ -179,19 +179,19 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR8Unorm:
         return vk::Format::eR8Uint;
     case vk::Format::eR8G8Unorm:
+    case vk::Format::eR16Sfloat:
         return vk::Format::eR8G8Uint;
     case vk::Format::eR8G8B8A8Srgb:
-        [[fallthrough]];
     case vk::Format::eB8G8R8A8Srgb:
-        [[fallthrough]];
     case vk::Format::eB8G8R8A8Unorm:
-        [[fallthrough]];
     case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR32Sfloat:
+    case vk::Format::eR32Uint:
         return vk::Format::eR32Uint;
     case vk::Format::eBc1RgbaUnormBlock:
+    case vk::Format::eR32G32Sfloat:
         return vk::Format::eR32G32Uint;
     case vk::Format::eBc3SrgbBlock:
-        [[fallthrough]];
     case vk::Format::eBc3UnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:

@@ -26,6 +26,25 @@ enum class ConditionOp : u32 {
     TRU,
 };
 
+enum class AtomicOp : u32 {
+    Swap,
+    CmpSwap,
+    Add,
+    Sub,
+    Smin,
+    Umin,
+    Smax,
+    Umax,
+    And,
+    Or,
+    Xor,
+    Inc,
+    Dec,
+    FCmpSwap,
+    Fmin,
+    Fmax,
+};
+
 enum class NegateMode : u32 {
     None,
     Src1,
@@ -61,6 +80,8 @@ public:
     void S_BREV_B32(const GcnInst& inst);
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
+    void S_GETPC_B64(u32 pc, const GcnInst& inst);
+    void S_ADDC_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -133,6 +154,9 @@ public:
     void V_NOT_B32(const GcnInst& inst);
     void V_CVT_F32_UBYTE(u32 index, const GcnInst& inst);
     void V_BFREV_B32(const GcnInst& inst);
+    void V_LDEXP_F32(const GcnInst& inst);
+    void V_CVT_FLR_I32_F32(const GcnInst& inst);
+    void V_CMP_CLASS_F32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
@@ -145,6 +169,8 @@ public:
     void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
+    void V_READFIRSTLANE_B32(const GcnInst& inst);
+    void S_BARRIER();
 
     // MIMG
     void IMAGE_GET_RESINFO(const GcnInst& inst);
@@ -153,6 +179,7 @@ public:
     void IMAGE_STORE(const GcnInst& inst);
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
+    void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);
@@ -167,6 +194,6 @@ private:
     static std::array<bool, IR::NumScalarRegs> exec_contexts;
 };
 
-void Translate(IR::Block* block, std::span<const GcnInst> inst_list, Info& info);
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info);
 
 } // namespace Shader::Gcn

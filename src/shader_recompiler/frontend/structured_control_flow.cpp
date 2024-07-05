@@ -187,7 +187,7 @@ std::string DumpExpr(const Statement* stmt) {
         case StatementType::Not:
         case StatementType::Or:
         case StatementType::Variable:
-            throw LogicError("Statement can't be printed");
+            UNREACHABLE_MSG("Statement can't be printed");
         }
     }
     return ret;
@@ -335,7 +335,7 @@ private:
         }
         // Expensive operation:
         if (!AreSiblings(goto_stmt, label_stmt)) {
-            throw LogicError("Goto is not a sibling with the label");
+            UNREACHABLE_MSG("Goto is not a sibling with the label");
         }
         // goto_stmt and label_stmt are guaranteed to be siblings, eliminate
         if (std::next(goto_stmt) == label_stmt) {
@@ -451,7 +451,7 @@ private:
         case StatementType::Loop:
             return MoveOutwardLoop(goto_stmt);
         default:
-            throw LogicError("Invalid outward movement");
+            UNREACHABLE_MSG("Invalid outward movement");
         }
     }
 
@@ -486,7 +486,7 @@ private:
         case StatementType::Loop:
             break;
         default:
-            throw LogicError("Invalid inward movement");
+            UNREACHABLE_MSG("Invalid inward movement");
         }
         Tree& nested_tree{label_nested_stmt->children};
         Statement* const new_goto{pool.Create(Goto{}, variable, label, &*label_nested_stmt)};
@@ -633,7 +633,8 @@ private:
                 if (!stmt.block->is_dummy) {
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
-                    Translate(current_block, inst_list.subspan(start, size), info);
+                    Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),
+                              info);
                 }
                 break;
             }

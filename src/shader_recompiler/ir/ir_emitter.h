@@ -43,6 +43,10 @@ public:
     void Epilogue();
     void Discard();
 
+    void Barrier();
+    void WorkgroupMemoryBarrier();
+    void DeviceMemoryBarrier();
+
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
     void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
@@ -60,11 +64,13 @@ public:
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
+    [[nodiscard]] U32 GetSccLo();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
     void SetVcc(const U1& value);
+    void SetSccLo(const U32& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
 
@@ -74,7 +80,7 @@ public:
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
-    [[nodiscard]] U32U64 ReadShared(int bit_size, bool is_signed, const U32& offset);
+    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
@@ -120,6 +126,7 @@ public:
     [[nodiscard]] F32 FPSin(const F32& value);
     [[nodiscard]] F32 FPExp2(const F32& value);
     [[nodiscard]] F32 FPLog2(const F32& value);
+    [[nodiscard]] F32 FPLdexp(const F32& value, const U32& exp);
     [[nodiscard]] F32F64 FPRecip(const F32F64& value);
     [[nodiscard]] F32F64 FPRecipSqrt(const F32F64& value);
     [[nodiscard]] F32 FPSqrt(const F32& value);
@@ -139,14 +146,16 @@ public:
     [[nodiscard]] U1 FPLessThan(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPGreaterThan(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPIsNan(const F32F64& value);
+    [[nodiscard]] U1 FPIsInf(const F32F64& value);
     [[nodiscard]] U1 FPOrdered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] U1 FPUnordered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] F32F64 FPMin(const F32F64& lhs, const F32F64& rhs);
 
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
+    [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
-    [[nodiscard]] IR::Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
+    [[nodiscard]] Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32 IMul(const U32& a, const U32& b);
     [[nodiscard]] U32 IDiv(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 INeg(const U32U64& value);
@@ -198,6 +207,33 @@ public:
 
     [[nodiscard]] U16U32U64 UConvert(size_t result_bitsize, const U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
+
+    [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMin(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicSMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicUMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicIMax(const Value& handle, const Value& coords,
+                                        const Value& value, bool is_signed, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicDec(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicAnd(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicOr(const Value& handle, const Value& coords, const Value& value,
+                                      TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicXor(const Value& handle, const Value& coords, const Value& value,
+                                       TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
+                                            const Value& value, TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& coords,
                                                const F32& bias, const Value& offset,

@@ -318,4 +318,16 @@ void Translator::S_SUB_U32(const GcnInst& inst) {
     ir.SetScc(ir.Imm1(false));
 }
 
+void Translator::S_GETPC_B64(u32 pc, const GcnInst& inst) {
+    // This only really exists to let resource tracking pass know
+    // there is an inline cbuf.
+    SetDst(inst.dst[0], ir.Imm32(pc));
+}
+
+void Translator::S_ADDC_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), ir.GetSccLo()));
+}
+
 } // namespace Shader::Gcn

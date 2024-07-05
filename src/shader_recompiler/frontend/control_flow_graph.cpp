@@ -149,9 +149,15 @@ void CFG::LinkBlocks() {
             block.end_class = EndClass::Branch;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
             const auto& prev_inst = inst_list[block.end_index - 1];
-            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0 &&
-                prev_inst.control.exp.target != 9) {
-                block.end_class = EndClass::Kill;
+            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0) {
+                if (prev_inst.control.exp.target != 9) {
+                    block.end_class = EndClass::Kill;
+                } else if (const auto& exec_mask = inst_list[block.end_index - 2];
+                           exec_mask.src[0].field == OperandField::ConstZero) {
+                    block.end_class = EndClass::Kill;
+                } else {
+                    block.end_class = EndClass::Exit;
+                }
             } else {
                 block.end_class = EndClass::Exit;
             }

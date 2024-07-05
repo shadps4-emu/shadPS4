@@ -134,13 +134,13 @@ ImageId TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool r
         image_id = slot_images.insert(instance, scheduler, info, cpu_address);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids.size() > 1 ? image_ids[1] : image_ids[0];
+        image_id = image_ids[0];
     }
 
     RegisterMeta(info, image_id);
 
     Image& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::CpuModified)) {
+    if (True(image.flags & ImageFlagBits::CpuModified) && refresh_on_create) {
         RefreshImage(image);
         TrackImage(image, image_id);
     }
@@ -193,7 +193,7 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storag
 ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
                                       const AmdGpu::Liverpool::CbDbExtent& hint) {
     const ImageInfo info{buffer, hint};
-    const ImageId image_id = FindImage(info, buffer.Address(), false);
+    const ImageId image_id = FindImage(info, buffer.Address());
     Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
