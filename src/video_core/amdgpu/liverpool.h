@@ -937,16 +937,8 @@ public:
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
-    void WaitGpuIdle();
-
     bool IsGpuIdle() const {
         return num_submits == 0;
-    }
-
-    void NotifySubmitDone() {
-        std::scoped_lock lk{submit_mutex};
-        submit_done = true;
-        submit_cv.notify_all();
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -1017,7 +1009,6 @@ private:
     u32 num_submits{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
-    std::atomic<bool> submit_done{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

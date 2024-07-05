@@ -26,6 +26,7 @@ enum class InterruptId : u32 {
     Compute6RelMem = 6u,
     GfxEop = 7u,
     GfxFlip = 8u,
+    GpuIdle = 9u,
 };
 
 using IrqHandler = std::function<void(InterruptId)>;
