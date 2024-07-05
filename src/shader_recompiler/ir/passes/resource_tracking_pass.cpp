@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <deque>
 #include <boost/container/small_vector.hpp>
-
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/runtime_info.h"
@@ -244,22 +244,19 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     const IR::Inst* spgpr_base = inst->Arg(0).InstRecursive();
 
     // Retrieve SGPR pair that holds sbase
-    const IR::Inst* sbase0 = spgpr_base->Arg(0).InstRecursive();
-    const IR::Inst* sbase1 = spgpr_base->Arg(1).InstRecursive();
-    while (sbase0->GetOpcode() == IR::Opcode::Phi) {
-        sbase0 = sbase0->Arg(0).TryInstRecursive();
-    }
-    while (sbase1->GetOpcode() == IR::Opcode::Phi) {
-        sbase1 = sbase1->Arg(0).TryInstRecursive();
-    }
-    ASSERT_MSG(sbase0->GetOpcode() == IR::Opcode::GetUserData &&
-                   sbase1->GetOpcode() == IR::Opcode::GetUserData,
-               "Nested resource loads not supported");
-    const IR::ScalarReg base = sbase0->Arg(0).ScalarReg();
+    const auto pred = [](const IR::Inst* inst) -> std::optional<IR::ScalarReg> {
+        if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+            return inst->Arg(0).ScalarReg();
+        }
+        return std::nullopt;
+    };
+    const auto base0 = IR::BreadthFirstSearch(spgpr_base->Arg(0), pred);
+    const auto base1 = IR::BreadthFirstSearch(spgpr_base->Arg(1), pred);
+    ASSERT_MSG(base0 && base1, "Nested resource loads not supported");
 
     // Return retrieved location.
     return SharpLocation{
-        .sgpr_base = u32(base),
+        .sgpr_base = u32(base0.value()),
         .dword_offset = dword_offset,
     };
 }

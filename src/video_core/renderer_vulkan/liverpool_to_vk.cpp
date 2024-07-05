@@ -422,6 +422,13 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Sint) {
         return vk::Format::eR16G16Sint;
     }
+    if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
+        num_format == AmdGpu::NumberFormat::Uscaled) {
+        return vk::Format::eR8G8B8A8Uscaled;
+    }
+    if (data_format == AmdGpu::DataFormat::Format16 && num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eR16Unorm;
+    }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }
 
