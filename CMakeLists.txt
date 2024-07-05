@@ -32,7 +32,6 @@ function(create_target_directory_groups target_name)
     endforeach()
 endfunction()
 
-
 # Setup a custom clang-format target (if clang-format can be found) that will run
 # against all the src files. This should be used before making a pull request.
 # =======================================================================
@@ -42,24 +41,6 @@ find_program(CLANG_FORMAT
     NAMES clang-format${CLANG_FORMAT_POSTFIX}
           clang-format
     PATHS ${PROJECT_BINARY_DIR}/externals)
-# if find_program doesn't find it, try to download from externals
-if (NOT CLANG_FORMAT)
-    if (WIN32)
-        message(STATUS "Clang format not found! Downloading...")
-        set(CLANG_FORMAT "${PROJECT_BINARY_DIR}/externals/clang-format${CLANG_FORMAT_POSTFIX}.exe")
-        file(DOWNLOAD
-            https://github.com/citra-emu/ext-windows-bin/raw/master/clang-format${CLANG_FORMAT_POSTFIX}.exe
-            "${CLANG_FORMAT}" SHOW_PROGRESS
-            STATUS DOWNLOAD_SUCCESS)
-        if (NOT DOWNLOAD_SUCCESS EQUAL 0)
-            message(WARNING "Could not download clang format! Disabling the clang format target")
-            file(REMOVE ${CLANG_FORMAT})
-            unset(CLANG_FORMAT)
-        endif()
-    else()
-        message(WARNING "Clang format not found! Disabling the clang format target")
-    endif()
-endif()
 
 if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
