@@ -438,9 +438,7 @@ s32 saveDataMount(u32 user_id, char* dir_name, u32 mount_mode,
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF |
-        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
-    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
-        ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF: {
+        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
         auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
         if (std::filesystem::exists(mount_dir)) {
             std::strncpy(mount_result->mount_point.data, g_mount_point.c_str(), 16);
