@@ -52,7 +52,7 @@ int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
 
 int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* value) {
     if (value == nullptr)
-        return 0x80D90002;
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     auto* param_sfo = Common::Singleton<PSF>::Instance();
     switch (paramId) {
     case ORBIS_APP_CONTENT_APPPARAM_ID_SKU_FLAG:
@@ -70,9 +70,18 @@ int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, 
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_4:
         *value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
         break;
+    default:
+        LOG_ERROR(Lib_AppContent, " paramId = {}, value = {} paramId is not valid", paramId,
+                  *value);
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
-    LOG_ERROR(Lib_AppContent, " paramId = {}, value = {}", paramId, *value);
-    return *value == -1 ? 0x80D90005 : ORBIS_OK;
+    if (*value == -1) {
+        LOG_ERROR(Lib_AppContent,
+                  " paramId = {}, value = {} value is not valid can't read param.sfo?", paramId,
+                  *value);
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAppContentAppParamGetString() {
@@ -120,8 +129,11 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfo() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentGetAddcontInfoList() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
+                                                 OrbisAppContentAddcontInfo* list, u32 list_num,
+                                                 u32* hit_num) {
+    *hit_num = 0;
+    LOG_ERROR(Lib_AppContent, "(DUMMY) called");
     return ORBIS_OK;
 }
 

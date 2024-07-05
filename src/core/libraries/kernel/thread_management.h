@@ -58,6 +58,7 @@ struct PthreadInternal {
     std::atomic_bool is_free;
     using Destructor = std::pair<OrbisPthreadKey, PthreadKeyDestructor>;
     std::vector<Destructor> key_destructors;
+    int prio;
 };
 
 struct PthreadAttrInternal {

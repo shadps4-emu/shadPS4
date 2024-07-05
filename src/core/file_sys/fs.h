@@ -22,7 +22,7 @@ public:
     virtual ~MntPoints() = default;
 
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder);
-    void Unmount(const std::string& path);
+    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
     void UnmountAll();
     std::string GetHostDirectory(const std::string& guest_directory);
     std::string GetHostFile(const std::string& guest_file);
