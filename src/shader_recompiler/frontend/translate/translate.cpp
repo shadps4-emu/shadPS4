@@ -396,6 +396,7 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::IMAGE_SAMPLE_L:
         case Opcode::IMAGE_SAMPLE_C_O:
         case Opcode::IMAGE_SAMPLE_B:
+        case Opcode::IMAGE_SAMPLE_C_LZ_O:
             translator.IMAGE_SAMPLE(inst);
             break;
         case Opcode::IMAGE_ATOMIC_ADD:

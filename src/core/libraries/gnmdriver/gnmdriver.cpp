@@ -1029,7 +1029,7 @@ s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marke
 
     if (cmdbuf && marker) {
         const auto len = std::strlen(marker);
-        const u32 packet_size = ((len + 8) >> 2) + ((len + 0xc) >> 3);
+        const u32 packet_size = ((len + 8) >> 2) + ((len + 0xc) >> 3) * 2;
         if (packet_size + 2 == size) {
             auto* nop = reinterpret_cast<PM4CmdNop*>(cmdbuf);
             nop->header =

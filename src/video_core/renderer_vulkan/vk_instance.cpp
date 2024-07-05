@@ -109,16 +109,14 @@ std::string Instance::GetDriverVersionName() {
 
 bool Instance::CreateDevice() {
     const vk::StructureChain feature_chain = physical_device.getFeatures2<
-        vk::PhysicalDeviceFeatures2, vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
-        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT,
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR,
-        vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceIndexTypeUint8FeaturesEXT,
-        vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
-        vk::PhysicalDevicePipelineCreationCacheControlFeaturesEXT,
-        vk::PhysicalDeviceColorWriteEnableFeaturesEXT,
-        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
+        vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
+        vk::PhysicalDeviceColorWriteEnableFeaturesEXT, vk::PhysicalDeviceVulkan12Features,
+        vk::PhysicalDeviceVulkan13Features,
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+        vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
     const vk::StructureChain properties_chain =
         physical_device.getProperties2<vk::PhysicalDeviceProperties2,
                                        vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
@@ -130,7 +128,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 13> enabled_extensions;
+    boost::container::static_vector<const char*, 20> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -156,7 +154,8 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
-    add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
+    workgroup_memory_explicit_layout =
+        add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
@@ -190,6 +189,8 @@ bool Instance::CreateDevice() {
         .pQueuePriorities = queue_priorities.data(),
     };
 
+    const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
+    const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
             .queueCreateInfoCount = 1u,
@@ -200,32 +201,33 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceFeatures2{
             .features{
                 .robustBufferAccess = features.robustBufferAccess,
-                .independentBlend = true,
+                .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
-                .multiViewport = true,
+                .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
-                .shaderImageGatherExtended = true,
-                .shaderStorageImageMultisample = true,
+                .shaderImageGatherExtended = features.shaderImageGatherExtended,
+                .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,
+                .shaderStorageImageMultisample = features.shaderStorageImageMultisample,
                 .shaderClipDistance = features.shaderClipDistance,
-                .shaderInt16 = true,
+                .shaderInt16 = features.shaderInt16,
             },
         },
         vk::PhysicalDeviceVulkan11Features{
             .shaderDrawParameters = true,
         },
         vk::PhysicalDeviceVulkan12Features{
-            .shaderFloat16 = true,
-            .scalarBlockLayout = true,
-            .uniformBufferStandardLayout = true,
-            .hostQueryReset = true,
-            .timelineSemaphore = true,
+            .shaderFloat16 = vk12_features.shaderFloat16,
+            .scalarBlockLayout = vk12_features.scalarBlockLayout,
+            .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
+            .hostQueryReset = vk12_features.hostQueryReset,
+            .timelineSemaphore = vk12_features.timelineSemaphore,
         },
         vk::PhysicalDeviceVulkan13Features{
-            .shaderDemoteToHelperInvocation = true,
-            .dynamicRendering = true,
-            .maintenance4 = true,
+            .shaderDemoteToHelperInvocation = vk13_features.shaderDemoteToHelperInvocation,
+            .dynamicRendering = vk13_features.dynamicRendering,
+            .maintenance4 = vk13_features.maintenance4,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,

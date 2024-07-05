@@ -74,21 +74,19 @@ Id EmitContext::Def(const IR::Value& value) {
 void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
-    F16[1] = Name(TypeFloat(16), "f16_id");
+    if (info.uses_fp16) {
+        F16[1] = Name(TypeFloat(16), "f16_id");
+        U16 = Name(TypeUInt(16), "u16_id");
+    }
     F32[1] = Name(TypeFloat(32), "f32_id");
-    // F64[1] = Name(TypeFloat(64), "f64_id");
     S32[1] = Name(TypeSInt(32), "i32_id");
     U32[1] = Name(TypeUInt(32), "u32_id");
-    // U8 = Name(TypeSInt(8), "u8");
-    // S8 = Name(TypeUInt(8), "s8");
-    U16 = Name(TypeUInt(16), "u16_id");
-    // S16 = Name(TypeSInt(16), "s16_id");
-    // U64 = Name(TypeUInt(64), "u64_id");
 
     for (u32 i = 2; i <= 4; i++) {
-        F16[i] = Name(TypeVector(F16[1], i), fmt::format("f16vec{}_id", i));
+        if (info.uses_fp16) {
+            F16[i] = Name(TypeVector(F16[1], i), fmt::format("f16vec{}_id", i));
+        }
         F32[i] = Name(TypeVector(F32[1], i), fmt::format("f32vec{}_id", i));
-        // F64[i] = Name(TypeVector(F64[1], i), fmt::format("f64vec{}_id", i));
         S32[i] = Name(TypeVector(S32[1], i), fmt::format("i32vec{}_id", i));
         U32[i] = Name(TypeVector(U32[1], i), fmt::format("u32vec{}_id", i));
         U1[i] = Name(TypeVector(U1[1], i), fmt::format("bvec{}_id", i));

@@ -26,8 +26,26 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::WriteSharedU16:
         info.uses_shared_u16 = true;
         break;
+    case IR::Opcode::ConvertF32F16:
+    case IR::Opcode::BitCastF16U16:
+        info.uses_fp16 = true;
+        break;
+    case IR::Opcode::ImageWrite:
+        info.has_storage_images = true;
+        break;
     case IR::Opcode::QuadShuffle:
         info.uses_group_quad = true;
+        break;
+    case IR::Opcode::Discard:
+        info.has_discard = true;
+        break;
+    case IR::Opcode::ImageGather:
+    case IR::Opcode::ImageGatherDref:
+        info.has_image_gather = true;
+        break;
+    case IR::Opcode::ImageQueryDimensions:
+    case IR::Opcode::ImageQueryLod:
+        info.has_image_query = true;
         break;
     default:
         break;
