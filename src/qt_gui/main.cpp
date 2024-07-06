@@ -8,6 +8,9 @@
 #include "qt_gui/game_install_dialog.h"
 #include "qt_gui/main_window.h"
 
+#include <emulator.h>
+#include <fmt/core.h>
+
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
