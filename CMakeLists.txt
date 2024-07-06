@@ -36,12 +36,6 @@ endfunction()
 # against all the src files. This should be used before making a pull request.
 # =======================================================================
 
-set(CLANG_FORMAT_POSTFIX "-17")
-find_program(CLANG_FORMAT
-    NAMES clang-format${CLANG_FORMAT_POSTFIX}
-          clang-format
-    PATHS ${PROJECT_BINARY_DIR}/externals)
-
 if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
     set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
@@ -576,7 +570,5 @@ add_dependencies(shadps4 host_shaders)
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 if (ENABLE_QT_GUI)
-    set_target_properties(shadps4 PROPERTIES
-#        WIN32_EXECUTABLE ON
-        MACOSX_BUNDLE ON)
+    set_target_properties(shadps4 PROPERTIES WIN32_EXECUTABLE ON)
 endif()
