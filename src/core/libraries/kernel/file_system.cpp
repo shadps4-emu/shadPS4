@@ -160,6 +160,38 @@ size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
+int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
+    if (path == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
+    std::string host_path = mnt->GetHostFile(path);
+
+    if (host_path.empty()) {
+        return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    if (std::filesystem::is_directory(host_path)) {
+        return SCE_KERNEL_ERROR_EPERM;
+    }
+
+    auto* file = h->getFile(host_path);
+    if (file == nullptr) {
+        return SCE_KERNEL_ERROR_EIO;
+    }
+
+    file->f.Close();
+    if (!std::filesystem::remove(host_path)) {
+        return SCE_KERNEL_ERROR_ENOENT;
+    }
+
+    LOG_INFO(Kernel_Fs, "Deleted {}", path);
+    return SCE_OK;
+}
+
 size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -359,6 +391,31 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
+    auto* file = h->GetFile(fd);
+
+    if (file == nullptr) {
+        return SCE_KERNEL_ERROR_EBADF;
+    }
+
+    if (file->m_host_name.empty()) {
+        return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    // CUSA05289 (PSPHD emulator): Tries to resize a temporary file after deleting it
+    try {
+        // TODO: Check for sufficient space?
+        std::filesystem::resize_file(file->m_host_name, length);
+    } catch (std::filesystem::filesystem_error& e) {
+        LOG_ERROR(Kernel_Fs, "Error: {}", e.what());
+    }
+
+    return SCE_OK;
+}
+
 static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     // TODO error codes
     ASSERT(buf != nullptr);
@@ -375,7 +432,7 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     static int fileno = 1000; // random
     OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
     sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
-                                  // hash or something?
+    // hash or something?
     sce_ent->d_reclen = sizeof(OrbisKernelDirent);
     sce_ent->d_type = (entry.isFile ? 8 : 4);
     sce_ent->d_namlen = str_size;
@@ -438,6 +495,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
+    LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
 
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
@@ -446,6 +504,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
+    LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
