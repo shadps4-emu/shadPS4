@@ -147,7 +147,7 @@ public:
 
 #else
             linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
-                       QString::fromStdString(m_games[itemID].name);
+                       QString::fromStdString(m_games[itemID].name) + ".desktop";
 #endif
 
             // Convert the icon to .ico if necessary
@@ -311,7 +311,7 @@ private:
         QTextStream out(&shortcutFile);
         out << "[Desktop Entry]\n";
         out << "Version=1.0\n";
-        out << "Name=" << QFileInfo(targetPath).baseName() << "\n";
+        out << "Name=" << QFileInfo(linkPath).baseName() << "\n";
         out << "Exec=" << QCoreApplication::applicationFilePath() << " \"" << targetPath << "\"\n";
         out << "Icon=" << iconPath << "\n";
         out << "Terminal=false\n";
