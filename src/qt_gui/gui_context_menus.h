@@ -147,7 +147,7 @@ public:
 
 #else
             linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
-                       QString::fromStdString(m_games[itemID].name);
+                       QString::fromStdString(m_games[itemID].name) + ".desktop";
 #endif
 
             // Convert the icon to .ico if necessary
