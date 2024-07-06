@@ -3,14 +3,30 @@
 
 #pragma once
 
+#include <QCoreApplication>
 #include <QDesktopServices>
+#include <QFile>
 #include <QHeaderView>
+#include <QImage>
 #include <QMenu>
+#include <QMessageBox>
+#include <QPixmap>
+#include <QStandardPaths>
 #include <QTableWidget>
+#include <QTextStream>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+
 #include "game_info.h"
 #include "trophy_viewer.h"
+
+#ifdef Q_OS_WIN
+#include <ShlObj.h>
+#include <Windows.h>
+#include <objbase.h>
+#include <shlguid.h>
+#include <shobjidl.h>
+#endif
 
 class GuiContextMenus : public QObject {
     Q_OBJECT
@@ -27,13 +43,16 @@ public:
 
         // Setup menu.
         QMenu menu(widget);
+        QAction createShortcut("Create Shortcut", widget);
         QAction openFolder("Open Game Folder", widget);
         QAction openSfoViewer("SFO Viewer", widget);
         QAction openTrophyViewer("Trophy Viewer", widget);
 
+        menu.addAction(&createShortcut);
         menu.addAction(&openFolder);
         menu.addAction(&openSfoViewer);
         menu.addAction(&openTrophyViewer);
+
         // Show menu.
         auto selected = menu.exec(global_pos);
         if (!selected) {
@@ -105,6 +124,69 @@ public:
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
                     [widget, trophyViewer]() { trophyViewer->deleteLater(); });
         }
+
+        if (selected == &createShortcut) {
+            QString targetPath = QString::fromStdString(m_games[itemID].path);
+            QString ebootPath = targetPath + "/eboot.bin";
+
+            // Get the full path to the icon
+            QString iconPath = QString::fromStdString(m_games[itemID].icon_path);
+            QFileInfo iconFileInfo(iconPath);
+            QString icoPath = iconFileInfo.absolutePath() + "/" + iconFileInfo.baseName() + ".ico";
+
+            // Path to shortcut/link
+            QString linkPath;
+
+            // Path to the shadps4.exe executable
+            QString exePath;
+#ifdef Q_OS_WIN
+            linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
+                       QString::fromStdString(m_games[itemID].name) + ".lnk";
+
+            exePath = QCoreApplication::applicationFilePath().replace("\\", "/");
+
+#else
+            linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
+                       QString::fromStdString(m_games[itemID].name);
+#endif
+
+            // Convert the icon to .ico if necessary
+            if (iconFileInfo.suffix().toLower() == "png") {
+                // Convert icon from PNG to ICO
+                if (convertPngToIco(iconPath, icoPath)) {
+
+#ifdef Q_OS_WIN
+                    if (createShortcutWin(linkPath, ebootPath, icoPath, exePath)) {
+#else
+                    if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
+#endif
+                        QMessageBox::information(
+                            nullptr, "Shortcut Creation",
+                            QString("Shortcut created successfully:\n %1").arg(linkPath));
+                    } else {
+                        QMessageBox::critical(
+                            nullptr, "Error",
+                            QString("Error creating shortcut:\n %1").arg(linkPath));
+                    }
+                } else {
+                    QMessageBox::critical(nullptr, "Error", "Failed to convert icon.");
+                }
+            } else {
+                // If the icon is already in ICO format, we just create the shortcut
+#ifdef Q_OS_WIN
+                if (createShortcutWin(linkPath, ebootPath, iconPath, exePath)) {
+#else
+                if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
+#endif
+                    QMessageBox::information(
+                        nullptr, "Shortcut Creation",
+                        QString("Shortcut created successfully:\n %1").arg(linkPath));
+                } else {
+                    QMessageBox::critical(nullptr, "Error",
+                                          QString("Error creating shortcut:\n %1").arg(linkPath));
+                }
+            }
+        }
     }
 
     int GetRowIndex(QTreeWidget* treeWidget, QTreeWidgetItem* item) {
@@ -155,4 +237,88 @@ public:
             InstallDragDropPkg(path, 1, 1);
         }
     }
+
+private:
+    bool convertPngToIco(const QString& pngFilePath, const QString& icoFilePath) {
+        // Load the PNG image
+        QImage image(pngFilePath);
+        if (image.isNull()) {
+            return false;
+        }
+
+        // Scale the image to the default icon size (256x256 pixels)
+        QImage scaledImage =
+            image.scaled(QSize(256, 256), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        // Convert the image to QPixmap
+        QPixmap pixmap = QPixmap::fromImage(scaledImage);
+
+        // Save the pixmap as an ICO file
+        if (pixmap.save(icoFilePath, "ICO")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+#ifdef Q_OS_WIN
+    bool createShortcutWin(const QString& linkPath, const QString& targetPath,
+                           const QString& iconPath, const QString& exePath) {
+        CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+        // Create the ShellLink object
+        IShellLink* pShellLink = nullptr;
+        HRESULT hres = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+                                        IID_IShellLink, (LPVOID*)&pShellLink);
+        if (SUCCEEDED(hres)) {
+            // Defines the path to the program executable
+            pShellLink->SetPath((LPCWSTR)exePath.utf16());
+
+            // Sets the home directory ("Start in")
+            pShellLink->SetWorkingDirectory((LPCWSTR)QFileInfo(exePath).absolutePath().utf16());
+
+            // Set arguments, eboot.bin file location
+            QString arguments = QString("\"%1\"").arg(targetPath);
+            pShellLink->SetArguments((LPCWSTR)arguments.utf16());
+
+            // Set the icon for the shortcut
+            pShellLink->SetIconLocation((LPCWSTR)iconPath.utf16(), 0);
+
+            // Save the shortcut
+            IPersistFile* pPersistFile = nullptr;
+            hres = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&pPersistFile);
+            if (SUCCEEDED(hres)) {
+                hres = pPersistFile->Save((LPCWSTR)linkPath.utf16(), TRUE);
+                pPersistFile->Release();
+            }
+            pShellLink->Release();
+        }
+
+        CoUninitialize();
+
+        return SUCCEEDED(hres);
+    }
+#else
+    bool createShortcutLinux(const QString& linkPath, const QString& targetPath,
+                             const QString& iconPath) {
+        QFile shortcutFile(linkPath);
+        if (!shortcutFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::critical(nullptr, "Error",
+                                  QString("Error creating shortcut:\n %1").arg(linkPath));
+            return false;
+        }
+
+        QTextStream out(&shortcutFile);
+        out << "[Desktop Entry]\n";
+        out << "Version=1.0\n";
+        out << "Name=" << QFileInfo(targetPath).baseName() << "\n";
+        out << "Exec=" << QCoreApplication::applicationFilePath() << " \"" << targetPath << "\"\n";
+        out << "Icon=" << iconPath << "\n";
+        out << "Terminal=false\n";
+        out << "Type=Application\n";
+        shortcutFile.close();
+
+        return true;
+    }
+#endif
 };
