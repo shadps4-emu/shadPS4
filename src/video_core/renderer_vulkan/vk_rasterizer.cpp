@@ -54,6 +54,13 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     UpdateDynamicState(*pipeline);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+
+    const u32 step_rates[] = {
+        regs.vgt_instance_step_rate_0,
+        regs.vgt_instance_step_rate_1,
+    };
+    cmdbuf.pushConstants(pipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0u,
+                         sizeof(step_rates), &step_rates);
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {

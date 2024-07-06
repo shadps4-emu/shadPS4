@@ -135,15 +135,33 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(index)};
-        if (!ValidId(param.id)) {
-            // Attribute is disabled or varying component is not written
-            return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
-        }
-        if (param.num_components > 1) {
-            const Id pointer{ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
-            return ctx.OpLoad(param.component_type, pointer);
+        if (param.buffer_handle < 0) {
+            if (!ValidId(param.id)) {
+                // Attribute is disabled or varying component is not written
+                return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
+            }
+
+            if (param.num_components > 1) {
+                const Id pointer{
+                    ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
+                return ctx.OpLoad(param.component_type, pointer);
+            } else {
+                return ctx.OpLoad(param.component_type, param.id);
+            }
         } else {
-            return ctx.OpLoad(param.component_type, param.id);
+            const auto rate_idx = param.id.value == 0 ? ctx.u32_zero_value : ctx.u32_one_value;
+            const auto step_rate = ctx.OpLoad(
+                ctx.U32[1],
+                ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
+                                  ctx.instance_step_rates, rate_idx));
+            const auto offset = ctx.OpIAdd(
+                ctx.U32[1],
+                ctx.OpIMul(
+                    ctx.U32[1],
+                    ctx.OpUDiv(ctx.U32[1], ctx.OpLoad(ctx.U32[1], ctx.instance_id), step_rate),
+                    ctx.ConstU32(param.num_components)),
+                ctx.ConstU32(comp));
+            return EmitReadConstBuffer(ctx, param.buffer_handle, offset);
         }
     }
     switch (attr) {
