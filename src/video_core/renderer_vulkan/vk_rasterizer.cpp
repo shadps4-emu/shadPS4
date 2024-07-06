@@ -106,6 +106,12 @@ void Rasterizer::BeginRendering() {
             continue;
         }
 
+        // If the color buffer is still bound but rendering to it is disabled by the target mask,
+        // we need to prevent the render area from being affected by unbound render target extents.
+        if (!regs.color_target_mask.GetMask(col_buf_id)) {
+            continue;
+        }
+
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
         const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
         const auto& image = texture_cache.GetImage(image_view.image_id);
