@@ -313,7 +313,7 @@ private:
         out << "Version=1.0\n";
         out << "Name=" << QFileInfo(targetPath).baseName() << "\n";
         out << "Exec=" << QCoreApplication::applicationFilePath() << " \"" << targetPath << "\"\n";
-        out << "Icon=" << iconPath.replace("\\", "/") << "\n";
+        out << "Icon=" << iconPath << "\n";
         out << "Terminal=false\n";
         out << "Type=Application\n";
         shortcutFile.close();
