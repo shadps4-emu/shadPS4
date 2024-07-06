@@ -393,8 +393,6 @@ s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
 
 int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
     auto* file = h->GetFile(fd);
 
     if (file == nullptr) {
