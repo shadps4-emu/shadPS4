@@ -29,7 +29,6 @@ public:
 
 private:
     void LoadSystemModules(const std::filesystem::path& file);
-    void PrintSystemInfo();
 
     Core::MemoryManager* memory;
     Input::GameController* controller = Common::Singleton<Input::GameController>::Instance();

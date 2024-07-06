@@ -140,6 +140,3 @@ option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
 option(TRACY_FIBERS "" ON) # For AmdGpu frontend profiling
 add_subdirectory(tracy)
-
-# hwinfo
-add_subdirectory(hwinfo)
