@@ -13,7 +13,6 @@
 #include "core/libraries/libs.h"
 #include "libkernel.h"
 
-
 namespace Libraries::Kernel {
 
 std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::string& path) {
