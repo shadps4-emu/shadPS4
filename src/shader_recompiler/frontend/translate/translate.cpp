@@ -876,7 +876,7 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             translator.V_MAD_F32(inst);
             break;
         case Opcode::V_MAX_LEGACY_F32:
-            translator.V_MAX3_F32(inst);
+            translator.V_MAX_F32(inst);
             break;
         case Opcode::V_RSQ_LEGACY_F32:
         case Opcode::V_RSQ_CLAMP_F32:
