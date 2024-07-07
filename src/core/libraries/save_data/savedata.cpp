@@ -177,12 +177,11 @@ int PS4_SYSV_ABI sceSaveDataDeleteUser() {
 
 int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* cond,
                                           OrbisSaveDataDirNameSearchResult* result) {
-    if (cond == nullptr || cond->dirName == nullptr)
-        return ORBIS_SAVE_DATA_ERROR_PARAMETER;
-    LOG_ERROR(Lib_SaveData,
-              "TODO sceSaveDataDirNameSearch: search_dir_name = {}, key = {}, result = {}",
-              cond->dirName->data, (int)cond->key, (result->infos == nullptr));
-
+    if (cond != nullptr && cond->dirName != nullptr) {
+        LOG_ERROR(Lib_SaveData,
+                  "TODO sceSaveDataDirNameSearch: search_dir_name = {}, key = {}, result = {}",
+                  cond->dirName->data, (int)cond->key, (result->infos == nullptr));
+    }
     return ORBIS_OK;
 }
 
