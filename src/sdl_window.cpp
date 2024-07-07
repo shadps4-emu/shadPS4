@@ -15,7 +15,7 @@
 
 namespace Frontend {
 
-void WindowSDL::CursorVisibility(bool cursor_visibility) {
+void WindowSDL::SetCursorVisibility(bool cursor_visibility) {
     if (cursor_visibility) {
         SDL_HideCursor();
     } else {
