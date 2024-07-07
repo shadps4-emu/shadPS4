@@ -7,9 +7,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 Clone the repository recursively:
 ```
-git clone https://github.com/shadps4-emu/shadPS4.git
-cd shadPS4/
-git submodule update --init --recursive
+git clone --recursive https://github.com/shadps4-emu/shadPS4.git
+cd shadPS4
 ```
 
 Generate the build directory in the shadPS4 directory:
