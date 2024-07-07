@@ -68,6 +68,8 @@ public:
             return "Tls";
         case SymbolType::NoType:
             return "NoType";
+        default:
+            return "Invalid";
         }
     }
 
