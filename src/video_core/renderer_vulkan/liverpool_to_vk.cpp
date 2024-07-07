@@ -222,7 +222,6 @@ vk::CompareOp DepthCompare(AmdGpu::DepthCompare comp) {
         return vk::CompareOp::eGreaterOrEqual;
     case AmdGpu::DepthCompare::Always:
         return vk::CompareOp::eAlways;
-    /// Missing AMG Gpu default statement
     default:
         UNREACHABLE_MSG("Unknown depth compare op {}", u32(comp));
     }
