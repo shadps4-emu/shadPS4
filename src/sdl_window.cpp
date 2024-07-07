@@ -11,8 +11,17 @@
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+#include <SDL3/SDL_mouse.h>
 
 namespace Frontend {
+
+void WindowSDL::CursorVisibility(bool cursor_visibility) {
+    if (cursor_visibility) {
+        SDL_HideCursor();
+    } else {
+        SDL_ShowCursor();
+    }
+}
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_)
     : width{width_}, height{height_}, controller{controller_} {
@@ -36,6 +45,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
 
     SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
+    CursorVisibility(true);
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
