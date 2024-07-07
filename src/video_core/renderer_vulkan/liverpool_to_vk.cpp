@@ -222,6 +222,8 @@ vk::CompareOp DepthCompare(AmdGpu::DepthCompare comp) {
         return vk::CompareOp::eGreaterOrEqual;
     case AmdGpu::DepthCompare::Always:
         return vk::CompareOp::eAlways;
+    default:
+        UNREACHABLE();
     }
 }
 
