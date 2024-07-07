@@ -224,6 +224,7 @@ vk::CompareOp DepthCompare(AmdGpu::DepthCompare comp) {
         return vk::CompareOp::eAlways;
     default:
         UNREACHABLE_MSG("Unknown depth compare op {}", u32(comp));
+        UNREACHABLE();
     }
 }
 
