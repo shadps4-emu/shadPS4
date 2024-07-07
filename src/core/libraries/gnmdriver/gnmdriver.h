@@ -75,7 +75,7 @@ int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery();
 int PS4_SYSV_ABI sceGnmDriverTraceInProgress();
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture();
 int PS4_SYSV_ABI sceGnmEndWorkload();
-int PS4_SYSV_ABI sceGnmFindResourcesPublic();
+s32 PS4_SYSV_ABI sceGnmFindResourcesPublic();
 void PS4_SYSV_ABI sceGnmFlushGarlic();
 int PS4_SYSV_ABI sceGnmGetCoredumpAddress();
 int PS4_SYSV_ABI sceGnmGetCoredumpMode();

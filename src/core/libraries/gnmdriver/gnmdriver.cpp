@@ -872,9 +872,9 @@ int PS4_SYSV_ABI sceGnmEndWorkload() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmFindResourcesPublic() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmFindResourcesPublic() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // not available in retail FW
 }
 
 void PS4_SYSV_ABI sceGnmFlushGarlic() {
@@ -1330,7 +1330,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     if (shader_id > 1) {
         LOG_ERROR(Lib_GnmDriver, "Unknown shader id {}", shader_id);
-        return 0x8eee00ff;
+        return ORBIS_GNM_ERROR_FAILURE;
     }
 
     // clang-format off
@@ -1400,7 +1400,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     if (shader_id != 0) {
         LOG_ERROR(Lib_GnmDriver, "Unknown shader id {}", shader_id);
-        return 0x8eee00ff;
+        return ORBIS_GNM_ERROR_FAILURE;
     }
 
     // A fullscreen triangle with one uv set
