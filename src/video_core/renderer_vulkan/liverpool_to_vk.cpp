@@ -222,6 +222,9 @@ vk::CompareOp DepthCompare(AmdGpu::DepthCompare comp) {
         return vk::CompareOp::eGreaterOrEqual;
     case AmdGpu::DepthCompare::Always:
         return vk::CompareOp::eAlways;
+    /// Missing AMG Gpu default statement
+    default:
+        throw std::invalid_argument("Unsupported DeepCompare");
     }
 }
 
