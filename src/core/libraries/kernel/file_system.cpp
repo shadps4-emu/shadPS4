@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
+#include <cstring>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
@@ -10,8 +12,7 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
 #include "libkernel.h"
-#include <cstdlib>
-#include <cstring>
+
 
 namespace Libraries::Kernel {
 
