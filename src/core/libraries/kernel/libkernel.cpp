@@ -295,8 +295,9 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
     return 0;
 }
 
-char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
-    char* path = "sys";
+/// Naomi Rework (Const)
+const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
+    const char* path = "sys";
     return path;
 }
 
