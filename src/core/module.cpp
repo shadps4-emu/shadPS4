@@ -183,6 +183,27 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             }
             break;
         }
+        case PT_INTERP: {
+            LOG_INFO(Core_Linker, "Interpreter Path Segment (NEED IMPLEMENT)");
+
+            const char* interpreter_path = reinterpret_cast<const char*>(base_virtual_addr + elf_pheader[i].p_vaddr);
+            LOG_INFO(Core_Linker, "Interpreter Path: {}", interpreter_path);
+            break;
+        }
+        case PT_SCE_COMMENT: {
+            LOG_INFO(Core_Linker, "SCE Comment Segment (NEED IMPLEMENT)");
+
+            const char* sce_comment = reinterpret_cast<const char*>(base_virtual_addr + elf_pheader[i].p_vaddr);
+            LOG_INFO(Core_Linker, "SCE Comment: {}", sce_comment);
+            break;
+        }
+        case PT_SCE_LIBVERSION: {
+            LOG_INFO(Core_Linker, "SCE Library Version Segment (NEED IMPLEMENT)");
+
+            const char* sce_libvers = reinterpret_cast<const char*>(base_virtual_addr + elf_pheader[i].p_vaddr);
+            LOG_INFO(Core_Linker, "SCE Library Version: {}", sce_libvers);
+            break;
+        }
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }
