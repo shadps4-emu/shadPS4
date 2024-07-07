@@ -23,7 +23,7 @@ cd build/
 
 Use make to build the project:
 ```
-cmake /"PATH"/"TO"/"DIRECTORY"/shadPS4/ && make -j$(nproc)
+cmake --build . --parallel
 ```
 
 Now run the emulator:
