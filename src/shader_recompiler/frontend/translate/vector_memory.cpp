@@ -165,13 +165,14 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
         if (!flags.test(MimgModifier::Pcf)) {
             return ir.ImageGather(handle, body, offset, {}, info);
         }
+        ASSERT(mimg.dmask & 1); // should be always 1st (R) component
         return ir.ImageGatherDref(handle, body, offset, {}, dref, info);
     }();
 
+    // For gather4 instructions dmask selects which component to read and must have
+    // only one bit set to 1
+    ASSERT_MSG(std::popcount(mimg.dmask) == 1, "Unexpected bits in gather dmask");
     for (u32 i = 0; i < 4; i++) {
-        if (((mimg.dmask >> i) & 1) == 0) {
-            continue;
-        }
         const IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
         ir.SetVectorReg(dest_reg++, value);
     }

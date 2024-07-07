@@ -183,7 +183,7 @@ void PipelineCache::RefreshGraphicsKey() {
     int remapped_cb{};
     for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
-        if (!col_buf || skip_cb_binding) {
+        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
             continue;
         }
         const auto base_format =

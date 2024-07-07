@@ -54,6 +54,13 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     UpdateDynamicState(*pipeline);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+
+    const u32 step_rates[] = {
+        regs.vgt_instance_step_rate_0,
+        regs.vgt_instance_step_rate_1,
+    };
+    cmdbuf.pushConstants(pipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0u,
+                         sizeof(step_rates), &step_rates);
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
@@ -96,6 +103,12 @@ void Rasterizer::BeginRendering() {
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
+            continue;
+        }
+
+        // If the color buffer is still bound but rendering to it is disabled by the target mask,
+        // we need to prevent the render area from being affected by unbound render target extents.
+        if (!regs.color_target_mask.GetMask(col_buf_id)) {
             continue;
         }
 
