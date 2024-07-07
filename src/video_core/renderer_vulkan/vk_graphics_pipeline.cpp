@@ -30,12 +30,19 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         stages[i] = *infos[i];
     }
     BuildDescSetLayout();
+
+    const vk::PushConstantRange push_constants = {
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .offset = 0,
+        .size = 2 * sizeof(u32),
+    };
+
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 1U,
         .pSetLayouts = &set_layout,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &push_constants,
     };
     pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
 
@@ -43,6 +50,12 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> attributes;
     const auto& vs_info = stages[0];
     for (const auto& input : vs_info.vs_inputs) {
+        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+            // Skip attribute binding as the data will be pulled by shader
+            continue;
+        }
+
         const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         attributes.push_back({
             .location = input.binding,
@@ -420,6 +433,11 @@ void GraphicsPipeline::BindVertexBuffers(StreamBuffer& staging) const {
     // Calculate buffers memory overlaps
     boost::container::static_vector<BufferRange, MaxVertexBufferCount> ranges{};
     for (const auto& input : vs_info.vs_inputs) {
+        if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
+            input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
+            continue;
+        }
+
         const auto& buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         if (buffer.GetSize() == 0) {
             continue;

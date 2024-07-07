@@ -171,17 +171,47 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
 
 void EmitContext::DefineInputs(const Info& info) {
     switch (stage) {
-    case Stage::Vertex:
+    case Stage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
+        instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
+
+        // Create push constants block for instance steps rates
+        const Id struct_type{Name(TypeStruct(U32[1], U32[1]), "instance_step_rates")};
+        Decorate(struct_type, spv::Decoration::Block);
+        MemberName(struct_type, 0, "sr0");
+        MemberName(struct_type, 1, "sr1");
+        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+        MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
+        instance_step_rates = DefineVar(struct_type, spv::StorageClass::PushConstant);
+        Name(instance_step_rates, "step_rates");
+        interfaces.push_back(instance_step_rates);
+
         for (const auto& input : info.vs_inputs) {
             const Id type{GetAttributeType(*this, input.fmt)};
-            const Id id{DefineInput(type, input.binding)};
-            Name(id, fmt::format("vs_in_attr{}", input.binding));
-            input_params[input.binding] = GetAttributeInfo(input.fmt, id);
-            interfaces.push_back(id);
+            if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
+                input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
+
+                const u32 rate_idx =
+                    input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ? 0
+                                                                                             : 1;
+                // Note that we pass index rather than Id
+                input_params[input.binding] = {
+                    rate_idx, input_u32, U32[1], input.num_components, input.instance_data_buf,
+                };
+            } else {
+                Id id{DefineInput(type, input.binding)};
+                if (input.instance_step_rate == Info::VsInput::InstanceIdType::Plain) {
+                    Name(id, fmt::format("vs_instance_attr{}", input.binding));
+                } else {
+                    Name(id, fmt::format("vs_in_attr{}", input.binding));
+                }
+                input_params[input.binding] = GetAttributeInfo(input.fmt, id);
+                interfaces.push_back(id);
+            }
         }
         break;
+    }
     case Stage::Fragment:
         if (info.uses_group_quad) {
             subgroup_local_invocation_id = DefineVariable(
@@ -276,7 +306,10 @@ void EmitContext::DefineBuffers(const Info& info) {
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
             const auto name =
-                fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
+                buffer.is_instance_data
+                    ? fmt::format("{}_instance_data{}_{}{}", stage, i, 'f',
+                                  sizeof(float) * CHAR_BIT)
+                    : fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
             Name(struct_type, name);
             Decorate(struct_type, spv::Decoration::Block);
             MemberName(struct_type, 0, "data");
@@ -316,6 +349,14 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rg32f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::Rg32ui;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32_32_32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::Rgba32ui;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {

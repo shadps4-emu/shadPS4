@@ -67,20 +67,24 @@ public:
     void BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
                        VideoCore::TextureCache& texture_cache) const;
 
-    [[nodiscard]] vk::Pipeline Handle() const noexcept {
+    vk::Pipeline Handle() const noexcept {
         return *pipeline;
     }
 
-    [[nodiscard]] bool IsEmbeddedVs() const noexcept {
+    vk::PipelineLayout GetLayout() const {
+        return *pipeline_layout;
+    }
+
+    bool IsEmbeddedVs() const noexcept {
         static constexpr size_t EmbeddedVsHash = 0x9b2da5cf47f8c29f;
         return key.stage_hashes[0] == EmbeddedVsHash;
     }
 
-    [[nodiscard]] auto GetWriteMasks() const {
+    auto GetWriteMasks() const {
         return key.write_masks;
     }
 
-    [[nodiscard]] bool IsDepthEnabled() const {
+    bool IsDepthEnabled() const {
         return key.depth.depth_enable.Value();
     }
 
