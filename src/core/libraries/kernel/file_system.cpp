@@ -10,6 +10,8 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
 #include "libkernel.h"
+#include <cstdlib>
+#include <cstring>
 
 namespace Libraries::Kernel {
 
@@ -451,5 +453,17 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
                  posix_open); // _open shoudld be equal to open function
 }
+
+#ifdef _WIN32
+// Implementation of strdup for Windows, as it is not standard
+char* strdup(const char* str) {
+    size_t len = strlen(str) + 1; // +1 for the final '\0'
+    char* dup = (char*)malloc(len);
+    if (dup) {
+        strcpy_s(dup, len, str); // Using strcpy_s for safety
+    }
+    return dup;
+}
+#endif
 
 } // namespace Libraries::Kernel
