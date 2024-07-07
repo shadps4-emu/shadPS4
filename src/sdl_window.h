@@ -63,7 +63,7 @@ public:
 private:
     void onResize();
     void onKeyPress(const SDL_Event* event);
-    void CursorVisibility(bool cursor_visibility);
+    void SetCursorVisibility(bool cursor_visibility);
 
 private:
     s32 width;

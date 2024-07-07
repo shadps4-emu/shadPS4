@@ -45,7 +45,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
 
     SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
-    CursorVisibility(Config::isHideCursor());
+    SetCursorVisibility(Config::isHideCursor());
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
