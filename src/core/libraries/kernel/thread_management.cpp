@@ -323,6 +323,7 @@ int PS4_SYSV_ABI scePthreadAttrGetstackaddr(const ScePthreadAttr* attr, void** s
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
+
 int PS4_SYSV_ABI scePthreadAttrGetstacksize(const ScePthreadAttr* attr, size_t* stack_size) {
 
     if (stack_size == nullptr || attr == nullptr || *attr == nullptr) {
@@ -334,6 +335,7 @@ int PS4_SYSV_ABI scePthreadAttrGetstacksize(const ScePthreadAttr* attr, size_t* 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
+/*
 int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
 
     if (addr == nullptr || attr == nullptr || *attr == nullptr) {
@@ -343,6 +345,18 @@ int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
     int result = pthread_attr_setstackaddr(&(*attr)->pth_attr, addr);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+}*/
+int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* stack_addr, size_t stack_size) {
+    if (attr == nullptr || *attr == nullptr || stack_addr == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = pthread_attr_setstack(&(*attr)->pth_attr, stack_addr, stack_size);
+    if (result != 0) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetstacksize(ScePthreadAttr* attr, size_t stack_size) {
@@ -897,7 +911,7 @@ static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* sr
     result = (result == 0 ? scePthreadAttrSetschedparam(dst, &param) : result);
     result = (result == 0 ? scePthreadAttrSetschedpolicy(dst, policy) : result);
     if (stack_addr != nullptr) {
-        result = (result == 0 ? scePthreadAttrSetstackaddr(dst, stack_addr) : result);
+        result = (result == 0 ? scePthreadAttrSetstackaddr(dst, stack_addr, stack_size) : result);
     }
     if (stack_size != 0) {
         result = (result == 0 ? scePthreadAttrSetstacksize(dst, stack_size) : result);
