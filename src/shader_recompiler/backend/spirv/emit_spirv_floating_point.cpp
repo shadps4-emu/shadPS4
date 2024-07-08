@@ -64,8 +64,7 @@ Id EmitFPMax64(EmitContext& ctx, Id a, Id b) {
 }
 
 Id EmitFPMin32(EmitContext& ctx, Id a, Id b, bool is_legacy) {
-    if (is_legacy)
-    {
+    if (is_legacy) {
         return ctx.OpNMin(ctx.F32[1], a, b);
     }
 
