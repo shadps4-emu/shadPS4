@@ -361,7 +361,7 @@ void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 
-void Translator::V_MAD_I32_I24(const GcnInst& inst, bool performBitExtract) {
+void Translator::V_MAD_I32_I24(const GcnInst& inst, bool is_signed) {
     const IR::U32 src0{
         ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), performBitExtract)};
     const IR::U32 src1{
