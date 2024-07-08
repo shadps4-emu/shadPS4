@@ -215,6 +215,12 @@ void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IMax(src0, src1, is_signed));
 }
 
+void Translator::V_MAX_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    SetDst(inst.dst[0], ir.FPMax(src0, src1, true));
+}
+
 void Translator::V_RSQ_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
@@ -251,6 +257,12 @@ void Translator::V_MIN3_F32(const GcnInst& inst) {
     const IR::F32 src1{GetSrc(inst.src[1], true)};
     const IR::F32 src2{GetSrc(inst.src[2], true)};
     SetDst(inst.dst[0], ir.FPMin(src0, ir.FPMin(src1, src2)));
+}
+
+void Translator::V_MIN_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    SetDst(inst.dst[0], ir.FPMin(src0, src1, true));
 }
 
 void Translator::V_MADMK_F32(const GcnInst& inst) {

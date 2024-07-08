@@ -113,6 +113,7 @@ public:
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_MAX_F32(const GcnInst& inst);
     void V_MAX_U32(bool is_signed, const GcnInst& inst);
+    void V_MAX_LEGACY_F32(const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
@@ -120,6 +121,7 @@ public:
     void V_SQRT_F32(const GcnInst& inst);
     void V_MIN_F32(const GcnInst& inst);
     void V_MIN3_F32(const GcnInst& inst);
+    void V_MIN_LEGACY_F32(const GcnInst& inst);
     void V_MADMK_F32(const GcnInst& inst);
     void V_CUBEMA_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);
