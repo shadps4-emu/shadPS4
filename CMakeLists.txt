@@ -188,6 +188,12 @@ set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc_internal/libc_internal.h
 )
 
+set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
+                src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog.cpp
+                src/core/libraries/dialogs/ime_dialog.h
+)
+
 set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad.h
 )
@@ -309,6 +315,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${USBD_LIB}
          ${MISC_LIBS}
+         ${DIALOGS_LIB}
          src/core/linker.cpp
          src/core/linker.h
          src/core/memory.cpp
