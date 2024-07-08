@@ -192,6 +192,7 @@ set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
                 src/core/libraries/dialogs/error_dialog.h
                 src/core/libraries/dialogs/ime_dialog.cpp
                 src/core/libraries/dialogs/ime_dialog.h
+                src/core/libraries/dialogs/error_codes.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp

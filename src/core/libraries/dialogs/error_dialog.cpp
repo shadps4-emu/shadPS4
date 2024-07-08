@@ -5,27 +5,36 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "error_codes.h"
 #include "error_dialog.h"
 
 namespace Libraries::ErrorDialog {
 
+static OrbisErrorDialogStatus g_error_dlg_status =
+    OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_NONE;
+
 int PS4_SYSV_ABI sceErrorDialogClose() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
+    g_error_dlg_status = OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_FINISHED;
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceErrorDialogGetStatus() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
+OrbisErrorDialogStatus PS4_SYSV_ABI sceErrorDialogGetStatus() {
+    return g_error_dlg_status;
+}
+
+int PS4_SYSV_ABI sceErrorDialogInitialize(OrbisErrorDialogParam* param) {
+    if (g_error_dlg_status == OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_INITIALIZED) {
+        LOG_ERROR(Lib_ErrorDialog, "Error dialog is already at init mode");
+        return ORBIS_ERROR_DIALOG_ERROR_ALREADY_INITIALIZED;
+    }
+    g_error_dlg_status = OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_INITIALIZED;
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceErrorDialogInitialize() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceErrorDialogOpen() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
+int PS4_SYSV_ABI sceErrorDialogOpen(OrbisErrorDialogParam* param) {
+    LOG_ERROR(Lib_ErrorDialog, "size = {} errorcode = {:#x} userid = {}", param->size,
+              param->errorCode, param->userId);
+    g_error_dlg_status = OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_RUNNING;
     return ORBIS_OK;
 }
 
@@ -40,13 +49,19 @@ int PS4_SYSV_ABI sceErrorDialogOpenWithReport() {
 }
 
 int PS4_SYSV_ABI sceErrorDialogTerminate() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
+    if (g_error_dlg_status == OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_NONE) {
+        LOG_ERROR(Lib_ErrorDialog, "Error dialog hasn't initialized");
+        return ORBIS_ERROR_DIALOG_ERROR_NOT_INITIALIZED;
+    }
+    g_error_dlg_status = OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_NONE;
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceErrorDialogUpdateStatus() {
-    LOG_ERROR(Lib_ErrorDialog, "(STUBBED) called");
-    return ORBIS_OK;
+OrbisErrorDialogStatus PS4_SYSV_ABI sceErrorDialogUpdateStatus() {
+    // TODO when imgui dialog is done this will loop until ORBIS_ERROR_DIALOG_STATUS_FINISHED
+    // This should be done calling sceErrorDialogClose but since we don't have a dialog we finish it
+    // here
+    return OrbisErrorDialogStatus::ORBIS_ERROR_DIALOG_STATUS_FINISHED;
 }
 
 void RegisterlibSceErrorDialog(Core::Loader::SymbolsResolver* sym) {
