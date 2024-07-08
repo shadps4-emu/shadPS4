@@ -133,7 +133,7 @@ public:
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_BFE_U32(bool is_signed, const GcnInst& inst);
-    void V_MAD_I32_I24(const GcnInst& inst);
+    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = true);
     void V_MUL_I32_I24(const GcnInst& inst);
     void V_SUB_I32(const GcnInst& inst);
     void V_LSHR_B32(const GcnInst& inst);

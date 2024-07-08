@@ -361,9 +361,11 @@ void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 
-void Translator::V_MAD_I32_I24(const GcnInst& inst) {
-    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), true)};
-    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), true)};
+void Translator::V_MAD_I32_I24(const GcnInst& inst, bool is_signed) {
+    const IR::U32 src0{
+        ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), is_signed)};
+    const IR::U32 src1{
+        ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), is_signed)};
     const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.IAdd(ir.IMul(src0, src1), src2));
 }
@@ -393,8 +395,7 @@ void Translator::V_ASHRREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_U32_U24(const GcnInst& inst) {
-    // TODO:
-    V_MAD_I32_I24(inst);
+    V_MAD_I32_I24(inst, false);
 }
 
 void Translator::V_RNDNE_F32(const GcnInst& inst) {
