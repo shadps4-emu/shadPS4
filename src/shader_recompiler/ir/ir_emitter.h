@@ -149,8 +149,8 @@ public:
     [[nodiscard]] U1 FPIsInf(const F32F64& value);
     [[nodiscard]] U1 FPOrdered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] U1 FPUnordered(const F32F64& lhs, const F32F64& rhs);
-    [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs);
-    [[nodiscard]] F32F64 FPMin(const F32F64& lhs, const F32F64& rhs);
+    [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
+    [[nodiscard]] F32F64 FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
 
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
     [[nodiscard]] Value IAddCary(const U32& a, const U32& b);

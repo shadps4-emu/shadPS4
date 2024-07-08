@@ -203,10 +203,10 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
     }
 }
 
-void Translator::V_MAX_F32(const GcnInst& inst) {
+void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::F32 src1{GetSrc(inst.src[1], true)};
-    SetDst(inst.dst[0], ir.FPMax(src0, src1));
+    SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
 }
 
 void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
@@ -240,10 +240,10 @@ void Translator::V_SQRT_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPSqrt(src0));
 }
 
-void Translator::V_MIN_F32(const GcnInst& inst) {
+void Translator::V_MIN_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::F32 src1{GetSrc(inst.src[1], true)};
-    SetDst(inst.dst[0], ir.FPMin(src0, src1));
+    SetDst(inst.dst[0], ir.FPMin(src0, src1, is_legacy));
 }
 
 void Translator::V_MIN3_F32(const GcnInst& inst) {
