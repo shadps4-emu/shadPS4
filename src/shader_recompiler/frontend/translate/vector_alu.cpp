@@ -362,9 +362,9 @@ void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
 }
 
 void Translator::V_MAD_I32_I24(const GcnInst& inst, bool performBitExtract) {
-    const IR::U32 src0 = performBitExtract ? ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), true) : GetSrc(inst.src[0]);
-    const IR::U32 src1 = performBitExtract ? ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), true) : GetSrc(inst.src[1]);
-    const IR::U32 src2 = GetSrc(inst.src[2]);
+    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), performBitExtract)};
+    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), performBitExtract)};
+    const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.IAdd(ir.IMul(src0, src1), src2));
 }
 
