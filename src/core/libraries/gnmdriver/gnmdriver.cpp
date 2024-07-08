@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
@@ -264,6 +265,7 @@ static_assert(CtxInitSequence400.size() == 0x61);
 
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
+std::condition_variable cv_lock{};
 static std::mutex m_submission{};
 static u64 frames_submitted{};      // frame counter
 static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
@@ -276,6 +278,18 @@ struct AscQueueInfo {
 };
 static Common::SlotVector<AscQueueInfo> asc_queues{};
 static constexpr VAddr tessellation_factors_ring_addr = 0xFF0000000ULL;
+
+static void ResetSubmissionLock(Platform::InterruptId irq) {
+    std::unique_lock lock{m_submission};
+    submission_lock = 0;
+    cv_lock.notify_all();
+}
+
+static void WaitGpuIdle() {
+    HLE_TRACE;
+    std::unique_lock lock{m_submission};
+    cv_lock.wait(lock, [] { return submission_lock == 0; });
+}
 
 static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {
     using namespace Common::FS;
@@ -465,14 +479,9 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         return;
     }
 
-    std::unique_lock lock{m_submission};
-    if (submission_lock != 0) {
-        liverpool->WaitGpuIdle();
+    WaitGpuIdle();
 
-        // Suspend logic goes here
-
-        submission_lock = 0;
-    }
+    /* Suspend logic goes here */
 
     auto vqid = gnm_vqid - 1;
     auto& asc_queue = asc_queues[{vqid}];
@@ -863,9 +872,9 @@ int PS4_SYSV_ABI sceGnmEndWorkload() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmFindResourcesPublic() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmFindResourcesPublic() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_FAILURE; // not available in retail FW
 }
 
 void PS4_SYSV_ABI sceGnmFlushGarlic() {
@@ -1321,7 +1330,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     if (shader_id > 1) {
         LOG_ERROR(Lib_GnmDriver, "Unknown shader id {}", shader_id);
-        return 0x8eee00ff;
+        return ORBIS_GNM_ERROR_FAILURE;
     }
 
     // clang-format off
@@ -1391,7 +1400,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     if (shader_id != 0) {
         LOG_ERROR(Lib_GnmDriver, "Unknown shader id {}", shader_id);
-        return 0x8eee00ff;
+        return ORBIS_GNM_ERROR_FAILURE;
     }
 
     // A fullscreen triangle with one uv set
@@ -1930,13 +1939,9 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
         }
     }
 
-    if (submission_lock != 0) {
-        liverpool->WaitGpuIdle();
+    WaitGpuIdle();
 
-        // Suspend logic goes here
-
-        submission_lock = 0;
-    }
+    /* Suspend logic goes here */
 
     if (send_init_packet) {
         if (sdk_version <= 0x1ffffffu) {
@@ -1990,7 +1995,6 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
-    liverpool->NotifySubmitDone();
     send_init_packet = true;
     ++frames_submitted;
     return ORBIS_OK;
@@ -2470,6 +2474,9 @@ void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
     if (result != ORBIS_OK) {
         sdk_version = 0;
     }
+
+    Platform::IrqC::Instance()->Register(Platform::InterruptId::GpuIdle, ResetSubmissionLock,
+                                         nullptr);
 
     LIB_FUNCTION("b0xyllnVY-I", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1, sceGnmAddEqEvent);
     LIB_FUNCTION("b08AgtPlHPg", "libSceGnmDriver", 1, "libSceGnmDriver", 1, 1,

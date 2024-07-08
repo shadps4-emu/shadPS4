@@ -165,6 +165,8 @@ public:
 
     Id output_position{};
     Id vertex_index{};
+    Id instance_id{};
+    Id instance_step_rates{};
     Id base_vertex{};
     Id frag_coord{};
     Id front_facing{};
@@ -214,6 +216,7 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        s32 buffer_handle{-1};
     };
     std::array<SpirvAttribute, 32> input_params{};
     std::array<SpirvAttribute, 32> output_params{};

@@ -840,6 +840,31 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(ScePthreadMutexattr* attr, 
     return result;
 }
 
+int PS4_SYSV_ABI scePthreadMutexTimedlock(ScePthreadMutex* mutex, u64 usec) {
+    mutex = createMutex(mutex);
+    if (mutex == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    timespec time{};
+    time.tv_sec = usec / 1000000;
+    time.tv_nsec = ((usec % 1000000) * 1000);
+    int result = pthread_mutex_timedlock(&(*mutex)->pth_mutex, &time);
+
+    switch (result) {
+    case 0:
+        return SCE_OK;
+    case ETIMEDOUT:
+        return SCE_KERNEL_ERROR_ETIMEDOUT;
+    case EINTR:
+        return SCE_KERNEL_ERROR_EINTR;
+    case EAGAIN:
+        return SCE_KERNEL_ERROR_EAGAIN;
+    default:
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+}
+
 static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* src) {
     if (dst == nullptr || *dst == nullptr || src == nullptr || *src == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -1362,6 +1387,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexLock);
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
+    LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTimedlock);
+
     // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", 1, 1, scePthreadCondattrInit);
