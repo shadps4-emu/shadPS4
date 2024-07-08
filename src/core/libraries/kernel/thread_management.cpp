@@ -1067,6 +1067,7 @@ ScePthread PS4_SYSV_ABI posix_pthread_self() {
 }
 
 int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
+    cond = createCond(cond);
     if (cond == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
