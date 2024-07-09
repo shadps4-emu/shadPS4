@@ -15,6 +15,7 @@
 #include "common/ntapi.h"
 
 #else
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 #endif

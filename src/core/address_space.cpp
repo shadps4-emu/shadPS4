@@ -245,14 +245,20 @@ struct AddressSpace::Impl {
     Impl() {
         // Allocate virtual address placeholder for our address space.
         void* hint_address = reinterpret_cast<void*>(SYSTEM_MANAGED_MIN);
+#ifdef __APPLE__
+        constexpr int virtual_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+#else
+        constexpr int virtual_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+#endif
         virtual_size = SystemSize + UserSize;
         virtual_base = reinterpret_cast<u8*>(
-            mmap(hint_address, virtual_size, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0));
+            mmap(hint_address, virtual_size, PROT_READ | PROT_WRITE, virtual_flags, -1, 0));
         if (virtual_base == MAP_FAILED) {
             LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
             throw std::bad_alloc{};
         }
+
+#ifndef __APPLE__
         madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
 
         backing_fd = memfd_create("BackingDmem", 0);
@@ -260,6 +266,15 @@ struct AddressSpace::Impl {
             LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
             throw std::bad_alloc{};
         }
+#else
+        const auto shm_path = fmt::format("/BackingDmem{}", getpid());
+        backing_fd = shm_open(shm_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+        if (backing_fd < 0) {
+            LOG_CRITICAL(Kernel_Vmm, "shm_open failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+        shm_unlink(shm_path.c_str());
+#endif
 
         // Defined to extend the file with zeros
         int ret = ftruncate(backing_fd, BackingSize);

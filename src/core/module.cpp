@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
+#include "core/instruction_emulator.h"
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
@@ -84,8 +85,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     // Map module segments (and possible TLS trampolines)
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, LoadAddress, aligned_base_size + TrampolineSize,
-                      MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);
+    memory->MapMemory(out_addr, memory->VirtualOffset() + LoadAddress,
+                      aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
+                      MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadAddress += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
 
     // Initialize trampoline generator.
@@ -131,6 +133,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             add_segment(elf_pheader[i]);
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PatchTLS(segment_addr, segment_file_size, c);
+                PatchInstructions(segment_addr, segment_file_size, c);
             }
             break;
         }

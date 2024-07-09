@@ -8,7 +8,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#else
+#elif !defined(__APPLE__)
 #include <asm/prctl.h>   /* Definition of ARCH_* constants */
 #include <sys/syscall.h> /* Definition of SYS_* constants */
 #endif
@@ -88,6 +88,51 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
     c.jmp(code + total_size); // Return to the instruction right after the mov.
 }
 
+#elif defined(__APPLE__)
+
+static pthread_key_t slot = 0;
+static std::once_flag slot_alloc_flag;
+
+static void AllocTcbKey() {
+    ASSERT(pthread_key_create(&slot, nullptr) == 0);
+}
+
+void SetTcbBase(void* image_address) {
+    std::call_once(slot_alloc_flag, &AllocTcbKey);
+    ASSERT(pthread_setspecific(slot, image_address) == 0);
+}
+
+Tcb* GetTcbBase() {
+    std::call_once(slot_alloc_flag, &AllocTcbKey);
+    return reinterpret_cast<Tcb*>(pthread_getspecific(slot));
+}
+
+static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGenerator& c) {
+    using namespace Xbyak::util;
+    const auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
+
+    // Allocate slot in the process if not done already.
+    std::call_once(slot_alloc_flag, &AllocTcbKey);
+
+    static constexpr u32 NearJmpSize = 5;
+
+    // Replace fs read with gs read.
+    auto patch = Xbyak::CodeGenerator(total_size, code);
+    patch.jmp(c.getCurr(), Xbyak::CodeGenerator::LabelType::T_NEAR);
+    patch.nop(total_size - NearJmpSize);
+
+    // Write the trampoline.
+    const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
+
+    // The following logic is based on the Darwin implementation of _os_tsd_get_direct, used by pthread_getspecific
+    // https://github.com/apple/darwin-xnu/blob/main/libsyscall/os/tsd.h#L89-L96
+    c.putSeg(gs);
+    c.mov(target_reg, qword[reinterpret_cast<void*>(slot * sizeof(void*))]); // Load the slot data.
+
+    // Return to the instruction right after the mov.
+    c.jmp(code + total_size);
+}
+
 #else
 
 static u32 slot = 0;
@@ -110,7 +155,6 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
 
     // Replace fs read with gs read.
     auto patch = Xbyak::CodeGenerator(total_size, code);
-    const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
     patch.putSeg(gs);
 }
 
@@ -147,11 +191,6 @@ void PatchTLS(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
                 continue;
             }
             ASSERT(offset == 0);
-
-            // Allocate slot in the process if not done already.
-            if (slot == 0) {
-                AllocTcbKey();
-            }
 
             // Replace bogus instruction prefix with nops if it exists.
             if (std::memcmp(code - BadPrefix.size(), BadPrefix.data(), sizeof(BadPrefix)) == 0) {

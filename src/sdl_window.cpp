@@ -12,6 +12,10 @@
 #include "input/controller.h"
 #include "sdl_window.h"
 
+#ifdef __APPLE__
+#include <SDL3/SDL_metal.h>
+#endif
+
 namespace Frontend {
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_)
@@ -55,6 +59,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         window_info.render_surface = SDL_GetProperty(SDL_GetWindowProperties(window),
                                                      SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     }
+#elif defined(SDL_PLATFORM_MACOS)
+    window_info.type = WindowSystemType::Metal;
+    window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
 }
 

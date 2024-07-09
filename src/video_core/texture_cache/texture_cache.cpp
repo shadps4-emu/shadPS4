@@ -36,7 +36,14 @@ static TextureCache* g_texture_cache = nullptr;
 void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
     ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
     const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
-    if (ctx->uc_mcontext.gregs[REG_ERR] & 0x2) {
+
+#ifdef __APPLE__
+    const u32 err = ctx->uc_mcontext->__es.__err;
+#else
+    const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
+#endif
+
+    if (err & 0x2) {
         g_texture_cache->OnCpuWrite(address);
     } else {
         // Read not supported!
@@ -69,9 +76,16 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
       tile_manager{instance, scheduler} {
 
 #ifndef _WIN64
+#ifdef __APPLE__
+    // Read-only memory write results in SIGBUS on Apple.
+    static constexpr int SignalType = SIGBUS;
+#else
+    static constexpr int SignalType = SIGSEGV;
+#endif
+
     sigset_t signal_mask;
     sigemptyset(&signal_mask);
-    sigaddset(&signal_mask, SIGSEGV);
+    sigaddset(&signal_mask, SignalType);
 
     using HandlerType = decltype(sigaction::sa_sigaction);
 
@@ -79,7 +93,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     guest_access_fault.sa_flags = SA_SIGINFO | SA_ONSTACK;
     guest_access_fault.sa_sigaction = &GuestFaultSignalHandler;
     guest_access_fault.sa_mask = signal_mask;
-    sigaction(SIGSEGV, &guest_access_fault, nullptr);
+    sigaction(SignalType, &guest_access_fault, nullptr);
 #else
     veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
     ASSERT_MSG(veh_handle, "Failed to register an exception handler");

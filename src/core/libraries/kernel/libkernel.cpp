@@ -3,11 +3,13 @@
 
 #include <chrono>
 #include <thread>
+#include <date/tz.h>
 
 #include <boost/asio/io_context.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/polyfill_thread.h"
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_format/psf.h"
@@ -56,7 +58,7 @@ static void KernelServiceThread(std::stop_token stoken) {
         HLE_TRACE;
         {
             std::unique_lock lock{m_asio_req};
-            cv_asio_req.wait(lock, stoken, [] { return asio_requests != 0; });
+            Common::CondvarWait(cv_asio_req, lock, stoken, [] { return asio_requests != 0; });
         }
         if (stoken.stop_requested()) {
             break;
@@ -180,7 +182,7 @@ s64 PS4_SYSV_ABI ps4__write(int d, const void* buf, std::size_t nbytes) {
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
                                                 struct OrbisTimesec* st, unsigned long* dst_sec) {
     LOG_TRACE(Kernel, "Called");
-    const auto* time_zone = std::chrono::current_zone();
+    const auto* time_zone = date::current_zone();
     auto info = time_zone->get_info(std::chrono::system_clock::now());
 
     *local_time = info.offset.count() + info.save.count() * 60 + time;

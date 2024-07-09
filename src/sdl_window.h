@@ -19,6 +19,7 @@ enum class WindowSystemType : u8 {
     Windows,
     X11,
     Wayland,
+    Metal,
 };
 
 struct WindowSystemInfo {

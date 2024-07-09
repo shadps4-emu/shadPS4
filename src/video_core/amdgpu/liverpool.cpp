@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/polyfill_thread.h"
 #include "common/thread.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
@@ -31,7 +32,7 @@ void Liverpool::Process(std::stop_token stoken) {
     while (!stoken.stop_requested()) {
         {
             std::unique_lock lk{submit_mutex};
-            submit_cv.wait(lk, stoken, [this] { return num_submits != 0; });
+            Common::CondvarWait(submit_cv, lk, stoken, [this] { return num_submits != 0; });
         }
         if (stoken.stop_requested()) {
             break;

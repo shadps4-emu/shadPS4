@@ -848,6 +848,37 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(ScePthreadMutexattr* attr, 
     return result;
 }
 
+#ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+static int pthread_mutex_timedlock(pthread_mutex_t* mutex, const struct timespec* abstime) {
+    int rc;
+    while ((rc = pthread_mutex_trylock(mutex)) == EBUSY) {
+        struct timespec curr_time;
+        clock_gettime(CLOCK_REALTIME, &curr_time);
+
+        s64 remaining_ns = 0;
+        remaining_ns +=
+            (static_cast<s64>(abstime->tv_sec) - static_cast<s64>(curr_time.tv_sec)) * 1000000000L;
+        remaining_ns += static_cast<s64>(abstime->tv_nsec) - static_cast<s64>(curr_time.tv_nsec);
+
+        if (remaining_ns <= 0) {
+            return ETIMEDOUT;
+        }
+
+        struct timespec sleep_time;
+        sleep_time.tv_sec = 0;
+        if (remaining_ns < 5000000L) {
+            sleep_time.tv_nsec = remaining_ns;
+        } else {
+            sleep_time.tv_nsec = 5000000;
+        }
+
+        nanosleep(&sleep_time, nullptr);
+    }
+
+    return rc;
+}
+#endif
+
 int PS4_SYSV_ABI scePthreadMutexTimedlock(ScePthreadMutex* mutex, u64 usec) {
     mutex = createMutex(mutex);
     if (mutex == nullptr) {
@@ -1232,7 +1263,10 @@ int PS4_SYSV_ABI posix_pthread_create(ScePthread* thread, const ScePthreadAttr* 
 using Destructor = void (*)(void*);
 
 int PS4_SYSV_ABI posix_pthread_key_create(u32* key, Destructor func) {
-    return pthread_key_create(key, func);
+    pthread_key_t thread_key;
+    int rc = pthread_key_create(&thread_key, func);
+    *key = static_cast<u32>(thread_key);
+    return rc;
 }
 
 int PS4_SYSV_ABI posix_pthread_setspecific(int key, const void* value) {

@@ -12,7 +12,10 @@ int PS4_SYSV_ABI scePthreadKeyCreate(OrbisPthreadKey* key, PthreadKeyDestructor 
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    int result = pthread_key_create(key, nullptr);
+    pthread_key_t thread_key;
+    int result = pthread_key_create(&thread_key, nullptr);
+    *key = static_cast<OrbisPthreadKey>(thread_key);
+
     if (destructor) {
         auto thread = scePthreadSelf();
         thread->key_destructors.emplace_back(*key, destructor);
