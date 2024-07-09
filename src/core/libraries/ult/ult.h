@@ -14,7 +14,12 @@ namespace Libraries::Ult {
 typedef int32_t (*OrbisUltUlthreadEntry)(uint64_t arg);
 
 struct OrbisUltQueue {
-	//private
+    char unknown[208];
+    void* waitingWorkArea;
+    void* dataWorkArea;
+    char unknown2[24];
+    size_t datasize;
+    // private
 };
 
 struct OrbisUltUlthreadRuntimeOptParam {
@@ -39,7 +44,7 @@ struct OrbisUltUlthreadOptParam {
 };
 
 struct OrbisUltWaitingQueueResourcePool {
-    char unknown_padding1[30];
+    char unknown_padding1[31];
     char unknown_char;
     u16 field32_0x20;
     char field33_0x22;
@@ -56,11 +61,26 @@ struct OrbisUltWaitingQueueResourcePoolOptParam {
 };
 
 struct OrbisUltQueueDataResourcePool {
+    char unknown_padding1[31];
+    short uk_200;
+    char uk_a;
+    char unknown_char;
+    u32 numData;
+    u32 numQueueObjects;
+    char unknkown_char3[4];
+    void* workArea;
+    char padd[130];
+    char unkown_padding2[4];
+    OrbisUltWaitingQueueResourcePool* waitingPool;
     // private
 };
 
 struct OrbisUltQueueDataResourcePoolOptParam {
     // private
+};
+
+struct OrbisUltQueueOptParam {
+    // Private
 };
 
 int PS4_SYSV_ABI sceUltInitialize();
@@ -84,11 +104,24 @@ int PS4_SYSV_ABI _sceUltQueueDataResourcePoolCreate(
     uint32_t numQueueObjects, OrbisUltWaitingQueueResourcePool* waitingQueueResourcePool,
     void* workArea, OrbisUltQueueDataResourcePoolOptParam* optParam);
 
+int PS4_SYSV_ABI _sceUltQueueCreate(OrbisUltQueue* queue, const char* name, uint64_t dataSize,
+                                    OrbisUltQueueDataResourcePool* queueDataResourcePool,
+                                    OrbisUltWaitingQueueResourcePool* waitingQueueResourcePool,
+                                    OrbisUltQueueOptParam* optParam);
+
+int PS4_SYSV_ABI _sceUltQueueOptParamInitialize(OrbisUltQueueOptParam* optParam);
+
 int PS4_SYSV_ABI sceUltQueueTryPush(OrbisUltQueue* queue, void* data);
 int PS4_SYSV_ABI sceUltQueuePush(OrbisUltQueue* queue, void* data);
 
 int PS4_SYSV_ABI sceUltQueueTryPop(OrbisUltQueue* queue, void* data);
 int PS4_SYSV_ABI sceUltQueuePop(OrbisUltQueue* queue, void* data);
+
+u64 PS4_SYSV_ABI sceUltWaitingQueueResourcePoolGetWorkAreaSize(uint32_t numThreads,
+                                                               uint32_t numSyncObjects);
+
+u64 PS4_SYSV_ABI sceUltQueueDataResourcePoolGetWorkAreaSize(uint32_t numData, uint64_t dataSize,
+                                                            uint32_t numQueueObjects);
 
 void RegisterlibSceUlt(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Ult
