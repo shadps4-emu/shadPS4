@@ -46,7 +46,7 @@ cd build/
 
 Use make to build the project:
 ```
-cmake --build . --parallel
+cmake --build . --parallel$(nproc)
 ```
 
 Now run the emulator:
