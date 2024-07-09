@@ -57,11 +57,10 @@ int PS4_SYSV_ABI _sceUltWaitingQueueResourcePoolCreate(
 
     if (numThreads > 0 && numSyncObjects > 0 && workArea != nullptr) {
         pool->workArea = workArea;
-        void* w = (void*)((long)workArea + 0x20);
     }
 
     // IF NO ERROR
-    // FUN_0101e800((char *)pool,name)
+    strncpy((char*)pool, name, 0x1f);
     pool->field32_0x20 = 0x100;  // ??
     pool->field33_0x22 = '\x06'; // ??
     pool->numThreads = numThreads * 2;
@@ -91,6 +90,7 @@ int PS4_SYSV_ABI _sceUltQueueDataResourcePoolCreate(
     pool->numData = numData;
     pool->numQueueObjects = numQueueObjects;
     pool->waitingPool = waitingQueueResourcePool;
+    pool->workArea = workArea;
 
     // TODO: BG26hBGiNlw(pool,0x17,&pool->field347_0x170);
 
@@ -119,6 +119,7 @@ int PS4_SYSV_ABI _sceUltQueueCreate(OrbisUltQueue* queue, const char* name, uint
 
         queue->waitingWorkArea = waitingQueueResourcePool->workArea;
         queue->dataWorkArea = queueDataResourcePool->workArea;
+        queue->datasize = dataSize;
 
     } else {
         return ORBIS_ULT_ERROR_NULL;
@@ -142,6 +143,17 @@ int PS4_SYSV_ABI sceUltQueuePush(OrbisUltQueue* queue, void* data) {
 
     if (queue == nullptr || data == nullptr)
         return ORBIS_ULT_ERROR_NULL;
+    
+    // If there is no data in the queue when sceUltQueuePop() is executed, the thread is in the wait
+    // state until data is added to the queue.
+    void* addr = (char*)queue->waitingWorkArea + (queue->datasize) * (queue->uk5);
+
+    if (!addr) // Empty
+        return ORBIS_OK;
+
+    memcpy(addr, data, queue->datasize);
+
+    queue->uk5++;
 
     return ORBIS_OK;
 }
@@ -156,6 +168,19 @@ int PS4_SYSV_ABI sceUltQueuePop(OrbisUltQueue* queue, void* data) {
 
     if (queue == nullptr || data == nullptr)
         return ORBIS_ULT_ERROR_NULL;
+
+    if (queue->uk5 < 1) // Thread should wait
+        return ORBIS_OK;
+
+    // If there is no data in the queue when sceUltQueuePop() is executed, the thread is in the wait state until data is added to the queue.
+    void* addr = (char*)queue->waitingWorkArea + (queue->datasize) * (queue->uk5 - 1);
+
+    if (!addr) // Empty
+        return ORBIS_OK;
+
+    memcpy(data, addr, queue->datasize);
+
+    queue->uk5--;
 
     return ORBIS_OK;
 }

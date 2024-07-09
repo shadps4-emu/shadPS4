@@ -14,7 +14,14 @@ namespace Libraries::Ult {
 typedef int32_t (*OrbisUltUlthreadEntry)(uint64_t arg);
 
 struct OrbisUltQueue {
-    char unknown[208];
+    char queue_name[31];
+    char uk[8];
+    u64 uk2;
+    u64 uk3;
+    u64 uk4;
+    void* ukP;
+    u32 uk5;
+    char uk6[131];
     void* waitingWorkArea;
     void* dataWorkArea;
     char unknown2[24];
@@ -44,7 +51,7 @@ struct OrbisUltUlthreadOptParam {
 };
 
 struct OrbisUltWaitingQueueResourcePool {
-    char unknown_padding1[31];
+    char queue_name[31];
     char unknown_char;
     u16 field32_0x20;
     char field33_0x22;
@@ -61,7 +68,7 @@ struct OrbisUltWaitingQueueResourcePoolOptParam {
 };
 
 struct OrbisUltQueueDataResourcePool {
-    char unknown_padding1[31];
+    char queue_name[31];
     short uk_200;
     char uk_a;
     char unknown_char;
