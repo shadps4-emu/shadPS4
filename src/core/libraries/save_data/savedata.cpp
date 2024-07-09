@@ -248,20 +248,12 @@ int PS4_SYSV_ABI sceSaveDataGetEventInfo() {
 
 int PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam* eventParam,
                                            OrbisSaveDataEvent* event) {
-    LOG_INFO(Lib_SaveData, "called sceSaveDataGetEventResult : null = {}", (eventParam == nullptr));
-    if (eventParam == nullptr)
-        return ORBIS_SAVE_DATA_ERROR_PARAMETER;
+    // eventParam can be 0/null.
+    if (event == nullptr)
+        return ORBIS_SAVE_DATA_ERROR_NOT_INITIALIZED;
 
-    const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(1) / game_serial; // fix me
-
-    Common::FS::IOFile file(mount_dir / "param.txt", Common::FS::FileAccessMode::Read);
-    OrbisSaveDataParam* param = new OrbisSaveDataParam{};
-    file.ReadRaw<u8>(param, sizeof(OrbisSaveDataParam));
-
-    LOG_INFO(Lib_SaveData, "called");
+    LOG_INFO(Lib_SaveData, "called: Todo.");
     event->userId = 1;
-
     return ORBIS_OK;
 }
 
