@@ -44,7 +44,7 @@ int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogGetResult() {
+int PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -54,7 +54,8 @@ int PS4_SYSV_ABI sceImeDialogGetStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogInit() {
+int PS4_SYSV_ABI sceImeDialogInit(const OrbisImeDialogParam* param,
+                                  const OrbisImeParamExtended* extended) {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
