@@ -141,13 +141,17 @@ public:
             QString exePath;
 #ifdef Q_OS_WIN
             linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
-                       QString::fromStdString(m_games[itemID].name) + ".lnk";
+                       QString::fromStdString(m_games[itemID].name)
+                           .remove(QRegularExpression("[\\\\/:*?\"<>|]")) +
+                       ".lnk";
 
             exePath = QCoreApplication::applicationFilePath().replace("\\", "/");
 
 #else
             linkPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) + "/" +
-                       QString::fromStdString(m_games[itemID].name) + ".desktop";
+                       QString::fromStdString(m_games[itemID].name)
+                           .remove(QRegularExpression("[\\\\/:*?\"<>|]")) +
+                       ".desktop";
 #endif
 
             // Convert the icon to .ico if necessary
