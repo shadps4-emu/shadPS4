@@ -6,6 +6,10 @@ cmake_minimum_required(VERSION 3.16.3)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+if(APPLE)
+    enable_language(OBJC)
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -62,6 +66,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
+find_package(date 3.0.1 CONFIG)
 find_package(fmt 10.2.1 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
@@ -74,6 +79,13 @@ find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(zlib-ng 2.2.0 MODULE)
 find_package(Zydis 4.1.0 CONFIG)
+
+include(CheckSymbolExists)
+check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
+# Windows always has the function through winpthreads
+if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
+    add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
+endif()
 
 add_subdirectory(externals)
 include_directories(src)
@@ -295,7 +307,9 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/splash.h
          src/core/file_format/splash.cpp
          src/core/file_sys/fs.cpp
-         src/core/file_sys/fs.h  
+         src/core/file_sys/fs.h
+         src/core/instruction_emulator.cpp
+         src/core/instruction_emulator.h
          src/core/loader.cpp
          src/core/loader.h
          src/core/loader/dwarf.cpp
@@ -539,8 +553,14 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient date::date-tz)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
+
+if (APPLE)
+  # Link MoltenVK for Vulkan support
+  find_library(MOLTENVK MoltenVK REQUIRED)
+  target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
+endif()
 
 if (NOT ENABLE_QT_GUI)
   target_link_libraries(shadps4 PRIVATE SDL3::SDL3)

@@ -460,7 +460,7 @@ struct PM4CmdWriteData {
 
     template <typename T>
     void Address(T addr) {
-        addr64 = reinterpret_cast<u64>(addr);
+        addr64 = static_cast<u64>(addr);
     }
 
     template <typename T>

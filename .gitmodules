@@ -58,3 +58,6 @@
 [submodule "externals/ext-boost"]
 	path = externals/ext-boost
 	url = https://github.com/shadps4-emu/ext-boost.git
+[submodule "externals/date"]
+	path = externals/date
+	url = https://github.com/HowardHinnant/date.git

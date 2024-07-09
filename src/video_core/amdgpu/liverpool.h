@@ -12,6 +12,7 @@
 #include <queue>
 #include "common/assert.h"
 #include "common/bit_field.h"
+#include "common/polyfill_thread.h"
 #include "common/types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"

@@ -134,6 +134,13 @@ if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
+# date
+if (NOT TARGET date::date-tz)
+    option(BUILD_TZ_LIB "" ON)
+    option(USE_SYSTEM_TZ_DB "" ON)
+    add_subdirectory(date)
+endif()
+
 # Tracy
 option(TRACY_ENABLE "" ON)
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash

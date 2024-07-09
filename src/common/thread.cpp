@@ -9,6 +9,7 @@
 #include "common/thread.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <pthread.h>
 #elif defined(_WIN32)
 #include <windows.h>
 #include "common/string_util.h"

@@ -132,6 +132,11 @@ public:
         return total_flexible_size - flexible_usage;
     }
 
+    /// Returns the offset of the mapped virtual memory base from where it usually would be mapped.
+    [[nodiscard]] u64 VirtualOffset() noexcept {
+        return impl.VirtualBase() - SYSTEM_MANAGED_MIN;
+    }
+
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
 

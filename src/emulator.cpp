@@ -15,6 +15,7 @@
 #include "common/logging/backend.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
+#include "common/polyfill_thread.h"
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/file_sys/fs.h"
