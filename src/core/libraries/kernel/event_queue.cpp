@@ -8,32 +8,40 @@ namespace Libraries::Kernel {
 
 EqueueInternal::~EqueueInternal() = default;
 
-int EqueueInternal::addEvent(const EqueueEvent& event) {
+bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
-    ASSERT(!event.isTriggered);
+    event.time_added = std::chrono::high_resolution_clock::now();
 
-    // TODO check if event is already exists and return it. Currently we just add in m_events array
-    m_events.push_back(event);
-    return 0;
+    const auto& it = std::ranges::find(m_events, event);
+    if (it != m_events.cend()) {
+        *it = event;
+    } else {
+        m_events.emplace_back(event);
+    }
+
+    return true;
 }
 
-int EqueueInternal::removeEvent(u64 id) {
+bool EqueueInternal::RemoveEvent(u64 id) {
+    bool has_found = false;
     std::scoped_lock lock{m_mutex};
 
-    const auto& event_q =
+    const auto& it =
         std::ranges::find_if(m_events, [id](auto& ev) { return ev.event.ident == id; });
-    ASSERT(event_q != m_events.cend());
-    m_events.erase(event_q);
-    return 0;
+    if (it != m_events.cend()) {
+        m_events.erase(it);
+        has_found = true;
+    }
+    return has_found;
 }
 
-int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
+int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     std::unique_lock lock{m_mutex};
     int ret = 0;
 
     const auto predicate = [&] {
-        ret = getTriggeredEvents(ev, num);
+        ret = GetTriggeredEvents(ev, num);
         return ret > 0;
     };
 
@@ -45,28 +53,38 @@ int EqueueInternal::waitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     return ret;
 }
 
-bool EqueueInternal::triggerEvent(u64 ident, s16 filter, void* trigger_data) {
+bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
+    bool has_found = false;
     {
         std::scoped_lock lock{m_mutex};
 
         for (auto& event : m_events) {
-            if (event.event.ident == ident) { // event filter?
-                event.trigger(trigger_data);
+            ASSERT_MSG(event.event.filter == filter,
+                       "Event to trigger doesn't match to queue events");
+            if (event.event.ident == ident) {
+                event.Trigger(trigger_data);
+                has_found = true;
             }
         }
     }
     m_cond.notify_one();
-
-    return true;
+    return has_found;
 }
 
-int EqueueInternal::getTriggeredEvents(SceKernelEvent* ev, int num) {
+int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     int ret = 0;
 
     for (auto& event : m_events) {
-        if (event.isTriggered) {
+        if (event.IsTriggered()) {
+            if (ev->flags & SceKernelEvent::Flags::Clear) {
+                event.Reset();
+            }
+
             ev[ret++] = event.event;
-            event.reset();
+
+            if (ret == num) {
+                break;
+            }
         }
     }
 

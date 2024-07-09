@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/event_queues.h"
@@ -43,31 +44,33 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq) {
 
 int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int num, int* out,
                                      SceKernelUseconds* timo) {
-    LOG_INFO(Kernel_Event, "num = {}", num);
+    HLE_TRACE;
+    TRACE_HINT(eq->GetName());
+    LOG_TRACE(Kernel_Event, "equeue = {} num = {}", eq->GetName(), num);
 
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (ev == nullptr) {
-        return SCE_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
     if (num < 1) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (timo == nullptr) { // wait until an event arrives without timing out
-        *out = eq->waitForEvents(ev, num, 0);
+        *out = eq->WaitForEvents(ev, num, 0);
     }
 
     if (timo != nullptr) {
         // Only events that have already arrived at the time of this function call can be received
         if (*timo == 0) {
-            *out = eq->getTriggeredEvents(ev, num);
+            *out = eq->GetTriggeredEvents(ev, num);
         } else {
             // Wait until an event arrives with timing out
-            *out = eq->waitForEvents(ev, num, *timo);
+            *out = eq->WaitForEvents(ev, num, *timo);
         }
     }
 
@@ -83,16 +86,15 @@ int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    Kernel::EqueueEvent event{};
-    event.isTriggered = false;
+    EqueueEvent event{};
     event.event.ident = id;
-    event.event.filter = Kernel::EVFILT_USER;
+    event.event.filter = SceKernelEvent::Filter::User;
     event.event.udata = 0;
-    event.event.flags = 1;
+    event.event.flags = SceKernelEvent::Flags::Add;
     event.event.fflags = 0;
     event.event.data = 0;
 
-    return eq->addEvent(event);
+    return eq->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
 }
 
 int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id) {
@@ -100,33 +102,41 @@ int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    Kernel::EqueueEvent event{};
-    event.isTriggered = false;
+    EqueueEvent event{};
     event.event.ident = id;
-    event.event.filter = Kernel::EVFILT_USER;
+    event.event.filter = SceKernelEvent::Filter::User;
     event.event.udata = 0;
-    event.event.flags = 0x21;
+    event.event.flags = SceKernelEvent::Flags::Add | SceKernelEvent::Flags::Clear;
     event.event.fflags = 0;
     event.event.data = 0;
 
-    return eq->addEvent(event);
+    return eq->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
 }
 
 void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev) {
-    if (!ev) {
-        return nullptr;
-    }
-
+    ASSERT(ev);
     return ev->udata;
 }
 
 int PS4_SYSV_ABI sceKernelTriggerUserEvent(SceKernelEqueue eq, int id, void* udata) {
-    eq->triggerEvent(id, Kernel::EVFILT_USER, udata);
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!eq->TriggerEvent(id, SceKernelEvent::Filter::User, udata)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
-    eq->removeEvent(id);
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!eq->RemoveEvent(id)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
     return ORBIS_OK;
 }
 

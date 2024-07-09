@@ -48,16 +48,15 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     }
 
     Kernel::EqueueEvent event{};
-    event.isTriggered = false;
     event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
-    event.event.filter = Kernel::EVFILT_VIDEO_OUT;
+    event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     event.event.udata = udata;
     event.event.fflags = 0;
     event.event.data = 0;
-    event.filter.data = port;
+    event.data = port;
 
     port->flip_events.push_back(eq);
-    return eq->addEvent(event);
+    return eq->AddEvent(event);
 }
 
 s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handle, void* udata) {
@@ -73,16 +72,15 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     }
 
     Kernel::EqueueEvent event{};
-    event.isTriggered = false;
     event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
-    event.event.filter = Kernel::EVFILT_VIDEO_OUT;
+    event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
     event.event.udata = udata;
     event.event.fflags = 0;
     event.event.data = 0;
-    event.filter.data = port;
+    event.data = port;
 
     port->vblank_events.push_back(eq);
-    return eq->addEvent(event);
+    return eq->AddEvent(event);
 }
 
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
