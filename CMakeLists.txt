@@ -214,6 +214,8 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
 )
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
+               src/core/libraries/ult/ult.cpp
+               src/core/libraries/ult/ult.h
 )
 
 set(COMMON src/common/logging/backend.cpp

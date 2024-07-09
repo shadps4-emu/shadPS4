@@ -67,6 +67,7 @@ enum class Class : u8 {
     Lib_NpScore,        ///< The LibSceNpScore implementation
     Lib_NpTrophy,       ///< The LibSceNpTrophy implementation
     Lib_Screenshot,     ///< The LibSceScreenshot implementation
+    Lib_Ult,            ///< The LibSceUlt implementation
     Lib_LibCInternal,   ///< The LibCInternal implementation.
     Lib_AppContent,     ///< The LibSceAppContent implementation.
     Lib_Rtc,            ///< The LibSceRtc implementation.

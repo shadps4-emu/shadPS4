@@ -23,6 +23,7 @@
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
+#include "core/libraries/ult/ult.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
@@ -65,6 +66,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
+    Libraries::Ult::RegisterlibSceUlt(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
     Libraries::PlayGo::RegisterlibScePlayGo(sym);

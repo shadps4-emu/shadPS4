@@ -100,6 +100,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, NpScore)                                                                              \
     SUB(Lib, NpTrophy)                                                                             \
     SUB(Lib, Screenshot)                                                                           \
+    SUB(Lib, Ult)                                                                                  \
     SUB(Lib, LibCInternal)                                                                         \
     SUB(Lib, AppContent)                                                                           \
     SUB(Lib, Rtc)                                                                                  \
