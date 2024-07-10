@@ -576,6 +576,8 @@ if (WIN32)
     target_sources(shadps4 PRIVATE src/shadps4.rc)
 endif()
 
+add_definitions(-DBOOST_ASIO_STANDALONE)
+
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Shaders sources
