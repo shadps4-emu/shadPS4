@@ -31,9 +31,6 @@
 [submodule "externals/robin-map"]
 	path = externals/robin-map
 	url = https://github.com/Tessil/robin-map.git
-[submodule "externals/boost"]
-	path = externals/boost
-	url = https://github.com/raphaelthegreat/ext-boost.git
 [submodule "externals/xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak.git
