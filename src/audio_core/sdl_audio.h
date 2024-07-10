@@ -15,7 +15,7 @@ public:
     virtual ~SDLAudio() = default;
 
     int AudioOutOpen(int type, u32 samples_num, u32 freq,
-                     Libraries::AudioOut::OrbisAudioOutParam format);
+                     Libraries::AudioOut::OrbisAudioOutParamFormat format);
     s32 AudioOutOutput(s32 handle, const void* ptr);
     bool AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume);
     bool AudioOutGetStatus(s32 handle, int* type, int* channels_num);

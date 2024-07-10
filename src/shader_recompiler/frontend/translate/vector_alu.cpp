@@ -203,10 +203,10 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
     }
 }
 
-void Translator::V_MAX_F32(const GcnInst& inst) {
+void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::F32 src1{GetSrc(inst.src[1], true)};
-    SetDst(inst.dst[0], ir.FPMax(src0, src1));
+    SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
 }
 
 void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
@@ -240,10 +240,10 @@ void Translator::V_SQRT_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPSqrt(src0));
 }
 
-void Translator::V_MIN_F32(const GcnInst& inst) {
+void Translator::V_MIN_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::F32 src1{GetSrc(inst.src[1], true)};
-    SetDst(inst.dst[0], ir.FPMin(src0, src1));
+    SetDst(inst.dst[0], ir.FPMin(src0, src1, is_legacy));
 }
 
 void Translator::V_MIN3_F32(const GcnInst& inst) {
@@ -361,9 +361,11 @@ void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
     SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 
-void Translator::V_MAD_I32_I24(const GcnInst& inst) {
-    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), true)};
-    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), true)};
+void Translator::V_MAD_I32_I24(const GcnInst& inst, bool is_signed) {
+    const IR::U32 src0{
+        ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), is_signed)};
+    const IR::U32 src1{
+        ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), is_signed)};
     const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.IAdd(ir.IMul(src0, src1), src2));
 }
@@ -393,8 +395,7 @@ void Translator::V_ASHRREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_U32_U24(const GcnInst& inst) {
-    // TODO:
-    V_MAD_I32_I24(inst);
+    V_MAD_I32_I24(inst, false);
 }
 
 void Translator::V_RNDNE_F32(const GcnInst& inst) {
@@ -518,7 +519,38 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
-    UNREACHABLE();
+    constexpr u32 SIGNALING_NAN = 1 << 0;
+    constexpr u32 QUIET_NAN = 1 << 1;
+    constexpr u32 NEGATIVE_INFINITY = 1 << 2;
+    constexpr u32 NEGATIVE_NORMAL = 1 << 3;
+    constexpr u32 NEGATIVE_DENORM = 1 << 4;
+    constexpr u32 NEGATIVE_ZERO = 1 << 5;
+    constexpr u32 POSITIVE_ZERO = 1 << 6;
+    constexpr u32 POSITIVE_DENORM = 1 << 7;
+    constexpr u32 POSITIVE_NORMAL = 1 << 8;
+    constexpr u32 POSITIVE_INFINITY = 1 << 9;
+
+    const IR::F32F64 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    if (src1.IsImmediate()) {
+        const u32 class_mask = src1.U32();
+        IR::U1 value;
+        if ((class_mask & (SIGNALING_NAN | QUIET_NAN)) == (SIGNALING_NAN | QUIET_NAN)) {
+            value = ir.FPIsNan(src0);
+        } else if ((class_mask & (POSITIVE_INFINITY | NEGATIVE_INFINITY)) ==
+                   (POSITIVE_INFINITY | NEGATIVE_INFINITY)) {
+            value = ir.FPIsInf(src0);
+        } else {
+            UNREACHABLE();
+        }
+        if (inst.dst[1].field == OperandField::VccLo) {
+            return ir.SetVcc(value);
+        } else {
+            UNREACHABLE();
+        }
+    } else {
+        UNREACHABLE();
+    }
 }
 
 } // namespace Shader::Gcn

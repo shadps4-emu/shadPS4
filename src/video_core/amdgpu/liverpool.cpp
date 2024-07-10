@@ -66,19 +66,8 @@ void Liverpool::Process(std::stop_token stoken) {
             }
         }
 
-        if (submit_done) {
-            std::scoped_lock lk{submit_mutex};
-            submit_cv.notify_all();
-            submit_done = false;
-        }
+        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
     }
-}
-
-void Liverpool::WaitGpuIdle() {
-    RENDERER_TRACE;
-
-    std::unique_lock lk{submit_mutex};
-    submit_cv.wait(lk, [this] { return num_submits == 0; });
 }
 
 Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {

@@ -111,14 +111,14 @@ public:
     void V_RCP_F32(const GcnInst& inst);
     void V_FMA_F32(const GcnInst& inst);
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
-    void V_MAX_F32(const GcnInst& inst);
+    void V_MAX_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MAX_U32(bool is_signed, const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
     void V_EXP_F32(const GcnInst& inst);
     void V_SQRT_F32(const GcnInst& inst);
-    void V_MIN_F32(const GcnInst& inst);
+    void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN3_F32(const GcnInst& inst);
     void V_MADMK_F32(const GcnInst& inst);
     void V_CUBEMA_F32(const GcnInst& inst);
@@ -133,7 +133,7 @@ public:
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_BFE_U32(bool is_signed, const GcnInst& inst);
-    void V_MAD_I32_I24(const GcnInst& inst);
+    void V_MAD_I32_I24(const GcnInst& inst, bool is_signed = true);
     void V_MUL_I32_I24(const GcnInst& inst);
     void V_SUB_I32(const GcnInst& inst);
     void V_LSHR_B32(const GcnInst& inst);

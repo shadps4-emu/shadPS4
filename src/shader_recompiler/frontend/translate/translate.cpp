@@ -235,9 +235,22 @@ void Translator::EmitFetch(const GcnInst& inst) {
             ir.SetVectorReg(dst_reg++, comp);
         }
 
-        if (attrib.instance_data == 2 || attrib.instance_data == 3) {
-            LOG_WARNING(Render_Recompiler, "Unsupported instance step rate = {}",
-                        attrib.instance_data);
+        // In case of programmable step rates we need to fallback to instance data pulling in
+        // shader, so VBs should be bound as regular data buffers
+        s32 instance_buf_handle = -1;
+        const auto step_rate = static_cast<Info::VsInput::InstanceIdType>(attrib.instance_data);
+        if (step_rate == Info::VsInput::OverStepRate0 ||
+            step_rate == Info::VsInput::OverStepRate1) {
+            info.buffers.push_back({
+                .sgpr_base = attrib.sgpr_base,
+                .dword_offset = attrib.dword_offset,
+                .stride = buffer.GetStride(),
+                .num_records = buffer.num_records,
+                .used_types = IR::Type::F32,
+                .is_storage = true, // we may not fit into UBO with large meshes
+                .is_instance_data = true,
+            });
+            instance_buf_handle = s32(info.buffers.size() - 1);
         }
 
         const u32 num_components = AmdGpu::NumComponents(buffer.GetDataFmt());
@@ -247,7 +260,8 @@ void Translator::EmitFetch(const GcnInst& inst) {
             .num_components = std::min<u16>(attrib.num_elements, num_components),
             .sgpr_base = attrib.sgpr_base,
             .dword_offset = attrib.dword_offset,
-            .instance_step_rate = static_cast<Info::VsInput::InstanceIdType>(attrib.instance_data),
+            .instance_step_rate = step_rate,
+            .instance_data_buf = instance_buf_handle,
         });
     }
 }
@@ -625,6 +639,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::V_MIN3_F32:
             translator.V_MIN3_F32(inst);
             break;
+        case Opcode::V_MIN_LEGACY_F32:
+            translator.V_MIN_F32(inst, true);
+            break;
         case Opcode::V_MADMK_F32:
             translator.V_MADMK_F32(inst);
             break;
@@ -874,6 +891,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             break;
         case Opcode::V_MAD_LEGACY_F32:
             translator.V_MAD_F32(inst);
+            break;
+        case Opcode::V_MAX_LEGACY_F32:
+            translator.V_MAX_F32(inst, true);
             break;
         case Opcode::V_RSQ_LEGACY_F32:
         case Opcode::V_RSQ_CLAMP_F32:

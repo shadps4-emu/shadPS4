@@ -887,7 +887,10 @@ struct Liverpool {
             IndexBufferType index_buffer_type;
             INSERT_PADDING_WORDS(0xA2A1 - 0xA29E - 2);
             u32 enable_primitive_id;
-            INSERT_PADDING_WORDS(0xA2DF - 0xA2A1 - 1);
+            INSERT_PADDING_WORDS(0xA2A8 - 0xA2A1 - 1);
+            u32 vgt_instance_step_rate_0;
+            u32 vgt_instance_step_rate_1;
+            INSERT_PADDING_WORDS(0xA2DF - 0xA2A9 - 1);
             PolygonOffset poly_offset;
             INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
             AaConfig aa_config;
@@ -937,16 +940,8 @@ public:
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
-    void WaitGpuIdle();
-
     bool IsGpuIdle() const {
         return num_submits == 0;
-    }
-
-    void NotifySubmitDone() {
-        std::scoped_lock lk{submit_mutex};
-        submit_done = true;
-        submit_cv.notify_all();
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -1017,7 +1012,6 @@ private:
     u32 num_submits{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
-    std::atomic<bool> submit_done{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
@@ -1055,6 +1049,8 @@ static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
+static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
+static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);

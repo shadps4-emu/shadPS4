@@ -77,7 +77,8 @@ struct BufferResource {
     u32 num_records;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
-    bool is_storage;
+    bool is_storage{false};
+    bool is_instance_data{false};
 
     constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
 };
@@ -116,6 +117,7 @@ struct Info {
         u8 sgpr_base;
         u8 dword_offset;
         InstanceIdType instance_step_rate;
+        s32 instance_data_buf;
     };
     boost::container::static_vector<VsInput, 32> vs_inputs{};
 

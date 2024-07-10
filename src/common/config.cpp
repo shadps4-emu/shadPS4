@@ -18,7 +18,7 @@ static std::string logFilter;
 static std::string logType = "sync";
 static bool isDebugDump = false;
 static bool isLibc = true;
-static bool isShowSplash = true;
+static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;

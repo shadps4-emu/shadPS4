@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "common/bit_field.h"
+
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::AudioOut {
@@ -18,7 +20,7 @@ enum OrbisAudioOutPort {
     ORBIS_AUDIO_OUT_PORT_TYPE_AUX = 127
 };
 
-enum OrbisAudioOutParam {
+enum OrbisAudioOutParamFormat {
     ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO = 0,
     ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO = 1,
     ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH = 2,
@@ -27,6 +29,22 @@ enum OrbisAudioOutParam {
     ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH = 5,
     ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD = 6,
     ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD = 7
+};
+
+enum OrbisAudioOutParamAttr {
+    ORBIS_AUDIO_OUT_PARAM_ATTR_NONE = 0,
+    ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED = 1,
+    ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN = 2,
+};
+
+struct OrbisAudioOutParamExtendedInformation {
+    union {
+        BitField<0, 8, OrbisAudioOutParamFormat> data_format;
+        BitField<8, 8, u32> reserve0;
+        BitField<16, 4, OrbisAudioOutParamAttr> attributes;
+        BitField<20, 10, u32> reserve1;
+        BitField<31, 1, u32> unused;
+    };
 };
 
 struct OrbisAudioOutOutputParam {
@@ -80,7 +98,7 @@ int PS4_SYSV_ABI sceAudioOutMasteringTerm();
 int PS4_SYSV_ABI sceAudioOutMbusInit();
 s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
-                                 u32 sample_rate, OrbisAudioOutParam param_type);
+                                 u32 sample_rate, OrbisAudioOutParamExtendedInformation param_type);
 int PS4_SYSV_ABI sceAudioOutOpenEx();
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, const void* ptr);
 s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num);

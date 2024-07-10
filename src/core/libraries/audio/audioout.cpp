@@ -33,7 +33,7 @@ static std::string_view GetAudioOutPort(u32 port) {
     }
 }
 
-static std::string_view GetAudioOutParam(u32 param) {
+static std::string_view GetAudioOutParamFormat(OrbisAudioOutParamFormat param) {
     switch (param) {
     case ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
         return "S16_MONO";
@@ -51,6 +51,19 @@ static std::string_view GetAudioOutParam(u32 param) {
         return "S16_8CH_STD";
     case ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
         return "FLOAT_8CH_STD";
+    default:
+        return "INVALID";
+    }
+}
+
+static std::string_view GetAudioOutParamAttr(OrbisAudioOutParamAttr attr) {
+    switch (attr) {
+    case ORBIS_AUDIO_OUT_PARAM_ATTR_NONE:
+        return "NONE";
+    case ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED:
+        return "RESTRICTED";
+    case ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN:
+        return "MIX_TO_MAIN";
     default:
         return "INVALID";
     }
@@ -259,12 +272,14 @@ int PS4_SYSV_ABI sceAudioOutMbusInit() {
 
 s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  OrbisAudioOutPort port_type, s32 index, u32 length,
-                                 u32 sample_rate, OrbisAudioOutParam param_type) {
+                                 u32 sample_rate,
+                                 OrbisAudioOutParamExtendedInformation param_type) {
     LOG_INFO(Lib_AudioOut,
              "AudioOutOpen id = {} port_type = {} index = {} lenght= {} sample_rate = {} "
-             "param_type = {}",
+             "param_type = {} attr = {}",
              user_id, GetAudioOutPort(port_type), index, length, sample_rate,
-             GetAudioOutParam(param_type));
+             GetAudioOutParamFormat(param_type.data_format),
+             GetAudioOutParamAttr(param_type.attributes));
     if ((port_type < 0 || port_type > 4) && (port_type != 127)) {
         LOG_ERROR(Lib_AudioOut, "Invalid port type");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
@@ -272,10 +287,6 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     if (sample_rate != 48000) {
         LOG_ERROR(Lib_AudioOut, "Invalid sample rate");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ;
-    }
-    if (param_type < 0 || param_type > 7) {
-        LOG_ERROR(Lib_AudioOut, "Invalid format");
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
     if (length != 256 && length != 512 && length != 768 && length != 1024 && length != 1280 &&
         length != 1536 && length != 1792 && length != 2048) {
@@ -285,7 +296,18 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     if (index != 0) {
         LOG_ERROR(Lib_AudioOut, "index is not valid !=0 {}", index);
     }
-    int result = audio->AudioOutOpen(port_type, length, sample_rate, param_type);
+    OrbisAudioOutParamFormat format = param_type.data_format;
+    if (format < 0 || format > 7) {
+        LOG_ERROR(Lib_AudioOut, "Invalid format");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
+    }
+    OrbisAudioOutParamAttr attr = param_type.attributes;
+    if (attr < 0 || attr > 2) {
+        // TODO Handle attributes in output audio device
+        LOG_ERROR(Lib_AudioOut, "Invalid format attribute");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
+    }
+    int result = audio->AudioOutOpen(port_type, length, sample_rate, format);
     if (result == -1) {
         LOG_ERROR(Lib_AudioOut, "Audio ports are full");
         return ORBIS_AUDIO_OUT_ERROR_PORT_FULL;

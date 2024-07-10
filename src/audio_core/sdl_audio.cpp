@@ -11,8 +11,8 @@
 namespace Audio {
 
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
-                           Libraries::AudioOut::OrbisAudioOutParam format) {
-    using Libraries::AudioOut::OrbisAudioOutParam;
+                           Libraries::AudioOut::OrbisAudioOutParamFormat format) {
+    using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::scoped_lock lock{m_mutex};
     for (int id = 0; id < portsOut.size(); id++) {
         auto& port = portsOut[id];
@@ -24,42 +24,42 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             port.format = format;
             SDL_AudioFormat sampleFormat;
             switch (format) {
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO:
                 sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 1;
                 port.sample_size = 2;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_MONO:
                 sampleFormat = SDL_AUDIO_F32;
                 port.channels_num = 1;
                 port.sample_size = 4;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO:
                 sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 2;
                 port.sample_size = 2;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_STEREO:
                 sampleFormat = SDL_AUDIO_F32;
                 port.channels_num = 2;
                 port.sample_size = 4;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH:
                 sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 8;
                 port.sample_size = 2;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH:
                 sampleFormat = SDL_AUDIO_F32;
                 port.channels_num = 8;
                 port.sample_size = 4;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD:
                 sampleFormat = SDL_AUDIO_S16;
                 port.channels_num = 8;
                 port.sample_size = 2;
                 break;
-            case OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
+            case OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD:
                 sampleFormat = SDL_AUDIO_F32;
                 port.channels_num = 8;
                 port.sample_size = 4;
@@ -108,7 +108,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
 }
 
 bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
-    using Libraries::AudioOut::OrbisAudioOutParam;
+    using Libraries::AudioOut::OrbisAudioOutParamFormat;
     std::scoped_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
@@ -119,8 +119,9 @@ bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
 
         if (bit == 1) {
             int src_index = i;
-            if (port.format == OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD ||
-                port.format == OrbisAudioOutParam::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD) {
+            if (port.format ==
+                    OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_FLOAT_8CH_STD ||
+                port.format == OrbisAudioOutParamFormat::ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_8CH_STD) {
                 switch (i) {
                 case 4:
                     src_index = 6;

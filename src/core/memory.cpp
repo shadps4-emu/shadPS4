@@ -243,6 +243,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
         ASSERT(dmem_it != dmem_map.end());
+        info->offset = vma.phys_base;
         info->memory_type = dmem_it->second.memory_type;
     }
 

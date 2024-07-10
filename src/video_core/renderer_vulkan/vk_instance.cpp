@@ -52,16 +52,36 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     LOG_INFO(Render_Vulkan, "Found {} physical devices", num_physical_devices);
 
     if (physical_device_index < 0) {
-        std::vector<std::pair<size_t, vk::PhysicalDeviceProperties2>> properties2{};
+        std::vector<
+            std::tuple<size_t, vk::PhysicalDeviceProperties2, vk::PhysicalDeviceMemoryProperties>>
+            properties2{};
         for (auto const& physical : physical_devices) {
-            properties2.emplace_back(properties2.size(), physical.getProperties2());
+            properties2.emplace_back(properties2.size(), physical.getProperties2(),
+                                     physical.getMemoryProperties());
         }
         std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
-            if (std::get<1>(left).properties.deviceType ==
-                std::get<1>(right).properties.deviceType) {
+            const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
+            const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
+            if (left_prop.apiVersion >= TargetVulkanApiVersion &&
+                right_prop.apiVersion < TargetVulkanApiVersion) {
                 return true;
             }
-            return std::get<1>(left).properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            if (left_prop.deviceType != right_prop.deviceType) {
+                return left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            }
+            constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
+                size_t max = 0;
+                for (u32 i = 0; i < mem.memoryHeapCount; i++) {
+                    const vk::MemoryHeap& heap = mem.memoryHeaps[i];
+                    if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal && heap.size > max) {
+                        max = heap.size;
+                    }
+                }
+                return max;
+            };
+            size_t left_mem_size = get_mem(std::get<2>(left));
+            size_t right_mem_size = get_mem(std::get<2>(right));
+            return left_mem_size > right_mem_size;
         });
         physical_device = physical_devices[std::get<0>(properties2[0])];
     } else {
