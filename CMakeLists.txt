@@ -161,6 +161,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
+                src/core/libraries/avplayer/avplayer.cpp
+                src/core/libraries/avplayer/avplayer.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -186,6 +188,13 @@ set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
                  src/core/libraries/libc/libc_stdlib.h
                  src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
+)
+
+set(DIALOGS_LIB src/core/libraries/dialogs/error_dialog.cpp
+                src/core/libraries/dialogs/error_dialog.h
+                src/core/libraries/dialogs/ime_dialog.cpp
+                src/core/libraries/dialogs/ime_dialog.h
+                src/core/libraries/dialogs/error_codes.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
@@ -309,6 +318,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${USBD_LIB}
          ${MISC_LIBS}
+         ${DIALOGS_LIB}
          src/core/linker.cpp
          src/core/linker.h
          src/core/memory.cpp

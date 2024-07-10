@@ -198,6 +198,8 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount() {
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint) {
+    if (std::string_view(mountPoint->data).empty()) // causing issues with save_data.
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     auto* param_sfo = Common::Singleton<PSF>::Instance();
     std::string id(param_sfo->GetString("CONTENT_ID"), 7, 9);
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
