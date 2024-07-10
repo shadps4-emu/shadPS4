@@ -15,9 +15,9 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 
     const auto& it = std::ranges::find(m_events, event);
     if (it != m_events.cend()) {
-        *it = event;
+        *it = std::move(event);
     } else {
-        m_events.emplace_back(event);
+        m_events.emplace_back(std::move(event));
     }
 
     return true;
@@ -37,20 +37,32 @@ bool EqueueInternal::RemoveEvent(u64 id) {
 }
 
 int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
-    std::unique_lock lock{m_mutex};
-    int ret = 0;
+    int count = 0;
 
     const auto predicate = [&] {
-        ret = GetTriggeredEvents(ev, num);
-        return ret > 0;
+        count = GetTriggeredEvents(ev, num);
+        return count > 0;
     };
 
     if (micros == 0) {
+        std::unique_lock lock{m_mutex};
         m_cond.wait(lock, predicate);
     } else {
+        std::unique_lock lock{m_mutex};
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
-    return ret;
+
+    if (ev->flags & SceKernelEvent::Flags::OneShot) {
+        for (auto ev_id = 0u; ev_id < count; ++ev_id) {
+            RemoveEvent(ev->ident);
+        }
+    }
+
+    if (HasSmallTimer()) {
+        count = WaitForSmallTimer(ev, num, micros);
+    }
+
+    return count;
 }
 
 bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
@@ -72,7 +84,7 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
 }
 
 int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
-    int ret = 0;
+    int count = 0;
 
     for (auto& event : m_events) {
         if (event.IsTriggered()) {
@@ -80,15 +92,53 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
                 event.Reset();
             }
 
-            ev[ret++] = event.event;
+            ev[count++] = event.event;
 
-            if (ret == num) {
+            if (count == num) {
                 break;
             }
         }
     }
 
-    return ret;
+    return count;
+}
+
+bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
+    // We assume that only one timer event (with the same ident across calls)
+    // can be posted to the queue, based on observations so far. In the opposite case,
+    // the small timer storage and wait logic should be reworked.
+    ASSERT(!HasSmallTimer() || small_timer_event.event.ident == ev.event.ident);
+    ev.time_added = std::chrono::high_resolution_clock::now();
+    small_timer_event = std::move(ev);
+    return true;
+}
+
+int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
+    int count{};
+
+    ASSERT(num == 1);
+
+    auto curr_clock = std::chrono::high_resolution_clock::now();
+    const auto wait_end_us = curr_clock + std::chrono::microseconds{micros};
+
+    do {
+        curr_clock = std::chrono::high_resolution_clock::now();
+
+        {
+            std::unique_lock lock{m_mutex};
+            if ((curr_clock - small_timer_event.time_added) >
+                std::chrono::microseconds{small_timer_event.event.data}) {
+                ev[count++] = small_timer_event.event;
+                small_timer_event.event.data = 0;
+                break;
+            }
+        }
+
+        std::this_thread::yield();
+
+    } while (curr_clock < wait_end_us);
+
+    return count;
 }
 
 } // namespace Libraries::Kernel

@@ -7,6 +7,9 @@
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include <boost/asio/steady_timer.hpp>
+
 #include "common/types.h"
 
 namespace Libraries::Kernel {
@@ -58,6 +61,7 @@ struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
+    std::unique_ptr<boost::asio::steady_timer> timer;
 
     void Reset() {
         is_triggered = false;
@@ -99,10 +103,17 @@ public:
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
     int GetTriggeredEvents(SceKernelEvent* ev, int num);
 
+    bool AddSmallTimer(EqueueEvent& event);
+    bool HasSmallTimer() const {
+        return small_timer_event.event.data != 0;
+    }
+    int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
+
 private:
     std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
+    EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };
 

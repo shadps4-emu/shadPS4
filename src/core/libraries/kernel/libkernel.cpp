@@ -3,9 +3,14 @@
 
 #include <chrono>
 #include <thread>
+
+#include <boost/asio/io_context.hpp>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "common/thread.h"
+#include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/cpu_management.h"
@@ -19,6 +24,7 @@
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
+
 #ifdef _WIN64
 #include <io.h>
 #include <objbase.h>
@@ -26,11 +32,42 @@
 #else
 #include <sys/mman.h>
 #endif
-#include <core/file_format/psf.h>
 
 namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
+
+boost::asio::io_context io_context;
+std::mutex m_asio_req;
+std::condition_variable_any cv_asio_req;
+std::atomic<u32> asio_requests;
+std::jthread service_thread;
+
+void KernelSignalRequest() {
+    std::unique_lock lock{m_asio_req};
+    ++asio_requests;
+    cv_asio_req.notify_one();
+}
+
+static void KernelServiceThread(std::stop_token stoken) {
+    Common::SetCurrentThreadName("Kernel_ServiceThread");
+
+    while (!stoken.stop_requested()) {
+        HLE_TRACE;
+        {
+            std::unique_lock lock{m_asio_req};
+            cv_asio_req.wait(lock, stoken, [] { return asio_requests != 0; });
+        }
+        if (stoken.stop_requested()) {
+            break;
+        }
+
+        io_context.run();
+        io_context.reset();
+
+        asio_requests = 0;
+    }
+}
 
 static void* PS4_SYSV_ABI sceKernelGetProcParam() {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
@@ -310,6 +347,8 @@ int PS4_SYSV_ABI _sigprocmask() {
 }
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
+    service_thread = std::jthread{KernelServiceThread};
+
     // obj
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     // misc
