@@ -27,7 +27,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 <p align="center">
   <a href="https://shadps4.net/">
   <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/screenshot.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Bloodborne.png" width="400">
   <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400">
   <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
 </p>
@@ -128,3 +128,7 @@ Open a PR and we'll check it :)
 
 - [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
 - [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
+
+# License
+
+- [**GPL-2.0 license**](https://github.com/shadps4-emu/shadPS4/blob/main/LICENSE)
