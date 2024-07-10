@@ -33,6 +33,7 @@
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videoout/video_out.h"
 #include "src/core/libraries/ajm/ajm.h"
+#include "src/core/libraries/avplayer/avplayer.h"
 #include "src/core/libraries/dialogs/error_dialog.h"
 #include "src/core/libraries/dialogs/ime_dialog.h"
 #include "src/core/libraries/libpng/pngdec.h"
@@ -75,6 +76,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Ajm::RegisterlibSceAjm(sym);
     Libraries::ErrorDialog::RegisterlibSceErrorDialog(sym);
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
+    Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
 }
 
 } // namespace Libraries
