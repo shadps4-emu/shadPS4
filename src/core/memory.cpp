@@ -87,8 +87,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
                            u64 alignment) {
     std::scoped_lock lk{mutex};
 
-    // TODO: Search for free space if virtual_addr is zero
-    virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
+    ASSERT_MSG(virtual_addr != 0, "TODO: Reserve address is zero - search for free space");
 
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
 
