@@ -84,9 +84,10 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
 }
 
 int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                            u64 alignment) {
+                           u64 alignment) {
     std::scoped_lock lk{mutex};
 
+    // TODO: Search for free space if virtual_addr is zero
     virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
 
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
@@ -170,7 +171,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     } else {
         LOG_INFO(Kernel_Vmm, "Virtual addr {:#x} with size {:#x}", virtual_addr, size);
     }
-    
+
     VAddr mapped_addr = 0;
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
 
@@ -188,7 +189,8 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     if (True(flags & MemoryMapFlags::Fixed)) {
         const auto& vma = FindVMA(virtual_addr)->second;
         const size_t remaining_size = vma.base + vma.size - virtual_addr;
-        ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) && remaining_size >= size);
+        ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
+                   remaining_size >= size);
 
         mapped_addr = virtual_addr;
     }
@@ -338,7 +340,8 @@ VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) && vma.base <= virtual_addr,
+    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
+                   vma.base <= virtual_addr,
                "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;
