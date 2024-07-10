@@ -161,6 +161,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
+                src/core/libraries/avplayer/avplayer.cpp
+                src/core/libraries/avplayer/avplayer.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
