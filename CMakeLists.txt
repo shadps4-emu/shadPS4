@@ -261,6 +261,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/types.h
            src/common/uint128.h
            src/common/version.h
+           src/common/ntapi.h
 )
 
 set(CORE src/core/aerolib/stubs.cpp

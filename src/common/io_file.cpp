@@ -11,6 +11,8 @@
 #include "common/path_util.h"
 
 #ifdef _WIN32
+#include "common/ntapi.h"
+
 #include <io.h>
 #include <share.h>
 #include <windows.h>
@@ -213,6 +215,26 @@ void IOFile::Close() {
     if (file_mapping) {
         CloseHandle(std::bit_cast<HANDLE>(file_mapping));
     }
+#endif
+}
+
+void IOFile::Unlink() {
+    if (!IsOpen()) {
+        return;
+    }
+
+    // Mark the file for deletion
+    // TODO: Also remove the file path?
+#if _WIN64
+    FILE_DISPOSITION_INFORMATION disposition;
+    IO_STATUS_BLOCK iosb;
+
+    const int fd = fileno(file);
+    HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+
+    disposition.DeleteFile = TRUE;
+    NtSetInformationFile(hfile, &iosb, &disposition, sizeof(disposition),
+                         FileDispositionInformation);
 #endif
 }
 

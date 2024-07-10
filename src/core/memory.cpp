@@ -146,7 +146,6 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                            MemoryMapFlags flags, uintptr_t fd, size_t offset) {
-    ASSERT(virtual_addr == 0);
     virtual_addr = impl.VirtualBase();
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
 

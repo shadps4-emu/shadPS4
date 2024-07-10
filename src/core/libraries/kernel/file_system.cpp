@@ -179,16 +179,11 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     }
 
     auto* file = h->getFile(host_path);
-    if (file == nullptr) {
-        return SCE_KERNEL_ERROR_EIO;
+    if (file != nullptr) {
+        file->f.Unlink();
     }
 
-    file->f.Close();
-    if (!std::filesystem::remove(host_path)) {
-        return SCE_KERNEL_ERROR_ENOENT;
-    }
-
-    LOG_INFO(Kernel_Fs, "Deleted {}", path);
+    LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return SCE_OK;
 }
 
@@ -403,14 +398,7 @@ int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
         return SCE_KERNEL_ERROR_EACCES;
     }
 
-    // CUSA05289 (PSPHD emulator): Tries to resize a temporary file after deleting it
-    try {
-        // TODO: Check for sufficient space?
-        std::filesystem::resize_file(file->m_host_name, length);
-    } catch (std::filesystem::filesystem_error& e) {
-        LOG_ERROR(Kernel_Fs, "Error: {}", e.what());
-    }
-
+    file->f.SetSize(length);
     return SCE_OK;
 }
 
