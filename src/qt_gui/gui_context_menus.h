@@ -48,8 +48,8 @@ public:
         QAction openSfoViewer("SFO Viewer", widget);
         QAction openTrophyViewer("Trophy Viewer", widget);
 
-        menu.addAction(&createShortcut);
         menu.addAction(&openFolder);
+        menu.addAction(&createShortcut);
         menu.addAction(&openSfoViewer);
         menu.addAction(&openTrophyViewer);
 
