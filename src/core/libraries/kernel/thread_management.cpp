@@ -57,29 +57,51 @@ void pthreadInitSelfMainThread() {
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
+    if (attr == nullptr) {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
     *attr = new PthreadAttrInternal{};
 
     int result = pthread_attr_init(&(*attr)->pth_attr);
 
+    if (result != 0) {
+        delete *attr;
+        *attr = nullptr;
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
     (*attr)->affinity = 0x7f;
     (*attr)->guard_size = 0x1000;
+
+    result = scePthreadAttrSetinheritsched(attr, PTHREAD_EXPLICIT_SCHED);
+
+    if (result != SCE_OK) {
+        delete *attr;
+        *attr = nullptr;
+        return result;
+    }
 
     SceKernelSchedParam param{};
     param.sched_priority = 700;
 
-    result = (result == 0 ? scePthreadAttrSetinheritsched(attr, 4) : result);
-    result = (result == 0 ? scePthreadAttrSetschedparam(attr, &param) : result);
-    result = (result == 0 ? scePthreadAttrSetschedpolicy(attr, SCHED_OTHER) : result);
-    result = (result == 0 ? scePthreadAttrSetdetachstate(attr, PTHREAD_CREATE_JOINABLE) : result);
+    result = scePthreadAttrSetschedparam(attr, &param);
 
-    switch (result) {
-    case 0:
-        return SCE_OK;
-    case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
-    default:
-        return SCE_KERNEL_ERROR_EINVAL;
+    if (result != SCE_OK) {
+        delete *attr;
+        *attr = nullptr;
+        return result;
     }
+
+    result = scePthreadAttrSetdetachstate(attr, PTHREAD_CREATE_JOINABLE);
+
+    if (result != SCE_OK) {
+        delete *attr;
+        *attr = nullptr;
+        return result;
+    }
+
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrDestroy(ScePthreadAttr* attr) {
@@ -231,19 +253,26 @@ int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    SceKernelSchedParam pparam{};
-    if (param->sched_priority <= 478) {
-        pparam.sched_priority = +2;
-    } else if (param->sched_priority >= 733) {
-        pparam.sched_priority = -2;
-    } else {
-        pparam.sched_priority = 0;
+    struct sched_param sched_param;
+    sched_param.sched_priority = param->sched_priority;
+
+    int result;
+    switch ((*attr)->policy) {
+    case SCHED_OTHER:
+        sched_param.sched_priority = 700;
+        break;
+    case SCHED_FIFO:
+    case SCHED_RR:
+    case SCHED_ULE:
+    case SCHED_4BSD:
+        result = pthread_attr_setschedparam(&(*attr)->pth_attr, &sched_param);
+        return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    default:
+        LOG_ERROR(Kernel_Pthread, "policy={} not supported by winpthreads", (*attr)->policy);
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    // We always use SCHED_OTHER for now, so don't call this for now.
-    // int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
-    int result = 0;
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetschedpolicy(const ScePthreadAttr* attr, int* policy) {
@@ -255,19 +284,16 @@ int PS4_SYSV_ABI scePthreadAttrGetschedpolicy(const ScePthreadAttr* attr, int* p
 
     switch (*policy) {
     case SCHED_OTHER:
-        *policy = (*attr)->policy;
-        break;
     case SCHED_FIFO:
-        *policy = 1;
-        break;
     case SCHED_RR:
-        *policy = 3;
-        break;
+    case SCHED_ULE:
+    case SCHED_4BSD:
+        return SCE_OK;
     default:
-        UNREACHABLE();
+        LOG_ERROR(Kernel_Pthread, "Unknown policy={} returned by pthread_attr_getschedpolicy",
+                  *policy);
+        return SCE_KERNEL_ERROR_EINVAL;
     }
-
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
@@ -280,6 +306,8 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
     case SCHED_OTHER:
     case SCHED_FIFO:
     case SCHED_RR:
+    case SCHED_ULE:
+    case SCHED_4BSD:
         ppolicy = policy;
         break;
     default:
