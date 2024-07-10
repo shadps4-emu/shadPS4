@@ -107,9 +107,9 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     }
 
     auto* memory = Core::Memory::Instance();
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    memory->MapMemory(addr, 0, len, Core::MemoryProt::NoAccess, map_flags, Core::VMAType::Direct,
-                      "", false, -1, alignment);
+    memory->Reserve(addr, in_addr, len, map_flags, alignment);
 
     return SCE_OK;
 }
