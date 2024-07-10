@@ -235,6 +235,8 @@ void IOFile::Unlink() {
     disposition.DeleteFile = TRUE;
     NtSetInformationFile(hfile, &iosb, &disposition, sizeof(disposition),
                          FileDispositionInformation);
+#else
+    UNREACHABLE_MSG("Missing Linux implementation");
 #endif
 }
 
