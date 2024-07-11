@@ -195,7 +195,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     }
 
     // Map the file.
-    impl.MapFile(mapped_addr, size, offset, fd);
+    impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
     auto& new_vma = AddMapping(mapped_addr, size_aligned);
