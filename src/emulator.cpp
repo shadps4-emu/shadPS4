@@ -40,7 +40,9 @@ Emulator::Emulator()
     Config::load(config_dir / "config.toml");
 
     // Initialize NT API functions
+#ifdef _WIN32
     Common::NtApi::Initialize();
+#endif
 
     // Start logger.
     Common::Log::Initialize();
