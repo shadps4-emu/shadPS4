@@ -251,13 +251,13 @@ uintptr_t IOFile::GetFileMapping() {
     HANDLE mapping = nullptr;
 
     if (file_access_mode == FileAccessMode::ReadWrite) {
-        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT,
-                                            0, NULL, NULL, 0);
+        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT, 0,
+                                     NULL, NULL, 0);
     } else {
-        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT,
-                                            0, NULL, NULL, 0);
+        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL,
+                                     NULL, 0);
     }
-    
+
     file_mapping = std::bit_cast<uintptr_t>(mapping);
     ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
     return file_mapping;

@@ -5,8 +5,8 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "core/address_space.h"
-#include "core/memory.h"
 #include "core/libraries/kernel/memory_management.h"
+#include "core/memory.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -338,8 +338,10 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
                      is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 }
 
-void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot, uintptr_t fd) {
-    return impl->Map(virtual_addr, offset, size, ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
+void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot,
+                            uintptr_t fd) {
+    return impl->Map(virtual_addr, offset, size,
+                     ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
 }
 
 void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
