@@ -60,7 +60,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_package(Boost 1.83.0 CONFIG)
+find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
 find_package(fmt 10.2.1 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
