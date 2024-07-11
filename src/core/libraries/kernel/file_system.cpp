@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     } else {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostFile(file->m_guest_name);
-        errno_t e = 0;
+        int e = 0;
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (write && (create || truncate)) {
