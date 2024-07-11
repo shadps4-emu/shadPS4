@@ -50,8 +50,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexce
     : is_storage{is_storage} {
     type = ConvertImageViewType(image.GetType());
     format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
-    range.base.level = 0;
-    range.base.layer = 0;
+    range.base.level = static_cast<u32>(image.base_level);
+    range.base.layer = static_cast<u32>(image.base_array);
     range.extent.levels = image.NumLevels();
     range.extent.layers = image.NumLayers();
     if (!is_storage) {
@@ -95,7 +95,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .aspectMask = aspect,
             .baseMipLevel = 0U,
             .levelCount = 1,
-            .baseArrayLayer = 0,
+            .baseArrayLayer = info_.range.base.layer,
             .layerCount = image.info.IsBlockCoded() ? 1 : VK_REMAINING_ARRAY_LAYERS,
         },
     };

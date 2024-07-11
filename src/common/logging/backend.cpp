@@ -170,7 +170,7 @@ public:
                    const char* function, std::string message) {
         // Propagate important log messages to the profiler
         if (IsProfilerConnected()) {
-            const auto& msg_str = std::format("[{}] {}", GetLogClassName(log_class), message);
+            const auto& msg_str = fmt::format("[{}] {}", GetLogClassName(log_class), message);
             switch (log_level) {
             case Level::Warning:
                 TRACE_WARN(msg_str);

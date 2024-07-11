@@ -13,6 +13,7 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 void ErrSceToPosix(int result);
+int ErrnoToSceKernelError(int e);
 
 struct OrbisTimesec {
     time_t t;
