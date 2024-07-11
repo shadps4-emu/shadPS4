@@ -19,5 +19,6 @@ int PS4_SYSV_ABI sceKernelTriggerUserEvent(SceKernelEqueue eq, int id, void* uda
 int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id);
 int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id);
 int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id);
+s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* ts, void* udata);
 
 } // namespace Libraries::Kernel

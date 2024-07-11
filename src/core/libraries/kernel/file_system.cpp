@@ -73,28 +73,25 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     } else {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostFile(file->m_guest_name);
+        int e = 0;
         if (read) {
-            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write && create) {
-            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (write && (create || truncate)) {
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
         } else if (write && create && append) { // CUSA04729 (appends app0/shaderlist.txt)
-            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
         } else if (rdwr) {
             if (create) { // Create an empty file first.
                 Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
             }
             // RW, then scekernelWrite is called and savedata is written just fine now.
-            file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
         } else {
             UNREACHABLE();
         }
-        if (!file->f.IsOpen()) {
+        if (e != 0) {
             h->DeleteHandle(handle);
-            if (create) {
-                return ORBIS_KERNEL_ERROR_EACCES;
-            } else {
-                return ORBIS_KERNEL_ERROR_ENOENT;
-            }
+            return ErrnoToSceKernelError(e);
         }
     }
     file->is_opened = true;

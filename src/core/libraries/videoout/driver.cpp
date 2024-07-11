@@ -196,7 +196,7 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
     // Trigger flip events for the port.
     for (auto& event : req.port->flip_events) {
         if (event != nullptr) {
-            event->triggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::EVFILT_VIDEO_OUT,
+            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::SceKernelEvent::Filter::VideoOut,
                                 reinterpret_cast<void*>(req.flip_arg));
         }
     }
@@ -252,7 +252,8 @@ void VideoOutDriver::Vblank() {
     // Trigger flip events for the port.
     for (auto& event : main_port.vblank_events) {
         if (event != nullptr) {
-            event->triggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK, Kernel::EVFILT_VIDEO_OUT, nullptr);
+            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
+                                Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
         }
     }
 }
