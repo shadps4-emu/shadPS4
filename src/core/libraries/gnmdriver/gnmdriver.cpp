@@ -26,6 +26,17 @@ using namespace AmdGpu;
 
 static std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
+enum GnmEventIdents : u64 {
+    Compute0RelMem = 0x00,
+    Compute1RelMem = 0x01,
+    Compute2RelMem = 0x02,
+    Compute3RelMem = 0x03,
+    Compute4RelMem = 0x04,
+    Compute5RelMem = 0x05,
+    Compute6RelMem = 0x06,
+    GfxEop = 0x40
+};
+
 enum ShaderStages : u32 {
     Cs,
     Ps,
@@ -327,10 +338,6 @@ static inline u32* ClearContextState(u32* cmdbuf) {
 
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (id != SceKernelEvent::Type::GfxEop) {
-        return ORBIS_OK;
-    }
-    ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
 
     if (!eq) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -338,20 +345,20 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
 
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
-    kernel_event.event.filter = EVFILT_GRAPHICS_CORE;
-    kernel_event.event.flags = 1;
+    kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
+    kernel_event.event.flags = SceKernelEvent::Flags::Add;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
-    eq->addEvent(kernel_event);
+    eq->AddEvent(kernel_event);
 
     Platform::IrqC::Instance()->Register(
         Platform::InterruptId::GfxEop,
         [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                       "An unexpected IRQ occured"); // We need to conver IRQ# to event id and do
+                       "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
                                                      // proper filtering in trigger function
-            eq->triggerEvent(SceKernelEvent::Type::GfxEop, EVFILT_GRAPHICS_CORE, nullptr);
+            eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
         },
         eq);
     return ORBIS_OK;
@@ -455,13 +462,13 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
 
 s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    ASSERT_MSG(id == SceKernelEvent::Type::GfxEop);
+    ASSERT_MSG(id == GnmEventIdents::GfxEop);
 
     if (!eq) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    eq->removeEvent(id);
+    eq->RemoveEvent(id);
 
     Platform::IrqC::Instance()->Unregister(Platform::InterruptId::GfxEop, eq);
     return ORBIS_OK;
