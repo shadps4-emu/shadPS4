@@ -63,7 +63,7 @@ public:
               bool exec = false);
 
     /// Memory maps a specified file descriptor.
-    void* MapFile(VAddr virtual_addr, size_t size, size_t offset, uintptr_t fd);
+    void* MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
     void Unmap(VAddr virtual_addr, size_t size, bool has_backing);

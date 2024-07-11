@@ -83,6 +83,25 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
     MergeAdjacent(dmem_map, dmem_area);
 }
 
+int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
+                           u64 alignment) {
+    std::scoped_lock lk{mutex};
+
+    ASSERT_MSG(virtual_addr != 0, "TODO: Reserve address is zero - search for free space");
+
+    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+
+    // Add virtual memory area
+    auto& new_vma = AddMapping(mapped_addr, size);
+    new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
+    new_vma.prot = MemoryProt::NoAccess;
+    new_vma.name = "";
+    new_vma.type = VMAType::Reserved;
+
+    *out_addr = std::bit_cast<void*>(mapped_addr);
+    return ORBIS_OK;
+}
+
 int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
@@ -146,20 +165,37 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                            MemoryMapFlags flags, uintptr_t fd, size_t offset) {
-    ASSERT(virtual_addr == 0);
-    virtual_addr = impl.VirtualBase();
+    if (virtual_addr == 0) {
+        virtual_addr = impl.VirtualBase();
+    } else {
+        LOG_INFO(Kernel_Vmm, "Virtual addr {:#x} with size {:#x}", virtual_addr, size);
+    }
+
+    VAddr mapped_addr = 0;
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
-    auto it = FindVMA(virtual_addr);
-    while (it->second.type != VMAType::Free || it->second.size < size_aligned) {
-        it++;
+    if (False(flags & MemoryMapFlags::Fixed)) {
+        auto it = FindVMA(virtual_addr);
+        while (it->second.type != VMAType::Free || it->second.size < size_aligned) {
+            it++;
+        }
+        ASSERT(it != vma_map.end());
+
+        mapped_addr = it->second.base;
     }
-    ASSERT(it != vma_map.end());
+
+    if (True(flags & MemoryMapFlags::Fixed)) {
+        const auto& vma = FindVMA(virtual_addr)->second;
+        const size_t remaining_size = vma.base + vma.size - virtual_addr;
+        ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
+                   remaining_size >= size);
+
+        mapped_addr = virtual_addr;
+    }
 
     // Map the file.
-    const VAddr mapped_addr = it->second.base;
-    impl.MapFile(mapped_addr, size, offset, fd);
+    impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
     auto& new_vma = AddMapping(mapped_addr, size_aligned);
@@ -303,7 +339,8 @@ VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG(vma.type == VMAType::Free && vma.base <= virtual_addr,
+    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
+                   vma.base <= virtual_addr,
                "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;

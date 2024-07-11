@@ -87,6 +87,33 @@ s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtual
     return memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
 }
 
+s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u64 alignment) {
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}, alignment = {:#x}",
+             fmt::ptr(*addr), len, flags, alignment);
+
+    if (addr == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (len == 0 || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (alignment != 0) {
+        if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
+            LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+            return SCE_KERNEL_ERROR_EINVAL;
+        }
+    }
+
+    auto* memory = Core::Memory::Instance();
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    memory->Reserve(addr, in_addr, len, map_flags, alignment);
+
+    return SCE_OK;
+}
+
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
                                                s64 directMemoryStart, u64 alignment,
                                                const char* name) {

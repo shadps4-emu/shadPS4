@@ -107,6 +107,8 @@ public:
              FileShareFlag flag = FileShareFlag::ShareReadOnly);
     void Close();
 
+    void Unlink();
+
     bool Flush() const;
     bool Commit() const;
 
