@@ -11,7 +11,7 @@ EqueueInternal::~EqueueInternal() = default;
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
-    event.time_added = std::chrono::high_resolution_clock::now();
+    event.time_added = std::chrono::steady_clock::now();
 
     const auto& it = std::ranges::find(m_events, event);
     if (it != m_events.cend()) {
@@ -52,14 +52,20 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
 
+    if (HasSmallTimer()) {
+        if (count > 0) {
+            const auto time_waited = std::chrono::duration_cast<std::chrono::microseconds>(
+                                         std::chrono::steady_clock::now() - m_events[0].time_added)
+                                         .count();
+            count = WaitForSmallTimer(ev, num, std::max(0l, long(micros - time_waited)));
+        }
+        small_timer_event.event.data = 0;
+    }
+
     if (ev->flags & SceKernelEvent::Flags::OneShot) {
         for (auto ev_id = 0u; ev_id < count; ++ev_id) {
             RemoveEvent(ev->ident);
         }
-    }
-
-    if (HasSmallTimer()) {
-        count = WaitForSmallTimer(ev, num, micros);
     }
 
     return count;
@@ -108,7 +114,7 @@ bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
     // can be posted to the queue, based on observations so far. In the opposite case,
     // the small timer storage and wait logic should be reworked.
     ASSERT(!HasSmallTimer() || small_timer_event.event.ident == ev.event.ident);
-    ev.time_added = std::chrono::high_resolution_clock::now();
+    ev.time_added = std::chrono::steady_clock::now();
     small_timer_event = std::move(ev);
     return true;
 }
@@ -118,11 +124,11 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
 
     ASSERT(num == 1);
 
-    auto curr_clock = std::chrono::high_resolution_clock::now();
+    auto curr_clock = std::chrono::steady_clock::now();
     const auto wait_end_us = curr_clock + std::chrono::microseconds{micros};
 
     do {
-        curr_clock = std::chrono::high_resolution_clock::now();
+        curr_clock = std::chrono::steady_clock::now();
 
         {
             std::unique_lock lock{m_mutex};
