@@ -177,12 +177,39 @@ int PS4_SYSV_ABI sceSaveDataDeleteUser() {
 
 int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* cond,
                                           OrbisSaveDataDirNameSearchResult* result) {
-    if (cond == nullptr || cond->dirName == nullptr)
+    if (cond == nullptr)
         return ORBIS_SAVE_DATA_ERROR_PARAMETER;
-    LOG_ERROR(Lib_SaveData,
-              "TODO sceSaveDataDirNameSearch: search_dir_name = {}, key = {}, result = {}",
-              cond->dirName->data, (int)cond->key, (result->infos == nullptr));
-
+    LOG_ERROR(Lib_SaveData, "TODO sceSaveDataDirNameSearch: Add params");
+    const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
+                            std::to_string(cond->userId) / game_serial;
+    if (!mount_dir.empty() && std::filesystem::exists(mount_dir)) {
+        if (cond->dirName == nullptr) { // look for all dirs if no dir is provided.
+            for (int i = 0; const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
+                if (std::filesystem::is_directory(entry.path())) {
+                    i++;
+                    result->dirNamesNum = 0; // why is it 1024? is it max?
+                    // copy dir name to be used by sceSaveDataMount in read mode.
+                    strncpy(result->dirNames[i].data, entry.path().filename().string().c_str(), 32);
+                    result->hitNum = i + 1;
+                    result->dirNamesNum = i + 1; // to confirm
+                    result->setNum = i + 1;      // to confirm
+                }
+            }
+        } else { // Need a game to test.
+            strncpy(result->dirNames[0].data, cond->dirName->data, 32);
+            result->hitNum = 1;
+            result->dirNamesNum = 1; // to confirm
+            result->setNum = 1;      // to confirm
+        }
+    } else {
+        result->hitNum = 0;
+        result->dirNamesNum = 0;
+        result->setNum = 0;
+    }
+    if (result->infos != nullptr) {
+        result->infos->blocks = ORBIS_SAVE_DATA_BLOCK_SIZE;
+        result->infos->freeBlocks = ORBIS_SAVE_DATA_BLOCK_SIZE;
+    }
     return ORBIS_OK;
 }
 
