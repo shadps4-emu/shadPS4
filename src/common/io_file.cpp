@@ -167,7 +167,7 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     return *this;
 }
 
-errno_t IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
     Close();
 
     file_path = path;
@@ -175,7 +175,7 @@ errno_t IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, F
     file_type = type;
 
     errno = 0;
-    errno_t result = 0;
+    int result = 0;
 
 #ifdef _WIN32
     if (flag != FileShareFlag::ShareNone) {

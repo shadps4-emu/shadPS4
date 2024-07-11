@@ -75,7 +75,7 @@ void ErrSceToPosix(int result) {
     g_posix_errno = rt;
 }
 
-int ErrnoToSceKernelError(errno_t e) {
+int ErrnoToSceKernelError(int e) {
     const auto res = SCE_KERNEL_ERROR_UNKNOWN + e;
     return res > SCE_KERNEL_ERROR_ESTOP ? SCE_KERNEL_ERROR_UNKNOWN : res;
 }
