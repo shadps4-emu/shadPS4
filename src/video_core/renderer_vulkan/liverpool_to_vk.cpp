@@ -441,6 +441,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR16G16B16A16Unorm;
     }
+    if (data_format == AmdGpu::DataFormat::Format16_16 &&
+        num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR16G16Uint;
+    }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }
 
