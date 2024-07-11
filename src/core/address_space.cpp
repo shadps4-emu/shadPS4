@@ -19,6 +19,8 @@ namespace Core {
 
 static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE;
 
+#ifdef _WIN32
+
 [[nodiscard]] constexpr u64 ToWindowsProt(Core::MemoryProt prot) {
     switch (prot) {
     case Core::MemoryProt::NoAccess:
@@ -31,7 +33,6 @@ static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE;
     }
 }
 
-#ifdef _WIN32
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
         // Allocate virtual address placeholder for our address space.
@@ -228,6 +229,18 @@ enum PosixPageProtection {
     PAGE_EXECUTE_READWRITE = PROT_EXEC | PROT_READ | PROT_WRITE
 };
 
+[[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
+    switch (prot) {
+    case Core::MemoryProt::NoAccess:
+    default:
+        return PAGE_NOACCESS;
+    case Core::MemoryProt::CpuRead:
+        return PAGE_READONLY;
+    case Core::MemoryProt::CpuReadWrite:
+        return PAGE_READWRITE;
+    }
+}
+
 struct AddressSpace::Impl {
     Impl() {
         // Allocate virtual address placeholder for our address space.
@@ -340,8 +353,13 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
 
 void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot,
                             uintptr_t fd) {
+#ifdef _WIN32
     return impl->Map(virtual_addr, offset, size,
                      ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
+#else
+    return impl->Map(virtual_addr, offset, size, ToPosixProt(std::bit_cast<Core::MemoryProt>(prot)),
+                     fd);
+#endif
 }
 
 void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
