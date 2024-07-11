@@ -5,9 +5,8 @@
 
 #ifdef _WIN32
 
-#include "common/types.h"
-
 #include <windows.h>
+#include "common/types.h"
 
 typedef enum _FILE_INFORMATION_CLASS {
     FileDirectoryInformation = 1,
@@ -109,15 +108,17 @@ typedef struct _FILE_DISPOSITION_INFORMATION {
     BOOLEAN DeleteFile;
 } FILE_DISPOSITION_INFORMATION, *PFILE_DISPOSITION_INFORMATION;
 
-// http://stackoverflow.com/a/31411628/4725495
-static u32(__stdcall* NtDelayExecution)(BOOL Alertable, PLARGE_INTEGER DelayInterval) =
-    (u32(__stdcall*)(BOOL, PLARGE_INTEGER))GetProcAddress(GetModuleHandleA("ntdll.dll"),
-                                                          "NtDelayExecution");
+typedef u32(__stdcall* NtDelayExecution_t)(BOOL Alertable, PLARGE_INTEGER DelayInterval);
 
-static u32(__stdcall* NtSetInformationFile)(HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock,
-                                            PVOID FileInformation, ULONG Length,
-                                            FILE_INFORMATION_CLASS FileInformationClass) =
-    (u32(__stdcall*)(HANDLE, PIO_STATUS_BLOCK, PVOID, ULONG, FILE_INFORMATION_CLASS))
-        GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtSetInformationFile");
+typedef u32(__stdcall* NtSetInformationFile_t)(HANDLE FileHandle, PIO_STATUS_BLOCK IoStatusBlock,
+                                               PVOID FileInformation, ULONG Length,
+                                               FILE_INFORMATION_CLASS FileInformationClass);
+
+extern NtDelayExecution_t NtDelayExecution;
+extern NtSetInformationFile_t NtSetInformationFile;
+
+namespace Common::NtApi {
+void Initialize();
+}
 
 #endif
