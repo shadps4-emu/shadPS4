@@ -55,6 +55,6 @@
 [submodule "externals/tracy"]
 	path = externals/tracy
 	url = https://github.com/shadps4-emu/tracy.git
-[submodule "externals/boost"]
-	path = externals/boost
+[submodule "externals/ext-boost"]
+	path = externals/ext-boost
 	url = https://github.com/shadps4-emu/ext-boost.git
