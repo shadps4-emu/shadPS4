@@ -143,9 +143,7 @@ struct Info {
         }
 
         u32 NumComponents(IR::Attribute attrib) const {
-            const u8 mask = flags[Index(attrib)];
-            ASSERT(mask != 0b1011 || mask != 0b1101);
-            return std::popcount(mask);
+            return 4;
         }
 
         static size_t Index(IR::Attribute attrib) {
