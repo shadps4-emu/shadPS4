@@ -167,7 +167,7 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     return *this;
 }
 
-void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
     Close();
 
     file_path = path;
@@ -175,21 +175,26 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
     file_type = type;
 
     errno = 0;
+    int result = 0;
 
 #ifdef _WIN32
     if (flag != FileShareFlag::ShareNone) {
         file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
+        result = errno;
     } else {
-        _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
+        result = _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
     }
 #else
     file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
+    result = errno;
 #endif
 
     if (!IsOpen()) {
         LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}",
                   PathToUTF8String(file_path));
     }
+
+    return result;
 }
 
 void IOFile::Close() {

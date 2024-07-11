@@ -106,10 +106,15 @@ int* PS4_SYSV_ABI __Error() {
 }
 
 void ErrSceToPosix(int result) {
-    int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                 ? result + -SCE_KERNEL_ERROR_UNKNOWN
-                 : POSIX_EOTHER;
+    const int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
+                       ? result + -SCE_KERNEL_ERROR_UNKNOWN
+                       : POSIX_EOTHER;
     g_posix_errno = rt;
+}
+
+int ErrnoToSceKernelError(int e) {
+    const auto res = SCE_KERNEL_ERROR_UNKNOWN + e;
+    return res > SCE_KERNEL_ERROR_ESTOP ? SCE_KERNEL_ERROR_UNKNOWN : res;
 }
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,

@@ -102,9 +102,9 @@ public:
 
     uintptr_t GetFileMapping();
 
-    void Open(const std::filesystem::path& path, FileAccessMode mode,
-              FileType type = FileType::BinaryFile,
-              FileShareFlag flag = FileShareFlag::ShareReadOnly);
+    int Open(const std::filesystem::path& path, FileAccessMode mode,
+             FileType type = FileType::BinaryFile,
+             FileShareFlag flag = FileShareFlag::ShareReadOnly);
     void Close();
 
     bool Flush() const;
