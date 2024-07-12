@@ -9,6 +9,8 @@
 
 namespace Libraries::ImeDialog {
 
+static OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_NONE;
+
 int PS4_SYSV_ABI sceImeDialogAbort() {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
     return ORBIS_OK;
@@ -45,18 +47,22 @@ int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
 }
 
 int PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
+    result->endstatus = OrbisImeDialogEndStatus::ORBIS_IME_DIALOG_END_STATUS_OK;
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceImeDialogGetStatus() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    if (g_ime_dlg_status == OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING) {
+        return OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_FINISHED;
+    }
+    return g_ime_dlg_status;
 }
 
 int PS4_SYSV_ABI sceImeDialogInit(const OrbisImeDialogParam* param,
                                   const OrbisImeParamExtended* extended) {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
+    g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING;
     return ORBIS_OK;
 }
 
@@ -82,6 +88,7 @@ int PS4_SYSV_ABI sceImeDialogSetPanelPosition() {
 
 int PS4_SYSV_ABI sceImeDialogTerm() {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
+    g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_NONE;
     return ORBIS_OK;
 }
 
