@@ -318,7 +318,8 @@ int PS4_SYSV_ABI scePthreadAttrGetstackaddr(const ScePthreadAttr* attr, void** s
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int result = pthread_attr_getstackaddr(&(*attr)->pth_attr, stack_addr);
+    size_t stack_size = 0;
+    int result = pthread_attr_getstack(&(*attr)->pth_attr, stack_addr, &stack_size);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
@@ -340,7 +341,10 @@ int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int result = pthread_attr_setstackaddr(&(*attr)->pth_attr, addr);
+    size_t stack_size = 0;
+    pthread_attr_getstacksize(&(*attr)->pth_attr, &stack_size);
+
+    int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, stack_size);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
