@@ -72,6 +72,7 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
     switch (stage) {
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
+        info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
         BuildVsOutputs(info, regs.vs_output_control);
         break;
     }

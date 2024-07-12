@@ -35,10 +35,20 @@ void Translator::EmitPrologue() {
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
     switch (info.stage) {
     case Stage::Vertex:
-        // https://github.com/chaotic-cx/mesa-mirror/blob/72326e15/src/amd/vulkan/radv_shader_args.c#L146C1-L146C23
+        // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        // v1: instance ID, step rate 0
+        if (info.num_input_vgprs > 0) {
+            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId0));
+        }
+        // v2: instance ID, step rate 1
+        if (info.num_input_vgprs > 1) {
+            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId1));
+        }
+        // v3: instance ID, plain
+        if (info.num_input_vgprs > 2) {
+            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+        }
         break;
     case Stage::Fragment:
         // https://github.com/chaotic-cx/mesa-mirror/blob/72326e15/src/amd/vulkan/radv_shader_args.c#L258

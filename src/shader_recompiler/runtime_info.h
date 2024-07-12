@@ -163,6 +163,7 @@ struct Info {
     std::array<u32, 3> workgroup_size{};
 
     u32 num_user_data;
+    u32 num_input_vgprs;
     std::span<const u32> user_data;
     Stage stage;
 

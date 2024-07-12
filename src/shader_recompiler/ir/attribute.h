@@ -72,6 +72,8 @@ enum class Attribute : u64 {
     LocalInvocationId = 75,
     LocalInvocationIndex = 76,
     FragCoord = 77,
+    InstanceId0 = 78, // step rate 0
+    InstanceId1 = 79, // step rate 1
     Max,
 };
 

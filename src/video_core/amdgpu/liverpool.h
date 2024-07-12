@@ -80,6 +80,7 @@ struct Liverpool {
         union {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
+            BitField<24, 2, u64> vgpr_comp_cnt; // SPI provided per-thread inputs
             BitField<33, 5, u64> num_user_regs;
         } settings;
         UserData user_data;

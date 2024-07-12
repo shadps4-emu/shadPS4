@@ -131,6 +131,13 @@ Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
     return ctx.OpBitcast(ctx.U32[1], EmitReadConstBuffer(ctx, handle, index));
 }
 
+Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
+    return ctx.OpLoad(
+        ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
+                                      ctx.instance_step_rates,
+                                      rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
+}
+
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
@@ -149,11 +156,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
                 return ctx.OpLoad(param.component_type, param.id);
             }
         } else {
-            const auto rate_idx = param.id.value == 0 ? ctx.u32_zero_value : ctx.u32_one_value;
-            const auto step_rate = ctx.OpLoad(
-                ctx.U32[1],
-                ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                  ctx.instance_step_rates, rate_idx));
+            const auto step_rate = EmitReadStepRate(ctx, param.id.value);
             const auto offset = ctx.OpIAdd(
                 ctx.U32[1],
                 ctx.OpIMul(
@@ -182,6 +185,12 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     switch (attr) {
     case IR::Attribute::VertexId:
         return ctx.OpLoad(ctx.U32[1], ctx.vertex_index);
+    case IR::Attribute::InstanceId:
+        return ctx.OpLoad(ctx.U32[1], ctx.instance_id);
+    case IR::Attribute::InstanceId0:
+        return EmitReadStepRate(ctx, 0);
+    case IR::Attribute::InstanceId1:
+        return EmitReadStepRate(ctx, 1);
     case IR::Attribute::WorkgroupId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
     case IR::Attribute::LocalInvocationId:
