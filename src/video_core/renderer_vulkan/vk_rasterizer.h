@@ -35,6 +35,8 @@ public:
 
     void ScopeMarkerBegin(const std::string& str);
     void ScopeMarkerEnd();
+    
+    void Flush();
 
 private:
     u32 SetupIndexBuffer(bool& is_indexed, u32 index_offset);

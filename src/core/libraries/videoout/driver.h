@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include "common/polyfill_thread.h"
 #include "core/libraries/videoout/video_out.h"
 
 namespace Vulkan {
@@ -63,7 +64,6 @@ public:
                         const BufferAttribute* attribute);
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
-    void Flip(std::chrono::microseconds timeout);
     bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
 
     void Vblank();
@@ -78,10 +78,14 @@ private:
         bool eop;
     };
 
+    void Flip(const Request& req);
+    void PresentThread(std::stop_token token);
+
     std::mutex mutex;
     VideoOutPort main_port{};
     std::condition_variable_any submit_cond;
     std::condition_variable done_cond;
+    std::jthread present_thread;
     std::queue<Request> requests;
     bool is_neo{};
 };

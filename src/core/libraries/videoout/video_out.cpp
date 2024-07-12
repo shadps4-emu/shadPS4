@@ -141,10 +141,12 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     LOG_INFO(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
              flipArg);
 
-    if (!driver->SubmitFlip(port, bufferIndex, flipArg)) {
-        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
-        return ORBIS_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
-    }
+    // Next time the gpu enters idle state, submit the flip
+    Platform::IrqC::Instance()->RegisterOnce(
+        Platform::InterruptId::GpuIdle, [=](Platform::InterruptId irq) {
+            const auto result = driver->SubmitFlip(port, bufferIndex, flipArg);
+            ASSERT_MSG(result, "Flip submission failed");
+        });
 
     return ORBIS_OK;
 }
@@ -227,14 +229,6 @@ s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
     }
 
     return driver->UnregisterBuffers(port, attributeIndex);
-}
-
-void Flip(std::chrono::microseconds micros) {
-    return driver->Flip(micros);
-}
-
-void Vblank() {
-    return driver->Vblank();
 }
 
 void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {

@@ -96,6 +96,10 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
+void Rasterizer::Flush() {
+    scheduler.Flush();
+}
+
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;

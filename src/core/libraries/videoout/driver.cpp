@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include "common/assert.h"
+#include "common/debug.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
@@ -41,6 +42,7 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     main_port.resolution.fullHeight = height;
     main_port.resolution.paneWidth = width;
     main_port.resolution.paneHeight = height;
+    present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
 }
 
 VideoOutDriver::~VideoOutDriver() = default;
@@ -158,27 +160,7 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
-    Request req;
-    {
-        std::unique_lock lock{mutex};
-        submit_cond.wait_for(lock, timeout, [&] { return !requests.empty(); });
-        if (requests.empty()) {
-            renderer->ShowSplash();
-            return;
-        }
-
-        // Retrieve the request.
-        req = requests.front();
-        requests.pop();
-    }
-
-    // Whatever the game is rendering show splash if it is active
-    if (!renderer->ShowSplash(req.frame)) {
-        // Present the frame.
-        renderer->Present(req.frame);
-    }
-
+void VideoOutDriver::Flip(const Request& req) {
     std::scoped_lock lock{mutex};
 
     // Update flip status.
@@ -253,6 +235,35 @@ void VideoOutDriver::Vblank() {
             event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
                                 Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
         }
+    }
+}
+
+void VideoOutDriver::PresentThread(std::stop_token token) {
+    static constexpr std::chrono::milliseconds FlipPeriod{16};
+    while (!token.stop_requested()) {
+        Request req;
+        {
+            std::unique_lock lock{mutex};
+            submit_cond.wait_for(lock, FlipPeriod, [&] { return !requests.empty(); });
+            if (requests.empty()) {
+                renderer->ShowSplash();
+                continue;
+            }
+
+            // Retrieve the request.
+            req = requests.front();
+            requests.pop();
+        }
+
+        // Whatever the game is rendering show splash if it is active
+        if (!renderer->ShowSplash(req.frame)) {
+            // Present the frame.
+            renderer->Present(req.frame);
+        }
+
+        Flip(req);
+        Vblank();
+        FRAME_END;
     }
 }
 

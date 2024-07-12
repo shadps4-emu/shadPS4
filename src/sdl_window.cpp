@@ -71,7 +71,7 @@ void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event;
 
-    if (!SDL_PollEvent(&event)) {
+    if (!SDL_WaitEvent(&event)) {
         return;
     }
 
