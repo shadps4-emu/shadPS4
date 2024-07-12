@@ -97,7 +97,8 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
         pclock_id = CLOCK_MONOTONIC;
         break;
     default:
-        UNREACHABLE();
+        LOG_ERROR(Lib_Kernel, "unsupported = {} using CLOCK_REALTIME", clock_id);
+        break;
     }
 
     timespec t{};
