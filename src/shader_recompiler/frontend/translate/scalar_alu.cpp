@@ -193,6 +193,14 @@ void Translator::S_AND_B32(const GcnInst& inst) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
+void Translator::S_ASHR_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result{ir.ShiftRightArithmetic(src0, src1)};
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
 void Translator::S_OR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
