@@ -17,7 +17,7 @@ class WindowSDL;
 
 namespace Vulkan {
 
-constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_3;
+constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_2;
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& emu_window);
 

@@ -180,6 +180,8 @@ bool Instance::CreateDevice() {
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     const auto calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+    add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -210,7 +212,6 @@ bool Instance::CreateDevice() {
     };
 
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
-    const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
             .queueCreateInfoCount = 1u,
@@ -244,10 +245,14 @@ bool Instance::CreateDevice() {
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
         },
-        vk::PhysicalDeviceVulkan13Features{
-            .shaderDemoteToHelperInvocation = vk13_features.shaderDemoteToHelperInvocation,
-            .dynamicRendering = vk13_features.dynamicRendering,
-            .maintenance4 = vk13_features.maintenance4,
+        vk::PhysicalDeviceMaintenance4FeaturesKHR{
+            .maintenance4 = true,
+        },
+        vk::PhysicalDeviceDynamicRenderingFeaturesKHR{
+            .dynamicRendering = true,
+        },
+        vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT{
+            .shaderDemoteToHelperInvocation = true,
         },
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
