@@ -65,10 +65,9 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
 
 RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_}, instance{window, Config::getGpuId(), Config::vkValidationEnabled()},
-      schedulers{Scheduler{instance}, Scheduler{instance}, Scheduler{instance}},
-      swapchain{instance, window}, texture_cache{instance, schedulers[SchedulerType::Draw]} {
-    rasterizer = std::make_unique<Rasterizer>(instance, schedulers[SchedulerType::Draw],
-                                              texture_cache, liverpool);
+      draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
+      swapchain{instance, window}, texture_cache{instance, draw_scheduler} {
+    rasterizer = std::make_unique<Rasterizer>(instance, draw_scheduler, texture_cache, liverpool);
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 
@@ -82,7 +81,7 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
 }
 
 RendererVulkan::~RendererVulkan() {
-    schedulers[SchedulerType::Draw].Finish();
+    draw_scheduler.Finish();
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
         vmaDestroyImage(instance.GetAllocator(), frame.image, frame.allocation);
@@ -170,7 +169,7 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
             info.pitch = splash->GetImageInfo().width;
             info.guest_address = VAddr(splash->GetImageData().data());
             info.guest_size_bytes = splash->GetImageData().size();
-            splash_img.emplace(instance, schedulers[SchedulerType::Present], info);
+            splash_img.emplace(instance, present_scheduler, info);
             texture_cache.RefreshImage(*splash_img);
         }
         frame = PrepareFrameInternal(*splash_img);
@@ -186,7 +185,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
     // EOP flips are triggered from GPU thread to use the drawing scheduler to record
     // commands. Otherwise we are dealing with a CPU flip which could have arrived
     // from any guest thread. Use a separate scheduler for that.
-    auto& scheduler = schedulers[is_eop ? SchedulerType::Draw : SchedulerType::CpuFlip];
+    auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
 
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead,
@@ -253,7 +252,7 @@ void RendererVulkan::Present(Frame* frame) {
 
     const vk::Image swapchain_image = swapchain.Image();
 
-    auto& scheduler = schedulers[SchedulerType::Present];
+    auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
     {
         auto* profiler_ctx = instance.GetProfilerContext();

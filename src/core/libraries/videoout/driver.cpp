@@ -12,6 +12,10 @@
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
+namespace Libraries::GnmDriver {
+void WaitGpuIdle();
+}
+
 namespace Libraries::VideoOut {
 
 constexpr static bool Is32BppPixelFormat(PixelFormat format) {
@@ -188,6 +192,11 @@ void VideoOutDriver::Flip(const Request& req) {
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     std::scoped_lock lock{mutex};
+
+    if (!is_eop) {
+        liverpool->SubmitDone();
+        GnmDriver::WaitGpuIdle();
+    }
 
     Vulkan::Frame* frame;
     if (index == -1) {

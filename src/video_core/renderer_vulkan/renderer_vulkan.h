@@ -83,7 +83,9 @@ private:
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;
-    std::array<Scheduler, 3> schedulers;
+    Scheduler draw_scheduler;
+    Scheduler present_scheduler;
+    Scheduler flip_scheduler;
     Swapchain swapchain;
     std::unique_ptr<Rasterizer> rasterizer;
     VideoCore::TextureCache texture_cache;

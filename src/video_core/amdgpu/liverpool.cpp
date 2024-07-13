@@ -362,11 +362,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
         case PM4ItOpcode::EventWriteEop: {
             const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
-            // Guest can wait for GfxEop event to submit CPU flips.
-            // Flush command list to ensure order.
-            if (rasterizer && event_eop->int_sel == InterruptSelect::IrqWhenWriteConfirm) {
-                rasterizer->Flush();
-            }
             event_eop->SignalFence();
             break;
         }
@@ -380,11 +375,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const u32 data_size = (header->type3.count.Value() - 2) * 4;
             u64* address = write_data->Address<u64*>();
             if (!write_data->wr_one_addr.Value()) {
-                // Guest can poll VO label before submitting CPU flips.
-                // Flush command list before signalling to ensure order.
-                if (rasterizer && vo_port->IsVoLabel(address)) {
-                    rasterizer->Flush();
-                }
                 std::memcpy(address, write_data->data, data_size);
             } else {
                 UNREACHABLE();
