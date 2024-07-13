@@ -26,6 +26,8 @@ struct VideoOutPort {
     SceVideoOutVblankStatus vblank_status;
     std::vector<Kernel::SceKernelEqueue> flip_events;
     std::vector<Kernel::SceKernelEqueue> vblank_events;
+    std::mutex vo_mutex;
+    std::condition_variable vo_cv;
     int flip_rate = 0;
 
     s32 FindFreeGroup() const {
@@ -34,6 +36,22 @@ struct VideoOutPort {
             index++;
         }
         return index;
+    }
+
+    bool IsVoLabel(const u64* address) const {
+        const u64* start = &buffer_labels[0];
+        const u64* end = &buffer_labels[MaxDisplayBuffers - 1];
+        return address >= start && address <= end;
+    }
+
+    void WaitVoLabel(auto&& pred) {
+        std::unique_lock lk{vo_mutex};
+        vo_cv.wait(lk, pred);
+    }
+
+    void SignalVoLabel() {
+        std::scoped_lock lk{vo_mutex};
+        vo_cv.notify_one();
     }
 
     [[nodiscard]] int NumRegisteredBuffers() const {

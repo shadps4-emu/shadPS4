@@ -7,11 +7,10 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/platform.h"
-
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
 
@@ -48,15 +47,12 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
 VideoOutDriver::~VideoOutDriver() = default;
 
 int VideoOutDriver::Open(const ServiceThreadParams* params) {
-    std::scoped_lock lock{mutex};
-
     if (main_port.is_open) {
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
-
-    int handle = 1;
     main_port.is_open = true;
-    return handle;
+    liverpool->SetVoPort(&main_port);
+    return 1;
 }
 
 void VideoOutDriver::Close(s32 handle) {
@@ -164,7 +160,8 @@ void VideoOutDriver::Flip(const Request& req) {
     std::scoped_lock lock{mutex};
 
     // Update flip status.
-    auto& flip_status = req.port->flip_status;
+    auto* port = req.port;
+    auto& flip_status = port->flip_status;
     flip_status.count++;
     flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
     flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
@@ -174,7 +171,7 @@ void VideoOutDriver::Flip(const Request& req) {
     flip_status.flipPendingNum = static_cast<int>(requests.size());
 
     // Trigger flip events for the port.
-    for (auto& event : req.port->flip_events) {
+    for (auto& event : port->flip_events) {
         if (event != nullptr) {
             event->TriggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::SceKernelEvent::Filter::VideoOut,
                                 reinterpret_cast<void*>(req.flip_arg));
@@ -183,7 +180,8 @@ void VideoOutDriver::Flip(const Request& req) {
 
     // Reset flip label
     if (req.index != -1) {
-        req.port->buffer_labels[req.index] = 0;
+        port->buffer_labels[req.index] = 0;
+        port->SignalVoLabel();
     }
 }
 
@@ -197,7 +195,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = renderer->PrepareFrame(group, buffer.address_left);
+        frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
     }
 
     if (index != -1 && requests.size() >= port->NumRegisteredBuffers()) {

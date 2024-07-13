@@ -10,6 +10,7 @@
 #include <span>
 #include <thread>
 #include <queue>
+#include <functional>
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
@@ -19,6 +20,10 @@
 
 namespace Vulkan {
 class Rasterizer;
+}
+
+namespace Libraries::VideoOut {
+struct VideoOutPort;
 }
 
 namespace AmdGpu {
@@ -1001,6 +1006,10 @@ public:
         return num_submits == 0;
     }
 
+    void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
+        vo_port = port;
+    }
+
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
     }
@@ -1065,6 +1074,7 @@ private:
     } cblock{};
 
     Vulkan::Rasterizer* rasterizer{};
+    Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
     std::atomic<bool> submit_done{};

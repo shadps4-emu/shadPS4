@@ -5,6 +5,7 @@
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
+#include "core/libraries/videoout/driver.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -361,6 +362,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
         case PM4ItOpcode::EventWriteEop: {
             const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
+            // Guest can wait for GfxEop event to submit CPU flips.
+            // Flush command list to ensure order.
+            if (rasterizer && event_eop->int_sel == InterruptSelect::IrqWhenWriteConfirm) {
+                rasterizer->Flush();
+            }
             event_eop->SignalFence();
             break;
         }
@@ -372,8 +378,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
             ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
             const u32 data_size = (header->type3.count.Value() - 2) * 4;
+            u64* address = write_data->Address<u64*>();
             if (!write_data->wr_one_addr.Value()) {
-                std::memcpy(write_data->Address<void*>(), write_data->data, data_size);
+                // Guest can poll VO label before submitting CPU flips.
+                // Flush command list before signalling to ensure order.
+                if (rasterizer && vo_port->IsVoLabel(address)) {
+                    rasterizer->Flush();
+                }
+                std::memcpy(address, write_data->data, data_size);
             } else {
                 UNREACHABLE();
             }
@@ -386,6 +398,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+            // Optimization: VO label waits are special because the emulator
+            // will write to the label when presentation is finished. So if
+            // there are no other submits to yield to we can sleep the thread
+            // instead and allow other tasks to run.
+            const u64* wait_addr = wait_reg_mem->Address<u64*>();
+            if (vo_port->IsVoLabel(wait_addr) && num_submits == 1) {
+                vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+            }
             while (!wait_reg_mem->Test()) {
                 TracyFiberLeave;
                 co_yield {};
