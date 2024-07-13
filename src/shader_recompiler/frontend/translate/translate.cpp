@@ -254,8 +254,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sgpr_base = attrib.sgpr_base,
                 .dword_offset = attrib.dword_offset,
-                .stride = buffer.GetStride(),
-                .num_records = buffer.num_records,
+                .length = buffer.num_records,
                 .used_types = IR::Type::F32,
                 .is_storage = true, // we may not fit into UBO with large meshes
                 .is_instance_data = true,
@@ -571,28 +570,40 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             translator.V_CNDMASK_B32(inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_X:
-            translator.BUFFER_LOAD_FORMAT(1, true, inst);
+            translator.BUFFER_LOAD_FORMAT(1, true, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XY:
-            translator.BUFFER_LOAD_FORMAT(2, true, inst);
+            translator.BUFFER_LOAD_FORMAT(2, true, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
-            translator.BUFFER_LOAD_FORMAT(3, true, inst);
+            translator.BUFFER_LOAD_FORMAT(3, true, true, inst);
             break;
         case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
-            translator.BUFFER_LOAD_FORMAT(4, true, inst);
+            translator.BUFFER_LOAD_FORMAT(4, true, true, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_X:
-        case Opcode::BUFFER_LOAD_DWORD:
-            translator.BUFFER_LOAD_FORMAT(1, false, inst);
+            translator.BUFFER_LOAD_FORMAT(1, false, true, inst);
+            break;
+        case Opcode::BUFFER_LOAD_FORMAT_XY:
+            translator.BUFFER_LOAD_FORMAT(2, false, true, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_XYZ:
-        case Opcode::BUFFER_LOAD_DWORDX3:
-            translator.BUFFER_LOAD_FORMAT(3, false, inst);
+            translator.BUFFER_LOAD_FORMAT(3, false, true, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_XYZW:
+            translator.BUFFER_LOAD_FORMAT(4, false, true, inst);
+            break;
+        case Opcode::BUFFER_LOAD_DWORD:
+            translator.BUFFER_LOAD_FORMAT(1, false, false, inst);
+            break;
+        case Opcode::BUFFER_LOAD_DWORDX2:
+            translator.BUFFER_LOAD_FORMAT(2, false, false, inst);
+            break;
+        case Opcode::BUFFER_LOAD_DWORDX3:
+            translator.BUFFER_LOAD_FORMAT(3, false, false, inst);
+            break;
         case Opcode::BUFFER_LOAD_DWORDX4:
-            translator.BUFFER_LOAD_FORMAT(4, false, inst);
+            translator.BUFFER_LOAD_FORMAT(4, false, false, inst);
             break;
         case Opcode::BUFFER_STORE_FORMAT_X:
         case Opcode::BUFFER_STORE_DWORD:

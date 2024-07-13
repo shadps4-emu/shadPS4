@@ -89,6 +89,8 @@ public:
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);
+    [[nodiscard]] Value LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                                         BufferInstInfo info);
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
 
