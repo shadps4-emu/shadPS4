@@ -42,6 +42,7 @@ public:
     void Prologue();
     void Epilogue();
     void Discard();
+    void Discard(const U1& cond);
 
     void Barrier();
     void WorkgroupMemoryBarrier();

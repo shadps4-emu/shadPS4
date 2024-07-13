@@ -121,7 +121,7 @@ void CFG::EmitBlocks() {
 
 void CFG::LinkBlocks() {
     const auto get_block = [this](u32 address) {
-        const auto it = blocks.find(address, Compare{});
+        auto it = blocks.find(address, Compare{});
         ASSERT_MSG(it != blocks.end() && it->begin == address);
         return &*it;
     };
@@ -131,7 +131,10 @@ void CFG::LinkBlocks() {
         // If the block doesn't end with a branch we simply
         // need to link with the next block.
         if (!end_inst.IsTerminateInstruction()) {
-            block.branch_true = get_block(block.end);
+            auto* next_block = get_block(block.end);
+            ++next_block->num_predecessors;
+
+            block.branch_true = next_block;
             block.end_class = EndClass::Branch;
             continue;
         }
@@ -141,11 +144,20 @@ void CFG::LinkBlocks() {
         const u32 branch_pc = block.end - end_inst.length;
         const u32 target_pc = end_inst.BranchTarget(branch_pc);
         if (end_inst.IsUnconditionalBranch()) {
-            block.branch_true = get_block(target_pc);
+            auto* target_block = get_block(target_pc);
+            ++target_block->num_predecessors;
+
+            block.branch_true = target_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.IsConditionalBranch()) {
-            block.branch_true = get_block(target_pc);
-            block.branch_false = get_block(block.end);
+            auto* target_block = get_block(target_pc);
+            ++target_block->num_predecessors;
+
+            auto* end_block = get_block(block.end);
+            ++end_block->num_predecessors;
+
+            block.branch_true = target_block;
+            block.branch_false = end_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
             const auto& prev_inst = inst_list[block.end_index - 1];

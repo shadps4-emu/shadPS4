@@ -13,6 +13,7 @@ OPCODE(PhiMove,                                             Void,           Opaq
 OPCODE(Prologue,                                            Void,                                                                                           )
 OPCODE(Epilogue,                                            Void,                                                                                           )
 OPCODE(Discard,                                             Void,                                                                                           )
+OPCODE(DiscardCond,                                         Void,           U1,                                                                             )
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U32x2,          U32,                                                            )

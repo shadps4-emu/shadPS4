@@ -115,6 +115,10 @@ void IREmitter::Discard() {
     Inst(Opcode::Discard);
 }
 
+void IREmitter::Discard(const U1& cond) {
+    Inst(Opcode::DiscardCond, cond);
+}
+
 void IREmitter::Barrier() {
     Inst(Opcode::Barrier);
 }
