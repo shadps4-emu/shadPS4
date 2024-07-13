@@ -69,6 +69,7 @@ public:
     void S_AND_B64(NegateMode negate, const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_AND_B32(const GcnInst& inst);
+    void S_ASHR_I32(const GcnInst& inst);
     void S_OR_B32(const GcnInst& inst);
     void S_LSHR_B32(const GcnInst& inst);
     void S_CSELECT_B32(const GcnInst& inst);

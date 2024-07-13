@@ -573,6 +573,7 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             translator.BUFFER_LOAD_FORMAT(4, true, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_X:
+        case Opcode::BUFFER_LOAD_DWORD:
             translator.BUFFER_LOAD_FORMAT(1, false, inst);
             break;
         case Opcode::BUFFER_LOAD_FORMAT_XYZ:
@@ -817,6 +818,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             break;
         case Opcode::S_AND_B32:
             translator.S_AND_B32(inst);
+            break;
+        case Opcode::S_ASHR_I32:
+            translator.S_ASHR_I32(inst);
             break;
         case Opcode::S_OR_B32:
             translator.S_OR_B32(inst);
