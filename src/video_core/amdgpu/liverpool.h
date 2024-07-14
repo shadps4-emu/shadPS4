@@ -988,7 +988,7 @@ private:
 
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
-    Task ProcessCompute(std::span<const u32> acb);
+    Task ProcessCompute(std::span<const u32> acb, int vqid);
 
     void Process(std::stop_token stoken);
 

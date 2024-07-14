@@ -254,4 +254,16 @@ void Rasterizer::UpdateDepthStencilState() {
     cmdbuf.setDepthBoundsTestEnable(depth.depth_bounds_enable);
 }
 
+void Rasterizer::ScopeMarkerBegin(const std::string& str) {
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+        .pLabelName = str.c_str(),
+    });
+}
+
+void Rasterizer::ScopeMarkerEnd() {
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.endDebugUtilsLabelEXT();
+}
+
 } // namespace Vulkan
