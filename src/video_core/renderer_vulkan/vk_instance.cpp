@@ -9,6 +9,7 @@
 
 #include "common/assert.h"
 #include "sdl_window.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -26,6 +27,15 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
         supported_extensions.emplace_back(extension.extensionName.data());
     }
     return supported_extensions;
+}
+
+std::unordered_map<vk::Format, vk::FormatProperties> GetFormatProperties(
+    vk::PhysicalDevice physical) {
+    std::unordered_map<vk::Format, vk::FormatProperties> format_properties;
+    for (const auto& format : LiverpoolToVK::GetAllFormats()) {
+        format_properties.emplace(format, physical.getFormatProperties(format));
+    }
+    return format_properties;
 }
 
 std::string GetReadableVersion(u32 version) {
@@ -93,6 +103,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     }
 
     available_extensions = GetSupportedExtensions(physical_device);
+    format_properties = GetFormatProperties(physical_device);
     properties = physical_device.getProperties();
     CollectDeviceParameters();
     ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
@@ -102,6 +113,22 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     CreateDevice();
     CollectToolingInfo();
+
+    // Check and log format support details.
+    for (const auto& key : format_properties | std::views::keys) {
+        const auto format = key;
+        if (!IsFormatSupported(format)) {
+            const auto alternative = GetAlternativeFormat(format);
+            if (IsFormatSupported(alternative)) {
+                LOG_WARNING(Render_Vulkan, "Format {} is not supported, falling back to {}",
+                            vk::to_string(format), vk::to_string(alternative));
+            } else {
+                LOG_ERROR(Render_Vulkan,
+                          "Format {} is not supported and no suitable alternative is supported.",
+                          vk::to_string(format));
+            }
+        }
+    }
 }
 
 Instance::~Instance() {
@@ -303,7 +330,7 @@ bool Instance::CreateDevice() {
                       vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
 #else
         // Tracy limitation means only Windows and Linux can use host time domain.
-        // See https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
+        // https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
         const bool has_host_time_domain = false;
 #endif
         if (has_host_time_domain) {
@@ -375,6 +402,54 @@ void Instance::CollectToolingInfo() {
         has_renderdoc = has_renderdoc || name == "RenderDoc";
         has_nsight_graphics = has_nsight_graphics || name == "NVIDIA Nsight Graphics";
     }
+}
+
+bool Instance::IsFormatSupported(const vk::Format format) const {
+    if (format == vk::Format::eUndefined) [[unlikely]] {
+        return true;
+    }
+
+    const auto it = format_properties.find(format);
+    if (it == format_properties.end()) {
+        UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
+    }
+
+    constexpr vk::FormatFeatureFlags optimal_flags = vk::FormatFeatureFlagBits::eTransferSrc |
+                                                     vk::FormatFeatureFlagBits::eTransferDst |
+                                                     vk::FormatFeatureFlagBits::eSampledImage;
+    return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
+}
+
+vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
+    if (format == vk::Format::eB5G6R5UnormPack16) {
+        return vk::Format::eR5G6B5UnormPack16;
+    }
+    return format;
+}
+
+vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
+    if (IsFormatSupported(format)) [[likely]] {
+        return format;
+    }
+    const vk::Format alternative = GetAlternativeFormat(format);
+    if (IsFormatSupported(alternative)) [[likely]] {
+        return alternative;
+    }
+    return format;
+}
+
+vk::ComponentMapping Instance::GetSupportedComponentSwizzle(vk::Format format,
+                                                            vk::ComponentMapping swizzle) const {
+    if (IsFormatSupported(format)) [[likely]] {
+        return swizzle;
+    }
+
+    vk::ComponentMapping supported_swizzle = swizzle;
+    if (format == vk::Format::eB5G6R5UnormPack16) {
+        // B5G6R5 -> R5G6B5
+        std::swap(supported_swizzle.r, supported_swizzle.b);
+    }
+    return supported_swizzle;
 }
 
 } // namespace Vulkan

@@ -281,6 +281,63 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
     }
 }
 
+const std::vector<vk::Format>& GetAllFormats() {
+    static const std::vector formats{
+        vk::Format::eR32G32B32A32Sfloat,
+        vk::Format::eR32G32B32Uint,
+        vk::Format::eR8G8B8A8Unorm,
+        vk::Format::eB8G8R8A8Unorm,
+        vk::Format::eR8G8B8A8Srgb,
+        vk::Format::eB8G8R8A8Srgb,
+        vk::Format::eR32G32B32Sfloat,
+        vk::Format::eR32G32Sfloat,
+        vk::Format::eB5G6R5UnormPack16,
+        vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eR8Unorm,
+        vk::Format::eBc3SrgbBlock,
+        vk::Format::eBc3UnormBlock,
+        vk::Format::eBc4UnormBlock,
+        vk::Format::eBc5UnormBlock,
+        vk::Format::eR16G16B16A16Sint,
+        vk::Format::eR16G16Sfloat,
+        vk::Format::eB10G11R11UfloatPack32,
+        vk::Format::eA2B10G10R10UnormPack32,
+        vk::Format::eBc7SrgbBlock,
+        vk::Format::eBc1RgbaUnormBlock,
+        vk::Format::eR8G8B8A8Uint,
+        vk::Format::eR16Sfloat,
+        vk::Format::eR32Sfloat,
+        vk::Format::eR16G16B16A16Sfloat,
+        vk::Format::eR32Uint,
+        vk::Format::eR32Sint,
+        vk::Format::eR8G8Unorm,
+        vk::Format::eR8G8Snorm,
+        vk::Format::eBc7UnormBlock,
+        vk::Format::eBc2UnormBlock,
+        vk::Format::eR16G16Snorm,
+        vk::Format::eA2R10G10B10UnormPack32,
+        vk::Format::eA2R10G10B10SnormPack32,
+        vk::Format::eB10G11R11UfloatPack32,
+        vk::Format::eR16G16Sfloat,
+        vk::Format::eR16G16B16A16Snorm,
+        vk::Format::eR32G32Uint,
+        vk::Format::eR4G4B4A4UnormPack16,
+        vk::Format::eR16G16B16A16Uint,
+        vk::Format::eR32G32B32A32Uint,
+        vk::Format::eR8Sint,
+        vk::Format::eBc1RgbaSrgbBlock,
+        vk::Format::eR16G16Sint,
+        vk::Format::eR8G8B8A8Uscaled,
+        vk::Format::eR16Unorm,
+        vk::Format::eR16G16B16A16Unorm,
+        vk::Format::eD32SfloatS8Uint,
+        vk::Format::eD32Sfloat,
+        vk::Format::eD16Unorm,
+        vk::Format::eD16UnormS8Uint,
+    };
+    return formats;
+}
+
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
 
     if (data_format == AmdGpu::DataFormat::Format32_32_32_32 &&
