@@ -122,16 +122,16 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     case SDLK_RIGHT:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
         break;
-    case SDLK_KP_8:
+    case SDLK_C:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
         break;
-    case SDLK_KP_6:
+    case SDLK_B:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
         break;
-    case SDLK_KP_2:
+    case SDLK_N:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
         break;
-    case SDLK_KP_4:
+    case SDLK_V:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
         break;
     case SDLK_RETURN:
