@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <unordered_map>
 
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -33,6 +34,13 @@ public:
 
     /// Returns a formatted string for the driver version
     std::string GetDriverVersionName();
+
+    /// Gets a compatibility format if the format is not supported.
+    [[nodiscard]] vk::Format GetSupportedFormat(vk::Format format) const;
+
+    /// Re-orders a component swizzle for format compatibility, if needed.
+    [[nodiscard]] vk::ComponentMapping GetSupportedComponentSwizzle(
+        vk::Format format, vk::ComponentMapping swizzle) const;
 
     /// Returns the Vulkan instance
     vk::Instance GetInstance() const {
@@ -211,6 +219,12 @@ private:
     void CollectDeviceParameters();
     void CollectToolingInfo();
 
+    /// Determines if a format is supported.
+    [[nodiscard]] bool IsFormatSupported(vk::Format format) const;
+
+    /// Gets a commonly available alternative for an unsupported pixel format.
+    vk::Format GetAlternativeFormat(const vk::Format format) const;
+
 private:
     vk::DynamicLoader dl{VULKAN_LIBRARY_NAME};
     vk::UniqueInstance instance;
@@ -226,6 +240,7 @@ private:
     vk::Queue graphics_queue;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
+    std::unordered_map<vk::Format, vk::FormatProperties> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
     bool image_view_reinterpretation{true};

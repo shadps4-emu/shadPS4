@@ -142,7 +142,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
         .imageType = info.type,
-        .format = info.pixel_format,
+        .format = instance->GetSupportedFormat(info.pixel_format),
         .extent{
             .width = info.size.width,
             .height = info.size.height,

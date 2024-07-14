@@ -89,8 +89,8 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .pNext = usage_override ? &usage_ci : nullptr,
         .image = image.image,
         .viewType = info.type,
-        .format = format,
-        .components = info.mapping,
+        .format = instance.GetSupportedFormat(format),
+        .components = instance.GetSupportedComponentSwizzle(format, info.mapping),
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = 0U,
