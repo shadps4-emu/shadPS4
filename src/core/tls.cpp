@@ -9,7 +9,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <pthread.h>
+#include <asm/prctl.h>        /* Definition of ARCH_* constants */
+#include <sys/syscall.h>      /* Definition of SYS_* constants */
 #endif
 
 namespace Core {
@@ -89,47 +90,28 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
 
 #else
 
-static pthread_key_t slot = 0;
+static u32 slot = 0;
 
 void SetTcbBase(void* image_address) {
-    ASSERT(pthread_setspecific(slot, image_address) == 0);
+    asm volatile("wrgsbase %0" :: "r" (image_address) : "memory");
 }
 
 Tcb* GetTcbBase() {
-    return reinterpret_cast<Tcb*>(pthread_getspecific(slot));
+    Tcb* tcb;
+    asm volatile("rdgsbase %0" : "=r" (tcb) :: "memory");
+    return tcb;
 }
 
-static void AllocTcbKey() {
-    ASSERT(pthread_key_create(&slot, nullptr) == 0);
-}
+static void AllocTcbKey() {}
 
 static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGenerator& c) {
     using namespace Xbyak::util;
     const auto total_size = tls_pattern.pattern_size + tls_pattern.imm_size;
 
-    // Replace mov instruction with near jump to the trampoline.
-    static constexpr u32 NearJmpSize = 5;
+    // Replace fs read with gs read.
     auto patch = Xbyak::CodeGenerator(total_size, code);
-    patch.jmp(c.getCurr(), Xbyak::CodeGenerator::LabelType::T_NEAR);
-    patch.nop(total_size - NearJmpSize);
-
-    // Write the trampoline.
-    // The following logic is based on the glibc implementation of pthread_getspecific
-    // https://github.com/bminor/glibc/blob/29807a27/nptl/pthread_getspecific.c#L23
-    static constexpr u32 PthreadKeySecondLevelSize = 32;
-    static constexpr u32 PthreadSpecificOffset = 0x510;
-    static constexpr u32 PthreadKeyDataSize = 16;
-    ASSERT(slot >= PthreadKeySecondLevelSize);
-
-    const u32 idx1st = slot / PthreadKeySecondLevelSize;
-    const u32 idx2nd = slot % PthreadKeySecondLevelSize;
     const auto target_reg = Xbyak::Reg64(tls_pattern.target_reg);
-    c.mov(target_reg, PthreadSpecificOffset);
-    c.putSeg(fs);
-    c.mov(target_reg, qword[target_reg + idx1st * 8]); // Load first level specific array.
-    c.mov(target_reg, qword[target_reg + idx2nd * 16 +
-                            8]); // Load data member of pthread_key_data our slot specifies.
-    c.jmp(code + total_size);    // Return to the instruction right after the mov.
+    patch.putSeg(gs);
 }
 
 #endif
