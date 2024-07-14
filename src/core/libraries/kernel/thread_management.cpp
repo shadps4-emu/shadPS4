@@ -1331,6 +1331,26 @@ int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI posix_pthread_condattr_init(ScePthreadCondattr* attr) {
+    int result = scePthreadCondattrInit(attr);
+    LOG_INFO(Kernel_Pthread,
+             "posix_pthread_condattr_init redirect to scePthreadCondattrInit, result = {}", result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_condattr_destroy(ScePthreadCondattr* attr) {
+    int result = scePthreadCondattrDestroy(attr);
+    LOG_INFO(Kernel_Pthread,
+             "posix_pthread_condattr_destroy redirect to scePthreadCondattrDestroy, result = {}",
+             result);
+    return result;
+}
+
+int PS4_SYSV_ABI posix_pthread_condattr_setclock(ScePthreadCondattr* attr, clockid_t clock) {
+    (*attr)->clock = clock;
+    return SCE_OK;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
@@ -1418,6 +1438,11 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_mutexattr_setprotocol);
     LIB_FUNCTION("HF7lK46xzjY", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_mutexattr_destroy);
+    LIB_FUNCTION("mKoTx03HRWA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_condattr_init);
+    LIB_FUNCTION("dJcuQVn6-Iw", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_condattr_destroy);
+    LIB_FUNCTION("EjllaAqAPZo", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_condattr_setclock);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
