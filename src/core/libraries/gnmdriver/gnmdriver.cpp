@@ -495,8 +495,33 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     const auto* acb_ptr = reinterpret_cast<const u32*>(asc_queue.map_addr + *asc_queue.read_addr);
     const auto acb_size = next_offs_dw ? (next_offs_dw << 2u) - *asc_queue.read_addr
                                        : (asc_queue.ring_size_dw << 2u) - *asc_queue.read_addr;
+    const std::span<const u32> acb_span{acb_ptr, acb_size >> 2u};
 
-    liverpool->SubmitAsc(vqid, {acb_ptr, acb_size >> 2u});
+    if (Config::dumpPM4()) {
+        static auto last_frame_num = -1LL;
+        static u32 seq_num{};
+        if (last_frame_num == frames_submitted) {
+            ++seq_num;
+        } else {
+            last_frame_num = frames_submitted;
+            seq_num = 0u;
+        }
+
+        // Up to this point, all ACB submissions have been stored in a secondary command buffer.
+        // Dumping them using the current ring pointer would result in files containing only the
+        // `IndirectBuffer` command. To access the actual command stream, we need to unwrap the IB.
+        auto acb = acb_span;
+        const auto* indirect_buffer =
+            reinterpret_cast<const PM4CmdIndirectBuffer*>(acb_span.data());
+        if (indirect_buffer->header.opcode == PM4ItOpcode::IndirectBuffer) {
+            acb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size};
+        }
+
+        // File name format is: <queue>_<queue num>_<submit_num>
+        DumpCommandList(acb, std::format("acb_{}_{}", gnm_vqid, seq_num));
+    }
+
+    liverpool->SubmitAsc(vqid, acb_span);
 
     *asc_queue.read_addr += acb_size;
     *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
