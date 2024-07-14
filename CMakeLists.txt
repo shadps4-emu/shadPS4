@@ -581,5 +581,7 @@ add_dependencies(shadps4 host_shaders)
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 if (ENABLE_QT_GUI)
-    set_target_properties(shadps4 PROPERTIES)
+    set_target_properties(shadps4 PROPERTIES
+#       WIN32_EXECUTABLE ON
+        MACOSX_BUNDLE ON)
 endif()
