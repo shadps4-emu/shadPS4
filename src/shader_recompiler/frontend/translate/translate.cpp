@@ -29,7 +29,8 @@ void Translator::EmitPrologue() {
     // Initialize user data.
     IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
     for (u32 i = 0; i < info.num_user_data; i++) {
-        ir.SetScalarReg(dst_sreg++, ir.GetUserData(dst_sreg));
+        ir.SetScalarReg(dst_sreg, ir.GetUserData(dst_sreg));
+        ++dst_sreg;
     }
 
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
