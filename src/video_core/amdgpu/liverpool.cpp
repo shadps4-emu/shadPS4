@@ -199,19 +199,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
             switch (reg_addr) {
             case ContextRegs::CbColor0Base:
-                [[fallthrough]];
             case ContextRegs::CbColor1Base:
-                [[fallthrough]];
             case ContextRegs::CbColor2Base:
-                [[fallthrough]];
             case ContextRegs::CbColor3Base:
-                [[fallthrough]];
             case ContextRegs::CbColor4Base:
-                [[fallthrough]];
             case ContextRegs::CbColor5Base:
-                [[fallthrough]];
             case ContextRegs::CbColor6Base:
-                [[fallthrough]];
             case ContextRegs::CbColor7Base: {
                 const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Base) /
                                         (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
@@ -224,6 +217,26 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
                 } else {
                     last_cb_extent[col_buf_id].raw = 0;
+                }
+                break;
+            }
+            case ContextRegs::CbColor0Cmask:
+            case ContextRegs::CbColor1Cmask:
+            case ContextRegs::CbColor2Cmask:
+            case ContextRegs::CbColor3Cmask:
+            case ContextRegs::CbColor4Cmask:
+            case ContextRegs::CbColor5Cmask:
+            case ContextRegs::CbColor6Cmask:
+            case ContextRegs::CbColor7Cmask: {
+                const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Cmask) /
+                                        (ContextRegs::CbColor1Cmask - ContextRegs::CbColor0Cmask);
+                ASSERT(col_buf_id < NumColorBuffers);
+
+                const auto nop_offset = header->type3.count;
+                if (nop_offset == 0x04) {
+                    ASSERT_MSG(payload[nop_offset] == 0xc0001000,
+                               "NOP hint is missing in CB setup sequence");
+                    last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
                 }
                 break;
             }

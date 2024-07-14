@@ -786,6 +786,14 @@ struct Liverpool {
         CbColor5Base = 0xA363,
         CbColor6Base = 0xA372,
         CbColor7Base = 0xA381,
+        CbColor0Cmask = 0xA31F,
+        CbColor1Cmask = 0xA32E,
+        CbColor2Cmask = 0xA33D,
+        CbColor3Cmask = 0xA34C,
+        CbColor4Cmask = 0xA35B,
+        CbColor5Cmask = 0xA36A,
+        CbColor6Cmask = 0xA379,
+        CbColor7Cmask = 0xA388,
     };
 
     struct PolygonOffset {
