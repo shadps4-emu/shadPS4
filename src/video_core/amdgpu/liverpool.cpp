@@ -199,19 +199,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
             switch (reg_addr) {
             case ContextRegs::CbColor0Base:
-                [[fallthrough]];
             case ContextRegs::CbColor1Base:
-                [[fallthrough]];
             case ContextRegs::CbColor2Base:
-                [[fallthrough]];
             case ContextRegs::CbColor3Base:
-                [[fallthrough]];
             case ContextRegs::CbColor4Base:
-                [[fallthrough]];
             case ContextRegs::CbColor5Base:
-                [[fallthrough]];
             case ContextRegs::CbColor6Base:
-                [[fallthrough]];
             case ContextRegs::CbColor7Base: {
                 const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Base) /
                                         (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
@@ -224,6 +217,26 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
                 } else {
                     last_cb_extent[col_buf_id].raw = 0;
+                }
+                break;
+            }
+            case ContextRegs::CbColor0Cmask:
+            case ContextRegs::CbColor1Cmask:
+            case ContextRegs::CbColor2Cmask:
+            case ContextRegs::CbColor3Cmask:
+            case ContextRegs::CbColor4Cmask:
+            case ContextRegs::CbColor5Cmask:
+            case ContextRegs::CbColor6Cmask:
+            case ContextRegs::CbColor7Cmask: {
+                const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Cmask) /
+                                        (ContextRegs::CbColor1Cmask - ContextRegs::CbColor0Cmask);
+                ASSERT(col_buf_id < NumColorBuffers);
+
+                const auto nop_offset = header->type3.count;
+                if (nop_offset == 0x04) {
+                    ASSERT_MSG(payload[nop_offset] == 0xc0001000,
+                               "NOP hint is missing in CB setup sequence");
+                    last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
                 }
                 break;
             }
@@ -267,7 +280,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
+                rasterizer->ScopeMarkerBegin(
+                    fmt::format("dcb:{}:DrawIndex2", reinterpret_cast<const void*>(dcb.data())));
                 rasterizer->Draw(true);
+                rasterizer->ScopeMarkerEnd();
             }
             break;
         }
@@ -277,7 +293,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index_off->index_count;
             regs.draw_initiator = draw_index_off->draw_initiator;
             if (rasterizer) {
+                rasterizer->ScopeMarkerBegin(fmt::format(
+                    "dcb:{}:DrawIndexOffset2", reinterpret_cast<const void*>(dcb.data())));
                 rasterizer->Draw(true, draw_index_off->index_offset);
+                rasterizer->ScopeMarkerEnd();
             }
             break;
         }
@@ -286,7 +305,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
+                rasterizer->ScopeMarkerBegin(
+                    fmt::format("dcb:{}:DrawIndexAuto", reinterpret_cast<const void*>(dcb.data())));
                 rasterizer->Draw(false);
+                rasterizer->ScopeMarkerEnd();
             }
             break;
         }
@@ -297,7 +319,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                rasterizer->ScopeMarkerBegin(
+                    fmt::format("dcb:{}:Dispatch", reinterpret_cast<const void*>(dcb.data())));
                 rasterizer->DispatchDirect();
+                rasterizer->ScopeMarkerEnd();
             }
             break;
         }
@@ -387,7 +412,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     TracyFiberLeave;
 }
 
-Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
+Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
     TracyFiberEnter(acb_task_name);
 
     while (!acb.empty()) {
@@ -408,8 +433,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task =
-                ProcessCompute({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            auto task = ProcessCompute(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
             while (!task.handle.done()) {
                 task.handle.resume();
 
@@ -435,7 +460,10 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                rasterizer->ScopeMarkerBegin(fmt::format(
+                    "acb[{}]:{}:Dispatch", vqid, reinterpret_cast<const void*>(acb.data())));
                 rasterizer->DispatchDirect();
+                rasterizer->ScopeMarkerEnd();
             }
             break;
         }
@@ -495,7 +523,7 @@ void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
     ASSERT_MSG(vqid >= 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
     auto& queue = mapped_queues[vqid];
 
-    const auto& task = ProcessCompute(acb);
+    const auto& task = ProcessCompute(acb, vqid);
     {
         std::unique_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);

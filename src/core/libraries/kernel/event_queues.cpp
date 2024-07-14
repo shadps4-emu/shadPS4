@@ -185,6 +185,10 @@ void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev) {
     return ev->udata;
 }
 
+u64 PS4_SYSV_ABI sceKernelGetEventId(const SceKernelEvent* ev) {
+    return ev->ident;
+}
+
 int PS4_SYSV_ABI sceKernelTriggerUserEvent(SceKernelEqueue eq, int id, void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;

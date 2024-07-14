@@ -149,6 +149,8 @@ public:
     std::array<Value, NumScalarRegs> ssa_sreg_values;
     std::array<Value, NumVectorRegs> ssa_vreg_values;
 
+    bool has_multiple_predecessors{false};
+
 private:
     /// Memory pool for instruction list
     ObjectPool<Inst>* inst_pool;

@@ -631,6 +631,7 @@ private:
             case StatementType::Code: {
                 ensure_block();
                 if (!stmt.block->is_dummy) {
+                    current_block->has_multiple_predecessors = stmt.block->num_predecessors > 1;
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
                     Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),

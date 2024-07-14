@@ -80,6 +80,7 @@ struct Liverpool {
         union {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
+            BitField<24, 2, u64> vgpr_comp_cnt; // SPI provided per-thread inputs
             BitField<33, 5, u64> num_user_regs;
         } settings;
         UserData user_data;
@@ -785,6 +786,14 @@ struct Liverpool {
         CbColor5Base = 0xA363,
         CbColor6Base = 0xA372,
         CbColor7Base = 0xA381,
+        CbColor0Cmask = 0xA31F,
+        CbColor1Cmask = 0xA32E,
+        CbColor2Cmask = 0xA33D,
+        CbColor3Cmask = 0xA34C,
+        CbColor4Cmask = 0xA35B,
+        CbColor5Cmask = 0xA36A,
+        CbColor6Cmask = 0xA379,
+        CbColor7Cmask = 0xA388,
     };
 
     struct PolygonOffset {
@@ -979,7 +988,7 @@ private:
 
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
-    Task ProcessCompute(std::span<const u32> acb);
+    Task ProcessCompute(std::span<const u32> acb, int vqid);
 
     void Process(std::stop_token stoken);
 

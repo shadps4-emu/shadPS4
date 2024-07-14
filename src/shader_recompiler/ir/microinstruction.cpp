@@ -49,6 +49,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::Prologue:
     case Opcode::Epilogue:
     case Opcode::Discard:
+    case Opcode::DiscardCond:
     case Opcode::SetAttribute:
     case Opcode::StoreBufferF32:
     case Opcode::StoreBufferF32x2:

@@ -37,6 +37,7 @@ void Visit(Info& info, IR::Inst& inst) {
         info.uses_group_quad = true;
         break;
     case IR::Opcode::Discard:
+    case IR::Opcode::DiscardCond:
         info.has_discard = true;
         break;
     case IR::Opcode::ImageGather:
