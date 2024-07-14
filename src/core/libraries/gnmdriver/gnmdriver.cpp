@@ -1384,9 +1384,8 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
     // repeat set shader functionality here as it is trivial.
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
                                      0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
-    cmdbuf =
-        PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
-                                ps_regs[3]); // SPI_SHADER_USER_DATA_PS_4/SPI_SHADER_USER_DATA_PS_5
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
+                                     ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c4u, ps_regs[4],
                                           ps_regs[5]); // SPI_SHADER_Z_FORMAT/SPI_SHADER_COL_FORMAT
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b3u, ps_regs[6],
@@ -1443,11 +1442,11 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id,
     // pointer to a stack memory, so the check will likely fail. To workaround it we will
     // repeat set shader functionality here as it is trivial.
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], vs_regs[1]); // SPI_SHADER_PGM_LO_VS
-    cmdbuf =
-        PM4CmdSetData::SetShReg(cmdbuf, 0x4au, vs_regs[2], vs_regs[3]); // SPI_SHADER_PGM_RSRC1_VS
-    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x207u, vs_regs[6]);  // PA_CL_VS_OUT_CNTL
-    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b1u, vs_regs[4]);  // SPI_VS_OUT_CONFIG
-    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c3u, vs_regs[5]);  // SPI_SHADER_POS_FORMAT
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x4au, vs_regs[2],
+                                     vs_regs[3]); // SPI_SHADER_PGM_RSRC1_VS/SPI_SHADER_PGM_RSRC2_VS
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x207u, vs_regs[6]); // PA_CL_VS_OUT_CNTL
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b1u, vs_regs[4]); // SPI_VS_OUT_CONFIG
+    cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1c3u, vs_regs[5]); // SPI_SHADER_POS_FORMAT
 
     WriteTrailingNop<11>(cmdbuf);
     return ORBIS_OK;
@@ -1475,7 +1474,8 @@ s32 PS4_SYSV_ABI sceGnmSetEsShader(u32* cmdbuf, u32 size, const u32* es_regs, u3
         return -1;
     }
 
-    const u32 var = shader_modifier == 0 ? es_regs[2] : (es_regs[2] & 0xfcfffc3f | shader_modifier);
+    const u32 var =
+        shader_modifier == 0 ? es_regs[2] : ((es_regs[2] & 0xfcfffc3f) | shader_modifier);
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0xc8u, es_regs[0], 0u);  // SPI_SHADER_PGM_LO_ES
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0xcau, var, es_regs[3]); // SPI_SHADER_PGM_RSRC1_ES
 
@@ -1506,9 +1506,8 @@ s32 PS4_SYSV_ABI sceGnmSetGsShader(u32* cmdbuf, u32 size, const u32* gs_regs) {
     }
 
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x88u, gs_regs[0], 0u); // SPI_SHADER_PGM_LO_GS
-    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x8au, gs_regs[1],
-                                     gs_regs[1]); // SPI_SHADER_PGM_RSRC1_GS
-
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x8au, gs_regs[2],
+                                     gs_regs[3]); // SPI_SHADER_PGM_RSRC1_GS/SPI_SHADER_PGM_RSRC2_GS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x2e5u, gs_regs[4]); // VGT_STRMOUT_CONFIG
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x29bu, gs_regs[5]); // VGT_GS_OUT_PRIM_TYPE
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x2e4u, gs_regs[6]); // VGT_GS_INSTANCE_CNT
@@ -1535,9 +1534,8 @@ s32 PS4_SYSV_ABI sceGnmSetHsShader(u32* cmdbuf, u32 size, const u32* hs_regs, u3
     }
 
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x108u, hs_regs[0], 0u); // SPI_SHADER_PGM_LO_HS
-    cmdbuf =
-        PM4CmdSetData::SetShReg(cmdbuf, 0x10au, hs_regs[1], hs_regs[1]); // SPI_SHADER_PGM_RSRC1_HS
-
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x10au, hs_regs[2],
+                                     hs_regs[3]); // SPI_SHADER_PGM_RSRC1_HS/SPI_SHADER_PGM_RSRC2_HS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x286u, hs_regs[5],
                                           hs_regs[5]);                 // VGT_HOS_MAX_TESS_LEVEL
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x2dbu, hs_regs[4]); // VGT_TF_PARAM
@@ -1559,7 +1557,8 @@ s32 PS4_SYSV_ABI sceGnmSetLsShader(u32* cmdbuf, u32 size, const u32* ls_regs, u3
         return -1;
     }
 
-    if (shader_modifier & 0xfcfffc3f) {
+    const auto modifier_mask = ((shader_modifier & 0xfffffc3f) == 0) ? 0xfffffc3f : 0xfcfffc3f;
+    if (shader_modifier & modifier_mask) {
         LOG_ERROR(Lib_GnmDriver, "Invalid modifier mask");
         return -1;
     }
@@ -1569,7 +1568,8 @@ s32 PS4_SYSV_ABI sceGnmSetLsShader(u32* cmdbuf, u32 size, const u32* ls_regs, u3
         return -1;
     }
 
-    const u32 var = shader_modifier == 0 ? ls_regs[2] : (ls_regs[2] & 0xfcfffc3f | shader_modifier);
+    const u32 var =
+        shader_modifier == 0 ? ls_regs[2] : ((ls_regs[2] & modifier_mask) | shader_modifier);
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x148u, ls_regs[0], 0u);  // SPI_SHADER_PGM_LO_LS
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x14bu, ls_regs[3]);      // SPI_SHADER_PGM_RSRC2_LS
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x14au, var, ls_regs[3]); // SPI_SHADER_PGM_RSRC1_LS
@@ -1598,9 +1598,9 @@ s32 PS4_SYSV_ABI sceGnmSetPsShader(u32* cmdbuf, u32 size, const u32* ps_regs) {
 
         cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
                                          0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
-        cmdbuf = PM4CmdSetData::SetShReg(
-            cmdbuf, 10u, ps_regs[2],
-            ps_regs[3]); // SPI_SHADER_USER_DATA_PS_4/SPI_SHADER_USER_DATA_PS_5
+        cmdbuf =
+            PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
+                                    ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
         cmdbuf = PM4CmdSetData::SetContextReg(
             cmdbuf, 0x1c4u, ps_regs[4], ps_regs[5]); // SPI_SHADER_Z_FORMAT/SPI_SHADER_COL_FORMAT
         cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b3u, ps_regs[6],
@@ -1636,9 +1636,9 @@ s32 PS4_SYSV_ABI sceGnmSetPsShader350(u32* cmdbuf, u32 size, const u32* ps_regs)
 
         cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
                                          0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
-        cmdbuf = PM4CmdSetData::SetShReg(
-            cmdbuf, 10u, ps_regs[2],
-            ps_regs[3]); // SPI_SHADER_USER_DATA_PS_4/SPI_SHADER_USER_DATA_PS_5
+        cmdbuf =
+            PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
+                                    ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
         cmdbuf = PM4CmdSetData::SetContextReg(
             cmdbuf, 0x1c4u, ps_regs[4], ps_regs[5]); // SPI_SHADER_Z_FORMAT/SPI_SHADER_COL_FORMAT
         cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x1b3u, ps_regs[6],
@@ -2145,9 +2145,8 @@ s32 PS4_SYSV_ABI sceGnmUpdateGsShader(u32* cmdbuf, u32 size, const u32* gs_regs)
     }
 
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x88u, gs_regs[0], 0u); // SPI_SHADER_PGM_LO_GS
-    cmdbuf =
-        PM4CmdSetData::SetShReg(cmdbuf, 0x8au, gs_regs[1], gs_regs[1]); // SPI_SHADER_PGM_RSRC1_GS
-
+    cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x8au, gs_regs[2],
+                                     gs_regs[3]); // SPI_SHADER_PGM_RSRC1_GS/SPI_SHADER_PGM_RSRC2_GS
     cmdbuf = WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e02e5u,
                                            gs_regs[4]);
     cmdbuf = WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e029bu,
@@ -2184,9 +2183,9 @@ s32 PS4_SYSV_ABI sceGnmUpdatePsShader(u32* cmdbuf, u32 size, const u32* ps_regs)
 
         cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
                                          0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
-        cmdbuf = PM4CmdSetData::SetShReg(
-            cmdbuf, 10u, ps_regs[2],
-            ps_regs[3]); // SPI_SHADER_USER_DATA_PS_4/SPI_SHADER_USER_DATA_PS_5
+        cmdbuf =
+            PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
+                                    ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
         cmdbuf = WritePacket<PM4ItOpcode::Nop>(
             cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e01c4u, ps_regs[4],
             ps_regs[5]); // SPI_SHADER_Z_FORMAT/SPI_SHADER_COL_FORMAT update
@@ -2229,9 +2228,9 @@ s32 PS4_SYSV_ABI sceGnmUpdatePsShader350(u32* cmdbuf, u32 size, const u32* ps_re
 
         cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 8u, ps_regs[0],
                                          0u); // SPI_SHADER_PGM_LO_PS/SPI_SHADER_PGM_HI_PS
-        cmdbuf = PM4CmdSetData::SetShReg(
-            cmdbuf, 10u, ps_regs[2],
-            ps_regs[3]); // SPI_SHADER_USER_DATA_PS_4/SPI_SHADER_USER_DATA_PS_5
+        cmdbuf =
+            PM4CmdSetData::SetShReg(cmdbuf, 10u, ps_regs[2],
+                                    ps_regs[3]); // SPI_SHADER_PGM_RSRC1_PS/SPI_SHADER_PGM_RSRC2_PS
         cmdbuf = WritePacket<PM4ItOpcode::Nop>(
             cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e01c4u, ps_regs[4],
             ps_regs[5]); // SPI_SHADER_Z_FORMAT/SPI_SHADER_COL_FORMAT update
@@ -2275,7 +2274,8 @@ s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
         return -1;
     }
 
-    const u32 var = shader_modifier == 0 ? vs_regs[2] : (vs_regs[2] & 0xfcfffc3f | shader_modifier);
+    const u32 var =
+        shader_modifier == 0 ? vs_regs[2] : ((vs_regs[2] & 0xfcfffc3f) | shader_modifier);
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], 0u);  // SPI_SHADER_PGM_LO_VS
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x4au, var, vs_regs[3]); // SPI_SHADER_PGM_RSRC1_VS
     cmdbuf = WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0xc01e0207u,

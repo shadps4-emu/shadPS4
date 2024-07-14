@@ -13,10 +13,12 @@ std::string_view StageName(Stage stage) {
     switch (stage) {
     case Stage::Vertex:
         return "vs";
-    case Stage::TessellationControl:
-        return "tcs";
-    case Stage::TessellationEval:
-        return "tes";
+    case Stage::Local:
+        return "ls";
+    case Stage::Export:
+        return "es";
+    case Stage::Hull:
+        return "hs";
     case Stage::Geometry:
         return "gs";
     case Stage::Fragment:
