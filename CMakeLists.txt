@@ -292,6 +292,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
+         src/core/cpu_patches.cpp
+         src/core/cpu_patches.h
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h 
          src/core/crypto/keys.h
@@ -308,8 +310,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/splash.cpp
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
-         src/core/instruction_emulator.cpp
-         src/core/instruction_emulator.h
          src/core/loader.cpp
          src/core/loader.h
          src/core/loader/dwarf.cpp
