@@ -412,7 +412,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     TracyFiberLeave;
 }
 
-Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb) {
+Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
     TracyFiberEnter(acb_task_name);
 
     while (!acb.empty()) {
