@@ -17,11 +17,12 @@ namespace Shader {
 static constexpr size_t NumUserDataRegs = 16;
 
 enum class Stage : u32 {
-    Vertex,
-    TessellationControl,
-    TessellationEval,
-    Geometry,
     Fragment,
+    Vertex,
+    Geometry,
+    Export,
+    Hull,
+    Local,
     Compute,
 };
 constexpr u32 MaxStageTypes = 6;
@@ -204,7 +205,7 @@ struct fmt::formatter<Shader::Stage> {
         return ctx.begin();
     }
     auto format(const Shader::Stage& stage, format_context& ctx) const {
-        constexpr static std::array names = {"vs", "tc", "te", "gs", "fs", "cs"};
+        constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
         return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
     }
 };

@@ -149,11 +149,11 @@ s32 PS4_SYSV_ABI sceGnmSetCsShaderWithModifier(u32* cmdbuf, u32 size, const u32*
 s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
                                            u32 shader_modifier);
 s32 PS4_SYSV_ABI sceGnmSetEmbeddedVsShader(u32* cmdbuf, u32 size, u32 shader_id, u32 modifier);
-int PS4_SYSV_ABI sceGnmSetEsShader();
+s32 PS4_SYSV_ABI sceGnmSetEsShader(u32* cmdbuf, u32 size, const u32* es_regs, u32 shader_modifier);
 int PS4_SYSV_ABI sceGnmSetGsRingSizes();
-int PS4_SYSV_ABI sceGnmSetGsShader();
-int PS4_SYSV_ABI sceGnmSetHsShader();
-int PS4_SYSV_ABI sceGnmSetLsShader();
+s32 PS4_SYSV_ABI sceGnmSetGsShader(u32* cmdbuf, u32 size, const u32* gs_regs);
+s32 PS4_SYSV_ABI sceGnmSetHsShader(u32* cmdbuf, u32 size, const u32* hs_regs, u32 param4);
+s32 PS4_SYSV_ABI sceGnmSetLsShader(u32* cmdbuf, u32 size, const u32* ls_regs, u32 shader_modifier);
 s32 PS4_SYSV_ABI sceGnmSetPsShader(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmSetPsShader350(u32* cmdbuf, u32 size, const u32* ps_regs);
 int PS4_SYSV_ABI sceGnmSetResourceRegistrationUserMemory();
@@ -216,7 +216,7 @@ int PS4_SYSV_ABI sceGnmUnmapComputeQueue();
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner();
 int PS4_SYSV_ABI sceGnmUnregisterOwnerAndResources();
 int PS4_SYSV_ABI sceGnmUnregisterResource();
-int PS4_SYSV_ABI sceGnmUpdateGsShader();
+s32 PS4_SYSV_ABI sceGnmUpdateGsShader(u32* cmdbuf, u32 size, const u32* gs_regs);
 int PS4_SYSV_ABI sceGnmUpdateHsShader();
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader350(u32* cmdbuf, u32 size, const u32* ps_regs);

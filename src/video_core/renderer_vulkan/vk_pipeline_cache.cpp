@@ -256,6 +256,12 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
+        if (stage != Shader::Stage::Compute && stage != Shader::Stage::Fragment &&
+            stage != Shader::Stage::Vertex) {
+            LOG_ERROR(Render_Vulkan, "Unsupported shader stage {}. PL creation skipped.", stage);
+            return {};
+        }
+
         // Recompile shader to IR.
         try {
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
