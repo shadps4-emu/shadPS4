@@ -192,13 +192,10 @@ bool Instance::CreateDevice() {
     };
 
     add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    image_format_list = add_extension(VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME);
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
-    tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-    add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     workgroup_memory_explicit_layout =
@@ -207,6 +204,11 @@ bool Instance::CreateDevice() {
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     const auto calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+
+    // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
+    // with extensions.
+    tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
+    add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
 
