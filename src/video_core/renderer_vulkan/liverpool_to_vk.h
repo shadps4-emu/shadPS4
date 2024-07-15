@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <vector>
+#include <span>
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
@@ -39,7 +39,7 @@ vk::SamplerMipmapMode MipFilter(AmdGpu::MipFilter filter);
 
 vk::BorderColor BorderColor(AmdGpu::BorderColor color);
 
-const std::vector<vk::Format>& GetAllFormats();
+std::span<const vk::Format> GetAllFormats();
 
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format);
 
