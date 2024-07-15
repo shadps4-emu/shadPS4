@@ -311,7 +311,7 @@ static void DumpCommandList(std::span<const u32> cmd_list, const std::string& po
     if (cmd_list.empty()) {
         return;
     }
-    const auto filename = std::format("{:08}_{}", frames_submitted, postfix);
+    const auto filename = fmt::format("{:08}_{}", frames_submitted, postfix);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(cmd_list);
 }
@@ -519,7 +519,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         }
 
         // File name format is: <queue>_<queue num>_<submit_num>
-        DumpCommandList(acb, std::format("acb_{}_{}", gnm_vqid, seq_num));
+        DumpCommandList(acb, fmt::format("acb_{}_{}", gnm_vqid, seq_num));
     }
 
     liverpool->SubmitAsc(vqid, acb_span);
@@ -2110,8 +2110,8 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
             }
 
             // File name format is: <queue>_<submit num>_<buffer_in_submit>
-            DumpCommandList(dcb_span, std::format("dcb_{}_{}", seq_num, cbpair));
-            DumpCommandList(ccb_span, std::format("ccb_{}_{}", seq_num, cbpair));
+            DumpCommandList(dcb_span, fmt::format("dcb_{}_{}", seq_num, cbpair));
+            DumpCommandList(ccb_span, fmt::format("ccb_{}_{}", seq_num, cbpair));
         }
 
         liverpool->SubmitGfx(dcb_span, ccb_span);
