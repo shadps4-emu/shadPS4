@@ -31,11 +31,16 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
         return guest_directory;
     }
 
+    // Nothing to do if getting the mount itself.
+    if (guest_directory == mount->mount) {
+        return mount->host_path;
+    }
+
     // Remove device (e.g /app0) from path to retrieve relative path.
     const u32 pos = mount->mount.size() + 1;
     const auto rel_path = std::string_view(guest_directory).substr(pos);
     const auto host_path = mount->host_path / rel_path;
-    if (!NeedsCaseInsensiveSearch || std::filesystem::exists(host_path)) {
+    if (!NeedsCaseInsensiveSearch) {
         return host_path;
     }
 
@@ -87,7 +92,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
         if (!found_match) {
             // Opening the guest path will surely fail but at least gives
             // a better error message than the empty path.
-            return guest_directory;
+            return host_path;
         }
     }
 
