@@ -131,14 +131,9 @@ File* HandleTable::GetFile(int d) {
     return m_files.at(d - RESERVED_HANDLES);
 }
 
-File* HandleTable::getFile(const std::string& host_name) {
-    std::scoped_lock lock{m_mutex};
-    for (auto* file : m_files) {
-        if (file != nullptr && file->m_host_name == host_name) {
-            return file;
-        }
-    }
-    return nullptr;
+File* HandleTable::GetFile(const std::filesystem::path& host_name) {
+    const auto it = std::ranges::find(m_files, host_name, &File::m_host_name);
+    return it == m_files.end() ? nullptr : *it;
 }
 
 } // namespace Core::FileSys

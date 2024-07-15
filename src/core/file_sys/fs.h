@@ -54,7 +54,7 @@ struct DirEntry {
 struct File {
     std::atomic_bool is_opened{};
     std::atomic_bool is_directory{};
-    std::string m_host_name;
+    std::filesystem::path m_host_name;
     std::string m_guest_name;
     Common::FS::IOFile f;
     std::vector<DirEntry> dirents;
@@ -70,7 +70,7 @@ public:
     int CreateHandle();
     void DeleteHandle(int d);
     File* GetFile(int d);
-    File* getFile(const std::string& host_name);
+    File* GetFile(const std::filesystem::path& host_name);
 
 private:
     std::vector<File*> m_files;

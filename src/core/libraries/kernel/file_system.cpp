@@ -13,7 +13,7 @@
 
 namespace Libraries::Kernel {
 
-std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::string& path) {
+std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::filesystem::path& path) {
     std::vector<Core::FileSys::DirEntry> files;
     for (const auto& entry : std::filesystem::directory_iterator(path)) {
         auto& dir_entry = files.emplace_back();
@@ -58,7 +58,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     if (directory) {
         file->is_directory = true;
         file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name).string();
+        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
             h->DeleteHandle(handle);
             return ORBIS_KERNEL_ERROR_ENOTDIR;
@@ -72,7 +72,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         }
     } else {
         file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name).string();
+        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         int e = 0;
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
@@ -174,7 +174,7 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
         return SCE_KERNEL_ERROR_EPERM;
     }
 
-    auto* file = h->getFile(host_path.string());
+    auto* file = h->GetFile(host_path);
     if (file != nullptr) {
         file->f.Unlink();
     }
