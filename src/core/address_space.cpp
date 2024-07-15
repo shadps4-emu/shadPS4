@@ -58,20 +58,28 @@ struct AddressSpace::Impl {
         static constexpr size_t ReductionOnFail = 1_GB;
         static constexpr size_t MaxReductions = 10;
 
-        system_managed_size = SystemManagedSize;
-        system_reserved_size = SystemReservedSize + ReductionOnFail;
-        user_size = UserSize;
-        for (u32 i = 0; i < MaxReductions && !virtual_base; i++) {
-            system_reserved_size -= ReductionOnFail;
-            virtual_base = static_cast<u8*>(
-                VirtualAlloc2(process, NULL, system_managed_size + system_reserved_size + user_size,
-                              MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &param, 1));
+        size_t reduction = 0;
+        for (u32 i = 0; i < MaxReductions; i++) {
+            virtual_base = static_cast<u8*>(VirtualAlloc2(
+                process, NULL, SystemManagedSize + SystemReservedSize + UserSize - reduction,
+                MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &param, 1));
+            if (virtual_base) {
+                break;
+            }
+            reduction += ReductionOnFail;
         }
         ASSERT_MSG(virtual_base, "Unable to reserve virtual address space!");
 
         system_managed_base = virtual_base;
-        system_reserved_base = virtual_base + system_managed_size;
-        user_base = system_reserved_base + system_reserved_size;
+        system_managed_size = SystemManagedSize - reduction;
+        system_reserved_base =
+            virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN) - reduction;
+        system_reserved_size = SystemReservedSize;
+        user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN) - reduction;
+        user_size = UserSize;
+
+        ASSERT_MSG(user_base == reinterpret_cast<u8*>(USER_MIN),
+                   "Unexpected user address space location: {}", fmt::ptr(user_base));
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
                  fmt::ptr(system_managed_base),
@@ -277,23 +285,24 @@ struct AddressSpace::Impl {
         system_managed_size = SystemManagedSize;
         system_reserved_size = SystemReservedSize;
         user_size = UserSize;
+
+        constexpr int protection_flags = PROT_READ | PROT_WRITE;
+        constexpr int base_map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
 #ifdef __APPLE__
         system_managed_base = reinterpret_cast<u8*>(
-            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size,
-                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED,
-                 -1, 0));
+            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size, protection_flags,
+                 base_map_flags | MAP_FIXED, -1, 0));
         // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
         system_reserved_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN), system_reserved_size,
-                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+                 protection_flags, base_map_flags, -1, 0));
         user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
-                                               PROT_READ | PROT_WRITE,
-                                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+                                               protection_flags, base_map_flags, -1, 0));
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
-        const auto virtual_base = reinterpret_cast<u8*>(
-            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0));
+        const auto virtual_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
+                                       protection_flags, base_map_flags | MAP_FIXED, -1, 0));
         system_managed_base = virtual_base;
         system_managed_base = virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN);
         user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN);
@@ -330,9 +339,6 @@ struct AddressSpace::Impl {
         shm_unlink(shm_path.c_str());
 #else
         madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
-
-        const VAddr start_addr = reinterpret_cast<VAddr>(virtual_base);
-        m_free_regions.insert({start_addr, start_addr + virtual_size});
 
         backing_fd = memfd_create("BackingDmem", 0);
         if (backing_fd < 0) {

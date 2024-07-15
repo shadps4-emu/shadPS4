@@ -16,6 +16,8 @@
 #include <pthread.h>
 #endif
 
+using namespace Xbyak::util;
+
 namespace Core {
 
 static Xbyak::Reg ZydisToXbyakRegister(const ZydisRegister reg) {
@@ -54,7 +56,7 @@ static Xbyak::Address ZydisToXbyakMemoryOperand(const ZydisDecodedOperand& opera
         expression = expression + operand.mem.disp.value;
     }
 
-    return Xbyak::util::ptr[expression];
+    return ptr[expression];
 }
 
 static std::unique_ptr<Xbyak::Operand> ZydisToXbyakOperand(const ZydisDecodedOperand& operand) {
@@ -125,8 +127,8 @@ static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<X
     for (const auto& reg : regs) {
         const auto offset = reinterpret_cast<void*>(register_save_slots[index++] * sizeof(void*));
 
-        c.putSeg(Xbyak::util::gs);
-        c.mov(Xbyak::util::qword[offset], reg.cvt64());
+        c.putSeg(gs);
+        c.mov(qword[offset], reg.cvt64());
     }
 }
 
@@ -141,8 +143,8 @@ static void RestoreRegisters(Xbyak::CodeGenerator& c,
     for (const auto& reg : regs) {
         const auto offset = reinterpret_cast<void*>(register_save_slots[index++] * sizeof(void*));
 
-        c.putSeg(Xbyak::util::gs);
-        c.mov(reg.cvt64(), Xbyak::util::qword[offset]);
+        c.putSeg(gs);
+        c.mov(reg.cvt64(), qword[offset]);
     }
 }
 
@@ -277,20 +279,20 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const u32 tls_index = slot < TlsMinimumAvailable ? slot : slot - TlsMinimumAvailable;
 
     // Load the pointer to the table of TLS slots.
-    c.putSeg(Xbyak::util::gs);
-    c.mov(dst, Xbyak::util::ptr[reinterpret_cast<void*>(teb_offset)]);
+    c.putSeg(gs);
+    c.mov(dst, ptr[reinterpret_cast<void*>(teb_offset)]);
     // Load the pointer to our buffer.
-    c.mov(dst, Xbyak::util::qword[dst + tls_index * sizeof(LPVOID)]);
+    c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
 #elif defined(__APPLE__)
     // The following logic is based on the Darwin implementation of _os_tsd_get_direct, used by
     // pthread_getspecific https://github.com/apple/darwin-xnu/blob/main/libsyscall/os/tsd.h#L89-L96
-    c.putSeg(Xbyak::util::gs);
-    c.mov(dst, Xbyak::util::qword[reinterpret_cast<void*>(slot * sizeof(void*))]);
+    c.putSeg(gs);
+    c.mov(dst, qword[reinterpret_cast<void*>(slot * sizeof(void*))]);
 #else
     const auto src = ZydisToXbyakMemoryOperand(operands[1]);
 
     // Replace fs read with gs read.
-    c.putSeg(Xbyak::util::gs);
+    c.putSeg(gs);
     c.mov(dst, src);
 #endif
 }
