@@ -7,8 +7,6 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/event_queues.h"
 
-#include <boost/asio/placeholders.hpp>
-
 namespace Libraries::Kernel {
 
 extern boost::asio::io_context io_context;
@@ -136,8 +134,7 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     event.timer = std::make_unique<boost::asio::steady_timer>(
         io_context, std::chrono::microseconds(total_us - HrTimerSpinlockThresholdUs));
 
-    event.timer->async_wait(
-        std::bind(SmallTimerCallback, boost::asio::placeholders::error, eq, event.event));
+    event.timer->async_wait(std::bind(SmallTimerCallback, std::placeholders::_1, eq, event.event));
 
     if (!eq->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;

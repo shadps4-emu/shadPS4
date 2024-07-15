@@ -1033,7 +1033,7 @@ private:
 
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
-    u32 num_submits{};
+    std::atomic<u32> num_submits{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
 };
