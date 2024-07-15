@@ -32,10 +32,7 @@ namespace Core {
 static constexpr s32 WindowWidth = 1280;
 static constexpr s32 WindowHeight = 720;
 
-Emulator::Emulator()
-    : memory{Core::Memory::Instance()}, window{WindowWidth, WindowHeight, controller} {
-    g_window = &window;
-
+Emulator::Emulator() {
     // Read configuration file.
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(config_dir / "config.toml");
@@ -49,6 +46,14 @@ Emulator::Emulator()
     Common::Log::Initialize();
     Common::Log::Start();
     LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
+
+    // Defer until after logging is initialized.
+    memory = Core::Memory::Instance();
+    controller = Common::Singleton<Input::GameController>::Instance();
+    linker = Common::Singleton<Core::Linker>::Instance();
+    window = std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller);
+
+    g_window = window.get();
 }
 
 Emulator::~Emulator() {
@@ -134,8 +139,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     // Begin main window loop until the application exits
     static constexpr std::chrono::milliseconds FlipPeriod{16};
 
-    while (window.isOpen()) {
-        window.waitEvent();
+    while (window->isOpen()) {
+        window->waitEvent();
         Libraries::VideoOut::Flip(FlipPeriod);
         Libraries::VideoOut::Vblank();
         FRAME_END;

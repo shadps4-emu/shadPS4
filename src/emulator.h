@@ -31,9 +31,9 @@ private:
     void LoadSystemModules(const std::filesystem::path& file);
 
     Core::MemoryManager* memory;
-    Input::GameController* controller = Common::Singleton<Input::GameController>::Instance();
-    Core::Linker* linker = Common::Singleton<Core::Linker>::Instance();
-    Frontend::WindowSDL window;
+    Input::GameController* controller;
+    Core::Linker* linker;
+    std::unique_ptr<Frontend::WindowSDL> window;
 };
 
 } // namespace Core
