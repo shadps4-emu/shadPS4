@@ -108,11 +108,6 @@ public:
         return fragment_shader_interlock;
     }
 
-    /// Returns true when VK_KHR_image_format_list is supported
-    bool IsImageFormatListSupported() const {
-        return image_format_list;
-    }
-
     /// Returns true when VK_EXT_pipeline_creation_cache_control is supported
     bool IsPipelineCreationCacheControlSupported() const {
         return pipeline_creation_cache_control;
@@ -247,7 +242,6 @@ private:
     bool timeline_semaphores{};
     bool custom_border_color{};
     bool fragment_shader_interlock{};
-    bool image_format_list{};
     bool pipeline_creation_cache_control{};
     bool fragment_shader_barycentric{};
     bool shader_stencil_export{};
