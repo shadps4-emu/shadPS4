@@ -18,18 +18,21 @@ enum class MemoryPermission : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
 
-constexpr VAddr SYSTEM_RESERVED = 0x800000000ULL;
 constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
+
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
+constexpr VAddr SYSTEM_RESERVED_MIN = 0x800000000ULL;
+constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
 constexpr VAddr USER_MIN = 0x1000000000ULL;
 constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
 
+static constexpr size_t SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
+static constexpr size_t SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
 // User area size is normally larger than this. However games are unlikely to map to high
 // regions of that area, so by default we allocate a smaller virtual address space (about 1/4th).
 // to save space on page tables.
 static constexpr size_t UserSize = 1ULL << 39;
-static constexpr size_t SystemSize = USER_MIN - SYSTEM_MANAGED_MIN;
 
 /**
  * Represents the user virtual address space backed by a dmem memory block
@@ -39,14 +42,34 @@ public:
     explicit AddressSpace();
     ~AddressSpace();
 
-    [[nodiscard]] VAddr VirtualBase() noexcept {
-        return reinterpret_cast<VAddr>(virtual_base);
+    [[nodiscard]] VAddr SystemManagedVirtualBase() noexcept {
+        return reinterpret_cast<VAddr>(system_managed_base);
     }
-    [[nodiscard]] const u8* VirtualBase() const noexcept {
-        return virtual_base;
+    [[nodiscard]] const u8* SystemManagedVirtualBase() const noexcept {
+        return system_managed_base;
     }
-    [[nodiscard]] size_t VirtualSize() const noexcept {
-        return virtual_size;
+    [[nodiscard]] size_t SystemManagedVirtualSize() const noexcept {
+        return system_managed_size;
+    }
+
+    [[nodiscard]] VAddr SystemReservedVirtualBase() noexcept {
+        return reinterpret_cast<VAddr>(system_reserved_base);
+    }
+    [[nodiscard]] const u8* SystemReservedVirtualBase() const noexcept {
+        return system_reserved_base;
+    }
+    [[nodiscard]] size_t SystemReservedVirtualSize() const noexcept {
+        return system_reserved_size;
+    }
+
+    [[nodiscard]] VAddr UserVirtualBase() noexcept {
+        return reinterpret_cast<VAddr>(user_base);
+    }
+    [[nodiscard]] const u8* UserVirtualBase() const noexcept {
+        return user_base;
+    }
+    [[nodiscard]] size_t UserVirtualSize() const noexcept {
+        return user_size;
     }
 
     /**
@@ -74,8 +97,12 @@ private:
     struct Impl;
     std::unique_ptr<Impl> impl;
     u8* backing_base{};
-    u8* virtual_base{};
-    size_t virtual_size{};
+    u8* system_managed_base{};
+    size_t system_managed_size{};
+    u8* system_reserved_base{};
+    size_t system_reserved_size{};
+    u8* user_base{};
+    size_t user_size{};
 };
 
 } // namespace Core

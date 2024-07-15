@@ -558,6 +558,9 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
+  # Reserve system-managed memory space.
+  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x400000,-segaddr,SYSTEM_MANAGED,0x400000,-image_base,0x10000000000)
+
   # Link MoltenVK for Vulkan support
   find_library(MOLTENVK MoltenVK REQUIRED)
   target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
