@@ -263,7 +263,8 @@ private:
     template <typename Type>
     IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
         for (IR::Block* const imm_pred : block->ImmPredecessors()) {
-            const bool is_thread_bit = std::is_same_v<Type, IR::ScalarReg> && phi.Flags<IR::Type>() == IR::Type::U1;
+            const bool is_thread_bit =
+                std::is_same_v<Type, IR::ScalarReg> && phi.Flags<IR::Type>() == IR::Type::U1;
             phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred, is_thread_bit));
         }
         return TryRemoveTrivialPhi(phi, block, UndefOpcode(variable));
@@ -347,7 +348,8 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        inst.ReplaceUsesWith(pass.ReadVariable(reg, block, opcode == IR::Opcode::GetThreadBitScalarReg));
+        inst.ReplaceUsesWith(
+            pass.ReadVariable(reg, block, opcode == IR::Opcode::GetThreadBitScalarReg));
         break;
     }
     case IR::Opcode::GetVectorRegister: {
