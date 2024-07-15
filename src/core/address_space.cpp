@@ -16,8 +16,8 @@
 #endif
 
 #ifdef __APPLE__
-// Reserve space for the system-managed address space using a zerofill section.
-asm(".zerofill SYSTEM_MANAGED,SYSTEM_MANAGED,__system_managed,0x800000000");
+// Reserve space for the system address space using a zerofill section.
+asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xEFFC00000");
 #endif
 
 namespace Core {
@@ -295,7 +295,7 @@ struct AddressSpace::Impl {
         // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
         system_reserved_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN), system_reserved_size,
-                 protection_flags, base_map_flags, -1, 0));
+                 protection_flags, base_map_flags | MAP_FIXED, -1, 0));
         user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
                                                protection_flags, base_map_flags, -1, 0));
 #else
