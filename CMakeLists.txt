@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     enable_language(OBJC)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 11)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
