@@ -27,18 +27,15 @@ public:
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
-    void Mount(const std::filesystem::path& host_folder,
-               const std::string& guest_folder);
-    void Unmount(const std::filesystem::path& host_folder,
-                 const std::string& guest_folder);
+    void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
     void UnmountAll();
 
     std::filesystem::path GetHostPath(const std::string& guest_directory);
 
     const MntPair* GetMount(const std::string& guest_path) {
-        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
-            return guest_path.starts_with(mount.mount);
-        });
+        const auto it = std::ranges::find_if(
+            m_mnt_pairs, [&](const auto& mount) { return guest_path.starts_with(mount.mount); });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 

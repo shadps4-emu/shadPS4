@@ -9,8 +9,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <asm/prctl.h>        /* Definition of ARCH_* constants */
-#include <sys/syscall.h>      /* Definition of SYS_* constants */
+#include <asm/prctl.h>   /* Definition of ARCH_* constants */
+#include <sys/syscall.h> /* Definition of SYS_* constants */
 #endif
 
 namespace Core {
@@ -93,12 +93,12 @@ static void PatchFsAccess(u8* code, const TLSPattern& tls_pattern, Xbyak::CodeGe
 static u32 slot = 0;
 
 void SetTcbBase(void* image_address) {
-    asm volatile("wrgsbase %0" :: "r" (image_address) : "memory");
+    asm volatile("wrgsbase %0" ::"r"(image_address) : "memory");
 }
 
 Tcb* GetTcbBase() {
     Tcb* tcb;
-    asm volatile("rdgsbase %0" : "=r" (tcb) :: "memory");
+    asm volatile("rdgsbase %0" : "=r"(tcb)::"memory");
     return tcb;
 }
 

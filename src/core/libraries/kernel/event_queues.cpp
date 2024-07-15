@@ -134,8 +134,7 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     event.timer = std::make_unique<boost::asio::steady_timer>(
         io_context, std::chrono::microseconds(total_us - HrTimerSpinlockThresholdUs));
 
-    event.timer->async_wait(
-        std::bind(SmallTimerCallback, std::placeholders::_1, eq, event.event));
+    event.timer->async_wait(std::bind(SmallTimerCallback, std::placeholders::_1, eq, event.event));
 
     if (!eq->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;

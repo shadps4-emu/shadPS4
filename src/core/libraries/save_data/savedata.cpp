@@ -536,7 +536,7 @@ int PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint,
     const auto mount_dir = mnt->GetHostPath(mountPoint->data);
     LOG_INFO(Lib_SaveData, "called = {}", mount_dir.native());
 
-    if (icon != nullptr) {        
+    if (icon != nullptr) {
         Common::FS::IOFile file(mount_dir / "save_data.png", Common::FS::FileAccessMode::Write);
         file.WriteRaw<u8>(icon->buf, icon->bufSize);
     }
