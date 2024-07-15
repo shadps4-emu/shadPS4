@@ -173,7 +173,7 @@ public:
     }
 
     template <typename Type>
-    IR::Value ReadVariable(Type variable, IR::Block* root_block) {
+    IR::Value ReadVariable(Type variable, IR::Block* root_block, bool is_thread_bit = false) {
         boost::container::small_vector<ReadState<Type>, 64> stack{
             ReadState<Type>(nullptr),
             ReadState<Type>(root_block),
@@ -201,7 +201,7 @@ public:
                 } else if (!block->IsSsaSealed()) {
                     // Incomplete CFG
                     IR::Inst* phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
+                    phi->SetFlags(is_thread_bit ? IR::Type::U1 : IR::TypeOf(UndefOpcode(variable)));
 
                     incomplete_phis[block].insert_or_assign(variable, phi);
                     stack.back().result = IR::Value{&*phi};
@@ -214,7 +214,7 @@ public:
                 } else {
                     // Break potential cycles with operandless phi
                     IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
+                    phi->SetFlags(is_thread_bit ? IR::Type::U1 : IR::TypeOf(UndefOpcode(variable)));
 
                     WriteVariable(variable, block, IR::Value{phi});
 
@@ -263,7 +263,8 @@ private:
     template <typename Type>
     IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
         for (IR::Block* const imm_pred : block->ImmPredecessors()) {
-            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred));
+            const bool is_thread_bit = std::is_same_v<Type, IR::ScalarReg> && phi.Flags<IR::Type>() == IR::Type::U1;
+            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred, is_thread_bit));
         }
         return TryRemoveTrivialPhi(phi, block, UndefOpcode(variable));
     }
@@ -346,7 +347,7 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        inst.ReplaceUsesWith(pass.ReadVariable(reg, block));
+        inst.ReplaceUsesWith(pass.ReadVariable(reg, block, opcode == IR::Opcode::GetThreadBitScalarReg));
         break;
     }
     case IR::Opcode::GetVectorRegister: {

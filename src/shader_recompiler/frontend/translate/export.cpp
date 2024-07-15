@@ -7,7 +7,7 @@
 namespace Shader::Gcn {
 
 void Translator::EXP(const GcnInst& inst) {
-    if (ir.block->has_multiple_predecessors) {
+    if (ir.block->has_multiple_predecessors && info.stage == Stage::Fragment) {
         LOG_WARNING(Render_Recompiler, "An ambiguous export appeared in translation");
         ir.Discard(ir.LogicalNot(ir.GetExec()));
     }
