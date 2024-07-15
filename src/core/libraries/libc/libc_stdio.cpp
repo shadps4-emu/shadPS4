@@ -10,12 +10,12 @@ namespace Libraries::LibC {
 
 std::FILE* PS4_SYSV_ABI ps4_fopen(const char* filename, const char* mode) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto host_path = mnt->GetHostPath(filename);
+    const auto host_path = mnt->GetHostPath(filename).string();
     FILE* f = std::fopen(host_path.c_str(), mode);
     if (f != nullptr) {
-        LOG_INFO(Lib_LibC, "fopen = {}", host_path.native());
+        LOG_INFO(Lib_LibC, "fopen = {}", host_path);
     } else {
-        LOG_INFO(Lib_LibC, "fopen can't open = {}", host_path.native());
+        LOG_INFO(Lib_LibC, "fopen can't open = {}", host_path);
     }
     return f;
 }
