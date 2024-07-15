@@ -15,6 +15,11 @@
 #include <sys/mman.h>
 #endif
 
+#ifdef __APPLE__
+// Reserve space for the system-managed address space using a zerofill section.
+asm(".zerofill SYSTEM_MANAGED,SYSTEM_MANAGED,__system_managed,0x800000000");
+#endif
+
 namespace Core {
 
 static constexpr size_t BackingSize = SCE_KERNEL_MAIN_DMEM_SIZE;
@@ -52,18 +57,38 @@ struct AddressSpace::Impl {
         // to a reasonable amount.
         static constexpr size_t ReductionOnFail = 1_GB;
         static constexpr size_t MaxReductions = 10;
-        virtual_size = SystemSize + UserSize + ReductionOnFail;
+
+        system_managed_size = SystemManagedSize;
+        system_reserved_size = SystemReservedSize + ReductionOnFail;
+        user_size = UserSize;
         for (u32 i = 0; i < MaxReductions && !virtual_base; i++) {
-            virtual_size -= ReductionOnFail;
-            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size,
-                                                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-                                                          PAGE_NOACCESS, &param, 1));
+            system_reserved_size -= ReductionOnFail;
+            virtual_base = static_cast<u8*>(
+                VirtualAlloc2(process, NULL, system_managed_size + system_reserved_size + user_size,
+                              MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &param, 1));
         }
         ASSERT_MSG(virtual_base, "Unable to reserve virtual address space!");
 
+        system_managed_base = virtual_base;
+        system_reserved_base = virtual_base + system_managed_size;
+        user_base = system_reserved_base + system_reserved_size;
+
+        LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
+                 fmt::ptr(system_managed_base),
+                 fmt::ptr(system_managed_base + system_managed_size - 1));
+        LOG_INFO(Kernel_Vmm, "System reserved virtual memory region: {} - {}",
+                 fmt::ptr(system_reserved_base),
+                 fmt::ptr(system_reserved_base + system_reserved_size - 1));
+        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
+                 fmt::ptr(user_base + user_size - 1));
+
         // Initializer placeholder tracker
-        const uintptr_t virtual_addr = reinterpret_cast<uintptr_t>(virtual_base);
-        placeholders.insert({virtual_addr, virtual_addr + virtual_size});
+        const uintptr_t system_managed_addr = reinterpret_cast<uintptr_t>(system_managed_base);
+        const uintptr_t system_reserved_addr = reinterpret_cast<uintptr_t>(system_reserved_base);
+        const uintptr_t user_addr = reinterpret_cast<uintptr_t>(user_base);
+        placeholders.insert({system_managed_addr, system_managed_addr + system_managed_size});
+        placeholders.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
+        placeholders.insert({user_addr, user_addr + user_size});
 
         // Allocate backing file that represents the total physical memory.
         backing_handle =
@@ -215,7 +240,12 @@ struct AddressSpace::Impl {
     HANDLE backing_handle{};
     u8* backing_base{};
     u8* virtual_base{};
-    size_t virtual_size{};
+    u8* system_managed_base{};
+    size_t system_managed_size{};
+    u8* system_reserved_base{};
+    size_t system_reserved_size{};
+    u8* user_base{};
+    size_t user_size{};
     boost::icl::separate_interval_set<uintptr_t> placeholders;
 };
 #else
@@ -244,29 +274,53 @@ enum PosixPageProtection {
 struct AddressSpace::Impl {
     Impl() {
         // Allocate virtual address placeholder for our address space.
-        void* hint_address = reinterpret_cast<void*>(SYSTEM_MANAGED_MIN);
+        system_managed_size = SystemManagedSize;
+        system_reserved_size = SystemReservedSize;
+        user_size = UserSize;
 #ifdef __APPLE__
-        constexpr int virtual_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+        system_managed_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size,
+                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED,
+                 -1, 0));
+        // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
+        system_reserved_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN), system_reserved_size,
+                 PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+        user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
+                                               PROT_READ | PROT_WRITE,
+                                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
 #else
-        constexpr int virtual_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+        const auto virtual_size = system_managed_size + system_reserved_size + user_size;
+        const auto virtual_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size, PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED, -1, 0));
+        system_managed_base = virtual_base;
+        system_managed_base = virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN);
+        user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN);
 #endif
-        virtual_size = SystemSize + UserSize;
-        virtual_base = reinterpret_cast<u8*>(
-            mmap(hint_address, virtual_size, PROT_READ | PROT_WRITE, virtual_flags, -1, 0));
-        if (virtual_base == MAP_FAILED) {
+        if (system_managed_base == MAP_FAILED || system_reserved_base == MAP_FAILED ||
+            user_base == MAP_FAILED) {
             LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
             throw std::bad_alloc{};
         }
 
-#ifndef __APPLE__
-        madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
+        LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
+                 fmt::ptr(system_managed_base),
+                 fmt::ptr(system_managed_base + system_managed_size - 1));
+        LOG_INFO(Kernel_Vmm, "System reserved virtual memory region: {} - {}",
+                 fmt::ptr(system_reserved_base),
+                 fmt::ptr(system_reserved_base + system_reserved_size - 1));
+        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
+                 fmt::ptr(user_base + user_size - 1));
 
-        backing_fd = memfd_create("BackingDmem", 0);
-        if (backing_fd < 0) {
-            LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
-            throw std::bad_alloc{};
-        }
-#else
+        const VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
+        const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_managed_base);
+        const VAddr user_addr = reinterpret_cast<VAddr>(user_base);
+        m_free_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
+        m_free_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
+        m_free_regions.insert({user_addr, user_addr + user_size});
+
+#ifdef __APPLE__
         const auto shm_path = fmt::format("/BackingDmem{}", getpid());
         backing_fd = shm_open(shm_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
         if (backing_fd < 0) {
@@ -274,6 +328,17 @@ struct AddressSpace::Impl {
             throw std::bad_alloc{};
         }
         shm_unlink(shm_path.c_str());
+#else
+        madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
+
+        const VAddr start_addr = reinterpret_cast<VAddr>(virtual_base);
+        m_free_regions.insert({start_addr, start_addr + virtual_size});
+
+        backing_fd = memfd_create("BackingDmem", 0);
+        if (backing_fd < 0) {
+            LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
 #endif
 
         // Defined to extend the file with zeros
@@ -291,9 +356,6 @@ struct AddressSpace::Impl {
             LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
             throw std::bad_alloc{};
         }
-
-        const VAddr start_addr = reinterpret_cast<VAddr>(virtual_base);
-        m_free_regions.insert({start_addr, start_addr + virtual_size});
     }
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot,
@@ -346,16 +408,24 @@ struct AddressSpace::Impl {
 
     int backing_fd;
     u8* backing_base{};
-    u8* virtual_base{};
-    size_t virtual_size{};
+    u8* system_managed_base{};
+    size_t system_managed_size{};
+    u8* system_reserved_base{};
+    size_t system_reserved_size{};
+    u8* user_base{};
+    size_t user_size{};
     boost::icl::interval_set<VAddr> m_free_regions;
 };
 #endif
 
 AddressSpace::AddressSpace() : impl{std::make_unique<Impl>()} {
-    virtual_base = impl->virtual_base;
     backing_base = impl->backing_base;
-    virtual_size = impl->virtual_size;
+    system_managed_base = impl->system_managed_base;
+    system_managed_size = impl->system_managed_size;
+    system_reserved_base = impl->system_reserved_base;
+    system_reserved_size = impl->system_reserved_size;
+    user_base = impl->user_base;
+    user_size = impl->user_size;
 }
 
 AddressSpace::~AddressSpace() = default;

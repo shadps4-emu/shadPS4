@@ -17,12 +17,21 @@ MemoryManager::MemoryManager() {
     dmem_map.emplace(0, DirectMemoryArea{0, SCE_KERNEL_MAIN_DMEM_SIZE});
 
     // Insert a virtual memory area that covers the entire area we manage.
-    const VAddr virtual_base = impl.VirtualBase();
-    const size_t virtual_size = impl.VirtualSize();
-    vma_map.emplace(virtual_base, VirtualMemoryArea{virtual_base, virtual_size});
+    const VAddr system_managed_base = impl.SystemManagedVirtualBase();
+    const size_t system_managed_size = impl.SystemManagedVirtualSize();
+    const VAddr system_reserved_base = impl.SystemReservedVirtualBase();
+    const size_t system_reserved_size = impl.SystemReservedVirtualSize();
+    const VAddr user_base = impl.UserVirtualBase();
+    const size_t user_size = impl.UserVirtualSize();
+    vma_map.emplace(system_managed_base,
+                    VirtualMemoryArea{system_managed_base, system_managed_size});
+    vma_map.emplace(system_reserved_base,
+                    VirtualMemoryArea{system_reserved_base, system_reserved_size});
+    vma_map.emplace(user_base, VirtualMemoryArea{user_base, user_size});
 
     // Log initialization.
-    LOG_INFO(Kernel_Vmm, "Usable memory address space {}_GB", virtual_size >> 30);
+    LOG_INFO(Kernel_Vmm, "Usable memory address space: {}_GB",
+             (system_managed_size + system_reserved_size + user_size) >> 30);
 }
 
 MemoryManager::~MemoryManager() = default;
@@ -112,7 +121,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
     // flag so we will take the branch that searches for free (or reserved) mappings.
-    virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
+    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 16_KB;
 
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
@@ -166,7 +175,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                            MemoryMapFlags flags, uintptr_t fd, size_t offset) {
     if (virtual_addr == 0) {
-        virtual_addr = impl.VirtualBase();
+        virtual_addr = impl.SystemManagedVirtualBase();
     } else {
         LOG_INFO(Kernel_Vmm, "Virtual addr {:#x} with size {:#x}", virtual_addr, size);
     }
