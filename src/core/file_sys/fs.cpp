@@ -79,7 +79,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
         bool found_match = false;
         for (const auto& path : std::filesystem::directory_iterator(current_path)) {
             const auto candidate = path.path().filename();
-            const auto filename = Common::ToLower(candidate);
+            const auto filename = Common::ToLower(candidate.string());
             // Check if a filename matches in case insensitive manner.
             if (filename != part_low) {
                 continue;

@@ -55,7 +55,7 @@ int PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData* 
     if (!std::filesystem::exists(mount_dir)) {
         return ORBIS_SAVE_DATA_ERROR_NOT_FOUND;
     }
-    LOG_INFO(Lib_SaveData, "called = {}", mount_dir.native());
+    LOG_INFO(Lib_SaveData, "called = {}", mount_dir.string());
 
     return ORBIS_OK;
 }
@@ -396,7 +396,7 @@ int PS4_SYSV_ABI sceSaveDataLoadIcon(const OrbisSaveDataMountPoint* mountPoint,
                                      OrbisSaveDataIcon* icon) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto mount_dir = mnt->GetHostPath(mountPoint->data);
-    LOG_INFO(Lib_SaveData, "called: dir = {}", mount_dir.native());
+    LOG_INFO(Lib_SaveData, "called: dir = {}", mount_dir.string());
 
     if (icon != nullptr) {
         Common::FS::IOFile file(mount_dir / "save_data.png", Common::FS::FileAccessMode::Read);
@@ -534,7 +534,7 @@ int PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint,
                                      const OrbisSaveDataIcon* icon) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto mount_dir = mnt->GetHostPath(mountPoint->data);
-    LOG_INFO(Lib_SaveData, "called = {}", mount_dir.native());
+    LOG_INFO(Lib_SaveData, "called = {}", mount_dir.string());
 
     if (icon != nullptr) {
         Common::FS::IOFile file(mount_dir / "save_data.png", Common::FS::FileAccessMode::Write);
@@ -558,7 +558,7 @@ int PS4_SYSV_ABI sceSaveDataSetParam(const OrbisSaveDataMountPoint* mountPoint,
                                      size_t paramBufSize) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto mount_dir = mnt->GetHostPath(mountPoint->data);
-    LOG_INFO(Lib_SaveData, "called = {}, mountPoint->data = {}", mount_dir.native(),
+    LOG_INFO(Lib_SaveData, "called = {}, mountPoint->data = {}", mount_dir.string(),
              mountPoint->data);
 
     if (paramBuf != nullptr) {

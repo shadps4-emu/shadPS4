@@ -12,8 +12,8 @@
 namespace Shader::IR {
 
 template <typename Pred>
-auto BreadthFirstSearch(const Value& value,
-                        Pred&& pred) -> std::invoke_result_t<Pred, const Inst*> {
+auto BreadthFirstSearch(const Value& value, Pred&& pred)
+    -> std::invoke_result_t<Pred, const Inst*> {
     if (value.IsImmediate()) {
         // Nothing to do with immediates
         return std::nullopt;
