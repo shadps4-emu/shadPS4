@@ -58,7 +58,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     if (directory) {
         file->is_directory = true;
         file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostDirectory(file->m_guest_name);
+        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
             h->DeleteHandle(handle);
             return ORBIS_KERNEL_ERROR_ENOTDIR;
@@ -72,7 +72,7 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
         }
     } else {
         file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostFile(file->m_guest_name);
+        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         int e = 0;
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
@@ -165,8 +165,7 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    std::string host_path = mnt->GetHostFile(path);
-
+    const auto host_path = mnt->GetHostPath(path);
     if (host_path.empty()) {
         return SCE_KERNEL_ERROR_EACCES;
     }
@@ -250,7 +249,7 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    std::string dir_name = mnt->GetHostFile(path);
+    const auto dir_name = mnt->GetHostPath(path);
     if (std::filesystem::exists(dir_name)) {
         return SCE_KERNEL_ERROR_EEXIST;
     }
@@ -279,7 +278,7 @@ int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto& path_name = mnt->GetHostFile(path);
+    const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
     const bool is_dir = std::filesystem::is_directory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
@@ -314,7 +313,7 @@ int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
 
 int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    std::string path_name = mnt->GetHostFile(path);
+    const auto path_name = mnt->GetHostPath(path);
     if (!std::filesystem::exists(path_name)) {
         return SCE_KERNEL_ERROR_ENOENT;
     }

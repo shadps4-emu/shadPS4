@@ -205,9 +205,9 @@ public:
         return WriteSpan(string);
     }
 
-    static void WriteBytes(const std::filesystem::path path, std::span<u8> vec) {
+    static void WriteBytes(const std::filesystem::path path, std::span<const u8> data) {
         IOFile out(path, FileAccessMode::Write);
-        out.Write(vec);
+        out.Write(data);
     }
 
 private:

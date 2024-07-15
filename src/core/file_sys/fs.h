@@ -7,28 +7,45 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <tsl/robin_map.h>
 #include "common/io_file.h"
 
 namespace Core::FileSys {
 
 class MntPoints {
+#ifdef _WIN64
+    static constexpr bool NeedsCaseInsensiveSearch = false;
+#else
+    static constexpr bool NeedsCaseInsensiveSearch = true;
+#endif
 public:
     struct MntPair {
-        std::string host_path;
-        std::string guest_path; // e.g /app0/
+        std::filesystem::path host_path;
+        std::string mount; // e.g /app0/
     };
 
-    MntPoints() = default;
-    virtual ~MntPoints() = default;
+    explicit MntPoints() = default;
+    ~MntPoints() = default;
 
-    void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder);
-    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Mount(const std::filesystem::path& host_folder,
+               const std::string& guest_folder);
+    void Unmount(const std::filesystem::path& host_folder,
+                 const std::string& guest_folder);
     void UnmountAll();
-    std::string GetHostDirectory(const std::string& guest_directory);
-    std::string GetHostFile(const std::string& guest_file);
+
+    std::filesystem::path GetHostPath(const std::string& guest_directory);
+
+    const MntPair* GetMount(const std::string& guest_path) {
+        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
+            return guest_path.starts_with(mount.mount);
+        });
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
+    }
 
 private:
     std::vector<MntPair> m_mnt_pairs;
+    std::vector<std::filesystem::path> path_parts;
+    tsl::robin_map<std::filesystem::path, std::filesystem::path> path_cache;
     std::mutex m_mutex;
 };
 
