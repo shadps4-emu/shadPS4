@@ -283,6 +283,11 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
 
 std::span<const vk::Format> GetAllFormats() {
     static constexpr std::array formats{
+        vk::Format::eR8Uint,
+        vk::Format::eR8G8Uint,
+        vk::Format::eR32Uint,
+        vk::Format::eR32G32Uint,
+        vk::Format::eR32G32B32A32Uint,
         vk::Format::eR32G32B32A32Sfloat,
         vk::Format::eR32G32B32Uint,
         vk::Format::eR8G8B8A8Unorm,
