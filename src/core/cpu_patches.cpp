@@ -14,6 +14,9 @@
 #include <windows.h>
 #else
 #include <pthread.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 #endif
 
 using namespace Xbyak::util;
@@ -251,6 +254,15 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     RestoreRegisters(c, {scratch});
 }
 
+bool FilterRosetta2Only(const ZydisDecodedOperand*) {
+    int ret = 0;
+    size_t size = sizeof(ret);
+    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) != 0) {
+        return false;
+    }
+    return ret;
+}
+
 #endif // __APPLE__
 
 static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
@@ -297,10 +309,6 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 #endif
 }
 
-bool FilterAlwaysTrue(const ZydisDecodedOperand* operands) {
-    return true;
-}
-
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
 using InstructionGenerator = void (*)(const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
@@ -324,11 +332,11 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
 
 #ifdef __APPLE__
     // BMI1 instructions that are not supported by Rosetta 2 on Apple Silicon.
-    {ZYDIS_MNEMONIC_ANDN, {FilterAlwaysTrue, GenerateANDN, true}},
-    {ZYDIS_MNEMONIC_BEXTR, {FilterAlwaysTrue, GenerateBEXTR, true}},
-    {ZYDIS_MNEMONIC_BLSI, {FilterAlwaysTrue, GenerateBLSI, true}},
-    {ZYDIS_MNEMONIC_BLSMSK, {FilterAlwaysTrue, GenerateBLSMSK, true}},
-    {ZYDIS_MNEMONIC_BLSR, {FilterAlwaysTrue, GenerateBLSR, true}},
+    {ZYDIS_MNEMONIC_ANDN, {FilterRosetta2Only, GenerateANDN, true}},
+    {ZYDIS_MNEMONIC_BEXTR, {FilterRosetta2Only, GenerateBEXTR, true}},
+    {ZYDIS_MNEMONIC_BLSI, {FilterRosetta2Only, GenerateBLSI, true}},
+    {ZYDIS_MNEMONIC_BLSMSK, {FilterRosetta2Only, GenerateBLSMSK, true}},
+    {ZYDIS_MNEMONIC_BLSR, {FilterRosetta2Only, GenerateBLSR, true}},
 #endif
 };
 
