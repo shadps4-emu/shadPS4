@@ -74,8 +74,7 @@ struct Info;
 struct BufferResource {
     u32 sgpr_base;
     u32 dword_offset;
-    u32 stride;
-    u32 num_records;
+    u32 length;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
     bool is_storage{false};

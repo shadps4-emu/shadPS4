@@ -201,6 +201,7 @@ public:
         Id id;
         const VectorIds* data_types;
         Id pointer_type;
+        AmdGpu::Buffer buffer;
     };
 
     u32& binding;

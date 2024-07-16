@@ -62,14 +62,6 @@ struct Buffer {
         return stride == 0 ? 1U : stride;
     }
 
-    u32 GetStrideElements(u32 element_size) const noexcept {
-        if (stride == 0) {
-            return 1U;
-        }
-        ASSERT(stride % element_size == 0);
-        return stride / element_size;
-    }
-
     u32 GetSize() const noexcept {
         return GetStride() * num_records;
     }

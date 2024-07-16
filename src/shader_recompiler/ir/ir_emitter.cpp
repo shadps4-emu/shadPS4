@@ -327,6 +327,22 @@ Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
+Value IREmitter::LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                                  BufferInstInfo info) {
+    switch (num_dwords) {
+    case 1:
+        return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
+    case 2:
+        return Inst(Opcode::LoadBufferFormatF32x2, Flags{info}, handle, address);
+    case 3:
+        return Inst(Opcode::LoadBufferFormatF32x3, Flags{info}, handle, address);
+    case 4:
+        return Inst(Opcode::LoadBufferFormatF32x4, Flags{info}, handle, address);
+    default:
+        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
+    }
+}
+
 void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& address,
                             const Value& data, BufferInstInfo info) {
     switch (num_dwords) {
