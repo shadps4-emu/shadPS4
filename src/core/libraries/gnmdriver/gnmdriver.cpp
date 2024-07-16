@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
+#include "core/address_space.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
@@ -288,7 +289,7 @@ struct AscQueueInfo {
     u32 ring_size_dw;
 };
 static Common::SlotVector<AscQueueInfo> asc_queues{};
-static constexpr VAddr tessellation_factors_ring_addr = 0xFF0000000ULL;
+static constexpr VAddr tessellation_factors_ring_addr = Core::SYSTEM_RESERVED_MAX - 0xFFFFFFF;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
     std::unique_lock lock{m_submission};
