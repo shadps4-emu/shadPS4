@@ -158,6 +158,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
     info.force_level0.Assign(flags.test(MimgModifier::Level0));
     info.explicit_lod.Assign(explicit_lod);
+    info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {

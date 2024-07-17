@@ -543,7 +543,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_offset) {
         // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
-        const u32 arg_pos = inst_info.is_depth ? 4 : 3;
+        const bool is_gather = inst.GetOpcode() == IR::Opcode::ImageGather ||
+                               inst.GetOpcode() == IR::Opcode::ImageGatherDref;
+        const u32 arg_pos = is_gather ? 2 : (inst_info.is_depth ? 4 : 3);
         const IR::Value arg = inst.Arg(arg_pos);
         ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
         const auto sign_ext = [&](u32 value) { return ir.Imm32(s32(value << 24) >> 24); };
