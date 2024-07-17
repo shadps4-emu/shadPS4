@@ -456,6 +456,8 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             translator.IMAGE_GET_LOD(inst);
             break;
         case Opcode::IMAGE_GATHER4_C:
+        case Opcode::IMAGE_GATHER4_LZ:
+        case Opcode::IMAGE_GATHER4_LZ_O:
             translator.IMAGE_GATHER(inst);
             break;
         case Opcode::IMAGE_STORE:

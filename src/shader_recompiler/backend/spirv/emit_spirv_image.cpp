@@ -9,6 +9,9 @@ namespace Shader::Backend::SPIRV {
 
 struct ImageOperands {
     void Add(spv::ImageOperandsMask new_mask, Id value) {
+        if (!Sirit::ValidId(value)) {
+            return;
+        }
         mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
                                                    static_cast<u32>(new_mask));
         operands.push_back(value);
@@ -25,9 +28,7 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
-    if (Sirit::ValidId(offset)) {
-        operands.Add(spv::ImageOperandsMask::ConstOffset, offset);
-    }
+    operands.Add(spv::ImageOperandsMask::Offset, offset);
     return ctx.OpImageSampleImplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
                                         operands.operands);
 }
@@ -61,18 +62,29 @@ Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, 
                                             spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
 }
 
-Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
-                   const IR::Value& offset, const IR::Value& offset2) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
-}
-
-Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                       const IR::Value& offset, const IR::Value& offset2, Id dref) {
+Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageDrefGather(ctx.F32[4], sampled_image, coords, dref);
+    const u32 comp = inst->Flags<IR::TextureInstInfo>().gather_comp.Value();
+    ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    operands.Add(spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
+    return ctx.OpImageGather(ctx.F32[4], sampled_image, coords, ctx.ConstU32(comp), operands.mask,
+                             operands.operands);
+}
+
+Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset,
+                       Id offset2, Id dref) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
+    const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
+    ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    return ctx.OpImageDrefGather(ctx.F32[4], sampled_image, coords, dref, operands.mask,
+                                 operands.operands);
 }
 
 Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,

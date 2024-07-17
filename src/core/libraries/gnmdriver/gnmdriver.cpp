@@ -346,7 +346,8 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
     kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
-    kernel_event.event.flags = SceKernelEvent::Flags::Add;
+    // The library only sets EV_ADD but it is suspected the kernel driver forces EV_CLEAR
+    kernel_event.event.flags = SceKernelEvent::Flags::Clear;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
@@ -649,6 +650,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset,
         cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[3] = 0;
 
+        cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
     }
@@ -704,6 +706,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 
         cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[3] = 2; // auto index
 
+        cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
     }
