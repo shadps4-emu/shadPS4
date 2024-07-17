@@ -649,6 +649,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirect(u32* cmdbuf, u32 size, u32 data_offset,
         cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[3] = 0;
 
+        cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
     }
@@ -704,6 +705,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 
         cmdbuf[2] = instance_vgpr_offset == 0 ? 0 : (instance_vgpr_offset & 0xffffu) + sgpr_offset;
         cmdbuf[3] = 2; // auto index
 
+        cmdbuf += 4;
         WriteTrailingNop<3>(cmdbuf);
         return ORBIS_OK;
     }
