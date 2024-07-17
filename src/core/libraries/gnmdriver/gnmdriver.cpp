@@ -346,7 +346,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
     kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
-    kernel_event.event.flags = SceKernelEvent::Flags::Add;
+    kernel_event.event.flags = SceKernelEvent::Flags::Clear;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
