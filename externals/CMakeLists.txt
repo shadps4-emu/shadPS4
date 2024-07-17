@@ -135,7 +135,7 @@ if (WIN32)
 endif()
 
 # date
-if (NOT TARGET date::date-tz)
+if (APPLE AND NOT TARGET date::date-tz)
     option(BUILD_TZ_LIB "" ON)
     option(USE_SYSTEM_TZ_DB "" ON)
     add_subdirectory(date)
