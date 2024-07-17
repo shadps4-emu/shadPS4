@@ -148,9 +148,10 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 7> ModulesToLoad{
+    constexpr std::array<SysModules, 8> ModulesToLoad{
         {{"libSceNgs2.sprx", nullptr},
          {"libSceFiber.sprx", nullptr},
+         {"libSceUlt.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
