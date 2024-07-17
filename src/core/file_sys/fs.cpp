@@ -37,7 +37,11 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    const u32 pos = mount->mount.size() + 1;
+    u32 pos = mount->mount.size() + 1;
+    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
+    if (guest_directory[pos] == '/') {
+        pos++;
+    }
     const auto rel_path = std::string_view(guest_directory).substr(pos);
     const auto host_path = mount->host_path / rel_path;
     if (!NeedsCaseInsensiveSearch) {
