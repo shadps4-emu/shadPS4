@@ -148,39 +148,35 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 6> ModulesToLoad{
+    constexpr std::array<SysModules, 7> ModulesToLoad{
         {{"libSceNgs2.sprx", nullptr},
+         {"libSceFiber.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceJpegEnc.sprx", nullptr},
-         {"libSceJson2.sprx", nullptr}}};
+         {"libSceJson2.sprx", nullptr}},
+    };
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
         found_modules.push_back(entry.path());
     }
-    for (auto it : ModulesToLoad) {
-        bool found = false;
-        std::filesystem::path foundpath;
-        for (auto f : found_modules) {
-            if (f.filename().string() == it.module_name) {
-                found = true;
-                foundpath = f;
-                break;
-            }
+    for (const auto& [module_name, init_func] : ModulesToLoad) {
+        const auto it = std::ranges::find_if(found_modules, [&](const auto& path) {
+            return path.filename() == module_name;
+        });
+        if (it != found_modules.end()) {
+            LOG_INFO(Loader, "Loading {}", it->string());
+            linker->LoadModule(*it);
+            continue;
         }
-        if (found) {
-            LOG_INFO(Loader, "Loading {}", foundpath.string().c_str());
-            linker->LoadModule(foundpath);
+        if (init_func) {
+            LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
+            init_func(&linker->GetHLESymbols());
         } else {
-            if (it.callback != nullptr) {
-                LOG_INFO(Loader, "Can't Load {} switching to HLE", it.module_name);
-                it.callback(&linker->GetHLESymbols());
-            } else {
-                LOG_INFO(Loader, "No HLE available for {} module", it.module_name);
-            }
+            LOG_INFO(Loader, "No HLE available for {} module", module_name);
         }
     }
 }
