@@ -105,6 +105,20 @@ void WindowSDL::onResize() {
 void WindowSDL::onKeyPress(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
 
+#ifdef __APPLE__
+    // Use keys that are more friendly for keyboards without a keypad.
+    // Once there are key binding options this won't be necessary.
+    constexpr SDL_Keycode CrossKey = SDLK_N;
+    constexpr SDL_Keycode CircleKey = SDLK_B;
+    constexpr SDL_Keycode SquareKey = SDLK_V;
+    constexpr SDL_Keycode TriangleKey = SDLK_C;
+#else
+    constexpr SDL_Keycode CrossKey = SDLK_KP_2;
+    constexpr SDL_Keycode CircleKey = SDLK_KP_6;
+    constexpr SDL_Keycode SquareKey = SDLK_KP_4;
+    constexpr SDL_Keycode TriangleKey = SDLK_KP_8;
+#endif
+
     u32 button = 0;
     Input::Axis axis = Input::Axis::AxisMax;
     int axisvalue = 0;
@@ -122,16 +136,16 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     case SDLK_RIGHT:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
         break;
-    case SDLK_C:
+    case TriangleKey:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
         break;
-    case SDLK_B:
+    case CircleKey:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
         break;
-    case SDLK_N:
+    case CrossKey:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
         break;
-    case SDLK_V:
+    case SquareKey:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
         break;
     case SDLK_RETURN:
