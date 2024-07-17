@@ -50,6 +50,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::SceKernelEqueue eq, s32 handle,
     Kernel::EqueueEvent event{};
     event.event.ident = SCE_VIDEO_OUT_EVENT_FLIP;
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
+    // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
     event.event.udata = udata;
     event.event.fflags = 0;
@@ -76,6 +77,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::SceKernelEqueue eq, s32 handl
     Kernel::EqueueEvent event{};
     event.event.ident = SCE_VIDEO_OUT_EVENT_VBLANK;
     event.event.filter = Kernel::SceKernelEvent::Filter::VideoOut;
+    // The library only sets EV_ADD but kernel driver forces EV_CLEAR
     event.event.flags = Kernel::SceKernelEvent::Flags::Clear;
     event.event.udata = udata;
     event.event.fflags = 0;

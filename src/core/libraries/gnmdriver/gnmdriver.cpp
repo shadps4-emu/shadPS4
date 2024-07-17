@@ -346,6 +346,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
     kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
+    // The library only sets EV_ADD but it is suspected the kernel driver forces EV_CLEAR
     kernel_event.event.flags = SceKernelEvent::Flags::Clear;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
