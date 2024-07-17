@@ -165,9 +165,8 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
         found_modules.push_back(entry.path());
     }
     for (const auto& [module_name, init_func] : ModulesToLoad) {
-        const auto it = std::ranges::find_if(found_modules, [&](const auto& path) {
-            return path.filename() == module_name;
-        });
+        const auto it = std::ranges::find_if(
+            found_modules, [&](const auto& path) { return path.filename() == module_name; });
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
             linker->LoadModule(*it);

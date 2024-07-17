@@ -62,8 +62,7 @@ Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, 
                                             spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
 }
 
-Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                   Id offset, Id offset2) {
+Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
@@ -72,20 +71,20 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Offset, offset);
     operands.Add(spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
-    return ctx.OpImageGather(ctx.F32[4], sampled_image, coords, ctx.ConstU32(comp),
-                             operands.mask, operands.operands);
+    return ctx.OpImageGather(ctx.F32[4], sampled_image, coords, ctx.ConstU32(comp), operands.mask,
+                             operands.operands);
 }
 
-Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
-                       Id offset, Id offset2, Id dref) {
+Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset,
+                       Id offset2, Id dref) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Offset, offset);
-    return ctx.OpImageDrefGather(ctx.F32[4], sampled_image, coords, dref,
-                                 operands.mask, operands.operands);
+    return ctx.OpImageDrefGather(ctx.F32[4], sampled_image, coords, dref, operands.mask,
+                                 operands.operands);
 }
 
 Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
