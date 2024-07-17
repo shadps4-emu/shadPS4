@@ -152,7 +152,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.GetSizeAligned();
+    guest_size_bytes = buffer.GetColorSliceSize();
     meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
     meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
     usage.render_target = true;
@@ -168,7 +168,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_a
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.GetSizeAligned();
+    guest_size_bytes = buffer.GetDepthSliceSize();
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
     usage.depth_target = true;
 }
@@ -184,7 +184,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    guest_size_bytes = image.GetSizeAligned();
+    guest_size_bytes = image.GetSize();
     usage.texture = true;
 }
 

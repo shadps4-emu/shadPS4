@@ -130,7 +130,7 @@ void Rasterizer::BeginRendering() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
 
-    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invald &&
+    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invalid &&
         regs.depth_buffer.Address() != 0) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
