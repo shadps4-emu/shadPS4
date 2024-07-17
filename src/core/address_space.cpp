@@ -60,6 +60,7 @@ struct AddressSpace::Impl {
 
         size_t reduction = 0;
         for (u32 i = 0; i < MaxReductions; i++) {
+            req.LowestStartingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN + reduction);
             virtual_base = static_cast<u8*>(VirtualAlloc2(
                 process, NULL, SystemManagedSize + SystemReservedSize + UserSize - reduction,
                 MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &param, 1));
@@ -70,16 +71,13 @@ struct AddressSpace::Impl {
         }
         ASSERT_MSG(virtual_base, "Unable to reserve virtual address space!");
 
+        // Take the reduction off of the system managed area, and leave the others unchanged.
         system_managed_base = virtual_base;
         system_managed_size = SystemManagedSize - reduction;
-        system_reserved_base =
-            virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN) - reduction;
+        system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
-        user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN) - reduction;
+        user_base = reinterpret_cast<u8*>(USER_MIN);
         user_size = UserSize;
-
-        ASSERT_MSG(user_base == reinterpret_cast<u8*>(USER_MIN),
-                   "Unexpected user address space location: {}", fmt::ptr(user_base));
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
                  fmt::ptr(system_managed_base),
@@ -292,10 +290,10 @@ struct AddressSpace::Impl {
         system_managed_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size, protection_flags,
                  base_map_flags | MAP_FIXED, -1, 0));
-        // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
         system_reserved_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN), system_reserved_size,
                  protection_flags, base_map_flags | MAP_FIXED, -1, 0));
+        // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
         user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
                                                protection_flags, base_map_flags, -1, 0));
 #else
@@ -304,8 +302,8 @@ struct AddressSpace::Impl {
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, base_map_flags | MAP_FIXED, -1, 0));
         system_managed_base = virtual_base;
-        system_managed_base = virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN);
-        user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN);
+        system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
+        user_base = reinterpret_cast<u8*>(USER_MIN);
 #endif
         if (system_managed_base == MAP_FAILED || system_reserved_base == MAP_FAILED ||
             user_base == MAP_FAILED) {
