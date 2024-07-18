@@ -6,11 +6,11 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
+#include <functional>
 #include <mutex>
 #include <span>
 #include <thread>
 #include <queue>
-#include <functional>
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"

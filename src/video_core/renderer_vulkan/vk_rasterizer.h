@@ -35,7 +35,7 @@ public:
 
     void ScopeMarkerBegin(const std::string& str);
     void ScopeMarkerEnd();
-    
+
     u64 Flush();
 
 private:
