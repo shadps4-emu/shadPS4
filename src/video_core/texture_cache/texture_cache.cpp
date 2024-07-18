@@ -89,7 +89,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     ImageInfo info;
     info.pixel_format = vk::Format::eR8G8B8A8Unorm;
     info.type = vk::ImageType::e2D;
-    const ImageId null_id = slot_images.insert(instance, scheduler, info, 0);
+    const ImageId null_id = slot_images.insert(instance, scheduler, info);
     ASSERT(null_id.index == 0);
 
     ImageViewInfo view_info;
@@ -112,26 +112,27 @@ void TextureCache::OnCpuWrite(VAddr address) {
     });
 }
 
-ImageId TextureCache::FindImage(const ImageInfo& info, VAddr cpu_address, bool refresh_on_create) {
+ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
     std::unique_lock lock{m_page_table};
     boost::container::small_vector<ImageId, 2> image_ids;
-    ForEachImageInRegion(cpu_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
-        // Address and width must match.
-        if (image.cpu_addr != cpu_address || image.info.size.width != info.size.width) {
-            return;
-        }
-        if (info.IsDepthStencil() != image.info.IsDepthStencil() &&
-            info.pixel_format != vk::Format::eR32Sfloat) {
-            return;
-        }
-        image_ids.push_back(image_id);
-    });
+    ForEachImageInRegion(
+        info.guest_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
+            // Address and width must match.
+            if (image.cpu_addr != info.guest_address || image.info.size.width != info.size.width) {
+                return;
+            }
+            if (info.IsDepthStencil() != image.info.IsDepthStencil() &&
+                info.pixel_format != vk::Format::eR32Sfloat) {
+                return;
+            }
+            image_ids.push_back(image_id);
+        });
 
     ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
-        image_id = slot_images.insert(instance, scheduler, info, cpu_address);
+        image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
     } else {
         image_id = image_ids[0];
@@ -169,9 +170,9 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storage) {
+ImageView& TextureCache::FindTexture(const AmdGpu::Image& desc, bool is_storage) {
     const ImageInfo info{desc};
-    const ImageId image_id = FindImage(info, desc.Address());
+    const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;
 
@@ -190,10 +191,10 @@ ImageView& TextureCache::FindImageView(const AmdGpu::Image& desc, bool is_storag
     return RegisterImageView(image_id, view_info);
 }
 
-ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                                      const AmdGpu::Liverpool::CbDbExtent& hint) {
+ImageView& TextureCache::FindRenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                                          const AmdGpu::Liverpool::CbDbExtent& hint) {
     const ImageInfo info{buffer, hint};
-    const ImageId image_id = FindImage(info, buffer.Address());
+    const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
@@ -207,11 +208,12 @@ ImageView& TextureCache::RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buff
     return RegisterImageView(image_id, view_info);
 }
 
-ImageView& TextureCache::DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
-                                     bool write_enabled) {
-    const ImageInfo info{buffer, htile_address, hint};
-    const ImageId image_id = FindImage(info, buffer.Address(), false);
+ImageView& TextureCache::FindDepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                         u32 num_slices, VAddr htile_address,
+                                         const AmdGpu::Liverpool::CbDbExtent& hint,
+                                         bool write_enabled) {
+    const ImageInfo info{buffer, num_slices, htile_address, hint};
+    const ImageId image_id = FindImage(info, false);
     Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 

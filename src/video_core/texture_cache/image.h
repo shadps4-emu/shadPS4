@@ -69,8 +69,7 @@ private:
 constexpr Common::SlotId NULL_IMAGE_ID{0};
 
 struct Image {
-    explicit Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                   const ImageInfo& info, VAddr cpu_addr);
+    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;

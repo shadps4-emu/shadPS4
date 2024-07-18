@@ -47,20 +47,21 @@ public:
     /// Invalidates any image in the logical page range.
     void OnCpuWrite(VAddr address);
 
-    /// Retrieves the image handle of the image with the provided attributes and address.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info, VAddr cpu_address,
-                                    bool refresh_on_create = true);
+    /// Retrieves the image handle of the image with the provided attributes.
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info, bool refresh_on_create = true);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
-    [[nodiscard]] ImageView& FindImageView(const AmdGpu::Image& image, bool is_storage);
+    [[nodiscard]] ImageView& FindTexture(const AmdGpu::Image& image, bool is_storage);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& RenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                                          const AmdGpu::Liverpool::CbDbExtent& hint);
-    [[nodiscard]] ImageView& DepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                                         VAddr htile_address,
-                                         const AmdGpu::Liverpool::CbDbExtent& hint,
-                                         bool write_enabled);
+    [[nodiscard]] ImageView& FindRenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
+                                              const AmdGpu::Liverpool::CbDbExtent& hint);
+
+    /// Retrieves the depth target with specified properties
+    [[nodiscard]] ImageView& FindDepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
+                                             u32 num_slices, VAddr htile_address,
+                                             const AmdGpu::Liverpool::CbDbExtent& hint,
+                                             bool write_enabled);
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);

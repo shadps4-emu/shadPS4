@@ -13,12 +13,12 @@ namespace VideoCore {
 
 struct ImageInfo {
     ImageInfo() = default;
-    explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                       const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
-                       const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Image& image) noexcept;
+    ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address) noexcept;
+    ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
+              const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
+    ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices, VAddr htile_address,
+              const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
+    ImageInfo(const AmdGpu::Image& image) noexcept;
 
     bool IsTiled() const {
         return tiling_mode != AmdGpu::TilingMode::Display_Linear;
@@ -42,15 +42,18 @@ struct ImageInfo {
         u32 vo_buffer : 1;
     } usage{}; // Usage data tracked during image lifetime
 
+    bool is_cube = false;
     bool is_tiled = false;
+    bool is_read_only = false;
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
     u32 num_samples = 1;
     u32 pitch = 0;
-    u32 guest_size_bytes = 0;
     AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
+    VAddr guest_address{0};
+    u32 guest_size_bytes{0};
 };
 
 } // namespace VideoCore

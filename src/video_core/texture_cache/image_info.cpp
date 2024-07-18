@@ -44,7 +44,8 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     }
 }
 
-ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept {
+ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
+                     VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
     is_tiled = attrib.tiling_mode == TilingMode::Tile;
     tiling_mode =
@@ -56,14 +57,16 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noe
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) & (~127);
     const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
     ASSERT(is_32bpp);
+
+    guest_address = cpu_address;
     if (!is_tiled) {
         guest_size_bytes = pitch * size.height * 4;
-        return;
-    }
-    if (Config::isNeoMode()) {
-        guest_size_bytes = pitch * ((size.height + 127) & (~127)) * 4;
     } else {
-        guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
+        if (Config::isNeoMode()) {
+            guest_size_bytes = pitch * ((size.height + 127) & (~127)) * 4;
+        } else {
+            guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
+        }
     }
     usage.vo_buffer = true;
 }
@@ -79,14 +82,17 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.GetColorSliceSize();
+    resources.layers = buffer.NumSlices();
     meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
     meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
     usage.render_target = true;
+
+    guest_address = buffer.Address();
+    guest_size_bytes = buffer.GetColorSliceSize() * buffer.NumSlices();
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
-                     const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
+                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
     is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
@@ -95,9 +101,12 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_a
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
     pitch = size.width;
-    guest_size_bytes = buffer.GetDepthSliceSize();
+    resources.layers = num_slices;
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
     usage.depth_target = true;
+
+    guest_address = buffer.Address();
+    guest_size_bytes = buffer.GetDepthSliceSize() * num_slices;
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
@@ -111,8 +120,11 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    guest_size_bytes = image.GetSize();
+    is_cube = image.GetType() == AmdGpu::ImageType::Cube;
     usage.texture = true;
+
+    guest_address = image.Address();
+    guest_size_bytes = image.GetSize();
 }
 
 } // namespace VideoCore
