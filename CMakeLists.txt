@@ -453,6 +453,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
                src/video_core/texture_cache/image.cpp
                src/video_core/texture_cache/image.h
+               src/video_core/texture_cache/image_info.cpp
+               src/video_core/texture_cache/image_info.h
                src/video_core/texture_cache/image_view.cpp
                src/video_core/texture_cache/image_view.h
                src/video_core/texture_cache/sampler.cpp
