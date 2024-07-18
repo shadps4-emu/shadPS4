@@ -59,9 +59,11 @@ int PS4_SYSV_ABI sceImeDialogGetStatus() {
     return g_ime_dlg_status;
 }
 
-int PS4_SYSV_ABI sceImeDialogInit(const OrbisImeDialogParam* param,
-                                  const OrbisImeParamExtended* extended) {
+int PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
     LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
+    const std::wstring_view text = L"shadPS4";
+    param->maxTextLength = text.size();
+    std::memcpy(param->inputTextBuffer, text.data(), text.size() * sizeof(wchar_t));
     g_ime_dlg_status = OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING;
     return ORBIS_OK;
 }

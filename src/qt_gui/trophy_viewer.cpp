@@ -19,7 +19,7 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
-    QString trophyDir = qApp->applicationDirPath() + "/game_data/" + title + "/TrophyFiles";
+    QString trophyDir = QDir::currentPath() + "/user/game_data/" + title + "/TrophyFiles";
     QDir dir(trophyDir);
     if (!dir.exists()) {
         std::filesystem::path path(gameTrpPath_.toStdString());

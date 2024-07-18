@@ -160,7 +160,7 @@ public:
     void V_CMP_CLASS_F32(const GcnInst& inst);
 
     // Vector Memory
-    void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
     void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
 
     // Vector interpolation

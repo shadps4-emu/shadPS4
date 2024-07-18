@@ -73,7 +73,12 @@ int EventFlagInternal::Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, 
 
 int EventFlagInternal::Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result) {
     u32 micros = 0;
-    return Wait(bits, wait_mode, clear_mode, result, &micros);
+    auto ret = Wait(bits, wait_mode, clear_mode, result, &micros);
+    if (ret == ORBIS_KERNEL_ERROR_ETIMEDOUT) {
+        // Poll returns EBUSY instead.
+        ret = ORBIS_KERNEL_ERROR_EBUSY;
+    }
+    return ret;
 }
 
 void EventFlagInternal::Set(u64 bits) {

@@ -13,10 +13,12 @@ std::string_view StageName(Stage stage) {
     switch (stage) {
     case Stage::Vertex:
         return "vs";
-    case Stage::TessellationControl:
-        return "tcs";
-    case Stage::TessellationEval:
-        return "tes";
+    case Stage::Local:
+        return "ls";
+    case Stage::Export:
+        return "es";
+    case Stage::Hull:
+        return "hs";
     case Stage::Geometry:
         return "gs";
     case Stage::Fragment:
@@ -299,9 +301,7 @@ void EmitContext::DefineBuffers(const Info& info) {
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const u32 stride = buffer.stride == 0 ? 1 : buffer.stride;
-        const u32 num_elements = stride * buffer.num_records;
-        const Id record_array_type{TypeArray(data_type, ConstU32(num_elements))};
+        const Id record_array_type{TypeArray(data_type, ConstU32(buffer.length))};
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
@@ -331,6 +331,7 @@ void EmitContext::DefineBuffers(const Info& info) {
             .id = id,
             .data_types = data_types,
             .pointer_type = pointer_type,
+            .buffer = buffer.GetVsharp(info),
         });
         interfaces.push_back(id);
         i++;

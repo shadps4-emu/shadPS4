@@ -48,7 +48,7 @@ bool TRP::Extract(std::filesystem::path trophyPath) {
                 return false;
 
             s64 seekPos = sizeof(TrpHeader);
-            std::filesystem::path trpFilesPath(std::filesystem::current_path() / "game_data" /
+            std::filesystem::path trpFilesPath(std::filesystem::current_path() / "user/game_data" /
                                                title / "TrophyFiles" / it.path().stem());
             std::filesystem::create_directories(trpFilesPath / "Icons");
             std::filesystem::create_directory(trpFilesPath / "Xml");

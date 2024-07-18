@@ -94,7 +94,7 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
 
     for (auto& event : m_events) {
         if (event.IsTriggered()) {
-            if (ev->flags & SceKernelEvent::Flags::Clear) {
+            if (event.event.flags & SceKernelEvent::Flags::Clear) {
                 event.Reset();
             }
 

@@ -65,6 +65,8 @@ enum class NumberFormat : u32 {
 
 int NumComponents(DataFormat format);
 int NumBits(DataFormat format);
+u32 ComponentBits(DataFormat format, u32 comp);
+s32 ComponentOffset(DataFormat format, u32 comp);
 
 } // namespace AmdGpu
 

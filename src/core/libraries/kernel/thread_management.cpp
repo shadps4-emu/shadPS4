@@ -318,7 +318,8 @@ int PS4_SYSV_ABI scePthreadAttrGetstackaddr(const ScePthreadAttr* attr, void** s
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int result = pthread_attr_getstackaddr(&(*attr)->pth_attr, stack_addr);
+    size_t stack_size = 0;
+    int result = pthread_attr_getstack(&(*attr)->pth_attr, stack_addr, &stack_size);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
@@ -340,7 +341,10 @@ int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    int result = pthread_attr_setstackaddr(&(*attr)->pth_attr, addr);
+    size_t stack_size = 0;
+    pthread_attr_getstacksize(&(*attr)->pth_attr, &stack_size);
+
+    int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, stack_size);
 
     return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
 }
@@ -831,6 +835,10 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_destroy(ScePthreadMutexattr* attr) {
     return result;
 }
 
+int PS4_SYSV_ABI posix_pthread_once(pthread_once_t* once_control, void (*init_routine)(void)) {
+    return pthread_once(once_control, init_routine);
+}
+
 int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(ScePthreadMutexattr* attr, int protocol) {
     int result = scePthreadMutexattrSetprotocol(attr, protocol);
     LOG_INFO(Kernel_Pthread, "redirect to scePthreadMutexattrSetprotocol: result = {}", result);
@@ -1002,17 +1010,7 @@ ScePthread PThreadPool::Create() {
         }
     }
 
-#ifdef _WIN64
     auto* ret = new PthreadInternal{};
-#else
-    // TODO: Linux specific hack
-    static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
-    auto* ret = reinterpret_cast<PthreadInternal*>(
-        mmap(hint_address, sizeof(PthreadInternal), PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
-    hint_address += Common::AlignUp(sizeof(PthreadInternal), 4_KB);
-#endif
-
     ret->is_free = false;
     ret->is_detached = false;
     ret->is_almost_done = false;
@@ -1443,6 +1441,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_condattr_destroy);
     LIB_FUNCTION("EjllaAqAPZo", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_condattr_setclock);
+    LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);

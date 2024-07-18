@@ -837,7 +837,15 @@ struct Liverpool {
             ShaderProgram ps_program;
             INSERT_PADDING_WORDS(0x2C);
             ShaderProgram vs_program;
-            INSERT_PADDING_WORDS(0x2E00 - 0x2C4C - 16);
+            INSERT_PADDING_WORDS(0x2C);
+            ShaderProgram gs_program;
+            INSERT_PADDING_WORDS(0x2C);
+            ShaderProgram es_program;
+            INSERT_PADDING_WORDS(0x2C);
+            ShaderProgram hs_program;
+            INSERT_PADDING_WORDS(0x2C);
+            ShaderProgram ls_program;
+            INSERT_PADDING_WORDS(0xA4);
             ComputeProgram cs_program;
             INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80 - 3 - 5);
             DepthRenderControl depth_render_control;
@@ -916,12 +924,19 @@ struct Liverpool {
         const ShaderProgram* ProgramForStage(u32 index) const {
             switch (index) {
             case 0:
-                return &vs_program;
-            case 4:
                 return &ps_program;
-            default:
-                return nullptr;
+            case 1:
+                return &vs_program;
+            case 2:
+                return &gs_program;
+            case 3:
+                return &es_program;
+            case 4:
+                return &hs_program;
+            case 5:
+                return &ls_program;
             }
+            return nullptr;
         }
     };
 
@@ -1018,7 +1033,7 @@ private:
 
     Vulkan::Rasterizer* rasterizer{};
     std::jthread process_thread{};
-    u32 num_submits{};
+    std::atomic<u32> num_submits{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
 };
@@ -1026,6 +1041,10 @@ private:
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
 static_assert(GFX6_3D_REG_INDEX(vs_program) == 0x2C48);
 static_assert(GFX6_3D_REG_INDEX(vs_program.user_data) == 0x2C4C);
+static_assert(GFX6_3D_REG_INDEX(gs_program) == 0x2C88);
+static_assert(GFX6_3D_REG_INDEX(es_program) == 0x2CC8);
+static_assert(GFX6_3D_REG_INDEX(hs_program) == 0x2D08);
+static_assert(GFX6_3D_REG_INDEX(ls_program) == 0x2D48);
 static_assert(GFX6_3D_REG_INDEX(cs_program) == 0x2E00);
 static_assert(GFX6_3D_REG_INDEX(cs_program.dim_z) == 0x2E03);
 static_assert(GFX6_3D_REG_INDEX(cs_program.address_lo) == 0x2E0C);

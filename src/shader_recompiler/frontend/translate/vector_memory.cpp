@@ -158,6 +158,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
     info.force_level0.Assign(flags.test(MimgModifier::Level0));
     info.explicit_lod.Assign(explicit_lod);
+    info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
@@ -225,7 +226,8 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
     ir.ImageWrite(handle, body, value, {});
 }
 
-void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst) {
+void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format,
+                                    const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
@@ -254,7 +256,8 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, const GcnInst
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, info);
+    const IR::Value value = is_format ? ir.LoadBufferFormat(num_dwords, handle, address, info)
+                                      : ir.LoadBuffer(num_dwords, handle, address, info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
         ir.SetVectorReg(dst_reg, IR::F32{value});
