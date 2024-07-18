@@ -423,60 +423,41 @@ Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
     return EmitLoadBufferFormatF32xN<4>(ctx, inst, handle, address);
 }
 
+template <unsigned N>
+static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
+    const auto& buffer = ctx.buffers[handle];
+    Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    if constexpr (N == 1) {
+        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        ctx.OpStore(ptr, value);
+    } else {
+        for (u32 i = 0; i < N; i++) {
+            index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
+            const Id ptr =
+                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
+            ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
+        }
+    }
+}
+
 void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32(ctx, inst, handle, address, value);
+    EmitStoreBufferF32xN<1>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    UNREACHABLE();
+    EmitStoreBufferF32xN<2>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    const auto info = inst->Flags<IR::BufferInstInfo>();
-    const auto& buffer = ctx.buffers[handle];
-    if (info.index_enable && info.offset_enable) {
-        UNREACHABLE();
-    } else if (info.index_enable) {
-        for (u32 i = 0; i < 3; i++) {
-            const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
-            const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
-        }
-        return;
-    }
-    UNREACHABLE();
+    EmitStoreBufferF32xN<3>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    const auto info = inst->Flags<IR::BufferInstInfo>();
-    const auto& buffer = ctx.buffers[handle];
-    if (info.index_enable && info.offset_enable) {
-        UNREACHABLE();
-    } else if (info.index_enable) {
-        for (u32 i = 0; i < 4; i++) {
-            const Id index{ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i))};
-            const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
-        }
-        return;
-    }
-    UNREACHABLE();
+    EmitStoreBufferF32xN<4>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    const auto info = inst->Flags<IR::BufferInstInfo>();
-    const auto& buffer = ctx.buffers[handle];
-    if (info.index_enable && info.offset_enable) {
-        UNREACHABLE();
-    } else if (info.index_enable) {
-        const Id ptr{
-            ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, address)};
-        ctx.OpStore(ptr, value);
-        return;
-    }
-    UNREACHABLE();
+    EmitStoreBufferF32xN<1>(ctx, handle, address, value);
 }
 
 } // namespace Shader::Backend::SPIRV
