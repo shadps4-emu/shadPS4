@@ -448,6 +448,7 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format16_16 &&
         num_format == AmdGpu::NumberFormat::Uint) {
         return vk::Format::eR16G16Uint;
+    }
     if (data_format == AmdGpu::DataFormat::Format8 && num_format == AmdGpu::NumberFormat::Uint) {
         return vk::Format::eR8Uint;
     }
