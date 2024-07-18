@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/libraries/error_codes.h"
@@ -269,10 +270,11 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return {};
     };
 
+    auto vblank_period = VblankPeriod / Config::vblankDiv();
     auto delay = std::chrono::microseconds{0};
     while (!token.stop_requested()) {
         // Sleep for most of the vblank duration.
-        std::this_thread::sleep_for(VblankPeriod - delay);
+        std::this_thread::sleep_for(vblank_period - delay);
 
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;

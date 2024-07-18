@@ -22,6 +22,7 @@ static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;
+static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 // Gui
@@ -92,6 +93,10 @@ bool dumpShaders() {
 
 bool dumpPM4() {
     return shouldDumpPM4;
+}
+
+u32 vblankDiv() {
+    return vblankDivider;
 }
 
 bool vkValidationEnabled() {
@@ -237,6 +242,7 @@ void load(const std::filesystem::path& path) {
             isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
             shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
             shouldDumpPM4 = toml::find_or<toml::boolean>(gpu, "dumpPM4", false);
+            vblankDivider = toml::find_or<toml::integer>(gpu, "vblankDivider", 1);
         }
     }
     if (data.contains("Vulkan")) {
@@ -318,6 +324,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["dumpPM4"] = shouldDumpPM4;
+    data["GPU"]["vblankDivider"] = vblankDivider;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Debug"]["DebugDump"] = isDebugDump;
