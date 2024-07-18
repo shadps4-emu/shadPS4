@@ -94,9 +94,13 @@ private:
         s64 flip_arg;
         u64 submit_tsc;
         bool eop;
+
+        operator bool() const noexcept {
+            return frame != nullptr;
+        }
     };
 
-    void Flip(const Request& req);
+    std::chrono::microseconds Flip(const Request& req);
     void PresentThread(std::stop_token token);
 
     std::mutex mutex;

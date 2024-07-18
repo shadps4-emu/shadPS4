@@ -65,6 +65,8 @@ void Liverpool::Process(std::stop_token stoken) {
                 queue.submits.pop();
 
                 --num_submits;
+                std::scoped_lock lock2{submit_mutex};
+                submit_cv.notify_all();
             }
         }
 

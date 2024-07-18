@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/thread.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
@@ -11,10 +12,6 @@
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
-
-namespace Libraries::GnmDriver {
-void WaitGpuIdle();
-}
 
 namespace Libraries::VideoOut {
 
@@ -160,8 +157,18 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-void VideoOutDriver::Flip(const Request& req) {
-    std::scoped_lock lock{mutex};
+std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
+    if (!req) {
+        return std::chrono::microseconds{0};
+    }
+
+    const auto start = std::chrono::high_resolution_clock::now();
+
+    // Whatever the game is rendering show splash if it is active
+    if (!renderer->ShowSplash(req.frame)) {
+        // Present the frame.
+        renderer->Present(req.frame);
+    }
 
     // Update flip status.
     auto* port = req.port;
@@ -187,6 +194,9 @@ void VideoOutDriver::Flip(const Request& req) {
         port->buffer_labels[req.index] = 0;
         port->SignalVoLabel();
     }
+
+    const auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
@@ -195,7 +205,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 
     if (!is_eop) {
         liverpool->SubmitDone();
-        GnmDriver::WaitGpuIdle();
+        liverpool->WaitGpuIdle();
     }
 
     Vulkan::Frame* frame;
@@ -246,31 +256,42 @@ void VideoOutDriver::Vblank() {
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::milliseconds FlipPeriod{16};
-    while (!token.stop_requested()) {
-        Request req;
-        {
-            std::unique_lock lock{mutex};
-            submit_cond.wait_for(lock, FlipPeriod, [&] { return !requests.empty(); });
-            if (requests.empty()) {
-                renderer->ShowSplash();
-                continue;
-            }
+    static constexpr std::chrono::microseconds VblankPeriod{16683};
+    Common::SetCurrentThreadName("VblankThread");
 
-            // Retrieve the request.
-            req = requests.front();
+    const auto receive_request = [this] -> Request {
+        std::scoped_lock lk{mutex};
+        if (!requests.empty()) {
+            const auto request = requests.front();
             requests.pop();
+            return request;
         }
+        return {};
+    };
 
-        // Whatever the game is rendering show splash if it is active
-        if (!renderer->ShowSplash(req.frame)) {
-            // Present the frame.
-            renderer->Present(req.frame);
+    auto delay = std::chrono::microseconds{0};
+    while (!token.stop_requested()) {
+        // Sleep for most of the vblank duration.
+        std::this_thread::sleep_for(VblankPeriod - delay);
+
+        // Check if it's time to take a request.
+        auto& vblank_status = main_port.vblank_status;
+        if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
+            const auto request = receive_request();
+            delay = Flip(request);
+            FRAME_END;
         }
+        vblank_status.count++;
+        vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+        vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
 
-        Flip(req);
-        Vblank();
-        FRAME_END;
+        // Trigger flip events for the port.
+        for (auto& event : main_port.vblank_events) {
+            if (event != nullptr) {
+                event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
+                                    Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
+            }
+        }
     }
 }
 

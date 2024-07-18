@@ -1002,6 +1002,11 @@ public:
         submit_cv.notify_one();
     }
 
+    void WaitGpuIdle() noexcept {
+        std::unique_lock lk{submit_mutex};
+        submit_cv.wait(lk, [this] { return num_submits == 0; });
+    }
+
     bool IsGpuIdle() const {
         return num_submits == 0;
     }

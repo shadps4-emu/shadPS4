@@ -182,10 +182,11 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
-    // EOP flips are triggered from GPU thread to use the drawing scheduler to record
+    // EOP flips are triggered from GPU thread so use the drawing scheduler to record
     // commands. Otherwise we are dealing with a CPU flip which could have arrived
     // from any guest thread. Use a separate scheduler for that.
     auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
+    scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
 
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead,
