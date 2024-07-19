@@ -246,21 +246,24 @@ void TextureCache::RefreshImage(Image& image) {
         return;
     }
 
+    ASSERT(image.info.resources.levels == image.info.mips_layout.size());
     const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
     for (u32 m = 0; m < image.info.resources.levels; m++) {
-        const u32 width = image.info.size.width >> m;
-        const u32 height = image.info.size.height >> m;
-        const u32 map_size = width * height * image.info.resources.layers;
+        const u32 width = std::max(image.info.size.width >> m, 1u);
+        const u32 height = std::max(image.info.size.height >> m, 1u);
+        const u32 depth = image.info.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+        const u32 map_size = image.info.mips_layout[m].second * image.info.resources.layers;
 
         // Upload data to the staging buffer.
         const auto [data, offset, _] = staging.Map(map_size, 16);
         if (image.info.is_tiled) {
             ConvertTileToLinear(data, image_data, width, height, Config::isNeoMode());
         } else {
-            std::memcpy(data, image_data, map_size);
+            std::memcpy(data,
+                        image_data + image.info.mips_layout[m].first * image.info.resources.layers,
+                        map_size);
         }
         staging.Commit(map_size);
-        image_data += map_size;
 
         // Copy to the image.
         const vk::BufferImageCopy image_copy = {
@@ -274,7 +277,7 @@ void TextureCache::RefreshImage(Image& image) {
                 .layerCount = u32(image.info.resources.layers),
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, 1},
+            .imageExtent = {width, height, depth},
         };
 
         scheduler.EndRendering();

@@ -128,6 +128,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
     size.width = attrib.width;
     size.height = attrib.height;
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) & (~127);
+    usage.vo_buffer = true;
     const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
     ASSERT(is_32bpp);
 
@@ -141,7 +142,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
             guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
         }
     }
-    usage.vo_buffer = true;
+    mips_layout.emplace_back(0, guest_size_bytes);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
@@ -161,7 +162,9 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     usage.render_target = true;
 
     guest_address = buffer.Address();
-    guest_size_bytes = buffer.GetColorSliceSize() * buffer.NumSlices();
+    const auto color_slice_sz = buffer.GetColorSliceSize();
+    guest_size_bytes = color_slice_sz * buffer.NumSlices();
+    mips_layout.emplace_back(0, color_slice_sz);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
@@ -179,7 +182,9 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     usage.depth_target = true;
 
     guest_address = buffer.Address();
-    guest_size_bytes = buffer.GetDepthSliceSize() * num_slices;
+    const auto depth_slice_sz = buffer.GetDepthSliceSize();
+    guest_size_bytes = depth_slice_sz * num_slices;
+    mips_layout.emplace_back(0, depth_slice_sz);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
@@ -198,7 +203,6 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     usage.texture = true;
 
     guest_address = image.Address();
-    guest_size_bytes = image.GetSize();
 
     mips_layout.reserve(resources.levels);
     const auto num_bits = NumBits(image.GetDataFmt());

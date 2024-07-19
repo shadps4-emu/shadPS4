@@ -43,6 +43,7 @@ struct ImageInfo {
     } usage{}; // Usage data tracked during image lifetime
 
     bool is_cube = false;
+    bool is_volume = false;
     bool is_tiled = false;
     bool is_read_only = false;
     vk::Format pixel_format = vk::Format::eUndefined;

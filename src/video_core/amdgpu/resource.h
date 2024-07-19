@@ -227,11 +227,6 @@ struct Image {
     bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
     }
-
-    size_t GetSize() const {
-        // TODO: Derive this properly from tiling params
-        return Pitch() * (height + 1) * NumComponents(GetDataFmt());
-    }
 };
 static_assert(sizeof(Image) == 32); // 256bits
 
