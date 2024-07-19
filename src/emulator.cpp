@@ -114,15 +114,11 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
         if (std::filesystem::is_directory(sce_module_folder)) {
             for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
-                if (entry.path().filename() == "libc.prx" ||
-                    entry.path().filename() == "libSceFios2.prx" ||
-                    entry.path().filename() == "libSceAudioLatencyEstimation.prx" ||
-                    entry.path().filename() == "libSceJobManager.prx" ||
-                    entry.path().filename() == "libSceS3DConversion.prx") {
+                if (entry.path().filename() == "libc.prx") {
                     found = true;
-                    LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
-                    linker->LoadModule(entry.path());
                 }
+                LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
+                linker->LoadModule(entry.path());
             }
         }
     }

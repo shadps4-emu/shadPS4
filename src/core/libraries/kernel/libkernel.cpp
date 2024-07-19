@@ -351,6 +351,10 @@ int PS4_SYSV_ABI _sigprocmask() {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI posix_getpagesize() {
+    return 4096;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -414,6 +418,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
+    LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

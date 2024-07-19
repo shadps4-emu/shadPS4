@@ -56,7 +56,6 @@ int PS4_SYSV_ABI sceImeDialogGetStatus() {
     if (g_ime_dlg_status == OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_RUNNING) {
         return OrbisImeDialogStatus::ORBIS_IME_DIALOG_STATUS_FINISHED;
     }
-
     return g_ime_dlg_status;
 }
 

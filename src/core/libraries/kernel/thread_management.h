@@ -92,6 +92,7 @@ struct PthreadCondInternal {
 struct PthreadCondAttrInternal {
     u8 reserved[64];
     pthread_condattr_t cond_attr;
+    clockid_t clock;
 };
 
 struct PthreadRwLockAttrInternal {
