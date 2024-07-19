@@ -220,8 +220,7 @@ static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
     const auto& buffer = ctx.buffers[handle];
     Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
-        const Id ptr{
-            ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
         return ctx.OpLoad(buffer.data_types->Get(1), ptr);
     } else {
         boost::container::static_vector<Id, N> ids;
