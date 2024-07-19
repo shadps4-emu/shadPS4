@@ -218,7 +218,7 @@ Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
 template <u32 N>
 static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
     const auto& buffer = ctx.buffers[handle];
-    Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
         return ctx.OpLoad(buffer.data_types->Get(1), ptr);
@@ -425,7 +425,7 @@ Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
 template <u32 N>
 static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     const auto& buffer = ctx.buffers[handle];
-    Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
         ctx.OpStore(ptr, value);
