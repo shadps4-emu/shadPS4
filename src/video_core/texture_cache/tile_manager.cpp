@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/math.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -18,10 +19,6 @@
 #include <magic_enum.hpp>
 
 namespace VideoCore {
-
-static u32 IntLog2(u32 i) {
-    return 31 - __builtin_clz(i | 1u);
-}
 
 class TileManager32 {
 public:
@@ -210,8 +207,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
 const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
 
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled ||
-        image.info.tiling_mode == AmdGpu::TilingMode::Depth_MicroTiled) {
+    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled) {
         switch (format) {
         case vk::Format::eR8Uint:
             return &detilers[DetilerType::Micro8x1];

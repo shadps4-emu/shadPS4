@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/math.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/texture_cache/image_info.h"
 
@@ -44,6 +45,78 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     }
 }
 
+// clang-format off
+static constexpr std::array macro_tile_extents{
+    std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, // 00
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 01
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 02
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 03
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 04
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 05
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 06
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 07
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 08
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 09
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0A
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 0B
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 0C
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 0D
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0E
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0F
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 10
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 11
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 12
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 13
+    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 14
+    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 15
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 16
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 17
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 18
+    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 19
+    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 1A
+};
+// clang-format on
+
+static constexpr std::pair<u32, u32> GetMacroTileExtents(u32 tiling_idx, u32 bpp, u32 num_samples) {
+    ASSERT(num_samples == 1);
+    return macro_tile_extents[tiling_idx * 4 + IntLog2(bpp) - 3];
+}
+
+static constexpr size_t ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
+    const auto pitch_align = std::max(8u, 64u / ((bpp + 7) / 8));
+    auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
+    const auto height_aligned = height;
+    size_t log_sz = 1;
+    const auto slice_align = std::max(64u, 256u / (bpp + 7) / 8);
+    while (log_sz % slice_align) {
+        log_sz = pitch_aligned * height_aligned * num_samples;
+        pitch_aligned += pitch_align;
+    }
+    return (log_sz * bpp + 7) / 8;
+}
+
+static constexpr size_t ImageSizeMicroTiled(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
+    const auto pitch_align = 8u;
+    const auto height_align = 8u;
+    auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
+    const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
+    size_t log_sz = 1;
+    while (log_sz % 256) {
+        log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
+        pitch_aligned += 8;
+    }
+    return log_sz;
+}
+
+static constexpr size_t ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp, u32 num_samples,
+                                            u32 tiling_idx) {
+    const auto& [pitch_align, height_align] = GetMacroTileExtents(tiling_idx, bpp, num_samples);
+    ASSERT(pitch_align != 0 && height_align != 0);
+    const auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
+    const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
+    return (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
+}
+
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
                      VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
@@ -81,7 +154,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
-    pitch = size.width;
+    pitch = buffer.Pitch();
     resources.layers = buffer.NumSlices();
     meta_info.cmask_addr = buffer.info.fast_clear ? buffer.CmaskAddress() : 0;
     meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
@@ -114,17 +187,74 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     type = ConvertImageType(image.GetType());
+    is_cube = image.GetType() == AmdGpu::ImageType::Cube;
+    const auto is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
     size.width = image.width + 1;
     size.height = image.height + 1;
-    size.depth = 1;
+    size.depth = is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
-    is_cube = image.GetType() == AmdGpu::ImageType::Cube;
     usage.texture = true;
 
     guest_address = image.Address();
     guest_size_bytes = image.GetSize();
+
+    mips_layout.reserve(resources.levels);
+    const auto num_bits = NumBits(image.GetDataFmt());
+    const auto is_block = IsBlockCoded();
+    const auto is_pow2 = image.pow2pad;
+
+    guest_size_bytes = 0;
+    for (auto mip = 0u; mip < resources.levels; ++mip) {
+        auto bpp = num_bits;
+        auto mip_w = pitch >> mip;
+        auto mip_h = size.height >> mip;
+        if (is_block) {
+            mip_w = (mip_w + 3) / 4;
+            mip_h = (mip_h + 3) / 4;
+            bpp *= 16;
+        }
+        mip_w = std::max(mip_w, 1u);
+        mip_h = std::max(mip_h, 1u);
+        auto mip_d = std::max(size.depth >> mip, 1u);
+
+        if (is_pow2) {
+            mip_w = std::bit_ceil(mip_w);
+            mip_h = std::bit_ceil(mip_h);
+            mip_d = std::bit_ceil(mip_d);
+        }
+
+        size_t mip_size = 0;
+        switch (tiling_mode) {
+        case AmdGpu::TilingMode::Display_Linear: {
+            ASSERT(!is_cube);
+            mip_size = ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
+            break;
+        }
+        case AmdGpu::TilingMode::Texture_MicroTiled: {
+            mip_size = ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
+            break;
+        }
+        case AmdGpu::TilingMode::Display_MacroTiled:
+        case AmdGpu::TilingMode::Texture_MacroTiled:
+        case AmdGpu::TilingMode::Depth_MacroTiled: {
+            ASSERT(!is_cube && !is_block);
+            ASSERT(num_samples == 1);
+            ASSERT(num_bits <= 64);
+            mip_size = ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, image.tiling_index);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
+        mip_size *= mip_d;
+
+        mips_layout.emplace_back(guest_size_bytes, mip_size);
+        guest_size_bytes += mip_size;
+    }
+    guest_size_bytes *= resources.layers;
 }
 
 } // namespace VideoCore

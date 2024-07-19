@@ -112,22 +112,25 @@ constexpr std::string_view NameOf(ImageType type) {
 }
 
 enum class TilingMode : u32 {
-    Depth_MicroTiled = 0x5u,
+    Depth_MacroTiled = 0u,
     Display_Linear = 0x8u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
+    Texture_MacroTiled = 0xEu,
 };
 
 constexpr std::string_view NameOf(TilingMode type) {
     switch (type) {
-    case TilingMode::Depth_MicroTiled:
-        return "Depth_MicroTiled";
+    case TilingMode::Depth_MacroTiled:
+        return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
         return "Display_Linear";
     case TilingMode::Display_MacroTiled:
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:
         return "Texture_MicroTiled";
+    case TilingMode::Texture_MacroTiled:
+        return "Texture_MacroTiled";
     default:
         return "Unknown";
     }
@@ -211,6 +214,13 @@ struct Image {
     }
 
     TilingMode GetTilingMode() const {
+        if (tiling_index >= 0 && tiling_index <= 7) {
+            return tiling_index == 5 ? TilingMode::Texture_MicroTiled
+                                     : TilingMode::Depth_MacroTiled;
+        }
+        if (tiling_index == 0x13) {
+            return TilingMode::Texture_MicroTiled;
+        }
         return static_cast<TilingMode>(tiling_index);
     }
 

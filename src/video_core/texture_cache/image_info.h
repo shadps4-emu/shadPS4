@@ -52,6 +52,7 @@ struct ImageInfo {
     u32 num_samples = 1;
     u32 pitch = 0;
     AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
+    std::vector<std::pair<u32, u32>> mips_layout;
     VAddr guest_address{0};
     u32 guest_size_bytes{0};
 };
