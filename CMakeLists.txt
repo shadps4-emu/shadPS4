@@ -254,7 +254,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/error.h
            src/common/scope_exit.h
            src/common/func_traits.h
-           src/common/math.h
            src/common/native_clock.cpp
            src/common/native_clock.h
            src/common/path_util.cpp

@@ -3,7 +3,6 @@
 
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/math.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/texture_cache/image_info.h"
 
@@ -46,6 +45,7 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
 }
 
 // clang-format off
+// The table of macro tiles parameters for given tiling index (row) and bpp (column)
 static constexpr std::array macro_tile_extents{
     std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, // 00
     std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 01
@@ -77,9 +77,14 @@ static constexpr std::array macro_tile_extents{
 };
 // clang-format on
 
+static constexpr std::pair micro_tile_extent{8u, 8u};
+static constexpr auto hw_pipe_interleave = 256u;
+
 static constexpr std::pair<u32, u32> GetMacroTileExtents(u32 tiling_idx, u32 bpp, u32 num_samples) {
     ASSERT(num_samples == 1);
-    return macro_tile_extents[tiling_idx * 4 + IntLog2(bpp) - 3];
+    const auto row = tiling_idx * 4;
+    const auto column = std::bit_width(bpp) - 4; // bpps are 8, 16, 32, 64
+    return macro_tile_extents[row + column];
 }
 
 static constexpr size_t ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
@@ -87,7 +92,7 @@ static constexpr size_t ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp, u
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = height;
     size_t log_sz = 1;
-    const auto slice_align = std::max(64u, 256u / (bpp + 7) / 8);
+    const auto slice_align = std::max(64u, hw_pipe_interleave / (bpp + 7) / 8);
     while (log_sz % slice_align) {
         log_sz = pitch_aligned * height_aligned * num_samples;
         pitch_aligned += pitch_align;
@@ -96,8 +101,7 @@ static constexpr size_t ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp, u
 }
 
 static constexpr size_t ImageSizeMicroTiled(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
-    const auto pitch_align = 8u;
-    const auto height_align = 8u;
+    const auto& [pitch_align, height_align] = micro_tile_extent;
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
     size_t log_sz = 1;
@@ -193,7 +197,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     type = ConvertImageType(image.GetType());
     is_cube = image.GetType() == AmdGpu::ImageType::Cube;
-    const auto is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
+    is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = is_volume ? image.depth + 1 : 1;

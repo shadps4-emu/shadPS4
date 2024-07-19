@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/math.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -78,8 +77,8 @@ public:
 
     static u32 getBankIdx(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks,
                           u32 num_pipes) {
-        const u32 x_shift_offset = IntLog2(bank_width * num_pipes);
-        const u32 y_shift_offset = IntLog2(bank_height);
+        const u32 x_shift_offset = std::bit_width(bank_width * num_pipes) - 1;
+        const u32 y_shift_offset = std::bit_width(bank_height) - 1;
         const u32 xs = x >> x_shift_offset;
         const u32 ys = y >> y_shift_offset;
         u32 bank = 0;

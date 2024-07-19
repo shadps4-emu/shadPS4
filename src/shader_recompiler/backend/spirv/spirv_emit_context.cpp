@@ -7,7 +7,7 @@
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 
-static constexpr auto M_PI = 3.14159265358979323846f;
+#include <numbers>
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -103,7 +103,7 @@ void EmitContext::DefineArithmeticTypes() {
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
 
-    pi_x2 = ConstF32(2.0f * float(M_PI));
+    pi_x2 = ConstF32(2.0f * float{std::numbers::pi});
 
     input_f32 = Name(TypePointer(spv::StorageClass::Input, F32[1]), "input_f32");
     input_u32 = Name(TypePointer(spv::StorageClass::Input, U32[1]), "input_u32");
