@@ -142,11 +142,17 @@ if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
-# date
-if (APPLE AND NOT TARGET date::date-tz)
-    option(BUILD_TZ_LIB "" ON)
-    option(USE_SYSTEM_TZ_DB "" ON)
-    add_subdirectory(date)
+if (APPLE)
+    # half
+    add_library(half INTERFACE)
+    target_include_directories(half INTERFACE half/include)
+
+    # date
+    if (NOT TARGET date::date-tz)
+        option(BUILD_TZ_LIB "" ON)
+        option(USE_SYSTEM_TZ_DB "" ON)
+        add_subdirectory(date)
+    endif()
 endif()
 
 # Tracy
