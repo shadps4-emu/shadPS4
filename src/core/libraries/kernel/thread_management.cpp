@@ -303,6 +303,8 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
 
 int PS4_SYSV_ABI scePthreadAttrGetaffinity(const ScePthreadAttr* pattr,
                                            /* SceKernelCpumask*/ u64* mask) {
+    LOG_INFO(Kernel_Pthread, "called");
+
     if (pattr == nullptr || *pattr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
@@ -385,11 +387,21 @@ int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t st
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
     LOG_INFO(Kernel_Pthread, "called");
 
-    if (thread == nullptr) {
+    if (thread == nullptr)
         return SCE_KERNEL_ERROR_ESRCH;
-    }
 
     auto result = scePthreadAttrSetaffinity(&thread->attr, mask);
+
+    return result;
+}
+
+int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u64* mask) {
+    LOG_INFO(Kernel_Pthread, "called");
+
+    if (thread == nullptr)
+        return SCE_KERNEL_ERROR_ESRCH;
+
+    auto result = scePthreadAttrGetaffinity(&thread->attr, mask);
 
     return result;
 }
@@ -1367,6 +1379,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create);
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity);
+    LIB_FUNCTION("rcrVFJsQWRY", "libkernel", 1, "libkernel", 1, 1, scePthreadGetaffinity); // TODO
     LIB_FUNCTION("6UgtwV+0zb4", "libkernel", 1, "libkernel", 1, 1, scePthreadCreate);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, scePthreadYield);
     LIB_FUNCTION("B5GmVDKwpn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_yield);
