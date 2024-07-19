@@ -143,6 +143,8 @@ public:
     Id full_result_i32x2;
     Id full_result_u32x2;
 
+    Id pi_x2;
+
     Id true_value{};
     Id false_value{};
     Id u32_one_value{};
