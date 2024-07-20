@@ -234,26 +234,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 
     port->flip_status.flipPendingNum = static_cast<int>(requests.size());
     port->flip_status.gcQueueNum = 0;
-    submit_cond.notify_one();
 
     return true;
-}
-
-void VideoOutDriver::Vblank() {
-    std::scoped_lock lock{mutex};
-
-    auto& vblank_status = main_port.vblank_status;
-    vblank_status.count++;
-    vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
-    vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
-
-    // Trigger flip events for the port.
-    for (auto& event : main_port.vblank_events) {
-        if (event != nullptr) {
-            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
-                                Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
-        }
-    }
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
@@ -283,9 +265,15 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             delay = Flip(request);
             FRAME_END;
         }
-        vblank_status.count++;
-        vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
-        vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+
+        {
+            // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
+            std::unique_lock lock{main_port.vo_mutex};
+            vblank_status.count++;
+            vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+            vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+            main_port.vblank_cv.notify_all();
+        }
 
         // Trigger flip events for the port.
         for (auto& event : main_port.vblank_events) {

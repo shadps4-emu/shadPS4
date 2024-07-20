@@ -183,6 +183,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus*
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
+    std::unique_lock lock{port->vo_mutex};
     *status = port->vblank_status;
     return ORBIS_OK;
 }
@@ -258,6 +259,18 @@ s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle) {
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    std::unique_lock lock{port->vo_mutex};
+    const auto prev_counter = port->vblank_status.count;
+    port->vblank_cv.wait(lock, [&]() { return prev_counter != port->vblank_status.count; });
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
 
@@ -286,6 +299,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutGetVblankStatus);
     LIB_FUNCTION("kGVLc3htQE8", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetDeviceCapabilityInfo);
+    LIB_FUNCTION("j6RaAUlaLv0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutWaitVblank);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);

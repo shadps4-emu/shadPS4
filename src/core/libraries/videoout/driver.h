@@ -3,11 +3,13 @@
 
 #pragma once
 
+#include "common/debug.h"
+#include "common/polyfill_thread.h"
+#include "core/libraries/videoout/video_out.h"
+
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-#include "common/polyfill_thread.h"
-#include "core/libraries/videoout/video_out.h"
 
 namespace Vulkan {
 struct Frame;
@@ -28,6 +30,7 @@ struct VideoOutPort {
     std::vector<Kernel::SceKernelEqueue> vblank_events;
     std::mutex vo_mutex;
     std::condition_variable vo_cv;
+    std::condition_variable vblank_cv;
     int flip_rate = 0;
 
     s32 FindFreeGroup() const {
@@ -84,8 +87,6 @@ public:
 
     bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
 
-    void Vblank();
-
 private:
     struct Request {
         Vulkan::Frame* frame;
@@ -105,11 +106,8 @@ private:
 
     std::mutex mutex;
     VideoOutPort main_port{};
-    std::condition_variable_any submit_cond;
-    std::condition_variable done_cond;
     std::jthread present_thread;
     std::queue<Request> requests;
-    bool is_neo{};
 };
 
 } // namespace Libraries::VideoOut
