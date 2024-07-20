@@ -562,6 +562,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
 
 set(INPUT src/input/controller.cpp
           src/input/controller.h
+          src/input/keys_constants.h
 )
 
 set(EMULATOR src/emulator.cpp
@@ -606,6 +607,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/settings_dialog.cpp
            src/qt_gui/settings_dialog.h
            src/qt_gui/settings_dialog.ui
+    	   src/qt_gui/keyboardcontrolswindow.h
+           src/qt_gui/keyboardcontrolswindow.cpp
+    	   src/qt_gui/keyboardcontrolswindow.ui
            src/qt_gui/main.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
