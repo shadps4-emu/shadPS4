@@ -14,12 +14,12 @@ sudo apt-get install build-essential libasound2-dev libpulse-dev libopenal-dev z
 
 #### Fedora
 ```
-sudo dnf install alsa-lib-devel cmake libatomic libevdev-devel libudev-devel openal-devel qt6-qtbase-devel qt6-qtbase-private-devel vulkan-devel pipewire-jack-audio-connection-kit-devel qt6-qtmultimedia-devel qt6-qtsvg-devel
+sudo dnf install alsa-lib-devel cmake git libatomic libevdev-devel libudev-devel openal-devel qt6-qtbase-devel qt6-qtbase-private-devel vulkan-devel pipewire-jack-audio-connection-kit-devel qt6-qtmultimedia-devel qt6-qtsvg-devel
 ```
 
 #### Arch Linux
 ```
-sudo pacman -S openal cmake vulkan-validation-layers qt6-base qt6-declarative qt6-multimedia sdl2 sndio jack2 base-devel
+sudo pacman -S openal cmake git vulkan-validation-layers qt6-base qt6-declarative qt6-multimedia sdl2 sndio jack2 base-devel
 ```
 
 #### OpenSUSE
