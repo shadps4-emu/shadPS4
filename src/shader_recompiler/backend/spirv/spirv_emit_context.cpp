@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <boost/container/static_vector.hpp>
-#include <fmt/format.h>
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+
+#include <boost/container/static_vector.hpp>
+#include <fmt/format.h>
+
+#include <numbers>
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -99,6 +102,8 @@ void EmitContext::DefineArithmeticTypes() {
     u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
+
+    pi_x2 = ConstF32(2.0f * float{std::numbers::pi});
 
     input_f32 = Name(TypePointer(spv::StorageClass::Input, F32[1]), "input_f32");
     input_u32 = Name(TypePointer(spv::StorageClass::Input, U32[1]), "input_u32");

@@ -40,7 +40,7 @@ public:
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address) {
-        const auto info = VideoCore::ImageInfo{attribute};
+        const auto info = VideoCore::ImageInfo{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(info, cpu_address);
         auto& image = texture_cache.GetImage(image_id);
         return PrepareFrameInternal(image);
@@ -54,7 +54,7 @@ public:
     VideoCore::Image& RegisterVideoOutSurface(
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
         vo_buffers_addr.emplace_back(cpu_address);
-        const auto info = VideoCore::ImageInfo{attribute};
+        const auto info = VideoCore::ImageInfo{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(info, cpu_address);
         return texture_cache.GetImage(image_id);
     }

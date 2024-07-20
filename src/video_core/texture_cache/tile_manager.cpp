@@ -19,10 +19,6 @@
 
 namespace VideoCore {
 
-static u32 IntLog2(u32 i) {
-    return 31 - __builtin_clz(i | 1u);
-}
-
 class TileManager32 {
 public:
     u32 m_macro_tile_height = 0;
@@ -81,8 +77,8 @@ public:
 
     static u32 getBankIdx(u32 x, u32 y, u32 bank_width, u32 bank_height, u32 num_banks,
                           u32 num_pipes) {
-        const u32 x_shift_offset = IntLog2(bank_width * num_pipes);
-        const u32 y_shift_offset = IntLog2(bank_height);
+        const u32 x_shift_offset = std::bit_width(bank_width * num_pipes) - 1;
+        const u32 y_shift_offset = std::bit_width(bank_height) - 1;
         const u32 xs = x >> x_shift_offset;
         const u32 ys = y >> y_shift_offset;
         u32 bank = 0;
@@ -210,8 +206,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
 const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     const auto format = DemoteImageFormatForDetiling(image.info.pixel_format);
 
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled ||
-        image.info.tiling_mode == AmdGpu::TilingMode::Depth_MicroTiled) {
+    if (image.info.tiling_mode == AmdGpu::TilingMode::Texture_MicroTiled) {
         switch (format) {
         case vk::Format::eR8Uint:
             return &detilers[DetilerType::Micro8x1];

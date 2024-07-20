@@ -36,6 +36,12 @@ struct Buffer {
     u32 element_size : 2;
     u32 index_stride : 2;
     u32 add_tid_enable : 1;
+    u32 : 6;
+    u32 type : 2; // overlaps with T# type, so should be 0 for buffer
+
+    bool Valid() const {
+        return type == 0u;
+    }
 
     operator bool() const noexcept {
         return base_address != 0;
@@ -106,22 +112,25 @@ constexpr std::string_view NameOf(ImageType type) {
 }
 
 enum class TilingMode : u32 {
-    Depth_MicroTiled = 0x5u,
+    Depth_MacroTiled = 0u,
     Display_Linear = 0x8u,
     Display_MacroTiled = 0xAu,
     Texture_MicroTiled = 0xDu,
+    Texture_MacroTiled = 0xEu,
 };
 
 constexpr std::string_view NameOf(TilingMode type) {
     switch (type) {
-    case TilingMode::Depth_MicroTiled:
-        return "Depth_MicroTiled";
+    case TilingMode::Depth_MacroTiled:
+        return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
         return "Display_Linear";
     case TilingMode::Display_MacroTiled:
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:
         return "Texture_MicroTiled";
+    case TilingMode::Texture_MacroTiled:
+        return "Texture_MacroTiled";
     default:
         return "Unknown";
     }
@@ -149,7 +158,7 @@ struct Image {
     u64 pow2pad : 1;
     u64 mtype2 : 1;
     u64 atc : 1;
-    u64 type : 4;
+    u64 type : 4; // overlaps with V# type, so shouldn't be 0 for buffer
 
     u64 depth : 13;
     u64 pitch : 14;
@@ -161,6 +170,10 @@ struct Image {
     u64 counter_bank_id : 8;
     u64 lod_hw_cnt_en : 1;
     u64 : 43;
+
+    bool Valid() const {
+        return (type & 0x8u) != 0;
+    }
 
     VAddr Address() const {
         return base_address << 8;
@@ -201,16 +214,18 @@ struct Image {
     }
 
     TilingMode GetTilingMode() const {
+        if (tiling_index >= 0 && tiling_index <= 7) {
+            return tiling_index == 5 ? TilingMode::Texture_MicroTiled
+                                     : TilingMode::Depth_MacroTiled;
+        }
+        if (tiling_index == 0x13) {
+            return TilingMode::Texture_MicroTiled;
+        }
         return static_cast<TilingMode>(tiling_index);
     }
 
     bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
-    }
-
-    size_t GetSizeAligned() const {
-        // TODO: Derive this properly from tiling params
-        return Pitch() * (height + 1) * NumComponents(GetDataFmt());
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits

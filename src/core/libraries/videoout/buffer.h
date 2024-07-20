@@ -62,7 +62,6 @@ struct BufferAttribute {
 struct BufferAttributeGroup {
     bool is_occupied;
     BufferAttribute attrib;
-    u32 size_in_bytes;
 };
 
 struct VideoOutBuffer {

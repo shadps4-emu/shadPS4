@@ -9,6 +9,7 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/types.h"
 
@@ -33,47 +34,6 @@ enum ImageFlagBits : u32 {
     MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
-
-struct ImageInfo {
-    ImageInfo() = default;
-    explicit ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                       const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, VAddr htile_address,
-                       const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    explicit ImageInfo(const AmdGpu::Image& image) noexcept;
-
-    bool IsTiled() const {
-        return tiling_mode != AmdGpu::TilingMode::Display_Linear;
-    }
-    bool IsBlockCoded() const;
-    bool IsPacked() const;
-    bool IsDepthStencil() const;
-
-    struct {
-        VAddr cmask_addr;
-        VAddr fmask_addr;
-        VAddr htile_addr;
-    } meta_info{};
-
-    struct {
-        u32 texture : 1;
-        u32 storage : 1;
-        u32 render_target : 1;
-        u32 depth_target : 1;
-        u32 vo_buffer : 1;
-    } usage{}; // Usage data tracked during image lifetime
-
-    bool is_tiled = false;
-    vk::Format pixel_format = vk::Format::eUndefined;
-    vk::ImageType type = vk::ImageType::e1D;
-    SubresourceExtent resources;
-    Extent3D size{1, 1, 1};
-    u32 num_samples = 1;
-    u32 pitch = 0;
-    u32 guest_size_bytes = 0;
-    AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
-};
 
 struct UniqueImage {
     explicit UniqueImage(vk::Device device, VmaAllocator allocator);
@@ -109,8 +69,7 @@ private:
 constexpr Common::SlotId NULL_IMAGE_ID{0};
 
 struct Image {
-    explicit Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                   const ImageInfo& info, VAddr cpu_addr);
+    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;

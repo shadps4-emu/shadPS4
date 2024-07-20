@@ -113,7 +113,7 @@ void Rasterizer::BeginRendering() {
         }
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
-        const auto& image_view = texture_cache.RenderTarget(col_buf, hint);
+        const auto& image_view = texture_cache.FindRenderTarget(col_buf, hint);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
@@ -130,14 +130,15 @@ void Rasterizer::BeginRendering() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
 
-    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invald &&
+    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invalid &&
         regs.depth_buffer.Address() != 0) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
         const auto& hint = liverpool->last_db_extent;
-        const auto& image_view = texture_cache.DepthTarget(regs.depth_buffer, htile_address, hint,
-                                                           regs.depth_control.depth_write_enable);
+        const auto& image_view = texture_cache.FindDepthTarget(
+            regs.depth_buffer, regs.depth_view.NumSlices(), htile_address, hint,
+            regs.depth_control.depth_write_enable);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);

@@ -505,7 +505,7 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
         stencil_format == DepthBuffer::StencilFormat::Stencil8) {
         return vk::Format::eD16UnormS8Uint;
     }
-    if (z_format == DepthBuffer::ZFormat::Invald &&
+    if (z_format == DepthBuffer::ZFormat::Invalid &&
         stencil_format == DepthBuffer::StencilFormat::Invalid) {
         return vk::Format::eUndefined;
     }

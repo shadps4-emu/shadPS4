@@ -321,7 +321,7 @@ struct Liverpool {
 
     struct DepthBuffer {
         enum class ZFormat : u32 {
-            Invald = 0,
+            Invalid = 0,
             Z16 = 1,
             Z32Float = 3,
         };
@@ -367,8 +367,14 @@ struct Liverpool {
             return u64(z_read_base) << 8;
         }
 
-        size_t GetSizeAligned() const {
-            return depth_slice.tile_max * 8;
+        u32 NumSamples() const {
+            return 1u << z_info.num_samples; // spec doesn't say it is a log2
+        }
+
+        size_t GetDepthSliceSize() const {
+            ASSERT(z_info.format != ZFormat::Invalid);
+            const auto bpe = z_info.format == ZFormat::Z32Float ? 4 : 2;
+            return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
         }
     };
 
@@ -733,12 +739,19 @@ struct Liverpool {
             return VAddr(fmask_base_address) << 8;
         }
 
-        size_t GetSizeAligned() const {
+        u32 NumSamples() const {
+            return 1 << attrib.num_fragments_log2;
+        }
+
+        u32 NumSlices() const {
+            return view.slice_max + 1;
+        }
+
+        size_t GetColorSliceSize() const {
             const auto num_bytes_per_element = NumBits(info.format) / 8u;
-            const auto slice_size = (slice.tile_max + 1) * 64u;
-            const auto total_size = slice_size * (view.slice_max + 1) * num_bytes_per_element;
-            ASSERT(total_size > 0);
-            return total_size;
+            const auto slice_size =
+                num_bytes_per_element * (slice.tile_max + 1) * 64u * NumSamples();
+            return slice_size;
         }
 
         TilingMode GetTilingMode() const {
@@ -819,6 +832,17 @@ struct Liverpool {
         BitField<6, 1, u32> depth_compress_disable;
     };
 
+    union DepthView {
+        BitField<0, 11, u32> slice_start;
+        BitField<13, 11, u32> slice_max;
+        BitField<24, 1, u32> z_read_only;
+        BitField<25, 1, u32> stencil_read_only;
+
+        u32 NumSlices() const {
+            return slice_max + 1u;
+        }
+    };
+
     union AaConfig {
         BitField<0, 3, u32> msaa_num_samples;
         BitField<4, 1, u32> aa_mask_centroid_dtmn;
@@ -849,7 +873,9 @@ struct Liverpool {
             ComputeProgram cs_program;
             INSERT_PADDING_WORDS(0xA008 - 0x2E00 - 80 - 3 - 5);
             DepthRenderControl depth_render_control;
-            INSERT_PADDING_WORDS(4);
+            INSERT_PADDING_WORDS(1);
+            DepthView depth_view;
+            INSERT_PADDING_WORDS(2);
             Address depth_htile_data_base;
             INSERT_PADDING_WORDS(2);
             float depth_bounds_min;
@@ -1050,6 +1076,7 @@ static_assert(GFX6_3D_REG_INDEX(cs_program.dim_z) == 0x2E03);
 static_assert(GFX6_3D_REG_INDEX(cs_program.address_lo) == 0x2E0C);
 static_assert(GFX6_3D_REG_INDEX(cs_program.user_data) == 0x2E40);
 static_assert(GFX6_3D_REG_INDEX(depth_render_control) == 0xA000);
+static_assert(GFX6_3D_REG_INDEX(depth_view) == 0xA002);
 static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
