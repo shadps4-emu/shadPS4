@@ -18,16 +18,9 @@ int main(int argc, char* argv[]) {
     QApplication a(argc, argv);
 
     // Load configurations and initialize Qt application
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(config_dir / "config.toml");
-    QString gameDataPath = QDir::currentPath() + "/user/game_data/";
-    std::string stdStr = gameDataPath.toStdString();
-    std::filesystem::path path(stdStr);
-#ifdef _WIN64
-    std::wstring wstdStr = gameDataPath.toStdWString();
-    path = std::filesystem::path(wstdStr);
-#endif
-    std::filesystem::create_directory(path);
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(user_dir / "config.toml");
+    std::filesystem::create_directory(user_dir / "game_data");
 
     // Check if the game install directory is set
     if (Config::getGameInstallDir() == "") {

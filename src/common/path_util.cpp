@@ -4,6 +4,12 @@
 #include <unordered_map>
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/scope_exit.h"
+
+#ifdef __APPLE__
+#include <CoreFoundation/CFBundle.h>
+#include <sys/param.h>
+#endif
 
 #ifndef MAX_PATH
 #ifdef _WIN32
@@ -19,7 +25,36 @@ namespace Common::FS {
 
 namespace fs = std::filesystem;
 
+#ifdef __APPLE__
+static std::filesystem::path GetBundleParentDirectory() {
+    if (CFBundleRef bundle_ref = CFBundleGetMainBundle()) {
+        if (CFURLRef bundle_url_ref = CFBundleCopyBundleURL(bundle_ref)) {
+            SCOPE_EXIT {
+                CFRelease(bundle_url_ref);
+            };
+            if (CFStringRef bundle_path_ref =
+                    CFURLCopyFileSystemPath(bundle_url_ref, kCFURLPOSIXPathStyle)) {
+                SCOPE_EXIT {
+                    CFRelease(bundle_path_ref);
+                };
+                char app_bundle_path[MAXPATHLEN];
+                if (CFStringGetFileSystemRepresentation(bundle_path_ref, app_bundle_path,
+                                                        sizeof(app_bundle_path))) {
+                    std::filesystem::path bundle_path{app_bundle_path};
+                    return bundle_path.parent_path();
+                }
+            }
+        }
+    }
+    return std::filesystem::current_path();
+}
+#endif
+
 static auto UserPaths = [] {
+#ifdef __APPLE__
+    std::filesystem::current_path(GetBundleParentDirectory());
+#endif
+
     std::unordered_map<PathType, fs::path> paths;
     const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 
