@@ -140,4 +140,10 @@ option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will b
 option(TRACY_ON_DEMAND "" ON)
 option(TRACY_NO_FRAME_IMAGE "" ON)
 option(TRACY_FIBERS "" ON) # For AmdGpu frontend profiling
+option(TRACY_NO_SYSTEM_TRACING "" ON)
+option(TRACY_NO_CALLSTACK "" ON)
+option(TRACY_NO_CODE_TRANSFER "" ON)
+option(TRACY_NO_SAMPLING "" ON)
+option(TRACY_ONLY_LOCALHOST "" ON)
+option(TRACY_NO_CONTEXT_SWITCH "" ON)
 add_subdirectory(tracy)
