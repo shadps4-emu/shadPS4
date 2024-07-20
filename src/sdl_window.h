@@ -5,6 +5,7 @@
 
 #include <string>
 #include "common/types.h"
+#include "input/keysmappingprovider.h"
 
 struct SDL_Window;
 struct SDL_Gamepad;
@@ -12,7 +13,8 @@ union SDL_Event;
 
 namespace Input {
 class GameController;
-}
+enum class Axis;
+} // namespace Input
 
 namespace Frontend {
 
@@ -64,6 +66,8 @@ public:
 
     void waitEvent();
 
+    void setKeysMappingProvider(KeysMappingProvider* provider);
+
 private:
     void onResize();
     void onKeyPress(const SDL_Event* event);
@@ -71,12 +75,34 @@ private:
 
     int sdlGamepadToOrbisButton(u8 button);
 
+    void handleR2Key(const SDL_Event* event, u32& button, Input::Axis& axis, int& axisvalue,
+                     int& ax);
+    void handleL2Key(const SDL_Event* event, u32& button, Input::Axis& axis, int& axisvalue,
+                     int& ax);
+    void handleLAnalogRightKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                               int& axisvalue, int& ax);
+    void handleLAnalogLeftKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                              int& axisvalue, int& ax);
+    void handleLAnalogUpKey(const SDL_Event* event, u32& button, Input::Axis& axis, int& axisvalue,
+                            int& ax);
+    void handleLAnalogDownKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                              int& axisvalue, int& ax);
+    void handleRAnalogRightKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                               int& axisvalue, int& ax);
+    void handleRAnalogLeftKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                              int& axisvalue, int& ax);
+    void handleRAnalogUpKey(const SDL_Event* event, u32& button, Input::Axis& axis, int& axisvalue,
+                            int& ax);
+    void handleRAnalogDownKey(const SDL_Event* event, u32& button, Input::Axis& axis,
+                              int& axisvalue, int& ax);
+
 private:
     s32 width;
     s32 height;
     Input::GameController* controller;
     WindowSystemInfo window_info{};
     SDL_Window* window{};
+    KeysMappingProvider* keysMappingProvider = nullptr;
     bool is_shown{};
     bool is_open{true};
 };

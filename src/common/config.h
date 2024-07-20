@@ -4,7 +4,10 @@
 #pragma once
 
 #include <filesystem>
+#include <map>
 #include <vector>
+#include "SDL3/SDL_stdinc.h"
+#include "input/keys_constants.h"
 #include "types.h"
 
 namespace Config {
@@ -70,6 +73,8 @@ void setMainWindowHeight(u32 height);
 void setPkgViewer(std::vector<std::string> pkgList);
 void setElfViewer(std::vector<std::string> elfList);
 void setRecentFiles(std::vector<std::string> recentFiles);
+void setKeyboardBindingMap(std::map<Uint32, KeysMapping> map);
+std::map<Uint32, KeysMapping> getKeyboardBindingMap();
 
 u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();

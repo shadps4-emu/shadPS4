@@ -116,6 +116,9 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     window =
         std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
+    m_keysMappingProvider = std::make_unique<KeysMappingProvider>(Config::getKeyboardBindingMap());
+    window->setKeysMappingProvider(m_keysMappingProvider.get());
+
 
     g_window = window.get();
 
