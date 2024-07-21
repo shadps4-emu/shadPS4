@@ -44,6 +44,10 @@ static Xbyak::Address ZydisToXbyakMemoryOperand(const ZydisDecodedOperand& opera
     ASSERT_MSG(operand.type == ZYDIS_OPERAND_TYPE_MEMORY, "Expected memory operand, got type: {}",
                static_cast<u32>(operand.type));
 
+    if (operand.mem.base == ZYDIS_REGISTER_RIP) {
+        return ptr[rip + operand.mem.disp.value];
+    }
+
     Xbyak::RegExp expression{};
     if (operand.mem.base != ZYDIS_REGISTER_NONE) {
         expression = expression + ZydisToXbyakRegister(operand.mem.base);
