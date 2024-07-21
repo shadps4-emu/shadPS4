@@ -71,6 +71,11 @@ public:
         return &master_semaphore;
     }
 
+    /// Defers an operation until the gpu has reached the current cpu tick.
+    void DeferOperation(auto&& func) {
+        pending_ops.emplace(func, CurrentTick());
+    }
+
     std::mutex submit_mutex;
 
 private:
@@ -84,6 +89,11 @@ private:
     CommandPool command_pool;
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
+    struct PendingOp {
+        std::function<void()> callback;
+        u64 gpu_tick;
+    };
+    std::queue<PendingOp> pending_ops;
     RenderState render_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};

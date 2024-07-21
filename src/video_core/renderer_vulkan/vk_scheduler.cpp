@@ -100,6 +100,12 @@ void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wa
     master_semaphore.SubmitWork(current_cmdbuf, wait_semaphore, signal_semaphore, signal_value);
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
+
+    // Apply pending operations
+    while (IsFree(pending_ops.back().gpu_tick)) {
+        pending_ops.back().callback();
+        pending_ops.pop();
+    }
 }
 
 } // namespace Vulkan
