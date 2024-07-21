@@ -166,6 +166,9 @@ public:
 
     std::pair<vk::Buffer, size_t> GetVulkanBuffer(VAddr addr);
 
+    int GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
+                            void** directMemoryEndOut);
+
 private:
     VMAHandle FindVMA(VAddr target) {
         return std::prev(vma_map.upper_bound(target));
