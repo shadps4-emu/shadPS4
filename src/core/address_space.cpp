@@ -17,7 +17,7 @@
 
 #ifdef __APPLE__
 // Reserve space for the system address space using a zerofill section.
-asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xEFFC00000");
+asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xFBFC00000");
 #endif
 
 namespace Core {
@@ -287,6 +287,11 @@ struct AddressSpace::Impl {
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
         constexpr int base_map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
 #ifdef __APPLE__
+        // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
+        // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. We can allocate the system
+        // managed region, as well as system reserved if reduced in size slightly, but we cannot map
+        // the user region where we want, so we must let the OS put it wherever possible and hope
+        // the game won't rely on its location.
         system_managed_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size, protection_flags,
                  base_map_flags | MAP_FIXED, -1, 0));
