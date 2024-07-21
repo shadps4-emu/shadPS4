@@ -506,8 +506,8 @@ void MemoryManager::UnmapVulkanMemory(VAddr addr, size_t size) {
     mapped_memories.erase(it);
 }
 
-int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
-                                       void** directMemoryEndOut) {
+int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
+                                       void** directMemoryStartOut, void** directMemoryEndOut) {
     std::scoped_lock lk{mutex};
 
     auto dmem_area = FindDmemArea(addr);

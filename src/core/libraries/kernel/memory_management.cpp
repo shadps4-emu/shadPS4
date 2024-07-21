@@ -216,7 +216,8 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
                                               void** directMemoryEndOut) {
     LOG_WARNING(Kernel_Vmm, "called, direct memory addr = {:#x}", addr);
     auto* memory = Core::Memory::Instance();
-    return memory->GetDirectMemoryType(addr, directMemoryTypeOut, directMemoryStartOut, directMemoryEndOut);
+    return memory->GetDirectMemoryType(addr, directMemoryTypeOut, directMemoryStartOut,
+                                       directMemoryEndOut);
 }
 
 } // namespace Libraries::Kernel
