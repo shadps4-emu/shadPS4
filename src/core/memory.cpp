@@ -87,9 +87,26 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
                            u64 alignment) {
     std::scoped_lock lk{mutex};
 
-    ASSERT_MSG(virtual_addr != 0, "TODO: Reserve address is zero - search for free space");
-
+    virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
+    alignment = alignment > 0 ? alignment : 16_KB;
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+
+    // Find the first free area starting with provided virtual address.
+    if (False(flags & MemoryMapFlags::Fixed)) {
+        auto it = FindVMA(mapped_addr);
+        // If the VMA is free and contains the requested mapping we are done.
+        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
+            mapped_addr = virtual_addr;
+        } else {
+            // Search for the first free VMA that fits our mapping.
+            while (it->second.type != VMAType::Free || it->second.size < size) {
+                it++;
+            }
+            ASSERT(it != vma_map.end());
+            const auto& vma = it->second;
+            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
+        }
+    }
 
     // Add virtual memory area
     auto& new_vma = AddMapping(mapped_addr, size);
@@ -487,6 +504,24 @@ void MemoryManager::UnmapVulkanMemory(VAddr addr, size_t size) {
     const auto it = mapped_memories.find(addr);
     ASSERT(it != mapped_memories.end() && it->second.buffer_size == size);
     mapped_memories.erase(it);
+}
+
+int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
+                                       void** directMemoryEndOut) {
+    std::scoped_lock lk{mutex};
+
+    auto dmem_area = FindDmemArea(addr);
+
+    if (dmem_area == dmem_map.end() || dmem_area->second.is_free) {
+        LOG_ERROR(Core, "Unable to find allocated direct memory region to check type!");
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+
+    const auto& area = dmem_area->second;
+    *directMemoryStartOut = reinterpret_cast<void*>(area.base);
+    *directMemoryEndOut = reinterpret_cast<void*>(area.GetEnd());
+    *directMemoryTypeOut = area.memory_type;
+    return ORBIS_OK;
 }
 
 } // namespace Core
