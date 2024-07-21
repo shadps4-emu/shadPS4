@@ -168,9 +168,19 @@ void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
+void IREmitter::SetScalarReg64(IR::ScalarReg reg, const U64F64& value) {
+    const U64 value_typed = value.Type() == Type::F64 ? BitCast<U64>(F64{value}) : U64{value};
+    Inst(Opcode::SetScalarRegister, reg, value_typed);
+}
+
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
+}
+
+void IREmitter::SetVectorReg64(IR::VectorReg reg, const U64F64& value) {
+    const U64 value_typed = value.Type() == Type::F64 ? BitCast<U64>(F64{value}) : U64{value};
+    Inst(Opcode::SetVectorRegister, reg, value);
 }
 
 U1 IREmitter::GetGotoVariable(u32 id) {
@@ -964,8 +974,18 @@ IR::Value IREmitter::IMulExt(const U32& a, const U32& b, bool is_signed) {
     return Inst(is_signed ? Opcode::SMulExt : Opcode::UMulExt, a, b);
 }
 
-U32 IREmitter::IMul(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::IMul32, a, b);
+U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::IMul32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::IMul64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
 }
 
 U32 IREmitter::IDiv(const U32& a, const U32& b, bool is_signed) {
@@ -1168,6 +1188,13 @@ U32U64 IREmitter::ConvertFToU(size_t bitsize, const F32F64& value) {
         default:
             ThrowInvalidType(value.Type());
         }
+    case 64:
+        switch (value.Type()) {
+        case Type::F32:
+            return Inst<U64>(Opcode::ConvertU64F32, value);
+        default:
+            ThrowInvalidType(value.Type());
+        }
     default:
         UNREACHABLE_MSG("Invalid destination bitsize {}", bitsize);
     }
@@ -1227,6 +1254,15 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         switch (value.Type()) {
         case Type::U32:
             return Inst<U16>(Opcode::ConvertU16U32, value);
+        default:
+            ThrowInvalidType(value.Type());
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U64>(Opcode::ConvertU64U32, value);
+        default:
+            ThrowInvalidType(value.Type());
         }
     }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);

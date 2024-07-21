@@ -57,7 +57,9 @@ public:
     template <typename T = U32>
     [[nodiscard]] T GetVectorReg(IR::VectorReg reg);
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
+    void SetScalarReg64(IR::ScalarReg reg, const U64F64& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
+    void SetVectorReg64(IR::VectorReg reg, const U64F64& value);
 
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
@@ -159,7 +161,7 @@ public:
     [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
     [[nodiscard]] Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
-    [[nodiscard]] U32 IMul(const U32& a, const U32& b);
+    [[nodiscard]] U32U64 IMul(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 IDiv(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 INeg(const U32U64& value);
     [[nodiscard]] U32 IAbs(const U32& value);

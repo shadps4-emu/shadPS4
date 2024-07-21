@@ -100,6 +100,7 @@ public:
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
+    void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
     void V_CVT_F32_U32(const GcnInst& inst);
     void V_MAD_F32(const GcnInst& inst);
@@ -129,6 +130,7 @@ public:
     void V_CVT_U32_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_SUBREV_I32(const GcnInst& inst);
+    void V_MAD_U64_U32(const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_LSHRREV_B32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);

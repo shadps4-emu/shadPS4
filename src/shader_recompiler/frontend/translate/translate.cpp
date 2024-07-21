@@ -319,6 +319,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::V_ADD_I32:
             translator.V_ADD_I32(inst);
             break;
+        case Opcode::V_ADDC_U32:
+            translator.V_ADDC_U32(inst);
+            break;
         case Opcode::V_CVT_F32_I32:
             translator.V_CVT_F32_I32(inst);
             break;
@@ -468,6 +471,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
             break;
         case Opcode::IMAGE_LOAD:
             translator.IMAGE_LOAD(false, inst);
+            break;
+        case Opcode::V_MAD_U64_U32:
+            translator.V_MAD_U64_U32(inst);
             break;
         case Opcode::V_CMP_GE_I32:
             translator.V_CMP_U32(ConditionOp::GE, true, false, inst);

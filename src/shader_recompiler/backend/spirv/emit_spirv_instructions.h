@@ -258,6 +258,7 @@ Id EmitISub64(EmitContext& ctx, Id a, Id b);
 Id EmitSMulExt(EmitContext& ctx, Id a, Id b);
 Id EmitUMulExt(EmitContext& ctx, Id a, Id b);
 Id EmitIMul32(EmitContext& ctx, Id a, Id b);
+Id EmitIMul64(EmitContext& ctx, Id a, Id b);
 Id EmitSDiv32(EmitContext& ctx, Id a, Id b);
 Id EmitUDiv32(EmitContext& ctx, Id a, Id b);
 Id EmitINeg32(EmitContext& ctx, Id value);

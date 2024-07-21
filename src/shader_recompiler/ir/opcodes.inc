@@ -227,6 +227,7 @@ OPCODE(IAddCary32,                                          U32x2,          U32,
 OPCODE(ISub32,                                              U32,            U32,            U32,                                                            )
 OPCODE(ISub64,                                              U64,            U64,            U64,                                                            )
 OPCODE(IMul32,                                              U32,            U32,            U32,                                                            )
+OPCODE(IMul64,                                              U64,            U64,            U64,                                                            )
 OPCODE(SMulExt,                                             U32x2,          U32,            U32,                                                            )
 OPCODE(UMulExt,                                             U32x2,          U32,            U32,                                                            )
 OPCODE(SDiv32,                                              U32,            U32,            U32,                                                            )
@@ -289,6 +290,8 @@ OPCODE(ConvertF64S32,                                       F64,            U32,
 OPCODE(ConvertF64U32,                                       F64,            U32,                                                                            )
 OPCODE(ConvertF32U16,                                       F32,            U16,                                                                            )
 OPCODE(ConvertU16U32,                                       U16,            U32,                                                                            )
+OPCODE(ConvertU64U32,                                       U64,            U32,                                                                            )
+OPCODE(ConvertU64F32,                                       U64,            F32,                                                                            )
 
 // Image operations
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
