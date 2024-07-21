@@ -96,7 +96,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
                            u64 alignment) {
     std::scoped_lock lk{mutex};
 
-    virtual_addr = (virtual_addr == 0) ? impl.VirtualBase() : virtual_addr;
+    virtual_addr = (virtual_addr == 0) ? impl.SystemReservedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 16_KB;
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
 
