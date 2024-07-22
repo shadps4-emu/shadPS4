@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/path_util.h"
 #include "trophy_viewer.h"
 
 TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
@@ -19,8 +20,17 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
-    QString trophyDir = QDir::currentPath() + "/user/game_data/" + title + "/TrophyFiles";
-    QDir dir(trophyDir);
+#ifdef _WIN32
+    const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data" /
+                           title.toStdWString() / "TrophyFiles";
+    const auto trophyDirQt = QString::fromStdWString(trophyDir.wstring());
+#else
+    const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data" /
+                           title.toStdString() / "TrophyFiles";
+    const auto trophyDirQt = QString::fromStdString(trophyDir.string());
+#endif
+
+    QDir dir(trophyDirQt);
     if (!dir.exists()) {
         std::filesystem::path path(gameTrpPath_.toStdString());
 #ifdef _WIN64
@@ -35,7 +45,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
 
     for (const QFileInfo& dirInfo : dirList) {
         QString tabName = dirInfo.fileName();
-        QString trpDir = trophyDir + "/" + tabName;
+        QString trpDir = trophyDirQt + "/" + tabName;
 
         QString iconsPath = trpDir + "/Icons";
         QDir iconsDir(iconsPath);
