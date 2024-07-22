@@ -8,10 +8,14 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0) buffer input_buf {
     uint in_data[];
 };
-layout(rg32ui, binding = 1) uniform writeonly uimage2D output_img;
+layout(std430, binding = 1) buffer output_buf {
+    uint out_data[];
+};
 
 layout(push_constant) uniform image_info {
+    uint num_levels;
     uint pitch;
+    uint sizes[14];
 } info;
 
 // Inverse morton LUT, small enough to fit into K$
@@ -30,19 +34,25 @@ uint rmort[16] = {
 #define MICRO_TILE_DIM      (8)
 
 void main() {
+    uint block_ofs = 2 * gl_GlobalInvocationID.x;
+    uint p0 = in_data[block_ofs + 0];
+    uint p1 = in_data[block_ofs + 1];
+    
     uint bit_ofs = 8 * (gl_LocalInvocationID.x % 4);
     uint packed_pos = rmort[gl_LocalInvocationID.x >> 2] >> bit_ofs;
     uint col = bitfieldExtract(packed_pos, 4, 4);
     uint row = bitfieldExtract(packed_pos, 0, 4);
 
-    uint block_ofs = 2 * gl_GlobalInvocationID.x;
-    uint p0 = in_data[block_ofs + 0];
-    uint p1 = in_data[block_ofs + 1];
+    uint mip = 0;
+    for (int m = 0; m < info.num_levels; ++m) {
+        mip += (gl_GlobalInvocationID.x * 8) >= info.sizes[m] ? 1 : 0;
+    }
 
-    uint tiles_per_pitch = (info.pitch >> 3) >> 2; // log2(MICRO_TILE_DIM) / 4
-    ivec2 img_pos = MICRO_TILE_DIM * ivec2(
-        gl_WorkGroupID.x % tiles_per_pitch,
-        gl_WorkGroupID.x / tiles_per_pitch
-    );
-    imageStore(output_img, img_pos + ivec2(col, row), uvec4(p0, p1, 0, 0));
+    uint tiles_per_pitch = max((info.pitch >> mip) / MICRO_TILE_DIM, 1) * 2;
+    uint target_tile_x = 2 * gl_WorkGroupID.x % tiles_per_pitch;
+    uint target_tile_y = 2 * gl_WorkGroupID.x / tiles_per_pitch;
+    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + col * 2;
+    uint dw_ofs_y = (target_tile_y * tiles_per_pitch * 64) + row * tiles_per_pitch * MICRO_TILE_DIM;
+    out_data[dw_ofs_x + dw_ofs_y] = p0;
+    out_data[dw_ofs_x + dw_ofs_y + 1] = p1; 
 }

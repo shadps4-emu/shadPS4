@@ -392,6 +392,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Float) {
         return vk::Format::eR16G16Sfloat;
     }
+    if (data_format == AmdGpu::DataFormat::Format16_16 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eR16G16Unorm;
+    }
     if (data_format == AmdGpu::DataFormat::Format10_11_11 &&
         num_format == AmdGpu::NumberFormat::Float) {
         return vk::Format::eB10G11R11UfloatPack32;

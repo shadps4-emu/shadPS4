@@ -34,10 +34,16 @@ struct DetilerContext {
 
 class TileManager {
 public:
+    using ScratchBuffer = std::pair<VkBuffer, VmaAllocation>;
+
     TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~TileManager();
 
-    bool TryDetile(Image& image);
+    std::optional<vk::Buffer> TryDetile(Image& image);
+
+    ScratchBuffer AllocBuffer(u32 size, bool is_storage = false);
+    void Upload(ScratchBuffer buffer, const void* data, size_t size);
+    void FreeBuffer(ScratchBuffer buffer);
 
 private:
     const DetilerContext* GetDetiler(const Image& image) const;
@@ -45,7 +51,6 @@ private:
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
-    Vulkan::StreamBuffer staging;
     std::array<DetilerContext, DetilerType::Max> detilers;
 };
 

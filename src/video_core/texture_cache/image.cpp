@@ -119,11 +119,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     ASSERT(info.pixel_format != vk::Format::eUndefined);
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
-    if (info.type == vk::ImageType::e2D && info.resources.layers >= 6 &&
-        info.size.width == info.size.height) {
+    if (info.props.is_cube) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;
-    }
-    if (info.type == vk::ImageType::e3D) {
+    } else if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
     if (info.IsBlockCoded()) {
@@ -157,15 +155,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     };
 
     image.Create(image_ci);
-
-    // Create a special view for detiler
-    if (info.is_tiled) {
-        ImageViewInfo view_info;
-        view_info.format = DemoteImageFormatForDetiling(info.pixel_format);
-        view_for_detiler.emplace(*instance, view_info, *this, ImageId{});
-    }
-
-    Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }
 
 void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,
