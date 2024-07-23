@@ -30,7 +30,8 @@ jobs:
 
     - name: Install MoltenVK
       run: |
-        brew install molten-vk
+        arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        arch -x86_64 /usr/local/bin/brew install molten-vk
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=x86_64
@@ -42,7 +43,7 @@ jobs:
       run: |
         mkdir upload
         mv ${{github.workspace}}/build/shadps4 upload
-        cp /opt/homebrew/opt/molten-vk/lib/libMoltenVK.dylib upload
+        cp $(arch -x86_64 /usr/local/bin/brew --prefix)/opt/molten-vk/lib/libMoltenVK.dylib upload
         install_name_tool -add_rpath "@loader_path" upload/shadps4
         tar cf shadps4-macos.tar.gz -C upload .
 
