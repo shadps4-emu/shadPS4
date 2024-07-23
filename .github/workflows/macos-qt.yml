@@ -30,7 +30,8 @@ jobs:
 
     - name: Install MoltenVK
       run: |
-        brew install molten-vk
+        arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        arch -x86_64 /usr/local/bin/brew install molten-vk
 
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
