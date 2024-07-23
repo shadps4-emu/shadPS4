@@ -93,31 +93,15 @@ void Translator::V_ADD_I32(const GcnInst& inst) {
 }
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
-    IR::U32 src0;
-    const IR::Value src0_0{GetSrc(inst.src[0])};
-    if (src0_0.Type() == IR::Type::F32 || src0_0.Type() == IR::Type::F64) {
-        src0 = ir.ConvertFToU(32, IR::F32F64(src0_0));
-    } else if (src0_0.Type() == IR::Type::U32) {
-        src0 = IR::U32U64(src0_0);
-    } else {
-        UNREACHABLE();
-    }
 
-    IR::U32 src1;
-    const IR::Value src1_0{GetSrc(inst.src[1])};
-    if (src1_0.Type() == IR::Type::F32 || src1_0.Type() == IR::Type::F64) {
-        src1 = ir.ConvertFToU(32, IR::F32F64(src1_0));
-    } else if (src1_0.Type() == IR::Type::U32) {
-        src1 = IR::U32U64(src1_0);
-    } else {
-        UNREACHABLE();
-    }
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
 
     IR::U32 scarry;
     if (inst.src_count == 3) { // VOP3
-        scarry = {GetSrc(inst.src[2])};
+        scarry = GetSrc<IR::U32>(inst.src[2]);
     } else { // VOP2
-        scarry = {ir.GetVccLo()};
+        scarry = ir.GetVccLo();
     }
 
     IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
@@ -330,41 +314,10 @@ void Translator::V_SUBREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_U64_U32(const GcnInst& inst) {
-    IR::U32 src0;
-    const IR::Value src0_0{GetSrc(inst.src[0])};
-    if (src0_0.Type() == IR::Type::F32 || src0_0.Type() == IR::Type::F64) {
-        src0 = ir.ConvertFToU(32, IR::F32F64(src0_0));
-    } else if (src0_0.Type() == IR::Type::U64) {
-        src0 = ir.UConvert(32, IR::U64(src0_0));
-    } else if (src0_0.Type() == IR::Type::U32) {
-        src0 = IR::U32(src0_0);
-    } else {
-        UNREACHABLE();
-    }
 
-    IR::U32 src1;
-    const IR::Value src1_0{GetSrc(inst.src[1])};
-    if (src1_0.Type() == IR::Type::F32 || src1_0.Type() == IR::Type::F64) {
-        src1 = ir.ConvertFToU(32, IR::F32F64(src1_0));
-    } else if (src1_0.Type() == IR::Type::U64) {
-        src1 = ir.UConvert(32, IR::U64(src1_0));
-    } else if (src1_0.Type() == IR::Type::U32) {
-        src1 = IR::U32(src1_0);
-    } else {
-        UNREACHABLE();
-    }
-
-    IR::U64 src2;
-    const IR::Value src2_0{GetSrc(inst.src[2])};
-    if (src2_0.Type() == IR::Type::F32 || src2_0.Type() == IR::Type::F64) {
-        src2 = ir.ConvertFToU(64, IR::F32F64(src2_0));
-    } else if (src2_0.Type() == IR::Type::U64) {
-        src2 = IR::U64(src2_0);
-    } else if (src2_0.Type() == IR::Type::U32) {
-        src2 = ir.UConvert(64, IR::U32(src2_0));
-    } else {
-        UNREACHABLE();
-    }
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc64<IR::U64>(inst.src[2]);
 
     IR::U64 result;
     result = ir.IMul(src0, src1);

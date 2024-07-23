@@ -154,6 +154,16 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 }
 
 template <>
+U64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
+    return Inst<U64>(Opcode::GetScalarRegister, reg);
+}
+
+template <>
+F64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
+    return BitCast<F64>(GetScalarReg<U64>(reg));
+}
+
+template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
     return Inst<U32>(Opcode::GetVectorRegister, reg);
 }
@@ -161,6 +171,16 @@ U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 template <>
 F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
     return BitCast<F32>(GetVectorReg<U32>(reg));
+}
+
+template <>
+U64 IREmitter::GetVectorReg(IR::VectorReg reg) {
+    return Inst<U64>(Opcode::GetVectorRegister, reg);
+}
+
+template <>
+F64 IREmitter::GetVectorReg(IR::VectorReg reg) {
+    return BitCast<F64>(GetVectorReg<U64>(reg));
 }
 
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {

@@ -75,6 +75,7 @@ void Translator::EmitPrologue() {
     }
 }
 
+template <>
 IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     // Input modifiers work on float values.
     force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
@@ -170,6 +171,127 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         value = ir.FPNeg(value);
     }
     return value;
+}
+
+template <>
+IR::U32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
+    return GetSrc<IR::U32F32>(operand, force_flt);
+}
+
+template <>
+IR::F32 Translator::GetSrc(const InstOperand& operand, bool) {
+    return GetSrc<IR::U32F32>(operand, true);
+}
+
+template <>
+IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
+    // Input modifiers work on float values.
+    force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
+
+    IR::U64F64 value{};
+    switch (operand.field) {
+    case OperandField::ScalarGPR:
+        if (operand.type == ScalarType::Float64 || force_flt) {
+            value = ir.GetScalarReg<IR::F64>(IR::ScalarReg(operand.code));
+        } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
+            value = ir.GetScalarReg<IR::U64>(IR::ScalarReg(operand.code));
+        } else {
+            UNREACHABLE();
+        }
+        break;
+    case OperandField::VectorGPR:
+        if (operand.type == ScalarType::Float64 || force_flt) {
+            value = ir.GetVectorReg<IR::F64>(IR::VectorReg(operand.code));
+        } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
+            value = ir.GetVectorReg<IR::U64>(IR::VectorReg(operand.code));
+        } else {
+            UNREACHABLE();
+        }
+        break;
+    case OperandField::ConstZero:
+        if (force_flt) {
+            value = ir.Imm64(0.0);
+        } else {
+            value = ir.Imm64(u64(0U));
+        }
+        break;
+    case OperandField::SignedConstIntPos:
+        ASSERT(!force_flt);
+        value = ir.Imm64(s64(operand.code) - SignedConstIntPosMin + 1);
+        break;
+    case OperandField::SignedConstIntNeg:
+        ASSERT(!force_flt);
+        value = ir.Imm64(-s64(operand.code) + SignedConstIntNegMin - 1);
+        break;
+    case OperandField::LiteralConst:
+        if (force_flt) {
+            UNREACHABLE(); // There is a literal double?
+        } else {
+            value = ir.Imm64(u64(operand.code));
+        }
+        break;
+    case OperandField::ConstFloatPos_1_0:
+        if (force_flt) {
+            value = ir.Imm64(1.0);
+        } else {
+            value = ir.Imm64(std::bit_cast<u64>(double(1.0)));
+        }
+        break;
+    case OperandField::ConstFloatPos_0_5:
+        value = ir.Imm64(0.5);
+        break;
+    case OperandField::ConstFloatPos_2_0:
+        value = ir.Imm64(2.0);
+        break;
+    case OperandField::ConstFloatPos_4_0:
+        value = ir.Imm64(4.0);
+        break;
+    case OperandField::ConstFloatNeg_0_5:
+        value = ir.Imm64(-0.5);
+        break;
+    case OperandField::ConstFloatNeg_1_0:
+        value = ir.Imm64(-1.0);
+        break;
+    case OperandField::ConstFloatNeg_2_0:
+        value = ir.Imm64(-2.0);
+        break;
+    case OperandField::ConstFloatNeg_4_0:
+        value = ir.Imm64(-4.0);
+        break;
+    case OperandField::VccLo:
+        if (force_flt) {
+            value = ir.BitCast<IR::F64>(IR::U64(ir.UConvert(64, ir.GetVccLo())));
+        } else {
+            value = ir.UConvert(64, ir.GetVccLo());
+        }
+        break;
+    case OperandField::VccHi:
+        if (force_flt) {
+            value = ir.BitCast<IR::F64>(IR::U64(ir.UConvert(64, ir.GetVccHi())));
+        } else {
+            value = ir.UConvert(64, ir.GetVccHi());
+        }
+        break;
+    default:
+        UNREACHABLE();
+    }
+
+    if (operand.input_modifier.abs) {
+        value = ir.FPAbs(value);
+    }
+    if (operand.input_modifier.neg) {
+        value = ir.FPNeg(value);
+    }
+    return value;
+}
+
+template <>
+IR::U64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
+    return GetSrc64<IR::U64F64>(operand, force_flt);
+}
+template <>
+IR::F64 Translator::GetSrc64(const InstOperand& operand, bool) {
+    return GetSrc64<IR::U64F64>(operand, true);
 }
 
 void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {

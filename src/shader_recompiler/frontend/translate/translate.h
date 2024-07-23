@@ -188,7 +188,10 @@ public:
     void EXP(const GcnInst& inst);
 
 private:
-    IR::U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
+    template <typename T = IR::U32F32>
+    [[nodiscard]] T GetSrc(const InstOperand& operand, bool flt_zero = false);
+    template <typename T = IR::U64F64>
+    [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
 
 private:
