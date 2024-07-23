@@ -77,20 +77,19 @@ void Translator::EmitPrologue() {
 
 template <>
 IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
-    // Input modifiers work on float values.
-    force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
-
     IR::U32F32 value{};
+
+    bool is_float = operand.type == ScalarType::Float32 || force_flt;
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (operand.type == ScalarType::Float32 || force_flt) {
+        if (is_float) {
             value = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
         } else {
             value = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
         }
         break;
     case OperandField::VectorGPR:
-        if (operand.type == ScalarType::Float32 || force_flt) {
+        if (is_float) {
             value = ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code));
         } else {
             value = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
@@ -164,11 +163,13 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         UNREACHABLE();
     }
 
-    if (operand.input_modifier.abs) {
-        value = ir.FPAbs(value);
-    }
-    if (operand.input_modifier.neg) {
-        value = ir.FPNeg(value);
+    if (is_float) {
+        if (operand.input_modifier.abs) {
+            value = ir.FPAbs(value);
+        }
+        if (operand.input_modifier.neg) {
+            value = ir.FPNeg(value);
+        }
     }
     return value;
 }
@@ -185,13 +186,12 @@ IR::F32 Translator::GetSrc(const InstOperand& operand, bool) {
 
 template <>
 IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
-    // Input modifiers work on float values.
-    force_flt |= operand.input_modifier.abs | operand.input_modifier.neg;
-
     IR::U64F64 value{};
+
+    bool is_float = operand.type == ScalarType::Float64 || force_flt;
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (operand.type == ScalarType::Float64 || force_flt) {
+        if (is_float) {
             value = ir.GetScalarReg<IR::F64>(IR::ScalarReg(operand.code));
         } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
             value = ir.GetScalarReg<IR::U64>(IR::ScalarReg(operand.code));
@@ -200,7 +200,7 @@ IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::VectorGPR:
-        if (operand.type == ScalarType::Float64 || force_flt) {
+        if (is_float) {
             value = ir.GetVectorReg<IR::F64>(IR::VectorReg(operand.code));
         } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
             value = ir.GetVectorReg<IR::U64>(IR::VectorReg(operand.code));
@@ -276,11 +276,13 @@ IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
         UNREACHABLE();
     }
 
-    if (operand.input_modifier.abs) {
-        value = ir.FPAbs(value);
-    }
-    if (operand.input_modifier.neg) {
-        value = ir.FPNeg(value);
+    if (is_float) {
+        if (operand.input_modifier.abs) {
+            value = ir.FPAbs(value);
+        }
+        if (operand.input_modifier.neg) {
+            value = ir.FPNeg(value);
+        }
     }
     return value;
 }
