@@ -243,6 +243,7 @@ U1 IREmitter::GetExec() {
 }
 
 U1 IREmitter::GetVcc() {
+    // FIXME Should it be a thread bit?
     return Inst<U1>(Opcode::GetVcc);
 }
 
