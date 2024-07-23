@@ -30,10 +30,7 @@ jobs:
 
     - name: Install MoltenVK
       run: |
-        curl -LO https://github.com/KhronosGroup/MoltenVK/releases/download/v1.2.10/MoltenVK-macos.tar
-        tar xf MoltenVK-macos.tar
-        sudo mkdir -p /usr/local/lib
-        sudo cp MoltenVK/MoltenVK/dylib/macOS/libMoltenVK.dylib /usr/local/lib/libMoltenVK.dylib
+        brew install molten-vk
 
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
