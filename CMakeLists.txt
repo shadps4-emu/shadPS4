@@ -308,6 +308,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
+         src/core/file_format/playgo_chunk.cpp
+         src/core/file_format/playgo_chunk.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
          src/core/file_format/splash.h
