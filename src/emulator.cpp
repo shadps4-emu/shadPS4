@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/logging/log.h>
+#include <core/file_format/playgo_chunk.h>
 #include <core/file_format/psf.h>
 #include <core/file_format/splash.h>
 #include <core/libraries/disc_map/disc_map.h>
@@ -79,6 +80,9 @@ void Emulator::Run(const std::filesystem::path& file) {
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
                 app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+            } else if (entry.path().filename() == "playgo-chunk.dat") {
+                auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
+                playgo->Open(sce_sys_folder.string() + "/playgo-chunk.dat");
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
