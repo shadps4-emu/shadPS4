@@ -225,4 +225,42 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
                                        directMemoryEndOut);
 }
 
+s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                   int* numEntriesOut) {
+    return sceKernelBatchMap2(entries, numEntries, numEntriesOut, 0x10); // 0x10 : Fixed / 0x410
+}
+
+s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                    int* numEntriesOut, int flags) {
+    int processed = 0;
+    int result = 0;
+    for (int i = 0; i < numEntries; i++) {
+        if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
+            result = ORBIS_KERNEL_ERROR_EINVAL;
+            break; // break and assign a value to numEntriesOut.
+        }
+
+        if (entries[i].operation == 0) { // MAP_DIRECT
+            result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
+                                                   entries[i].protection, flags,
+                                                   static_cast<s64>(entries[i].offset), 0, "");
+            LOG_INFO(
+                Kernel_Vmm,
+                "BatchMap: entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
+                "result = {}",
+                i, entries[i].operation, entries[i].length, entries[i].offset, (u8)entries[i].type,
+                result);
+
+            if (result == 0)
+                processed++;
+        } else {
+            LOG_ERROR(Kernel_Vmm, "called: Unimplemented Operation = {}", entries[i].operation);
+        }
+    }
+    if (numEntriesOut != NULL) { // can be zero. do not return an error code.
+        *numEntriesOut = processed;
+    }
+    return result;
+}
+
 } // namespace Libraries::Kernel
