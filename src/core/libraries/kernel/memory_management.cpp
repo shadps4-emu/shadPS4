@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include "common/assert.h"
 #include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -230,6 +231,8 @@ s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEnt
     return sceKernelBatchMap2(entries, numEntries, numEntriesOut, 0x10); // 0x10 : Fixed / 0x410
 }
 
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
+
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
                                     int* numEntriesOut, int flags) {
     int processed = 0;
@@ -253,8 +256,17 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
+        } else if (entries[i].operation == 1) {
+            result = sceKernelMunmap(entries[i].start, entries[i].length);
+            LOG_INFO(
+                Kernel_Vmm,
+                "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
+                i, entries[i].operation, entries[i].length, result);
+
+            if (result == 0)
+                processed++;
         } else {
-            LOG_ERROR(Kernel_Vmm, "called: Unimplemented Operation = {}", entries[i].operation);
+            UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }
     }
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.

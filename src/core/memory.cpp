@@ -55,7 +55,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
 
     // Add the allocated region to the list and commit its pages.
-    auto& area = AddDmemAllocation(free_addr, size);
+    auto& area = CarveDmemArea(free_addr, size);
     area.memory_type = memory_type;
     area.is_free = false;
     return free_addr;
@@ -131,7 +131,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     }
 
     // Add virtual memory area
-    const auto new_vma_handle = AddMapping(mapped_addr, size);
+    const auto new_vma_handle = CarveVMA(mapped_addr, size);
     auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = MemoryProt::NoAccess;
@@ -186,7 +186,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
     TRACK_ALLOC(*out_addr, size, "VMEM");
 
-    auto& new_vma = AddMapping(mapped_addr, size)->second;
+    auto& new_vma = CarveVMA(mapped_addr, size)->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = name;
@@ -238,7 +238,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
-    auto& new_vma = AddMapping(mapped_addr, size_aligned)->second;
+    auto& new_vma = CarveVMA(mapped_addr, size_aligned)->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = "File";
@@ -253,9 +253,9 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
     // TODO: Partial unmaps are technically supported by the guest.
-    const auto it = vma_map.find(virtual_addr);
-    ASSERT_MSG(it != vma_map.end() && it->first == virtual_addr,
-               "Attempting to unmap partially mapped range");
+    const auto it = FindVMA(virtual_addr);
+    ASSERT_MSG(it->second.Contains(virtual_addr, size),
+               "Existing mapping does not contain requested unmap range");
 
     const auto type = it->second.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
@@ -267,11 +267,12 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
-    auto& vma = it->second;
+    const auto new_it = CarveVMA(virtual_addr, size, true);
+    auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
-    MergeAdjacent(vma_map, it);
+    MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
     impl.Unmap(virtual_addr, size, has_backing);
@@ -374,12 +375,13 @@ std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     return std::make_pair(*it->second.buffer, addr - it->first);
 }
 
-MemoryManager::VMAHandle MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
+MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size,
+                                                   bool allow_mapped) {
     auto vma_handle = FindVMA(virtual_addr);
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
+    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved || allow_mapped) &&
                    vma.base <= virtual_addr,
                "Adding a mapping to already mapped region");
 
@@ -399,7 +401,7 @@ MemoryManager::VMAHandle MemoryManager::AddMapping(VAddr virtual_addr, size_t si
     return vma_handle;
 }
 
-DirectMemoryArea& MemoryManager::AddDmemAllocation(PAddr addr, size_t size) {
+DirectMemoryArea& MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
     auto dmem_handle = FindDmemArea(addr);
     ASSERT_MSG(dmem_handle != dmem_map.end(), "Physical address not in dmem_map");
 
