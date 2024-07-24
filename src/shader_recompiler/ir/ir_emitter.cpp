@@ -200,7 +200,7 @@ void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
 
 void IREmitter::SetVectorReg64(IR::VectorReg reg, const U64F64& value) {
     const U64 value_typed = value.Type() == Type::F64 ? BitCast<U64>(F64{value}) : U64{value};
-    Inst(Opcode::SetVectorRegister, reg, value);
+    Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
 
 U1 IREmitter::GetGotoVariable(u32 id) {
@@ -1196,8 +1196,9 @@ U32U64 IREmitter::ConvertFToS(size_t bitsize, const F32F64& value) {
             ThrowInvalidType(value.Type());
         }
     default:
-        UNREACHABLE_MSG("Invalid destination bitsize {}", bitsize);
+        break;
     }
+    throw NotImplementedException("Invalid destination bitsize {}", bitsize);
 }
 
 U32U64 IREmitter::ConvertFToU(size_t bitsize, const F32F64& value) {
@@ -1231,13 +1232,17 @@ F32F64 IREmitter::ConvertSToF(size_t dest_bitsize, size_t src_bitsize, const Val
         switch (src_bitsize) {
         case 32:
             return Inst<F32>(Opcode::ConvertF32S32, value);
+        default:
+            break;
         }
-        break;
     case 64:
         switch (src_bitsize) {
         case 32:
             return Inst<F64>(Opcode::ConvertF64S32, value);
+        default:
+            break;
         }
+    default:
         break;
     }
     UNREACHABLE_MSG("Invalid bit size combination dst={} src={}", dest_bitsize, src_bitsize);
@@ -1251,13 +1256,17 @@ F32F64 IREmitter::ConvertUToF(size_t dest_bitsize, size_t src_bitsize, const Val
             return Inst<F32>(Opcode::ConvertF32U16, value);
         case 32:
             return Inst<F32>(Opcode::ConvertF32U32, value);
+        default:
+            break;
         }
-        break;
     case 64:
         switch (src_bitsize) {
         case 32:
             return Inst<F64>(Opcode::ConvertF64U32, value);
+        default:
+            break;
         }
+    default:
         break;
     }
     UNREACHABLE_MSG("Invalid bit size combination dst={} src={}", dest_bitsize, src_bitsize);
@@ -1276,22 +1285,24 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         case Type::U32:
             return Inst<U16>(Opcode::ConvertU16U32, value);
         default:
-            ThrowInvalidType(value.Type());
+            break;
         }
     case 32:
         switch (value.Type()) {
         case Type::U64:
             return Inst<U32>(Opcode::ConvertU32U64, value);
         default:
-            ThrowInvalidType(value.Type());
+            break;
         }
     case 64:
         switch (value.Type()) {
         case Type::U32:
             return Inst<U64>(Opcode::ConvertU64U32, value);
         default:
-            ThrowInvalidType(value.Type());
+            break;
         }
+    default:
+        break;
     }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
@@ -1302,13 +1313,17 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
         switch (value.Type()) {
         case Type::F32:
             return Inst<F16>(Opcode::ConvertF16F32, value);
+        default:
+            break;
         }
-        break;
     case 32:
         switch (value.Type()) {
         case Type::F16:
             return Inst<F32>(Opcode::ConvertF32F16, value);
+        default:
+            break;
         }
+    default:
         break;
     }
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
