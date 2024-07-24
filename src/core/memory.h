@@ -92,6 +92,10 @@ struct VirtualMemoryArea {
         return addr >= base && (addr + size) < (base + this->size);
     }
 
+    bool IsMapped() const noexcept {
+        return type != VMAType::Free && type != VMAType::Reserved;
+    }
+
     bool CanMergeWith(const VirtualMemoryArea& next) const {
         if (disallow_merge || next.disallow_merge) {
             return false;
@@ -198,7 +202,7 @@ private:
         return iter;
     }
 
-    VirtualMemoryArea& AddMapping(VAddr virtual_addr, size_t size);
+    VMAHandle AddMapping(VAddr virtual_addr, size_t size);
 
     DirectMemoryArea& AddDmemAllocation(PAddr addr, size_t size);
 
