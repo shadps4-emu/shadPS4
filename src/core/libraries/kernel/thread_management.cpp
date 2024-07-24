@@ -1340,6 +1340,10 @@ int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
     return sem_post(sem);
 }
 
+int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
+    return sem_destroy(sem);
+}
+
 int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
     return sem_getvalue(sem, sval);
 }
@@ -1403,6 +1407,26 @@ int PS4_SYSV_ABI posix_pthread_condattr_setclock(ScePthreadCondattr* attr, clock
     return SCE_OK;
 }
 
+int PS4_SYSV_ABI posix_pthread_getschedparam(ScePthread thread, int* policy,
+                                             SceKernelSchedParam* param) {
+    return scePthreadGetschedparam(thread, policy, param);
+}
+
+int PS4_SYSV_ABI posix_pthread_setschedparam(ScePthread thread, int policy,
+                                             const SceKernelSchedParam* param) {
+    return scePthreadSetschedparam(thread, policy, param);
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_getschedpolicy(const ScePthreadAttr* attr, int* policy) {
+    return scePthreadAttrGetschedpolicy(attr, policy);
+}
+
+int PS4_SYSV_ABI scePthreadRename(ScePthread thread, const char* name) {
+    thread->name = name;
+    LOG_INFO(Kernel_Pthread, "scePthreadRename: name = {}", thread->name);
+    return SCE_OK;
+}
+
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
@@ -1427,6 +1451,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, scePthreadGetthreadid);
     LIB_FUNCTION("1tKyG7RlMJo", "libkernel", 1, "libkernel", 1, 1, scePthreadGetprio);
     LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, scePthreadSetprio);
+    LIB_FUNCTION("GBUY7ywdULE", "libkernel", 1, "libkernel", 1, 1, scePthreadRename);
 
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, scePthreadSelf);
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
@@ -1498,6 +1523,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EjllaAqAPZo", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_condattr_setclock);
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
+    LIB_FUNCTION("RtLRV-pBTTY", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_getschedpolicy);
 
     // openorbis weird functions
     LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
@@ -1512,9 +1539,12 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_detach);
     LIB_FUNCTION("CBNtXOoef-E", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libScePosix", 1, "libkernel", 1, 1, posix_sched_get_priority_min);
+    LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
+    LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
     LIB_FUNCTION("pDuPEf3m4fI", "libScePosix", 1, "libkernel", 1, 1, posix_sem_init);
     LIB_FUNCTION("YCV5dGGBcCo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_wait);
     LIB_FUNCTION("IKP8typ0QUk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_post);
+    LIB_FUNCTION("cDW233RAwWo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_destroy);
     LIB_FUNCTION("Bq+LRV-N6Hk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_getvalue);
     // libs
     RwlockSymbolsRegister(sym);
