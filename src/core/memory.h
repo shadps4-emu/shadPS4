@@ -202,8 +202,7 @@ private:
         return iter;
     }
 
-    VMAHandle CarveVMA(VAddr virtual_addr, size_t size,
-                         bool allow_mapped = false);
+    VMAHandle CarveVMA(VAddr virtual_addr, size_t size);
 
     DirectMemoryArea& CarveDmemArea(PAddr addr, size_t size);
 

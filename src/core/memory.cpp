@@ -252,7 +252,6 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
 void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    // TODO: Partial unmaps are technically supported by the guest.
     const auto it = FindVMA(virtual_addr);
     ASSERT_MSG(it->second.Contains(virtual_addr, size),
                "Existing mapping does not contain requested unmap range");
@@ -267,7 +266,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
-    const auto new_it = CarveVMA(virtual_addr, size, true);
+    const auto new_it = CarveVMA(virtual_addr, size);
     auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
@@ -375,14 +374,12 @@ std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     return std::make_pair(*it->second.buffer, addr - it->first);
 }
 
-MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size,
-                                                   bool allow_mapped) {
+MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {
     auto vma_handle = FindVMA(virtual_addr);
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved || allow_mapped) &&
-                   vma.base <= virtual_addr,
+    ASSERT_MSG(vma.base <= virtual_addr,
                "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;
