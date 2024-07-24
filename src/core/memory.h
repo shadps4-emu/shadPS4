@@ -92,6 +92,10 @@ struct VirtualMemoryArea {
         return addr >= base && (addr + size) < (base + this->size);
     }
 
+    bool IsFree() const noexcept {
+        return type == VMAType::Free;
+    }
+
     bool IsMapped() const noexcept {
         return type != VMAType::Free && type != VMAType::Reserved;
     }
@@ -201,6 +205,8 @@ private:
 
         return iter;
     }
+
+    VAddr SearchFree(VAddr virtual_addr, size_t size, u32 alignment = 0);
 
     VMAHandle CarveVMA(VAddr virtual_addr, size_t size);
 

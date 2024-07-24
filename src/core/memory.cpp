@@ -4,7 +4,6 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/debug.h"
-#include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
@@ -115,19 +114,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(mapped_addr);
-        // If the VMA is free and contains the requested mapping we are done.
-        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
-            mapped_addr = virtual_addr;
-        } else {
-            // Search for the first free VMA that fits our mapping.
-            while (it->second.type != VMAType::Free || it->second.size < size) {
-                it++;
-            }
-            ASSERT(it != vma_map.end());
-            const auto& vma = it->second;
-            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
-        }
+        mapped_addr = SearchFree(mapped_addr, size, alignment);
     }
 
     // Add virtual memory area
@@ -147,6 +134,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
     std::scoped_lock lk{mutex};
+
+    // Certain games perform flexible mappings on loop to determine
+    // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
         return SCE_KERNEL_ERROR_ENOMEM;
     }
@@ -167,19 +157,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(mapped_addr);
-        // If the VMA is free and contains the requested mapping we are done.
-        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
-            mapped_addr = virtual_addr;
-        } else {
-            // Search for the first free VMA that fits our mapping.
-            while (it->second.type != VMAType::Free || it->second.size < size) {
-                it++;
-            }
-            ASSERT(it != vma_map.end());
-            const auto& vma = it->second;
-            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
-        }
+        mapped_addr = SearchFree(mapped_addr, size, alignment);
     }
 
     // Perform the mapping.
@@ -205,33 +183,18 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                            MemoryMapFlags flags, uintptr_t fd, size_t offset) {
-    if (virtual_addr == 0) {
-        virtual_addr = impl.SystemManagedVirtualBase();
-    } else {
-        LOG_INFO(Kernel_Vmm, "Virtual addr {:#x} with size {:#x}", virtual_addr, size);
-    }
-
-    VAddr mapped_addr = 0;
+    VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(virtual_addr);
-        while (it->second.type != VMAType::Free || it->second.size < size_aligned) {
-            it++;
-        }
-        ASSERT(it != vma_map.end());
-
-        mapped_addr = it->second.base;
+        mapped_addr = SearchFree(mapped_addr, size_aligned);
     }
 
     if (True(flags & MemoryMapFlags::Fixed)) {
         const auto& vma = FindVMA(virtual_addr)->second;
         const size_t remaining_size = vma.base + vma.size - virtual_addr;
-        ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
-                   remaining_size >= size);
-
-        mapped_addr = virtual_addr;
+        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
     }
 
     // Map the file.
@@ -372,6 +335,20 @@ std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     it = std::prev(it);
     ASSERT(it != mapped_memories.end() && it->first <= addr);
     return std::make_pair(*it->second.buffer, addr - it->first);
+}
+
+VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
+    auto it = FindVMA(virtual_addr);
+    // If the VMA is free and contains the requested mapping we are done.
+    if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
+        return virtual_addr;
+    }
+    // Search for the first free VMA that fits our mapping.
+    while (!it->second.IsFree() || it->second.size < size) {
+        it++;
+    }
+    const auto& vma = it->second;
+    return alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
 }
 
 MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {
