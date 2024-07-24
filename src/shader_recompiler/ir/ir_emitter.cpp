@@ -145,7 +145,7 @@ void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
 
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
-    return Inst<U32>(Opcode::GetScalarRegister, reg);
+    return Inst<U32>(Opcode::GetScalarRegister, reg, Imm32(32));
 }
 
 template <>
@@ -155,7 +155,7 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 
 template <>
 U64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
-    return Inst<U64>(Opcode::GetScalarRegister, reg);
+    return Inst<U64>(Opcode::GetScalarRegister, reg, Imm32(64));
 }
 
 template <>
@@ -165,7 +165,7 @@ F64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 
 template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
-    return Inst<U32>(Opcode::GetVectorRegister, reg);
+    return Inst<U32>(Opcode::GetVectorRegister, reg, Imm32(32));
 }
 
 template <>
@@ -175,7 +175,7 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 
 template <>
 U64 IREmitter::GetVectorReg(IR::VectorReg reg) {
-    return Inst<U64>(Opcode::GetVectorRegister, reg);
+    return Inst<U64>(Opcode::GetVectorRegister, reg, Imm32(64));
 }
 
 template <>
@@ -1275,6 +1275,13 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         switch (value.Type()) {
         case Type::U32:
             return Inst<U16>(Opcode::ConvertU16U32, value);
+        default:
+            ThrowInvalidType(value.Type());
+        }
+    case 32:
+        switch (value.Type()) {
+        case Type::U64:
+            return Inst<U32>(Opcode::ConvertU32U64, value);
         default:
             ThrowInvalidType(value.Type());
         }

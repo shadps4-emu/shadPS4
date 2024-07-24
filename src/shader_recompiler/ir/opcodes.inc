@@ -43,9 +43,9 @@ OPCODE(WriteSharedU128,                                     Void,           U32,
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
 OPCODE(GetThreadBitScalarReg,                               U1,             ScalarReg,                                                                      )
 OPCODE(SetThreadBitScalarReg,                               Void,           ScalarReg,      U1,                                                             )
-OPCODE(GetScalarRegister,                                   U32,            ScalarReg,                                                                      )
+OPCODE(GetScalarRegister,                                   U32,            ScalarReg,      U32,                                                            )
 OPCODE(SetScalarRegister,                                   Void,           ScalarReg,      U32,                                                            )
-OPCODE(GetVectorRegister,                                   U32,            VectorReg,                                                                      )
+OPCODE(GetVectorRegister,                                   U32,            VectorReg,      U32,                                                            )
 OPCODE(SetVectorRegister,                                   Void,           VectorReg,      U32,                                                            )
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
 OPCODE(SetGotoVariable,                                     Void,           U32,            U1,                                                             )
@@ -291,6 +291,7 @@ OPCODE(ConvertF64U32,                                       F64,            U32,
 OPCODE(ConvertF32U16,                                       F32,            U16,                                                                            )
 OPCODE(ConvertU16U32,                                       U16,            U32,                                                                            )
 OPCODE(ConvertU64U32,                                       U64,            U32,                                                                            )
+OPCODE(ConvertU32U64,                                       U32,            U64,                                                                            )
 OPCODE(ConvertU64F32,                                       U64,            F32,                                                                            )
 
 // Image operations

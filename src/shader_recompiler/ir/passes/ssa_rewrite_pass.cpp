@@ -310,7 +310,8 @@ private:
     DefTable current_def;
 };
 
-void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
+void VisitInst(Pass& pass, IR::Block* block, const IR::Block::iterator& iter) {
+    auto& inst{*iter};
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
     case IR::Opcode::SetThreadBitScalarReg:
@@ -348,13 +349,37 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        inst.ReplaceUsesWith(
-            pass.ReadVariable(reg, block, opcode == IR::Opcode::GetThreadBitScalarReg));
+        bool thread_bit = opcode == IR::Opcode::GetThreadBitScalarReg;
+        IR::Value value = pass.ReadVariable(reg, block, thread_bit);
+
+        if (!thread_bit) {
+            size_t bit_size{inst.Arg(1).U32()};
+            if (bit_size == 32 && value.Type() == IR::Type::U64) {
+                auto it{block->PrependNewInst(iter, IR::Opcode::ConvertU32U64, {value})};
+                value = IR::U32{IR::Value{&*it}};
+            } else if (bit_size == 64 && value.Type() == IR::Type::U32) {
+                auto it{block->PrependNewInst(iter, IR::Opcode::ConvertU64U32, {value})};
+                value = IR::U64{IR::Value{&*it}};
+            }
+        }
+
+        inst.ReplaceUsesWith(value);
         break;
     }
     case IR::Opcode::GetVectorRegister: {
         const IR::VectorReg reg{inst.Arg(0).VectorReg()};
-        inst.ReplaceUsesWith(pass.ReadVariable(reg, block));
+        IR::Value value = pass.ReadVariable(reg, block);
+
+        size_t bit_size{inst.Arg(1).U32()};
+        if (bit_size == 32 && value.Type() == IR::Type::U64) {
+            auto it{block->PrependNewInst(iter, IR::Opcode::ConvertU32U64, {value})};
+            value = IR::U32{IR::Value{&*it}};
+        } else if (bit_size == 64 && value.Type() == IR::Type::U32) {
+            auto it{block->PrependNewInst(iter, IR::Opcode::ConvertU64U32, {value})};
+            value = IR::U64{IR::Value{&*it}};
+        }
+
+        inst.ReplaceUsesWith(value);
         break;
     }
     case IR::Opcode::GetGotoVariable:
@@ -384,8 +409,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
 }
 
 void VisitBlock(Pass& pass, IR::Block* block) {
-    for (IR::Inst& inst : block->Instructions()) {
-        VisitInst(pass, block, inst);
+    const auto end{block->end()};
+    for (auto iter = block->begin(); iter != end; ++iter) {
+        VisitInst(pass, block, iter);
     }
     pass.SealBlock(block);
 }
