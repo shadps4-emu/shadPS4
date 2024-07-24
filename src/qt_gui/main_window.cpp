@@ -483,12 +483,12 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else if (pkgD < appD) {
-                    QMessageBox::information(this, "PKG Extraction",
-                                             QString("Patch detected!\nPKG Version %1 is older "
-                                                     "than installed version!: %2\nWould you like "
-                                                     "to overwrite?")
-                                                 .arg(pkg_app_version, game_app_version));
-                    return;
+                    msgBox.setText(QString("Patch detected!\nPKG Version %1 is older "
+                                           "than installed version!: %2\nWould you like "
+                                           "to overwrite?")
+                                       .arg(pkg_app_version, game_app_version));
+                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setDefaultButton(QMessageBox::No);
                 } else {
                     msgBox.setText(QString("Patch detected!\nGame is installed: %1\nWould you like "
                                            "to install Patch: %2?")
