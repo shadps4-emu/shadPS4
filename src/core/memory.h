@@ -89,7 +89,7 @@ struct VirtualMemoryArea {
     uintptr_t fd = 0;
 
     bool Contains(VAddr addr, size_t size) const {
-        return addr >= base && (addr + size) < (base + this->size);
+        return addr >= base && (addr + size) <= (base + this->size);
     }
 
     bool IsFree() const noexcept {
