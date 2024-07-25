@@ -6,7 +6,7 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5376_MB; // ~ 6GB
+constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 6_GB; // ~ 6GB
 
 namespace Libraries::Kernel {
 
@@ -53,6 +53,16 @@ struct OrbisVirtualQueryInfo {
     std::array<char, 32> name;
 };
 
+struct OrbisKernelBatchMapEntry {
+    void* start;
+    off_t offset;
+    size_t length;
+    char protection;
+    char type;
+    short reserved;
+    int operation;
+};
+
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut);
@@ -84,5 +94,10 @@ void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func);
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,
                                               void** directMemoryStartOut,
                                               void** directMemoryEndOut);
+
+s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                   int* numEntriesOut);
+s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                    int* numEntriesOut, int flags);
 
 } // namespace Libraries::Kernel

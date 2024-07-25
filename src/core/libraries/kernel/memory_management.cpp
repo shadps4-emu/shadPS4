@@ -3,6 +3,7 @@
 
 #include <bit>
 #include "common/alignment.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
@@ -223,6 +224,53 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
     auto* memory = Core::Memory::Instance();
     return memory->GetDirectMemoryType(addr, directMemoryTypeOut, directMemoryStartOut,
                                        directMemoryEndOut);
+}
+
+s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                   int* numEntriesOut) {
+    return sceKernelBatchMap2(entries, numEntries, numEntriesOut, 0x10); // 0x10 : Fixed / 0x410
+}
+
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
+
+s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                    int* numEntriesOut, int flags) {
+    int processed = 0;
+    int result = 0;
+    for (int i = 0; i < numEntries; i++) {
+        if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
+            result = ORBIS_KERNEL_ERROR_EINVAL;
+            break; // break and assign a value to numEntriesOut.
+        }
+
+        if (entries[i].operation == 0) { // MAP_DIRECT
+            result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
+                                                   entries[i].protection, flags,
+                                                   static_cast<s64>(entries[i].offset), 0, "");
+            LOG_INFO(
+                Kernel_Vmm,
+                "BatchMap: entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
+                "result = {}",
+                i, entries[i].operation, entries[i].length, entries[i].offset, (u8)entries[i].type,
+                result);
+
+            if (result == 0)
+                processed++;
+        } else if (entries[i].operation == 1) {
+            result = sceKernelMunmap(entries[i].start, entries[i].length);
+            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
+                     i, entries[i].operation, entries[i].length, result);
+
+            if (result == 0)
+                processed++;
+        } else {
+            UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
+        }
+    }
+    if (numEntriesOut != NULL) { // can be zero. do not return an error code.
+        *numEntriesOut = processed;
+    }
+    return result;
 }
 
 } // namespace Libraries::Kernel
