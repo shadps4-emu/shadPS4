@@ -193,6 +193,7 @@ private:
     template <typename T = IR::U64F64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
+    void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
 private:
     IR::IREmitter ir;

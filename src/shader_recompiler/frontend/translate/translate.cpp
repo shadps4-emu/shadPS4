@@ -186,105 +186,126 @@ IR::F32 Translator::GetSrc(const InstOperand& operand, bool) {
 
 template <>
 IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
-    IR::U64F64 value{};
+    IR::Value value_hi{};
+    IR::Value value_lo{};
 
+    bool immediate = false;
     bool is_float = operand.type == ScalarType::Float64 || force_flt;
     switch (operand.field) {
     case OperandField::ScalarGPR:
         if (is_float) {
-            value = ir.GetScalarReg<IR::F64>(IR::ScalarReg(operand.code));
+            value_lo = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
+            value_hi = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code + 1));
         } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
-            value = ir.GetScalarReg<IR::U64>(IR::ScalarReg(operand.code));
+            value_lo = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
+            value_hi = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code + 1));
         } else {
             UNREACHABLE();
         }
         break;
     case OperandField::VectorGPR:
         if (is_float) {
-            value = ir.GetVectorReg<IR::F64>(IR::VectorReg(operand.code));
+            value_lo = ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code));
+            value_hi = ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code + 1));
         } else if (operand.type == ScalarType::Uint64 || operand.type == ScalarType::Sint64) {
-            value = ir.GetVectorReg<IR::U64>(IR::VectorReg(operand.code));
+            value_lo = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
+            value_hi = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code + 1));
         } else {
             UNREACHABLE();
         }
         break;
     case OperandField::ConstZero:
+        immediate = true;
         if (force_flt) {
-            value = ir.Imm64(0.0);
+            value_lo = ir.Imm64(0.0);
         } else {
-            value = ir.Imm64(u64(0U));
+            value_lo = ir.Imm64(u64(0U));
         }
         break;
     case OperandField::SignedConstIntPos:
         ASSERT(!force_flt);
-        value = ir.Imm64(s64(operand.code) - SignedConstIntPosMin + 1);
+        immediate = true;
+        value_lo = ir.Imm64(s64(operand.code) - SignedConstIntPosMin + 1);
         break;
     case OperandField::SignedConstIntNeg:
         ASSERT(!force_flt);
-        value = ir.Imm64(-s64(operand.code) + SignedConstIntNegMin - 1);
+        immediate = true;
+        value_lo = ir.Imm64(-s64(operand.code) + SignedConstIntNegMin - 1);
         break;
     case OperandField::LiteralConst:
+        immediate = true;
         if (force_flt) {
             UNREACHABLE(); // There is a literal double?
         } else {
-            value = ir.Imm64(u64(operand.code));
+            value_lo = ir.Imm64(u64(operand.code));
         }
         break;
     case OperandField::ConstFloatPos_1_0:
+        immediate = true;
         if (force_flt) {
-            value = ir.Imm64(1.0);
+            value_lo = ir.Imm64(1.0);
         } else {
-            value = ir.Imm64(std::bit_cast<u64>(double(1.0)));
+            value_lo = ir.Imm64(std::bit_cast<u64>(f64(1.0)));
         }
         break;
     case OperandField::ConstFloatPos_0_5:
-        value = ir.Imm64(0.5);
+        immediate = true;
+        value_lo = ir.Imm64(0.5);
         break;
     case OperandField::ConstFloatPos_2_0:
-        value = ir.Imm64(2.0);
+        immediate = true;
+        value_lo = ir.Imm64(2.0);
         break;
     case OperandField::ConstFloatPos_4_0:
-        value = ir.Imm64(4.0);
+        immediate = true;
+        value_lo = ir.Imm64(4.0);
         break;
     case OperandField::ConstFloatNeg_0_5:
-        value = ir.Imm64(-0.5);
+        immediate = true;
+        value_lo = ir.Imm64(-0.5);
         break;
     case OperandField::ConstFloatNeg_1_0:
-        value = ir.Imm64(-1.0);
+        immediate = true;
+        value_lo = ir.Imm64(-1.0);
         break;
     case OperandField::ConstFloatNeg_2_0:
-        value = ir.Imm64(-2.0);
+        immediate = true;
+        value_lo = ir.Imm64(-2.0);
         break;
     case OperandField::ConstFloatNeg_4_0:
-        value = ir.Imm64(-4.0);
+        immediate = true;
+        value_lo = ir.Imm64(-4.0);
         break;
-    case OperandField::VccLo:
-        if (force_flt) {
-            value = ir.BitCast<IR::F64>(IR::U64(ir.UConvert(64, ir.GetVccLo())));
-        } else {
-            value = ir.UConvert(64, ir.GetVccLo());
-        }
-        break;
+    case OperandField::VccLo: {
+        value_lo = ir.GetVccLo();
+        value_hi = ir.GetVccHi();
+    } break;
     case OperandField::VccHi:
-        if (force_flt) {
-            value = ir.BitCast<IR::F64>(IR::U64(ir.UConvert(64, ir.GetVccHi())));
-        } else {
-            value = ir.UConvert(64, ir.GetVccHi());
-        }
-        break;
+        UNREACHABLE();
     default:
         UNREACHABLE();
     }
 
+    IR::Value value;
+
+    if (immediate) {
+        value = value_lo;
+    } else if (is_float) {
+        throw NotImplementedException("required OpPackDouble2x32 implementation");
+    } else {
+        IR::Value packed = ir.CompositeConstruct(value_lo, value_hi);
+        value = ir.PackUint2x32(packed);
+    }
+
     if (is_float) {
         if (operand.input_modifier.abs) {
-            value = ir.FPAbs(value);
+            value = ir.FPAbs(IR::F32F64(value));
         }
         if (operand.input_modifier.neg) {
-            value = ir.FPNeg(value);
+            value = ir.FPNeg(IR::F32F64(value));
         }
     }
-    return value;
+    return IR::U64F64(value);
 }
 
 template <>
@@ -313,6 +334,42 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
         return ir.SetVccLo(result);
     case OperandField::VccHi:
         return ir.SetVccHi(result);
+    case OperandField::M0:
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
+void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_raw) {
+    IR::U64F64 value_untyped = value_raw;
+
+    bool is_float = value_raw.Type() == IR::Type::F64 || value_raw.Type() == IR::Type::F32;
+    if (is_float) {
+        if (operand.output_modifier.multiplier != 0.f) {
+            value_untyped =
+                ir.FPMul(value_untyped, ir.Imm64(f64(operand.output_modifier.multiplier)));
+        }
+        if (operand.output_modifier.clamp) {
+            value_untyped = ir.FPSaturate(value_raw);
+        }
+    }
+    IR::U64 value = is_float ? ir.BitCast<IR::U64>(IR::F64{value_untyped}) : IR::U64{value_untyped};
+
+    IR::Value unpacked{ir.UnpackUint2x32(value)};
+    IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+    IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+    switch (operand.field) {
+    case OperandField::ScalarGPR:
+        ir.SetScalarReg(IR::ScalarReg(operand.code + 1), hi);
+        return ir.SetScalarReg(IR::ScalarReg(operand.code), lo);
+    case OperandField::VectorGPR:
+        ir.SetVectorReg(IR::VectorReg(operand.code + 1), hi);
+        return ir.SetVectorReg(IR::VectorReg(operand.code), lo);
+    case OperandField::VccLo:
+        UNREACHABLE();
+    case OperandField::VccHi:
+        UNREACHABLE();
     case OperandField::M0:
         break;
     default:

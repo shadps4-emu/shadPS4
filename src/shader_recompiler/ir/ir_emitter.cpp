@@ -145,7 +145,7 @@ void IREmitter::SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value) {
 
 template <>
 U32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
-    return Inst<U32>(Opcode::GetScalarRegister, reg, Imm32(32));
+    return Inst<U32>(Opcode::GetScalarRegister, reg);
 }
 
 template <>
@@ -154,18 +154,8 @@ F32 IREmitter::GetScalarReg(IR::ScalarReg reg) {
 }
 
 template <>
-U64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
-    return Inst<U64>(Opcode::GetScalarRegister, reg, Imm32(64));
-}
-
-template <>
-F64 IREmitter::GetScalarReg(IR::ScalarReg reg) {
-    return BitCast<F64>(GetScalarReg<U64>(reg));
-}
-
-template <>
 U32 IREmitter::GetVectorReg(IR::VectorReg reg) {
-    return Inst<U32>(Opcode::GetVectorRegister, reg, Imm32(32));
+    return Inst<U32>(Opcode::GetVectorRegister, reg);
 }
 
 template <>
@@ -173,33 +163,13 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
     return BitCast<F32>(GetVectorReg<U32>(reg));
 }
 
-template <>
-U64 IREmitter::GetVectorReg(IR::VectorReg reg) {
-    return Inst<U64>(Opcode::GetVectorRegister, reg, Imm32(64));
-}
-
-template <>
-F64 IREmitter::GetVectorReg(IR::VectorReg reg) {
-    return BitCast<F64>(GetVectorReg<U64>(reg));
-}
-
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
-void IREmitter::SetScalarReg64(IR::ScalarReg reg, const U64F64& value) {
-    const U64 value_typed = value.Type() == Type::F64 ? BitCast<U64>(F64{value}) : U64{value};
-    Inst(Opcode::SetScalarRegister, reg, value_typed);
-}
-
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
-    Inst(Opcode::SetVectorRegister, reg, value_typed);
-}
-
-void IREmitter::SetVectorReg64(IR::VectorReg reg, const U64F64& value) {
-    const U64 value_typed = value.Type() == Type::F64 ? BitCast<U64>(F64{value}) : U64{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
 
@@ -243,7 +213,6 @@ U1 IREmitter::GetExec() {
 }
 
 U1 IREmitter::GetVcc() {
-    // FIXME Should it be a thread bit?
     return Inst<U1>(Opcode::GetVcc);
 }
 
@@ -1065,8 +1034,18 @@ U32 IREmitter::BitwiseAnd(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::BitwiseAnd32, a, b);
 }
 
-U32 IREmitter::BitwiseOr(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::BitwiseOr32, a, b);
+U32U64 IREmitter::BitwiseOr(const U32U64& a, const U32U64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::BitwiseOr32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::BitwiseOr64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
 }
 
 U32 IREmitter::BitwiseXor(const U32& a, const U32& b) {

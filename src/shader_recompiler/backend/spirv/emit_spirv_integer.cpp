@@ -146,6 +146,13 @@ Id EmitBitwiseOr32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return result;
 }
 
+Id EmitBitwiseOr64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    const Id result{ctx.OpBitwiseOr(ctx.U64, a, b)};
+    SetZeroFlag(ctx, inst, result);
+    SetSignFlag(ctx, inst, result);
+    return result;
+}
+
 Id EmitBitwiseXor32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     const Id result{ctx.OpBitwiseXor(ctx.U32[1], a, b)};
     SetZeroFlag(ctx, inst, result);

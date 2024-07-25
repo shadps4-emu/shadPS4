@@ -57,9 +57,7 @@ public:
     template <typename T = U32>
     [[nodiscard]] T GetVectorReg(IR::VectorReg reg);
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
-    void SetScalarReg64(IR::ScalarReg reg, const U64F64& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
-    void SetVectorReg64(IR::VectorReg reg, const U64F64& value);
 
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
@@ -169,7 +167,7 @@ public:
     [[nodiscard]] U32U64 ShiftRightLogical(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
     [[nodiscard]] U32 BitwiseAnd(const U32& a, const U32& b);
-    [[nodiscard]] U32 BitwiseOr(const U32& a, const U32& b);
+    [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
     [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
                                      const U32& count);
