@@ -234,6 +234,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
+    vma.disallow_merge = false;
     MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
@@ -344,11 +345,23 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
         return virtual_addr;
     }
     // Search for the first free VMA that fits our mapping.
-    while (!it->second.IsFree() || it->second.size < size) {
+    const auto is_suitable = [&] {
+        if (!it->second.IsFree()) {
+            return false;
+        }
+        const auto& vma = it->second;
+        virtual_addr = Common::AlignUp(vma.base, alignment);
+        // Sometimes the alignment itself might be larger than the VMA.
+        if (virtual_addr > vma.base + vma.size) {
+            return false;
+        }
+        const size_t remaining_size = vma.base + vma.size - virtual_addr;
+        return remaining_size >= size;
+    };
+    while (!is_suitable()) {
         it++;
     }
-    const auto& vma = it->second;
-    return alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
+    return virtual_addr;
 }
 
 MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {

@@ -1364,6 +1364,11 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
     UNREACHABLE();
 }
 
+[[noreturn]] void PS4_SYSV_ABI posix_pthread_exit(void* value_ptr) {
+    pthread_exit(value_ptr);
+    UNREACHABLE();
+}
+
 int PS4_SYSV_ABI scePthreadGetthreadid() {
     return (int)(size_t)g_pthread_self;
 }
@@ -1415,6 +1420,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4qGrR6eoP9Y", "libkernel", 1, "libkernel", 1, 1, scePthreadDetach);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, scePthreadEqual);
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, scePthreadExit);
+    LIB_FUNCTION("FJrT5LuUBAU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_equal);
     LIB_FUNCTION("h9CcP3J0oVM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_join);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, scePthreadGetthreadid);

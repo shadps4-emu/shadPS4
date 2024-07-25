@@ -8,8 +8,6 @@
 #include "playgo.h"
 
 namespace Libraries::PlayGo {
-// this lib is used to play as the game is being installed.
-// can be skipped by just returning and assigning the correct values.
 
 s32 PS4_SYSV_ABI sceDbgPlayGoRequestNextChunk() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
