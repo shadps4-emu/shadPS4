@@ -97,19 +97,23 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
 
-    IR::U1 scarry;
+    IR::U32 scarry;
     if (inst.src_count == 3) { // VOP3
-        scarry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
+        IR::U1 thread_bit{ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code))};
+        scarry = IR::U32{ir.Select(thread_bit, ir.Imm32(1), ir.Imm32(0))};
     } else { // VOP2
-        scarry = ir.GetVcc();
+        scarry = ir.GetVccLo();
     }
 
-    const IR::U32 carry_v{ir.Select(scarry, ir.Imm32(1), ir.Imm32(0))};
-    IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), carry_v);
+    IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, result);
-    ir.SetVcc(ir.IGreaterThan(result, ir.Imm32(0xFFFFFFFF), false));
+
+    IR::U1 less_src0 = ir.ILessThan(result, src0, false);
+    IR::U1 less_src1 = ir.ILessThan(result, src1, false);
+    IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
+    ir.SetVcc(did_overflow);
 }
 
 void Translator::V_CVT_F32_I32(const GcnInst& inst) {
