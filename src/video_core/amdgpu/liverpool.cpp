@@ -8,8 +8,8 @@
 #include "core/libraries/videoout/driver.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
-#include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderdoc.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace AmdGpu {
 
@@ -34,7 +34,8 @@ void Liverpool::Process(std::stop_token stoken) {
     while (!stoken.stop_requested()) {
         {
             std::unique_lock lk{submit_mutex};
-            Common::CondvarWait(submit_cv, lk, stoken, [this] { return num_submits != 0 || submit_done; });
+            Common::CondvarWait(submit_cv, lk, stoken,
+                                [this] { return num_submits != 0 || submit_done; });
         }
         if (stoken.stop_requested()) {
             break;
