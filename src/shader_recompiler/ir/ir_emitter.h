@@ -188,7 +188,7 @@ public:
     [[nodiscard]] U32 SClamp(const U32& value, const U32& min, const U32& max);
     [[nodiscard]] U32 UClamp(const U32& value, const U32& min, const U32& max);
 
-    [[nodiscard]] U1 ILessThan(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
     [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
     [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);

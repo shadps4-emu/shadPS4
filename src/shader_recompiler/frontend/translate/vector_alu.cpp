@@ -325,11 +325,15 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
     const auto src2 = GetSrc64<IR::U64>(inst.src[2]);
 
-    IR::U64 result;
-    result = ir.IMul(src0, src1);
-    result = ir.IAdd(ir.UConvert(64, result), src2);
+    IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
+    IR::U64 sum_result = ir.IAdd(mul_result, src2);
 
-    SetDst64(inst.dst[0], result);
+    SetDst64(inst.dst[0], sum_result);
+
+    IR::U1 less_src0 = ir.ILessThan(sum_result, mul_result, false);
+    IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
+    IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
+    ir.SetVcc(did_overflow);
 }
 
 void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {

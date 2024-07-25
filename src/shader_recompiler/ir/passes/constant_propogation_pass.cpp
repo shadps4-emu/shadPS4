@@ -281,11 +281,17 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldLogicalOr(inst);
     case IR::Opcode::LogicalNot:
         return FoldLogicalNot(inst);
-    case IR::Opcode::SLessThan:
+    case IR::Opcode::SLessThan32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a < b; });
         return;
-    case IR::Opcode::ULessThan:
+    case IR::Opcode::SLessThan64:
+        FoldWhenAllImmediates(inst, [](s64 a, s64 b) { return a < b; });
+        return;
+    case IR::Opcode::ULessThan32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a < b; });
+        return;
+    case IR::Opcode::ULessThan64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a < b; });
         return;
     case IR::Opcode::SLessThanEqual:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a <= b; });

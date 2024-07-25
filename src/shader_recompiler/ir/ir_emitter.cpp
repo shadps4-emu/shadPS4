@@ -1115,8 +1115,18 @@ U32 IREmitter::UClamp(const U32& value, const U32& min, const U32& max) {
     return Inst<U32>(Opcode::UClamp32, value, min, max);
 }
 
-U1 IREmitter::ILessThan(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SLessThan : Opcode::ULessThan, lhs, rhs);
+U1 IREmitter::ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SLessThan32 : Opcode::ULessThan32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SLessThan64 : Opcode::ULessThan64, lhs, rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
 U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
