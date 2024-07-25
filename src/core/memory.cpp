@@ -369,8 +369,7 @@ MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG(vma.base <= virtual_addr,
-               "Adding a mapping to already mapped region");
+    ASSERT_MSG(vma.base <= virtual_addr, "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;
     const VAddr end_in_vma = start_in_vma + size;

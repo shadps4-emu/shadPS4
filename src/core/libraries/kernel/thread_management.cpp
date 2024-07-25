@@ -793,7 +793,8 @@ int PS4_SYSV_ABI posix_pthread_cond_wait(ScePthreadCond* cond, ScePthreadMutex* 
     return result;
 }
 
-int PS4_SYSV_ABI posix_pthread_cond_timedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec) {
+int PS4_SYSV_ABI posix_pthread_cond_timedwait(ScePthreadCond* cond, ScePthreadMutex* mutex,
+                                              u64 usec) {
     int result = scePthreadCondTimedwait(cond, mutex, usec);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
