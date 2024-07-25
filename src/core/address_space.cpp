@@ -59,11 +59,11 @@ struct AddressSpace::Impl {
         static constexpr size_t MaxReductions = 10;
 
         size_t reduction = 0;
+        size_t virtual_size = SystemManagedSize + SystemReservedSize + UserSize;
         for (u32 i = 0; i < MaxReductions; i++) {
-            req.LowestStartingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN + reduction);
-            virtual_base = static_cast<u8*>(VirtualAlloc2(
-                process, NULL, SystemManagedSize + SystemReservedSize + UserSize - reduction,
-                MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &param, 1));
+            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size - reduction,
+                                                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
+                                                          PAGE_NOACCESS, &param, 1));
             if (virtual_base) {
                 break;
             }
@@ -92,9 +92,7 @@ struct AddressSpace::Impl {
         const uintptr_t system_managed_addr = reinterpret_cast<uintptr_t>(system_managed_base);
         const uintptr_t system_reserved_addr = reinterpret_cast<uintptr_t>(system_reserved_base);
         const uintptr_t user_addr = reinterpret_cast<uintptr_t>(user_base);
-        placeholders.insert({system_managed_addr, system_managed_addr + system_managed_size});
-        placeholders.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
-        placeholders.insert({user_addr, user_addr + user_size});
+        placeholders.insert({system_managed_addr, virtual_size - reduction});
 
         // Allocate backing file that represents the total physical memory.
         backing_handle =
