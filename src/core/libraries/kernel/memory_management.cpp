@@ -228,7 +228,8 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
 
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
                                    int* numEntriesOut) {
-    return sceKernelBatchMap2(entries, numEntries, numEntriesOut, 0x10); // 0x10 : Fixed / 0x410
+    return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
+                              MemoryFlags::SCE_KERNEL_MAP_FIXED); // 0x10, 0x410?
 }
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
@@ -243,7 +244,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break; // break and assign a value to numEntriesOut.
         }
 
-        if (entries[i].operation == 0) { // MAP_DIRECT
+        if (entries[i].operation == MemoryOpTypes::SCE_KERNEL_MAP_OP_MAP_DIRECT) {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
                                                    static_cast<s64>(entries[i].offset), 0, "");

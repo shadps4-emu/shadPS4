@@ -95,7 +95,8 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
-    std::string game_title = id + " - " + title + " <" + app_version + ">";
+    std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
+
     window =
         std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, game_title);
 

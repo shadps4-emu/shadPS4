@@ -19,14 +19,14 @@
 namespace Frontend {
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
-                     std::string game_title_)
-    : width{width_}, height{height_}, controller{controller_}, game_title{game_title_} {
+                     std::string_view game_title)
+    : width{width_}, height{height_}, controller{controller_}{
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
-    const std::string title = "shadPS4 v" + std::string(Common::VERSION) + " | " + game_title;
+    const std::string title = fmt::format("shadPS4 v{} | {}", Common::VERSION, game_title);
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, title.c_str());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
