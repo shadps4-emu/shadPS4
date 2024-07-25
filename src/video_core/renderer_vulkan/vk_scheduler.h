@@ -94,16 +94,12 @@ public:
         return &master_semaphore;
     }
 
-<<<<<<< HEAD
     /// Defers an operation until the gpu has reached the current cpu tick.
     void DeferOperation(auto&& func) {
         pending_ops.emplace(func, CurrentTick());
     }
 
-    std::mutex submit_mutex;
-=======
     static std::mutex submit_mutex;
->>>>>>> 06b0f04 (liverpool: Better sync for CPU flips)
 
 private:
     void AllocateWorkerCommandBuffers();
