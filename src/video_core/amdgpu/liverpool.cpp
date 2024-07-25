@@ -9,6 +9,7 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/renderdoc.h"
 
 namespace AmdGpu {
 
@@ -49,11 +50,9 @@ void Liverpool::Process(std::stop_token stoken) {
             Task::Handle task{};
             {
                 std::scoped_lock lock{queue.m_access};
-
                 if (queue.submits.empty()) {
                     continue;
                 }
-
                 task = queue.submits.front();
             }
             task.resume();
@@ -530,7 +529,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
 
     auto task = ProcessGraphics(dcb, ccb);
     {
-        std::unique_lock lock{queue.m_access};
+        std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
     }
 
@@ -545,7 +544,7 @@ void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
 
     const auto& task = ProcessCompute(acb, vqid);
     {
-        std::unique_lock lock{queue.m_access};
+        std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
     }
 

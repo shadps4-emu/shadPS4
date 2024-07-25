@@ -202,13 +202,6 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
-    std::scoped_lock lock{mutex};
-
-    if (!is_eop) {
-        liverpool->SubmitDone();
-        liverpool->WaitGpuIdle();
-    }
-
     Vulkan::Frame* frame;
     if (index == -1) {
         frame = renderer->PrepareBlankFrame();
@@ -223,6 +216,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         return false;
     }
 
+    std::scoped_lock lock{mutex};
     requests.push({
         .frame = frame,
         .port = port,
@@ -239,8 +233,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::microseconds VblankPeriod{16683};
-    Common::SetCurrentThreadName("VblankThread");
+    static constexpr std::chrono::milliseconds VblankPeriod{16};
+    Common::SetCurrentThreadName("PresentThread");
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
