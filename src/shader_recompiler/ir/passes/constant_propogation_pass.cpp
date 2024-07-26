@@ -21,6 +21,8 @@ template <typename T>
         return value.F32();
     } else if constexpr (std::is_same_v<T, u64>) {
         return value.U64();
+    } else if constexpr (std::is_same_v<T, s64>) {
+        return static_cast<s64>(value.U64());
     }
 }
 
