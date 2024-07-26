@@ -113,6 +113,13 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
 
+    const auto& mount_download_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
+    if (!std::filesystem::exists(mount_download_dir)) {
+        std::filesystem::create_directory(mount_download_dir);
+    }
+    mnt->Mount(mount_download_dir, "/download0");
+
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());

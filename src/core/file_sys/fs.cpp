@@ -26,23 +26,27 @@ void MntPoints::UnmountAll() {
 }
 
 std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory) {
-    const MntPair* mount = GetMount(guest_directory);
+    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
+    auto corrected_path = guest_directory;
+    size_t pos = corrected_path.find("//");
+    while (pos != std::string::npos) {
+        corrected_path.replace(pos, 2, "/");
+        pos = corrected_path.find("//", pos + 1);
+    }
+
+    const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
-        return guest_directory;
+        return "";
     }
 
     // Nothing to do if getting the mount itself.
-    if (guest_directory == mount->mount) {
+    if (corrected_path == mount->mount) {
         return mount->host_path;
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    u32 pos = mount->mount.size() + 1;
-    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    if (guest_directory[pos] == '/') {
-        pos++;
-    }
-    const auto rel_path = std::string_view(guest_directory).substr(pos);
+    pos = mount->mount.size() + 1;
+    const auto rel_path = std::string_view(corrected_path).substr(pos);
     const auto host_path = mount->host_path / rel_path;
     if (!NeedsCaseInsensiveSearch) {
         return host_path;
