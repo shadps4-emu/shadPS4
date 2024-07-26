@@ -31,7 +31,7 @@ public:
     void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
     void UnmountAll();
 
-    std::filesystem::path GetHostPath(const std::string& guest_directory);
+    std::filesystem::path GetHostPath(std::string_view guest_directory);
 
     const MntPair* GetMount(const std::string& guest_path) {
         const auto it = std::ranges::find_if(

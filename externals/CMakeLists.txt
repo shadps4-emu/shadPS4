@@ -47,6 +47,11 @@ else()
     endif()
 endif()
 
+if (NOT TARGET ffmpeg)
+    set(ARCHITECTURE "x86_64")
+    add_subdirectory(ffmpeg-core)
+endif()
+
 # Zlib-Ng
 if (NOT TARGET zlib-ng::zlib)
     set(ZLIB_ENABLE_TESTS OFF)
