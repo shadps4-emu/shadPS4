@@ -1337,7 +1337,12 @@ int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
 }
 
 int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
+#ifndef __APPLE__
     return sem_timedwait(sem, t);
+#else
+    LOG_ERROR(Kernel_Pthread, "Apple doesn't support sem_timedwait yet");
+    return 0; // unsupported for apple yet
+#endif
 }
 
 int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
