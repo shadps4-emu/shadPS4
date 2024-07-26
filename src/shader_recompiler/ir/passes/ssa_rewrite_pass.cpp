@@ -310,8 +310,7 @@ private:
     DefTable current_def;
 };
 
-void VisitInst(Pass& pass, IR::Block* block, const IR::Block::iterator& iter) {
-    auto& inst{*iter};
+void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
     case IR::Opcode::SetThreadBitScalarReg:
@@ -349,14 +348,14 @@ void VisitInst(Pass& pass, IR::Block* block, const IR::Block::iterator& iter) {
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        bool thread_bit = opcode == IR::Opcode::GetThreadBitScalarReg;
-        IR::Value value = pass.ReadVariable(reg, block, thread_bit);
+        const bool thread_bit = opcode == IR::Opcode::GetThreadBitScalarReg;
+        const IR::Value value = pass.ReadVariable(reg, block, thread_bit);
         inst.ReplaceUsesWith(value);
         break;
     }
     case IR::Opcode::GetVectorRegister: {
         const IR::VectorReg reg{inst.Arg(0).VectorReg()};
-        IR::Value value = pass.ReadVariable(reg, block);
+        const IR::Value value = pass.ReadVariable(reg, block);
         inst.ReplaceUsesWith(value);
         break;
     }
@@ -387,9 +386,8 @@ void VisitInst(Pass& pass, IR::Block* block, const IR::Block::iterator& iter) {
 }
 
 void VisitBlock(Pass& pass, IR::Block* block) {
-    const auto end{block->end()};
-    for (auto iter = block->begin(); iter != end; ++iter) {
-        VisitInst(pass, block, iter);
+    for (IR::Inst& inst : block->Instructions()) {
+        VisitInst(pass, block, inst);
     }
     pass.SealBlock(block);
 }

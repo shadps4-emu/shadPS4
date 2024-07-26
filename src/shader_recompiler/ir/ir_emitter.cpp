@@ -1199,13 +1199,6 @@ U32U64 IREmitter::ConvertFToU(size_t bitsize, const F32F64& value) {
         default:
             ThrowInvalidType(value.Type());
         }
-    case 64:
-        switch (value.Type()) {
-        case Type::F32:
-            return Inst<U64>(Opcode::ConvertU64F32, value);
-        default:
-            ThrowInvalidType(value.Type());
-        }
     default:
         UNREACHABLE_MSG("Invalid destination bitsize {}", bitsize);
     }
@@ -1273,20 +1266,6 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         switch (value.Type()) {
         case Type::U32:
             return Inst<U16>(Opcode::ConvertU16U32, value);
-        default:
-            break;
-        }
-    case 32:
-        switch (value.Type()) {
-        case Type::U64:
-            return Inst<U32>(Opcode::ConvertU32U64, value);
-        default:
-            break;
-        }
-    case 64:
-        switch (value.Type()) {
-        case Type::U32:
-            return Inst<U64>(Opcode::ConvertU64U32, value);
         default:
             break;
         }

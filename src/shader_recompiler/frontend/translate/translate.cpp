@@ -79,7 +79,7 @@ template <>
 IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
     IR::U32F32 value{};
 
-    bool is_float = operand.type == ScalarType::Float32 || force_flt;
+    const bool is_float = operand.type == ScalarType::Float32 || force_flt;
     switch (operand.field) {
     case OperandField::ScalarGPR:
         if (is_float) {
@@ -190,7 +190,7 @@ IR::U64F64 Translator::GetSrc64(const InstOperand& operand, bool force_flt) {
     IR::Value value_lo{};
 
     bool immediate = false;
-    bool is_float = operand.type == ScalarType::Float64 || force_flt;
+    const bool is_float = operand.type == ScalarType::Float64 || force_flt;
     switch (operand.field) {
     case OperandField::ScalarGPR:
         if (is_float) {
@@ -344,7 +344,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
 void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_raw) {
     IR::U64F64 value_untyped = value_raw;
 
-    bool is_float = value_raw.Type() == IR::Type::F64 || value_raw.Type() == IR::Type::F32;
+    const bool is_float = value_raw.Type() == IR::Type::F64 || value_raw.Type() == IR::Type::F32;
     if (is_float) {
         if (operand.output_modifier.multiplier != 0.f) {
             value_untyped =
@@ -354,11 +354,12 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
             value_untyped = ir.FPSaturate(value_raw);
         }
     }
-    IR::U64 value = is_float ? ir.BitCast<IR::U64>(IR::F64{value_untyped}) : IR::U64{value_untyped};
+    const IR::U64 value =
+        is_float ? ir.BitCast<IR::U64>(IR::F64{value_untyped}) : IR::U64{value_untyped};
 
-    IR::Value unpacked{ir.UnpackUint2x32(value)};
-    IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
-    IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+    const IR::Value unpacked{ir.UnpackUint2x32(value)};
+    const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+    const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
     switch (operand.field) {
     case OperandField::ScalarGPR:
         ir.SetScalarReg(IR::ScalarReg(operand.code + 1), hi);
