@@ -1228,7 +1228,13 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         case Type::U32:
             return Inst<U16>(Opcode::ConvertU16U32, value);
         }
+    case 32:
+        switch (value.Type()) {
+        case Type::U16:
+            return Inst<U32>(Opcode::ConvertU32U16, value);
+        }
     }
+
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 

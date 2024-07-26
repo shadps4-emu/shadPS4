@@ -371,6 +371,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::V_CVT_F32_F16:
             translator.V_CVT_F32_F16(inst);
             break;
+        case Opcode::V_CVT_F16_F32:
+            translator.V_CVT_F16_F32(inst);
+            break;
         case Opcode::V_CVT_F32_UBYTE0:
             translator.V_CVT_F32_UBYTE(0, inst);
             break;

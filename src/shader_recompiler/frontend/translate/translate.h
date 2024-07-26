@@ -94,6 +94,7 @@ public:
     void V_MAC_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
     void V_CVT_F32_F16(const GcnInst& inst);
+    void V_CVT_F16_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
     void V_OR_B32(bool is_xor, const GcnInst& inst);

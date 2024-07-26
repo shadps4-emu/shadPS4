@@ -6,8 +6,8 @@
 
 namespace Shader::Backend::SPIRV {
 
-void EmitBitCastU16F16(EmitContext&) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+Id EmitBitCastU16F16(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.U16, value);
 }
 
 Id EmitBitCastU32F32(EmitContext& ctx, Id value) {
