@@ -32,6 +32,12 @@ void Translator::V_CVT_F32_F16(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPConvert(32, ir.BitCast<IR::F16>(src0l)));
 }
 
+void Translator::V_CVT_F16_F32(const GcnInst& inst) {
+    const IR::F32 src0 = GetSrc(inst.src[0], true);
+    const IR::F16 src0fp16 = ir.FPConvert(16, src0);
+    SetDst(inst.dst[0], ir.UConvert(32, ir.BitCast<IR::U16>(src0fp16)));
+}
+
 void Translator::V_MUL_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMul(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true)));
 }
