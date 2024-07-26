@@ -612,6 +612,9 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::BUFFER_STORE_DWORD:
             translator.BUFFER_STORE_FORMAT(1, false, inst);
             break;
+        case Opcode::BUFFER_STORE_DWORDX2:
+            translator.BUFFER_STORE_FORMAT(2, false, inst);
+            break;
         case Opcode::BUFFER_STORE_DWORDX3:
             translator.BUFFER_STORE_FORMAT(3, false, inst);
             break;
