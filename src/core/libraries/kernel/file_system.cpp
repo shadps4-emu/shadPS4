@@ -53,6 +53,9 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, u16 mode) {
     if (std::string_view{path} == "/dev/stdout") {
         return 2002;
     }
+    if (std::string_view{path} == "/dev/urandom") {
+        return 2003;
+    }
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
     if (directory) {
@@ -112,6 +115,9 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
 int PS4_SYSV_ABI sceKernelClose(int d) {
     if (d < 3) { // d probably hold an error code
         return ORBIS_KERNEL_ERROR_EPERM;
+    }
+    if (d == 2003) { // dev/urandom case
+        return SCE_OK;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
@@ -223,6 +229,13 @@ s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
 }
 
 s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
+    if (d == 2003) // dev urandom case
+    {
+        auto rbuf = static_cast<char*>(buf);
+        for (size_t i = 0; i < nbytes; i++)
+            rbuf[i] = std::rand() & 0xFF;
+        return nbytes;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -460,6 +473,7 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
 }
 
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+    std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);

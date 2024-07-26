@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/logging/log.h>
+#include <core/file_format/playgo_chunk.h>
 #include <core/file_format/psf.h>
 #include <core/file_format/splash.h>
 #include <core/libraries/disc_map/disc_map.h>
@@ -51,9 +52,6 @@ Emulator::Emulator() {
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
-    window = std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller);
-
-    g_window = window.get();
 }
 
 Emulator::~Emulator() {
@@ -68,6 +66,8 @@ void Emulator::Run(const std::filesystem::path& file) {
 
     // Loading param.sfo file if exists
     std::string id;
+    std::string title;
+    std::string app_version;
     std::filesystem::path sce_sys_folder = file.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
@@ -75,11 +75,14 @@ void Emulator::Run(const std::filesystem::path& file) {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
-                std::string title(param_sfo->GetString("TITLE"));
+                title = param_sfo->GetString("TITLE");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
-                std::string app_version = param_sfo->GetString("APP_VER");
+                app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+            } else if (entry.path().filename() == "playgo-chunk.dat") {
+                auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
+                playgo->Open(sce_sys_folder.string() + "/playgo-chunk.dat");
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
@@ -92,6 +95,12 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
+    std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
+
+    window =
+        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, game_title);
+
+    g_window = window.get();
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
     if (!std::filesystem::exists(mount_data_dir)) {
@@ -103,6 +112,13 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::filesystem::create_directory(mount_temp_dir);
     }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
+
+    const auto& mount_download_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
+    if (!std::filesystem::exists(mount_download_dir)) {
+        std::filesystem::create_directory(mount_download_dir);
+    }
+    mnt->Mount(mount_download_dir, "/download0");
 
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();

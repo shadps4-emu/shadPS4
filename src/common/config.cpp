@@ -220,7 +220,7 @@ void load(const std::filesystem::path& path) {
             auto general = generalResult.unwrap();
 
             isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
-            isFullscreen = toml::find_or<toml::boolean>(general, "Fullscreen", true);
+            isFullscreen = toml::find_or<toml::boolean>(general, "Fullscreen", false);
             logFilter = toml::find_or<toml::string>(general, "logFilter", "");
             logType = toml::find_or<toml::string>(general, "logType", "sync");
             isShowSplash = toml::find_or<toml::boolean>(general, "showSplash", true);

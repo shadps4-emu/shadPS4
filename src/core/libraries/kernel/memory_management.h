@@ -31,6 +31,14 @@ enum MemoryProtection : u32 {
     SCE_KERNEL_PROT_GPU_RW = 0x30     // Permit reads/writes from the GPU
 };
 
+enum MemoryOpTypes : u32 {
+    ORBIS_KERNEL_MAP_OP_MAP_DIRECT = 0,
+    ORBIS_KERNEL_MAP_OP_UNMAP = 1,
+    ORBIS_KERNEL_MAP_OP_PROTECT = 2,
+    ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE = 3,
+    ORBIS_KERNEL_MAP_OP_TYPE_PROTECT = 4
+};
+
 struct OrbisQueryInfo {
     uintptr_t start;
     uintptr_t end;
