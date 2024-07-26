@@ -244,7 +244,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break; // break and assign a value to numEntriesOut.
         }
 
-        if (entries[i].operation == MemoryOpTypes::SCE_KERNEL_MAP_OP_MAP_DIRECT) {
+        if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT) {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
                                                    static_cast<s64>(entries[i].offset), 0, "");
@@ -257,7 +257,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
-        } else if (entries[i].operation == 1) {
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP) {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
             LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
                      i, entries[i].operation, entries[i].length, result);
