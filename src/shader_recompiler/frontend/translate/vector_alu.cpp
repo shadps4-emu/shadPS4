@@ -67,7 +67,8 @@ void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, is_xor ? ir.BitwiseXor(src0, src1) : ir.BitwiseOr(src0, src1));
+    ir.SetVectorReg(dst_reg,
+                    is_xor ? ir.BitwiseXor(src0, src1) : IR::U32(ir.BitwiseOr(src0, src1)));
 }
 
 void Translator::V_AND_B32(const GcnInst& inst) {
@@ -90,6 +91,30 @@ void Translator::V_ADD_I32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.IAdd(src0, src1));
     // TODO: Carry
+}
+
+void Translator::V_ADDC_U32(const GcnInst& inst) {
+
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+
+    IR::U32 scarry;
+    if (inst.src_count == 3) { // VOP3
+        IR::U1 thread_bit{ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code))};
+        scarry = IR::U32{ir.Select(thread_bit, ir.Imm32(1), ir.Imm32(0))};
+    } else { // VOP2
+        scarry = ir.GetVccLo();
+    }
+
+    const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
+
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, result);
+
+    const IR::U1 less_src0 = ir.ILessThan(result, src0, false);
+    const IR::U1 less_src1 = ir.ILessThan(result, src1, false);
+    const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
+    ir.SetVcc(did_overflow);
 }
 
 void Translator::V_CVT_F32_I32(const GcnInst& inst) {
@@ -292,6 +317,23 @@ void Translator::V_SUBREV_I32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ISub(src1, src0));
     // TODO: Carry-out
+}
+
+void Translator::V_MAD_U64_U32(const GcnInst& inst) {
+
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc64<IR::U64>(inst.src[2]);
+
+    const IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
+    const IR::U64 sum_result = ir.IAdd(mul_result, src2);
+
+    SetDst64(inst.dst[0], sum_result);
+
+    const IR::U1 less_src0 = ir.ILessThan(sum_result, mul_result, false);
+    const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
+    const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
+    ir.SetVcc(did_overflow);
 }
 
 void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
