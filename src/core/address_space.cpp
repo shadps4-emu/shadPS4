@@ -133,6 +133,7 @@ struct AddressSpace::Impl {
         ASSERT_MSG(it != placeholders.end(), "Cannot map already mapped region");
         ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + size <= it->upper(),
                    "Map range must be fully contained in a placeholder");
+
         // Windows only allows splitting a placeholder into two.
         // This means that if the map range is fully
         // contained the the placeholder we need to perform two split operations,
