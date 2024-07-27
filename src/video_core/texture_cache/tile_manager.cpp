@@ -326,11 +326,13 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .usage = usage,
     };
 
-    const VmaAllocationCreateInfo alloc_info{
+    const bool is_large_buffer = size > 128_MB;
+    VmaAllocationCreateInfo alloc_info{
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
                              : static_cast<VmaAllocationCreateFlags>(0),
-        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        .usage = is_large_buffer ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST
+                                 : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         .requiredFlags = !is_storage ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                                      : static_cast<VkMemoryPropertyFlags>(0),
     };
@@ -338,8 +340,9 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
     VkBuffer buffer;
     VmaAllocation allocation;
     const auto buffer_ci_unsafe = static_cast<VkBufferCreateInfo>(buffer_ci);
-    vmaCreateBuffer(instance.GetAllocator(), &buffer_ci_unsafe, &alloc_info, &buffer, &allocation,
-                    nullptr);
+    const auto result = vmaCreateBuffer(instance.GetAllocator(), &buffer_ci_unsafe, &alloc_info,
+                                        &buffer, &allocation, nullptr);
+    ASSERT(result == VK_SUCCESS);
     return {buffer, allocation};
 }
 
@@ -348,8 +351,8 @@ void TileManager::Upload(ScratchBuffer buffer, const void* data, size_t size) {
     vmaGetAllocationInfo(instance.GetAllocator(), buffer.second, &alloc_info);
     ASSERT(size <= alloc_info.size);
     void* ptr{};
-    auto res = vmaMapMemory(instance.GetAllocator(), buffer.second, &ptr);
-    ASSERT(res == VK_SUCCESS);
+    const auto result = vmaMapMemory(instance.GetAllocator(), buffer.second, &ptr);
+    ASSERT(result == VK_SUCCESS);
     std::memcpy(ptr, data, size);
     vmaUnmapMemory(instance.GetAllocator(), buffer.second);
 }
