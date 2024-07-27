@@ -416,8 +416,7 @@ MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, size_t size) 
     ASSERT_MSG(dmem_handle != dmem_map.end(), "Physical address not in dmem_map");
 
     const DirectMemoryArea& area = dmem_handle->second;
-    ASSERT_MSG(area.is_free && area.base <= addr,
-               "Adding an allocation to already allocated region");
+    ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
 
     const PAddr start_in_area = addr - area.base;
     const PAddr end_in_vma = start_in_area + size;

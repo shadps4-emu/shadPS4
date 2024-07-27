@@ -463,7 +463,7 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VA
     impl->Unmap(virtual_addr, size, has_backing);
 
     // TODO: Determine if any titles require partial unmapping support for flexible allocations.
-    ASSERT_MSG(!has_backing && (start_in_vma != 0 || end_in_vma != size),
+    ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
                "Partial unmapping of flexible allocations is not supported");
 
     if (start_in_vma != 0) {
