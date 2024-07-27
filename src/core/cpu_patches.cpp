@@ -296,9 +296,8 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 
     // Load the pointer to the table of TLS slots.
     c.putSeg(gs);
-    c.mov(dst, ptr[reinterpret_cast<void*>(teb_offset)]);
     // Load the pointer to our buffer.
-    c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
+    c.mov(dst, ptr[reinterpret_cast<void*>(teb_offset + tls_index * sizeof(LPVOID))]);
 #elif defined(__APPLE__)
     // The following logic is based on the Darwin implementation of _os_tsd_get_direct, used by
     // pthread_getspecific https://github.com/apple/darwin-xnu/blob/main/libsyscall/os/tsd.h#L89-L96
