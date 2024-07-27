@@ -198,7 +198,31 @@ ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo&
         usage.texture = true;
     }
 
-    return RegisterImageView(image_id, view_info);
+    // These changes are temporary and should be removed once texture cache will handle subresources
+    // merging
+    auto view_info_tmp = view_info;
+    if (view_info_tmp.range.base.level > image.info.resources.levels - 1 ||
+        view_info_tmp.range.base.layer > image.info.resources.layers - 1 ||
+        view_info_tmp.range.extent.levels > image.info.resources.levels ||
+        view_info_tmp.range.extent.layers > image.info.resources.layers) {
+
+        LOG_ERROR(Render_Vulkan,
+                  "Subresource range ({}~{},{}~{}) exceeds base image extents ({},{})",
+                  view_info_tmp.range.base.level, view_info_tmp.range.extent.levels,
+                  view_info_tmp.range.base.layer, view_info_tmp.range.extent.layers,
+                  image.info.resources.levels, image.info.resources.layers);
+
+        view_info_tmp.range.base.level =
+            std::min(view_info_tmp.range.base.level, image.info.resources.levels - 1);
+        view_info_tmp.range.base.layer =
+            std::min(view_info_tmp.range.base.layer, image.info.resources.layers - 1);
+        view_info_tmp.range.extent.levels =
+            std::min(view_info_tmp.range.extent.levels, image.info.resources.levels);
+        view_info_tmp.range.extent.layers =
+            std::min(view_info_tmp.range.extent.layers, image.info.resources.layers);
+    }
+
+    return RegisterImageView(image_id, view_info_tmp);
 }
 
 ImageView& TextureCache::FindRenderTarget(const ImageInfo& image_info,
