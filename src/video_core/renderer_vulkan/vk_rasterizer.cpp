@@ -120,7 +120,9 @@ void Rasterizer::BeginRendering() {
         }
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
-        const auto& image_view = texture_cache.FindRenderTarget(col_buf, hint);
+        VideoCore::ImageInfo image_info{col_buf, hint};
+        VideoCore::ImageViewInfo view_info{col_buf, false /*!!image.info.usage.vo_buffer*/};
+        const auto& image_view = texture_cache.FindRenderTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
@@ -143,9 +145,10 @@ void Rasterizer::BeginRendering() {
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
         const auto& hint = liverpool->last_db_extent;
-        const auto& image_view = texture_cache.FindDepthTarget(
-            regs.depth_buffer, regs.depth_view.NumSlices(), htile_address, hint,
-            regs.depth_control.depth_write_enable);
+        VideoCore::ImageInfo image_info{regs.depth_buffer, regs.depth_view.NumSlices(),
+                                        htile_address, hint};
+        VideoCore::ImageViewInfo view_info{regs.depth_buffer, regs.depth_view, regs.depth_control};
+        const auto& image_view = texture_cache.FindDepthTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);

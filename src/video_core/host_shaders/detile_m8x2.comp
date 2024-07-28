@@ -10,10 +10,14 @@ layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0) buffer input_buf {
     uint in_data[];
 };
-layout(rg8ui, binding = 1) uniform writeonly uimage2D output_img;
+layout(std430, binding = 1) buffer output_buf {
+    uint out_data[];
+};
 
 layout(push_constant) uniform image_info {
+    uint num_levels;
     uint pitch;
+    uint sizes[14];
 } info;
 
 #define MICRO_TILE_DIM      8
@@ -44,18 +48,14 @@ void main() {
     uint col = bitfieldExtract(packed_pos, 4, 4);
     uint row = bitfieldExtract(packed_pos, 0, 4);
 
-    uint tiles_per_pitch = info.pitch >> 3; // log2(MICRO_TILE_DIM)
+    uint mip = 0u;
+    for (int m = 0; m < info.num_levels; ++m) {
+        mip += (gl_GlobalInvocationID.x * 4) >= info.sizes[m] ? 1 : 0;
+    }    
+    uint tiles_per_pitch = max(((info.pitch >> mip) / 8u), 1u);
     uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
     uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;
-    uint dw_ofs_x = target_tile_x * MICRO_TILE_DIM + col;
-    uint dw_ofs_y = target_tile_y * MICRO_TILE_DIM + row;
-
-    ivec2 img_pos = ivec2(dw_ofs_x, dw_ofs_y);
-
-    #pragma unroll
-    for (int ofs = 0; ofs < TEXELS_PER_ELEMENT; ++ofs) {
-        uint p0 = (p[ofs] >> 8) & 0xff;
-        uint p1 =  p[ofs]       & 0xff;
-        imageStore(output_img, img_pos + ivec2(ofs, 0), uvec4(p1, p0, 0, 0));
-    }
+    uint dw_ofs_x = target_tile_x * 8 + col;
+    uint dw_ofs_y = (target_tile_y * tiles_per_pitch * 64) + row * tiles_per_pitch * 8;
+    out_data[(dw_ofs_x + dw_ofs_y) / 2] = src_tx;
 }

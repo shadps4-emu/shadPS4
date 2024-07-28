@@ -191,7 +191,7 @@ void PipelineCache::RefreshGraphicsKey() {
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         const auto is_vo_surface = renderer->IsVideoOutSurface(col_buf);
         key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), is_vo_surface);
+            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);

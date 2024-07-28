@@ -377,9 +377,13 @@ struct Liverpool {
             return 1u << z_info.num_samples; // spec doesn't say it is a log2
         }
 
+        u32 NumBits() const {
+            return z_info.format == ZFormat::Z32Float ? 32 : 16;
+        }
+
         size_t GetDepthSliceSize() const {
             ASSERT(z_info.format != ZFormat::Invalid);
-            const auto bpe = z_info.format == ZFormat::Z32Float ? 4 : 2;
+            const auto bpe = NumBits() >> 3; // in bytes
             return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
         }
     };

@@ -152,8 +152,6 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
         image_id = image_ids[0];
     }
 
-    RegisterMeta(info, image_id);
-
     Image& image = slot_images[image_id];
     if (True(image.flags & ImageFlagBits::CpuModified) && refresh_on_create) {
         RefreshImage(image);
@@ -184,13 +182,12 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindTexture(const AmdGpu::Image& desc, bool is_storage) {
-    const ImageInfo info{desc};
+ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;
 
-    if (is_storage) {
+    if (view_info.is_storage) {
         image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
@@ -201,14 +198,36 @@ ImageView& TextureCache::FindTexture(const AmdGpu::Image& desc, bool is_storage)
         usage.texture = true;
     }
 
-    const ImageViewInfo view_info{desc, is_storage};
-    return RegisterImageView(image_id, view_info);
+    // These changes are temporary and should be removed once texture cache will handle subresources
+    // merging
+    auto view_info_tmp = view_info;
+    if (view_info_tmp.range.base.level > image.info.resources.levels - 1 ||
+        view_info_tmp.range.base.layer > image.info.resources.layers - 1 ||
+        view_info_tmp.range.extent.levels > image.info.resources.levels ||
+        view_info_tmp.range.extent.layers > image.info.resources.layers) {
+
+        LOG_ERROR(Render_Vulkan,
+                  "Subresource range ({}~{},{}~{}) exceeds base image extents ({},{})",
+                  view_info_tmp.range.base.level, view_info_tmp.range.extent.levels,
+                  view_info_tmp.range.base.layer, view_info_tmp.range.extent.layers,
+                  image.info.resources.levels, image.info.resources.layers);
+
+        view_info_tmp.range.base.level =
+            std::min(view_info_tmp.range.base.level, image.info.resources.levels - 1);
+        view_info_tmp.range.base.layer =
+            std::min(view_info_tmp.range.base.layer, image.info.resources.layers - 1);
+        view_info_tmp.range.extent.levels =
+            std::min(view_info_tmp.range.extent.levels, image.info.resources.levels);
+        view_info_tmp.range.extent.layers =
+            std::min(view_info_tmp.range.extent.layers, image.info.resources.layers);
+    }
+
+    return RegisterImageView(image_id, view_info_tmp);
 }
 
-ImageView& TextureCache::FindRenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                                          const AmdGpu::Liverpool::CbDbExtent& hint) {
-    const ImageInfo info{buffer, hint};
-    const ImageId image_id = FindImage(info);
+ImageView& TextureCache::FindRenderTarget(const ImageInfo& image_info,
+                                          const ImageViewInfo& view_info) {
+    const ImageId image_id = FindImage(image_info);
     Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
@@ -216,30 +235,56 @@ ImageView& TextureCache::FindRenderTarget(const AmdGpu::Liverpool::ColorBuffer& 
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
+    // Register meta data for this color buffer
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (image_info.meta_info.cmask_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.cmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
+            image.info.meta_info.cmask_addr = image_info.meta_info.cmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+
+        if (image_info.meta_info.fmask_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.fmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
+            image.info.meta_info.fmask_addr = image_info.meta_info.fmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+    }
+
+    // Update tracked image usage
     image.info.usage.render_target = true;
 
-    ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image_id, view_info);
 }
 
-ImageView& TextureCache::FindDepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                                         u32 num_slices, VAddr htile_address,
-                                         const AmdGpu::Liverpool::CbDbExtent& hint,
-                                         bool write_enabled) {
-    const ImageInfo info{buffer, num_slices, htile_address, hint};
-    const ImageId image_id = FindImage(info, false);
+ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
+                                         const ImageViewInfo& view_info) {
+    const ImageId image_id = FindImage(image_info, false);
     Image& image = slot_images[image_id];
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    const auto new_layout = write_enabled ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-                                          : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    const auto new_layout = view_info.is_storage ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                                 : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     image.Transit(new_layout, vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                                   vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
+    // Register meta data for this depth buffer
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (image_info.meta_info.htile_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.htile_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
+            image.info.meta_info.htile_addr = image_info.meta_info.htile_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+    }
+
+    // Update tracked image usage
     image.info.usage.depth_target = true;
 
-    ImageViewInfo view_info;
-    view_info.format = info.pixel_format;
     return RegisterImageView(image_id, view_info);
 }
 
@@ -247,64 +292,56 @@ void TextureCache::RefreshImage(Image& image) {
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    {
-        if (!tile_manager.TryDetile(image)) {
-            // Upload data to the staging buffer.
-            const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
-            // Copy to the image.
-            image.Upload(staging.Handle(), offset);
-        }
+    scheduler.EndRendering();
 
-        image.Transit(vk::ImageLayout::eGeneral,
-                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
-        return;
+    const auto cmdbuf = scheduler.CommandBuffer();
+    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+    vk::Buffer buffer{staging.Handle()};
+    u32 offset{0};
+
+    auto upload_buffer = tile_manager.TryDetile(image);
+    if (upload_buffer) {
+        buffer = *upload_buffer;
+    } else {
+        // Upload data to the staging buffer.
+        const auto [data, offset_, _] = staging.Map(image.info.guest_size_bytes, 16);
+        std::memcpy(data, (void*)image.info.guest_address, image.info.guest_size_bytes);
+        staging.Commit(image.info.guest_size_bytes);
+        offset = offset_;
     }
 
-    ASSERT(image.info.resources.levels == image.info.mips_layout.size());
-    const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-    for (u32 m = 0; m < image.info.resources.levels; m++) {
+    const auto& num_layers = image.info.resources.layers;
+    const auto& num_mips = image.info.resources.levels;
+    ASSERT(num_mips == image.info.mips_layout.size());
+
+    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
+    for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
-        const u32 depth = image.info.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const u32 map_size = image.info.mips_layout[m].second * image.info.resources.layers;
+        const u32 depth =
+            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+        const auto& [_, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
 
-        // Upload data to the staging buffer.
-        const auto [data, offset, _] = staging.Map(map_size, 16);
-        if (image.info.is_tiled) {
-            ConvertTileToLinear(data, image_data, width, height, Config::isNeoMode());
-        } else {
-            std::memcpy(data,
-                        image_data + image.info.mips_layout[m].first * image.info.resources.layers,
-                        map_size);
-        }
-        staging.Commit(map_size);
-
-        // Copy to the image.
-        const vk::BufferImageCopy image_copy = {
-            .bufferOffset = offset,
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
+        image_copy.push_back({
+            .bufferOffset = offset + mip_ofs * num_layers,
+            .bufferRowLength = static_cast<uint32_t>(mip_pitch),
+            .bufferImageHeight = static_cast<uint32_t>(mip_height),
             .imageSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
-                .layerCount = u32(image.info.resources.layers),
+                .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, depth},
-        };
-
-        scheduler.EndRendering();
-
-        const auto cmdbuf = scheduler.CommandBuffer();
-        image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
-        cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                 vk::ImageLayout::eTransferDstOptimal, image_copy);
-
-        image.Transit(vk::ImageLayout::eGeneral,
-                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+        });
     }
+
+    cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+
+    image.Transit(vk::ImageLayout::eGeneral,
+                  vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
@@ -320,47 +357,8 @@ void TextureCache::RegisterImage(ImageId image_id) {
     image.flags |= ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
-}
 
-void TextureCache::RegisterMeta(const ImageInfo& info, ImageId image_id) {
-    Image& image = slot_images[image_id];
-
-    if (image.flags & ImageFlagBits::MetaRegistered) {
-        return;
-    }
-
-    bool registered = true;
-    // Current resource tracking implementation allows us to detect usage of meta only in the last
-    // moment, so we likely will miss its first clear. To avoid this and make first frame, where
-    // the meta is encountered, looks correct we set its state to "cleared" at registrations time.
-    if (info.usage.render_target) {
-        if (info.meta_info.cmask_addr) {
-            surface_metas.emplace(
-                info.meta_info.cmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
-            image.info.meta_info.cmask_addr = info.meta_info.cmask_addr;
-        }
-
-        if (info.meta_info.fmask_addr) {
-            surface_metas.emplace(
-                info.meta_info.fmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
-            image.info.meta_info.fmask_addr = info.meta_info.fmask_addr;
-        }
-    } else if (info.usage.depth_target) {
-        if (info.meta_info.htile_addr) {
-            surface_metas.emplace(
-                info.meta_info.htile_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
-            image.info.meta_info.htile_addr = info.meta_info.htile_addr;
-        }
-    } else {
-        registered = false;
-    }
-
-    if (registered) {
-        image.flags |= ImageFlagBits::MetaRegistered;
-    }
+    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }
 
 void TextureCache::UnregisterImage(ImageId image_id) {
