@@ -22,8 +22,10 @@ static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;
+static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
+static bool rdocEnable = false;
 // Gui
 std::string settings_install_dir = "";
 u32 main_window_geometry_x = 400;
@@ -92,6 +94,14 @@ bool dumpShaders() {
 
 bool dumpPM4() {
     return shouldDumpPM4;
+}
+
+bool isRdocEnabled() {
+    return rdocEnable;
+}
+
+u32 vblankDiv() {
+    return vblankDivider;
 }
 
 bool vkValidationEnabled() {
@@ -233,10 +243,10 @@ void load(const std::filesystem::path& path) {
 
             screenWidth = toml::find_or<toml::integer>(gpu, "screenWidth", screenWidth);
             screenHeight = toml::find_or<toml::integer>(gpu, "screenHeight", screenHeight);
-            gpuId = toml::find_or<toml::integer>(gpu, "gpuId", 0);
             isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
             shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
             shouldDumpPM4 = toml::find_or<toml::boolean>(gpu, "dumpPM4", false);
+            vblankDivider = toml::find_or<toml::integer>(gpu, "vblankDivider", 1);
         }
     }
     if (data.contains("Vulkan")) {
@@ -244,8 +254,10 @@ void load(const std::filesystem::path& path) {
         if (vkResult.is_ok()) {
             auto vk = vkResult.unwrap();
 
+            gpuId = toml::find_or<toml::integer>(vk, "gpuId", 0);
             vkValidation = toml::find_or<toml::boolean>(vk, "validation", true);
             vkValidationSync = toml::find_or<toml::boolean>(vk, "validation_sync", true);
+            rdocEnable = toml::find_or<toml::boolean>(vk, "rdocEnable", false);
         }
     }
     if (data.contains("Debug")) {
@@ -312,14 +324,16 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["showSplash"] = isShowSplash;
-    data["GPU"]["gpuId"] = gpuId;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["dumpPM4"] = shouldDumpPM4;
+    data["GPU"]["vblankDivider"] = vblankDivider;
+    data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
+    data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
     data["GUI"]["theme"] = mw_themes;

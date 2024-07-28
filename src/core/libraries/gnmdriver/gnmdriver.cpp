@@ -20,12 +20,11 @@
 
 extern Frontend::WindowSDL* g_window;
 std::unique_ptr<Vulkan::RendererVulkan> renderer;
+std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::GnmDriver {
 
 using namespace AmdGpu;
-
-static std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 enum GnmEventIdents : u64 {
     Compute0RelMem = 0x00,
@@ -2131,6 +2130,7 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
+    liverpool->SubmitDone();
     send_init_packet = true;
     ++frames_submitted;
     return ORBIS_OK;

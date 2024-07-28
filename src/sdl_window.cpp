@@ -11,6 +11,7 @@
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+#include "video_core/renderdoc.h"
 
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
@@ -72,7 +73,7 @@ void WindowSDL::waitEvent() {
     // Called on main thread
     SDL_Event event;
 
-    if (!SDL_PollEvent(&event)) {
+    if (!SDL_WaitEvent(&event)) {
         return;
     }
 
@@ -180,6 +181,11 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         ax = Input::GetAxis(-0x80, 0x80, axisvalue);
         break;
     case SDLK_S:
+        if (event->key.mod == SDL_KMOD_LCTRL) {
+            // Trigger rdoc capture
+            VideoCore::TriggerCapture();
+            break;
+        }
         axis = Input::Axis::LeftY;
         if (event->type == SDL_EVENT_KEY_DOWN) {
             axisvalue += 127;

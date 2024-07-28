@@ -231,7 +231,7 @@ static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eT
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler},
-      staging{instance, scheduler, StagingFlags, 128_MB, Vulkan::BufferType::Upload} {
+      staging{instance, scheduler, StagingFlags, 256_MB, Vulkan::BufferType::Upload} {
 
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,

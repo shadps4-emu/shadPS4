@@ -26,9 +26,15 @@ struct Frame {
     VmaAllocation allocation;
     vk::Image image;
     vk::ImageView image_view;
-    vk::Semaphore render_ready;
     vk::Fence present_done;
-    vk::CommandBuffer cmdbuf;
+    vk::Semaphore ready_semaphore;
+    u64 ready_tick;
+};
+
+enum SchedulerType {
+    Draw,
+    Present,
+    CpuFlip,
 };
 
 class Rasterizer;
@@ -39,16 +45,16 @@ public:
     ~RendererVulkan();
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                        VAddr cpu_address) {
+                        VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(info, cpu_address);
         auto& image = texture_cache.GetImage(image_id);
-        return PrepareFrameInternal(image);
+        return PrepareFrameInternal(image, is_eop);
     }
 
     Frame* PrepareBlankFrame() {
         auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
-        return PrepareFrameInternal(image);
+        return PrepareFrameInternal(image, true);
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
@@ -60,9 +66,9 @@ public:
     }
 
     bool IsVideoOutSurface(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
-        return std::find_if(vo_buffers_addr.cbegin(), vo_buffers_addr.cend(), [&](VAddr vo_buffer) {
+        return std::ranges::find_if(vo_buffers_addr, [&](VAddr vo_buffer) {
                    return vo_buffer == color_buffer.Address();
-               }) != vo_buffers_addr.cend();
+               }) != vo_buffers_addr.end();
     }
 
     bool ShowSplash(Frame* frame = nullptr);
@@ -70,13 +76,16 @@ public:
     void RecreateFrame(Frame* frame, u32 width, u32 height);
 
 private:
-    Frame* PrepareFrameInternal(VideoCore::Image& image);
+    Frame* PrepareFrameInternal(VideoCore::Image& image, bool is_eop = true);
     Frame* GetRenderFrame();
 
 private:
     Frontend::WindowSDL& window;
+    AmdGpu::Liverpool* liverpool;
     Instance instance;
-    Scheduler scheduler;
+    Scheduler draw_scheduler;
+    Scheduler present_scheduler;
+    Scheduler flip_scheduler;
     Swapchain swapchain;
     std::unique_ptr<Rasterizer> rasterizer;
     VideoCore::TextureCache texture_cache;

@@ -46,10 +46,6 @@ public:
     /// Waits for a tick to be hit on the GPU
     void Wait(u64 tick);
 
-    /// Submits the provided command buffer for execution
-    void SubmitWork(vk::CommandBuffer cmdbuf, vk::Semaphore wait, vk::Semaphore signal,
-                    u64 signal_value);
-
 protected:
     const Instance& instance;
     vk::UniqueSemaphore semaphore;    ///< Timeline semaphore.

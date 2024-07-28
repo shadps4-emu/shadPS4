@@ -96,6 +96,13 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
+u64 Rasterizer::Flush() {
+    const u64 current_tick = scheduler.CurrentTick();
+    SubmitInfo info{};
+    scheduler.Flush(info);
+    return current_tick;
+}
+
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;

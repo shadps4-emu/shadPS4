@@ -6,6 +6,7 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
+#include <functional>
 #include <mutex>
 #include <span>
 #include <thread>
@@ -19,6 +20,10 @@
 
 namespace Vulkan {
 class Rasterizer;
+}
+
+namespace Libraries::VideoOut {
+struct VideoOutPort;
 }
 
 namespace AmdGpu {
@@ -991,8 +996,23 @@ public:
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
+    void SubmitDone() noexcept {
+        std::scoped_lock lk{submit_mutex};
+        submit_done = true;
+        submit_cv.notify_one();
+    }
+
+    void WaitGpuIdle() noexcept {
+        std::unique_lock lk{submit_mutex};
+        submit_cv.wait(lk, [this] { return num_submits == 0; });
+    }
+
     bool IsGpuIdle() const {
         return num_submits == 0;
+    }
+
+    void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
+        vo_port = port;
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -1059,8 +1079,10 @@ private:
     } cblock{};
 
     Vulkan::Rasterizer* rasterizer{};
+    Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
 };

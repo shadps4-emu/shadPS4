@@ -26,16 +26,39 @@ struct RenderState {
     }
 };
 
+struct SubmitInfo {
+    boost::container::static_vector<vk::Semaphore, 3> wait_semas;
+    boost::container::static_vector<u64, 3> wait_ticks;
+    boost::container::static_vector<vk::Semaphore, 3> signal_semas;
+    boost::container::static_vector<u64, 3> signal_ticks;
+    vk::Fence fence;
+
+    void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
+        wait_semas.emplace_back(semaphore);
+        wait_ticks.emplace_back(tick);
+    }
+
+    void AddSignal(vk::Semaphore semaphore, u64 tick = 1) {
+        signal_semas.emplace_back(semaphore);
+        signal_ticks.emplace_back(tick);
+    }
+
+    void AddSignal(vk::Fence fence) {
+        this->fence = fence;
+    }
+};
+
 class Scheduler {
 public:
     explicit Scheduler(const Instance& instance);
     ~Scheduler();
 
-    /// Sends the current execution context to the GPU.
-    void Flush(vk::Semaphore signal = nullptr, vk::Semaphore wait = nullptr);
+    /// Sends the current execution context to the GPU
+    /// and increments the scheduler timeline semaphore.
+    void Flush(SubmitInfo& info);
 
     /// Sends the current execution context to the GPU and waits for it to complete.
-    void Finish(vk::Semaphore signal = nullptr, vk::Semaphore wait = nullptr);
+    void Finish();
 
     /// Waits for the given tick to trigger on the GPU.
     void Wait(u64 tick);
@@ -76,12 +99,12 @@ public:
         pending_ops.emplace(func, CurrentTick());
     }
 
-    std::mutex submit_mutex;
+    static std::mutex submit_mutex;
 
 private:
     void AllocateWorkerCommandBuffers();
 
-    void SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore);
+    void SubmitExecution(SubmitInfo& info);
 
 private:
     const Instance& instance;

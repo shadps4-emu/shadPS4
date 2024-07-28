@@ -5,8 +5,10 @@
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
+#include "core/libraries/videoout/driver.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
+#include "video_core/renderdoc.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace AmdGpu {
@@ -32,11 +34,14 @@ void Liverpool::Process(std::stop_token stoken) {
     while (!stoken.stop_requested()) {
         {
             std::unique_lock lk{submit_mutex};
-            Common::CondvarWait(submit_cv, lk, stoken, [this] { return num_submits != 0; });
+            Common::CondvarWait(submit_cv, lk, stoken,
+                                [this] { return num_submits != 0 || submit_done; });
         }
         if (stoken.stop_requested()) {
             break;
         }
+
+        VideoCore::StartCapture();
 
         int qid = -1;
 
@@ -48,11 +53,9 @@ void Liverpool::Process(std::stop_token stoken) {
             Task::Handle task{};
             {
                 std::scoped_lock lock{queue.m_access};
-
                 if (queue.submits.empty()) {
                     continue;
                 }
-
                 task = queue.submits.front();
             }
             task.resume();
@@ -64,7 +67,18 @@ void Liverpool::Process(std::stop_token stoken) {
                 queue.submits.pop();
 
                 --num_submits;
+                std::scoped_lock lock2{submit_mutex};
+                submit_cv.notify_all();
             }
+        }
+
+        if (submit_done) {
+            VideoCore::EndCapture();
+
+            if (rasterizer) {
+                rasterizer->Flush();
+            }
+            submit_done = false;
         }
 
         Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
@@ -365,8 +379,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
             ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
             const u32 data_size = (header->type3.count.Value() - 2) * 4;
+            u64* address = write_data->Address<u64*>();
             if (!write_data->wr_one_addr.Value()) {
-                std::memcpy(write_data->Address<void*>(), write_data->data, data_size);
+                std::memcpy(address, write_data->data, data_size);
             } else {
                 UNREACHABLE();
             }
@@ -379,6 +394,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+            // Optimization: VO label waits are special because the emulator
+            // will write to the label when presentation is finished. So if
+            // there are no other submits to yield to we can sleep the thread
+            // instead and allow other tasks to run.
+            const u64* wait_addr = wait_reg_mem->Address<u64*>();
+            if (vo_port->IsVoLabel(wait_addr) && num_submits == 1) {
+                vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+            }
             while (!wait_reg_mem->Test()) {
                 TracyFiberLeave;
                 co_yield {};
@@ -511,7 +534,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
 
     auto task = ProcessGraphics(dcb, ccb);
     {
-        std::unique_lock lock{queue.m_access};
+        std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
     }
 
@@ -526,7 +549,7 @@ void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
 
     const auto& task = ProcessCompute(acb, vqid);
     {
-        std::unique_lock lock{queue.m_access};
+        std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
     }
 

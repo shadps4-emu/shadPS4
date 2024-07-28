@@ -74,6 +74,13 @@ if (NOT TARGET GPUOpen::VulkanMemoryAllocator)
     add_subdirectory(vma)
 endif()
 
+# RenderDoc
+if (NOT TARGET RenderDoc::API)
+    add_library(renderdoc INTERFACE)
+    target_include_directories(renderdoc SYSTEM INTERFACE ./renderdoc)
+    add_library(RenderDoc::API ALIAS renderdoc)
+endif()
+
 # glslang
 if (NOT TARGET glslang::glslang)
     set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "")
