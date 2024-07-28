@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
+#include "common/assert.h"
 #include "common/debug.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
 namespace Vulkan {
+
+std::mutex Scheduler::submit_mutex;
 
 Scheduler::Scheduler(const Instance& instance)
     : instance{instance}, master_semaphore{instance}, command_pool{instance, &master_semaphore} {
@@ -50,22 +53,24 @@ void Scheduler::EndRendering() {
     current_cmdbuf.endRendering();
 }
 
-void Scheduler::Flush(vk::Semaphore signal, vk::Semaphore wait) {
-    // When flushing, we only send data to the worker thread; no waiting is necessary.
-    SubmitExecution(signal, wait);
+void Scheduler::Flush(SubmitInfo& info) {
+    // When flushing, we only send data to the driver; no waiting is necessary.
+    SubmitExecution(info);
 }
 
-void Scheduler::Finish(vk::Semaphore signal, vk::Semaphore wait) {
+void Scheduler::Finish() {
     // When finishing, we need to wait for the submission to have executed on the device.
     const u64 presubmit_tick = CurrentTick();
-    SubmitExecution(signal, wait);
+    SubmitInfo info{};
+    SubmitExecution(info);
     Wait(presubmit_tick);
 }
 
 void Scheduler::Wait(u64 tick) {
     if (tick >= master_semaphore.CurrentTick()) {
         // Make sure we are not waiting for the current tick without signalling
-        Flush();
+        SubmitInfo info{};
+        Flush(info);
     }
     master_semaphore.Wait(tick);
 }
@@ -86,7 +91,7 @@ void Scheduler::AllocateWorkerCommandBuffers() {
     }
 }
 
-void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore) {
+void Scheduler::SubmitExecution(SubmitInfo& info) {
     std::scoped_lock lk{submit_mutex};
     const u64 signal_value = master_semaphore.NextTick();
 
@@ -97,7 +102,40 @@ void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wa
     }
 
     EndRendering();
-    master_semaphore.SubmitWork(current_cmdbuf, wait_semaphore, signal_semaphore, signal_value);
+    current_cmdbuf.end();
+
+    const vk::Semaphore timeline = master_semaphore.Handle();
+    info.AddSignal(timeline, signal_value);
+
+    static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
+        vk::PipelineStageFlagBits::eAllCommands,
+        vk::PipelineStageFlagBits::eColorAttachmentOutput,
+    };
+
+    const vk::TimelineSemaphoreSubmitInfo timeline_si = {
+        .waitSemaphoreValueCount = static_cast<u32>(info.wait_ticks.size()),
+        .pWaitSemaphoreValues = info.wait_ticks.data(),
+        .signalSemaphoreValueCount = static_cast<u32>(info.signal_ticks.size()),
+        .pSignalSemaphoreValues = info.signal_ticks.data(),
+    };
+
+    const vk::SubmitInfo submit_info = {
+        .pNext = &timeline_si,
+        .waitSemaphoreCount = static_cast<u32>(info.wait_semas.size()),
+        .pWaitSemaphores = info.wait_semas.data(),
+        .pWaitDstStageMask = wait_stage_masks.data(),
+        .commandBufferCount = 1U,
+        .pCommandBuffers = &current_cmdbuf,
+        .signalSemaphoreCount = static_cast<u32>(info.signal_semas.size()),
+        .pSignalSemaphores = info.signal_semas.data(),
+    };
+
+    try {
+        instance.GetGraphicsQueue().submit(submit_info, info.fence);
+    } catch (vk::DeviceLostError& err) {
+        UNREACHABLE_MSG("Device lost during submit: {}", err.what());
+    }
+
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
 

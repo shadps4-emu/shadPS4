@@ -43,8 +43,8 @@ namespace Libraries {
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
     Libraries::Kernel::LibKernel_Register(sym);
-    Libraries::VideoOut::RegisterLib(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
+    Libraries::VideoOut::RegisterLib(sym);
     if (!Config::isLleLibc()) {
         Libraries::LibC::libcSymbolsRegister(sym);
     }

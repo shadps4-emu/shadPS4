@@ -3,14 +3,16 @@
 
 #include <pthread.h>
 #include "common/assert.h"
+#include "common/config.h"
+#include "common/debug.h"
+#include "common/thread.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/platform.h"
-
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
+extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
 
@@ -41,20 +43,18 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     main_port.resolution.fullHeight = height;
     main_port.resolution.paneWidth = width;
     main_port.resolution.paneHeight = height;
+    present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
 }
 
 VideoOutDriver::~VideoOutDriver() = default;
 
 int VideoOutDriver::Open(const ServiceThreadParams* params) {
-    std::scoped_lock lock{mutex};
-
     if (main_port.is_open) {
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
-
-    int handle = 1;
     main_port.is_open = true;
-    return handle;
+    liverpool->SetVoPort(&main_port);
+    return 1;
 }
 
 void VideoOutDriver::Close(s32 handle) {
@@ -158,20 +158,12 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
-    Request req;
-    {
-        std::unique_lock lock{mutex};
-        submit_cond.wait_for(lock, timeout, [&] { return !requests.empty(); });
-        if (requests.empty()) {
-            renderer->ShowSplash();
-            return;
-        }
-
-        // Retrieve the request.
-        req = requests.front();
-        requests.pop();
+std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
+    if (!req) {
+        return std::chrono::microseconds{0};
     }
+
+    const auto start = std::chrono::high_resolution_clock::now();
 
     // Whatever the game is rendering show splash if it is active
     if (!renderer->ShowSplash(req.frame)) {
@@ -179,10 +171,9 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
         renderer->Present(req.frame);
     }
 
-    std::scoped_lock lock{mutex};
-
     // Update flip status.
-    auto& flip_status = req.port->flip_status;
+    auto* port = req.port;
+    auto& flip_status = port->flip_status;
     flip_status.count++;
     flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
     flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
@@ -192,7 +183,7 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
     flip_status.flipPendingNum = static_cast<int>(requests.size());
 
     // Trigger flip events for the port.
-    for (auto& event : req.port->flip_events) {
+    for (auto& event : port->flip_events) {
         if (event != nullptr) {
             event->TriggerEvent(SCE_VIDEO_OUT_EVENT_FLIP, Kernel::SceKernelEvent::Filter::VideoOut,
                                 reinterpret_cast<void*>(req.flip_arg));
@@ -201,21 +192,23 @@ void VideoOutDriver::Flip(std::chrono::microseconds timeout) {
 
     // Reset flip label
     if (req.index != -1) {
-        req.port->buffer_labels[req.index] = 0;
+        port->buffer_labels[req.index] = 0;
+        port->SignalVoLabel();
     }
+
+    const auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
-    std::scoped_lock lock{mutex};
-
     Vulkan::Frame* frame;
     if (index == -1) {
         frame = renderer->PrepareBlankFrame();
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = renderer->PrepareFrame(group, buffer.address_left);
+        frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
     }
 
     if (index != -1 && requests.size() >= port->NumRegisteredBuffers()) {
@@ -223,6 +216,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         return false;
     }
 
+    std::scoped_lock lock{mutex};
     requests.push({
         .frame = frame,
         .port = port,
@@ -234,24 +228,53 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 
     port->flip_status.flipPendingNum = static_cast<int>(requests.size());
     port->flip_status.gcQueueNum = 0;
-    submit_cond.notify_one();
 
     return true;
 }
 
-void VideoOutDriver::Vblank() {
-    std::scoped_lock lock{mutex};
+void VideoOutDriver::PresentThread(std::stop_token token) {
+    static constexpr std::chrono::milliseconds VblankPeriod{16};
+    Common::SetCurrentThreadName("PresentThread");
 
-    auto& vblank_status = main_port.vblank_status;
-    vblank_status.count++;
-    vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
-    vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+    const auto receive_request = [this] -> Request {
+        std::scoped_lock lk{mutex};
+        if (!requests.empty()) {
+            const auto request = requests.front();
+            requests.pop();
+            return request;
+        }
+        return {};
+    };
 
-    // Trigger flip events for the port.
-    for (auto& event : main_port.vblank_events) {
-        if (event != nullptr) {
-            event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
-                                Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
+    auto vblank_period = VblankPeriod / Config::vblankDiv();
+    auto delay = std::chrono::microseconds{0};
+    while (!token.stop_requested()) {
+        // Sleep for most of the vblank duration.
+        std::this_thread::sleep_for(vblank_period - delay);
+
+        // Check if it's time to take a request.
+        auto& vblank_status = main_port.vblank_status;
+        if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
+            const auto request = receive_request();
+            delay = Flip(request);
+            FRAME_END;
+        }
+
+        {
+            // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
+            std::unique_lock lock{main_port.vo_mutex};
+            vblank_status.count++;
+            vblank_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+            vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+            main_port.vblank_cv.notify_all();
+        }
+
+        // Trigger flip events for the port.
+        for (auto& event : main_port.vblank_events) {
+            if (event != nullptr) {
+                event->TriggerEvent(SCE_VIDEO_OUT_EVENT_VBLANK,
+                                    Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
+            }
         }
     }
 }

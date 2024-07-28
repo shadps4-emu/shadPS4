@@ -63,44 +63,30 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     };
 }
 
-RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool)
-    : window{window_}, instance{window, Config::getGpuId(), Config::vkValidationEnabled()},
-      scheduler{instance}, swapchain{instance, window}, texture_cache{instance, scheduler} {
-    rasterizer = std::make_unique<Rasterizer>(instance, scheduler, texture_cache, liverpool);
+RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
+    : window{window_}, liverpool{liverpool_},
+      instance{window, Config::getGpuId(), Config::vkValidationEnabled()}, draw_scheduler{instance},
+      present_scheduler{instance}, flip_scheduler{instance}, swapchain{instance, window},
+      texture_cache{instance, draw_scheduler} {
+    rasterizer = std::make_unique<Rasterizer>(instance, draw_scheduler, texture_cache, liverpool);
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 
-    const vk::CommandPoolCreateInfo pool_info = {
-        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer |
-                 vk::CommandPoolCreateFlagBits::eTransient,
-        .queueFamilyIndex = instance.GetGraphicsQueueFamilyIndex(),
-    };
-    command_pool = device.createCommandPoolUnique(pool_info);
-
-    const vk::CommandBufferAllocateInfo alloc_info = {
-        .commandPool = *command_pool,
-        .level = vk::CommandBufferLevel::ePrimary,
-        .commandBufferCount = num_images,
-    };
-
-    const auto cmdbuffers = device.allocateCommandBuffers(alloc_info);
+    // Create presentation frames.
     present_frames.resize(num_images);
     for (u32 i = 0; i < num_images; i++) {
         Frame& frame = present_frames[i];
-        frame.cmdbuf = cmdbuffers[i];
-        frame.render_ready = device.createSemaphore({});
         frame.present_done = device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
         free_queue.push(&frame);
     }
 }
 
 RendererVulkan::~RendererVulkan() {
-    scheduler.Finish();
+    draw_scheduler.Finish();
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
         vmaDestroyImage(instance.GetAllocator(), frame.image, frame.allocation);
         device.destroyImageView(frame.image_view);
-        device.destroySemaphore(frame.render_ready);
         device.destroyFence(frame.present_done);
     }
 }
@@ -184,7 +170,7 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
             info.pitch = splash->GetImageInfo().width;
             info.guest_address = VAddr(splash->GetImageData().data());
             info.guest_size_bytes = splash->GetImageData().size();
-            splash_img.emplace(instance, scheduler, info);
+            splash_img.emplace(instance, present_scheduler, info);
             texture_cache.RefreshImage(*splash_img);
         }
         frame = PrepareFrameInternal(*splash_img);
@@ -193,12 +179,18 @@ bool RendererVulkan::ShowSplash(Frame* frame /*= nullptr*/) {
     return true;
 }
 
-Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
+Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
-    // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+    // EOP flips are triggered from GPU thread so use the drawing scheduler to record
+    // commands. Otherwise we are dealing with a CPU flip which could have arrived
+    // from any guest thread. Use a separate scheduler for that.
+    auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead, cmdbuf);
 
     const std::array pre_barrier{
         vk::ImageMemoryBarrier{
@@ -218,12 +210,11 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
             },
         },
     };
-
-    const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, {}, pre_barrier);
 
+    // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
     cmdbuf.blitImage(
         image.image, image.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
         MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
@@ -245,13 +236,15 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image) {
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                            vk::PipelineStageFlagBits::eAllCommands,
                            vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
 
-    // Flush pending vulkan operations.
-    scheduler.Flush(frame->render_ready);
+    // Flush frame creation commands.
+    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_tick = scheduler.CurrentTick();
+    SubmitInfo info{};
+    scheduler.Flush(info);
     return frame;
 }
 
@@ -260,11 +253,8 @@ void RendererVulkan::Present(Frame* frame) {
 
     const vk::Image swapchain_image = swapchain.Image();
 
-    const vk::CommandBufferBeginInfo begin_info = {
-        .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-    };
-    const vk::CommandBuffer cmdbuf = frame->cmdbuf;
-    cmdbuf.begin(begin_info);
+    auto& scheduler = present_scheduler;
+    const auto cmdbuf = scheduler.CommandBuffer();
     {
         auto* profiler_ctx = instance.GetProfilerContext();
         TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
@@ -339,35 +329,17 @@ void RendererVulkan::Present(Frame* frame) {
             TracyVkCollect(profiler_ctx, cmdbuf);
         }
     }
-    cmdbuf.end();
 
-    static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-        vk::PipelineStageFlagBits::eAllGraphics,
-    };
+    // Flush vulkan commands.
+    SubmitInfo info{};
+    info.AddWait(swapchain.GetImageAcquiredSemaphore());
+    info.AddWait(frame->ready_semaphore, frame->ready_tick);
+    info.AddSignal(swapchain.GetPresentReadySemaphore());
+    info.AddSignal(frame->present_done);
+    scheduler.Flush(info);
 
-    const vk::Semaphore present_ready = swapchain.GetPresentReadySemaphore();
-    const vk::Semaphore image_acquired = swapchain.GetImageAcquiredSemaphore();
-    const std::array wait_semaphores = {image_acquired, frame->render_ready};
-
-    vk::SubmitInfo submit_info = {
-        .waitSemaphoreCount = static_cast<u32>(wait_semaphores.size()),
-        .pWaitSemaphores = wait_semaphores.data(),
-        .pWaitDstStageMask = wait_stage_masks.data(),
-        .commandBufferCount = 1u,
-        .pCommandBuffers = &cmdbuf,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &present_ready,
-    };
-
-    std::scoped_lock submit_lock{scheduler.submit_mutex};
-    try {
-        instance.GetGraphicsQueue().submit(submit_info, frame->present_done);
-    } catch (vk::DeviceLostError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Device lost during present submit: {}", err.what());
-        UNREACHABLE();
-    }
-
+    // Present to swapchain.
+    std::scoped_lock submit_lock{Scheduler::submit_mutex};
     swapchain.Present();
 
     // Free the frame for reuse

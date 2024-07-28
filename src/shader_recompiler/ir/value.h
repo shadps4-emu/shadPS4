@@ -220,6 +220,7 @@ using F16 = TypedValue<Type::F16>;
 using F32 = TypedValue<Type::F32>;
 using F64 = TypedValue<Type::F64>;
 using U32F32 = TypedValue<Type::U32 | Type::F32>;
+using U64F64 = TypedValue<Type::U64 | Type::F64>;
 using U32U64 = TypedValue<Type::U32 | Type::U64>;
 using U16U32U64 = TypedValue<Type::U16 | Type::U32 | Type::U64>;
 using F32F64 = TypedValue<Type::F32 | Type::F64>;

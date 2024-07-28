@@ -26,6 +26,8 @@ bool showSplash();
 bool nullGpu();
 bool dumpShaders();
 bool dumpPM4();
+bool isRdocEnabled();
+u32 vblankDiv();
 
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();

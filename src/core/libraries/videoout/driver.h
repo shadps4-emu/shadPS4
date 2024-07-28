@@ -3,10 +3,13 @@
 
 #pragma once
 
+#include "common/debug.h"
+#include "common/polyfill_thread.h"
+#include "core/libraries/videoout/video_out.h"
+
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-#include "core/libraries/videoout/video_out.h"
 
 namespace Vulkan {
 struct Frame;
@@ -25,6 +28,9 @@ struct VideoOutPort {
     SceVideoOutVblankStatus vblank_status;
     std::vector<Kernel::SceKernelEqueue> flip_events;
     std::vector<Kernel::SceKernelEqueue> vblank_events;
+    std::mutex vo_mutex;
+    std::condition_variable vo_cv;
+    std::condition_variable vblank_cv;
     int flip_rate = 0;
 
     s32 FindFreeGroup() const {
@@ -33,6 +39,22 @@ struct VideoOutPort {
             index++;
         }
         return index;
+    }
+
+    bool IsVoLabel(const u64* address) const {
+        const u64* start = &buffer_labels[0];
+        const u64* end = &buffer_labels[MaxDisplayBuffers - 1];
+        return address >= start && address <= end;
+    }
+
+    void WaitVoLabel(auto&& pred) {
+        std::unique_lock lk{vo_mutex};
+        vo_cv.wait(lk, pred);
+    }
+
+    void SignalVoLabel() {
+        std::scoped_lock lk{vo_mutex};
+        vo_cv.notify_one();
     }
 
     [[nodiscard]] int NumRegisteredBuffers() const {
@@ -63,10 +85,7 @@ public:
                         const BufferAttribute* attribute);
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
-    void Flip(std::chrono::microseconds timeout);
     bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
-
-    void Vblank();
 
 private:
     struct Request {
@@ -76,14 +95,19 @@ private:
         s64 flip_arg;
         u64 submit_tsc;
         bool eop;
+
+        operator bool() const noexcept {
+            return frame != nullptr;
+        }
     };
+
+    std::chrono::microseconds Flip(const Request& req);
+    void PresentThread(std::stop_token token);
 
     std::mutex mutex;
     VideoOutPort main_port{};
-    std::condition_variable_any submit_cond;
-    std::condition_variable done_cond;
+    std::jthread present_thread;
     std::queue<Request> requests;
-    bool is_neo{};
 };
 
 } // namespace Libraries::VideoOut

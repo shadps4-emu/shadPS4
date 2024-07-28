@@ -183,6 +183,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus*
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
+    std::unique_lock lock{port->vo_mutex};
     *status = port->vblank_status;
     return ORBIS_OK;
 }
@@ -229,14 +230,6 @@ s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
     return driver->UnregisterBuffers(port, attributeIndex);
 }
 
-void Flip(std::chrono::microseconds micros) {
-    return driver->Flip(micros);
-}
-
-void Vblank() {
-    return driver->Vblank();
-}
-
 void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
     auto* port = driver->GetPort(handle);
     ASSERT(port);
@@ -263,6 +256,18 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
 s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
     s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
     pDeviceCapabilityInfo->capability = 0;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle) {
+    auto* port = driver->GetPort(handle);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    std::unique_lock lock{port->vo_mutex};
+    const auto prev_counter = port->vblank_status.count;
+    port->vblank_cv.wait(lock, [&]() { return prev_counter != port->vblank_status.count; });
     return ORBIS_OK;
 }
 
@@ -294,6 +299,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutGetVblankStatus);
     LIB_FUNCTION("kGVLc3htQE8", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetDeviceCapabilityInfo);
+    LIB_FUNCTION("j6RaAUlaLv0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutWaitVblank);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/logging/log.h>
 #include <core/file_format/playgo_chunk.h>
 #include <core/file_format/psf.h>
 #include <core/file_format/splash.h>
@@ -10,21 +9,30 @@
 #include <core/libraries/libc_internal/libc_internal.h>
 #include <core/libraries/rtc/rtc.h>
 #include <core/libraries/videoout/video_out.h>
-#include <fmt/core.h>
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
 #include "common/version.h"
+#include "core/file_format/psf.h"
+#include "core/file_format/splash.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/libc/libc.h"
+#include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/rtc/rtc.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
+#include "video_core/renderdoc.h"
+
+#include <fmt/core.h>
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -52,6 +60,9 @@ Emulator::Emulator() {
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
+
+    // Load renderdoc module.
+    VideoCore::LoadRenderDoc();
 }
 
 Emulator::~Emulator() {
@@ -120,6 +131,12 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     mnt->Mount(mount_download_dir, "/download0");
 
+    const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
+    if (!std::filesystem::exists(mount_captures_dir)) {
+        std::filesystem::create_directory(mount_captures_dir);
+    }
+    VideoCore::SetOutputDir(mount_captures_dir.generic_string(), id);
+
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());
@@ -152,14 +169,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     std::jthread mainthread =
         std::jthread([this](std::stop_token stop_token) { linker->Execute(); });
 
-    // Begin main window loop until the application exits
-    static constexpr std::chrono::milliseconds FlipPeriod{16};
-
     while (window->isOpen()) {
         window->waitEvent();
-        Libraries::VideoOut::Flip(FlipPeriod);
-        Libraries::VideoOut::Vblank();
-        FRAME_END;
     }
 
     std::exit(0);

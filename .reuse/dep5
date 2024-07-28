@@ -42,3 +42,7 @@ Files: CMakeSettings.json
        src/shadps4.rc
 Copyright: shadPS4 Emulator Project
 License: GPL-2.0-or-later
+
+Files: externals/renderdoc/*
+Copyright: 2019-2024 Baldur Karlsson
+License: MIT
