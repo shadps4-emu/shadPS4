@@ -2,14 +2,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include <source_location>
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
 namespace {
-[[noreturn]] void ThrowInvalidType(Type type, const std::string& functionName) {
-    UNREACHABLE_MSG("Invalid type= {}, functionName= {}", u32(type), functionName);
+[[noreturn]] void ThrowInvalidType(Type type,
+                                   std::source_location loc = std::source_location::current()) {
+    const std::string functionName = loc.function_name();
+    const int lineNumber = loc.line();
+    UNREACHABLE_MSG("Invalid type = {}, functionName = {}, line = {}", u32(type), functionName,
+                    lineNumber);
 }
 
 Value MakeLodClampPair(IREmitter& ir, const F32& bias_lod, const F32& lod_clamp) {
@@ -382,7 +387,7 @@ F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     case Type::F64:
         return Inst<F64>(Opcode::FPAdd64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "FPAdd");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -394,7 +399,7 @@ F32F64 IREmitter::FPSub(const F32F64& a, const F32F64& b) {
     case Type::F32:
         return Inst<F32>(Opcode::FPSub32, a, b);
     default:
-        ThrowInvalidType(a.Type(), "FPSub");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -412,7 +417,7 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2) {
     case Type::F64:
         return Inst(Opcode::CompositeConstructF64x2, e1, e2);
     default:
-        ThrowInvalidType(e1.Type(), "CompositeConstruct 2 arg");
+        ThrowInvalidType(e1.Type());
     }
 }
 
@@ -430,7 +435,7 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     case Type::F64:
         return Inst(Opcode::CompositeConstructF64x3, e1, e2, e3);
     default:
-        ThrowInvalidType(e1.Type(), "CompositeConstruct 3 arg");
+        ThrowInvalidType(e1.Type());
     }
 }
 
@@ -450,7 +455,7 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     case Type::F64:
         return Inst(Opcode::CompositeConstructF64x4, e1, e2, e3, e4);
     default:
-        ThrowInvalidType(e1.Type(), "CompositeConstruct 4 arg");
+        ThrowInvalidType(e1.Type());
     }
 }
 
@@ -487,7 +492,7 @@ Value IREmitter::CompositeExtract(const Value& vector, size_t element) {
     case Type::F64x4:
         return read(Opcode::CompositeExtractF64x4, 4);
     default:
-        ThrowInvalidType(vector.Type(), "CompositeExtract");
+        ThrowInvalidType(vector.Type());
     }
 }
 
@@ -524,7 +529,7 @@ Value IREmitter::CompositeInsert(const Value& vector, const Value& object, size_
     case Type::F64x4:
         return insert(Opcode::CompositeInsertF64x4, 4);
     default:
-        ThrowInvalidType(vector.Type(), "CompositeInsert");
+        ThrowInvalidType(vector.Type());
     }
 }
 
@@ -586,7 +591,7 @@ F32F64 IREmitter::FPMul(const F32F64& a, const F32F64& b) {
     case Type::F64:
         return Inst<F64>(Opcode::FPMul64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "FPMul");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -600,7 +605,7 @@ F32F64 IREmitter::FPFma(const F32F64& a, const F32F64& b, const F32F64& c) {
     case Type::F64:
         return Inst<F64>(Opcode::FPFma64, a, b, c);
     default:
-        ThrowInvalidType(a.Type(), "FPFma");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -611,7 +616,7 @@ F32F64 IREmitter::FPAbs(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPAbs64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPAbs");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -622,7 +627,7 @@ F32F64 IREmitter::FPNeg(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPNeg64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPNeg");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -664,7 +669,7 @@ F32F64 IREmitter::FPRecip(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPRecip64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPRecip");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -675,7 +680,7 @@ F32F64 IREmitter::FPRecipSqrt(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPRecipSqrt64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPRecipSqrt");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -690,7 +695,7 @@ F32F64 IREmitter::FPSaturate(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPSaturate64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPSaturate");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -705,7 +710,7 @@ F32F64 IREmitter::FPClamp(const F32F64& value, const F32F64& min_value, const F3
     case Type::F64:
         return Inst<F64>(Opcode::FPClamp64, value, min_value, max_value);
     default:
-        ThrowInvalidType(value.Type(), "FPClamp");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -716,7 +721,7 @@ F32F64 IREmitter::FPRoundEven(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPRoundEven64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPRoundEven");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -727,7 +732,7 @@ F32F64 IREmitter::FPFloor(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPFloor64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPFloor");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -738,7 +743,7 @@ F32F64 IREmitter::FPCeil(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPCeil64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPCeil");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -749,7 +754,7 @@ F32F64 IREmitter::FPTrunc(const F32F64& value) {
     case Type::F64:
         return Inst<F64>(Opcode::FPTrunc64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPTrunc");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -767,7 +772,7 @@ U1 IREmitter::FPEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {
     case Type::F64:
         return Inst<U1>(ordered ? Opcode::FPOrdEqual64 : Opcode::FPUnordEqual64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPEqual");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -781,7 +786,7 @@ U1 IREmitter::FPNotEqual(const F32F64& lhs, const F32F64& rhs, bool ordered) {
     case Type::F64:
         return Inst<U1>(ordered ? Opcode::FPOrdNotEqual64 : Opcode::FPUnordNotEqual64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPNotEqual");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -795,7 +800,7 @@ U1 IREmitter::FPLessThan(const F32F64& lhs, const F32F64& rhs, bool ordered) {
     case Type::F64:
         return Inst<U1>(ordered ? Opcode::FPOrdLessThan64 : Opcode::FPUnordLessThan64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPLessThan");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -811,7 +816,7 @@ U1 IREmitter::FPGreaterThan(const F32F64& lhs, const F32F64& rhs, bool ordered) 
         return Inst<U1>(ordered ? Opcode::FPOrdGreaterThan64 : Opcode::FPUnordGreaterThan64, lhs,
                         rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPGreaterThan");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -827,7 +832,7 @@ U1 IREmitter::FPLessThanEqual(const F32F64& lhs, const F32F64& rhs, bool ordered
         return Inst<U1>(ordered ? Opcode::FPOrdLessThanEqual64 : Opcode::FPUnordLessThanEqual64,
                         lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPLessThanEqual");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -845,7 +850,7 @@ U1 IREmitter::FPGreaterThanEqual(const F32F64& lhs, const F32F64& rhs, bool orde
                                 : Opcode::FPUnordGreaterThanEqual64,
                         lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPGreaterThanEqual");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -856,7 +861,7 @@ U1 IREmitter::FPIsNan(const F32F64& value) {
     case Type::F64:
         return Inst<U1>(Opcode::FPIsNan64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPIsNan");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -867,7 +872,7 @@ U1 IREmitter::FPIsInf(const F32F64& value) {
     case Type::F64:
         return Inst<U1>(Opcode::FPIsInf64, value);
     default:
-        ThrowInvalidType(value.Type(), "FPIsInf");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -899,7 +904,7 @@ F32F64 IREmitter::FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
         }
         return Inst<F64>(Opcode::FPMax64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPMax");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -916,7 +921,7 @@ F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
         }
         return Inst<F64>(Opcode::FPMin64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "FPMin");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -930,7 +935,7 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
     case Type::U64:
         return Inst<U64>(Opcode::IAdd64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "IAdd");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -942,7 +947,7 @@ Value IREmitter::IAddCary(const U32& a, const U32& b) {
     case Type::U32:
         return Inst<U32>(Opcode::IAddCary32, a, b);
     default:
-        ThrowInvalidType(a.Type(), "IAddCary");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -956,7 +961,7 @@ U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
     case Type::U64:
         return Inst<U64>(Opcode::ISub64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "ISub");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -974,7 +979,7 @@ U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {
     case Type::U64:
         return Inst<U64>(Opcode::IMul64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "IMul");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -989,7 +994,7 @@ U32U64 IREmitter::INeg(const U32U64& value) {
     case Type::U64:
         return Inst<U64>(Opcode::INeg64, value);
     default:
-        ThrowInvalidType(value.Type(), "INeg");
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -1004,7 +1009,7 @@ U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
     case Type::U64:
         return Inst<U64>(Opcode::ShiftLeftLogical64, base, shift);
     default:
-        ThrowInvalidType(base.Type(), "ShiftLeftLogical");
+        ThrowInvalidType(base.Type());
     }
 }
 
@@ -1015,7 +1020,7 @@ U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
     case Type::U64:
         return Inst<U64>(Opcode::ShiftRightLogical64, base, shift);
     default:
-        ThrowInvalidType(base.Type(), "ShiftRightLogical");
+        ThrowInvalidType(base.Type());
     }
 }
 
@@ -1026,7 +1031,7 @@ U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
     case Type::U64:
         return Inst<U64>(Opcode::ShiftRightArithmetic64, base, shift);
     default:
-        ThrowInvalidType(base.Type(), "ShiftRightArithmetic");
+        ThrowInvalidType(base.Type());
     }
 }
 
@@ -1044,7 +1049,7 @@ U32U64 IREmitter::BitwiseOr(const U32U64& a, const U32U64& b) {
     case Type::U64:
         return Inst<U64>(Opcode::BitwiseOr64, a, b);
     default:
-        ThrowInvalidType(a.Type(), "BitwiseOr");
+        ThrowInvalidType(a.Type());
     }
 }
 
@@ -1125,7 +1130,7 @@ U1 IREmitter::ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
     case Type::U64:
         return Inst<U1>(is_signed ? Opcode::SLessThan64 : Opcode::ULessThan64, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "ILessThan");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -1137,7 +1142,7 @@ U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
     case Type::U32:
         return Inst<U1>(Opcode::IEqual, lhs, rhs);
     default:
-        ThrowInvalidType(lhs.Type(), "IEqual");
+        ThrowInvalidType(lhs.Type());
     }
 }
 
@@ -1182,7 +1187,7 @@ U32U64 IREmitter::ConvertFToS(size_t bitsize, const F32F64& value) {
         case Type::F64:
             return Inst<U32>(Opcode::ConvertS32F64, value);
         default:
-            ThrowInvalidType(value.Type(), "ConvertFToS");
+            ThrowInvalidType(value.Type());
         }
     default:
         break;
@@ -1197,7 +1202,7 @@ U32U64 IREmitter::ConvertFToU(size_t bitsize, const F32F64& value) {
         case Type::F32:
             return Inst<U32>(Opcode::ConvertU32F32, value);
         default:
-            ThrowInvalidType(value.Type(), "ConvertFToU");
+            ThrowInvalidType(value.Type());
         }
     default:
         UNREACHABLE_MSG("Invalid destination bitsize {}", bitsize);
