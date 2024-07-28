@@ -105,6 +105,12 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
 
+    const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
+    if (!std::filesystem::exists(mount_captures_dir)) {
+        std::filesystem::create_directory(mount_captures_dir);
+    }
+    VideoCore::SetOutputDir(mount_captures_dir.generic_string(), id);
+
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());

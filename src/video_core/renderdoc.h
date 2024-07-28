@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace VideoCore {
 
 /// Loads renderdoc dynamic library module.
@@ -13,5 +15,11 @@ void StartCapture();
 
 /// Ends current renderdoc capture.
 void EndCapture();
+
+/// Triggers capturing process.
+void TriggerCapture();
+
+/// Sets output directory for captures
+void SetOutputDir(const std::string& path, const std::string& prefix);
 
 } // namespace VideoCore
