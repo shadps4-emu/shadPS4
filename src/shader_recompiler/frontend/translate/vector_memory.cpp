@@ -381,4 +381,63 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
     }
 }
 
+void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
+    const auto& mtbuf = inst.control.mtbuf;
+    IR::VectorReg val_reg{inst.dst[0].code};
+    IR::VectorReg addr_reg{inst.src[0].code};
+    const IR::ScalarReg sharp_reg{inst.src[2].code * 4};
+
+    // Load the value to be used in the atomic operation
+    const IR::Value value = ir.GetVectorReg(val_reg);
+
+    // Construct the address value
+    const IR::Value address = [&] -> IR::Value {
+        if (mtbuf.idxen && mtbuf.offen) {
+            return ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1));
+        }
+        if (mtbuf.idxen || mtbuf.offen) {
+            return ir.GetVectorReg(addr_reg);
+        }
+        return {};
+    }();
+
+    // Construct the handle
+    const IR::Value handle = ir.GetScalarReg(sharp_reg);
+
+    // Perform the atomic operation
+    const IR::Value prev = [&] {
+        switch (op) {
+        case AtomicOp::Swap:
+            return ir.ImageAtomicExchange(handle, address, value, {});
+        case AtomicOp::Add:
+            return ir.ImageAtomicIAdd(handle, address, value, {});
+        case AtomicOp::Smin:
+            return ir.ImageAtomicIMin(handle, address, value, true, {});
+        case AtomicOp::Umin:
+            return ir.ImageAtomicUMin(handle, address, value, {});
+        case AtomicOp::Smax:
+            return ir.ImageAtomicIMax(handle, address, value, true, {});
+        case AtomicOp::Umax:
+            return ir.ImageAtomicUMax(handle, address, value, {});
+        case AtomicOp::And:
+            return ir.ImageAtomicAnd(handle, address, value, {});
+        case AtomicOp::Or:
+            return ir.ImageAtomicOr(handle, address, value, {});
+        case AtomicOp::Xor:
+            return ir.ImageAtomicXor(handle, address, value, {});
+        case AtomicOp::Inc:
+            return ir.ImageAtomicInc(handle, address, value, {});
+        case AtomicOp::Dec:
+            return ir.ImageAtomicDec(handle, address, value, {});
+        default:
+            UNREACHABLE();
+        }
+    }();
+
+    // Store the result if Global L2 Cache (GLC) is enabled
+    if (mtbuf.glc) {
+        ir.SetVectorReg(val_reg, IR::U32{prev});
+    }
+}
+
 } // namespace Shader::Gcn
