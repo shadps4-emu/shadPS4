@@ -326,7 +326,12 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .usage = usage,
     };
 
+#ifdef __APPLE__
+    // Fix for detiler artifacts on macOS
+    const bool is_large_buffer = true;
+#else
     const bool is_large_buffer = size > 128_MB;
+#endif
     VmaAllocationCreateInfo alloc_info{
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
