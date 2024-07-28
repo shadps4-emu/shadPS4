@@ -74,7 +74,7 @@ static auto UserPaths = [] {
     create_path(PathType::SysModuleDir, user_dir / SYSMODULES_DIR);
     create_path(PathType::DownloadDir, user_dir / DOWNLOAD_DIR);
     create_path(PathType::CapturesDir, user_dir / CAPTURES_DIR);
-  
+
     return paths;
 }();
 
