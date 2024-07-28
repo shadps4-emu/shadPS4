@@ -1274,6 +1274,30 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         default:
             break;
         }
+    case 32:
+        switch (value.Type()) {
+        case Type::U64:
+            return Inst<U32>(Opcode::ConvertU32U64, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U64>(Opcode::ConvertU64U32, value);
+        default:
+            break;
+        }
+    // TODO:
+    // case U32x2:
+    //     switch (value.Type()) {
+    //     case Type::U32:
+    //         return Inst<U32x2>(Opcode::ConvertU32x2U32, value);
+    //     case Type::U64:
+    //         return Inst<U32x2>(Opcode::ConvertU32x2U64, value);
+    //     default:
+    //         break;
+    //     }
     default:
         break;
     }
