@@ -173,6 +173,8 @@ public:
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
+    void DS_MAX(int bit_size, const GcnInst& inst);
+    void DS_MIN(int bit_size, const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG
@@ -183,6 +185,7 @@ public:
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
+    void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);
