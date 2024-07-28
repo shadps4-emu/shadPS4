@@ -41,12 +41,14 @@ Id EmitImageAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicUMax);
 }
 
-Id EmitImageAtomicInc32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicInc);
+Id EmitImageAtomicInc32(EmitContext&, IR::Inst*, u32, Id, Id) {
+    // TODO: This is not yet implemented
+    throw NotImplementedException("SPIR-V Instruction");
 }
 
-Id EmitImageAtomicDec32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicDec);
+Id EmitImageAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id) {
+    // TODO: This is not yet implemented
+    throw NotImplementedException("SPIR-V Instruction");
 }
 
 Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
@@ -66,11 +68,12 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
 }
 
 Id EmitBufferAtomicIMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicMin);
+    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicSMin);
 }
 
 Id EmitBufferAtomicIMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicMax);
+    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicSMax);
 }
+
 
 } // namespace Shader::Backend::SPIRV
