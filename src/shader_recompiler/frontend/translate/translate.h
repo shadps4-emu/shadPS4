@@ -185,7 +185,6 @@ public:
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
-    void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Export
     void EXP(const GcnInst& inst);
