@@ -169,8 +169,11 @@ ScePthread PS4_SYSV_ABI scePthreadSelf();
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u64* mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   PthreadEntryFunc start_routine, void* arg, const char* name);
+
+int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio);
 
 /***
  * Mutex calls
