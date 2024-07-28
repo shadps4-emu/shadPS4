@@ -65,4 +65,20 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     UNREACHABLE();
 }
 
+void Translator::DS_MAX(int bit_size, const GcnInst& inst) {
+    const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
+    const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::U32 current_max{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
+    const IR::U32 max_value{ir.UMax(current_max, data)};
+    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), max_value);
+}
+
+void Translator::DS_MIN(int bit_size, const GcnInst& inst) {
+    const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
+    const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::U32 current_min{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
+    const IR::U32 min_value{ir.UMin(current_min, data)};
+    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), min_value);
+}
+
 } // namespace Shader::Gcn
