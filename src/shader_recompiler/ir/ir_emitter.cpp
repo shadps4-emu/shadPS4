@@ -2,14 +2,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include <source_location>
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
 namespace {
-[[noreturn]] void ThrowInvalidType(Type type) {
-    UNREACHABLE_MSG("Invalid type {}", u32(type));
+[[noreturn]] void ThrowInvalidType(Type type,
+                                   std::source_location loc = std::source_location::current()) {
+    const std::string functionName = loc.function_name();
+    const int lineNumber = loc.line();
+    UNREACHABLE_MSG("Invalid type = {}, functionName = {}, line = {}", u32(type), functionName,
+                    lineNumber);
 }
 
 Value MakeLodClampPair(IREmitter& ir, const F32& bias_lod, const F32& lod_clamp) {
