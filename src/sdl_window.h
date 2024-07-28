@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <string>
 #include "common/types.h"
 
 struct SDL_Window;
@@ -40,7 +41,8 @@ struct WindowSystemInfo {
 
 class WindowSDL {
 public:
-    explicit WindowSDL(s32 width, s32 height, Input::GameController* controller);
+    explicit WindowSDL(s32 width, s32 height, Input::GameController* controller,
+                       std::string_view game_title);
     ~WindowSDL();
 
     s32 getWidth() const {

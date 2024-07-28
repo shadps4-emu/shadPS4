@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <core/file_format/playgo_chunk.h>
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
@@ -8,8 +9,6 @@
 #include "playgo.h"
 
 namespace Libraries::PlayGo {
-// this lib is used to play as the game is being installed.
-// can be skipped by just returning and assigning the correct values.
 
 s32 PS4_SYSV_ABI sceDbgPlayGoRequestNextChunk() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
@@ -52,9 +51,16 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
                                    uint32_t numberOfEntries, OrbisPlayGoLocus* outLoci) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called handle = {}, chunkIds = {}, numberOfEntries = {}",
               handle, *chunkIds, numberOfEntries);
-    // assign all now so that scePlayGoGetLocus is not called again for every single entry
-    std::fill(outLoci, outLoci + numberOfEntries,
-              OrbisPlayGoLocusValue::ORBIS_PLAYGO_LOCUS_LOCAL_FAST);
+
+    auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
+
+    for (uint32_t i = 0; i < numberOfEntries; i++) {
+        if (chunkIds[i] <= playgo->GetPlaygoHeader().mchunk_count) {
+            outLoci[i] = OrbisPlayGoLocusValue::ORBIS_PLAYGO_LOCUS_LOCAL_FAST;
+        } else {
+            return ORBIS_PLAYGO_ERROR_BAD_CHUNK_ID;
+        }
+    }
     return ORBIS_OK;
 }
 
@@ -70,7 +76,7 @@ s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayG
 s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo* outTodoList,
                                       u32 numberOfEntries, u32* outEntries) {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
-    if (handle != shadMagic)
+    if (handle != 1)
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     if (outTodoList == nullptr)
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
@@ -88,7 +94,7 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
 }
 
 s32 PS4_SYSV_ABI scePlayGoOpen(OrbisPlayGoHandle* outHandle, const void* param) {
-    *outHandle = shadMagic;
+    *outHandle = 1;
     LOG_INFO(Lib_PlayGo, "(STUBBED)called");
     return ORBIS_OK;
 }

@@ -285,20 +285,24 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto slot = GetTcbKey();
 
 #if defined(_WIN32)
-    // The following logic is based on the wine implementation of TlsGetValue
-    // https://github.com/wine-mirror/wine/blob/a27b9551/dlls/kernelbase/thread.c#L719
+    // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
     static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
     static constexpr u32 TlsMinimumAvailable = 64;
 
-    const u32 teb_offset = slot < TlsMinimumAvailable ? TlsSlotsOffset : TlsExpansionSlotsOffset;
-    const u32 tls_index = slot < TlsMinimumAvailable ? slot : slot - TlsMinimumAvailable;
-
     // Load the pointer to the table of TLS slots.
     c.putSeg(gs);
-    c.mov(dst, ptr[reinterpret_cast<void*>(teb_offset)]);
-    // Load the pointer to our buffer.
-    c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
+    if (slot < TlsMinimumAvailable) {
+        // Load the pointer to TLS slots.
+        c.mov(dst, ptr[reinterpret_cast<void*>(TlsSlotsOffset + slot * sizeof(LPVOID))]);
+    } else {
+        const u32 tls_index = slot - TlsMinimumAvailable;
+
+        // Load the pointer to the table of TLS expansion slots.
+        c.mov(dst, ptr[reinterpret_cast<void*>(TlsExpansionSlotsOffset)]);
+        // Load the pointer to our buffer.
+        c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
+    }
 #elif defined(__APPLE__)
     // The following logic is based on the Darwin implementation of _os_tsd_get_direct, used by
     // pthread_getspecific https://github.com/apple/darwin-xnu/blob/main/libsyscall/os/tsd.h#L89-L96

@@ -89,7 +89,15 @@ struct VirtualMemoryArea {
     uintptr_t fd = 0;
 
     bool Contains(VAddr addr, size_t size) const {
-        return addr >= base && (addr + size) < (base + this->size);
+        return addr >= base && (addr + size) <= (base + this->size);
+    }
+
+    bool IsFree() const noexcept {
+        return type == VMAType::Free;
+    }
+
+    bool IsMapped() const noexcept {
+        return type != VMAType::Free && type != VMAType::Reserved;
     }
 
     bool CanMergeWith(const VirtualMemoryArea& next) const {
@@ -198,9 +206,11 @@ private:
         return iter;
     }
 
-    VirtualMemoryArea& AddMapping(VAddr virtual_addr, size_t size);
+    VAddr SearchFree(VAddr virtual_addr, size_t size, u32 alignment = 0);
 
-    DirectMemoryArea& AddDmemAllocation(PAddr addr, size_t size);
+    VMAHandle CarveVMA(VAddr virtual_addr, size_t size);
+
+    DirectMemoryArea& CarveDmemArea(PAddr addr, size_t size);
 
     VMAHandle Split(VMAHandle vma_handle, size_t offset_in_vma);
 

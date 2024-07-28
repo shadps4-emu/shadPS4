@@ -186,21 +186,23 @@ int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* 
     if (!mount_dir.empty() && std::filesystem::exists(mount_dir)) {
         if (cond->dirName == nullptr) { // look for all dirs if no dir is provided.
             for (int i = 0; const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
-                if (std::filesystem::is_directory(entry.path())) {
+                if (std::filesystem::is_directory(entry.path()) &&
+                    entry.path().filename().string() != "sdmemory") {
+                    // sceSaveDataDirNameSearch does not search for dataMemory1/2 dirs.
                     i++;
                     result->dirNamesNum = 0; // why is it 1024? is it max?
                     // copy dir name to be used by sceSaveDataMount in read mode.
                     strncpy(result->dirNames[i].data, entry.path().filename().string().c_str(), 32);
                     result->hitNum = i + 1;
-                    result->dirNamesNum = i + 1; // to confirm
-                    result->setNum = i + 1;      // to confirm
+                    result->dirNamesNum = i + 1;
+                    result->setNum = i + 1;
                 }
             }
         } else { // Need a game to test.
             strncpy(result->dirNames[0].data, cond->dirName->data, 32);
             result->hitNum = 1;
-            result->dirNamesNum = 1; // to confirm
-            result->setNum = 1;      // to confirm
+            result->dirNamesNum = 1;
+            result->setNum = 1;
         }
     } else {
         result->hitNum = 0;
@@ -321,7 +323,7 @@ int PS4_SYSV_ABI sceSaveDataGetSaveDataCount() {
 int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const u32 userId, void* buf, const size_t bufSize,
                                               const int64_t offset) {
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(userId) / game_serial / "save_mem1.sav";
+                            std::to_string(userId) / game_serial / "sdmemory/save_mem1.sav";
 
     Common::FS::IOFile file(mount_dir, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
@@ -336,7 +338,7 @@ int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const u32 userId, void* buf, const
 
 int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getParam) {
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(getParam->userId) / game_serial;
+                            std::to_string(getParam->userId) / game_serial / "sdmemory";
     if (getParam == nullptr)
         return ORBIS_SAVE_DATA_ERROR_PARAMETER;
     if (getParam->data != nullptr) {
@@ -604,7 +606,7 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(const u32 userId, const void* buf,
                                               const size_t bufSize, const int64_t offset) {
     LOG_INFO(Lib_SaveData, "called");
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(userId) / game_serial / "save_mem1.sav";
+                            std::to_string(userId) / game_serial / "sdmemory/save_mem1.sav";
 
     Common::FS::IOFile file(mount_dir, Common::FS::FileAccessMode::Write);
     file.Seek(offset);
@@ -616,7 +618,7 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(const u32 userId, const void* buf,
 int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* setParam) {
     LOG_INFO(Lib_SaveData, "called: dataNum = {}, slotId= {}", setParam->dataNum, setParam->slotId);
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(setParam->userId) / game_serial;
+                            std::to_string(setParam->userId) / game_serial / "sdmemory";
     if (setParam->data != nullptr) {
         Common::FS::IOFile file(mount_dir / "save_mem2.sav", Common::FS::FileAccessMode::Write);
         if (!file.IsOpen())
@@ -644,7 +646,7 @@ int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(u32 userId, size_t memorySize,
     LOG_INFO(Lib_SaveData, "called:userId = {}, memorySize = {}", userId, memorySize);
 
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(userId) / game_serial;
+                            std::to_string(userId) / game_serial / "sdmemory";
 
     if (std::filesystem::exists(mount_dir)) {
         return ORBIS_SAVE_DATA_ERROR_EXISTS;
@@ -663,7 +665,7 @@ int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetup2
     LOG_INFO(Lib_SaveData, "called");
     // if (setupParam->option == 1) { // check this later.
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(setupParam->userId) / game_serial;
+                            std::to_string(setupParam->userId) / game_serial / "sdmemory";
     if (std::filesystem::exists(mount_dir) &&
         std::filesystem::exists(mount_dir / "save_mem2.sav")) {
         Common::FS::IOFile file(mount_dir / "save_mem2.sav", Common::FS::FileAccessMode::Read);

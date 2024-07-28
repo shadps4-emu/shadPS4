@@ -100,6 +100,7 @@ public:
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
+    void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
     void V_CVT_F32_U32(const GcnInst& inst);
     void V_MAD_F32(const GcnInst& inst);
@@ -129,6 +130,7 @@ public:
     void V_CVT_U32_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_SUBREV_I32(const GcnInst& inst);
+    void V_MAD_U64_U32(const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_LSHRREV_B32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
@@ -186,8 +188,12 @@ public:
     void EXP(const GcnInst& inst);
 
 private:
-    IR::U32F32 GetSrc(const InstOperand& operand, bool flt_zero = false);
+    template <typename T = IR::U32F32>
+    [[nodiscard]] T GetSrc(const InstOperand& operand, bool flt_zero = false);
+    template <typename T = IR::U64F64>
+    [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
+    void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
 private:
     IR::IREmitter ir;

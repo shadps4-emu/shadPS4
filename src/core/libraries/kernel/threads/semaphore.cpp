@@ -41,7 +41,6 @@ public:
         AddWaiter(waiter);
 
         // Perform the wait.
-        std::exchange(lk, std::unique_lock{waiter.mutex});
         return waiter.Wait(lk, timeout);
     }
 
@@ -59,10 +58,9 @@ public:
                 it++;
                 continue;
             }
-            std::scoped_lock lk2{waiter.mutex};
+            it = wait_list.erase(it);
             token_count -= waiter.need_count;
             waiter.cv.notify_one();
-            it = wait_list.erase(it);
         }
 
         return true;
@@ -84,7 +82,6 @@ public:
 
 public:
     struct WaitingThread : public ListBaseHook {
-        std::mutex mutex;
         std::string name;
         std::condition_variable cv;
         u32 priority;
