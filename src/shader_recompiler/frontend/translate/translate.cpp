@@ -164,6 +164,8 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
             value = ir.GetVccHi();
         }
         break;
+    case OperandField::M0:
+        value = m0_value;
     default:
         UNREACHABLE();
     }
@@ -327,7 +329,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     if (operand.output_modifier.multiplier != 0.f) {
         result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
     }
-    if (operand.output_modifier.clamp) {
+    if (operand.output_modifier.clamp && value.Type() == IR::Type::F32) {
         result = ir.FPSaturate(value);
     }
     switch (operand.field) {
@@ -340,7 +342,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     case OperandField::VccHi:
         return ir.SetVccHi(result);
     case OperandField::M0:
-        break;
+        m0_value = result;
     default:
         UNREACHABLE();
     }
