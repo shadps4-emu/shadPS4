@@ -387,6 +387,7 @@ Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 
 Id EmitLaneId(EmitContext& ctx);
+Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
 
 } // namespace Shader::Backend::SPIRV
