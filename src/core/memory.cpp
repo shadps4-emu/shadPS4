@@ -348,7 +348,15 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
     it->second.name = name;
 }
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
+    // If the requested address is below the mapped range, start search from the lowest address
+    auto min_search_address = impl.SystemManagedVirtualBase();
+    if (virtual_addr < min_search_address) {
+        virtual_addr = min_search_address;
+    }
+
     auto it = FindVMA(virtual_addr);
+    ASSERT_MSG(it != vma_map.end(), "Specified mapping address was not found!");
+
     // If the VMA is free and contains the requested mapping we are done.
     if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
         return virtual_addr;
