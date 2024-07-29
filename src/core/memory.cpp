@@ -188,7 +188,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        mapped_addr = SearchFree(mapped_addr, size_aligned);
+        mapped_addr = SearchFree(mapped_addr, size_aligned,1);
     }
 
     if (True(flags & MemoryMapFlags::Fixed)) {
