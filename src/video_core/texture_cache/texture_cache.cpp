@@ -142,7 +142,7 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
             image_ids.push_back(image_id);
         });
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
+    //ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {

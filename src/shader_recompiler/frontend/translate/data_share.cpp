@@ -82,7 +82,8 @@ void Translator::S_BARRIER() {
 }
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
-    UNREACHABLE();
+    ASSERT(info.stage != Stage::Compute);
+    SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
 void Translator::EmitDataShare(const GcnInst& inst) {
