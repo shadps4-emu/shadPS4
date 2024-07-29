@@ -85,11 +85,15 @@ if (APPLE)
     find_package(date 3.0.1 CONFIG)
 endif()
 
+# Note: Windows always has these functions through winpthreads
 include(CheckSymbolExists)
 check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-# Windows always has the function through winpthreads
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
+endif()
+check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
+if(HAVE_SEM_TIMEDWAIT OR WIN32)
+    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
 endif()
 
 add_subdirectory(externals)
