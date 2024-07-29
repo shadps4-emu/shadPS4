@@ -1479,7 +1479,7 @@ constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
     // 337 = V_MIN3_F32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
     // 338 = V_MIN3_I32
     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
@@ -1488,7 +1488,7 @@ constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
      ScalarType::Uint32},
     // 340 = V_MAX3_F32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
     // 341 = V_MAX3_I32
     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
@@ -1497,7 +1497,7 @@ constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
      ScalarType::Uint32},
     // 343 = V_MED3_F32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
     // 344 = V_MED3_I32
     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,

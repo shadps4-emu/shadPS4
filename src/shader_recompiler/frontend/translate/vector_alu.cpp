@@ -5,6 +5,290 @@
 
 namespace Shader::Gcn {
 
+void Translator::EmitVectorAlu(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::V_LSHLREV_B32:
+        return V_LSHLREV_B32(inst);
+    case Opcode::V_LSHL_B32:
+        return V_LSHL_B32(inst);
+    case Opcode::V_BFREV_B32:
+        return V_BFREV_B32(inst);
+    case Opcode::V_BFE_U32:
+        return V_BFE_U32(false, inst);
+    case Opcode::V_BFE_I32:
+        return V_BFE_U32(true, inst);
+    case Opcode::V_BFI_B32:
+        return V_BFI_B32(inst);
+    case Opcode::V_LSHR_B32:
+        return V_LSHR_B32(inst);
+    case Opcode::V_ASHRREV_I32:
+        return V_ASHRREV_I32(inst);
+    case Opcode::V_LSHRREV_B32:
+        return V_LSHRREV_B32(inst);
+    case Opcode::V_NOT_B32:
+        return V_NOT_B32(inst);
+    case Opcode::V_AND_B32:
+        return V_AND_B32(inst);
+    case Opcode::V_OR_B32:
+        return V_OR_B32(false, inst);
+    case Opcode::V_XOR_B32:
+        return V_OR_B32(true, inst);
+    case Opcode::V_FFBL_B32:
+        return V_FFBL_B32(inst);
+
+    case Opcode::V_MOV_B32:
+        return V_MOV(inst);
+    case Opcode::V_ADD_I32:
+        return V_ADD_I32(inst);
+    case Opcode::V_ADDC_U32:
+        return V_ADDC_U32(inst);
+    case Opcode::V_CVT_F32_I32:
+        return V_CVT_F32_I32(inst);
+    case Opcode::V_CVT_F32_U32:
+        return V_CVT_F32_U32(inst);
+    case Opcode::V_CVT_PKRTZ_F16_F32:
+        return V_CVT_PKRTZ_F16_F32(inst);
+    case Opcode::V_CVT_F32_F16:
+        return V_CVT_F32_F16(inst);
+    case Opcode::V_CVT_F16_F32:
+        return V_CVT_F16_F32(inst);
+    case Opcode::V_CVT_F32_UBYTE0:
+        return V_CVT_F32_UBYTE(0, inst);
+    case Opcode::V_CVT_F32_UBYTE1:
+        return V_CVT_F32_UBYTE(1, inst);
+    case Opcode::V_CVT_F32_UBYTE2:
+        return V_CVT_F32_UBYTE(2, inst);
+    case Opcode::V_CVT_F32_UBYTE3:
+        return V_CVT_F32_UBYTE(3, inst);
+    case Opcode::V_CVT_OFF_F32_I4:
+        return V_CVT_OFF_F32_I4(inst);
+    case Opcode::V_MAD_U64_U32:
+        return V_MAD_U64_U32(inst);
+    case Opcode::V_CMP_GE_I32:
+        return V_CMP_U32(ConditionOp::GE, true, false, inst);
+    case Opcode::V_CMP_EQ_I32:
+        return V_CMP_U32(ConditionOp::EQ, true, false, inst);
+    case Opcode::V_CMP_LE_I32:
+        return V_CMP_U32(ConditionOp::LE, true, false, inst);
+    case Opcode::V_CMP_NE_I32:
+        return V_CMP_U32(ConditionOp::LG, true, false, inst);
+    case Opcode::V_CMP_NE_U32:
+        return V_CMP_U32(ConditionOp::LG, false, false, inst);
+    case Opcode::V_CMP_EQ_U32:
+        return V_CMP_U32(ConditionOp::EQ, false, false, inst);
+    case Opcode::V_CMP_F_U32:
+        return V_CMP_U32(ConditionOp::F, false, false, inst);
+    case Opcode::V_CMP_LT_U32:
+        return V_CMP_U32(ConditionOp::LT, false, false, inst);
+    case Opcode::V_CMP_GT_U32:
+        return V_CMP_U32(ConditionOp::GT, false, false, inst);
+    case Opcode::V_CMP_GE_U32:
+        return V_CMP_U32(ConditionOp::GE, false, false, inst);
+    case Opcode::V_CMP_TRU_U32:
+        return V_CMP_U32(ConditionOp::TRU, false, false, inst);
+    case Opcode::V_CMP_NEQ_F32:
+        return V_CMP_F32(ConditionOp::LG, false, inst);
+    case Opcode::V_CMP_F_F32:
+        return V_CMP_F32(ConditionOp::F, false, inst);
+    case Opcode::V_CMP_LT_F32:
+        return V_CMP_F32(ConditionOp::LT, false, inst);
+    case Opcode::V_CMP_EQ_F32:
+        return V_CMP_F32(ConditionOp::EQ, false, inst);
+    case Opcode::V_CMP_LE_F32:
+        return V_CMP_F32(ConditionOp::LE, false, inst);
+    case Opcode::V_CMP_GT_F32:
+        return V_CMP_F32(ConditionOp::GT, false, inst);
+    case Opcode::V_CMP_LG_F32:
+        return V_CMP_F32(ConditionOp::LG, false, inst);
+    case Opcode::V_CMP_GE_F32:
+        return V_CMP_F32(ConditionOp::GE, false, inst);
+    case Opcode::V_CMP_NLE_F32:
+        return V_CMP_F32(ConditionOp::GT, false, inst);
+    case Opcode::V_CMP_NLT_F32:
+        return V_CMP_F32(ConditionOp::GE, false, inst);
+    case Opcode::V_CMP_NGT_F32:
+        return V_CMP_F32(ConditionOp::LE, false, inst);
+    case Opcode::V_CMP_NGE_F32:
+        return V_CMP_F32(ConditionOp::LT, false, inst);
+    case Opcode::V_CNDMASK_B32:
+        return V_CNDMASK_B32(inst);
+    case Opcode::V_MAX_I32:
+        return V_MAX_U32(true, inst);
+    case Opcode::V_MAX_U32:
+        return V_MAX_U32(false, inst);
+    case Opcode::V_MIN_I32:
+        return V_MIN_I32(inst);
+    case Opcode::V_CUBEMA_F32:
+        return V_CUBEMA_F32(inst);
+    case Opcode::V_CUBESC_F32:
+        return V_CUBESC_F32(inst);
+    case Opcode::V_CUBETC_F32:
+        return V_CUBETC_F32(inst);
+    case Opcode::V_CUBEID_F32:
+        return V_CUBEID_F32(inst);
+    case Opcode::V_CVT_U32_F32:
+        return V_CVT_U32_F32(inst);
+    case Opcode::V_CVT_I32_F32:
+        return V_CVT_I32_F32(inst);
+    case Opcode::V_CVT_FLR_I32_F32:
+        return V_CVT_FLR_I32_F32(inst);
+    case Opcode::V_SUBREV_I32:
+        return V_SUBREV_I32(inst);
+    case Opcode::V_MUL_HI_U32:
+        return V_MUL_HI_U32(false, inst);
+    case Opcode::V_MUL_LO_I32:
+        return V_MUL_LO_U32(inst);
+    case Opcode::V_SAD_U32:
+        return V_SAD_U32(inst);
+    case Opcode::V_SUB_I32:
+        return V_SUB_I32(inst);
+    case Opcode::V_MAD_I32_I24:
+        return V_MAD_I32_I24(inst);
+    case Opcode::V_MUL_I32_I24:
+    case Opcode::V_MUL_U32_U24:
+        return V_MUL_I32_I24(inst);
+    case Opcode::V_MAD_U32_U24:
+        return V_MAD_U32_U24(inst);
+    case Opcode::V_BCNT_U32_B32:
+        return V_BCNT_U32_B32(inst);
+    case Opcode::V_MUL_LO_U32:
+        return V_MUL_LO_U32(inst);
+    case Opcode::V_MIN_U32:
+        return V_MIN_U32(inst);
+    case Opcode::V_CMP_NE_U64:
+        return V_CMP_NE_U64(inst);
+    case Opcode::V_READFIRSTLANE_B32:
+        return V_READFIRSTLANE_B32(inst);
+
+    case Opcode::V_MAD_F32:
+        return V_MAD_F32(inst);
+    case Opcode::V_MAC_F32:
+        return V_MAC_F32(inst);
+    case Opcode::V_MUL_F32:
+        return V_MUL_F32(inst);
+    case Opcode::V_RCP_F32:
+        return V_RCP_F32(inst);
+    case Opcode::V_LDEXP_F32:
+        return V_LDEXP_F32(inst);
+    case Opcode::V_FRACT_F32:
+        return V_FRACT_F32(inst);
+    case Opcode::V_ADD_F32:
+        return V_ADD_F32(inst);
+    case Opcode::V_MED3_F32:
+        return V_MED3_F32(inst);
+    case Opcode::V_FLOOR_F32:
+        return V_FLOOR_F32(inst);
+    case Opcode::V_SUB_F32:
+        return V_SUB_F32(inst);
+    case Opcode::V_FMA_F32:
+    case Opcode::V_MADAK_F32:
+        return V_FMA_F32(inst);
+    case Opcode::V_MAX_F32:
+        return V_MAX_F32(inst);
+    case Opcode::V_RSQ_F32:
+        return V_RSQ_F32(inst);
+    case Opcode::V_SIN_F32:
+        return V_SIN_F32(inst);
+    case Opcode::V_COS_F32:
+        return V_COS_F32(inst);
+    case Opcode::V_LOG_F32:
+        return V_LOG_F32(inst);
+    case Opcode::V_EXP_F32:
+        return V_EXP_F32(inst);
+    case Opcode::V_SQRT_F32:
+        return V_SQRT_F32(inst);
+    case Opcode::V_MIN_F32:
+        return V_MIN_F32(inst, false);
+    case Opcode::V_MIN3_F32:
+        return V_MIN3_F32(inst);
+    case Opcode::V_MIN_LEGACY_F32:
+        return V_MIN_F32(inst, true);
+    case Opcode::V_MADMK_F32:
+        return V_MADMK_F32(inst);
+    case Opcode::V_SUBREV_F32:
+        return V_SUBREV_F32(inst);
+    case Opcode::V_RNDNE_F32:
+        return V_RNDNE_F32(inst);
+    case Opcode::V_MAX3_F32:
+        return V_MAX3_F32(inst);
+    case Opcode::V_TRUNC_F32:
+        return V_TRUNC_F32(inst);
+    case Opcode::V_CEIL_F32:
+        return V_CEIL_F32(inst);
+    case Opcode::V_MUL_LEGACY_F32:
+        return V_MUL_F32(inst);
+    case Opcode::V_MAC_LEGACY_F32:
+        return V_MAC_F32(inst);
+    case Opcode::V_MAD_LEGACY_F32:
+        return V_MAD_F32(inst);
+    case Opcode::V_MAX_LEGACY_F32:
+        return V_MAX_F32(inst, true);
+    case Opcode::V_RSQ_LEGACY_F32:
+    case Opcode::V_RSQ_CLAMP_F32:
+        return V_RSQ_F32(inst);
+    case Opcode::V_RCP_IFLAG_F32:
+        return V_RCP_F32(inst);
+
+    case Opcode::V_CMPX_F_F32:
+        return V_CMP_F32(ConditionOp::F, true, inst);
+    case Opcode::V_CMPX_LT_F32:
+        return V_CMP_F32(ConditionOp::LT, true, inst);
+    case Opcode::V_CMPX_EQ_F32:
+        return V_CMP_F32(ConditionOp::EQ, true, inst);
+    case Opcode::V_CMPX_LE_F32:
+        return V_CMP_F32(ConditionOp::LE, true, inst);
+    case Opcode::V_CMPX_GT_F32:
+        return V_CMP_F32(ConditionOp::GT, true, inst);
+    case Opcode::V_CMPX_LG_F32:
+        return V_CMP_F32(ConditionOp::LG, true, inst);
+    case Opcode::V_CMPX_GE_F32:
+        return V_CMP_F32(ConditionOp::GE, true, inst);
+    case Opcode::V_CMPX_NGE_F32:
+        return V_CMP_F32(ConditionOp::LT, true, inst);
+    case Opcode::V_CMPX_NLG_F32:
+        return V_CMP_F32(ConditionOp::EQ, true, inst);
+    case Opcode::V_CMPX_NGT_F32:
+        return V_CMP_F32(ConditionOp::LE, true, inst);
+    case Opcode::V_CMPX_NLE_F32:
+        return V_CMP_F32(ConditionOp::GT, true, inst);
+    case Opcode::V_CMPX_NEQ_F32:
+        return V_CMP_F32(ConditionOp::LG, true, inst);
+    case Opcode::V_CMPX_NLT_F32:
+        return V_CMP_F32(ConditionOp::GE, true, inst);
+    case Opcode::V_CMPX_TRU_F32:
+        return V_CMP_F32(ConditionOp::TRU, true, inst);
+    case Opcode::V_CMP_CLASS_F32:
+        return V_CMP_CLASS_F32(inst);
+
+    case Opcode::V_CMP_LE_U32:
+        return V_CMP_U32(ConditionOp::LE, false, false, inst);
+    case Opcode::V_CMP_GT_I32:
+        return V_CMP_U32(ConditionOp::GT, true, false, inst);
+    case Opcode::V_CMP_LT_I32:
+        return V_CMP_U32(ConditionOp::LT, true, false, inst);
+    case Opcode::V_CMPX_LT_I32:
+        return V_CMP_U32(ConditionOp::LT, true, true, inst);
+    case Opcode::V_CMPX_F_U32:
+        return V_CMP_U32(ConditionOp::F, false, true, inst);
+    case Opcode::V_CMPX_LT_U32:
+        return V_CMP_U32(ConditionOp::LT, false, true, inst);
+    case Opcode::V_CMPX_EQ_U32:
+        return V_CMP_U32(ConditionOp::EQ, false, true, inst);
+    case Opcode::V_CMPX_LE_U32:
+        return V_CMP_U32(ConditionOp::LE, false, true, inst);
+    case Opcode::V_CMPX_GT_U32:
+        return V_CMP_U32(ConditionOp::GT, false, true, inst);
+    case Opcode::V_CMPX_NE_U32:
+        return V_CMP_U32(ConditionOp::LG, false, true, inst);
+    case Opcode::V_CMPX_GE_U32:
+        return V_CMP_U32(ConditionOp::GE, false, true, inst);
+    case Opcode::V_CMPX_TRU_U32:
+        return V_CMP_U32(ConditionOp::TRU, false, true, inst);
+    default:
+        info.translation_failed = true;
+    }
+}
+
 void Translator::V_MOV(const GcnInst& inst) {
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }

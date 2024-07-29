@@ -5,6 +5,88 @@
 
 namespace Shader::Gcn {
 
+void Translator::EmitScalarAlu(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::S_MOVK_I32:
+        return S_MOVK(inst);
+    case Opcode::S_MOV_B32:
+        return S_MOV(inst);
+    case Opcode::S_MUL_I32:
+        return S_MUL_I32(inst);
+    case Opcode::S_AND_SAVEEXEC_B64:
+        return S_AND_SAVEEXEC_B64(inst);
+    case Opcode::S_MOV_B64:
+        return S_MOV_B64(inst);
+    case Opcode::S_CMP_LT_U32:
+        return S_CMP(ConditionOp::LT, false, inst);
+    case Opcode::S_CMP_LE_U32:
+        return S_CMP(ConditionOp::LE, false, inst);
+    case Opcode::S_CMP_LG_U32:
+        return S_CMP(ConditionOp::LG, false, inst);
+    case Opcode::S_CMP_LT_I32:
+        return S_CMP(ConditionOp::LT, true, inst);
+    case Opcode::S_CMP_LG_I32:
+        return S_CMP(ConditionOp::LG, true, inst);
+    case Opcode::S_CMP_GT_I32:
+        return S_CMP(ConditionOp::GT, true, inst);
+    case Opcode::S_CMP_GE_I32:
+        return S_CMP(ConditionOp::GE, true, inst);
+    case Opcode::S_CMP_EQ_I32:
+        return S_CMP(ConditionOp::EQ, true, inst);
+    case Opcode::S_CMP_EQ_U32:
+        return S_CMP(ConditionOp::EQ, false, inst);
+    case Opcode::S_OR_B64:
+        return S_OR_B64(NegateMode::None, false, inst);
+    case Opcode::S_NOR_B64:
+        return S_OR_B64(NegateMode::Result, false, inst);
+    case Opcode::S_XOR_B64:
+        return S_OR_B64(NegateMode::None, true, inst);
+    case Opcode::S_ORN2_B64:
+        return S_OR_B64(NegateMode::Src1, false, inst);
+    case Opcode::S_AND_B64:
+        return S_AND_B64(NegateMode::None, inst);
+    case Opcode::S_NAND_B64:
+        return S_AND_B64(NegateMode::Result, inst);
+    case Opcode::S_ANDN2_B64:
+        return S_AND_B64(NegateMode::Src1, inst);
+    case Opcode::S_NOT_B64:
+        return S_NOT_B64(inst);
+    case Opcode::S_ADD_I32:
+        return S_ADD_I32(inst);
+    case Opcode::S_AND_B32:
+        return S_AND_B32(inst);
+    case Opcode::S_ASHR_I32:
+        return S_ASHR_I32(inst);
+    case Opcode::S_OR_B32:
+        return S_OR_B32(inst);
+    case Opcode::S_LSHL_B32:
+        return S_LSHL_B32(inst);
+    case Opcode::S_LSHR_B32:
+        return S_LSHR_B32(inst);
+    case Opcode::S_CSELECT_B32:
+        return S_CSELECT_B32(inst);
+    case Opcode::S_CSELECT_B64:
+        return S_CSELECT_B64(inst);
+    case Opcode::S_BFE_U32:
+        return S_BFE_U32(inst);
+    case Opcode::S_BFM_B32:
+        return S_BFM_B32(inst);
+    case Opcode::S_BREV_B32:
+        return S_BREV_B32(inst);
+    case Opcode::S_ADD_U32:
+        return S_ADD_U32(inst);
+    case Opcode::S_ADDC_U32:
+        return S_ADDC_U32(inst);
+    case Opcode::S_SUB_U32:
+    case Opcode::S_SUB_I32:
+        return S_SUB_U32(inst);
+    case Opcode::S_WQM_B64:
+        break;
+    default:
+        info.translation_failed = true;
+    }
+}
+
 void Translator::S_MOVK(const GcnInst& inst) {
     const auto simm16 = inst.control.sopk.simm.Value();
     if (simm16 & (1 << 15)) {
@@ -62,8 +144,6 @@ void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
         }
     }();
 
-    // Mark destination SPGR as an EXEC context. This means we will use 1-bit
-    // IR instruction whenever it's loaded.
     switch (inst.dst[0].field) {
     case OperandField::ScalarGPR:
         ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), exec);

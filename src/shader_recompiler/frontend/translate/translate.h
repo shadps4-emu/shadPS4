@@ -55,9 +55,17 @@ class Translator {
 public:
     explicit Translator(IR::Block* block_, Info& info);
 
+    // Instruction categories
     void EmitPrologue();
     void EmitFetch(const GcnInst& inst);
     void EmitDataShare(const GcnInst& inst);
+    void EmitVectorInterpolation(const GcnInst& inst);
+    void EmitScalarMemory(const GcnInst& inst);
+    void EmitVectorMemory(const GcnInst& inst);
+    void EmitExport(const GcnInst& inst);
+    void EmitFlowControl(u32 pc, const GcnInst& inst);
+    void EmitScalarAlu(const GcnInst& inst);
+    void EmitVectorAlu(const GcnInst& inst);
 
     // Scalar ALU
     void S_MOVK(const GcnInst& inst);
@@ -187,9 +195,6 @@ public:
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
-
-    // Export
-    void EXP(const GcnInst& inst);
 
 private:
     template <typename T = IR::U32F32>

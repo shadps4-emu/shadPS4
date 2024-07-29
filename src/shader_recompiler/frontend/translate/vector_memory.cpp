@@ -5,6 +5,93 @@
 
 namespace Shader::Gcn {
 
+void Translator::EmitVectorMemory(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::IMAGE_SAMPLE_LZ_O:
+    case Opcode::IMAGE_SAMPLE_O:
+    case Opcode::IMAGE_SAMPLE_C:
+    case Opcode::IMAGE_SAMPLE_C_LZ:
+    case Opcode::IMAGE_SAMPLE_LZ:
+    case Opcode::IMAGE_SAMPLE:
+    case Opcode::IMAGE_SAMPLE_L:
+    case Opcode::IMAGE_SAMPLE_C_O:
+    case Opcode::IMAGE_SAMPLE_B:
+    case Opcode::IMAGE_SAMPLE_C_LZ_O:
+        return IMAGE_SAMPLE(inst);
+    case Opcode::IMAGE_GATHER4_C:
+    case Opcode::IMAGE_GATHER4_LZ:
+    case Opcode::IMAGE_GATHER4_LZ_O:
+        return IMAGE_GATHER(inst);
+    case Opcode::IMAGE_ATOMIC_ADD:
+        return IMAGE_ATOMIC(AtomicOp::Add, inst);
+    case Opcode::IMAGE_ATOMIC_AND:
+        return IMAGE_ATOMIC(AtomicOp::And, inst);
+    case Opcode::IMAGE_ATOMIC_OR:
+        return IMAGE_ATOMIC(AtomicOp::Or, inst);
+    case Opcode::IMAGE_ATOMIC_XOR:
+        return IMAGE_ATOMIC(AtomicOp::Xor, inst);
+    case Opcode::IMAGE_ATOMIC_UMAX:
+        return IMAGE_ATOMIC(AtomicOp::Umax, inst);
+    case Opcode::IMAGE_ATOMIC_SMAX:
+        return IMAGE_ATOMIC(AtomicOp::Smax, inst);
+    case Opcode::IMAGE_ATOMIC_UMIN:
+        return IMAGE_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::IMAGE_ATOMIC_SMIN:
+        return IMAGE_ATOMIC(AtomicOp::Smin, inst);
+    case Opcode::IMAGE_ATOMIC_INC:
+        return IMAGE_ATOMIC(AtomicOp::Inc, inst);
+    case Opcode::IMAGE_ATOMIC_DEC:
+        return IMAGE_ATOMIC(AtomicOp::Dec, inst);
+    case Opcode::IMAGE_GET_LOD:
+        return IMAGE_GET_LOD(inst);
+    case Opcode::IMAGE_STORE:
+        return IMAGE_STORE(inst);
+    case Opcode::IMAGE_LOAD_MIP:
+        return IMAGE_LOAD(true, inst);
+    case Opcode::IMAGE_LOAD:
+        return IMAGE_LOAD(false, inst);
+    case Opcode::IMAGE_GET_RESINFO:
+        return IMAGE_GET_RESINFO(inst);
+
+    case Opcode::TBUFFER_LOAD_FORMAT_X:
+        return BUFFER_LOAD_FORMAT(1, true, true, inst);
+    case Opcode::TBUFFER_LOAD_FORMAT_XY:
+        return BUFFER_LOAD_FORMAT(2, true, true, inst);
+    case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
+        return BUFFER_LOAD_FORMAT(3, true, true, inst);
+    case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
+        return BUFFER_LOAD_FORMAT(4, true, true, inst);
+    case Opcode::BUFFER_LOAD_FORMAT_X:
+        return BUFFER_LOAD_FORMAT(1, false, true, inst);
+    case Opcode::BUFFER_LOAD_FORMAT_XY:
+        return BUFFER_LOAD_FORMAT(2, false, true, inst);
+    case Opcode::BUFFER_LOAD_FORMAT_XYZ:
+        return BUFFER_LOAD_FORMAT(3, false, true, inst);
+    case Opcode::BUFFER_LOAD_FORMAT_XYZW:
+        return BUFFER_LOAD_FORMAT(4, false, true, inst);
+    case Opcode::BUFFER_LOAD_DWORD:
+        return BUFFER_LOAD_FORMAT(1, false, false, inst);
+    case Opcode::BUFFER_LOAD_DWORDX2:
+        return BUFFER_LOAD_FORMAT(2, false, false, inst);
+    case Opcode::BUFFER_LOAD_DWORDX3:
+        return BUFFER_LOAD_FORMAT(3, false, false, inst);
+    case Opcode::BUFFER_LOAD_DWORDX4:
+        return BUFFER_LOAD_FORMAT(4, false, false, inst);
+    case Opcode::BUFFER_STORE_FORMAT_X:
+    case Opcode::BUFFER_STORE_DWORD:
+        return BUFFER_STORE_FORMAT(1, false, inst);
+    case Opcode::BUFFER_STORE_DWORDX2:
+        return BUFFER_STORE_FORMAT(2, false, inst);
+    case Opcode::BUFFER_STORE_DWORDX3:
+        return BUFFER_STORE_FORMAT(3, false, inst);
+    case Opcode::BUFFER_STORE_FORMAT_XYZW:
+    case Opcode::BUFFER_STORE_DWORDX4:
+        return BUFFER_STORE_FORMAT(4, false, inst);
+    default:
+        info.translation_failed = true;
+    }
+}
+
 void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
     IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code};

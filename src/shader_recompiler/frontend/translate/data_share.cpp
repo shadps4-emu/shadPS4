@@ -85,4 +85,29 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     UNREACHABLE();
 }
 
+void Translator::EmitDataShare(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::DS_SWIZZLE_B32:
+        return DS_SWIZZLE_B32(inst);
+    case Opcode::DS_READ_B32:
+        return DS_READ(32, false, false, inst);
+    case Opcode::DS_READ_B64:
+        return DS_READ(64, false, false, inst);
+    case Opcode::DS_READ2_B32:
+        return DS_READ(32, false, true, inst);
+    case Opcode::DS_READ2_B64:
+        return DS_READ(64, false, true, inst);
+    case Opcode::DS_WRITE_B32:
+        return DS_WRITE(32, false, false, inst);
+    case Opcode::DS_WRITE_B64:
+        return DS_WRITE(64, false, false, inst);
+    case Opcode::DS_WRITE2_B32:
+        return DS_WRITE(32, false, true, inst);
+    case Opcode::DS_WRITE2_B64:
+        return DS_WRITE(64, false, true, inst);
+    default:
+        info.translation_failed = true;
+    }
+}
+
 } // namespace Shader::Gcn

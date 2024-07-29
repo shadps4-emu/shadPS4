@@ -12,4 +12,15 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, ir.GetAttribute(attrib, inst.control.vintrp.chan));
 }
 
+void Translator::EmitVectorInterpolation(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::V_INTERP_P1_F32:
+        return;
+    case Opcode::V_INTERP_P2_F32:
+        return V_INTERP_P2_F32(inst);
+    default:
+        info.translation_failed = true;
+    }
+}
+
 } // namespace Shader::Gcn
