@@ -24,6 +24,7 @@ enum class ConditionOp : u32 {
     LT,
     LE,
     TRU,
+    U,
 };
 
 enum class AtomicOp : u32 {
@@ -83,6 +84,8 @@ public:
     void S_SUB_U32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
+    void S_MAX_U32(const GcnInst& inst);
+    void S_MIN_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -122,6 +125,7 @@ public:
     void V_SQRT_F32(const GcnInst& inst);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN3_F32(const GcnInst& inst);
+    void V_MIN3_I32(const GcnInst& inst);
     void V_MADMK_F32(const GcnInst& inst);
     void V_CUBEMA_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);
@@ -160,6 +164,8 @@ public:
     void V_LDEXP_F32(const GcnInst& inst);
     void V_CVT_FLR_I32_F32(const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
+    void V_MAD_U32(const GcnInst& inst);
+    void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
@@ -172,9 +178,9 @@ public:
     void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
-    void V_READFIRSTLANE_B32(const GcnInst& inst);
     void DS_MAX(int bit_size, const GcnInst& inst);
     void DS_MIN(int bit_size, const GcnInst& inst);
+    void V_READFIRSTLANE_B32(const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG
@@ -200,6 +206,7 @@ private:
 private:
     IR::IREmitter ir;
     Info& info;
+    IR::U32 m0_value;
     static std::array<bool, IR::NumScalarRegs> exec_contexts;
 };
 
