@@ -857,36 +857,27 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
-    constexpr u32 SIGNALING_NAN = 1 << 0;
-    constexpr u32 QUIET_NAN = 1 << 1;
-    constexpr u32 NEGATIVE_INFINITY = 1 << 2;
-    constexpr u32 NEGATIVE_NORMAL = 1 << 3;
-    constexpr u32 NEGATIVE_DENORM = 1 << 4;
-    constexpr u32 NEGATIVE_ZERO = 1 << 5;
-    constexpr u32 POSITIVE_ZERO = 1 << 6;
-    constexpr u32 POSITIVE_DENORM = 1 << 7;
-    constexpr u32 POSITIVE_NORMAL = 1 << 8;
-    constexpr u32 POSITIVE_INFINITY = 1 << 9;
-
     const IR::F32F64 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
+    IR::U1 value;
     if (src1.IsImmediate()) {
-        const u32 class_mask = src1.U32();
-        IR::U1 value;
-        if ((class_mask & (SIGNALING_NAN | QUIET_NAN)) == (SIGNALING_NAN | QUIET_NAN)) {
+        const auto class_mask = static_cast<IR::FloatClassFunc>(src1.U32());
+        if ((class_mask & IR::FloatClassFunc::NaN) == IR::FloatClassFunc::NaN) {
             value = ir.FPIsNan(src0);
-        } else if ((class_mask & (POSITIVE_INFINITY | NEGATIVE_INFINITY)) ==
-                   (POSITIVE_INFINITY | NEGATIVE_INFINITY)) {
+        } else if ((class_mask & IR::FloatClassFunc::Infinity) == IR::FloatClassFunc::Infinity) {
             value = ir.FPIsInf(src0);
         } else {
             UNREACHABLE();
         }
-        if (inst.dst[1].field == OperandField::VccLo) {
-            return ir.SetVcc(value);
-        } else {
-            UNREACHABLE();
-        }
     } else {
+        // We don't know the type yet, delay its resolution.
+        value = ir.FPCmpClass32(src0, src1);
+    }
+
+    switch (inst.dst[1].field) {
+    case OperandField::VccLo:
+        return ir.SetVcc(value);
+    default:
         UNREACHABLE();
     }
 }

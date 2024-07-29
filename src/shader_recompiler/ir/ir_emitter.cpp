@@ -876,6 +876,10 @@ U1 IREmitter::FPIsInf(const F32F64& value) {
     }
 }
 
+U1 IREmitter::FPCmpClass32(const F32& value, const U32& op) {
+    return Inst<U1>(Opcode::FPCmpClass32, value, op);
+}
+
 U1 IREmitter::FPOrdered(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());

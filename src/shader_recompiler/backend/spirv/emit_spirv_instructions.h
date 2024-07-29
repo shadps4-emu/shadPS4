@@ -42,6 +42,7 @@ void EmitSetVcc(EmitContext& ctx);
 void EmitSetSccLo(EmitContext& ctx);
 void EmitSetVccLo(EmitContext& ctx);
 void EmitSetVccHi(EmitContext& ctx);
+void EmitFPCmpClass32(EmitContext& ctx);
 void EmitPrologue(EmitContext& ctx);
 void EmitEpilogue(EmitContext& ctx);
 void EmitDiscard(EmitContext& ctx);

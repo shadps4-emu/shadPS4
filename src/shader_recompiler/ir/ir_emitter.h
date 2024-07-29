@@ -150,6 +150,7 @@ public:
     [[nodiscard]] U1 FPGreaterThan(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPIsNan(const F32F64& value);
     [[nodiscard]] U1 FPIsInf(const F32F64& value);
+    [[nodiscard]] U1 FPCmpClass32(const F32& value, const U32& op);
     [[nodiscard]] U1 FPOrdered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] U1 FPUnordered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
