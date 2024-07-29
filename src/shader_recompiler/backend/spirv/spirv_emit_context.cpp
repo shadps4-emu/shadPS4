@@ -126,6 +126,7 @@ Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
+    case AmdGpu::NumberFormat::SnormNz:
         return ctx.F32[4];
     case AmdGpu::NumberFormat::Sint:
         return ctx.S32[4];
@@ -146,6 +147,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
+    case AmdGpu::NumberFormat::SnormNz:
         return {id, input_f32, F32[1], 4};
     case AmdGpu::NumberFormat::Uint:
         return {id, input_u32, U32[1], 4};
@@ -220,11 +222,10 @@ void EmitContext::DefineInputs(const Info& info) {
         break;
     }
     case Stage::Fragment:
-        if (info.uses_group_quad) {
-            subgroup_local_invocation_id = DefineVariable(
-                U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
-            Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
-        }
+        subgroup_id = DefineVariable(U32[1], spv::BuiltIn::SubgroupId, spv::StorageClass::Input);
+        subgroup_local_invocation_id = DefineVariable(
+            U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
+        Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
