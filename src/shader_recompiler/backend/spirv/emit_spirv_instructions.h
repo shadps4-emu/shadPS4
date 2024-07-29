@@ -70,6 +70,10 @@ Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addr
 Id EmitLoadBufferFormatF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferFormatF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferFormatF64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferFormatF64x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferFormatF64x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferFormatF64x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
