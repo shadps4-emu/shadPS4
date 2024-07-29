@@ -278,7 +278,7 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst<U64>(Opcode::LoadSharedU64, offset);
+        return Inst(Opcode::LoadSharedU64, offset);
     case 128:
         return Inst(Opcode::LoadSharedU128, offset);
     default:
@@ -1086,6 +1086,10 @@ U32 IREmitter::FindSMsb(const U32& value) {
 
 U32 IREmitter::FindUMsb(const U32& value) {
     return Inst<U32>(Opcode::FindUMsb32, value);
+}
+
+U32 IREmitter::FindILsb(const U32& value) {
+    return Inst<U32>(Opcode::FindILsb32, value);
 }
 
 U32 IREmitter::SMin(const U32& a, const U32& b) {

@@ -91,6 +91,12 @@ void Translator::V_LSHLREV_B32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, ir.ShiftLeftLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
+void Translator::V_LSHL_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
+}
+
 void Translator::V_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
@@ -599,6 +605,11 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     } else {
         UNREACHABLE();
     }
+}
+
+void Translator::V_FFBL_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    SetDst(inst.dst[0], ir.FindILsb(src0));
 }
 
 } // namespace Shader::Gcn

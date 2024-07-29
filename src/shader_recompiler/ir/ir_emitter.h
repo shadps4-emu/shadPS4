@@ -179,6 +179,7 @@ public:
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32& value);
+    [[nodiscard]] U32 FindILsb(const U32& value);
     [[nodiscard]] U32 SMin(const U32& a, const U32& b);
     [[nodiscard]] U32 UMin(const U32& a, const U32& b);
     [[nodiscard]] U32 IMin(const U32& a, const U32& b, bool is_signed);

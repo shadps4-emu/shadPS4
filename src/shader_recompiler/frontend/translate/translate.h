@@ -100,6 +100,7 @@ public:
     void V_OR_B32(bool is_xor, const GcnInst& inst);
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
+    void V_LSHL_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
@@ -161,6 +162,7 @@ public:
     void V_LDEXP_F32(const GcnInst& inst);
     void V_CVT_FLR_I32_F32(const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
+    void V_FFBL_B32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
