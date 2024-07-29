@@ -65,12 +65,9 @@ void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
     // Mark destination SPGR as an EXEC context. This means we will use 1-bit
     // IR instruction whenever it's loaded.
     switch (inst.dst[0].field) {
-    case OperandField::ScalarGPR: {
-        const u32 reg = inst.dst[0].code;
-        exec_contexts[reg] = true;
-        ir.SetThreadBitScalarReg(IR::ScalarReg(reg), exec);
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), exec);
         break;
-    }
     case OperandField::VccLo:
         ir.SetVcc(exec);
         break;
@@ -79,27 +76,37 @@ void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
     }
 
     // Update EXEC.
-    ir.SetExec(ir.LogicalAnd(exec, src));
+    const IR::U1 result = ir.LogicalAnd(exec, src);
+    ir.SetExec(result);
+    ir.SetScc(result);
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
-    // TODO: Using VCC as EXEC context.
-    if (inst.src[0].field == OperandField::VccLo || inst.dst[0].field == OperandField::VccLo) {
-        return;
-    }
-    if (inst.dst[0].field == OperandField::ScalarGPR && inst.src[0].field == OperandField::ExecLo) {
-        // Exec context push
-        exec_contexts[inst.dst[0].code] = true;
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
-    } else if (inst.dst[0].field == OperandField::ExecLo &&
-               inst.src[0].field == OperandField::ScalarGPR) {
-        // Exec context pop
-        exec_contexts[inst.src[0].code] = false;
-        ir.SetExec(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
-    } else if (inst.dst[0].field == OperandField::ExecLo &&
-               inst.src[0].field == OperandField::ConstZero) {
-        ir.SetExec(ir.Imm1(false));
-    } else {
+    const IR::U1 src = [&] {
+        switch (inst.src[0].field) {
+        case OperandField::VccLo:
+            return ir.GetVcc();
+        case OperandField::ExecLo:
+            return ir.GetExec();
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
+        default:
+            UNREACHABLE();
+        }
+    }();
+    switch (inst.dst[0].field) {
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), src);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(src);
+        break;
+    case OperandField::VccLo:
+        ir.SetVcc(src);
+        break;
+    default:
         UNREACHABLE();
     }
 }

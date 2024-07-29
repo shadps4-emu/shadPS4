@@ -16,13 +16,10 @@
 
 namespace Shader::Gcn {
 
-std::array<bool, IR::NumScalarRegs> Translator::exec_contexts{};
-
 Translator::Translator(IR::Block* block_, Info& info_)
     : ir{*block_, block_->begin()}, info{info_} {}
 
 void Translator::EmitPrologue() {
-    exec_contexts.fill(false);
     ir.Prologue();
     ir.SetExec(ir.Imm1(true));
 
