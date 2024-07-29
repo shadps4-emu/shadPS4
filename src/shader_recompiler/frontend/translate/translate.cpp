@@ -141,7 +141,7 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         if (force_flt) {
             value = ir.Imm32(-1.0f);
         } else {
-            value = ir.Imm32(-1);
+            value = ir.Imm32(std::bit_cast<u32>(-1.f));
         }
         break;
     case OperandField::ConstFloatNeg_2_0:
@@ -164,8 +164,6 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
             value = ir.GetVccHi();
         }
         break;
-    case OperandField::M0:
-        value = m0_value;
     default:
         UNREACHABLE();
     }
@@ -1172,12 +1170,6 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::DS_WRITE2_B32:
             translator.DS_WRITE(32, false, true, inst);
             break;
-        case Opcode::DS_MAX_U32:
-            translator.DS_MAX(32, inst);
-            break;
-        case Opcode::DS_MIN_U32:
-            translator.DS_MIN(32, inst);
-            break;
         case Opcode::V_READFIRSTLANE_B32:
             translator.V_READFIRSTLANE_B32(inst);
             break;
@@ -1200,9 +1192,6 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::S_WQM_B64:
         case Opcode::V_INTERP_P1_F32:
         case Opcode::S_ENDPGM:
-        case Opcode::BUFFER_ATOMIC_ADD:
-        case Opcode::BUFFER_ATOMIC_UMIN:
-        case Opcode::BUFFER_ATOMIC_UMAX:
             break;
         default:
             const u32 opcode = u32(inst.opcode);
