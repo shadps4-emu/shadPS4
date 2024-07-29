@@ -1142,14 +1142,26 @@ void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_l
         case Opcode::DS_READ_B32:
             translator.DS_READ(32, false, false, inst);
             break;
+        case Opcode::DS_READ_B64:
+            translator.DS_READ(64, false, false, inst);
+            break;
         case Opcode::DS_READ2_B32:
             translator.DS_READ(32, false, true, inst);
+            break;
+        case Opcode::DS_READ2_B64:
+            translator.DS_READ(64, false, true, inst);
             break;
         case Opcode::DS_WRITE_B32:
             translator.DS_WRITE(32, false, false, inst);
             break;
+        case Opcode::DS_WRITE_B64:
+            translator.DS_WRITE(64, false, false, inst);
+            break;
         case Opcode::DS_WRITE2_B32:
             translator.DS_WRITE(32, false, true, inst);
+            break;
+        case Opcode::DS_WRITE2_B64:
+            translator.DS_WRITE(64, false, true, inst);
             break;
         case Opcode::V_READFIRSTLANE_B32:
             translator.V_READFIRSTLANE_B32(inst);
