@@ -14,6 +14,10 @@ Id EmitLaneId(EmitContext& ctx) {
     return ctx.OpLoad(ctx.U32[1], ctx.subgroup_local_invocation_id);
 }
 
+Id EmitWarpId(EmitContext& ctx) {
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
+}
+
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index) {
     return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, index);
 }
