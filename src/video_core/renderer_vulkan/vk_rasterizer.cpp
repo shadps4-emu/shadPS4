@@ -50,6 +50,15 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         UNREACHABLE();
     }
 
+    scheduler.EndRendering();
+    const vk::MemoryBarrier barrier = {
+        .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+        .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eAllCommands,
+                           vk::DependencyFlagBits::eByRegion, barrier, {}, {});
+
     BeginRendering();
     UpdateDynamicState(*pipeline);
 
@@ -92,6 +101,14 @@ void Rasterizer::DispatchDirect() {
     }
 
     scheduler.EndRendering();
+    const vk::MemoryBarrier barrier = {
+        .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+        .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eAllCommands,
+                           vk::DependencyFlagBits::eByRegion, barrier, {}, {});
+
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
