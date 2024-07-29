@@ -20,14 +20,25 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
 
 void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
+    IR::VectorReg dst_reg{inst.dst[0].code};
     if (is_pair) {
         // Pair loads are either 32 or 64-bit. We assume 32-bit for now.
-        ASSERT(bit_size == 32);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
-        ir.SetVectorReg(dst_reg, IR::U32{ir.LoadShared(32, is_signed, addr0)});
+        const IR::Value data0 = ir.LoadShared(bit_size, is_signed, addr0);
+        if (bit_size == 32) {
+            ir.SetVectorReg(dst_reg++, IR::U32{data0});
+        } else {
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data0, 0)});
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data0, 1)});
+        }
         const IR::U32 addr1 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset1)));
-        ir.SetVectorReg(dst_reg + 1, IR::U32{ir.LoadShared(32, is_signed, addr1)});
+        const IR::Value data1 = ir.LoadShared(bit_size, is_signed, addr1);
+        if (bit_size == 32) {
+            ir.SetVectorReg(dst_reg++, IR::U32{data1});
+        } else {
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data1, 0)});
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data1, 1)});
+        }
     } else if (bit_size == 64) {
         const IR::Value data = ir.LoadShared(bit_size, is_signed, addr);
         ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(data, 0)});
@@ -62,23 +73,25 @@ void Translator::S_BARRIER() {
 }
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
-    UNREACHABLE();
+    SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
 void Translator::DS_MAX(int bit_size, const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
     const IR::U32 current_max{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
-    const IR::U32 max_value{ir.UMax(current_max, data)};
-    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), max_value);
+    const IR::Value result =
+        ir.ImageAtomicUMax(addr, data, current_max, Shader::IR::TextureInstInfo{});
+    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), IR::U32{result});
 }
 
 void Translator::DS_MIN(int bit_size, const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
     const IR::U32 current_min{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
-    const IR::U32 min_value{ir.UMin(current_min, data)};
-    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), min_value);
+    const IR::Value result =
+        ir.ImageAtomicUMin(addr, data, current_min, Shader::IR::TextureInstInfo{});
+    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), IR::U32{result});
 }
 
 } // namespace Shader::Gcn
