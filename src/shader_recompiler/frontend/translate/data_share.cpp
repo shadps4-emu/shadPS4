@@ -83,15 +83,17 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnI
         if (bit_size == 32) {
             ir.WriteShared(32, ir.GetVectorReg(data0), addr0);
         } else {
-            ir.WriteShared(64, ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1)),
-                           addr0);
+            ir.WriteShared(
+                64, ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1)),
+                addr0);
         }
         const IR::U32 addr1 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset1)));
         if (bit_size == 32) {
             ir.WriteShared(32, ir.GetVectorReg(data1), addr1);
         } else {
-            ir.WriteShared(64, ir.CompositeConstruct(ir.GetVectorReg(data1), ir.GetVectorReg(data1 + 1)),
-                           addr1);
+            ir.WriteShared(
+                64, ir.CompositeConstruct(ir.GetVectorReg(data1), ir.GetVectorReg(data1 + 1)),
+                addr1);
         }
     } else if (bit_size == 64) {
         const IR::Value data =

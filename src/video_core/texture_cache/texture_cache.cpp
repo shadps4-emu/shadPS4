@@ -142,7 +142,7 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
             image_ids.push_back(image_id);
         });
 
-    //ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
+    // ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
@@ -188,8 +188,8 @@ ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo&
     auto& usage = image.info.usage;
 
     if (view_info.is_storage) {
-        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderRead |
-                                                 vk::AccessFlagBits::eShaderWrite);
+        image.Transit(vk::ImageLayout::eGeneral,
+                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
         const auto new_layout = image.info.IsDepthStencil()

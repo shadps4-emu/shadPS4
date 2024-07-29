@@ -12,8 +12,7 @@
 namespace Shader::IR {
 
 template <typename Pred>
-auto BreadthFirstSearch(const Inst* inst, Pred&& pred)
-    -> std::invoke_result_t<Pred, const Inst*> {
+auto BreadthFirstSearch(const Inst* inst, Pred&& pred) -> std::invoke_result_t<Pred, const Inst*> {
     // Most often case the instruction is the desired already.
     if (const std::optional result = pred(inst)) {
         return result;

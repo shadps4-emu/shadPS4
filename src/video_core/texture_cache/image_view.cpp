@@ -72,8 +72,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexce
         if (num_comps == 4) {
             printf("bad\n");
         }
-        LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}",
-                  num_comps, image.DstSelectName());
+        LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}", num_comps,
+                  image.DstSelectName());
         mapping = vk::ComponentMapping{};
     }
 }
