@@ -67,12 +67,4 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicExchange);
 }
 
-Id EmitBufferAtomicIMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicSMin);
-}
-
-Id EmitBufferAtomicIMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
-    return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicSMax);
-}
-
 } // namespace Shader::Backend::SPIRV
