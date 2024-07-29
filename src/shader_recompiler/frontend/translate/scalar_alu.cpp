@@ -287,6 +287,8 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
             return ir.GetExec();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
         default:
             UNREACHABLE();
         }
@@ -300,6 +302,9 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
         break;
     case OperandField::ScalarGPR:
         ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(result);
         break;
     default:
         UNREACHABLE();
@@ -336,6 +341,22 @@ void Translator::S_ADDC_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), ir.GetSccLo()));
+}
+
+void Translator::S_MAX_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result = ir.UMax(src0, src1);
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.IEqual(result, src0));
+}
+
+void Translator::S_MIN_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result = ir.UMin(src0, src1);
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.IEqual(result, src0));
 }
 
 } // namespace Shader::Gcn
