@@ -342,7 +342,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     case OperandField::VccHi:
         return ir.SetVccHi(result);
     case OperandField::M0:
-        m0_value = result;
+        break;
     default:
         UNREACHABLE();
     }
