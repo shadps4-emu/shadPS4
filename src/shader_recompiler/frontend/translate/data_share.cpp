@@ -76,22 +76,4 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
-void Translator::DS_MAX(int bit_size, const GcnInst& inst) {
-    const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
-    const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    const IR::U32 current_max{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
-    const IR::Value result =
-        ir.ImageAtomicUMax(addr, data, current_max, Shader::IR::TextureInstInfo{});
-    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), IR::U32{result});
-}
-
-void Translator::DS_MIN(int bit_size, const GcnInst& inst) {
-    const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
-    const IR::U32 data{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    const IR::U32 current_min{ir.GetVectorReg(IR::VectorReg(inst.dst[0].code))};
-    const IR::Value result =
-        ir.ImageAtomicUMin(addr, data, current_min, Shader::IR::TextureInstInfo{});
-    ir.SetVectorReg(IR::VectorReg(inst.dst[0].code), IR::U32{result});
-}
-
 } // namespace Shader::Gcn
