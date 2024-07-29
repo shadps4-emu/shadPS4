@@ -433,8 +433,7 @@ static Id EmitLoadBufferFormatF64xN(EmitContext& ctx, IR::Inst* inst, u32 handle
     } else {
         boost::container::static_vector<Id, N> ids;
         for (u32 i = 0; i < N; i++) {
-            const Id index_i =
-                ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i * 8));
+            const Id index_i = ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i * 8));
             const Id ptr =
                 ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
             ids.push_back(ctx.OpLoad(ctx.F64[1], ptr));
