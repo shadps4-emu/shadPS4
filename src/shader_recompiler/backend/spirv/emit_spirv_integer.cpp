@@ -242,10 +242,6 @@ Id EmitUClamp32(EmitContext& ctx, IR::Inst* inst, Id value, Id min, Id max) {
     return result;
 }
 
-Id EmitSLessThan(EmitContext& ctx, Id lhs, Id rhs) {
-    return ctx.OpSLessThan(ctx.U1[1], lhs, rhs);
-}
-
 Id EmitULessThan(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpULessThan(ctx.U1[1], lhs, rhs);
 }
