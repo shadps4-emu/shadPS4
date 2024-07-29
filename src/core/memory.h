@@ -177,6 +177,8 @@ public:
     int GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
                             void** directMemoryEndOut);
 
+    void NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name);
+
 private:
     VMAHandle FindVMA(VAddr target) {
         return std::prev(vma_map.upper_bound(target));

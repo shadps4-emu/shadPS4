@@ -188,7 +188,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        mapped_addr = SearchFree(mapped_addr, size_aligned);
+        mapped_addr = SearchFree(mapped_addr, size_aligned, 1);
     }
 
     if (True(flags & MemoryMapFlags::Fixed)) {
@@ -235,6 +235,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
     vma.disallow_merge = false;
+    vma.name = "";
     MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
@@ -280,6 +281,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_commited.Assign(vma.type != VMAType::Free);
+    vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
         ASSERT(dmem_it != dmem_map.end());
@@ -338,6 +340,13 @@ std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     return std::make_pair(*it->second.buffer, addr - it->first);
 }
 
+void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name) {
+    auto it = FindVMA(virtual_addr);
+
+    ASSERT_MSG(it->second.Contains(virtual_addr, size),
+               "Range provided is not fully containted in vma");
+    it->second.name = name;
+}
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
     auto it = FindVMA(virtual_addr);
     // If the VMA is free and contains the requested mapping we are done.
