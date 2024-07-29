@@ -179,6 +179,40 @@ struct Image {
         return base_address << 8;
     }
 
+    u32 DstSelect() const {
+        return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
+    }
+
+    static char SelectComp(u32 sel) {
+        switch (sel) {
+        case 0:
+            return '0';
+        case 1:
+            return '1';
+        case 4:
+            return 'R';
+        case 5:
+            return 'G';
+        case 6:
+            return 'B';
+        case 7:
+            return 'A';
+        default:
+            UNREACHABLE();
+        }
+    }
+
+    std::string DstSelectName() const {
+        std::string result = "[";
+        u32 dst_sel = DstSelect();
+        for (u32 i = 0; i < 4; i++) {
+            result += SelectComp(dst_sel & 7);
+            dst_sel >>= 3;
+        }
+        result += ']';
+        return result;
+    }
+
     u32 Pitch() const {
         return pitch + 1;
     }

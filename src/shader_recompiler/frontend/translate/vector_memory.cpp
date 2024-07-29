@@ -88,7 +88,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_STORE_DWORDX4:
         return BUFFER_STORE_FORMAT(4, false, inst);
     default:
-        info.translation_failed = true;
+        LogMissingOpcode(inst);
     }
 }
 

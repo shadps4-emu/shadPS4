@@ -479,6 +479,14 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
     }
 }
 
+void Translator::LogMissingOpcode(const GcnInst& inst) {
+    const u32 opcode = u32(inst.opcode);
+    LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({}, category = {})",
+              magic_enum::enum_name(inst.opcode), u32(inst.opcode),
+              magic_enum::enum_name(inst.category));
+    info.translation_failed = true;
+}
+
 void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info) {
     if (inst_list.empty()) {
         return;
@@ -522,12 +530,6 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
             break;
         default:
             UNREACHABLE();
-        }
-
-        if (info.translation_failed) {
-            const u32 opcode = u32(inst.opcode);
-            LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({})",
-                      magic_enum::enum_name(inst.opcode), u32(inst.opcode));
         }
     }
 }

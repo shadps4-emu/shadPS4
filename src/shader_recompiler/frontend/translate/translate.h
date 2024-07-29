@@ -185,6 +185,8 @@ public:
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
+    void V_READLANE_B32(const GcnInst& inst);
+    void V_WRITELANE_B32(const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG
@@ -204,9 +206,12 @@ private:
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
+    void LogMissingOpcode(const GcnInst& inst);
+
 private:
     IR::IREmitter ir;
     Info& info;
+    bool opcode_missing = false;
 };
 
 void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info);

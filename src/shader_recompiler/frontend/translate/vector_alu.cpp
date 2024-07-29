@@ -159,6 +159,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_NE_U64(inst);
     case Opcode::V_READFIRSTLANE_B32:
         return V_READFIRSTLANE_B32(inst);
+    case Opcode::V_READLANE_B32:
+        return V_READLANE_B32(inst);
+    case Opcode::V_WRITELANE_B32:
+        return V_WRITELANE_B32(inst);
 
     case Opcode::V_MAD_F32:
         return V_MAD_F32(inst);
@@ -285,7 +289,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
     default:
-        info.translation_failed = true;
+        LogMissingOpcode(inst);
     }
 }
 

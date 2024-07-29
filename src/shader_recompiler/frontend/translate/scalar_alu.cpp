@@ -83,7 +83,7 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
     case Opcode::S_WQM_B64:
         break;
     default:
-        info.translation_failed = true;
+        LogMissingOpcode(inst);
     }
 }
 

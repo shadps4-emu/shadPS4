@@ -149,7 +149,7 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
         image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids[0];
+        image_id = image_ids[image_ids.size() > 1 ? 1 : 0];
     }
 
     Image& image = slot_images[image_id];
@@ -188,7 +188,8 @@ ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo&
     auto& usage = image.info.usage;
 
     if (view_info.is_storage) {
-        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderRead |
+                                                 vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
         const auto new_layout = image.info.IsDepthStencil()

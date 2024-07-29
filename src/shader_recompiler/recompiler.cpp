@@ -60,9 +60,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);
-
-    fmt::print("Post passes\n\n{}\n", Shader::IR::DumpProgram(program));
-    std::fflush(stdout);
+    LOG_INFO(Render_Vulkan, "{}", Shader::IR::DumpProgram(program));
 
     return program;
 }
