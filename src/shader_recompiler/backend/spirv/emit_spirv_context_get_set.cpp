@@ -423,6 +423,43 @@ Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
 }
 
 template <u32 N>
+static Id EmitLoadBufferFormatF64xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto& buffer = ctx.buffers[handle];
+
+    if constexpr (N == 1) {
+        const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(3u));
+        const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
+        return ctx.OpLoad(ctx.F64[1], ptr);
+    } else {
+        boost::container::static_vector<Id, N> ids;
+        for (u32 i = 0; i < N; i++) {
+            const Id index_i =
+                ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i * 8));
+            const Id ptr =
+                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
+            ids.push_back(ctx.OpLoad(ctx.F64[1], ptr));
+        }
+        return ctx.OpCompositeConstruct(ctx.F64[N], ids);
+    }
+}
+
+Id EmitLoadBufferFormatF64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferFormatF64xN<1>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferFormatF64x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferFormatF64xN<2>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferFormatF64x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferFormatF64xN<3>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferFormatF64x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferFormatF64xN<4>(ctx, inst, handle, address);
+}
+
+template <u32 N>
 static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     const auto& buffer = ctx.buffers[handle];
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
