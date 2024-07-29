@@ -73,10 +73,11 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
             continue;
         }
         if (mapping.phys_base <= phys_addr && phys_addr < mapping.phys_base + mapping.size) {
-            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}", addr,
-                     mapping.size);
+            auto vma_segment_start_addr = phys_addr - mapping.phys_base + addr;
+            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}",
+                     vma_segment_start_addr, size);
             // Unmaping might erase from vma_map. We can't do it here.
-            remove_list.emplace_back(addr, mapping.size);
+            remove_list.emplace_back(vma_segment_start_addr, size);
         }
     }
     for (const auto& [addr, size] : remove_list) {
@@ -103,8 +104,6 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
         const auto& vma = FindVMA(mapped_addr)->second;
         // If the VMA is mapped, unmap the region first.
         if (vma.IsMapped()) {
-            ASSERT_MSG(vma.base == mapped_addr && vma.size == size,
-                       "Region must match when reserving a mapped region");
             UnmapMemory(mapped_addr, size);
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
