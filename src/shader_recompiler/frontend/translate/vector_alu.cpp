@@ -608,8 +608,14 @@ void Translator::V_MAD_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    // TODO
-    const IR::U32 result = ir.IAdd(ir.IMul(src0, src1), src2);
+
+    const IR::U32 src0_24 = ir.BitFieldExtract(src0, ir.Imm32(0), ir.Imm32(24), false);
+    const IR::U32 src1_24 = ir.BitFieldExtract(src1, ir.Imm32(0), ir.Imm32(24), false);
+    const IR::U32 src2_24 = src2;
+
+    const IR::U32 product = ir.IMul(src0_24, src1_24);
+    const IR::U32 result = ir.IAdd(product, src2_24);
+
     SetDst(inst.dst[0], result);
     ir.SetVccLo(result);
 }
@@ -620,7 +626,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     const IR::U32 lane_id = ir.LaneId();
     const IR::U32 thread_mask = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), lane_id), ir.Imm32(1));
     const IR::U1 is_odd_warp = ir.INotEqual(ir.BitwiseAnd(ir.WarpId(), ir.Imm32(1)), ir.Imm32(0));
-    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp, is_low ? ir.Imm32(0) : thread_mask,
+    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp, is_low ? ir.Imm32(~0U) : thread_mask,
                                            is_low ? thread_mask : ir.Imm32(0))};
     const IR::U32 masked_value = ir.BitwiseAnd(src0, mask);
     const IR::U32 result = ir.IAdd(src1, ir.BitCount(masked_value));
