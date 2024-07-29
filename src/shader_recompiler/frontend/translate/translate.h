@@ -178,8 +178,6 @@ public:
     void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
-    void DS_MAX(int bit_size, const GcnInst& inst);
-    void DS_MIN(int bit_size, const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void S_BARRIER();
 
