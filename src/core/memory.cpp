@@ -338,6 +338,13 @@ std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
     return std::make_pair(*it->second.buffer, addr - it->first);
 }
 
+void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name) {
+    auto it = FindVMA(virtual_addr);
+
+    ASSERT_MSG(it->second.Contains(virtual_addr, size),
+               "Range provided is not fully containted in vma");
+    it->second.name = name;
+}
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
     auto it = FindVMA(virtual_addr);
     // If the VMA is free and contains the requested mapping we are done.
