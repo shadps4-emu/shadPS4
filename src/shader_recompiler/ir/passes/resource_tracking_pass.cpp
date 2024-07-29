@@ -314,6 +314,10 @@ static bool IsLoadBufferFormat(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferFormatF32x2:
     case IR::Opcode::LoadBufferFormatF32x3:
     case IR::Opcode::LoadBufferFormatF32x4:
+    case IR::Opcode::LoadBufferFormatF64:
+    case IR::Opcode::LoadBufferFormatF64x2:
+    case IR::Opcode::LoadBufferFormatF64x3:
+    case IR::Opcode::LoadBufferFormatF64x4:
         return true;
     default:
         return false;
