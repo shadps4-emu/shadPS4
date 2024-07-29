@@ -108,6 +108,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEnt
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
                                     int* numEntriesOut, int flags);
 
-s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(void* addr, size_t len, const char* name);
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name);
 
 } // namespace Libraries::Kernel

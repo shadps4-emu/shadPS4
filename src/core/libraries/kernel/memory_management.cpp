@@ -274,7 +274,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
     return result;
 }
 
-s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(void* addr, size_t len, const char* name) {
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
     static constexpr size_t MaxNameSize = 32;
     if (std::strlen(name) > MaxNameSize) {
         LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
@@ -286,8 +286,7 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(void* addr, size_t len, const char
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     auto* memory = Core::Memory::Instance();
-    const VAddr vaddr = reinterpret_cast<VAddr>(addr);
-    memory->NameVirtualRange(vaddr, len, name);
+    memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
     return ORBIS_OK;
 }
 } // namespace Libraries::Kernel
