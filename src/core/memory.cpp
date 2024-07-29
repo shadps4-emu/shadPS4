@@ -235,6 +235,7 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
     vma.disallow_merge = false;
+    vma.name = "";
     MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
