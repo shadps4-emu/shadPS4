@@ -373,6 +373,10 @@ U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
 }
 
+U32 IREmitter::WarpId() {
+    return Inst<U32>(Opcode::WarpId);
+}
+
 U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
     return Inst<U32>(Opcode::QuadShuffle, value, index);
 }
