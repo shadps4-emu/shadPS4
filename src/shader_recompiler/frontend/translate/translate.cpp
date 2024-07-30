@@ -101,11 +101,11 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::SignedConstIntPos:
-        ASSERT(!is_float);
+        ASSERT(!force_flt);
         value = ir.Imm32(operand.code - SignedConstIntPosMin + 1);
         break;
     case OperandField::SignedConstIntNeg:
-        ASSERT(!is_float);
+        ASSERT(!force_flt);
         value = ir.Imm32(-s32(operand.code) + SignedConstIntNegMin - 1);
         break;
     case OperandField::LiteralConst:
