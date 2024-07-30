@@ -28,8 +28,9 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        arch: win64_msvc2019_64
         version: 6.7.2
+        arch: win64_msvc2019_64
+        archives: qtsvg qtbase
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

@@ -19,12 +19,11 @@ project(shadPS4)
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
-# This function should be passed a list of all files in a target. It will automatically generate
-# file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
-# one in the filesystem.
+# This function should be passed a list of all files in a target. It will automatically generate file groups
+# following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
 function(create_target_directory_groups target_name)
-    # Place any files that aren't in the source list in a separate group so that they don't get in
-    # the way.
+
+    # Place any files that aren't in the source list in a separate group so that they don't get in the way.
     source_group("Other Files" REGULAR_EXPRESSION ".")
 
     get_target_property(target_sources "${target_name}" SOURCES)
@@ -39,14 +38,6 @@ endfunction()
 
 # Setup a custom clang-format target (if clang-format can be found) that will run
 # against all the src files. This should be used before making a pull request.
-# =======================================================================
-
-set(CLANG_FORMAT_POSTFIX "-17")
-find_program(CLANG_FORMAT
-    NAMES clang-format${CLANG_FORMAT_POSTFIX}
-          clang-format
-    PATHS ${PROJECT_BINARY_DIR}/externals)
-
 if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
     set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
@@ -503,7 +494,7 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
-# the above is shared in sdl and qt version (TODO share them all)
+# The above is shared in SDL and Qt version (TODO share them all)
 
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
@@ -632,6 +623,6 @@ target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
-#        WIN32_EXECUTABLE ON
+#       WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON)
 endif()
