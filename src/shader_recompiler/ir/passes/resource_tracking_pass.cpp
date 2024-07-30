@@ -501,6 +501,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         const IR::Value& handle = producer->Arg(1);
         // Inline sampler resource.
         if (handle.IsImmediate()) {
+            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
             return descriptors.Add(SamplerResource{
                 .sgpr_base = std::numeric_limits<u32>::max(),
                 .dword_offset = 0,

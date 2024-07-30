@@ -7,6 +7,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"

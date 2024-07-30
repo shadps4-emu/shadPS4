@@ -439,8 +439,6 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
 
-    static auto mutex_loc = MUTEX_LOCATION("mutex");
-
     if (name != nullptr) {
         LOG_INFO(Kernel_Pthread, "name={}, result={}", name, result);
     }
