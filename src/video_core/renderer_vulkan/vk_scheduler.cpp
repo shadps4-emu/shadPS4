@@ -62,13 +62,14 @@ void Scheduler::EndRendering() {
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = render_state.color_images[i],
-            .subresourceRange = {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
-                .levelCount = VK_REMAINING_MIP_LEVELS,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-            },
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = VK_REMAINING_MIP_LEVELS,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
         });
     }
     current_cmdbuf.endRendering();
@@ -77,7 +78,6 @@ void Scheduler::EndRendering() {
                                        vk::PipelineStageFlagBits::eFragmentShader,
                                        vk::DependencyFlagBits::eByRegion, {}, {}, barriers);
     }
-
 }
 
 void Scheduler::Flush(SubmitInfo& info) {

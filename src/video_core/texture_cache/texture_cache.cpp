@@ -341,7 +341,8 @@ void TextureCache::RefreshImage(Image& image) {
 
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
-    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead);
+    image.Transit(vk::ImageLayout::eGeneral,
+                  vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {

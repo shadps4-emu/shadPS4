@@ -205,7 +205,9 @@ void EmitContext::DefineInputs(const Info& info) {
                                                                                              : 1;
                 // Note that we pass index rather than Id
                 input_params[input.binding] = {
-                    rate_idx, input_u32, U32[1], input.num_components, false, input.instance_data_buf,
+                    rate_idx, input_u32,
+                    U32[1],   input.num_components,
+                    false,    input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
