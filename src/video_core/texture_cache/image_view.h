@@ -35,6 +35,8 @@ struct ImageViewInfo {
 
 struct Image;
 
+constexpr Common::SlotId NULL_IMAGE_VIEW_ID{0};
+
 struct ImageView {
     explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
                        ImageId image_id, std::optional<vk::ImageUsageFlags> usage_override = {});

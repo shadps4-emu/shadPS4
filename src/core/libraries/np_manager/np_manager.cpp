@@ -870,7 +870,7 @@ int PS4_SYSV_ABI sceNpAsmTerminate() {
 }
 
 int PS4_SYSV_ABI sceNpCheckCallback() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    LOG_TRACE(Lib_NpManager, "(STUBBED) called");
     return ORBIS_OK;
 }
 

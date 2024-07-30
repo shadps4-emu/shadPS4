@@ -337,6 +337,8 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR32Sfloat,
         vk::Format::eR32Sint,
         vk::Format::eR32Uint,
+        vk::Format::eBc6HUfloatBlock,
+        vk::Format::eR16G16Unorm,
     };
     return formats;
 }
@@ -526,6 +528,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Snorm) {
         return vk::Format::eR8G8B8A8Snorm;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc6 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eBc6HUfloatBlock;
     }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }

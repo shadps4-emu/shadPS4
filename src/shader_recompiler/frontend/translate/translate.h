@@ -135,6 +135,7 @@ public:
     void V_SQRT_F32(const GcnInst& inst);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN3_F32(const GcnInst& inst);
+    void V_MIN3_I32(const GcnInst& inst);
     void V_MADMK_F32(const GcnInst& inst);
     void V_CUBEMA_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);

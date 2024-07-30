@@ -232,7 +232,7 @@ private:
     void DefineOutputs(const Info& info);
     void DefineBuffers(const Info& info);
     void DefineImagesAndSamplers(const Info& info);
-    void DefineSharedMemory(const Info& info);
+    void DefineSharedMemory();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

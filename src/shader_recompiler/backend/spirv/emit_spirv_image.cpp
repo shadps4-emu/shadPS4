@@ -106,8 +106,7 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     const auto type = ctx.info.images[handle & 0xFFFF].type;
     const Id zero = ctx.u32_zero_value;
     const auto mips{[&] { return skip_mips ? zero : ctx.OpImageQueryLevels(ctx.U32[1], image); }};
-    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa &&
-                        type != AmdGpu::ImageType::Buffer};
+    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa};
     const auto query{[&](Id type) {
         return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
                         : ctx.OpImageQuerySize(type, image);

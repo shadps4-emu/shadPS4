@@ -2779,11 +2779,11 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     // 60 = DS_READ_U16
     {InstClass::DsIdxRd, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 61 = DS_CONSUME
-    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 62 = DS_APPEND
-    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 63 = DS_ORDERED_COUNT
     {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
      ScalarType::Undefined},

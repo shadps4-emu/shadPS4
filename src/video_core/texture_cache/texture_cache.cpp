@@ -183,6 +183,10 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 }
 
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
+    if (info.guest_address == 0) [[unlikely]] {
+        return slot_image_views[NULL_IMAGE_VIEW_ID];
+    }
+
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;

@@ -75,7 +75,7 @@ struct Buffer {
 static_assert(sizeof(Buffer) == 16); // 128bits
 
 enum class ImageType : u64 {
-    Buffer = 0,
+    Invalid = 0,
     Color1D = 8,
     Color2D = 9,
     Color3D = 10,
@@ -88,8 +88,8 @@ enum class ImageType : u64 {
 
 constexpr std::string_view NameOf(ImageType type) {
     switch (type) {
-    case ImageType::Buffer:
-        return "Buffer";
+    case ImageType::Invalid:
+        return "Invalid";
     case ImageType::Color1D:
         return "Color1D";
     case ImageType::Color2D:

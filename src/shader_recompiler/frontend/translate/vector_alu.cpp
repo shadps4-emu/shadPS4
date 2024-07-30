@@ -205,6 +205,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MIN_F32(inst, false);
     case Opcode::V_MIN3_F32:
         return V_MIN3_F32(inst);
+    case Opcode::V_MIN3_I32:
+        return V_MIN3_I32(inst);
     case Opcode::V_MIN_LEGACY_F32:
         return V_MIN_F32(inst, true);
     case Opcode::V_MADMK_F32:
@@ -578,6 +580,13 @@ void Translator::V_MIN3_F32(const GcnInst& inst) {
     const IR::F32 src1{GetSrc(inst.src[1], true)};
     const IR::F32 src2{GetSrc(inst.src[2], true)};
     SetDst(inst.dst[0], ir.FPMin(src0, ir.FPMin(src1, src2)));
+}
+
+void Translator::V_MIN3_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+    SetDst(inst.dst[0], ir.SMin(src0, ir.SMin(src1, src2)));
 }
 
 void Translator::V_MADMK_F32(const GcnInst& inst) {
