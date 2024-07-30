@@ -183,6 +183,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         ctx.AddCapability(spv::Capability::Float16);
         ctx.AddCapability(spv::Capability::Int16);
     }
+    ctx.AddCapability(spv::Capability::Int64);
     if (info.has_storage_images) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
     }

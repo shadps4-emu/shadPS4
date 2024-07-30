@@ -179,6 +179,7 @@ public:
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
+    void V_INTERP_MOV_F32(const GcnInst& inst);
 
     // Data share
     void DS_SWIZZLE_B32(const GcnInst& inst);

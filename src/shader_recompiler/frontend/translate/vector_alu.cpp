@@ -620,12 +620,12 @@ void Translator::V_SUBREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_U64_U32(const GcnInst& inst) {
-
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
     const auto src2 = GetSrc64<IR::U64>(inst.src[2]);
 
-    const IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
+    //const IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
+    const IR::U64 mul_result = ir.PackUint2x32(ir.CompositeConstruct(ir.IMul(src0, src1), ir.Imm32(0U)));
     const IR::U64 sum_result = ir.IAdd(mul_result, src2);
 
     SetDst64(inst.dst[0], sum_result);
