@@ -25,6 +25,7 @@ enum class ConditionOp : u32 {
     LT,
     LE,
     TRU,
+    U,
 };
 
 enum class AtomicOp : u32 {
@@ -95,6 +96,8 @@ public:
     void S_ADDC_U32(const GcnInst& inst);
     void S_MULK_I32(const GcnInst& inst);
     void S_ADDK_I32(const GcnInst& inst);
+    void S_MAX_U32(const GcnInst& inst);
+    void S_MIN_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);

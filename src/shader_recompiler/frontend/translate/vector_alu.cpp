@@ -111,6 +111,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_F32(ConditionOp::LE, false, inst);
     case Opcode::V_CMP_NGE_F32:
         return V_CMP_F32(ConditionOp::LT, false, inst);
+    case Opcode::V_CMP_U_F32:
+        return V_CMP_F32(ConditionOp::U, false, inst);
     case Opcode::V_CNDMASK_B32:
         return V_CNDMASK_B32(inst);
     case Opcode::V_MAX_I32:
@@ -293,6 +295,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::GE, false, true, inst);
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
+    case Opcode::V_CMPX_LG_I32:
+        return V_CMP_U32(ConditionOp::LG, true, true, inst);
 
     case Opcode::V_MBCNT_LO_U32_B32:
         return V_MBCNT_U32_B32(true, inst);
@@ -518,6 +522,8 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
             return ir.FPLessThanEqual(src0, src1);
         case ConditionOp::GE:
             return ir.FPGreaterThanEqual(src0, src1);
+        case ConditionOp::U:
+            return ir.LogicalNot(ir.LogicalAnd(ir.FPIsNan(src0), ir.FPIsNan(src1)));
         default:
             UNREACHABLE();
         }
