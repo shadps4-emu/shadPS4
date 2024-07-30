@@ -28,7 +28,8 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 }
 
 IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                             std::span<const u32> token, const Info&& info, const Profile& profile) {
+                             std::span<const u32> token, const Info&& info,
+                             const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");

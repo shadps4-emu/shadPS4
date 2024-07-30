@@ -494,8 +494,8 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
-void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list,
-               Info& info, const Profile& profile) {
+void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info,
+               const Profile& profile) {
     if (inst_list.empty()) {
         return;
     }

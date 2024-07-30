@@ -12,7 +12,7 @@
 namespace Shader {
 struct Info;
 struct Profile;
-}
+} // namespace Shader
 
 namespace Shader::Gcn {
 
@@ -226,7 +226,7 @@ private:
     bool opcode_missing = false;
 };
 
-void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list,
-               Info& info, const Profile& profile);
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,
+               const Profile& profile);
 
 } // namespace Shader::Gcn

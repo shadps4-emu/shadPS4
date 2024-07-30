@@ -12,7 +12,7 @@
 namespace Shader {
 struct Info;
 struct Profile;
-}
+} // namespace Shader
 
 namespace Shader::Gcn {
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "shader_recompiler/profile.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
 
@@ -939,8 +939,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
 
     const IR::U32 thread_mask = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), mask_shift), ir.Imm32(1));
     const IR::U1 is_odd_warp = ir.INotEqual(warp_half, ir.Imm32(0));
-    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp,
-                                           is_low ? ir.Imm32(~0U) : thread_mask,
+    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp, is_low ? ir.Imm32(~0U) : thread_mask,
                                            is_low ? thread_mask : ir.Imm32(0))};
     const IR::U32 masked_value = ir.BitwiseAnd(src0, mask);
     const IR::U32 result = ir.IAdd(src1, ir.BitCount(masked_value));

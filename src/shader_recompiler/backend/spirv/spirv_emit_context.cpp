@@ -404,8 +404,8 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rgba32f;
     }
-    UNREACHABLE_MSG("Unknown storage format data_format={}, num_format={}",
-                    image.GetDataFmt(), image.GetNumberFmt());
+    UNREACHABLE_MSG("Unknown storage format data_format={}, num_format={}", image.GetDataFmt(),
+                    image.GetNumberFmt());
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
