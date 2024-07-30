@@ -10,6 +10,10 @@ Id SubgroupScope(EmitContext& ctx) {
     return ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
 }
 
+Id EmitWarpId(EmitContext& ctx) {
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
+}
+
 Id EmitLaneId(EmitContext& ctx) {
     return ctx.OpLoad(ctx.U32[1], ctx.subgroup_local_invocation_id);
 }

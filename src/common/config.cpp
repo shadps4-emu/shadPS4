@@ -15,7 +15,7 @@ static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
-static std::string logType = "sync";
+static std::string logType = "async";
 static bool isDebugDump = false;
 static bool isLibc = true;
 static bool isShowSplash = false;

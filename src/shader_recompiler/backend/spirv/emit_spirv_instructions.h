@@ -42,6 +42,7 @@ void EmitSetVcc(EmitContext& ctx);
 void EmitSetSccLo(EmitContext& ctx);
 void EmitSetVccLo(EmitContext& ctx);
 void EmitSetVccHi(EmitContext& ctx);
+void EmitFPCmpClass32(EmitContext& ctx);
 void EmitPrologue(EmitContext& ctx);
 void EmitEpilogue(EmitContext& ctx);
 void EmitDiscard(EmitContext& ctx);
@@ -148,7 +149,7 @@ Id EmitSelectU64(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 Id EmitSelectF16(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 Id EmitSelectF32(EmitContext& ctx, Id cond, Id true_value, Id false_value);
 Id EmitSelectF64(EmitContext& ctx, Id cond, Id true_value, Id false_value);
-void EmitBitCastU16F16(EmitContext& ctx);
+Id EmitBitCastU16F16(EmitContext& ctx, Id value);
 Id EmitBitCastU32F32(EmitContext& ctx, Id value);
 void EmitBitCastU64F64(EmitContext& ctx);
 Id EmitBitCastF16U16(EmitContext& ctx, Id value);
@@ -282,6 +283,7 @@ Id EmitBitCount32(EmitContext& ctx, Id value);
 Id EmitBitwiseNot32(EmitContext& ctx, Id value);
 Id EmitFindSMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb32(EmitContext& ctx, Id value);
+Id EmitFindILsb32(EmitContext& ctx, Id value);
 Id EmitSMin32(EmitContext& ctx, Id a, Id b);
 Id EmitUMin32(EmitContext& ctx, Id a, Id b);
 Id EmitSMax32(EmitContext& ctx, Id a, Id b);
@@ -353,6 +355,7 @@ Id EmitConvertF64U16(EmitContext& ctx, Id value);
 Id EmitConvertF64U32(EmitContext& ctx, Id value);
 Id EmitConvertF64U64(EmitContext& ctx, Id value);
 Id EmitConvertU16U32(EmitContext& ctx, Id value);
+Id EmitConvertU32U16(EmitContext& ctx, Id value);
 
 Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
                               Id offset);
@@ -387,6 +390,7 @@ Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 
 Id EmitLaneId(EmitContext& ctx);
+Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
 
 } // namespace Shader::Backend::SPIRV

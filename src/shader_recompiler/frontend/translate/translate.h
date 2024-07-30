@@ -11,7 +11,8 @@
 
 namespace Shader {
 struct Info;
-}
+struct Profile;
+} // namespace Shader
 
 namespace Shader::Gcn {
 
@@ -24,6 +25,7 @@ enum class ConditionOp : u32 {
     LT,
     LE,
     TRU,
+    U,
 };
 
 enum class AtomicOp : u32 {
@@ -53,10 +55,19 @@ enum class NegateMode : u32 {
 
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Info& info);
+    explicit Translator(IR::Block* block_, Info& info, const Profile& profile);
 
+    // Instruction categories
     void EmitPrologue();
     void EmitFetch(const GcnInst& inst);
+    void EmitDataShare(const GcnInst& inst);
+    void EmitVectorInterpolation(const GcnInst& inst);
+    void EmitScalarMemory(const GcnInst& inst);
+    void EmitVectorMemory(const GcnInst& inst);
+    void EmitExport(const GcnInst& inst);
+    void EmitFlowControl(u32 pc, const GcnInst& inst);
+    void EmitScalarAlu(const GcnInst& inst);
+    void EmitVectorAlu(const GcnInst& inst);
 
     // Scalar ALU
     void S_MOVK(const GcnInst& inst);
@@ -83,6 +94,10 @@ public:
     void S_SUB_U32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
+    void S_MULK_I32(const GcnInst& inst);
+    void S_ADDK_I32(const GcnInst& inst);
+    void S_MAX_U32(const GcnInst& inst);
+    void S_MIN_U32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -94,11 +109,13 @@ public:
     void V_MAC_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
     void V_CVT_F32_F16(const GcnInst& inst);
+    void V_CVT_F16_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
     void V_CNDMASK_B32(const GcnInst& inst);
     void V_OR_B32(bool is_xor, const GcnInst& inst);
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
+    void V_LSHL_B32(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
@@ -122,6 +139,7 @@ public:
     void V_SQRT_F32(const GcnInst& inst);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN3_F32(const GcnInst& inst);
+    void V_MIN3_I32(const GcnInst& inst);
     void V_MADMK_F32(const GcnInst& inst);
     void V_CUBEMA_F32(const GcnInst& inst);
     void V_CUBESC_F32(const GcnInst& inst);
@@ -146,6 +164,7 @@ public:
     void V_BCNT_U32_B32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
+    void V_MAX3_U32(const GcnInst& inst);
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
@@ -160,6 +179,8 @@ public:
     void V_LDEXP_F32(const GcnInst& inst);
     void V_CVT_FLR_I32_F32(const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
+    void V_FFBL_B32(const GcnInst& inst);
+    void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
@@ -167,12 +188,15 @@ public:
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
+    void V_INTERP_MOV_F32(const GcnInst& inst);
 
     // Data share
     void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
+    void V_READLANE_B32(const GcnInst& inst);
+    void V_WRITELANE_B32(const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG
@@ -184,9 +208,6 @@ public:
     void IMAGE_GET_LOD(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
-    // Export
-    void EXP(const GcnInst& inst);
-
 private:
     template <typename T = IR::U32F32>
     [[nodiscard]] T GetSrc(const InstOperand& operand, bool flt_zero = false);
@@ -195,12 +216,17 @@ private:
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
+    void LogMissingOpcode(const GcnInst& inst);
+
 private:
     IR::IREmitter ir;
     Info& info;
-    static std::array<bool, IR::NumScalarRegs> exec_contexts;
+    const Profile& profile;
+    IR::U32 m0_value;
+    bool opcode_missing = false;
 };
 
-void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info);
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,
+               const Profile& profile);
 
 } // namespace Shader::Gcn

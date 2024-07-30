@@ -76,11 +76,11 @@ struct SMRD {
 };
 
 struct InstControlSOPK {
-    BitField<0, 16, u32> simm;
+    s16 simm;
 };
 
 struct InstControlSOPP {
-    BitField<0, 16, u32> simm;
+    s16 simm;
 };
 
 struct InstControlVOP3 {

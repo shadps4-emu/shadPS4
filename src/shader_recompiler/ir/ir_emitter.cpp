@@ -278,7 +278,7 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst<U64>(Opcode::LoadSharedU64, offset);
+        return Inst(Opcode::LoadSharedU64, offset);
     case 128:
         return Inst(Opcode::LoadSharedU128, offset);
     default:
@@ -371,6 +371,10 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
 
 U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
+}
+
+U32 IREmitter::WarpId() {
+    return Inst<U32>(Opcode::WarpId);
 }
 
 U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
@@ -876,6 +880,10 @@ U1 IREmitter::FPIsInf(const F32F64& value) {
     }
 }
 
+U1 IREmitter::FPCmpClass32(const F32& value, const U32& op) {
+    return Inst<U1>(Opcode::FPCmpClass32, value, op);
+}
+
 U1 IREmitter::FPOrdered(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
@@ -1088,6 +1096,10 @@ U32 IREmitter::FindUMsb(const U32& value) {
     return Inst<U32>(Opcode::FindUMsb32, value);
 }
 
+U32 IREmitter::FindILsb(const U32& value) {
+    return Inst<U32>(Opcode::FindILsb32, value);
+}
+
 U32 IREmitter::SMin(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::SMin32, a, b);
 }
@@ -1273,6 +1285,11 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
             return Inst<U16>(Opcode::ConvertU16U32, value);
         default:
             break;
+        }
+    case 32:
+        switch (value.Type()) {
+        case Type::U16:
+            return Inst<U32>(Opcode::ConvertU32U16, value);
         }
     default:
         break;

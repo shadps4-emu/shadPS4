@@ -183,6 +183,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         ctx.AddCapability(spv::Capability::Float16);
         ctx.AddCapability(spv::Capability::Int16);
     }
+    ctx.AddCapability(spv::Capability::Int64);
     if (info.has_storage_images) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
     }
@@ -204,8 +205,8 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
+        ctx.AddCapability(spv::Capability::GroupNonUniform);
         if (info.uses_group_quad) {
-            ctx.AddCapability(spv::Capability::GroupNonUniform);
             ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
         }
         if (info.has_discard) {
@@ -217,9 +218,9 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         if (info.has_image_query) {
             ctx.AddCapability(spv::Capability::ImageQuery);
         }
-        // if (program.info.stores_frag_depth) {
-        //     ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
-        // }
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
+        }
         break;
     default:
         throw NotImplementedException("Stage {}", u32(program.info.stage));

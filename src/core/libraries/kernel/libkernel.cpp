@@ -7,6 +7,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
@@ -84,6 +85,9 @@ static PS4_SYSV_ABI void stack_chk_fail() {
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
+    if (len == 0) {
+        return ORBIS_OK;
+    }
     auto* memory = Core::Memory::Instance();
     memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
     return SCE_OK;

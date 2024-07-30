@@ -75,7 +75,7 @@ struct Buffer {
 static_assert(sizeof(Buffer) == 16); // 128bits
 
 enum class ImageType : u64 {
-    Buffer = 0,
+    Invalid = 0,
     Color1D = 8,
     Color2D = 9,
     Color3D = 10,
@@ -88,8 +88,8 @@ enum class ImageType : u64 {
 
 constexpr std::string_view NameOf(ImageType type) {
     switch (type) {
-    case ImageType::Buffer:
-        return "Buffer";
+    case ImageType::Invalid:
+        return "Invalid";
     case ImageType::Color1D:
         return "Color1D";
     case ImageType::Color2D:
@@ -177,6 +177,40 @@ struct Image {
 
     VAddr Address() const {
         return base_address << 8;
+    }
+
+    u32 DstSelect() const {
+        return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
+    }
+
+    static char SelectComp(u32 sel) {
+        switch (sel) {
+        case 0:
+            return '0';
+        case 1:
+            return '1';
+        case 4:
+            return 'R';
+        case 5:
+            return 'G';
+        case 6:
+            return 'B';
+        case 7:
+            return 'A';
+        default:
+            UNREACHABLE();
+        }
+    }
+
+    std::string DstSelectName() const {
+        std::string result = "[";
+        u32 dst_sel = DstSelect();
+        for (u32 i = 0; i < 4; i++) {
+            result += SelectComp(dst_sel & 7);
+            dst_sel >>= 3;
+        }
+        result += ']';
+        return result;
     }
 
     u32 Pitch() const {
@@ -290,6 +324,7 @@ enum class BorderColor : u64 {
 // Table 8.12 Sampler Resource Definition
 struct Sampler {
     union {
+        u64 raw0;
         BitField<0, 3, ClampMode> clamp_x;
         BitField<3, 3, ClampMode> clamp_y;
         BitField<6, 3, ClampMode> clamp_z;
@@ -309,6 +344,7 @@ struct Sampler {
         BitField<60, 4, u64> perf_z;
     };
     union {
+        u64 raw1;
         BitField<0, 14, u64> lod_bias;
         BitField<14, 6, u64> lod_bias_sec;
         BitField<20, 2, Filter> xy_mag_filter;
@@ -322,6 +358,10 @@ struct Sampler {
         BitField<42, 18, u64> unused1;
         BitField<62, 2, BorderColor> border_color_type;
     };
+
+    operator bool() const noexcept {
+        return raw0 != 0 || raw1 != 0;
+    }
 
     float LodBias() const noexcept {
         return static_cast<float>(static_cast<int16_t>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /

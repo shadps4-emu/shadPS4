@@ -95,6 +95,7 @@ public:
                      BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();
+    [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
@@ -150,6 +151,7 @@ public:
     [[nodiscard]] U1 FPGreaterThan(const F32F64& lhs, const F32F64& rhs, bool ordered = true);
     [[nodiscard]] U1 FPIsNan(const F32F64& value);
     [[nodiscard]] U1 FPIsInf(const F32F64& value);
+    [[nodiscard]] U1 FPCmpClass32(const F32& value, const U32& op);
     [[nodiscard]] U1 FPOrdered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] U1 FPUnordered(const F32F64& lhs, const F32F64& rhs);
     [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
@@ -179,6 +181,7 @@ public:
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32& value);
+    [[nodiscard]] U32 FindILsb(const U32& value);
     [[nodiscard]] U32 SMin(const U32& a, const U32& b);
     [[nodiscard]] U32 UMin(const U32& a, const U32& b);
     [[nodiscard]] U32 IMin(const U32& a, const U32& b, bool is_signed);

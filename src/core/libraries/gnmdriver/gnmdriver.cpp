@@ -957,7 +957,7 @@ int PS4_SYSV_ABI sceGnmGetGpuBlockStatus() {
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_DEBUG(Lib_GnmDriver, "(STUBBED) called");
     return ORBIS_OK;
 }
 

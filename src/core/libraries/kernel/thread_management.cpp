@@ -439,11 +439,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
 
-    static auto mutex_loc = MUTEX_LOCATION("mutex");
-    (*mutex)->tracy_lock = std::make_unique<tracy::LockableCtx>(&mutex_loc);
-
     if (name != nullptr) {
-        (*mutex)->tracy_lock->CustomName(name, std::strlen(name));
         LOG_INFO(Kernel_Pthread, "name={}, result={}", name, result);
     }
 
@@ -555,14 +551,10 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    (*mutex)->tracy_lock->BeforeLock();
-
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "Locked name={}, result={}", (*mutex)->name, result);
     }
-
-    (*mutex)->tracy_lock->AfterLock();
 
     switch (result) {
     case 0:
@@ -588,8 +580,6 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "Unlocking name={}, result={}", (*mutex)->name, result);
     }
-
-    (*mutex)->tracy_lock->AfterUnlock();
 
     switch (result) {
     case 0:
@@ -1194,8 +1184,6 @@ int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
-
-    (*mutex)->tracy_lock->AfterTryLock(result == 0);
 
     switch (result) {
     case 0:

@@ -9,8 +9,11 @@
 
 namespace Shader {
 
+struct Profile;
+
 [[nodiscard]] IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
                                            ObjectPool<IR::Block>& block_pool,
-                                           std::span<const u32> code, const Info&& info);
+                                           std::span<const u32> code, const Info&& info,
+                                           const Profile& profile);
 
 } // namespace Shader

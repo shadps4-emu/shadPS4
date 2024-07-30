@@ -264,6 +264,16 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+            result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
+                                                     entries[i].protection, flags, "");
+            LOG_INFO(Kernel_Vmm,
+                     "BatchMap: entry = {}, operation = {}, len = {:#x}, type = {}, "
+                     "result = {}",
+                     i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
+
+            if (result == 0)
+                processed++;
         } else {
             UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }

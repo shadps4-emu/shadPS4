@@ -70,7 +70,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
     // exist in filesystem but in different case.
     auto guest_path = current_path;
     while (!path_parts.empty()) {
-        const auto& part = path_parts.back();
+        const auto part = path_parts.back();
         const auto add_match = [&](const auto& host_part) {
             current_path /= host_part;
             guest_path /= part;

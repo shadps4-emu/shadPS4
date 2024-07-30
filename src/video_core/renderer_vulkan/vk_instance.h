@@ -188,6 +188,11 @@ public:
         return properties.limits.nonCoherentAtomSize;
     }
 
+    /// Returns the subgroup size of the selected physical device.
+    u32 SubgroupSize() const {
+        return subgroup_size;
+    }
+
     /// Returns the maximum supported elements in a texel buffer
     u32 MaxTexelBufferElements() const {
         return properties.limits.maxTexelBufferElements;
@@ -249,6 +254,7 @@ private:
     bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
     u64 min_imported_host_pointer_alignment{};
+    u32 subgroup_size{};
     bool tooling_info{};
     bool debug_utils_supported{};
     bool has_nsight_graphics{};

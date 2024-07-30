@@ -50,7 +50,32 @@ void Scheduler::EndRendering() {
         return;
     }
     is_rendering = false;
+    boost::container::static_vector<vk::ImageMemoryBarrier, 9> barriers;
+    for (size_t i = 0; i < render_state.num_color_attachments; ++i) {
+        barriers.push_back(vk::ImageMemoryBarrier{
+            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
+            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = render_state.color_images[i],
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = VK_REMAINING_MIP_LEVELS,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+        });
+    }
     current_cmdbuf.endRendering();
+    if (!barriers.empty()) {
+        current_cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                       vk::PipelineStageFlagBits::eFragmentShader,
+                                       vk::DependencyFlagBits::eByRegion, {}, {}, barriers);
+    }
 }
 
 void Scheduler::Flush(SubmitInfo& info) {

@@ -7,6 +7,29 @@ namespace Shader::Gcn {
 
 static constexpr u32 SQ_SRC_LITERAL = 0xFF;
 
+void Translator::EmitScalarMemory(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::S_LOAD_DWORDX4:
+        return S_LOAD_DWORD(4, inst);
+    case Opcode::S_LOAD_DWORDX8:
+        return S_LOAD_DWORD(8, inst);
+    case Opcode::S_LOAD_DWORDX16:
+        return S_LOAD_DWORD(16, inst);
+    case Opcode::S_BUFFER_LOAD_DWORD:
+        return S_BUFFER_LOAD_DWORD(1, inst);
+    case Opcode::S_BUFFER_LOAD_DWORDX2:
+        return S_BUFFER_LOAD_DWORD(2, inst);
+    case Opcode::S_BUFFER_LOAD_DWORDX4:
+        return S_BUFFER_LOAD_DWORD(4, inst);
+    case Opcode::S_BUFFER_LOAD_DWORDX8:
+        return S_BUFFER_LOAD_DWORD(8, inst);
+    case Opcode::S_BUFFER_LOAD_DWORDX16:
+        return S_BUFFER_LOAD_DWORD(16, inst);
+    default:
+        LogMissingOpcode(inst);
+    }
+}
+
 void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     const auto& smrd = inst.control.smrd;
     const u32 dword_offset = [&] -> u32 {

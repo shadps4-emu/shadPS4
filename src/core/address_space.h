@@ -34,10 +34,7 @@ constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
 
 static constexpr size_t SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
 static constexpr size_t SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
-// User area size is normally larger than this. However games are unlikely to map to high
-// regions of that area, so by default we allocate a smaller virtual address space (about 1/4th).
-// to save space on page tables.
-static constexpr size_t UserSize = 1ULL << 39;
+static constexpr size_t UserSize = 1ULL << 40;
 
 /**
  * Represents the user virtual address space backed by a dmem memory block
