@@ -15,7 +15,9 @@ class Instance;
 
 struct RenderState {
     std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
+    std::array<vk::Image, 8> color_images{};
     vk::RenderingAttachmentInfo depth_attachment{};
+    vk::Image depth_image{};
     u32 num_color_attachments{};
     u32 num_depth_attachments{};
     u32 width = std::numeric_limits<u32>::max();
