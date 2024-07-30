@@ -205,7 +205,7 @@ void EmitContext::DefineInputs(const Info& info) {
                                                                                              : 1;
                 // Note that we pass index rather than Id
                 input_params[input.binding] = {
-                    rate_idx, input_u32, U32[1], input.num_components, input.instance_data_buf,
+                    rate_idx, input_u32, U32[1], input.num_components, false, input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
@@ -232,8 +232,8 @@ void EmitContext::DefineInputs(const Info& info) {
         for (const auto& input : info.ps_inputs) {
             const u32 semantic = input.param_index;
             if (input.is_default) {
-                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), input_f32,
-                                          F32[1]};
+                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), F32[1],
+                                          F32[1], 4, true};
                 continue;
             }
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};

@@ -207,7 +207,7 @@ ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo&
         view_info_tmp.range.extent.levels > image.info.resources.levels ||
         view_info_tmp.range.extent.layers > image.info.resources.layers) {
 
-        LOG_ERROR(Render_Vulkan,
+        LOG_DEBUG(Render_Vulkan,
                   "Subresource range ({}~{},{}~{}) exceeds base image extents ({},{})",
                   view_info_tmp.range.base.level, view_info_tmp.range.extent.levels,
                   view_info_tmp.range.base.layer, view_info_tmp.range.extent.layers,

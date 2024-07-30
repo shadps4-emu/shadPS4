@@ -207,6 +207,7 @@ public:
             message_queue.EmplaceWait(entry);
         } else {
             ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
+            std::fflush(stdout);
         }
     }
 

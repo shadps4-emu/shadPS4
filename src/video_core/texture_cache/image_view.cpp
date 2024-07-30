@@ -48,10 +48,17 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
 }
 
 bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
-    return (num_components == 1 && dst_sel == 0b100) ||
-           (num_components == 2 && dst_sel == 0b101100) ||
-           (num_components == 3 && dst_sel == 0b110101100) ||
+    return (num_components == 1 && (dst_sel == 0b100 || dst_sel == 0b001000000100)) ||
+           (num_components == 2 && (dst_sel == 0b101100 || dst_sel == 0b001000101100)) ||
+           (num_components == 3 && (dst_sel == 0b110101100 || dst_sel == 0b001110101100)) ||
            (num_components == 4 && dst_sel == 0b111110101100);
+}
+
+vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
+    if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
+        return vk::Format::eB8G8R8A8Unorm;
+    }
+    return format;
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept
@@ -68,13 +75,15 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexce
     mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
     // Check for unfortunate case of storage images being swizzled
     const u32 num_comps = AmdGpu::NumComponents(image.GetDataFmt());
-    if (is_storage && !IsIdentityMapping(image.DstSelect(), num_comps)) {
-        if (num_comps == 4) {
-            printf("bad\n");
+    const u32 dst_sel = image.DstSelect();
+    if (is_storage && !IsIdentityMapping(dst_sel, num_comps)) {
+        mapping = vk::ComponentMapping{};
+        if (auto new_format = TrySwizzleFormat(format, dst_sel); new_format != format) {
+            format = new_format;
+            return;
         }
         LOG_ERROR(Render_Vulkan, "Storage image (num_comps = {}) requires swizzling {}", num_comps,
                   image.DstSelectName());
-        mapping = vk::ComponentMapping{};
     }
 }
 
