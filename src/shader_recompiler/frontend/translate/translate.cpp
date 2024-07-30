@@ -536,6 +536,8 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
         case InstCategory::VectorALU:
             translator.EmitVectorAlu(inst);
             break;
+        case InstCategory::DebugProfile:
+            break;
         default:
             UNREACHABLE();
         }
