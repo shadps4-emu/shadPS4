@@ -92,6 +92,8 @@ public:
     void S_SUB_U32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
+    void S_MULK_I32(const GcnInst& inst);
+    void S_ADDK_I32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -157,6 +159,7 @@ public:
     void V_BCNT_U32_B32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
+    void V_MAX3_U32(const GcnInst& inst);
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);

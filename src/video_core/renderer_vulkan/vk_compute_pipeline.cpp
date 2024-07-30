@@ -148,7 +148,7 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         }
     }
     for (const auto& sampler : info.samplers) {
-        const auto ssharp = info.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+        const auto ssharp = sampler.GetSsharp(info);
         const auto vk_sampler = texture_cache.GetSampler(ssharp);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({

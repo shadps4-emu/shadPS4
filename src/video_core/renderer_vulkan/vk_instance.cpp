@@ -261,6 +261,7 @@ bool Instance::CreateDevice() {
                 .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,
                 .shaderStorageImageMultisample = features.shaderStorageImageMultisample,
                 .shaderClipDistance = features.shaderClipDistance,
+                .shaderInt64 = features.shaderInt64,
                 .shaderInt16 = features.shaderInt16,
             },
         },

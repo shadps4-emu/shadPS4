@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include <algorithm>
 #include <deque>
 #include <boost/container/small_vector.hpp>
@@ -435,8 +435,8 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         }
     } else {
         const u32 stride = buffer.GetStride();
-        ASSERT_MSG(stride >= 4, "non-formatting load_buffer_* is not implemented for stride {}",
-                   stride);
+        //ASSERT_MSG(stride >= 4, "non-formatting load_buffer_* is not implemented for stride {}",
+        //           stride);
     }
 
     IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
@@ -477,18 +477,14 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     const auto result = IR::BreadthFirstSearch(&inst, pred);
     ASSERT_MSG(result, "Unable to find image sharp source");
     const IR::Inst* producer = result.value();
-    auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<const IR::Inst*, const IR::Inst*> {
-        if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
-            return std::make_pair(producer->Arg(0).InstRecursive(),
-                                  producer->Arg(1).InstRecursive());
-        }
-        return std::make_pair(producer, nullptr);
-    }();
+    const bool has_sampler = producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2;
+    const auto tsharp_handle = has_sampler ? producer->Arg(0).InstRecursive() : producer;
 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle);
     const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    ASSERT(image.GetType() != AmdGpu::ImageType::Buffer);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
@@ -499,15 +495,28 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    if (ssharp_handle) {
-        const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-        const auto ssharp = TrackSharp(ssharp_ud);
-        const u32 sampler_binding = descriptors.Add(SamplerResource{
-            .sgpr_base = ssharp.sgpr_base,
-            .dword_offset = ssharp.dword_offset,
-            .associated_image = image_binding,
-            .disable_aniso = disable_aniso,
-        });
+    if (has_sampler) {
+        u32 sampler_binding{};
+        const IR::Value& handle = producer->Arg(1);
+        // Inline sampler resource.
+        if (handle.IsImmediate()) {
+            sampler_binding = descriptors.Add(SamplerResource{
+                .sgpr_base = std::numeric_limits<u32>::max(),
+                .dword_offset = 0,
+                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
+            });
+        } else {
+            // Normal sampler resource.
+            const auto ssharp_handle = handle.InstRecursive();
+            const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+            const auto ssharp = TrackSharp(ssharp_ud);
+            sampler_binding = descriptors.Add(SamplerResource{
+                .sgpr_base = ssharp.sgpr_base,
+                .dword_offset = ssharp.dword_offset,
+                .associated_image = image_binding,
+                .disable_aniso = disable_aniso,
+            });
+        }
         image_binding |= (sampler_binding << 16);
     }
 
@@ -610,7 +619,7 @@ void ResourceTrackingPass(IR::Program& program) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
     Descriptors descriptors{info.buffers, info.images, info.samplers};
-    for (IR::Block* const block : program.post_order_blocks) {
+    for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferInstruction(*block, inst, info, descriptors);

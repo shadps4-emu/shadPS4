@@ -215,6 +215,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_RNDNE_F32(inst);
     case Opcode::V_MAX3_F32:
         return V_MAX3_F32(inst);
+    case Opcode::V_MAX3_U32:
+        return V_MAX3_U32(inst);
     case Opcode::V_TRUNC_F32:
         return V_TRUNC_F32(inst);
     case Opcode::V_CEIL_F32:
@@ -762,6 +764,13 @@ void Translator::V_MAX3_F32(const GcnInst& inst) {
     const IR::F32 src1{GetSrc(inst.src[1], true)};
     const IR::F32 src2{GetSrc(inst.src[2], true)};
     SetDst(inst.dst[0], ir.FPMax(src0, ir.FPMax(src1, src2)));
+}
+
+void Translator::V_MAX3_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+    SetDst(inst.dst[0], ir.UMax(src0, ir.UMax(src1, src2)));
 }
 
 void Translator::V_CVT_I32_F32(const GcnInst& inst) {

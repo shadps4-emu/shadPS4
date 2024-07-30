@@ -324,6 +324,7 @@ enum class BorderColor : u64 {
 // Table 8.12 Sampler Resource Definition
 struct Sampler {
     union {
+        u64 raw0;
         BitField<0, 3, ClampMode> clamp_x;
         BitField<3, 3, ClampMode> clamp_y;
         BitField<6, 3, ClampMode> clamp_z;
@@ -343,6 +344,7 @@ struct Sampler {
         BitField<60, 4, u64> perf_z;
     };
     union {
+        u64 raw1;
         BitField<0, 14, u64> lod_bias;
         BitField<14, 6, u64> lod_bias_sec;
         BitField<20, 2, Filter> xy_mag_filter;
@@ -356,6 +358,10 @@ struct Sampler {
         BitField<42, 18, u64> unused1;
         BitField<62, 2, BorderColor> border_color_type;
     };
+
+    operator bool() const noexcept {
+        return raw0 != 0 || raw1 != 0;
+    }
 
     float LodBias() const noexcept {
         return static_cast<float>(static_cast<int16_t>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /

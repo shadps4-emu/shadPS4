@@ -35,6 +35,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         return S_CMP(ConditionOp::EQ, true, inst);
     case Opcode::S_CMP_EQ_U32:
         return S_CMP(ConditionOp::EQ, false, inst);
+    case Opcode::S_CMP_GE_U32:
+        return S_CMP(ConditionOp::GE, false, inst);
     case Opcode::S_OR_B64:
         return S_OR_B64(NegateMode::None, false, inst);
     case Opcode::S_NOR_B64:
@@ -77,6 +79,10 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         return S_ADD_U32(inst);
     case Opcode::S_ADDC_U32:
         return S_ADDC_U32(inst);
+    case Opcode::S_ADDK_I32:
+        return S_ADDK_I32(inst);
+    case Opcode::S_MULK_I32:
+        return S_MULK_I32(inst);
     case Opcode::S_SUB_U32:
     case Opcode::S_SUB_I32:
         return S_SUB_U32(inst);
@@ -88,12 +94,22 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
 }
 
 void Translator::S_MOVK(const GcnInst& inst) {
-    const auto simm16 = inst.control.sopk.simm.Value();
+    const auto simm16 = inst.control.sopk.simm;
     if (simm16 & (1 << 15)) {
         // TODO: need to verify the case of imm sign extension
         UNREACHABLE();
     }
     SetDst(inst.dst[0], ir.Imm32(simm16));
+}
+
+void Translator::S_ADDK_I32(const GcnInst& inst) {
+    const s32 simm16 = inst.control.sopk.simm;
+    SetDst(inst.dst[0], ir.IAdd(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
+}
+
+void Translator::S_MULK_I32(const GcnInst& inst) {
+    const s32 simm16 = inst.control.sopk.simm;
+    SetDst(inst.dst[0], ir.IMul(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
 }
 
 void Translator::S_MOV(const GcnInst& inst) {

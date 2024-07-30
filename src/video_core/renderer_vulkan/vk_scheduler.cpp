@@ -54,9 +54,7 @@ void Scheduler::EndRendering() {
     for (size_t i = 0; i < render_state.num_color_attachments; ++i) {
         barriers.push_back(vk::ImageMemoryBarrier{
             .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite |
-                             vk::AccessFlagBits::eColorAttachmentRead |
-                             vk::AccessFlagBits::eColorAttachmentWrite,
+            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
             .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
             .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

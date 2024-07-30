@@ -23,7 +23,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 1_GB, BufferType::Upload} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 2_GB, BufferType::Upload} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -91,6 +91,7 @@ void Rasterizer::DispatchDirect() {
         UNREACHABLE();
     }
 
+    scheduler.EndRendering();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
