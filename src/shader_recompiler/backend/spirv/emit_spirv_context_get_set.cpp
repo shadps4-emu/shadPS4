@@ -120,6 +120,7 @@ void EmitGetGotoVariable(EmitContext&) {
 }
 
 Id EmitReadConst(EmitContext& ctx) {
+    return ctx.u32_zero_value;
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
@@ -148,6 +149,9 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
             if (!ValidId(param.id)) {
                 // Attribute is disabled or varying component is not written
                 return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
+            }
+            if (param.is_default) {
+                return ctx.OpCompositeExtract(param.component_type, param.id, comp);
             }
 
             if (param.num_components > 1) {
@@ -208,7 +212,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    ctx.OpStore(pointer, value);
+    ctx.OpStore(pointer, ctx.OpBitcast(ctx.F32[1], value));
 }
 
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {

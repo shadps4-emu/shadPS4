@@ -36,6 +36,7 @@ namespace AmdGpu {
     [[maybe_unused]] std::array<u32, num_words> CONCAT2(pad, __LINE__)
 
 struct Liverpool {
+    static constexpr u32 GfxQueueId = 0u;
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
     static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
     static constexpr u32 NumQueuesPerPipe = 8u;
@@ -1061,6 +1062,7 @@ private:
     struct GpuQueue {
         std::mutex m_access{};
         std::queue<Task::Handle> submits{};
+        ComputeProgram cs_state{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
 

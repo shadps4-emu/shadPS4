@@ -198,6 +198,10 @@ Id EmitFindUMsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindUMsb(ctx.U32[1], value);
 }
 
+Id EmitFindILsb32(EmitContext& ctx, Id value) {
+    return ctx.OpFindILsb(ctx.U32[1], value);
+}
+
 Id EmitSMin32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpSMin(ctx.U32[1], a, b);
 }

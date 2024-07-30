@@ -403,9 +403,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
             }
             while (!wait_reg_mem->Test()) {
+                mapped_queues[GfxQueueId].cs_state = regs.cs_program;
                 TracyFiberLeave;
                 co_yield {};
                 TracyFiberEnter(dcb_task_name);
+                regs.cs_program = mapped_queues[GfxQueueId].cs_state;
             }
             break;
         }
@@ -506,9 +508,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
             while (!wait_reg_mem->Test()) {
+                mapped_queues[vqid].cs_state = regs.cs_program;
                 TracyFiberLeave;
                 co_yield {};
                 TracyFiberEnter(acb_task_name);
+                regs.cs_program = mapped_queues[vqid].cs_state;
             }
             break;
         }
@@ -529,7 +533,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
 }
 
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
-    static constexpr u32 GfxQueueId = 0u;
     auto& queue = mapped_queues[GfxQueueId];
 
     auto task = ProcessGraphics(dcb, ccb);

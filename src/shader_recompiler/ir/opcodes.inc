@@ -223,6 +223,7 @@ OPCODE(FPIsNan32,                                           U1,             F32,
 OPCODE(FPIsNan64,                                           U1,             F64,                                                                            )
 OPCODE(FPIsInf32,                                           U1,             F32,                                                                            )
 OPCODE(FPIsInf64,                                           U1,             F64,                                                                            )
+OPCODE(FPCmpClass32,                                        U1,             F32,            U32                                                             )
 
 // Integer operations
 OPCODE(IAdd32,                                              U32,            U32,            U32,                                                            )
@@ -258,6 +259,7 @@ OPCODE(BitwiseNot32,                                        U32,            U32,
 
 OPCODE(FindSMsb32,                                          U32,            U32,                                                                            )
 OPCODE(FindUMsb32,                                          U32,            U32,                                                                            )
+OPCODE(FindILsb32,                                          U32,            U32,                                                                            )
 OPCODE(SMin32,                                              U32,            U32,            U32,                                                            )
 OPCODE(UMin32,                                              U32,            U32,            U32,                                                            )
 OPCODE(SMax32,                                              U32,            U32,            U32,                                                            )
@@ -297,6 +299,7 @@ OPCODE(ConvertF64S32,                                       F64,            U32,
 OPCODE(ConvertF64U32,                                       F64,            U32,                                                                            )
 OPCODE(ConvertF32U16,                                       F32,            U16,                                                                            )
 OPCODE(ConvertU16U32,                                       U16,            U32,                                                                            )
+OPCODE(ConvertU32U16,                                       U32,            U16,                                                                            )
 OPCODE(ConvertU32U64,                                       U32,            U64,                                                                            )
 OPCODE(ConvertU64U32,                                       U64,            U32,                                                                            )
 
@@ -329,5 +332,6 @@ OPCODE(ImageAtomicExchange32,                               U32,            Opaq
 
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
+OPCODE(WarpId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
 OPCODE(WarpId,                                              U32,                                                                                            )

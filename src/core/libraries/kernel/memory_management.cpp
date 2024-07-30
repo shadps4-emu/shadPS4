@@ -264,6 +264,16 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+            result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
+                                                     entries[i].protection, flags, "");
+            LOG_INFO(Kernel_Vmm,
+                     "BatchMap: entry = {}, operation = {}, len = {:#x}, type = {}, "
+                     "result = {}",
+                     i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
+
+            if (result == 0)
+                processed++;
         } else {
             UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }
@@ -274,4 +284,19 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
     return result;
 }
 
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
+    static constexpr size_t MaxNameSize = 32;
+    if (std::strlen(name) > MaxNameSize) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
+    }
+
+    if (name == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "name is invalid!");
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    auto* memory = Core::Memory::Instance();
+    memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
+    return ORBIS_OK;
+}
 } // namespace Libraries::Kernel

@@ -386,7 +386,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             }
         }
         for (const auto& sampler : stage.samplers) {
-            auto ssharp = stage.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+            auto ssharp = sampler.GetSsharp(stage);
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {

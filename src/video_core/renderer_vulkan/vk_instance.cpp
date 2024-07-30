@@ -164,10 +164,11 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceVulkan13Features,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
         vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
-    const vk::StructureChain properties_chain =
-        physical_device.getProperties2<vk::PhysicalDeviceProperties2,
-                                       vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
-                                       vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
+    const vk::StructureChain properties_chain = physical_device.getProperties2<
+        vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
+        vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties>();
+    subgroup_size = properties_chain.get<vk::PhysicalDeviceVulkan11Properties>().subgroupSize;
+    LOG_INFO(Render_Vulkan, "Physical device subgroup size {}", subgroup_size);
 
     features = feature_chain.get().features;
     if (available_extensions.empty()) {
@@ -261,6 +262,7 @@ bool Instance::CreateDevice() {
                 .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,
                 .shaderStorageImageMultisample = features.shaderStorageImageMultisample,
                 .shaderClipDistance = features.shaderClipDistance,
+                .shaderInt64 = features.shaderInt64,
                 .shaderInt16 = features.shaderInt16,
             },
         },

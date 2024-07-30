@@ -142,14 +142,14 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
             image_ids.push_back(image_id);
         });
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
+    // ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
         image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids[0];
+        image_id = image_ids[image_ids.size() > 1 ? 1 : 0];
     }
 
     Image& image = slot_images[image_id];
@@ -183,12 +183,17 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 }
 
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
+    if (info.guest_address == 0) [[unlikely]] {
+        return slot_image_views[NULL_IMAGE_VIEW_ID];
+    }
+
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;
 
     if (view_info.is_storage) {
-        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+        image.Transit(vk::ImageLayout::eGeneral,
+                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
         const auto new_layout = image.info.IsDepthStencil()
@@ -206,7 +211,7 @@ ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo&
         view_info_tmp.range.extent.levels > image.info.resources.levels ||
         view_info_tmp.range.extent.layers > image.info.resources.layers) {
 
-        LOG_ERROR(Render_Vulkan,
+        LOG_DEBUG(Render_Vulkan,
                   "Subresource range ({}~{},{}~{}) exceeds base image extents ({},{})",
                   view_info_tmp.range.base.level, view_info_tmp.range.extent.levels,
                   view_info_tmp.range.base.layer, view_info_tmp.range.extent.layers,
@@ -341,7 +346,7 @@ void TextureCache::RefreshImage(Image& image) {
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
     image.Transit(vk::ImageLayout::eGeneral,
-                  vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+                  vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {

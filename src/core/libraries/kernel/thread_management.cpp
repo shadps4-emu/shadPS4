@@ -439,11 +439,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 
     int result = pthread_mutex_init(&(*mutex)->pth_mutex, &(*attr)->pth_mutex_attr);
 
-    static auto mutex_loc = MUTEX_LOCATION("mutex");
-    (*mutex)->tracy_lock = std::make_unique<tracy::LockableCtx>(&mutex_loc);
-
     if (name != nullptr) {
-        (*mutex)->tracy_lock->CustomName(name, std::strlen(name));
         LOG_INFO(Kernel_Pthread, "name={}, result={}", name, result);
     }
 
@@ -555,14 +551,10 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    (*mutex)->tracy_lock->BeforeLock();
-
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "Locked name={}, result={}", (*mutex)->name, result);
     }
-
-    (*mutex)->tracy_lock->AfterLock();
 
     switch (result) {
     case 0:
@@ -588,8 +580,6 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "Unlocking name={}, result={}", (*mutex)->name, result);
     }
-
-    (*mutex)->tracy_lock->AfterUnlock();
 
     switch (result) {
     case 0:
@@ -1195,8 +1185,6 @@ int PS4_SYSV_ABI scePthreadMutexTrylock(ScePthreadMutex* mutex) {
         LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
     }
 
-    (*mutex)->tracy_lock->AfterTryLock(result == 0);
-
     switch (result) {
     case 0:
         return ORBIS_OK;
@@ -1382,13 +1370,38 @@ int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
     return sem_wait(sem);
 }
 
-int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
-#ifndef __APPLE__
-    return sem_timedwait(sem, t);
-#else
-    LOG_ERROR(Kernel_Pthread, "Apple doesn't support sem_timedwait yet");
-    return 0; // unsupported for apple yet
+#ifndef HAVE_SEM_TIMEDWAIT
+int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
+    int rc;
+    while ((rc = sem_trywait(sem)) == EAGAIN) {
+        struct timespec curr_time;
+        clock_gettime(CLOCK_REALTIME, &curr_time);
+
+        s64 remaining_ns = 0;
+        remaining_ns +=
+            (static_cast<s64>(abstime->tv_sec) - static_cast<s64>(curr_time.tv_sec)) * 1000000000L;
+        remaining_ns += static_cast<s64>(abstime->tv_nsec) - static_cast<s64>(curr_time.tv_nsec);
+
+        if (remaining_ns <= 0) {
+            return ETIMEDOUT;
+        }
+
+        struct timespec sleep_time;
+        sleep_time.tv_sec = 0;
+        if (remaining_ns < 5000000L) {
+            sleep_time.tv_nsec = remaining_ns;
+        } else {
+            sleep_time.tv_nsec = 5000000;
+        }
+
+        nanosleep(&sleep_time, nullptr);
+    }
+    return rc;
+}
 #endif
+
+int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
+    return sem_timedwait(sem, t);
 }
 
 int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
@@ -1401,6 +1414,10 @@ int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
 
 int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
     return sem_getvalue(sem, sval);
+}
+
+int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const pthread_attr_t* attr, size_t* size) {
+    return pthread_attr_getstacksize(attr, size);
 }
 
 int PS4_SYSV_ABI scePthreadGetschedparam(ScePthread thread, int* policy,
@@ -1608,6 +1625,8 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("IKP8typ0QUk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_post);
     LIB_FUNCTION("cDW233RAwWo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_destroy);
     LIB_FUNCTION("Bq+LRV-N6Hk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_getvalue);
+    LIB_FUNCTION("0qOtCR-ZHck", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_getstacksize);
     // libs
     RwlockSymbolsRegister(sym);
     SemaphoreSymbolsRegister(sym);

@@ -9,7 +9,6 @@
 #include <vector>
 #include <pthread.h>
 #include <sched.h>
-#include "common/debug.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -74,7 +73,6 @@ struct PthreadMutexInternal {
     u8 reserved[256];
     std::string name;
     pthread_mutex_t pth_mutex;
-    std::unique_ptr<tracy::LockableCtx> tracy_lock;
 };
 
 struct PthreadMutexattrInternal {

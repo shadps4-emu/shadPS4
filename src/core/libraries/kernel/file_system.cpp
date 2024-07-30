@@ -472,6 +472,28 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
+s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const auto src_path = mnt->GetHostPath(from);
+    if (!std::filesystem::exists(src_path)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+    const auto dst_path = mnt->GetHostPath(to);
+    const bool src_is_dir = std::filesystem::is_directory(src_path);
+    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
+    if (src_is_dir && !dst_is_dir) {
+        return ORBIS_KERNEL_ERROR_ENOTDIR;
+    }
+    if (!src_is_dir && dst_is_dir) {
+        return ORBIS_KERNEL_ERROR_EISDIR;
+    }
+    if (dst_is_dir && !std::filesystem::is_empty(dst_path)) {
+        return ORBIS_KERNEL_ERROR_ENOTEMPTY;
+    }
+    std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    return ORBIS_OK;
+}
+
 void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
@@ -493,6 +515,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
+    LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
 
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
