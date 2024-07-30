@@ -94,29 +94,29 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::ConstZero:
-        if (force_flt) {
+        if (is_float) {
             value = ir.Imm32(0.f);
         } else {
             value = ir.Imm32(0U);
         }
         break;
     case OperandField::SignedConstIntPos:
-        ASSERT(!force_flt);
+        ASSERT(!is_float);
         value = ir.Imm32(operand.code - SignedConstIntPosMin + 1);
         break;
     case OperandField::SignedConstIntNeg:
-        ASSERT(!force_flt);
+        ASSERT(!is_float);
         value = ir.Imm32(-s32(operand.code) + SignedConstIntNegMin - 1);
         break;
     case OperandField::LiteralConst:
-        if (force_flt) {
+        if (is_float) {
             value = ir.Imm32(std::bit_cast<float>(operand.code));
         } else {
             value = ir.Imm32(operand.code);
         }
         break;
     case OperandField::ConstFloatPos_1_0:
-        if (force_flt) {
+        if (is_float) {
             value = ir.Imm32(1.f);
         } else {
             value = ir.Imm32(std::bit_cast<u32>(1.f));
@@ -135,7 +135,11 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         value = ir.Imm32(-0.5f);
         break;
     case OperandField::ConstFloatNeg_1_0:
-        value = ir.Imm32(-1.0f);
+        if (is_float) {
+            value = ir.Imm32(-1.0f);
+        } else {
+            value = ir.Imm32(std::bit_cast<u32>(-1.0f));
+        }
         break;
     case OperandField::ConstFloatNeg_2_0:
         value = ir.Imm32(-2.0f);
@@ -157,6 +161,8 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
             value = ir.GetVccHi();
         }
         break;
+    case OperandField::M0:
+        return m0_value;
     default:
         UNREACHABLE();
     }
@@ -333,6 +339,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     case OperandField::VccHi:
         return ir.SetVccHi(result);
     case OperandField::M0:
+        m0_value = result;
         break;
     default:
         UNREACHABLE();

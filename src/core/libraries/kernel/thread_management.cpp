@@ -555,14 +555,16 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
-    (*mutex)->tracy_lock->BeforeLock();
+    if (mutex) {
+        (*mutex)->tracy_lock->BeforeLock();
+    }
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
     if (result != 0) {
         LOG_TRACE(Kernel_Pthread, "Locked name={}, result={}", (*mutex)->name, result);
     }
 
-    (*mutex)->tracy_lock->AfterLock();
+    //(*mutex)->tracy_lock->AfterLock();
 
     switch (result) {
     case 0:
@@ -589,7 +591,7 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
         LOG_TRACE(Kernel_Pthread, "Unlocking name={}, result={}", (*mutex)->name, result);
     }
 
-    (*mutex)->tracy_lock->AfterUnlock();
+    //(*mutex)->tracy_lock->AfterUnlock();
 
     switch (result) {
     case 0:

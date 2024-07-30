@@ -120,6 +120,7 @@ void EmitGetGotoVariable(EmitContext&) {
 }
 
 Id EmitReadConst(EmitContext& ctx) {
+    return ctx.u32_zero_value;
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

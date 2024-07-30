@@ -70,7 +70,6 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id o
     const u32 comp = inst->Flags<IR::TextureInstInfo>().gather_comp.Value();
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Offset, offset);
-    operands.Add(spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
     return ctx.OpImageGather(ctx.F32[4], sampled_image, coords, ctx.ConstU32(comp), operands.mask,
                              operands.operands);
 }
