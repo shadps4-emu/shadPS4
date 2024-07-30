@@ -11,6 +11,7 @@
 
 namespace Shader {
 struct Info;
+struct Profile;
 }
 
 namespace Shader::Gcn {
@@ -53,7 +54,7 @@ enum class NegateMode : u32 {
 
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Info& info);
+    explicit Translator(IR::Block* block_, Info& info, const Profile& profile);
 
     // Instruction categories
     void EmitPrologue();
@@ -176,6 +177,7 @@ public:
     void V_CVT_FLR_I32_F32(const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
+    void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
@@ -216,9 +218,11 @@ private:
 private:
     IR::IREmitter ir;
     Info& info;
+    const Profile& profile;
     bool opcode_missing = false;
 };
 
-void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info);
+void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list,
+               Info& info, const Profile& profile);
 
 } // namespace Shader::Gcn

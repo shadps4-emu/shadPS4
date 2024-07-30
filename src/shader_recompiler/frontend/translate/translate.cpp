@@ -16,8 +16,8 @@
 
 namespace Shader::Gcn {
 
-Translator::Translator(IR::Block* block_, Info& info_)
-    : ir{*block_, block_->begin()}, info{info_} {}
+Translator::Translator(IR::Block* block_, Info& info_, const Profile& profile_)
+    : ir{*block_, block_->begin()}, info{info_}, profile{profile_} {}
 
 void Translator::EmitPrologue() {
     ir.Prologue();
@@ -487,11 +487,12 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
-void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info) {
+void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list,
+               Info& info, const Profile& profile) {
     if (inst_list.empty()) {
         return;
     }
-    Translator translator{block, info};
+    Translator translator{block, info, profile};
     for (const auto& inst : inst_list) {
         pc += inst.length;
 

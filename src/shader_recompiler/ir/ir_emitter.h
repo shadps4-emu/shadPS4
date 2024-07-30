@@ -95,6 +95,7 @@ public:
                      BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();
+    [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
