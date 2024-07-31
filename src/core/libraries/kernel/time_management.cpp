@@ -214,6 +214,22 @@ int PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
+                                                OrbisKernelTimezone* timezone, int* dst_seconds) {
+    LOG_INFO(Kernel, "called");
+    if (timezone) {
+        sceKernelGettimezone(timezone);
+        param_1 -= (timezone->tz_minuteswest + timezone->tz_dsttime) * 60;
+        if (seconds)
+            *seconds = param_1;
+        if (dst_seconds)
+            *dst_seconds = timezone->tz_dsttime * 60;
+    } else {
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    return SCE_OK;
+}
+
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
@@ -239,6 +255,7 @@ void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, posix_clock_gettime);
     LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, posix_clock_gettime);
     LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, posix_clock_getres);
+    LIB_FUNCTION("0NTHN1NKONI", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertLocaltimeToUtc);
 }
 
 } // namespace Libraries::Kernel
