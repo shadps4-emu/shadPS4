@@ -34,7 +34,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # shadPS4
 
-shadPS4 is an early PS4 emulator for Windows and Linux written in C++
+shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++
 
 If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
 
@@ -42,13 +42,13 @@ To verify that a game works, you can look at [**shadPS4 Game Compatibility**](ht
 
 To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
 
-Check us on [**X (twitter)**](https://x.com/shadps4) or on our [**website**](https://shadps4.net/).
+To get the latest news, go to our [**X (twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
 
 # Status
 
 In development, small games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) and others...
 
-# Why?
+# Why
 
 The project started as a fun project. Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
 
@@ -64,20 +64,37 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 
 ## Build status
 
-|Windows|Build status|
-|--------|------------|
+<details>
+<summary><b>Windows</b></summary>
+
+| Windows | Build status |
+|--------|--------|
 |Windows SDL Build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
 |Windows Qt Build|[![Windows-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml)
+</details>
 
-|Linux|Build status|
-|--------|------------|
+<details>
+<summary><b>Linux</b></summary>
+
+| Linux | Build status |
+|--------|--------|
 |Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
 |Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+| macOS | Build status |
+|--------|--------|
+|macOS SDL Build|[![macOS-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml)
+|macOS Qt Build|[![macOS-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml)
+</details>
 
 # Keyboard Mapping
 
 | Controller button | Keyboard |
-| ------------- | ------------- |
+|-------------|-------------|
 LEFT AXIS UP | W |
 LEFT AXIS DOWN | S |
 LEFT AXIS LEFT | A |
@@ -123,7 +140,7 @@ Open a PR and we'll check it :)
 # Contributors
 
 <a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15" />
+  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
 </a>
 
 # Sister Projects
