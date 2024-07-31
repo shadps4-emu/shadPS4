@@ -157,19 +157,26 @@ public:
     [[nodiscard]] F32F64 FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
     [[nodiscard]] F32F64 FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy = false);
 
-    [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
+    template <typename T = U32>
+    [[nodiscard]] T IAdd(const T& a, const T& b);
     [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
-    [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
+    template <typename T = U32>
+    [[nodiscard]] T ISub(const T& a, const T& b);
     [[nodiscard]] Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
-    [[nodiscard]] U32U64 IMul(const U32U64& a, const U32U64& b);
+    template <typename T = U32>
+    [[nodiscard]] T IMul(const T& a, const T& b);
     [[nodiscard]] U32 IDiv(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 INeg(const U32U64& value);
     [[nodiscard]] U32 IAbs(const U32& value);
-    [[nodiscard]] U32U64 ShiftLeftLogical(const U32U64& base, const U32& shift);
-    [[nodiscard]] U32U64 ShiftRightLogical(const U32U64& base, const U32& shift);
-    [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
+    template <typename T = U32>
+    [[nodiscard]] T ShiftLeftLogical(const T& base, const U32& shift);
+    template <typename T = U32>
+    [[nodiscard]] T ShiftRightLogical(const T& base, const U32& shift);
+    template <typename T = U32>
+    [[nodiscard]] T ShiftRightArithmetic(const T& base, const U32& shift);
     [[nodiscard]] U32 BitwiseAnd(const U32& a, const U32& b);
-    [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
+    template <typename T = U32>
+    [[nodiscard]] T BitwiseOr(const T& a, const T& b);
     [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
     [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
                                      const U32& count);

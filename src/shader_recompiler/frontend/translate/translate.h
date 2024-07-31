@@ -209,10 +209,13 @@ public:
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
 private:
-    template <typename T = IR::U32F32>
-    [[nodiscard]] T GetSrc(const InstOperand& operand, bool integer = false);
-    template <typename T = IR::U64F64>
-    [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
+    struct SrcAuto;
+    [[nodiscard]] IR::U32F32 GetSrcRaw(const InstOperand& operand, bool integer);
+    [[nodiscard]] IR::U64F64 GetSrcRaw64(const InstOperand& operand, bool integer);
+
+    template <typename T = SrcAuto>
+    [[nodiscard]] T GetSrc(const InstOperand& operand);
+
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
@@ -224,6 +227,25 @@ private:
     const Profile& profile;
     IR::U32 m0_value;
     bool opcode_missing = false;
+
+    class SrcAuto {
+        Translator& translator;
+        const InstOperand& operand;
+
+    public:
+        SrcAuto(Translator& translator, const InstOperand& operand)
+            : translator(translator), operand(operand) {}
+
+        operator IR::Value() const;
+
+        operator IR::U32F32() const;
+        operator IR::U32() const;
+        operator IR::F32() const;
+
+        operator IR::U64F64() const;
+        operator IR::U64() const;
+        operator IR::F64() const;
+    };
 };
 
 void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,

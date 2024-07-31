@@ -312,12 +312,18 @@ void Translator::V_MOV(const GcnInst& inst) {
 }
 
 void Translator::V_SAD(const GcnInst& inst) {
-    const IR::U32 abs_diff = ir.IAbs(ir.ISub(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true)));
-    SetDst(inst.dst[0], ir.IAdd(abs_diff, GetSrc(inst.src[2])));
+    const IR::U32 src0 = GetSrc(inst.src[0]);
+    const IR::U32 src1 = GetSrc(inst.src[1]);
+    const IR::U32 src2 = GetSrc(inst.src[2]);
+    const IR::U32 abs_diff = ir.IAbs(ir.ISub(src0, src1));
+    SetDst(inst.dst[0], ir.IAdd(abs_diff, src2));
 }
 
 void Translator::V_MAC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0]), GetSrc(inst.src[1]), GetSrc(inst.dst[0])));
+    const IR::F32 src0 = GetSrc(inst.src[0]);
+    const IR::F32 src1 = GetSrc(inst.src[1]);
+    const IR::F32 dst0 = GetSrc(inst.dst[0]);
+    SetDst(inst.dst[0], ir.FPFma(src0, src1, dst0));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
@@ -339,7 +345,9 @@ void Translator::V_CVT_F16_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MUL_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
+    const IR::F32 src0 = GetSrc(inst.src[0]);
+    const IR::F32 src1 = GetSrc(inst.src[1]);
+    SetDst(inst.dst[0], ir.FPMul(src0, src1));
 }
 
 void Translator::V_CNDMASK_B32(const GcnInst& inst) {
@@ -357,8 +365,8 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     };
     const bool has_flt_source =
         is_float_const(inst.src[0].field) || is_float_const(inst.src[1].field);
-    IR::U32F32 src0 = GetSrc(inst.src[0], has_flt_source);
-    IR::U32F32 src1 = GetSrc(inst.src[1], has_flt_source);
+    IR::U32F32 src0 = GetSrc(inst.src[0]);
+    IR::U32F32 src1 = GetSrc(inst.src[1]);
     if (src0.Type() == IR::Type::F32 && src1.Type() == IR::Type::U32) {
         src1 = ir.BitCast<IR::F32, IR::U32>(src1);
     }
@@ -385,21 +393,21 @@ void Translator::V_AND_B32(const GcnInst& inst) {
 }
 
 void Translator::V_LSHLREV_B32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.ShiftLeftLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
 void Translator::V_LSHL_B32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.IAdd(src0, src1));
     // TODO: Carry
@@ -407,8 +415,8 @@ void Translator::V_ADD_I32(const GcnInst& inst) {
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
 
-    const auto src0 = GetSrc<IR::U32>(inst.src[0], true);
-    const auto src1 = GetSrc<IR::U32>(inst.src[1], true);
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
 
     IR::U32 scarry;
     if (inst.src_count == 3) { // VOP3
@@ -549,8 +557,8 @@ void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
 }
 
 void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IMax(src0, src1, is_signed));
 }
 
@@ -593,9 +601,9 @@ void Translator::V_MIN3_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MIN3_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
-    const IR::U32 src2{GetSrc(inst.src[2], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.SMin(src0, ir.SMin(src1, src2)));
 }
 
@@ -634,16 +642,16 @@ void Translator::V_SUBREV_F32(const GcnInst& inst) {
 }
 
 void Translator::V_SUBREV_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ISub(src1, src0));
     // TODO: Carry-out
 }
 
 void Translator::V_MAD_U64_U32(const GcnInst& inst) {
-    const auto src0 = GetSrc<IR::U32>(inst.src[0], true);
-    const auto src1 = GetSrc<IR::U32>(inst.src[1], true);
-    const auto src2 = GetSrc64<IR::U64>(inst.src[2], true);
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U64>(inst.src[2]);
 
     // const IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
     const IR::U64 mul_result =
@@ -659,8 +667,8 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
 }
 
 void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::F:
@@ -697,64 +705,64 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_LSHRREV_B32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftRightLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
 void Translator::V_MUL_HI_U32(bool is_signed, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 hi{ir.CompositeExtract(ir.IMulExt(src0, src1, is_signed), 1)};
     SetDst(inst.dst[0], hi);
 }
 
 void Translator::V_SAD_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
-    const IR::U32 src2{GetSrc(inst.src[2], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
     const IR::U32 max{ir.IMax(src0, src1, false)};
     const IR::U32 min{ir.IMin(src0, src1, false)};
     SetDst(inst.dst[0], ir.IAdd(ir.ISub(max, min), src2));
 }
 
 void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{ir.BitwiseAnd(GetSrc(inst.src[1], true), ir.Imm32(0x1F))};
-    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2], true), ir.Imm32(0x1F))};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{ir.BitwiseAnd(GetSrc(inst.src[1]), ir.Imm32(0x1F))};
+    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
     SetDst(inst.dst[0], ir.BitFieldExtract(src0, src1, src2, is_signed));
 }
 
 void Translator::V_MAD_I32_I24(const GcnInst& inst, bool is_signed) {
     const IR::U32 src0{
-        ir.BitFieldExtract(GetSrc(inst.src[0], true), ir.Imm32(0), ir.Imm32(24), is_signed)};
+        ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), is_signed)};
     const IR::U32 src1{
-        ir.BitFieldExtract(GetSrc(inst.src[1], true), ir.Imm32(0), ir.Imm32(24), is_signed)};
-    const IR::U32 src2{GetSrc(inst.src[2], true)};
+        ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), is_signed)};
+    const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.IAdd(ir.IMul(src0, src1), src2));
 }
 
 void Translator::V_MUL_I32_I24(const GcnInst& inst) {
-    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0], true), ir.Imm32(0), ir.Imm32(24))};
-    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1], true), ir.Imm32(0), ir.Imm32(24))};
+    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24))};
+    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24))};
     SetDst(inst.dst[0], ir.IMul(src0, src1));
 }
 
 void Translator::V_SUB_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ISub(src0, src1));
 }
 
 void Translator::V_LSHR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftRightLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
 }
 
 void Translator::V_ASHRREV_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftRightArithmetic(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
@@ -768,8 +776,8 @@ void Translator::V_RNDNE_F32(const GcnInst& inst) {
 }
 
 void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IAdd(ir.BitCount(src0), src1));
 }
 
@@ -786,9 +794,9 @@ void Translator::V_MAX3_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MAX3_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
-    const IR::U32 src2{GetSrc(inst.src[2], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
     SetDst(inst.dst[0], ir.UMax(src0, ir.UMax(src1, src2)));
 }
 
@@ -798,14 +806,14 @@ void Translator::V_CVT_I32_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MIN_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.SMin(src0, src1));
 }
 
 void Translator::V_MUL_LO_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IMul(src0, src1));
 }
 
@@ -820,8 +828,8 @@ void Translator::V_CEIL_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MIN_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IMin(src0, src1, false));
 }
 
@@ -891,7 +899,7 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     const IR::F32F64 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     IR::U1 value;
     if (src1.IsImmediate()) {
         const auto class_mask = static_cast<IR::FloatClassFunc>(src1.U32());
@@ -916,13 +924,13 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
 }
 
 void Translator::V_FFBL_B32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.FindILsb(src0));
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0], true)};
-    const IR::U32 src1{GetSrc(inst.src[1], true)};
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 lane_id = ir.LaneId();
 
     const auto [warp_half, mask_shift] = [&]() -> std::pair<IR::U32, IR::U32> {
