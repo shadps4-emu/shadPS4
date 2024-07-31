@@ -4,8 +4,8 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_timer.h>
-#include <common/assert.h>
-#include <core/libraries/error_codes.h>
+#include "common/assert.h"
+#include "core/libraries/error_codes.h"
 #include "sdl_audio.h"
 
 namespace Audio {

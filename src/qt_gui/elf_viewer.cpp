@@ -3,6 +3,7 @@
 
 #include <QHeaderView>
 #include "elf_viewer.h"
+
 ElfViewer::ElfViewer(QWidget* parent) : QTableWidget(parent) {
     dir_list_std = Config::getElfViewer();
     for (const auto& str : dir_list_std) {
