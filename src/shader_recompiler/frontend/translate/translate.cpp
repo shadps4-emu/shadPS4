@@ -74,20 +74,21 @@ void Translator::EmitPrologue() {
 }
 
 template <>
-IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
+IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool integer) {
     IR::U32F32 value{};
 
-    const bool is_float = operand.type == ScalarType::Float32 || force_flt;
+    const bool is_float = operand.type == ScalarType::Float32 && !integer;
+
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        if (is_float) {
+        if (!integer) {
             value = ir.GetScalarReg<IR::F32>(IR::ScalarReg(operand.code));
         } else {
             value = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
         }
         break;
     case OperandField::VectorGPR:
-        if (is_float) {
+        if (!integer) {
             value = ir.GetVectorReg<IR::F32>(IR::VectorReg(operand.code));
         } else {
             value = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
@@ -101,11 +102,11 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         }
         break;
     case OperandField::SignedConstIntPos:
-        ASSERT(!force_flt);
+        ASSERT(!is_float);
         value = ir.Imm32(operand.code - SignedConstIntPosMin + 1);
         break;
     case OperandField::SignedConstIntNeg:
-        ASSERT(!force_flt);
+        ASSERT(!is_float);
         value = ir.Imm32(-s32(operand.code) + SignedConstIntNegMin - 1);
         break;
     case OperandField::LiteralConst:
@@ -148,14 +149,14 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         value = ir.Imm32(-4.0f);
         break;
     case OperandField::VccLo:
-        if (force_flt) {
+        if (is_float) {
             value = ir.BitCast<IR::F32>(ir.GetVccLo());
         } else {
             value = ir.GetVccLo();
         }
         break;
     case OperandField::VccHi:
-        if (force_flt) {
+        if (is_float) {
             value = ir.BitCast<IR::F32>(ir.GetVccHi());
         } else {
             value = ir.GetVccHi();
@@ -167,7 +168,7 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
         UNREACHABLE();
     }
 
-    if (is_float) {
+    if (!integer) {
         if (operand.input_modifier.abs) {
             value = ir.FPAbs(value);
         }
@@ -175,17 +176,18 @@ IR::U32F32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
             value = ir.FPNeg(value);
         }
     }
+
     return value;
 }
 
 template <>
-IR::U32 Translator::GetSrc(const InstOperand& operand, bool force_flt) {
-    return GetSrc<IR::U32F32>(operand, force_flt);
+IR::U32 Translator::GetSrc(const InstOperand& operand, bool) {
+    return GetSrc<IR::U32F32>(operand, true);
 }
 
 template <>
-IR::F32 Translator::GetSrc(const InstOperand& operand, bool) {
-    return GetSrc<IR::U32F32>(operand, true);
+IR::F32 Translator::GetSrc(const InstOperand& operand, bool integer) {
+    return GetSrc<IR::U32F32>(operand, integer);
 }
 
 template <>
