@@ -3,12 +3,10 @@
 
 #pragma once
 
-#include <string>
-#include <string_view>
-
 namespace Common {
 
-constexpr char VERSION[] = "0.1.1 WIP";
-constexpr bool isRelease = false;
+extern const char g_scm_rev[];
+extern const char g_scm_branch[];
+extern const char g_scm_desc[];
 
 } // namespace Common

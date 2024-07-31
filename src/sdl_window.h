@@ -42,7 +42,7 @@ struct WindowSystemInfo {
 class WindowSDL {
 public:
     explicit WindowSDL(s32 width, s32 height, Input::GameController* controller,
-                       std::string_view game_title);
+                       std::string_view window_title);
     ~WindowSDL();
 
     s32 getWidth() const {
