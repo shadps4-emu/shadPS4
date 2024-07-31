@@ -408,3 +408,4 @@ FodyWeavers.xsd
 /emulator/eboot.bin
 /out/*
 /third-party/out/*
+/src/common/scm_rev.cpp

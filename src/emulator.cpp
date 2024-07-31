@@ -27,6 +27,7 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+#include "src/common/scm_rev.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -100,10 +101,11 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
+    
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
-
+    const std::string window_title = fmt::format("shadPS4 v{} {}| {}", Common::VERSION, Common::g_scm_desc,game_title);
     window =
-        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, game_title);
+        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
 
     g_window = window.get();
 
