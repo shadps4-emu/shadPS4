@@ -9,13 +9,13 @@
 #include <QMainWindow>
 #include <QMimeData>
 #include <QScopedPointer>
-#include <emulator.h>
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "elf_viewer.h"
+#include "emulator.h"
 #include "game_grid_frame.h"
 #include "game_info.h"
 #include "game_list_frame.h"

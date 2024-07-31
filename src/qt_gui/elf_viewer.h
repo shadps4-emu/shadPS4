@@ -14,8 +14,8 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 #include <QWidget>
+#include "core/loader/elf.h"
 #include "game_list_frame.h"
-#include "src/core/loader/elf.h"
 
 class ElfViewer : public QTableWidget {
     Q_OBJECT

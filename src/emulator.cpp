@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <core/file_format/playgo_chunk.h>
-#include <core/file_format/psf.h>
-#include <core/file_format/splash.h>
-#include <core/libraries/disc_map/disc_map.h>
-#include <core/libraries/libc/libc.h>
-#include <core/libraries/libc_internal/libc_internal.h>
-#include <core/libraries/rtc/rtc.h>
-#include <core/libraries/videoout/video_out.h>
+#include <fmt/core.h>
+
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
@@ -18,6 +12,7 @@
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
 #include "common/version.h"
+#include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
 #include "core/file_sys/fs.h"
@@ -27,12 +22,11 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
-
-#include <fmt/core.h>
 
 Frontend::WindowSDL* g_window = nullptr;
 
