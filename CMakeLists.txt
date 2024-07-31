@@ -222,6 +222,10 @@ set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo_types.h
 )
 
+set(RANDOM_LIB src/core/libraries/random/random.cpp
+               src/core/libraries/random/random.h
+)
+
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
 )
@@ -334,6 +338,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${NP_LIBS}
          ${PNG_LIB}
          ${PLAYGO_LIB}
+         ${RANDOM_LIB}
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
