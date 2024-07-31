@@ -26,8 +26,8 @@
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
-#include "video_core/renderdoc.h"
 #include "src/common/scm_rev.h"
+#include "video_core/renderdoc.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -50,6 +50,9 @@ Emulator::Emulator() {
     Common::Log::Initialize();
     Common::Log::Start();
     LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
+    LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
+    LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
+    LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
@@ -101,9 +104,15 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
-    
+
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
-    const std::string window_title = fmt::format("shadPS4 v{} {}| {}", Common::VERSION, Common::g_scm_desc,game_title);
+    std::string window_title = "";
+    if (Common::isRelease) {
+        window_title = fmt::format("shadPS4 v{} | {}", Common::VERSION, game_title);
+    } else {
+        window_title =
+            fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
+    }
     window =
         std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
 

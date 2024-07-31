@@ -16,6 +16,7 @@ Files: CMakeSettings.json
        documents/Screenshots/We are DOOMED.png
        externals/stb_image.h
        externals/tracy/*
+	   externals/cmake-modules/*
        scripts/ps4_names.txt
        src/images/controller_icon.png
        src/images/exit_icon.png
