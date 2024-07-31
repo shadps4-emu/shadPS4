@@ -242,6 +242,13 @@ struct OrbisSaveDataMemorySync {
     u8 reserved[28];
 };
 
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_ALL = 0;
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_TITLE = 1;
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_SUB_TITLE = 2;
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_DETAIL = 3;
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_USER_PARAM = 4;
+constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_MTIME = 5;
+
 int PS4_SYSV_ABI sceSaveDataAbort();
 int PS4_SYSV_ABI sceSaveDataBackup();
 int PS4_SYSV_ABI sceSaveDataBindPsnAccount();
@@ -291,7 +298,9 @@ int PS4_SYSV_ABI sceSaveDataGetFormat();
 int PS4_SYSV_ABI sceSaveDataGetMountedSaveDataCount();
 int PS4_SYSV_ABI sceSaveDataGetMountInfo(const OrbisSaveDataMountPoint* mountPoint,
                                          OrbisSaveDataMountInfo* info);
-int PS4_SYSV_ABI sceSaveDataGetParam();
+int PS4_SYSV_ABI sceSaveDataGetParam(const OrbisSaveDataMountPoint* mountPoint,
+                                     const OrbisSaveDataParamType paramType, void* paramBuf,
+                                     const size_t paramBufSize, size_t* gotSize);
 int PS4_SYSV_ABI sceSaveDataGetProgress();
 int PS4_SYSV_ABI sceSaveDataGetSaveDataCount();
 int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const u32 userId, void* buf, const size_t bufSize,
