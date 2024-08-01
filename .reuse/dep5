@@ -37,6 +37,7 @@ Files: CMakeSettings.json
        src/images/refresh_icon.png
        src/images/settings_icon.png
        src/images/stop_icon.png
+       src/images/shadPS4.icns
        src/images/shadps4.ico
        src/images/themes_icon.png
        src/shadps4.qrc

@@ -553,6 +553,7 @@ if (ENABLE_QT_GUI)
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+        src/images/shadPS4.icns
     )
 else()
     add_executable(shadps4
@@ -640,5 +641,9 @@ target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
-        MACOSX_BUNDLE ON)
+        MACOSX_BUNDLE ON
+        MACOSX_BUNDLE_ICON_FILE shadPS4.icns)
+
+    set_source_files_properties(src/images/shadPS4.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
 endif()
