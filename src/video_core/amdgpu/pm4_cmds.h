@@ -662,6 +662,10 @@ struct PM4CmdReleaseMem {
             *Address<u64>() = DataQWord();
             break;
         }
+        case DataSelect::GpuClock64: {
+            // TODO
+            break;
+        }
         case DataSelect::PerfCounter: {
             *Address<u64>() = Common::FencedRDTSC();
             break;
