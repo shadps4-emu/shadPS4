@@ -925,25 +925,13 @@ void Translator::V_FFBL_B32(const GcnInst& inst) {
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 lane_id = ir.LaneId();
-
-    const auto [warp_half, mask_shift] = [&]() -> std::pair<IR::U32, IR::U32> {
-        if (profile.subgroup_size == 32) {
-            const IR::U32 warp_half = ir.BitwiseAnd(ir.WarpId(), ir.Imm32(1));
-            return std::make_pair(warp_half, lane_id);
-        }
-        const IR::U32 warp_half = ir.ShiftRightLogical(lane_id, ir.Imm32(5));
-        const IR::U32 mask_shift = ir.BitwiseAnd(lane_id, ir.Imm32(0x1F));
-        return std::make_pair(warp_half, mask_shift);
-    }();
-
-    const IR::U32 thread_mask = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), mask_shift), ir.Imm32(1));
-    const IR::U1 is_odd_warp = ir.INotEqual(warp_half, ir.Imm32(0));
-    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp, is_low ? ir.Imm32(~0U) : thread_mask,
-                                           is_low ? thread_mask : ir.Imm32(0))};
-    const IR::U32 masked_value = ir.BitwiseAnd(src0, mask);
-    const IR::U32 result = ir.IAdd(src1, ir.BitCount(masked_value));
-    SetDst(inst.dst[0], result);
+    if (!is_low) {
+        ASSERT(src0.IsImmediate() && src0.U32() == ~0U &&
+               src1.IsImmediate() && src1.U32() == 0U);
+        return;
+    }
+    ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
+    SetDst(inst.dst[0], ir.LaneId());
 }
 
 } // namespace Shader::Gcn
