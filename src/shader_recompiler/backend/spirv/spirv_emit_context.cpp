@@ -225,7 +225,6 @@ void EmitContext::DefineInputs(const Info& info) {
         break;
     }
     case Stage::Fragment:
-        subgroup_id = DefineVariable(U32[1], spv::BuiltIn::SubgroupId, spv::StorageClass::Input);
         subgroup_local_invocation_id = DefineVariable(
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
