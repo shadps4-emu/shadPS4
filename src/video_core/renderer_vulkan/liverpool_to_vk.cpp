@@ -681,6 +681,8 @@ vk::SampleCountFlagBits NumSamples(u32 num_samples) {
         return vk::SampleCountFlagBits::e4;
     case 8:
         return vk::SampleCountFlagBits::e8;
+    case 16:
+        return vk::SampleCountFlagBits::e16;
     default:
         UNREACHABLE();
     }
