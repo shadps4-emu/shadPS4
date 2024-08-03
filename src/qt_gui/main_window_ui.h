@@ -44,8 +44,8 @@ public:
     QAction* gameInstallPathAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
-    QAction* setThemeLight;
     QAction* setThemeDark;
+    QAction* setThemeLight;
     QAction* setThemeGreen;
     QAction* setThemeBlue;
     QAction* setThemeViolet;
@@ -76,7 +76,7 @@ public:
             MainWindow->setObjectName("MainWindow");
         // MainWindow->resize(1280, 720);
         QIcon icon;
-        icon.addFile(QString::fromUtf8(":/images/shadps4.ico"), QSize(), QIcon::Normal, QIcon::Off);
+        icon.addFile(QString::fromUtf8(":images/shadps4.ico"), QSize(), QIcon::Normal, QIcon::Off);
         MainWindow->setWindowIcon(icon);
         QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         sizePolicy.setHorizontalStretch(0);
@@ -136,13 +136,13 @@ public:
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
-        setThemeLight = new QAction(MainWindow);
-        setThemeLight->setObjectName("setThemeLight");
-        setThemeLight->setCheckable(true);
-        setThemeLight->setChecked(true);
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
+        setThemeDark->setChecked(true);
+        setThemeLight = new QAction(MainWindow);
+        setThemeLight->setObjectName("setThemeLight");
+        setThemeLight->setCheckable(true);
         setThemeGreen = new QAction(MainWindow);
         setThemeGreen->setObjectName("setThemeGreen");
         setThemeGreen->setCheckable(true);
@@ -285,7 +285,7 @@ public:
     } // setupUi
 
     void retranslateUi(QMainWindow* MainWindow) {
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "Shadps4", nullptr));
+        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "shadPS4", nullptr));
         addElfFolderAct->setText(
             QCoreApplication::translate("MainWindow", "Open/Add Elf Folder", nullptr));
         bootInstallPkgAct->setText(
@@ -332,8 +332,8 @@ public:
         menuSettings->setTitle(QCoreApplication::translate("MainWindow", "Settings", nullptr));
         menuUtils->setTitle(QCoreApplication::translate("MainWindow", "Utils", nullptr));
         menuThemes->setTitle(QCoreApplication::translate("MainWindow", "Themes", nullptr));
-        setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
+        setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeGreen->setText(QCoreApplication::translate("MainWindow", "Green", nullptr));
         setThemeBlue->setText(QCoreApplication::translate("MainWindow", "Blue", nullptr));
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));

@@ -190,17 +190,17 @@ void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
     QTableWidgetItem* item = new QTableWidgetItem();
     QImage scaledPixmap;
     if (itemStr == "Japan") {
-        scaledPixmap = QImage(":/images/flag_jp.png");
+        scaledPixmap = QImage(":images/flag_jp.png");
     } else if (itemStr == "Europe") {
-        scaledPixmap = QImage(":/images/flag_eu.png");
+        scaledPixmap = QImage(":images/flag_eu.png");
     } else if (itemStr == "USA") {
-        scaledPixmap = QImage(":/images/flag_us.png");
+        scaledPixmap = QImage(":images/flag_us.png");
     } else if (itemStr == "Asia") {
-        scaledPixmap = QImage(":/images/flag_china.png");
+        scaledPixmap = QImage(":images/flag_china.png");
     } else if (itemStr == "World") {
-        scaledPixmap = QImage(":/images/flag_world.png");
+        scaledPixmap = QImage(":images/flag_world.png");
     } else {
-        scaledPixmap = QImage(":/images/flag_unk.png");
+        scaledPixmap = QImage(":images/flag_unk.png");
     }
     QWidget* widget = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(widget);

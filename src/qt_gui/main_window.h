@@ -10,6 +10,7 @@
 #include <QMimeData>
 #include <QScopedPointer>
 #include <fmt/core.h>
+
 #include "common/config.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"

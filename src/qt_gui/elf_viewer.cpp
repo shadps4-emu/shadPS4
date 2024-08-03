@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QHeaderView>
+
 #include "elf_viewer.h"
 
 ElfViewer::ElfViewer(QWidget* parent) : QTableWidget(parent) {
