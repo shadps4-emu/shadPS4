@@ -1706,8 +1706,18 @@ int PS4_SYSV_ABI sceGnmSetupMipStatsReport() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSetVgtControl() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmSetVgtControl(u32* cmdbuf, u32 size, u32 prim_group_sz_minus_one,
+                                     u32 partial_vs_wave_mode, u32 wd_switch_only_on_eop_mode) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (!cmdbuf || size != 3 || (prim_group_sz_minus_one >= 0x100) ||
+        ((wd_switch_only_on_eop_mode | partial_vs_wave_mode) >= 2)) {
+        return -1;
+    }
+
+    const u32 reg_value =
+        ((partial_vs_wave_mode & 1) << 0x10) | (prim_group_sz_minus_one & 0xffffu);
+    PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, reg_value); // IA_MULTI_VGT_PARAM
     return ORBIS_OK;
 }
 

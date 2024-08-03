@@ -161,7 +161,8 @@ int PS4_SYSV_ABI sceGnmSetResourceUserData();
 int PS4_SYSV_ABI sceGnmSetSpiEnableSqCounters();
 int PS4_SYSV_ABI sceGnmSetSpiEnableSqCountersForUnitInstance();
 int PS4_SYSV_ABI sceGnmSetupMipStatsReport();
-int PS4_SYSV_ABI sceGnmSetVgtControl();
+s32 PS4_SYSV_ABI sceGnmSetVgtControl(u32* cmdbuf, u32 size, u32 prim_group_sz_minus_one,
+                                     u32 partial_vs_wave_mode, u32 wd_switch_only_on_eop_mode);
 s32 PS4_SYSV_ABI sceGnmSetVsShader(u32* cmdbuf, u32 size, const u32* vs_regs, u32 shader_modifier);
 int PS4_SYSV_ABI sceGnmSetWaveLimitMultiplier();
 int PS4_SYSV_ABI sceGnmSetWaveLimitMultipliers();
