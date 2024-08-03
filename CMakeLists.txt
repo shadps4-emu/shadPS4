@@ -36,6 +36,10 @@ function(create_target_directory_groups target_name)
     endforeach()
 endfunction()
 
+# enable link time optimization for release builds
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+
 # Setup a custom clang-format target (if clang-format can be found) that will run
 # against all the src files. This should be used before making a pull request.
 if (CLANG_FORMAT)
