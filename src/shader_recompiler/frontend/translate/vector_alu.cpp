@@ -944,8 +944,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     if (!is_low) {
-        ASSERT(src0.IsImmediate() && src0.U32() == ~0U &&
-               src1.IsImmediate() && src1.U32() == 0U);
+        ASSERT(src0.IsImmediate() && src0.U32() == ~0U && src1.IsImmediate() && src1.U32() == 0U);
         return;
     }
     ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
