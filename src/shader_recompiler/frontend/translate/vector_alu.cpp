@@ -24,6 +24,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LSHR_B32(inst);
     case Opcode::V_ASHRREV_I32:
         return V_ASHRREV_I32(inst);
+    case Opcode::V_ASHR_I32:
+        return V_ASHR_I32(inst);
     case Opcode::V_LSHRREV_B32:
         return V_LSHRREV_B32(inst);
     case Opcode::V_NOT_B32:
@@ -183,6 +185,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ADD_F32(inst);
     case Opcode::V_MED3_F32:
         return V_MED3_F32(inst);
+    case Opcode::V_MED3_I32:
+        return V_MED3_I32(inst);
     case Opcode::V_FLOOR_F32:
         return V_FLOOR_F32(inst);
     case Opcode::V_SUB_F32:
@@ -479,6 +483,14 @@ void Translator::V_MED3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
 }
 
+void Translator::V_MED3_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+    const IR::U32 mmx = ir.SMin(ir.SMax(src0, src1), src2);
+    SetDst(inst.dst[0], ir.SMax(ir.SMin(src0, src1), mmx));
+}
+
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::VectorReg dst_reg{inst.dst[0].code};
@@ -758,6 +770,12 @@ void Translator::V_ASHRREV_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftRightArithmetic(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
+}
+
+void Translator::V_ASHR_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.ShiftRightArithmetic(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
 }
 
 void Translator::V_MAD_U32_U24(const GcnInst& inst) {
