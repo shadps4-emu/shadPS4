@@ -26,7 +26,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
               }).results();
 
     // Progress bar, please be patient :)
-    QProgressDialog dialog("Loading game list...", "Cancel", 0, 0, parent);
+    QProgressDialog dialog("Loading game list, please wait :3", "Cancel", 0, 0, parent);
     dialog.setWindowTitle("Loading...");
 
     QFutureWatcher<void> futureWatcher;
