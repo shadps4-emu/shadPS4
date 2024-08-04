@@ -956,9 +956,9 @@ int PS4_SYSV_ABI sceGnmGetGpuBlockStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
-    LOG_DEBUG(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return Config::isNeoMode() ? 911'000'000 : 800'000'000;
 }
 
 int PS4_SYSV_ABI sceGnmGetGpuInfoStatus() {
