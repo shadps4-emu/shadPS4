@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QXmlStreamReader>
+
 #include "common/types.h"
 #include "core/file_format/trp.h"
 

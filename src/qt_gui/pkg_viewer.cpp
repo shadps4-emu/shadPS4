@@ -3,6 +3,7 @@
 
 #include <QHeaderView>
 #include <QWidget>
+
 #include "pkg_viewer.h"
 
 PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent,

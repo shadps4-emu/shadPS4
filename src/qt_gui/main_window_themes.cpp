@@ -7,25 +7,6 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
     QPalette themePalette;
 
     switch (theme) {
-    case Theme::Light:
-        mw_searchbar->setStyleSheet("background-color: #ffffff; /* Light gray background */"
-                                    "color: #000000;            /* Black text */"
-                                    "padding: 5px;");
-        themePalette.setColor(QPalette::Window, QColor(240, 240, 240));   // Light gray
-        themePalette.setColor(QPalette::WindowText, Qt::black);           // Black
-        themePalette.setColor(QPalette::Base, QColor(230, 230, 230, 80)); // Grayish
-        themePalette.setColor(QPalette::ToolTipBase, Qt::black);          // Black
-        themePalette.setColor(QPalette::ToolTipText, Qt::black);          // Black
-        themePalette.setColor(QPalette::Text, Qt::black);                 // Black
-        themePalette.setColor(QPalette::Button, QColor(240, 240, 240));   // Light gray
-        themePalette.setColor(QPalette::ButtonText, Qt::black);           // Black
-        themePalette.setColor(QPalette::BrightText, Qt::red);             // Red
-        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));      // Blue
-        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218)); // Blue
-        themePalette.setColor(QPalette::HighlightedText, Qt::white);      // White
-        qApp->setPalette(themePalette);
-        break;
-
     case Theme::Dark:
         mw_searchbar->setStyleSheet("background-color: #1e1e1e; /* Dark background */"
                                     "color: #ffffff;            /* White text */"
@@ -45,6 +26,25 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Link, QColor(42, 130, 218));
         themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
+        qApp->setPalette(themePalette);
+        break;
+
+    case Theme::Light:
+        mw_searchbar->setStyleSheet("background-color: #ffffff; /* Light gray background */"
+                                    "color: #000000;            /* Black text */"
+                                    "padding: 5px;");
+        themePalette.setColor(QPalette::Window, QColor(240, 240, 240));   // Light gray
+        themePalette.setColor(QPalette::WindowText, Qt::black);           // Black
+        themePalette.setColor(QPalette::Base, QColor(230, 230, 230, 80)); // Grayish
+        themePalette.setColor(QPalette::ToolTipBase, Qt::black);          // Black
+        themePalette.setColor(QPalette::ToolTipText, Qt::black);          // Black
+        themePalette.setColor(QPalette::Text, Qt::black);                 // Black
+        themePalette.setColor(QPalette::Button, QColor(240, 240, 240));   // Light gray
+        themePalette.setColor(QPalette::ButtonText, Qt::black);           // Black
+        themePalette.setColor(QPalette::BrightText, Qt::red);             // Red
+        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));      // Blue
+        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218)); // Blue
+        themePalette.setColor(QPalette::HighlightedText, Qt::white);      // White
         qApp->setPalette(themePalette);
         break;
 

@@ -14,6 +14,7 @@
 #include <QTreeView>
 #include <QVBoxLayout>
 #include <QWidget>
+
 #include "core/loader/elf.h"
 #include "game_list_frame.h"
 
