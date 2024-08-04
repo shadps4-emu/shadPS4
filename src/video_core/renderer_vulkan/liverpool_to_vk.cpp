@@ -342,6 +342,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR16G16Unorm,
         vk::Format::eR16G16B16A16Sscaled,
         vk::Format::eR16G16Sscaled,
+        vk::Format::eE5B9G9R9UfloatPack32,
     };
     return formats;
 }
@@ -409,10 +410,6 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format16_16 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR16G16Unorm;
-    }
-    if (data_format == AmdGpu::DataFormat::Format10_11_11 &&
-        num_format == AmdGpu::NumberFormat::Float) {
-        return vk::Format::eB10G11R11UfloatPack32;
     }
     if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
@@ -549,6 +546,20 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::Format8 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eR8Srgb;
+    }
+    if (data_format == AmdGpu::DataFormat::Format11_11_10 &&
+        num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eB10G11R11UfloatPack32;
+    }
+    if (data_format == AmdGpu::DataFormat::Format16 && num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR16Uint;
+    }
+    if (data_format == AmdGpu::DataFormat::Format5_9_9_9 &&
+        num_format == AmdGpu::NumberFormat::Float) {
+        return vk::Format::eE5B9G9R9UfloatPack32;
+    }
+    if (data_format == AmdGpu::DataFormat::Format8 && num_format == AmdGpu::NumberFormat::Snorm) {
+        return vk::Format::eR8Snorm;
     }
     UNREACHABLE_MSG("Unknown data_format={} and num_format={}", u32(data_format), u32(num_format));
 }
