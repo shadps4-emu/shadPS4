@@ -165,7 +165,7 @@ public:
                     if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
 #endif
                         QMessageBox::information(
-                            nullptr, "Shortcut creation...",
+                            nullptr, "Shortcut creation",
                             QString("Shortcut created successfully!\n %1").arg(linkPath));
                     } else {
                         QMessageBox::critical(
@@ -183,7 +183,7 @@ public:
                 if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
 #endif
                     QMessageBox::information(
-                        nullptr, "Shortcut creation...",
+                        nullptr, "Shortcut creation",
                         QString("Shortcut created successfully!\n %1").arg(linkPath));
                 } else {
                     QMessageBox::critical(nullptr, "Error",
