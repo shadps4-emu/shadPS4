@@ -6,7 +6,7 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
-#include <functional>
+#include <exception>
 #include <mutex>
 #include <span>
 #include <thread>
