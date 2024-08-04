@@ -727,6 +727,9 @@ int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
 
     LOG_INFO(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
 
+    delete *cond;
+    *cond = nullptr;
+
     switch (result) {
     case 0:
         return SCE_OK;
@@ -1142,7 +1145,7 @@ int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex
     }
     int result = pthread_cond_wait(&(*cond)->cond, &(*mutex)->pth_mutex);
 
-    LOG_INFO(Kernel_Pthread, "scePthreadCondWait, result={}", result);
+    LOG_DEBUG(Kernel_Pthread, "scePthreadCondWait, result={}", result);
 
     switch (result) {
     case 0:
@@ -1162,7 +1165,7 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     }
     int result = pthread_condattr_destroy(&(*attr)->cond_attr);
 
-    LOG_INFO(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
+    LOG_DEBUG(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
 
     switch (result) {
     case 0:
