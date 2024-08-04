@@ -652,6 +652,13 @@ struct PM4CmdReleaseMem {
         return data_lo | u64(data_hi) << 32;
     }
 
+    uint64_t GetGpuClock64() const {
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = now.time_since_epoch();
+        auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+        return static_cast<uint64_t>(ticks);
+    }
+
     void SignalFence(Platform::InterruptId irq_id) const {
         switch (data_sel.Value()) {
         case DataSelect::Data32Low: {
@@ -660,6 +667,10 @@ struct PM4CmdReleaseMem {
         }
         case DataSelect::Data64: {
             *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::GpuClock64: {
+            *Address<u64>() = GetGpuClock64();
             break;
         }
         case DataSelect::PerfCounter: {
