@@ -309,11 +309,8 @@ IR::U64F64 Translator::GetSrcRaw64(const InstOperand& operand, bool integer) {
 }
 
 template <>
-Translator::SrcAuto Translator::GetSrc<Translator::SrcAuto>(const InstOperand& operand) {
-    return SrcAuto{
-        *this,
-        operand,
-    };
+Translator::SrcValue Translator::GetSrc<Translator::SrcValue>(const InstOperand& operand) {
+    return SrcValue{*this, operand};
 }
 
 template <>
@@ -346,31 +343,31 @@ IR::F64 Translator::GetSrc(const InstOperand& operand) {
     return GetSrcRaw64(operand, false);
 }
 
-Translator::SrcAuto::operator IR::U32F32() const {
+Translator::SrcValue::operator IR::U32F32() const {
     return translator.GetSrc<IR::U32F32>(operand);
 }
 
-Translator::SrcAuto::operator IR::Value() const {
+Translator::SrcValue::operator IR::Value() const {
     return IR::Value{translator.GetSrc<IR::U32F32>(operand)};
 }
 
-Translator::SrcAuto::operator IR::U32() const {
+Translator::SrcValue::operator IR::U32() const {
     return translator.GetSrc<IR::U32>(operand);
 }
 
-Translator::SrcAuto::operator IR::F32() const {
+Translator::SrcValue::operator IR::F32() const {
     return translator.GetSrc<IR::F32>(operand);
 }
 
-Translator::SrcAuto::operator IR::U64F64() const {
+Translator::SrcValue::operator IR::U64F64() const {
     return translator.GetSrc<IR::U64F64>(operand);
 }
 
-Translator::SrcAuto::operator IR::U64() const {
+Translator::SrcValue::operator IR::U64() const {
     return translator.GetSrc<IR::U64>(operand);
 }
 
-Translator::SrcAuto::operator IR::F64() const {
+Translator::SrcValue::operator IR::F64() const {
     return translator.GetSrc<IR::F64>(operand);
 }
 
