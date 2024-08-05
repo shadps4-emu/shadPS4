@@ -282,8 +282,8 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
-<<<<<<< HEAD
-        } else if (entries[i].operation == 4) { // MPROTECT
+        } else if (entries[i].operation ==
+                   MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT) { // MPROTECT
                 result =
                     sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
                 LOG_INFO(Kernel_Vmm,
