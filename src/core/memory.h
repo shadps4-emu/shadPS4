@@ -167,6 +167,8 @@ public:
 
     int MProtect(VAddr addr, size_t size, int prot);
 
+    int MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot);
+
     int VirtualQuery(VAddr addr, int flags, Libraries::Kernel::OrbisVirtualQueryInfo* info);
 
     int DirectMemoryQuery(PAddr addr, bool find_next, Libraries::Kernel::OrbisQueryInfo* out_info);
