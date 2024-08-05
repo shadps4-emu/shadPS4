@@ -6,7 +6,7 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
-#include <functional>
+#include <exception>
 #include <mutex>
 #include <span>
 #include <thread>
@@ -1040,7 +1040,11 @@ private:
                 return {};
             }
             void unhandled_exception() {
-                UNREACHABLE();
+                try {
+                    std::rethrow_exception(std::current_exception());
+                } catch (const std::exception& e) {
+                    UNREACHABLE_MSG("Unhandled exception: {}", e.what());
+                }
             }
             void return_void() {}
             struct empty {};

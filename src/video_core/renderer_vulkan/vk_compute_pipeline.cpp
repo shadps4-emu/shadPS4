@@ -94,7 +94,9 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
         const auto vsharp = buffer.GetVsharp(info);
         const u32 size = vsharp.GetSize();
         const VAddr address = vsharp.base_address;
-        texture_cache.OnCpuWrite(address);
+        if (buffer.is_storage) {
+            texture_cache.OnCpuWrite(address);
+        }
         const u32 offset = staging.Copy(address, size,
                                         buffer.is_storage ? instance.StorageMinAlignment()
                                                           : instance.UniformMinAlignment());

@@ -180,7 +180,6 @@ public:
 
     Id workgroup_id{};
     Id local_invocation_id{};
-    Id subgroup_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
 
