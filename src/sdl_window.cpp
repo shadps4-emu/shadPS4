@@ -45,8 +45,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
-    window_info.render_surface =
-        SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    window_info.render_surface = SDL_GetPointerProperty(SDL_GetWindowProperties(window),
+                                                        SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
         window_info.type = WindowSystemType::X11;

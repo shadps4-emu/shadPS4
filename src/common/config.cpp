@@ -223,90 +223,76 @@ void load(const std::filesystem::path& path) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
-
     if (data.contains("General")) {
-        auto generalResult = toml::expect<toml::value>(data.at("General"));
-        if (generalResult.is_ok()) {
-            auto general = generalResult.unwrap();
+        const toml::value& general = data.at("General");
 
-            isNeo = toml::find_or<toml::boolean>(general, "isPS4Pro", false);
-            isFullscreen = toml::find_or<toml::boolean>(general, "Fullscreen", false);
-            logFilter = toml::find_or<toml::string>(general, "logFilter", "");
-            logType = toml::find_or<toml::string>(general, "logType", "sync");
-            isShowSplash = toml::find_or<toml::boolean>(general, "showSplash", true);
-        }
+        isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
+        logFilter = toml::find_or<std::string>(general, "logFilter", "");
+        logType = toml::find_or<std::string>(general, "logType", "sync");
+        isShowSplash = toml::find_or<bool>(general, "showSplash", true);
     }
+
     if (data.contains("GPU")) {
-        auto gpuResult = toml::expect<toml::value>(data.at("GPU"));
-        if (gpuResult.is_ok()) {
-            auto gpu = gpuResult.unwrap();
+        const toml::value& gpu = data.at("GPU");
 
-            screenWidth = toml::find_or<toml::integer>(gpu, "screenWidth", screenWidth);
-            screenHeight = toml::find_or<toml::integer>(gpu, "screenHeight", screenHeight);
-            isNullGpu = toml::find_or<toml::boolean>(gpu, "nullGpu", false);
-            shouldDumpShaders = toml::find_or<toml::boolean>(gpu, "dumpShaders", false);
-            shouldDumpPM4 = toml::find_or<toml::boolean>(gpu, "dumpPM4", false);
-            vblankDivider = toml::find_or<toml::integer>(gpu, "vblankDivider", 1);
-        }
+        screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
+        screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
+        isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
+        shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
+        shouldDumpPM4 = toml::find_or<bool>(gpu, "dumpPM4", false);
+        vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
     }
+
     if (data.contains("Vulkan")) {
-        const auto vkResult = toml::expect<toml::value>(data.at("Vulkan"));
-        if (vkResult.is_ok()) {
-            auto vk = vkResult.unwrap();
+        const toml::value& vk = data.at("Vulkan");
 
-            gpuId = toml::find_or<toml::integer>(vk, "gpuId", 0);
-            vkValidation = toml::find_or<toml::boolean>(vk, "validation", true);
-            vkValidationSync = toml::find_or<toml::boolean>(vk, "validation_sync", true);
-            rdocEnable = toml::find_or<toml::boolean>(vk, "rdocEnable", false);
-        }
+        gpuId = toml::find_or<int>(vk, "gpuId", -1);
+        vkValidation = toml::find_or<bool>(vk, "validation", false);
+        vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
+        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
     }
+
     if (data.contains("Debug")) {
-        auto debugResult = toml::expect<toml::value>(data.at("Debug"));
-        if (debugResult.is_ok()) {
-            auto debug = debugResult.unwrap();
+        const toml::value& debug = data.at("Debug");
 
-            isDebugDump = toml::find_or<toml::boolean>(debug, "DebugDump", false);
-        }
+        isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
     }
+
     if (data.contains("LLE")) {
-        auto lleResult = toml::expect<toml::value>(data.at("LLE"));
-        if (lleResult.is_ok()) {
-            auto lle = lleResult.unwrap();
+        const toml::value& lle = data.at("LLE");
 
-            isLibc = toml::find_or<toml::boolean>(lle, "libc", true);
-        }
+        isLibc = toml::find_or<bool>(lle, "libc", true);
     }
-    if (data.contains("GUI")) {
-        auto guiResult = toml::expect<toml::value>(data.at("GUI"));
-        if (guiResult.is_ok()) {
-            auto gui = guiResult.unwrap();
 
-            m_icon_size = toml::find_or<toml::integer>(gui, "iconSize", 0);
-            m_icon_size_grid = toml::find_or<toml::integer>(gui, "iconSizeGrid", 0);
-            m_slider_pos = toml::find_or<toml::integer>(gui, "sliderPos", 0);
-            m_slider_pos_grid = toml::find_or<toml::integer>(gui, "sliderPosGrid", 0);
-            mw_themes = toml::find_or<toml::integer>(gui, "theme", 0);
-            m_window_size_W = toml::find_or<toml::integer>(gui, "mw_width", 0);
-            m_window_size_H = toml::find_or<toml::integer>(gui, "mw_height", 0);
-            settings_install_dir = toml::find_or<toml::string>(gui, "installDir", "");
-            main_window_geometry_x = toml::find_or<toml::integer>(gui, "geometry_x", 0);
-            main_window_geometry_y = toml::find_or<toml::integer>(gui, "geometry_y", 0);
-            main_window_geometry_w = toml::find_or<toml::integer>(gui, "geometry_w", 0);
-            main_window_geometry_h = toml::find_or<toml::integer>(gui, "geometry_h", 0);
-            m_pkg_viewer = toml::find_or<std::vector<std::string>>(gui, "pkgDirs", {});
-            m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
-            m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
-            m_table_mode = toml::find_or<toml::integer>(gui, "gameTableMode", 0);
-        }
+    if (data.contains("GUI")) {
+        const toml::value& gui = data.at("GUI");
+
+        m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
+        m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
+        m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
+        m_slider_pos_grid = toml::find_or<int>(gui, "sliderPosGrid", 0);
+        mw_themes = toml::find_or<int>(gui, "theme", 0);
+        m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
+        m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
+        settings_install_dir = toml::find_or<std::string>(gui, "installDir", "");
+        main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
+        main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
+        main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
+        main_window_geometry_h = toml::find_or<int>(gui, "geometry_h", 0);
+        m_pkg_viewer = toml::find_or<std::vector<std::string>>(gui, "pkgDirs", {});
+        m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
+        m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
+        m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
     }
 }
 void save(const std::filesystem::path& path) {
-    toml::basic_value<toml::preserve_comments> data;
+    toml::value data;
 
     std::error_code error;
     if (std::filesystem::exists(path, error)) {
         try {
-            data = toml::parse<toml::preserve_comments>(path);
+            data = toml::parse(path);
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
