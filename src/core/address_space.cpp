@@ -465,25 +465,4 @@ void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission per
     return impl->Protect(virtual_addr, size, true, true, true);
 }
 
-int AddressSpace::MProtect(VAddr addr, size_t size, int prot) {
-
-    // Use conditional compilation to switch between mprotect and VirtualProtect
-    int result;
-#ifdef _WIN32
-    // Windows-specific API call
-    result = VirtualProtect(reinterpret_cast<void*>(addr), size, prot, nullptr);
-#else
-    // POSIX-specific API call
-    result = ::mprotect(reinterpret_cast<void*>(addr), size, prot);
-#endif
-
-    if (result != 0) {
-        LOG_ERROR(Core, "Failed to change memory protection: {}", strerror(errno));
-        return ORBIS_KERNEL_ERROR_EACCES;
-    }
-
-    LOG_INFO(Core, "Changed protection on range {:#x}-{:#x} to {:#x}", addr, addr + size, prot);
-    return ORBIS_OK;
-}
-
 } // namespace Core
