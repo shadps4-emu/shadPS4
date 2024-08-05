@@ -10,6 +10,8 @@
 #include "core/libraries/kernel/memory_management.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/address_space.h"
+
 
 namespace Libraries::Kernel {
 
@@ -198,6 +200,22 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
+int PS4_SYSV_ABI sceKernelMProtect(void* addr, size_t size, int prot) {
+    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
+             prot);
+    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    if (!memory_manager) {
+        LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = memory_manager->MProtect(std::bit_cast<VAddr>(addr), size, prot);
+    if (result != ORBIS_OK) {
+        LOG_ERROR(Kernel_Vmm, "MProtect failed with result {}", result);
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize) {
     LOG_WARNING(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
@@ -256,14 +274,28 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
-        } else if (entries[i].operation == 1) {
+        } else if (entries[i].operation == 1) { // UNMAP
             result = sceKernelMunmap(entries[i].start, entries[i].length);
             LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
                      i, entries[i].operation, entries[i].length, result);
 
             if (result == 0)
                 processed++;
-        } else {
+        } else if (entries[i].operation == 4) { // MPROTECT
+                result =
+                    sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
+                LOG_INFO(Kernel_Vmm,
+                         "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                         entries[i].operation, entries[i].length, result);
+                if (result != ORBIS_OK) {
+                    LOG_ERROR(Kernel_Vmm, "BatchMap: MProtect failed on entry {} with result {}", i,
+                              result);
+                }
+                if (result == 0) {
+                    processed++;
+                }
+            }
+        else {
             UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }
     }

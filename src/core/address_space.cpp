@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #endif
+#include "libraries/error_codes.h"
 
 #ifdef __APPLE__
 // Reserve space for the system address space using a zerofill section.
@@ -240,6 +241,8 @@ struct AddressSpace::Impl {
         }
     }
 
+
+
     HANDLE process{};
     HANDLE backing_handle{};
     u8* backing_base{};
@@ -460,6 +463,27 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
     return impl->Protect(virtual_addr, size, true, true, true);
+}
+
+int AddressSpace::MProtect(VAddr addr, size_t size, int prot) {
+
+    // Use conditional compilation to switch between mprotect and VirtualProtect
+    int result;
+#ifdef _WIN32
+    // Windows-specific API call
+    result = VirtualProtect(reinterpret_cast<void*>(addr), size, prot, nullptr);
+#else
+    // POSIX-specific API call
+    result = ::mprotect(reinterpret_cast<void*>(addr), size, prot);
+#endif
+
+    if (result != 0) {
+        LOG_ERROR(Core, "Failed to change memory protection: {}", strerror(errno));
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    LOG_INFO(Core, "Changed protection on range {:#x}-{:#x} to {:#x}", addr, addr + size, prot);
+    return ORBIS_OK;
 }
 
 } // namespace Core

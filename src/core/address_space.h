@@ -98,6 +98,8 @@ public:
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 
+    int MProtect(VAddr addr, size_t size, int prot);
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;
