@@ -275,11 +275,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
-<<<<<<< HEAD
-        } else if (entries[i].operation == 1) { // UNMAP
-=======
         } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP) {
->>>>>>> cdff4af38da1d832e35d8c057d698f38c64b2932
             result = sceKernelMunmap(entries[i].start, entries[i].length);
             LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
                      i, entries[i].operation, entries[i].length, result);
@@ -300,9 +296,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                 if (result == 0) {
                     processed++;
                 }
-            }
-        else {
-=======
         } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
@@ -314,7 +307,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             if (result == 0)
                 processed++;
         } else {
->>>>>>> cdff4af38da1d832e35d8c057d698f38c64b2932
             UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }
     }
