@@ -97,8 +97,11 @@ using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
 struct SamplerResource {
     u32 sgpr_base;
     u32 dword_offset;
+    AmdGpu::Sampler inline_sampler{};
     u32 associated_image : 4;
     u32 disable_aniso : 1;
+
+    constexpr AmdGpu::Sampler GetSsharp(const Info& info) const noexcept;
 };
 using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
 
@@ -175,6 +178,7 @@ struct Info {
     bool has_image_gather{};
     bool has_image_query{};
     bool uses_group_quad{};
+    bool uses_shared{};
     bool uses_shared_u8{};
     bool uses_shared_u16{};
     bool uses_fp16{};
@@ -194,6 +198,10 @@ struct Info {
 
 constexpr AmdGpu::Buffer BufferResource::GetVsharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+}
+
+constexpr AmdGpu::Sampler SamplerResource::GetSsharp(const Info& info) const noexcept {
+    return inline_sampler ? inline_sampler : info.ReadUd<AmdGpu::Sampler>(sgpr_base, dword_offset);
 }
 
 } // namespace Shader

@@ -78,9 +78,7 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
         std::scoped_lock lock{m_mutex};
 
         for (auto& event : m_events) {
-            ASSERT_MSG(event.event.filter == filter,
-                       "Event to trigger doesn't match to queue events");
-            if (event.event.ident == ident) {
+            if ((event.event.ident == ident) && (event.event.filter == filter)) {
                 event.Trigger(trigger_data);
                 has_found = true;
             }

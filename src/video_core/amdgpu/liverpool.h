@@ -6,6 +6,7 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
+#include <functional>
 #include <mutex>
 #include <span>
 #include <thread>
@@ -21,6 +22,10 @@ namespace Vulkan {
 class Rasterizer;
 }
 
+namespace Libraries::VideoOut {
+struct VideoOutPort;
+}
+
 namespace AmdGpu {
 
 #define GFX6_3D_REG_INDEX(field_name) (offsetof(AmdGpu::Liverpool::Regs, field_name) / sizeof(u32))
@@ -31,6 +36,7 @@ namespace AmdGpu {
     [[maybe_unused]] std::array<u32, num_words> CONCAT2(pad, __LINE__)
 
 struct Liverpool {
+    static constexpr u32 GfxQueueId = 0u;
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
     static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
     static constexpr u32 NumQueuesPerPipe = 8u;
@@ -372,9 +378,13 @@ struct Liverpool {
             return 1u << z_info.num_samples; // spec doesn't say it is a log2
         }
 
+        u32 NumBits() const {
+            return z_info.format == ZFormat::Z32Float ? 32 : 16;
+        }
+
         size_t GetDepthSliceSize() const {
             ASSERT(z_info.format != ZFormat::Invalid);
-            const auto bpe = z_info.format == ZFormat::Z32Float ? 4 : 2;
+            const auto bpe = NumBits() >> 3; // in bytes
             return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
         }
     };
@@ -991,8 +1001,23 @@ public:
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
+    void SubmitDone() noexcept {
+        std::scoped_lock lk{submit_mutex};
+        submit_done = true;
+        submit_cv.notify_one();
+    }
+
+    void WaitGpuIdle() noexcept {
+        std::unique_lock lk{submit_mutex};
+        submit_cv.wait(lk, [this] { return num_submits == 0; });
+    }
+
     bool IsGpuIdle() const {
         return num_submits == 0;
+    }
+
+    void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
+        vo_port = port;
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
@@ -1037,6 +1062,7 @@ private:
     struct GpuQueue {
         std::mutex m_access{};
         std::queue<Task::Handle> submits{};
+        ComputeProgram cs_state{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
 
@@ -1059,8 +1085,10 @@ private:
     } cblock{};
 
     Vulkan::Rasterizer* rasterizer{};
+    Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
 };

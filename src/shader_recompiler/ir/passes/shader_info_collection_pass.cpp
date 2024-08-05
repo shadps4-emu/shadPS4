@@ -20,11 +20,19 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::LoadSharedU8:
     case IR::Opcode::WriteSharedU8:
         info.uses_shared_u8 = true;
+        info.uses_shared = true;
         break;
     case IR::Opcode::LoadSharedS16:
     case IR::Opcode::LoadSharedU16:
     case IR::Opcode::WriteSharedU16:
         info.uses_shared_u16 = true;
+        info.uses_shared = true;
+        break;
+    case IR::Opcode::LoadSharedU32:
+    case IR::Opcode::LoadSharedU64:
+    case IR::Opcode::WriteSharedU32:
+    case IR::Opcode::WriteSharedU64:
+        info.uses_shared = true;
         break;
     case IR::Opcode::ConvertF32F16:
     case IR::Opcode::BitCastF16U16:

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <limits>
-#include <mutex>
-#include "common/assert.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 
@@ -58,48 +56,6 @@ void MasterSemaphore::Wait(u64 tick) {
     while (instance.GetDevice().waitSemaphores(&wait_info, WAIT_TIMEOUT) != vk::Result::eSuccess) {
     }
     Refresh();
-}
-
-void MasterSemaphore::SubmitWork(vk::CommandBuffer cmdbuf, vk::Semaphore wait, vk::Semaphore signal,
-                                 u64 signal_value) {
-    cmdbuf.end();
-
-    const u32 num_signal_semaphores = signal ? 2U : 1U;
-    const std::array signal_values{signal_value, u64(0)};
-    const std::array signal_semaphores{Handle(), signal};
-
-    const u32 num_wait_semaphores = wait ? 2U : 1U;
-    const std::array wait_values{signal_value - 1, u64(1)};
-    const std::array wait_semaphores{Handle(), wait};
-
-    static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
-        vk::PipelineStageFlagBits::eAllCommands,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    };
-
-    const vk::TimelineSemaphoreSubmitInfo timeline_si = {
-        .waitSemaphoreValueCount = num_wait_semaphores,
-        .pWaitSemaphoreValues = wait_values.data(),
-        .signalSemaphoreValueCount = num_signal_semaphores,
-        .pSignalSemaphoreValues = signal_values.data(),
-    };
-
-    const vk::SubmitInfo submit_info = {
-        .pNext = &timeline_si,
-        .waitSemaphoreCount = num_wait_semaphores,
-        .pWaitSemaphores = wait_semaphores.data(),
-        .pWaitDstStageMask = wait_stage_masks.data(),
-        .commandBufferCount = 1u,
-        .pCommandBuffers = &cmdbuf,
-        .signalSemaphoreCount = num_signal_semaphores,
-        .pSignalSemaphores = signal_semaphores.data(),
-    };
-
-    try {
-        instance.GetGraphicsQueue().submit(submit_info);
-    } catch (vk::DeviceLostError& err) {
-        UNREACHABLE_MSG("Device lost during submit: {}", err.what());
-    }
 }
 
 } // namespace Vulkan

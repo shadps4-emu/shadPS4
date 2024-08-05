@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "game_install_dialog.h"
-
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
@@ -14,6 +12,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "game_install_dialog.h"
+
 GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     auto layout = new QVBoxLayout(this);
 
@@ -21,8 +21,8 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     layout->addStretch();
     layout->addWidget(SetupDialogActions());
 
-    setWindowTitle("Shadps4 - Choose directory");
-    setWindowIcon(QIcon(":/images/shadps4.ico"));
+    setWindowTitle("shadPS4 - Choose directory");
+    setWindowIcon(QIcon(":images/shadps4.ico"));
 }
 
 GameInstallDialog::~GameInstallDialog() {}
@@ -47,7 +47,7 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     layout->addWidget(m_gamesDirectory);
 
     // Browse button.
-    auto browse = new QPushButton("...");
+    auto browse = new QPushButton("Browse");
 
     connect(browse, &QPushButton::clicked, this, &GameInstallDialog::Browse);
 

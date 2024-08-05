@@ -47,33 +47,33 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
 // clang-format off
 // The table of macro tiles parameters for given tiling index (row) and bpp (column)
 static constexpr std::array macro_tile_extents{
-    std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, // 00
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 01
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 02
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 03
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 04
-    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 05
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 06
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 07
-    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 08
-    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 09
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0A
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 0B
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 0C
-    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 0D
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0E
-    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0F
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 10
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 11
-    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  // 12
-    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 13
-    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 14
-    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 15
-    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 16
-    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 17
-    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   // 18
-    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 19
-    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 1A
+    std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, std::pair{256u, 128u}, // 00
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 01
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{128u, 64u},  // 02
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{128u, 64u},  // 03
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   // 04
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 05
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, std::pair{128u, 128u}, // 06
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   // 07
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 08
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 09
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   // 0A
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   // 0B
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 0C
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 0D
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   // 0E
+    std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   // 0F
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   // 10
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   // 11
+    std::pair{256u, 256u}, std::pair{256u, 128u}, std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{128u, 64u},  // 12
+    std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     std::pair{0u, 0u},     // 13
+    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 14
+    std::pair{128u, 64u},  std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 15
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 16
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 17
+    std::pair{128u, 128u}, std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{128u, 64u},  // 18
+    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 19
+    std::pair{128u, 64u},  std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   std::pair{64u, 64u},   // 1A
 };
 // clang-format on
 
@@ -82,62 +82,65 @@ static constexpr auto hw_pipe_interleave = 256u;
 
 static constexpr std::pair<u32, u32> GetMacroTileExtents(u32 tiling_idx, u32 bpp, u32 num_samples) {
     ASSERT(num_samples == 1);
-    const auto row = tiling_idx * 4;
-    const auto column = std::bit_width(bpp) - 4; // bpps are 8, 16, 32, 64
+    const auto row = tiling_idx * 5;
+    const auto column = std::bit_width(bpp) - 4; // bpps are 8, 16, 32, 64, 128
     return macro_tile_extents[row + column];
 }
 
-static constexpr size_t ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
+static constexpr std::pair<u32, size_t> ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp,
+                                                               u32 num_samples) {
     const auto pitch_align = std::max(8u, 64u / ((bpp + 7) / 8));
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = height;
-    size_t log_sz = 1;
-    const auto slice_align = std::max(64u, hw_pipe_interleave / (bpp + 7) / 8);
+    size_t log_sz = pitch_aligned * height_aligned * num_samples;
+    const auto slice_align = std::max(64u, 256u / ((bpp + 7) / 8));
     while (log_sz % slice_align) {
-        log_sz = pitch_aligned * height_aligned * num_samples;
         pitch_aligned += pitch_align;
+        log_sz = pitch_aligned * height_aligned * num_samples;
     }
-    return (log_sz * bpp + 7) / 8;
+    return {pitch_aligned, (log_sz * bpp + 7) / 8};
 }
 
-static constexpr size_t ImageSizeMicroTiled(u32 pitch, u32 height, u32 bpp, u32 num_samples) {
+static constexpr std::pair<u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 bpp,
+                                                            u32 num_samples) {
     const auto& [pitch_align, height_align] = micro_tile_extent;
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
-    size_t log_sz = 1;
+    size_t log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
     while (log_sz % 256) {
-        log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
         pitch_aligned += 8;
+        log_sz = (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
     }
-    return log_sz;
+    return {pitch_aligned, log_sz};
 }
 
-static constexpr size_t ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp, u32 num_samples,
-                                            u32 tiling_idx) {
+static constexpr std::pair<u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp,
+                                                            u32 num_samples, u32 tiling_idx) {
     const auto& [pitch_align, height_align] = GetMacroTileExtents(tiling_idx, bpp, num_samples);
     ASSERT(pitch_align != 0 && height_align != 0);
     const auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
-    return (pitch_aligned * height_aligned * bpp * num_samples + 7) / 8;
+    const auto log_sz = pitch_aligned * height_aligned * num_samples;
+    return {pitch_aligned, (log_sz * bpp + 7) / 8};
 }
 
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
                      VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
-    is_tiled = attrib.tiling_mode == TilingMode::Tile;
-    tiling_mode =
-        is_tiled ? AmdGpu::TilingMode::Display_MacroTiled : AmdGpu::TilingMode::Display_Linear;
+    props.is_tiled = attrib.tiling_mode == TilingMode::Tile;
+    tiling_mode = props.is_tiled ? AmdGpu::TilingMode::Display_MacroTiled
+                                 : AmdGpu::TilingMode::Display_Linear;
     pixel_format = ConvertPixelFormat(attrib.pixel_format);
     type = vk::ImageType::e2D;
     size.width = attrib.width;
     size.height = attrib.height;
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) & (~127);
     usage.vo_buffer = true;
-    const bool is_32bpp = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float;
-    ASSERT(is_32bpp);
+    num_bits = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float ? 32 : 64;
+    ASSERT(num_bits == 32);
 
     guest_address = cpu_address;
-    if (!is_tiled) {
+    if (!props.is_tiled) {
         guest_size_bytes = pitch * size.height * 4;
     } else {
         if (Config::isNeoMode()) {
@@ -146,15 +149,16 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
             guest_size_bytes = pitch * ((size.height + 63) & (~63)) * 4;
         }
     }
-    mips_layout.emplace_back(0, guest_size_bytes);
+    mips_layout.emplace_back(guest_size_bytes, pitch, 0);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
                      const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
-    is_tiled = buffer.IsTiled();
+    props.is_tiled = buffer.IsTiled();
     tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.info.format, buffer.NumFormat());
     num_samples = 1 << buffer.attrib.num_fragments_log2;
+    num_bits = NumBits(buffer.info.format);
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
@@ -168,15 +172,16 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     guest_address = buffer.Address();
     const auto color_slice_sz = buffer.GetColorSliceSize();
     guest_size_bytes = color_slice_sz * buffer.NumSlices();
-    mips_layout.emplace_back(0, color_slice_sz);
+    mips_layout.emplace_back(color_slice_sz, pitch, 0);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
                      VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint) noexcept {
-    is_tiled = false;
+    props.is_tiled = false;
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = vk::ImageType::e2D;
     num_samples = 1 << buffer.z_info.num_samples; // spec doesn't say it is a log2
+    num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
     size.depth = 1;
@@ -188,37 +193,38 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     guest_address = buffer.Address();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
     guest_size_bytes = depth_slice_sz * num_slices;
-    mips_layout.emplace_back(0, depth_slice_sz);
+    mips_layout.emplace_back(depth_slice_sz, pitch, 0);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
-    is_tiled = image.IsTiled();
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     type = ConvertImageType(image.GetType());
-    is_cube = image.GetType() == AmdGpu::ImageType::Cube;
-    is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
+    props.is_tiled = image.IsTiled();
+    props.is_cube = image.GetType() == AmdGpu::ImageType::Cube;
+    props.is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
+    props.is_pow2 = image.pow2pad;
+    props.is_block = IsBlockCoded();
     size.width = image.width + 1;
     size.height = image.height + 1;
-    size.depth = is_volume ? image.depth + 1 : 1;
+    size.depth = props.is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
+    num_bits = NumBits(image.GetDataFmt());
     usage.texture = true;
 
     guest_address = image.Address();
 
     mips_layout.reserve(resources.levels);
-    const auto num_bits = NumBits(image.GetDataFmt());
-    const auto is_block = IsBlockCoded();
-    const auto is_pow2 = image.pow2pad;
 
+    MipInfo mip_info{};
     guest_size_bytes = 0;
     for (auto mip = 0u; mip < resources.levels; ++mip) {
         auto bpp = num_bits;
         auto mip_w = pitch >> mip;
         auto mip_h = size.height >> mip;
-        if (is_block) {
+        if (props.is_block) {
             mip_w = (mip_w + 3) / 4;
             mip_h = (mip_h + 3) / 4;
             bpp *= 16;
@@ -227,40 +233,48 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
         mip_h = std::max(mip_h, 1u);
         auto mip_d = std::max(size.depth >> mip, 1u);
 
-        if (is_pow2) {
+        if (props.is_pow2) {
             mip_w = std::bit_ceil(mip_w);
             mip_h = std::bit_ceil(mip_h);
             mip_d = std::bit_ceil(mip_d);
         }
 
-        size_t mip_size = 0;
         switch (tiling_mode) {
         case AmdGpu::TilingMode::Display_Linear: {
-            ASSERT(!is_cube);
-            mip_size = ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
+            ASSERT(!props.is_cube);
+            std::tie(mip_info.pitch, mip_info.size) =
+                ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
+            mip_info.height = mip_h;
             break;
         }
         case AmdGpu::TilingMode::Texture_MicroTiled: {
-            mip_size = ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
+            std::tie(mip_info.pitch, mip_info.size) =
+                ImageSizeMicroTiled(mip_w, mip_h, bpp, num_samples);
+            mip_info.height = std::max(mip_h, 8u);
+            if (props.is_block) {
+                mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
+                mip_info.height = std::max(mip_info.height * 4, 32u);
+            }
             break;
         }
         case AmdGpu::TilingMode::Display_MacroTiled:
         case AmdGpu::TilingMode::Texture_MacroTiled:
         case AmdGpu::TilingMode::Depth_MacroTiled: {
-            ASSERT(!is_cube && !is_block);
+            ASSERT(!props.is_cube && !props.is_block);
             ASSERT(num_samples == 1);
-            ASSERT(num_bits <= 64);
-            mip_size = ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, image.tiling_index);
+            std::tie(mip_info.pitch, mip_info.size) =
+                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, image.tiling_index);
             break;
         }
         default: {
             UNREACHABLE();
         }
         }
-        mip_size *= mip_d;
+        mip_info.size *= mip_d;
 
-        mips_layout.emplace_back(guest_size_bytes, mip_size);
-        guest_size_bytes += mip_size;
+        mip_info.offset = guest_size_bytes;
+        mips_layout.emplace_back(mip_info);
+        guest_size_bytes += mip_info.size;
     }
     guest_size_bytes *= resources.layers;
 }

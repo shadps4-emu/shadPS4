@@ -109,6 +109,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     pipeline_cache = instance.GetDevice().createPipelineCacheUnique({});
     profile = Shader::Profile{
         .supported_spirv = 0x00010600U,
+        .subgroup_size = instance.SubgroupSize(),
         .support_explicit_workgroup_layout = true,
     };
 }
@@ -191,7 +192,7 @@ void PipelineCache::RefreshGraphicsKey() {
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         const auto is_vo_surface = renderer->IsVideoOutSurface(col_buf);
         key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), is_vo_surface);
+            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);
@@ -268,7 +269,8 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
             info.pgm_base = pgm->Address<uintptr_t>();
             info.pgm_hash = hash;
-            programs[i] = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
+            programs[i] =
+                Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 
             // Compile IR to SPIR-V
             auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
@@ -308,7 +310,8 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
         Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
         info.pgm_base = cs_pgm.Address<uintptr_t>();
-        auto program = Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info));
+        auto program =
+            Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 
         // Compile IR to SPIR-V
         u32 binding{};

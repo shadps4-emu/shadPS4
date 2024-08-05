@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <deque>
 #include <boost/container/small_vector.hpp>
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -273,9 +272,18 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
 }
 
 SharpLocation TrackSharp(const IR::Inst* inst) {
-    while (inst->GetOpcode() == IR::Opcode::Phi) {
-        inst = inst->Arg(0).InstRecursive();
-    }
+    // Search until we find a potential sharp source.
+    const auto pred0 = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+            inst->GetOpcode() == IR::Opcode::ReadConst) {
+            return inst;
+        }
+        return std::nullopt;
+    };
+    const auto result = IR::BreadthFirstSearch(inst, pred0);
+    ASSERT_MSG(result, "Unable to track sharp source");
+    inst = result.value();
+    // If its from user data not much else to do.
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return SharpLocation{
             .sgpr_base = u32(IR::ScalarReg::Max),
@@ -289,14 +297,14 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     const IR::Inst* spgpr_base = inst->Arg(0).InstRecursive();
 
     // Retrieve SGPR pair that holds sbase
-    const auto pred = [](const IR::Inst* inst) -> std::optional<IR::ScalarReg> {
+    const auto pred1 = [](const IR::Inst* inst) -> std::optional<IR::ScalarReg> {
         if (inst->GetOpcode() == IR::Opcode::GetUserData) {
             return inst->Arg(0).ScalarReg();
         }
         return std::nullopt;
     };
-    const auto base0 = IR::BreadthFirstSearch(spgpr_base->Arg(0), pred);
-    const auto base1 = IR::BreadthFirstSearch(spgpr_base->Arg(1), pred);
+    const auto base0 = IR::BreadthFirstSearch(spgpr_base->Arg(0), pred1);
+    const auto base1 = IR::BreadthFirstSearch(spgpr_base->Arg(1), pred1);
     ASSERT_MSG(base0 && base1, "Nested resource loads not supported");
 
     // Return retrieved location.
@@ -456,36 +464,26 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    std::deque<IR::Inst*> insts{&inst};
-    const auto& pred = [](auto opcode) -> bool {
-        return (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
-                opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
-                opcode == IR::Opcode::GetUserData);
+    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        const auto opcode = inst->GetOpcode();
+        if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
+            opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+            opcode == IR::Opcode::GetUserData) {
+            return inst;
+        }
+        return std::nullopt;
     };
-
-    IR::Inst* producer{};
-    while (!insts.empty() && (producer = insts.front(), !pred(producer->GetOpcode()))) {
-        for (auto arg_idx = 0u; arg_idx < producer->NumArgs(); ++arg_idx) {
-            const auto arg = producer->Arg(arg_idx);
-            if (arg.TryInstRecursive()) {
-                insts.push_back(arg.InstRecursive());
-            }
-        }
-        insts.pop_front();
-    }
-    ASSERT(pred(producer->GetOpcode()));
-    auto [tsharp_handle, ssharp_handle] = [&] -> std::pair<IR::Inst*, IR::Inst*> {
-        if (producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2) {
-            return std::make_pair(producer->Arg(0).InstRecursive(),
-                                  producer->Arg(1).InstRecursive());
-        }
-        return std::make_pair(producer, nullptr);
-    }();
+    const auto result = IR::BreadthFirstSearch(&inst, pred);
+    ASSERT_MSG(result, "Unable to find image sharp source");
+    const IR::Inst* producer = result.value();
+    const bool has_sampler = producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2;
+    const auto tsharp_handle = has_sampler ? producer->Arg(0).InstRecursive() : producer;
 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle);
     const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
@@ -496,17 +494,32 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
-    if (ssharp_handle) {
+    const u32 sampler_binding = [&] {
+        if (!has_sampler) {
+            return 0U;
+        }
+        const IR::Value& handle = producer->Arg(1);
+        // Inline sampler resource.
+        if (handle.IsImmediate()) {
+            LOG_WARNING(Render_Vulkan, "Inline sampler detected");
+            return descriptors.Add(SamplerResource{
+                .sgpr_base = std::numeric_limits<u32>::max(),
+                .dword_offset = 0,
+                .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
+            });
+        }
+        // Normal sampler resource.
+        const auto ssharp_handle = handle.InstRecursive();
         const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
         const auto ssharp = TrackSharp(ssharp_ud);
-        const u32 sampler_binding = descriptors.Add(SamplerResource{
+        return descriptors.Add(SamplerResource{
             .sgpr_base = ssharp.sgpr_base,
             .dword_offset = ssharp.dword_offset,
             .associated_image = image_binding,
             .disable_aniso = disable_aniso,
         });
-        image_binding |= (sampler_binding << 16);
-    }
+    }();
+    image_binding |= (sampler_binding << 16);
 
     // Patch image handle
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -607,7 +620,7 @@ void ResourceTrackingPass(IR::Program& program) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
     Descriptors descriptors{info.buffers, info.images, info.samplers};
-    for (IR::Block* const block : program.post_order_blocks) {
+    for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferInstruction(*block, inst, info, descriptors);

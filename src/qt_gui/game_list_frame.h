@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QtConcurrent/QtConcurrent>
+
 #include "game_info.h"
 #include "game_list_utils.h"
 #include "gui_context_menus.h"

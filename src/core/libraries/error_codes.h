@@ -233,6 +233,9 @@ constexpr int SCE_KERNEL_ERROR_ESDKVERSION = 0x80020063;
 constexpr int SCE_KERNEL_ERROR_ESTART = 0x80020064;
 constexpr int SCE_KERNEL_ERROR_ESTOP = 0x80020065;
 
+// libSceRandom error codes
+constexpr int SCE_RANDOM_ERROR_INVALID = 0x817C0016;
+
 // videoOut
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_VALUE = 0x80290001;        // invalid argument
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS = 0x80290002;      // invalid addresses

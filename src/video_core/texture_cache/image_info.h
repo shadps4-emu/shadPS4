@@ -9,6 +9,8 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/texture_cache/types.h"
 
+#include <boost/container/small_vector.hpp>
+
 namespace VideoCore {
 
 struct ImageInfo {
@@ -42,18 +44,29 @@ struct ImageInfo {
         u32 vo_buffer : 1;
     } usage{}; // Usage data tracked during image lifetime
 
-    bool is_cube = false;
-    bool is_volume = false;
-    bool is_tiled = false;
-    bool is_read_only = false;
+    struct {
+        u32 is_cube : 1;
+        u32 is_volume : 1;
+        u32 is_tiled : 1;
+        u32 is_pow2 : 1;
+        u32 is_block : 1;
+    } props{}; // Surface properties with impact on various calculation factors
+
     vk::Format pixel_format = vk::Format::eUndefined;
     vk::ImageType type = vk::ImageType::e1D;
     SubresourceExtent resources;
     Extent3D size{1, 1, 1};
+    u32 num_bits{};
     u32 num_samples = 1;
     u32 pitch = 0;
     AmdGpu::TilingMode tiling_mode{AmdGpu::TilingMode::Display_Linear};
-    std::vector<std::pair<u32, u32>> mips_layout;
+    struct MipInfo {
+        u32 size;
+        u32 pitch;
+        u32 height;
+        u32 offset;
+    };
+    boost::container::small_vector<MipInfo, 14> mips_layout;
     VAddr guest_address{0};
     u32 guest_size_bytes{0};
 };

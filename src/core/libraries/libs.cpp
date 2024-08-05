@@ -20,6 +20,7 @@
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
+#include "core/libraries/random/random.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
@@ -43,8 +44,8 @@ namespace Libraries {
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
     Libraries::Kernel::LibKernel_Register(sym);
-    Libraries::VideoOut::RegisterLib(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
+    Libraries::VideoOut::RegisterLib(sym);
     if (!Config::isLleLibc()) {
         Libraries::LibC::libcSymbolsRegister(sym);
     }
@@ -71,6 +72,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
     Libraries::PlayGo::RegisterlibScePlayGo(sym);
+    Libraries::Random::RegisterlibSceRandom(sym);
     Libraries::Usbd::RegisterlibSceUsbd(sym);
     Libraries::Pad::RegisterlibScePad(sym);
     Libraries::Ajm::RegisterlibSceAjm(sym);

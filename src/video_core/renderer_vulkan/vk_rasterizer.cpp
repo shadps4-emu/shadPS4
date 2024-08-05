@@ -23,7 +23,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 1_GB, BufferType::Upload} {
+      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 2_GB, BufferType::Upload} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -96,6 +96,13 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
+u64 Rasterizer::Flush() {
+    const u64 current_tick = scheduler.CurrentTick();
+    SubmitInfo info{};
+    scheduler.Flush(info);
+    return current_tick;
+}
+
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;
@@ -113,12 +120,15 @@ void Rasterizer::BeginRendering() {
         }
 
         const auto& hint = liverpool->last_cb_extent[col_buf_id];
-        const auto& image_view = texture_cache.FindRenderTarget(col_buf, hint);
+        VideoCore::ImageInfo image_info{col_buf, hint};
+        VideoCore::ImageViewInfo view_info{col_buf, false /*!!image.info.usage.vo_buffer*/};
+        const auto& image_view = texture_cache.FindRenderTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
 
         const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress());
+        state.color_images[state.num_color_attachments] = image.image;
         state.color_attachments[state.num_color_attachments++] = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eGeneral,
@@ -136,12 +146,14 @@ void Rasterizer::BeginRendering() {
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
         const auto& hint = liverpool->last_db_extent;
-        const auto& image_view = texture_cache.FindDepthTarget(
-            regs.depth_buffer, regs.depth_view.NumSlices(), htile_address, hint,
-            regs.depth_control.depth_write_enable);
+        VideoCore::ImageInfo image_info{regs.depth_buffer, regs.depth_view.NumSlices(),
+                                        htile_address, hint};
+        VideoCore::ImageViewInfo view_info{regs.depth_buffer, regs.depth_view, regs.depth_control};
+        const auto& image_view = texture_cache.FindDepthTarget(image_info, view_info);
         const auto& image = texture_cache.GetImage(image_view.image_id);
         state.width = std::min<u32>(state.width, image.info.size.width);
         state.height = std::min<u32>(state.height, image.info.size.height);
+        state.depth_image = image.image;
         state.depth_attachment = {
             .imageView = *image_view.image_view,
             .imageLayout = image.layout,

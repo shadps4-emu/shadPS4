@@ -49,7 +49,7 @@ EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& bin
     DefineInterfaces(program);
     DefineBuffers(info);
     DefineImagesAndSamplers(info);
-    DefineSharedMemory(info);
+    DefineSharedMemory();
 }
 
 EmitContext::~EmitContext() = default;
@@ -86,6 +86,7 @@ void EmitContext::DefineArithmeticTypes() {
     F32[1] = Name(TypeFloat(32), "f32_id");
     S32[1] = Name(TypeSInt(32), "i32_id");
     U32[1] = Name(TypeUInt(32), "u32_id");
+    U64 = Name(TypeUInt(64), "u64_id");
 
     for (u32 i = 2; i <= 4; i++) {
         if (info.uses_fp16) {
@@ -126,6 +127,7 @@ Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
+    case AmdGpu::NumberFormat::SnormNz:
         return ctx.F32[4];
     case AmdGpu::NumberFormat::Sint:
         return ctx.S32[4];
@@ -146,6 +148,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
+    case AmdGpu::NumberFormat::SnormNz:
         return {id, input_f32, F32[1], 4};
     case AmdGpu::NumberFormat::Uint:
         return {id, input_u32, U32[1], 4};
@@ -204,7 +207,9 @@ void EmitContext::DefineInputs(const Info& info) {
                                                                                              : 1;
                 // Note that we pass index rather than Id
                 input_params[input.binding] = {
-                    rate_idx, input_u32, U32[1], input.num_components, input.instance_data_buf,
+                    rate_idx, input_u32,
+                    U32[1],   input.num_components,
+                    false,    input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
@@ -220,19 +225,18 @@ void EmitContext::DefineInputs(const Info& info) {
         break;
     }
     case Stage::Fragment:
-        if (info.uses_group_quad) {
-            subgroup_local_invocation_id = DefineVariable(
-                U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
-            Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
-        }
+        subgroup_id = DefineVariable(U32[1], spv::BuiltIn::SubgroupId, spv::StorageClass::Input);
+        subgroup_local_invocation_id = DefineVariable(
+            U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
+        Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : info.ps_inputs) {
             const u32 semantic = input.param_index;
             if (input.is_default) {
-                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), input_f32,
-                                          F32[1]};
+                input_params[semantic] = {MakeDefaultValue(*this, input.default_value), F32[1],
+                                          F32[1], 4, true};
                 continue;
             }
             const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
@@ -392,7 +396,16 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
         return spv::ImageFormat::Rgba8ui;
     }
-    UNREACHABLE();
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format10_11_11 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::R11fG11fB10f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format32_32_32_32 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
+        return spv::ImageFormat::Rgba32f;
+    }
+    UNREACHABLE_MSG("Unknown storage format data_format={}, num_format={}", image.GetDataFmt(),
+                    image.GetNumberFmt());
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
@@ -412,8 +425,6 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
         return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Cube:
         return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, false, false, sampled, format);
-    case AmdGpu::ImageType::Buffer:
-        throw NotImplementedException("Image buffer");
     default:
         break;
     }
@@ -471,9 +482,13 @@ void EmitContext::DefineImagesAndSamplers(const Info& info) {
     }
 }
 
-void EmitContext::DefineSharedMemory(const Info& info) {
-    if (info.shared_memory_size == 0) {
+void EmitContext::DefineSharedMemory() {
+    static constexpr size_t DefaultSharedMemSize = 16_KB;
+    if (!info.uses_shared) {
         return;
+    }
+    if (info.shared_memory_size == 0) {
+        info.shared_memory_size = DefaultSharedMemSize;
     }
     const auto make{[&](Id element_type, u32 element_size) {
         const u32 num_elements{Common::DivCeil(info.shared_memory_size, element_size)};

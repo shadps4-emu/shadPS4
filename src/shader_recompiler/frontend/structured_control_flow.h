@@ -11,12 +11,13 @@
 
 namespace Shader {
 struct Info;
-}
+struct Profile;
+} // namespace Shader
 
 namespace Shader::Gcn {
 
 [[nodiscard]] IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool,
                                               ObjectPool<IR::Block>& block_pool, CFG& cfg,
-                                              Info& info);
+                                              Info& info, const Profile& profile);
 
 } // namespace Shader::Gcn

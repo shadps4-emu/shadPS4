@@ -366,7 +366,9 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
         for (const auto& image_desc : stage.images) {
             const auto& tsharp = tsharps.emplace_back(
                 stage.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset));
-            const auto& image_view = texture_cache.FindTexture(tsharp, image_desc.is_storage);
+            VideoCore::ImageInfo image_info{tsharp};
+            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
+            const auto& image_view = texture_cache.FindTexture(image_info, view_info);
             const auto& image = texture_cache.GetImage(image_view.image_id);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
             set_writes.push_back({
@@ -384,7 +386,7 @@ void GraphicsPipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& 
             }
         }
         for (const auto& sampler : stage.samplers) {
-            auto ssharp = stage.ReadUd<AmdGpu::Sampler>(sampler.sgpr_base, sampler.dword_offset);
+            auto ssharp = sampler.GetSsharp(stage);
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {

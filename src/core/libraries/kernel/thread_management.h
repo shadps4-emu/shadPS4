@@ -9,7 +9,6 @@
 #include <vector>
 #include <pthread.h>
 #include <sched.h>
-#include "common/debug.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -74,7 +73,6 @@ struct PthreadMutexInternal {
     u8 reserved[256];
     std::string name;
     pthread_mutex_t pth_mutex;
-    std::unique_ptr<tracy::LockableCtx> tracy_lock;
 };
 
 struct PthreadMutexattrInternal {
@@ -169,8 +167,11 @@ ScePthread PS4_SYSV_ABI scePthreadSelf();
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
+int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u64* mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   PthreadEntryFunc start_routine, void* arg, const char* name);
+
+int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio);
 
 /***
  * Mutex calls

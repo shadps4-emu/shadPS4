@@ -84,6 +84,10 @@ Id EmitIMul32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIMul(ctx.U32[1], a, b);
 }
 
+Id EmitIMul64(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpIMul(ctx.U64, a, b);
+}
+
 Id EmitSDiv32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpSDiv(ctx.U32[1], a, b);
 }
@@ -142,6 +146,13 @@ Id EmitBitwiseOr32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return result;
 }
 
+Id EmitBitwiseOr64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
+    const Id result{ctx.OpBitwiseOr(ctx.U64, a, b)};
+    SetZeroFlag(ctx, inst, result);
+    SetSignFlag(ctx, inst, result);
+    return result;
+}
+
 Id EmitBitwiseXor32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     const Id result{ctx.OpBitwiseXor(ctx.U32[1], a, b)};
     SetZeroFlag(ctx, inst, result);
@@ -185,6 +196,10 @@ Id EmitFindSMsb32(EmitContext& ctx, Id value) {
 
 Id EmitFindUMsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindUMsb(ctx.U32[1], value);
+}
+
+Id EmitFindILsb32(EmitContext& ctx, Id value) {
+    return ctx.OpFindILsb(ctx.U32[1], value);
 }
 
 Id EmitSMin32(EmitContext& ctx, Id a, Id b) {
@@ -231,11 +246,19 @@ Id EmitUClamp32(EmitContext& ctx, IR::Inst* inst, Id value, Id min, Id max) {
     return result;
 }
 
-Id EmitSLessThan(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSLessThan32(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpSLessThan(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitULessThan(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSLessThan64(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpSLessThan(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitULessThan32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpULessThan(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitULessThan64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpULessThan(ctx.U1[1], lhs, rhs);
 }
 

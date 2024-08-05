@@ -180,6 +180,7 @@ public:
 
     Id workgroup_id{};
     Id local_invocation_id{};
+    Id subgroup_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
 
@@ -219,6 +220,7 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        bool is_default{};
         s32 buffer_handle{-1};
     };
     std::array<SpirvAttribute, 32> input_params{};
@@ -231,7 +233,7 @@ private:
     void DefineOutputs(const Info& info);
     void DefineBuffers(const Info& info);
     void DefineImagesAndSamplers(const Info& info);
-    void DefineSharedMemory(const Info& info);
+    void DefineSharedMemory();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

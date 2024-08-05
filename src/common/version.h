@@ -9,5 +9,6 @@
 namespace Common {
 
 constexpr char VERSION[] = "0.1.1 WIP";
+constexpr bool isRelease = false;
 
 } // namespace Common

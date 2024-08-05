@@ -165,12 +165,12 @@ public:
                     if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
 #endif
                         QMessageBox::information(
-                            nullptr, "Shortcut Creation",
-                            QString("Shortcut created successfully:\n %1").arg(linkPath));
+                            nullptr, "Shortcut creation",
+                            QString("Shortcut created successfully!\n %1").arg(linkPath));
                     } else {
                         QMessageBox::critical(
                             nullptr, "Error",
-                            QString("Error creating shortcut:\n %1").arg(linkPath));
+                            QString("Error creating shortcut!\n %1").arg(linkPath));
                     }
                 } else {
                     QMessageBox::critical(nullptr, "Error", "Failed to convert icon.");
@@ -183,11 +183,11 @@ public:
                 if (createShortcutLinux(linkPath, ebootPath, iconPath)) {
 #endif
                     QMessageBox::information(
-                        nullptr, "Shortcut Creation",
-                        QString("Shortcut created successfully:\n %1").arg(linkPath));
+                        nullptr, "Shortcut creation",
+                        QString("Shortcut created successfully!\n %1").arg(linkPath));
                 } else {
                     QMessageBox::critical(nullptr, "Error",
-                                          QString("Error creating shortcut:\n %1").arg(linkPath));
+                                          QString("Error creating shortcut!\n %1").arg(linkPath));
                 }
             }
         }
@@ -308,7 +308,7 @@ private:
         QFile shortcutFile(linkPath);
         if (!shortcutFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QMessageBox::critical(nullptr, "Error",
-                                  QString("Error creating shortcut:\n %1").arg(linkPath));
+                                  QString("Error creating shortcut!\n %1").arg(linkPath));
             return false;
         }
 
