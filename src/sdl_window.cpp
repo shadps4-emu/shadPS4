@@ -50,8 +50,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
         window_info.type = WindowSystemType::X11;
-        window_info.display_connection = SDL_GetProperty(SDL_GetWindowProperties(window),
-                                                         SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        window_info.display_connection = SDL_GetPointerProperty(
+            SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
         window_info.render_surface = (void*)SDL_GetNumberProperty(
             SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     } else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
