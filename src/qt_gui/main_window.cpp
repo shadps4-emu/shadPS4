@@ -52,7 +52,7 @@ bool MainWindow::Init() {
     // Update status bar
     int numGames = m_game_info->m_games.size();
     QString statusMessage =
-	"Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
+        "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
     return true;
 }
