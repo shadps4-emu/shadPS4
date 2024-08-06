@@ -86,6 +86,18 @@ int PS4_SYSV_ABI scePadGetCapability() {
 int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerInformation* pInfo) {
     LOG_INFO(Lib_Pad, "called handle = {}", handle);
     std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
+    if (handle < 0) {
+        pInfo->touchPadInfo.pixelDensity = 1;
+        pInfo->touchPadInfo.resolution.x = 1920;
+        pInfo->touchPadInfo.resolution.y = 950;
+        pInfo->stickInfo.deadZoneLeft = 2;
+        pInfo->stickInfo.deadZoneRight = 2;
+        pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
+        pInfo->connectedCount = 1;
+        pInfo->connected = false;
+        pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
+        return SCE_OK;
+    }
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
