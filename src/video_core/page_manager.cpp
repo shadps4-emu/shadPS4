@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#else
+#include <windows.h>
 #endif
 
 namespace VideoCore {
@@ -36,9 +38,9 @@ struct PageManager::Impl {
     void OnUnmap(VAddr address, size_t size) {}
 
     void Protect(VAddr address, size_t size, bool allow_write) {
-        DWORD prot = PROT_READ | (allow_write ? PROT_WRITE : 0);
+        DWORD prot = allow_write ? PAGE_READWRITE : PAGE_READONLY;
         DWORD old_prot{};
-        BOOL result = VirtualProtect(std::bit_cast<LPVOID>(address), len, prot, &old_prot);
+        BOOL result = VirtualProtect(std::bit_cast<LPVOID>(address), size, prot, &old_prot);
         ASSERT_MSG(result != 0, "Region protection failed");
     }
 
