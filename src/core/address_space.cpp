@@ -217,36 +217,33 @@ struct AddressSpace::Impl {
     }
 
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
-            DWORD new_flags{};
-            if (read && write) {
-                new_flags = PAGE_READWRITE;
-            } else if (read && !write) {
-                new_flags = PAGE_READONLY;
-            } else if (!read && !write) {
-                new_flags = PAGE_NOACCESS;
-            } else {
-                UNIMPLEMENTED_MSG("Protection flag combination read={} write={}", read, write);
+        DWORD new_flags{};
+        if (read && write && execute) {
+            new_flags = PAGE_EXECUTE_READWRITE;
+        } else if (read && write) {
+            new_flags = PAGE_READWRITE;
+        } else if (read && !write) {
+            new_flags = PAGE_READONLY;
+        } else if (execute && !read && !write) {
+            new_flags = PAGE_EXECUTE;
+        } else if (!read && !write && !execute) {
+            new_flags = PAGE_NOACCESS;
+        } else {
+            LOG_CRITICAL(Common_Memory, "Unsupported protection flag combination");
+        }
+
+        const VAddr virtual_end = virtual_addr + size;
+        auto [it, end] = placeholders.equal_range({virtual_addr, virtual_end});
+        while (it != end) {
+            const size_t offset = std::max(it->lower(), virtual_addr);
+            const size_t protect_length = std::min(it->upper(), virtual_end) - offset;
+            DWORD old_flags{};
+            if (!VirtualProtect(virtual_base + offset, protect_length, new_flags, &old_flags)) {
+                LOG_CRITICAL(Common_Memory, "Failed to change virtual memory protect rules");
             }
-
-            MEMORY_BASIC_INFORMATION info;
-            VirtualQuery(reinterpret_cast<LPVOID>(virtual_addr), &info, sizeof(info));
-            LOG_INFO(Common_Memory, "Current protection flags: {}", info.Protect);
-
-            if (info.Protect == new_flags) {
-                LOG_INFO(Common_Memory, "Protection flags already match, skipping VirtualProtect");
-                return;
-            }
-
-
-
-            if (!VirtualProtect(reinterpret_cast<LPVOID>(virtual_addr), size, new_flags, nullptr)) {
-                DWORD error = GetLastError();
-                LOG_CRITICAL(
-                    Common_Memory,
-                    "Failed to change virtual memory protect rules: error {}, new_flags = {:#x}", error,
-                    new_flags);
-            }
-       }
+            ++it;
+        }
+    }
 
 
 

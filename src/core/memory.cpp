@@ -318,6 +318,9 @@ int MemoryManager::MProtect(VAddr addr, size_t size, int prot) {
 int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot) {
     std::scoped_lock lk{mutex};
 
+    LOG_INFO(Core, "MTypeProtect called: addr = {:#x}, size = {:#x}, mtype = {:#x}, prot = {:#x}",
+             addr, size, mtype, prot);
+
     // Find the virtual memory area that contains the specified address range.
     auto it = FindVMA(addr);
     if (it == vma_map.end() || !it->second.Contains(addr, size)) {
@@ -326,6 +329,9 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot
     }
 
     VirtualMemoryArea& vma = it->second;
+    LOG_INFO(Core, "VMA found: base = {:#x}, size = {:#x}, prot = {:#x}, type = {}", vma.base,
+             vma.size, vma.prot, vma.type);
+
     if (vma.type == VMAType::Free) {
         LOG_ERROR(Core, "Cannot change protection on free memory region");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -345,6 +351,8 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot
     // Change the type and protection on the specified address range.
     vma.type = mtype;
     vma.prot = static_cast<MemoryProt>(prot);
+
+    LOG_INFO(Core, "Changed VMA type and protection: type = {:#x}, prot = {:#x}", mtype, prot);
 
     // Use the Protect function from the AddressSpace class.
     Core::MemoryPermission perms;
