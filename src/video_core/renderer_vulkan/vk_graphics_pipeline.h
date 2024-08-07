@@ -19,7 +19,6 @@ static constexpr u32 MaxShaderStages = 5;
 
 class Instance;
 class Scheduler;
-class StreamBuffer;
 
 using Liverpool = AmdGpu::Liverpool;
 

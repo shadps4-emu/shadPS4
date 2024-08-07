@@ -15,7 +15,6 @@ namespace Vulkan {
 
 class Instance;
 class Scheduler;
-class StreamBuffer;
 
 class ComputePipeline {
 public:

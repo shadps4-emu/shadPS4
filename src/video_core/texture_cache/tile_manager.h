@@ -5,7 +5,6 @@
 
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
-#include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
 
 namespace VideoCore {

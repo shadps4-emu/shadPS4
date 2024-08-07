@@ -17,8 +17,7 @@ static constexpr u64 PageShift = 12;
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
-      staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
-              Vulkan::BufferType::Upload},
+      staging{instance, scheduler, MemoryUsage::Upload, StreamBufferSize},
       tile_manager{instance, scheduler} {
     ImageInfo info;
     info.pixel_format = vk::Format::eR8G8B8A8Unorm;
@@ -242,10 +241,7 @@ void TextureCache::RefreshImage(Image& image) {
         buffer = *upload_buffer;
     } else {
         // Upload data to the staging buffer.
-        const auto [data, offset_, _] = staging.Map(image.info.guest_size_bytes, 16);
-        std::memcpy(data, (void*)image.info.guest_address, image.info.guest_size_bytes);
-        staging.Commit(image.info.guest_size_bytes);
-        offset = offset_;
+        offset = staging.Copy(image.info.guest_address, image.info.guest_size_bytes, 16);
     }
 
     const auto& num_layers = image.info.resources.layers;

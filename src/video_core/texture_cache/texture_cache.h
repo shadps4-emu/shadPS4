@@ -4,13 +4,11 @@
 #pragma once
 
 #include <boost/container/small_vector.hpp>
-#include <boost/icl/interval_map.hpp>
 #include <tsl/robin_map.h>
 
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/multi_level_page_table.h"
-#include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/sampler.h"
@@ -172,13 +170,12 @@ private:
     Vulkan::Scheduler& scheduler;
     BufferCache& buffer_cache;
     PageManager& tracker;
-    Vulkan::StreamBuffer staging;
+    StreamBuffer staging;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     PageTable page_table;
-    boost::icl::interval_map<VAddr, s32> cached_pages;
     std::mutex mutex;
 
     struct MetaDataInfo {

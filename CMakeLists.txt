@@ -487,8 +487,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
-               src/video_core/renderer_vulkan/vk_stream_buffer.cpp
-               src/video_core/renderer_vulkan/vk_stream_buffer.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
                src/video_core/texture_cache/image.cpp

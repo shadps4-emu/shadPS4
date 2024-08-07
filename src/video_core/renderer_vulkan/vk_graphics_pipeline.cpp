@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
@@ -12,7 +12,6 @@
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
