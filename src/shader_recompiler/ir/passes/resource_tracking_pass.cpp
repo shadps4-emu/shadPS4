@@ -433,6 +433,18 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         return;
     }
 
+    if (IsLoadBufferFormat(inst)) {
+        if (UseFP16(buffer.GetDataFmt(), buffer.GetNumberFmt())) {
+            info.uses_fp16 = true;
+        }
+    } else {
+        const u32 stride = buffer.GetStride();
+        if (stride < 4) {
+            LOG_WARNING(Render_Vulkan,
+                        "non-formatting load_buffer_* is not implemented for stride {}", stride);
+        }
+    }
+
     // Compute address of the buffer using the stride.
     // Todo: What if buffer is rebound with different stride?
     IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());

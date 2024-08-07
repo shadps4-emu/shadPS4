@@ -60,6 +60,7 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     PipelineCache pipeline_cache;
+    vk::UniqueEvent wfi_event;
 };
 
 } // namespace Vulkan

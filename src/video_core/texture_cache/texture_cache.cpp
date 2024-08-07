@@ -300,11 +300,11 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     image.flags &= ~ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
-        if (page_it == page_table.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageShift);
+        if (page_it == nullptr) {
+            UNREACHABLE_MSG("Unregistering unregistered page=0x{:x}", page << PageShift);
             return;
         }
-        auto& image_ids = page_it.value();
+        auto& image_ids = *page_it;
         const auto vector_it = std::ranges::find(image_ids, image_id);
         if (vector_it == image_ids.end()) {
             ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageShift);

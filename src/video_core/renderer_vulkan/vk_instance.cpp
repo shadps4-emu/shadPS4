@@ -204,7 +204,8 @@ bool Instance::CreateDevice() {
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
-    const auto calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -303,11 +304,18 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayoutScalarBlockLayout = true,
             .workgroupMemoryExplicitLayout8BitAccess = true,
             .workgroupMemoryExplicitLayout16BitAccess = true,
-        }};
+        },
+        vk::PhysicalDeviceRobustness2FeaturesEXT{
+            .nullDescriptor = true,
+        },
+    };
 
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();
         device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
+    }
+    if (!robustness) {
+        device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
 
     try {

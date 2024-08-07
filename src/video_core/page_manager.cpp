@@ -22,7 +22,44 @@ namespace VideoCore {
 constexpr size_t PAGESIZE = 4_KB;
 constexpr size_t PAGEBITS = 12;
 
-#ifdef SHADPS4_USERFAULTFD
+#ifdef _WIN64
+struct PageManager::Impl {
+    Impl(Vulkan::Rasterizer* rasterizer_) {
+        rasterizer = rasterizer_;
+
+        veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
+        ASSERT_MSG(veh_handle, "Failed to register an exception handler");
+    }
+
+    void OnMap(VAddr address, size_t size) {}
+
+    void OnUnmap(VAddr address, size_t size) {}
+
+    void Protect(VAddr address, size_t size, bool allow_write) {
+        DWORD prot = PROT_READ | (allow_write ? PROT_WRITE : 0);
+        DWORD old_prot{};
+        BOOL result = VirtualProtect(std::bit_cast<LPVOID>(address), len, prot, &old_prot);
+        ASSERT_MSG(result != 0, "Region protection failed");
+    }
+
+    static LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
+        const u32 ec = pExp->ExceptionRecord->ExceptionCode;
+        if (ec == EXCEPTION_ACCESS_VIOLATION) {
+            const auto info = pExp->ExceptionRecord->ExceptionInformation;
+            if (info[0] == 1) { // Write violation
+                rasterizer->InvalidateMemory(info[1], sizeof(u64));
+                return EXCEPTION_CONTINUE_EXECUTION;
+            } /* else {
+                UNREACHABLE();
+            }*/
+        }
+        return EXCEPTION_CONTINUE_SEARCH; // pass further
+    }
+
+    inline static Vulkan::Rasterizer* rasterizer;
+    void* veh_handle{};
+};
+#elif ENABLE_USERFAULTFD
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
         uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
@@ -121,9 +158,15 @@ struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
 
+#ifdef __APPLE__
+        // Read-only memory write results in SIGBUS on Apple.
+        static constexpr int SignalType = SIGBUS;
+#else
+        static constexpr int SignalType = SIGSEGV;
+#endif
         sigset_t signal_mask;
         sigemptyset(&signal_mask);
-        sigaddset(&signal_mask, SIGSEGV);
+        sigaddset(&signal_mask, SignalType);
 
         using HandlerType = decltype(sigaction::sa_sigaction);
 
@@ -131,7 +174,7 @@ struct PageManager::Impl {
         guest_access_fault.sa_flags = SA_SIGINFO | SA_ONSTACK;
         guest_access_fault.sa_sigaction = &GuestFaultSignalHandler;
         guest_access_fault.sa_mask = signal_mask;
-        sigaction(SIGSEGV, &guest_access_fault, nullptr);
+        sigaction(SignalType, &guest_access_fault, nullptr);
     }
 
     void OnMap(VAddr address, size_t size) {}
@@ -148,7 +191,7 @@ struct PageManager::Impl {
         const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
         const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
         if (err & 0x2) {
-            rasterizer->InvalidateMemory(address, PAGESIZE);
+            rasterizer->InvalidateMemory(address, sizeof(u64));
         } else {
             // Read not supported!
             UNREACHABLE();

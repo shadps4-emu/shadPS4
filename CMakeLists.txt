@@ -283,6 +283,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/native_clock.h
            src/common/path_util.cpp
            src/common/path_util.h
+           src/common/object_pool.h
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
@@ -368,7 +369,6 @@ set(CORE src/core/aerolib/stubs.cpp
 )
 
 set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/object_pool.h
                       src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
@@ -457,7 +457,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/buffer_cache/buffer_cache.cpp
                src/video_core/buffer_cache/buffer_cache.h
                src/video_core/buffer_cache/memory_tracker_base.h
-               src/video_core/buffer_cache/range_set.cpp
                src/video_core/buffer_cache/range_set.h
                src/video_core/buffer_cache/word_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
@@ -507,6 +506,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/types.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h
+               src/video_core/multi_level_page_table.h
                src/video_core/renderdoc.cpp
                src/video_core/renderdoc.h
 )

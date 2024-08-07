@@ -13,7 +13,7 @@
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
-#include "video_core/buffer_cache/range_set.h"
+#include "video_core/multi_level_page_table.h"
 
 namespace AmdGpu {
 struct Liverpool;
@@ -36,6 +36,14 @@ public:
     static constexpr u32 CACHING_PAGEBITS = 12;
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
     static constexpr u64 DEVICE_PAGESIZE = 4_KB;
+
+    struct Traits {
+        using Entry = BufferId;
+        static constexpr size_t AddressSpaceBits = 39;
+        static constexpr size_t FirstLevelBits = 14;
+        static constexpr size_t PageBits = CACHING_PAGEBITS;
+    };
+    using PageTable = MultiLevelPageTable<Traits>;
 
     struct OverlapResult {
         boost::container::small_vector<BufferId, 16> ids;
@@ -115,7 +123,7 @@ private:
     std::recursive_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     MemoryTracker memory_tracker;
-    std::array<BufferId, ((1ULL << 39) >> CACHING_PAGEBITS)> page_table;
+    PageTable page_table;
 };
 
 } // namespace VideoCore

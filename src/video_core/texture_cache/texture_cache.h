@@ -9,6 +9,7 @@
 
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/multi_level_page_table.h"
 #include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
@@ -25,12 +26,13 @@ class BufferCache;
 class PageManager;
 
 class TextureCache {
-    // This is the page shift for adding images into the hash map. It isn't related to
-    // the page size of the guest or the host and is chosen for convenience. A number too
-    // small will increase the number of hash map lookups per image, while too large will
-    // increase the number of images per page.
-    static constexpr u64 PageBits = 22;
-    static constexpr u64 PageMask = (1ULL << PageBits) - 1;
+    struct Traits {
+        using Entry = boost::container::small_vector<ImageId, 16>;
+        static constexpr size_t AddressSpaceBits = 39;
+        static constexpr size_t FirstLevelBits = 9;
+        static constexpr size_t PageBits = 22;
+    };
+    using PageTable = MultiLevelPageTable<Traits>;
 
 public:
     explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
@@ -97,8 +99,8 @@ private:
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
         static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
-        const u64 page_end = (addr + size - 1) >> PageBits;
-        for (u64 page = addr >> PageBits; page <= page_end; ++page) {
+        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
+        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
             if constexpr (RETURNS_BOOL) {
                 if (func(page)) {
                     break;
@@ -116,14 +118,14 @@ private:
         boost::container::small_vector<ImageId, 32> images;
         ForEachPage(cpu_addr, size, [this, &images, cpu_addr, size, func](u64 page) {
             const auto it = page_table.find(page);
-            if (it == page_table.end()) {
+            if (it == nullptr) {
                 if constexpr (BOOL_BREAK) {
                     return false;
                 } else {
                     return;
                 }
             }
-            for (const ImageId image_id : it->second) {
+            for (const ImageId image_id : *it) {
                 Image& image = slot_images[image_id];
                 if (image.flags & ImageFlagBits::Picked) {
                     continue;
@@ -175,7 +177,7 @@ private:
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
-    tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
+    PageTable page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
     std::mutex mutex;
 

@@ -202,12 +202,20 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc5UnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
+    case vk::Format::eBc6HUfloatBlock:
     case vk::Format::eR32G32B32A32Sfloat:
         return vk::Format::eR32G32B32A32Uint;
     default:
         break;
     }
-    LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+
+    // Log missing formats only once to avoid spamming the log.
+    static constexpr size_t MaxFormatIndex = 256;
+    static std::array<bool, MaxFormatIndex> logged_formats{};
+    if (const u32 index = u32(format); !logged_formats[index]) {
+        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+        logged_formats[index] = true;
+    }
     return format;
 }
 

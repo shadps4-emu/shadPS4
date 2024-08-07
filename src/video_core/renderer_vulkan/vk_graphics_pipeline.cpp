@@ -346,19 +346,26 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
         for (const auto& buffer : stage.buffers) {
             const auto vsharp = buffer.GetVsharp(stage);
-            const VAddr address = vsharp.base_address;
-            const u32 size = vsharp.GetSize();
-            const u32 alignment =
-                buffer.is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-            const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(address, size, buffer.is_written);
-            const u32 offset_aligned = Common::AlignDown(offset, alignment);
-            const u32 adjust = offset - offset_aligned;
-            if (adjust != 0) {
-                ASSERT(adjust % 4 == 0);
-                push_data.AddOffset(binding, adjust);
+            if (vsharp) {
+                const VAddr address = vsharp.base_address;
+                if (texture_cache.IsMeta(address)) {
+                    LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
+                }
+                const u32 size = vsharp.GetSize();
+                const u32 alignment = buffer.is_storage ? instance.StorageMinAlignment()
+                                                        : instance.UniformMinAlignment();
+                const auto [vk_buffer, offset] =
+                    buffer_cache.ObtainBuffer(address, size, buffer.is_written);
+                const u32 offset_aligned = Common::AlignDown(offset, alignment);
+                const u32 adjust = offset - offset_aligned;
+                if (adjust != 0) {
+                    ASSERT(adjust % 4 == 0);
+                    push_data.AddOffset(binding, adjust);
+                }
+                buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
+            } else {
+                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             }
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,
@@ -368,10 +375,6 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                                     : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
-
-            if (texture_cache.IsMeta(address)) {
-                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
-            }
         }
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
