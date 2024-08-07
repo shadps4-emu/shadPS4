@@ -22,8 +22,6 @@ class Instance;
 class Scheduler;
 
 class StreamBuffer final {
-    static constexpr std::size_t MAX_BUFFER_VIEWS = 3;
-
 public:
     explicit StreamBuffer(const Instance& instance, Scheduler& scheduler,
                           vk::BufferUsageFlags usage, u64 size,

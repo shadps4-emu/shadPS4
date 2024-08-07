@@ -7,13 +7,10 @@
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
-namespace Core {
-class MemoryManager;
-}
-
 namespace VideoCore {
+class BufferCache;
 class TextureCache;
-}
+} // namespace VideoCore
 
 namespace Vulkan {
 
@@ -64,7 +61,7 @@ public:
                               std::array<vk::ShaderModule, MaxShaderStages> modules);
     ~GraphicsPipeline();
 
-    void BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+    void BindResources(const Liverpool::Regs& regs, VideoCore::BufferCache& buffer_cache,
                        VideoCore::TextureCache& texture_cache) const;
 
     vk::Pipeline Handle() const noexcept {
@@ -73,6 +70,10 @@ public:
 
     vk::PipelineLayout GetLayout() const {
         return *pipeline_layout;
+    }
+
+    const Shader::Info& GetStage(Shader::Stage stage) const noexcept {
+        return stages[u32(stage)];
     }
 
     bool IsEmbeddedVs() const noexcept {
@@ -90,7 +91,6 @@ public:
 
 private:
     void BuildDescSetLayout();
-    void BindVertexBuffers(StreamBuffer& staging) const;
 
 private:
     const Instance& instance;

@@ -21,31 +21,27 @@ struct BufferAttributeGroup;
 
 namespace VideoCore {
 
+class BufferCache;
+class PageManager;
+
 class TextureCache {
     // This is the page shift for adding images into the hash map. It isn't related to
     // the page size of the guest or the host and is chosen for convenience. A number too
     // small will increase the number of hash map lookups per image, while too large will
     // increase the number of images per page.
-    static constexpr u64 PageBits = 20;
+    static constexpr u64 PageBits = 22;
     static constexpr u64 PageMask = (1ULL << PageBits) - 1;
 
-    struct MetaDataInfo {
-        enum class Type {
-            CMask,
-            FMask,
-            HTile,
-        };
-
-        Type type;
-        bool is_cleared;
-    };
-
 public:
-    explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
+    explicit TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+                          BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void OnCpuWrite(VAddr address);
+    void InvalidateMemory(VAddr address, size_t size);
+
+    /// Evicts any images that overlap the unmapped range.
+    void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(const ImageInfo& info, bool refresh_on_create = true);
@@ -166,12 +162,14 @@ private:
     /// Stop tracking CPU reads and writes for image
     void UntrackImage(Image& image, ImageId image_id);
 
-    /// Increase/decrease the number of surface in pages touching the specified region
-    void UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta);
+    /// Removes the image and any views/surface metas that reference it.
+    void DeleteImage(ImageId image_id);
 
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    BufferCache& buffer_cache;
+    PageManager& tracker;
     Vulkan::StreamBuffer staging;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
@@ -179,12 +177,18 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_pg_map<u64, std::vector<ImageId>> page_table;
     boost::icl::interval_map<VAddr, s32> cached_pages;
-    tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
     std::mutex mutex;
-#ifdef _WIN64
-    void* veh_handle{};
-#endif
-    std::mutex m_page_table;
+
+    struct MetaDataInfo {
+        enum class Type {
+            CMask,
+            FMask,
+            HTile,
+        };
+        Type type;
+        bool is_cleared;
+    };
+    tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };
 
 } // namespace VideoCore
