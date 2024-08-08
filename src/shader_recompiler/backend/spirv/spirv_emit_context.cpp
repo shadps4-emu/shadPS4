@@ -352,9 +352,9 @@ void EmitContext::DefineBuffers() {
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
         Name(id, fmt::format("{}_{}", buffer.is_storage ? "ssbo" : "cbuf", buffer.sgpr_base));
 
-        binding++;
         buffers.push_back({
             .id = id,
+            .global_binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
             .buffer = buffer.GetVsharp(info),
