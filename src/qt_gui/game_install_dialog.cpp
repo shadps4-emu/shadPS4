@@ -13,11 +13,16 @@
 #include <QVBoxLayout>
 
 #include "game_install_dialog.h"
+#include <QListWidget>
 
 GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     auto layout = new QVBoxLayout(this);
 
     layout->addWidget(SetupGamesDirectory());
+    
+    layout->addWidget(GameDirectoryList());
+    // call list dialog here later
+
     layout->addStretch();
     layout->addWidget(SetupDialogActions());
 
@@ -27,8 +32,54 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
 
 GameInstallDialog::~GameInstallDialog() {}
 
+QWidget* GameInstallDialog::GameDirectoryList() {
+    auto group = new QGroupBox("Gamepaths");
+    auto layout = new QHBoxLayout(group);
+
+    // Input.
+
+    /*
+    newItem->setText(path);
+    listWidget->insertItem(1, newItem);
+    */
+    // Browse button.
+    //auto browse = new QPushButton("Browse");
+
+    //connect(browse, &QPushButton::clicked, this, &GameInstallDialog::Browse);
+
+    QListWidget* listWidget = new QListWidget(this);
+    QFile file("shadPS4-gamepaths.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString path = in.readLine();
+            if (!path.isEmpty() && path.endsWith(";")) {
+                path.chop(1);
+                listWidget->addItem(path);
+            }
+        }
+        file.close();
+    }
+    layout->addWidget(listWidget);
+
+    return group;
+}
+
+QWidget* GameInstallDialog::GameDirectoryListDialog() {
+    auto actions = new QDialogButtonBox(QDialogButtonBox::Ok);
+    connect(actions, &QDialogButtonBox::accepted, this, &GameInstallDialog::Save);
+    return actions;
+}
+
 void GameInstallDialog::Browse() {
     auto path = QFileDialog::getExistingDirectory(this, "Directory to install games");
+
+    QFile file("shadPS4-gamepaths.txt");
+    if (file.open(QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << path << ";\n";
+        file.close();
+    }
 
     if (!path.isEmpty()) {
         m_gamesDirectory->setText(QDir::toNativeSeparators(path));

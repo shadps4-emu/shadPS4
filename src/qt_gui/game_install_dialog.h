@@ -15,6 +15,9 @@ public:
     GameInstallDialog();
     ~GameInstallDialog();
 
+    QWidget* GameDirectoryList();
+    QWidget* GameDirectoryListDialog();
+
 private slots:
     void Browse();
 
