@@ -63,7 +63,7 @@ struct OrbisVirtualQueryInfo {
 
 struct OrbisKernelBatchMapEntry {
     void* start;
-    off_t offset;
+    size_t offset;
     size_t length;
     char protection;
     char type;
