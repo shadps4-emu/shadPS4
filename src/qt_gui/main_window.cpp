@@ -180,7 +180,8 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
-    connect(m_game_list_grid.get(), &QTableWidget::cellDoubleClicked, this, &MainWindow::StartGame);
+    connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
+            &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
 
