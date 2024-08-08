@@ -54,6 +54,8 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
             &GameListFrame::RefreshListBackgroundImage);
 
+    connect(this, &QTableWidget::cellDoubleClicked, this, &MainWindow::StartGame);
+
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionsClickable(true);
     QObject::connect(

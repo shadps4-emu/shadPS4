@@ -37,6 +37,7 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
         crtColumn = this->currentColumn();
         columnCnt = this->columnCount();
     });
+    connect(this, &QTableWidget::cellDoubleClicked, this, &MainWindow::StartGame);
 }
 
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
