@@ -36,6 +36,24 @@ function(create_target_directory_groups target_name)
     endforeach()
 endfunction()
 
+# Setup a custom clang-format target (if clang-format can be found) that will run
+# against all the src files. This should be used before making a pull request.
+if (CLANG_FORMAT)
+    set(SRCS ${PROJECT_SOURCE_DIR}/src)
+    set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
+    if (WIN32)
+        add_custom_target(clang-format
+            COMMAND powershell.exe -Command "Get-ChildItem '${SRCS}/*' -Include *.cpp,*.h,*.mm -Recurse | Foreach {&'${CLANG_FORMAT}' -i $_.fullname}"
+            COMMENT ${CCOMMENT})
+    else()
+        add_custom_target(clang-format
+            COMMAND find ${SRCS} -iname *.h -o -iname *.cpp -o -iname *.mm | xargs ${CLANG_FORMAT} -i
+            COMMENT ${CCOMMENT})
+    endif()
+    unset(SRCS)
+    unset(CCOMMENT)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # generate git revision information
