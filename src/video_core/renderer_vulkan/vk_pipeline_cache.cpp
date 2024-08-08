@@ -280,6 +280,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
                 if (patch) {
                     spv_code = *patch;
                     patched = true;
+                    LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", stage, hash);
                 }
             }
             if (Config::dumpShaders() && !patched) {
@@ -330,6 +331,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
             if (patch) {
                 spv_code = *patch;
                 patched = true;
+                LOG_INFO(Loader, "Loaded patch for computer shader {}", compute_key);
             }
         }
         if (Config::dumpShaders() && !patched) {
