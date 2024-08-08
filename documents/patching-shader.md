@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+
 ### Install Vulkan SDK and \*ensure `spirv-cross` and `glslc` are in PATH\*.
 
 1. Enable `dumpShaders` in config.toml
