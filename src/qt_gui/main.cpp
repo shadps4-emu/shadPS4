@@ -21,8 +21,11 @@ int main(int argc, char* argv[]) {
     Config::load(user_dir / "config.toml");
     std::filesystem::create_directory(user_dir / "game_data");
 
+    // Check if elf or eboot.bin path was passed as a command line argument
+    bool has_command_line_argument = argc > 1;
+
     // Check if the game install directory is set
-    if (Config::getGameInstallDir() == "") {
+    if (Config::getGameInstallDir() == "" && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }
@@ -35,7 +38,7 @@ int main(int argc, char* argv[]) {
     m_main_window->Init();
 
     // Check for command line arguments
-    if (argc > 1) {
+    if (has_command_line_argument) {
         Core::Emulator emulator;
         emulator.Run(argv[1]);
     }
