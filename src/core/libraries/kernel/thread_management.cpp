@@ -1360,6 +1360,10 @@ int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
     return sem_wait(sem);
 }
 
+int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
+    return sem_trywait(sem);
+}
+
 #ifndef HAVE_SEM_TIMEDWAIT
 int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
     int rc;
@@ -1611,6 +1615,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
     LIB_FUNCTION("pDuPEf3m4fI", "libScePosix", 1, "libkernel", 1, 1, posix_sem_init);
     LIB_FUNCTION("YCV5dGGBcCo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_wait);
+    LIB_FUNCTION("WBWzsRifCEA", "libScePosix", 1, "libkernel", 1, 1, posix_sem_trywait);
     LIB_FUNCTION("w5IHyvahg-o", "libScePosix", 1, "libkernel", 1, 1, posix_sem_timedwait);
     LIB_FUNCTION("IKP8typ0QUk", "libScePosix", 1, "libkernel", 1, 1, posix_sem_post);
     LIB_FUNCTION("cDW233RAwWo", "libScePosix", 1, "libkernel", 1, 1, posix_sem_destroy);
