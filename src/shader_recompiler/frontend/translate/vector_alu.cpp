@@ -363,7 +363,8 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     const bool has_flt_source =
         is_float_const(inst.src[0].field) || is_float_const(inst.src[1].field);
     if (has_flt_source) {
-        const IR::Value result = ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
+        const IR::Value result =
+            ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
         ir.SetVectorReg(dst_reg, IR::U32F32{result});
     } else {
         const IR::Value result = ir.Select(flag, GetSrc(inst.src[1]), GetSrc(inst.src[0]));
