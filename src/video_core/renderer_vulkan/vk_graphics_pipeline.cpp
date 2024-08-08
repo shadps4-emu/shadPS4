@@ -343,7 +343,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
-        for (u32 i = 0; const auto& buffer : stage.buffers) {
+        for (const auto& buffer : stage.buffers) {
             const auto vsharp = buffer.GetVsharp(stage);
             if (vsharp) {
                 const VAddr address = vsharp.base_address;
@@ -359,7 +359,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 const u32 adjust = offset - offset_aligned;
                 if (adjust != 0) {
                     ASSERT(adjust % 4 == 0);
-                    push_data.AddOffset(i, adjust);
+                    push_data.AddOffset(binding, adjust);
                 }
                 buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
             } else {
@@ -374,7 +374,6 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                                     : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
-            i++;
         }
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
