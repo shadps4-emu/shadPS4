@@ -10,11 +10,13 @@
 
 #ifndef _WIN64
 #include <fcntl.h>
-#include <linux/userfaultfd.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#ifdef ENABLE_USERFAULTFD
+#include <linux/userfaultfd.h>
+#endif
 #else
 #include <windows.h>
 #endif
@@ -191,7 +193,11 @@ struct PageManager::Impl {
     static void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
         ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
         const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
+#ifdef __APPLE__
+        const u32 err = ctx->uc_mcontext->__es.__err;
+#else
         const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
+#endif
         if (err & 0x2) {
             rasterizer->InvalidateMemory(address, sizeof(u64));
         } else {
