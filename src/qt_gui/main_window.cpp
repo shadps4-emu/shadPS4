@@ -51,8 +51,8 @@ bool MainWindow::Init() {
     this->setStatusBar(statusBar.data());
     // Update status bar
     int numGames = m_game_info->m_games.size();
-    QString statusMessage = "Games: " + QString::number(numGames) + " (" +
-                            QString::number(duration.count()) + "ms). Ready.";
+    QString statusMessage =
+        "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
     return true;
 }
@@ -72,8 +72,8 @@ void MainWindow::CreateActions() {
 
     // create action group for themes
     m_theme_act_group = new QActionGroup(this);
-    m_theme_act_group->addAction(ui->setThemeLight);
     m_theme_act_group->addAction(ui->setThemeDark);
+    m_theme_act_group->addAction(ui->setThemeLight);
     m_theme_act_group->addAction(ui->setThemeGreen);
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
@@ -344,20 +344,20 @@ void MainWindow::CreateConnects() {
     });
 
     // Themes
-    connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
-        m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
-        if (!isIconBlack) {
-            SetUiIcons(true);
-            isIconBlack = true;
-        }
-    });
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
         Config::setMainWindowTheme(static_cast<int>(Theme::Dark));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
+        }
+    });
+    connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
+        if (!isIconBlack) {
+            SetUiIcons(true);
+            isIconBlack = true;
         }
     });
     connect(ui->setThemeGreen, &QAction::triggered, &m_window_themes, [this]() {
@@ -415,7 +415,7 @@ void MainWindow::RefreshGameTable() {
     m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
     statusBar->clearMessage();
     int numGames = m_game_info->m_games.size();
-    QString statusMessage = "Games: " + QString::number(numGames) + ". Ready.";
+    QString statusMessage = "Games: " + QString::number(numGames);
     statusBar->showMessage(statusMessage);
 }
 

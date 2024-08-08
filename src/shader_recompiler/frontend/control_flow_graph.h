@@ -8,10 +8,10 @@
 #include <boost/container/small_vector.hpp>
 #include <boost/intrusive/set.hpp>
 
+#include "common/object_pool.h"
 #include "common/types.h"
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/ir/condition.h"
-#include "shader_recompiler/object_pool.h"
 
 namespace Shader::Gcn {
 
@@ -49,7 +49,7 @@ class CFG {
     using Label = u32;
 
 public:
-    explicit CFG(ObjectPool<Block>& block_pool, std::span<const GcnInst> inst_list);
+    explicit CFG(Common::ObjectPool<Block>& block_pool, std::span<const GcnInst> inst_list);
 
     [[nodiscard]] std::string Dot() const;
 
@@ -59,7 +59,7 @@ private:
     void LinkBlocks();
 
 public:
-    ObjectPool<Block>& block_pool;
+    Common::ObjectPool<Block>& block_pool;
     std::span<const GcnInst> inst_list;
     std::vector<u32> index_to_pc;
     boost::container::small_vector<Label, 16> labels;

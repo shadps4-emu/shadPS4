@@ -13,22 +13,17 @@
 
 namespace Vulkan {
 
-static constexpr vk::BufferUsageFlags VertexIndexFlags =
-    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer |
-    vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformBuffer |
-    vk::BufferUsageFlagBits::eStorageBuffer;
-
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
-                       VideoCore::TextureCache& texture_cache_, AmdGpu::Liverpool* liverpool_)
-    : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_},
-      liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool},
-      vertex_index_buffer{instance, scheduler, VertexIndexFlags, 2_GB, BufferType::Upload} {
+                       AmdGpu::Liverpool* liverpool_)
+    : instance{instance_}, scheduler{scheduler_}, page_manager{this},
+      buffer_cache{instance, scheduler, liverpool_, page_manager},
+      texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
+      memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
-
-    memory->SetInstance(&instance);
+    memory->SetRasterizer(this);
+    wfi_event = instance.GetDevice().createEventUnique({});
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -38,29 +33,24 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
-    const u32 num_indices = SetupIndexBuffer(is_indexed, index_offset);
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
     }
 
     try {
-        pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+        pipeline->BindResources(regs, buffer_cache, texture_cache);
     } catch (...) {
         UNREACHABLE();
     }
 
+    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    buffer_cache.BindVertexBuffers(vs_info);
+    const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
+
     BeginRendering();
     UpdateDynamicState(*pipeline);
 
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
-
-    const u32 step_rates[] = {
-        regs.vgt_instance_step_rate_0,
-        regs.vgt_instance_step_rate_1,
-    };
-    cmdbuf.pushConstants(pipeline->GetLayout(), vk::ShaderStageFlagBits::eVertex, 0u,
-                         sizeof(step_rates), &step_rates);
     if (is_indexed) {
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
     } else {
@@ -82,8 +72,7 @@ void Rasterizer::DispatchDirect() {
     }
 
     try {
-        const auto has_resources =
-            pipeline->BindResources(memory, vertex_index_buffer, texture_cache);
+        const auto has_resources = pipeline->BindResources(buffer_cache, texture_cache);
         if (!has_resources) {
             return;
         }
@@ -131,7 +120,7 @@ void Rasterizer::BeginRendering() {
         state.color_images[state.num_color_attachments] = image.image;
         state.color_attachments[state.num_color_attachments++] = {
             .imageView = *image_view.image_view,
-            .imageLayout = vk::ImageLayout::eGeneral,
+            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .clearValue =
@@ -168,45 +157,19 @@ void Rasterizer::BeginRendering() {
     scheduler.BeginRendering(state);
 }
 
-u32 Rasterizer::SetupIndexBuffer(bool& is_indexed, u32 index_offset) {
-    // Emulate QuadList primitive type with CPU made index buffer.
-    const auto& regs = liverpool->regs;
-    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::QuadList) {
-        // ASSERT_MSG(!is_indexed, "Using QuadList primitive with indexed draw");
-        is_indexed = true;
+void Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
+    buffer_cache.InvalidateMemory(addr, size);
+    texture_cache.InvalidateMemory(addr, size);
+}
 
-        // Emit indices.
-        const u32 index_size = 3 * regs.num_indices;
-        const auto [data, offset, _] = vertex_index_buffer.Map(index_size);
-        LiverpoolToVK::EmitQuadToTriangleListIndices(data, regs.num_indices);
-        vertex_index_buffer.Commit(index_size);
+void Rasterizer::MapMemory(VAddr addr, u64 size) {
+    page_manager.OnGpuMap(addr, size);
+}
 
-        // Bind index buffer.
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset, vk::IndexType::eUint16);
-        return index_size / sizeof(u16);
-    }
-    if (!is_indexed) {
-        return regs.num_indices;
-    }
-
-    // Figure out index type and size.
-    const bool is_index16 = regs.index_buffer_type.index_type == Liverpool::IndexType::Index16;
-    const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
-    const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
-
-    // Upload index data to stream buffer.
-    const auto index_address = regs.index_base_address.Address<const void*>();
-    const u32 index_buffer_size = (index_offset + regs.num_indices) * index_size;
-    const auto [data, offset, _] = vertex_index_buffer.Map(index_buffer_size);
-    std::memcpy(data, index_address, index_buffer_size);
-    vertex_index_buffer.Commit(index_buffer_size);
-
-    // Bind index buffer.
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindIndexBuffer(vertex_index_buffer.Handle(), offset + index_offset * index_size,
-                           index_type);
-    return regs.num_indices;
+void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
+    buffer_cache.InvalidateMemory(addr, size);
+    texture_cache.UnmapMemory(addr, size);
+    page_manager.OnGpuUnmap(addr, size);
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {

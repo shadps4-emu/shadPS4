@@ -173,10 +173,9 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
 
 class Descriptors {
 public:
-    explicit Descriptors(BufferResourceList& buffer_resources_, ImageResourceList& image_resources_,
-                         SamplerResourceList& sampler_resources_)
-        : buffer_resources{buffer_resources_}, image_resources{image_resources_},
-          sampler_resources{sampler_resources_} {}
+    explicit Descriptors(Info& info_)
+        : info{info_}, buffer_resources{info_.buffers}, image_resources{info_.images},
+          sampler_resources{info_.samplers} {}
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
@@ -188,6 +187,7 @@ public:
         ASSERT(buffer.length == desc.length);
         buffer.is_storage |= desc.is_storage;
         buffer.used_types |= desc.used_types;
+        buffer.is_written |= desc.is_written;
         return index;
     }
 
@@ -201,9 +201,16 @@ public:
     }
 
     u32 Add(const SamplerResource& desc) {
-        const u32 index{Add(sampler_resources, desc, [&desc](const auto& existing) {
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+        const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
+            if (desc.sgpr_base == existing.sgpr_base &&
+                desc.dword_offset == existing.dword_offset) {
+                return true;
+            }
+            // Samplers with different bindings might still be the same.
+            const auto old_sharp =
+                info.ReadUd<AmdGpu::Sampler>(existing.sgpr_base, existing.dword_offset);
+            const auto new_sharp = info.ReadUd<AmdGpu::Sampler>(desc.sgpr_base, desc.dword_offset);
+            return old_sharp == new_sharp;
         })};
         return index;
     }
@@ -219,6 +226,7 @@ private:
         return static_cast<u32>(descriptors.size()) - 1;
     }
 
+    const Info& info;
     BufferResourceList& buffer_resources;
     ImageResourceList& image_resources;
     SamplerResourceList& sampler_resources;
@@ -328,16 +336,6 @@ static bool IsLoadBufferFormat(const IR::Inst& inst) {
     }
 }
 
-static bool IsReadConstBuffer(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ReadConstBuffer:
-    case IR::Opcode::ReadConstBufferU32:
-        return true;
-    default:
-        return false;
-    }
-}
-
 static u32 BufferLength(const AmdGpu::Buffer& buffer) {
     const auto stride = buffer.GetStride();
     if (stride < sizeof(f32)) {
@@ -401,30 +399,37 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         const auto sharp = TrackSharp(producer);
+        const bool is_store = IsBufferStore(inst);
         buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
         binding = descriptors.Add(BufferResource{
             .sgpr_base = sharp.sgpr_base,
             .dword_offset = sharp.dword_offset,
             .length = BufferLength(buffer),
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
-            .is_storage = IsBufferStore(inst) || buffer.GetSize() > MaxUboSize,
+            .is_storage = is_store || buffer.GetSize() > MaxUboSize,
+            .is_written = is_store,
         });
     }
 
+    // Update buffer descriptor format.
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    // Replace handle with binding index in buffer resource list.
-    inst.SetArg(0, ir.Imm32(binding));
-    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+    auto& buffer_desc = info.buffers[binding];
     if (inst_info.is_typed) {
-        ASSERT(inst_info.nfmt == AmdGpu::NumberFormat::Float &&
-               (inst_info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
-                inst_info.dmft == AmdGpu::DataFormat::Format32_32_32 ||
-                inst_info.dmft == AmdGpu::DataFormat::Format32_32 ||
-                inst_info.dmft == AmdGpu::DataFormat::Format32));
+        buffer_desc.dfmt = inst_info.dmft;
+        buffer_desc.nfmt = inst_info.nfmt;
+    } else {
+        buffer_desc.dfmt = buffer.GetDataFmt();
+        buffer_desc.nfmt = buffer.GetNumberFmt();
     }
 
-    if (IsReadConstBuffer(inst)) {
+    // Replace handle with binding index in buffer resource list.
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    inst.SetArg(0, ir.Imm32(binding));
+    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+
+    // Address of constant buffer reads can be calculated at IR emittion time.
+    if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
+        inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {
         return;
     }
 
@@ -434,10 +439,14 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         }
     } else {
         const u32 stride = buffer.GetStride();
-        ASSERT_MSG(stride >= 4, "non-formatting load_buffer_* is not implemented for stride {}",
-                   stride);
+        if (stride < 4) {
+            LOG_WARNING(Render_Vulkan,
+                        "non-formatting load_buffer_* is not implemented for stride {}", stride);
+        }
     }
 
+    // Compute address of the buffer using the stride.
+    // Todo: What if buffer is rebound with different stride?
     IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
     if (inst_info.index_enable) {
         const IR::U32 index = inst_info.offset_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
@@ -587,39 +596,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 }
 
 void ResourceTrackingPass(IR::Program& program) {
-    // When loading data from untyped buffer we don't have if it is float or integer.
-    // Most of the time it is float so that is the default. This pass detects float buffer loads
-    // combined with bitcasts and patches them to be integer loads.
-    for (IR::Block* const block : program.post_order_blocks) {
-        break;
-        for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() != IR::Opcode::BitCastU32F32) {
-                continue;
-            }
-            // Replace the bitcast with a typed buffer read
-            IR::Inst* const arg_inst{inst.Arg(0).TryInstRecursive()};
-            if (!arg_inst) {
-                continue;
-            }
-            const auto replace{[&](IR::Opcode new_opcode) {
-                inst.ReplaceOpcode(new_opcode);
-                inst.SetArg(0, arg_inst->Arg(0));
-                inst.SetArg(1, arg_inst->Arg(1));
-                inst.SetFlags(arg_inst->Flags<u32>());
-                arg_inst->Invalidate();
-            }};
-            if (arg_inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                replace(IR::Opcode::ReadConstBufferU32);
-            }
-            if (arg_inst->GetOpcode() == IR::Opcode::LoadBufferF32) {
-                replace(IR::Opcode::LoadBufferU32);
-            }
-        }
-    }
-
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
-    Descriptors descriptors{info.buffers, info.images, info.samplers};
+    Descriptors descriptors{info};
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
