@@ -8,10 +8,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
@@ -36,10 +34,11 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
+        version: 6.7.2
         host: mac
         target: desktop
         arch: clang_64
-        version: 6.7.2
+        archives: qtbase
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=x86_64 -DENABLE_QT_GUI=ON

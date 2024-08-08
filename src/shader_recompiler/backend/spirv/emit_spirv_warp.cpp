@@ -11,7 +11,7 @@ Id SubgroupScope(EmitContext& ctx) {
 }
 
 Id EmitWarpId(EmitContext& ctx) {
-    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
+    UNREACHABLE();
 }
 
 Id EmitLaneId(EmitContext& ctx) {

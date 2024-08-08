@@ -287,7 +287,7 @@ bool NeedsLift(Node goto_stmt, Node label_stmt) noexcept {
  */
 class GotoPass {
 public:
-    explicit GotoPass(CFG& cfg, ObjectPool<Statement>& stmt_pool) : pool{stmt_pool} {
+    explicit GotoPass(CFG& cfg, Common::ObjectPool<Statement>& stmt_pool) : pool{stmt_pool} {
         std::vector gotos{BuildTree(cfg)};
         const auto end{gotos.rend()};
         for (auto goto_stmt = gotos.rbegin(); goto_stmt != end; ++goto_stmt) {
@@ -563,7 +563,7 @@ private:
         return parent_tree.insert(std::next(loop), *new_goto);
     }
 
-    ObjectPool<Statement>& pool;
+    Common::ObjectPool<Statement>& pool;
     Statement root_stmt{FunctionTag{}};
 };
 
@@ -597,8 +597,9 @@ private:
 
 class TranslatePass {
 public:
-    TranslatePass(ObjectPool<IR::Inst>& inst_pool_, ObjectPool<IR::Block>& block_pool_,
-                  ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
+    TranslatePass(Common::ObjectPool<IR::Inst>& inst_pool_,
+                  Common::ObjectPool<IR::Block>& block_pool_,
+                  Common::ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
                   IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
                   Info& info_, const Profile& profile_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
@@ -808,9 +809,9 @@ private:
         return block_pool.Create(inst_pool);
     }
 
-    ObjectPool<Statement>& stmt_pool;
-    ObjectPool<IR::Inst>& inst_pool;
-    ObjectPool<IR::Block>& block_pool;
+    Common::ObjectPool<Statement>& stmt_pool;
+    Common::ObjectPool<IR::Inst>& inst_pool;
+    Common::ObjectPool<IR::Block>& block_pool;
     IR::AbstractSyntaxList& syntax_list;
     const Block dummy_flow_block{.is_dummy = true};
     std::span<const GcnInst> inst_list;
@@ -819,9 +820,10 @@ private:
 };
 } // Anonymous namespace
 
-IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                                CFG& cfg, Info& info, const Profile& profile) {
-    ObjectPool<Statement> stmt_pool{64};
+IR::AbstractSyntaxList BuildASL(Common::ObjectPool<IR::Inst>& inst_pool,
+                                Common::ObjectPool<IR::Block>& block_pool, CFG& cfg, Info& info,
+                                const Profile& profile) {
+    Common::ObjectPool<Statement> stmt_pool{64};
     GotoPass goto_pass{cfg, stmt_pool};
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;

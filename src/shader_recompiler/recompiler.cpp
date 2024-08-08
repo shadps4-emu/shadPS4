@@ -27,9 +27,9 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
     return blocks;
 }
 
-IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                             std::span<const u32> token, const Info&& info,
-                             const Profile& profile) {
+IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
+                             Common::ObjectPool<IR::Block>& block_pool, std::span<const u32> token,
+                             const Info&& info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
@@ -45,7 +45,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     }
 
     // Create control flow graph
-    ObjectPool<Gcn::Block> gcn_block_pool{64};
+    Common::ObjectPool<Gcn::Block> gcn_block_pool{64};
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
@@ -61,7 +61,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);
-    LOG_INFO(Render_Vulkan, "{}", Shader::IR::DumpProgram(program));
+    LOG_DEBUG(Render_Vulkan, "{}", Shader::IR::DumpProgram(program));
 
     return program;
 }

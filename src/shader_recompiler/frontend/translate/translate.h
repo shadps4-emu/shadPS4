@@ -125,6 +125,7 @@ public:
     void V_ADD_F32(const GcnInst& inst);
     void V_CVT_OFF_F32_I4(const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);
+    void V_MED3_I32(const GcnInst& inst);
     void V_FLOOR_F32(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
@@ -159,6 +160,7 @@ public:
     void V_SUB_I32(const GcnInst& inst);
     void V_LSHR_B32(const GcnInst& inst);
     void V_ASHRREV_I32(const GcnInst& inst);
+    void V_ASHR_I32(const GcnInst& inst);
     void V_MAD_U32_U24(const GcnInst& inst);
     void V_RNDNE_F32(const GcnInst& inst);
     void V_BCNT_U32_B32(const GcnInst& inst);

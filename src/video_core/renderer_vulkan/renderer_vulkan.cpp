@@ -67,8 +67,8 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled()}, draw_scheduler{instance},
       present_scheduler{instance}, flip_scheduler{instance}, swapchain{instance, window},
-      texture_cache{instance, draw_scheduler} {
-    rasterizer = std::make_unique<Rasterizer>(instance, draw_scheduler, texture_cache, liverpool);
+      rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
+      texture_cache{rasterizer->GetTextureCache()} {
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 

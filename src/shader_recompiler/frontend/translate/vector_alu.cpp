@@ -24,6 +24,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LSHR_B32(inst);
     case Opcode::V_ASHRREV_I32:
         return V_ASHRREV_I32(inst);
+    case Opcode::V_ASHR_I32:
+        return V_ASHR_I32(inst);
     case Opcode::V_LSHRREV_B32:
         return V_LSHRREV_B32(inst);
     case Opcode::V_NOT_B32:
@@ -183,6 +185,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ADD_F32(inst);
     case Opcode::V_MED3_F32:
         return V_MED3_F32(inst);
+    case Opcode::V_MED3_I32:
+        return V_MED3_I32(inst);
     case Opcode::V_FLOOR_F32:
         return V_FLOOR_F32(inst);
     case Opcode::V_SUB_F32:
@@ -479,6 +483,14 @@ void Translator::V_MED3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
 }
 
+void Translator::V_MED3_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+    const IR::U32 mmx = ir.SMin(ir.SMax(src0, src1), src2);
+    SetDst(inst.dst[0], ir.SMax(ir.SMin(src0, src1), mmx));
+}
+
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc(inst.src[0], true)};
     const IR::VectorReg dst_reg{inst.dst[0].code};
@@ -760,6 +772,12 @@ void Translator::V_ASHRREV_I32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.ShiftRightArithmetic(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
+void Translator::V_ASHR_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.ShiftRightArithmetic(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
+}
+
 void Translator::V_MAD_U32_U24(const GcnInst& inst) {
     V_MAD_I32_I24(inst, false);
 }
@@ -925,25 +943,12 @@ void Translator::V_FFBL_B32(const GcnInst& inst) {
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 lane_id = ir.LaneId();
-
-    const auto [warp_half, mask_shift] = [&]() -> std::pair<IR::U32, IR::U32> {
-        if (profile.subgroup_size == 32) {
-            const IR::U32 warp_half = ir.BitwiseAnd(ir.WarpId(), ir.Imm32(1));
-            return std::make_pair(warp_half, lane_id);
-        }
-        const IR::U32 warp_half = ir.ShiftRightLogical(lane_id, ir.Imm32(5));
-        const IR::U32 mask_shift = ir.BitwiseAnd(lane_id, ir.Imm32(0x1F));
-        return std::make_pair(warp_half, mask_shift);
-    }();
-
-    const IR::U32 thread_mask = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), mask_shift), ir.Imm32(1));
-    const IR::U1 is_odd_warp = ir.INotEqual(warp_half, ir.Imm32(0));
-    const IR::U32 mask = IR::U32{ir.Select(is_odd_warp, is_low ? ir.Imm32(~0U) : thread_mask,
-                                           is_low ? thread_mask : ir.Imm32(0))};
-    const IR::U32 masked_value = ir.BitwiseAnd(src0, mask);
-    const IR::U32 result = ir.IAdd(src1, ir.BitCount(masked_value));
-    SetDst(inst.dst[0], result);
+    if (!is_low) {
+        ASSERT(src0.IsImmediate() && src0.U32() == ~0U && src1.IsImmediate() && src1.U32() == 0U);
+        return;
+    }
+    ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
+    SetDst(inst.dst[0], ir.LaneId());
 }
 
 } // namespace Shader::Gcn

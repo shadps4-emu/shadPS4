@@ -61,23 +61,24 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
     return format;
 }
 
-ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept
-    : is_storage{is_storage} {
+ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexcept
+    : is_storage{is_storage_} {
     type = ConvertImageViewType(image.GetType());
     format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level + 1;
     range.extent.layers = image.last_array + 1;
-    mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
-    mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
-    mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
-    mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+    if (!is_storage) {
+        mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
+        mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
+        mapping.b = ConvertComponentSwizzle(image.dst_sel_z);
+        mapping.a = ConvertComponentSwizzle(image.dst_sel_w);
+    }
     // Check for unfortunate case of storage images being swizzled
     const u32 num_comps = AmdGpu::NumComponents(image.GetDataFmt());
     const u32 dst_sel = image.DstSelect();
     if (is_storage && !IsIdentityMapping(dst_sel, num_comps)) {
-        mapping = vk::ComponentMapping{};
         if (auto new_format = TrySwizzleFormat(format, dst_sel); new_format != format) {
             format = new_format;
             return;
