@@ -44,6 +44,7 @@ private Q_SLOTS:
     void ConfigureGuiFromSettings();
     void SaveWindowState() const;
     void SearchGameTable(const QString& text);
+    void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
 
