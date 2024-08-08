@@ -578,6 +578,8 @@ else()
         src/emulator.h
         src/sdl_window.h
         src/sdl_window.cpp
+        src/sdl_window_manager.cpp
+        src/sdl_window_manager.h
     )
 endif()
 
