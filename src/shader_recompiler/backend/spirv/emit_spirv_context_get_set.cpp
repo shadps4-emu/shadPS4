@@ -129,7 +129,7 @@ Id EmitReadConst(EmitContext& ctx) {
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     auto& buffer = ctx.buffers[handle];
     if (!Sirit::ValidId(buffer.offset)) {
-        buffer.offset = ctx.GetBufferOffset(handle);
+        buffer.offset = ctx.GetBufferOffset(buffer.global_binding);
     }
     const Id offset_dwords{ctx.OpShiftRightLogical(ctx.U32[1], buffer.offset, ctx.ConstU32(2U))};
     index = ctx.OpIAdd(ctx.U32[1], index, offset_dwords);
@@ -230,7 +230,7 @@ template <u32 N>
 static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
     auto& buffer = ctx.buffers[handle];
     if (!Sirit::ValidId(buffer.offset)) {
-        buffer.offset = ctx.GetBufferOffset(handle);
+        buffer.offset = ctx.GetBufferOffset(buffer.global_binding);
     }
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
@@ -412,7 +412,7 @@ template <u32 N>
 static Id EmitLoadBufferFormatF32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     auto& buffer = ctx.buffers[handle];
     if (!Sirit::ValidId(buffer.offset)) {
-        buffer.offset = ctx.GetBufferOffset(handle);
+        buffer.offset = ctx.GetBufferOffset(buffer.global_binding);
     }
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     if constexpr (N == 1) {
@@ -446,7 +446,7 @@ template <u32 N>
 static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     auto& buffer = ctx.buffers[handle];
     if (!Sirit::ValidId(buffer.offset)) {
-        buffer.offset = ctx.GetBufferOffset(handle);
+        buffer.offset = ctx.GetBufferOffset(buffer.global_binding);
     }
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));

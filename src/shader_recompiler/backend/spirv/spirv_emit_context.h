@@ -203,6 +203,7 @@ public:
     struct BufferDefinition {
         Id id;
         Id offset;
+        u32 global_binding;
         const VectorIds* data_types;
         Id pointer_type;
         AmdGpu::Buffer buffer;
