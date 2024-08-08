@@ -179,32 +179,11 @@ void MainWindow::CreateConnects() {
         }
     });
 
-    connect(ui->playButton, &QPushButton::clicked, this, [this]() {
-        QString gamePath = "";
-        int table_mode = Config::getTableMode();
-        if (table_mode == 0) {
-            if (m_game_list_frame->currentItem()) {
-                int itemID = m_game_list_frame->currentItem()->row();
-                gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
-            }
-        } else if (table_mode == 1) {
-            if (m_game_grid_frame->cellClicked) {
-                int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
-                             m_game_grid_frame->crtColumn;
-                gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
-            }
-        } else {
-            if (m_elf_viewer->currentItem()) {
-                int itemID = m_elf_viewer->currentItem()->row();
-                gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
-            }
-        }
-        if (gamePath != "") {
-            AddRecentFiles(gamePath);
-            Core::Emulator emulator;
-            emulator.Run(gamePath.toUtf8().constData());
-        }
-    });
+    connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
+            &MainWindow::StartGame);
+    connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
+            &MainWindow::StartGame);
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
         if (isTableList) {
@@ -384,6 +363,33 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+}
+
+void MainWindow::StartGame() {
+    QString gamePath = "";
+    int table_mode = Config::getTableMode();
+    if (table_mode == 0) {
+        if (m_game_list_frame->currentItem()) {
+            int itemID = m_game_list_frame->currentItem()->row();
+            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+        }
+    } else if (table_mode == 1) {
+        if (m_game_grid_frame->cellClicked) {
+            int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
+                         m_game_grid_frame->crtColumn;
+            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+        }
+    } else {
+        if (m_elf_viewer->currentItem()) {
+            int itemID = m_elf_viewer->currentItem()->row();
+            gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
+        }
+    }
+    if (gamePath != "") {
+        AddRecentFiles(gamePath);
+        Core::Emulator emulator;
+        emulator.Run(gamePath.toUtf8().constData());
+    }
 }
 
 void MainWindow::SearchGameTable(const QString& text) {
