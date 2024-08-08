@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "video_core/renderer_vulkan/vk_stream_buffer.h"
+#include "video_core/buffer_cache/buffer.h"
 #include "video_core/texture_cache/image.h"
 
 namespace VideoCore {
@@ -34,7 +34,7 @@ struct DetilerContext {
 
 class TileManager {
 public:
-    using ScratchBuffer = std::pair<VkBuffer, VmaAllocation>;
+    using ScratchBuffer = std::pair<vk::Buffer, VmaAllocation>;
 
     TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~TileManager();
@@ -51,6 +51,7 @@ private:
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    StreamBuffer stream_buffer;
     std::array<DetilerContext, DetilerType::Max> detilers;
 };
 

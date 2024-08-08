@@ -465,7 +465,7 @@ int PS4_SYSV_ABI scePthreadMutexDestroy(ScePthreadMutex* mutex) {
 
     int result = pthread_mutex_destroy(&(*mutex)->pth_mutex);
 
-    LOG_INFO(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
+    LOG_DEBUG(Kernel_Pthread, "name={}, result={}", (*mutex)->name, result);
 
     delete *mutex;
     *mutex = nullptr;
@@ -725,7 +725,7 @@ int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
     }
     int result = pthread_cond_destroy(&(*cond)->cond);
 
-    LOG_INFO(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
+    LOG_DEBUG(Kernel_Pthread, "scePthreadCondDestroy, result={}", result);
 
     delete *cond;
     *cond = nullptr;
@@ -811,8 +811,6 @@ int PS4_SYSV_ABI posix_pthread_cond_timedwait(ScePthreadCond* cond, ScePthreadMu
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
-    LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_broadcast redirect to scePthreadCondBroadcast");
     int result = scePthreadCondBroadcast(cond);
     if (result != 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -824,7 +822,6 @@ int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
-    // LOG_INFO(Kernel_Pthread, "posix pthread_mutexattr_init redirect to scePthreadMutexattrInit");
     int result = scePthreadMutexattrInit(attr);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -836,7 +833,6 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_settype(ScePthreadMutexattr* attr, int type) {
-    // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
     int result = scePthreadMutexattrSettype(attr, type);
     if (result < 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -861,7 +857,6 @@ int PS4_SYSV_ABI posix_pthread_once(pthread_once_t* once_control, void (*init_ro
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(ScePthreadMutexattr* attr, int protocol) {
     int result = scePthreadMutexattrSetprotocol(attr, protocol);
-    LOG_INFO(Kernel_Pthread, "redirect to scePthreadMutexattrSetprotocol: result = {}", result);
     if (result < 0) {
         UNREACHABLE();
     }
@@ -1295,8 +1290,6 @@ int PS4_SYSV_ABI posix_pthread_attr_setdetachstate(ScePthreadAttr* attr, int det
 int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthreadAttr* attr,
                                               PthreadEntryFunc start_routine, void* arg,
                                               const char* name) {
-    LOG_INFO(Kernel_Pthread, "posix pthread_create redirect to scePthreadCreate: name = {}", name);
-
     int result = scePthreadCreate(thread, attr, start_routine, arg, name);
     if (result != 0) {
         int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
@@ -1343,17 +1336,11 @@ int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadC
 
 int PS4_SYSV_ABI posix_pthread_cond_signal(ScePthreadCond* cond) {
     int result = scePthreadCondSignal(cond);
-    LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_signal redirect to scePthreadCondSignal, result = {}",
-             result);
     return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_cond_destroy(ScePthreadCond* cond) {
     int result = scePthreadCondDestroy(cond);
-    LOG_INFO(Kernel_Pthread,
-             "posix posix_pthread_cond_destroy redirect to scePthreadCondDestroy, result = {}",
-             result);
     return result;
 }
 

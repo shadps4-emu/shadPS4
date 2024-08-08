@@ -21,6 +21,7 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     case VsOutput::ClipDist7: {
         const u32 index = u32(output) - u32(VsOutput::ClipDist0);
         const Id clip_num{ctx.ConstU32(index)};
+        ASSERT_MSG(Sirit::ValidId(ctx.clip_distances), "Clip distance used but not defined");
         return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
     }
     case VsOutput::CullDist0:
@@ -33,6 +34,7 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     case VsOutput::CullDist7: {
         const u32 index = u32(output) - u32(VsOutput::CullDist0);
         const Id cull_num{ctx.ConstU32(index)};
+        ASSERT_MSG(Sirit::ValidId(ctx.cull_distances), "Cull distance used but not defined");
         return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
     }
     default:
@@ -125,7 +127,12 @@ Id EmitReadConst(EmitContext& ctx) {
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    if (!Sirit::ValidId(buffer.offset)) {
+        buffer.offset = ctx.GetBufferOffset(handle);
+    }
+    const Id offset_dwords{ctx.OpShiftRightLogical(ctx.U32[1], buffer.offset, ctx.ConstU32(2U))};
+    index = ctx.OpIAdd(ctx.U32[1], index, offset_dwords);
     const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
     return ctx.OpLoad(buffer.data_types->Get(1), ptr);
 }
@@ -137,7 +144,7 @@ Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
     return ctx.OpLoad(
         ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                      ctx.instance_step_rates,
+                                      ctx.push_data_block,
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
@@ -221,7 +228,11 @@ Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
 
 template <u32 N>
 static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    if (!Sirit::ValidId(buffer.offset)) {
+        buffer.offset = ctx.GetBufferOffset(handle);
+    }
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
@@ -314,7 +325,7 @@ static Id ComponentOffset(EmitContext& ctx, Id address, u32 stride, u32 bit_offs
 }
 
 static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 comp) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
     const auto format = buffer.buffer.GetDataFmt();
     switch (format) {
     case AmdGpu::DataFormat::FormatInvalid:
@@ -399,6 +410,11 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
 
 template <u32 N>
 static Id EmitLoadBufferFormatF32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    auto& buffer = ctx.buffers[handle];
+    if (!Sirit::ValidId(buffer.offset)) {
+        buffer.offset = ctx.GetBufferOffset(handle);
+    }
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     if constexpr (N == 1) {
         return GetBufferFormatValue(ctx, handle, address, 0);
     } else {
@@ -428,7 +444,11 @@ Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
 
 template <u32 N>
 static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    if (!Sirit::ValidId(buffer.offset)) {
+        buffer.offset = ctx.GetBufferOffset(handle);
+    }
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};

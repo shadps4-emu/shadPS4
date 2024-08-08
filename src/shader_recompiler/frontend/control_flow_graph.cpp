@@ -40,7 +40,7 @@ static IR::Condition MakeCondition(Opcode opcode) {
     }
 }
 
-CFG::CFG(ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
+CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
     : block_pool{block_pool_}, inst_list{inst_list_} {
     index_to_pc.resize(inst_list.size() + 1);
     EmitLabels();

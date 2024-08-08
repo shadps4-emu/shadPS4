@@ -47,7 +47,7 @@ public:
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, cpu_address);
+        const auto image_id = texture_cache.FindImage(info, false);
         auto& image = texture_cache.GetImage(image_id);
         return PrepareFrameInternal(image, is_eop);
     }
@@ -61,7 +61,7 @@ public:
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
         vo_buffers_addr.emplace_back(cpu_address);
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, cpu_address);
+        const auto image_id = texture_cache.FindImage(info, false);
         return texture_cache.GetImage(image_id);
     }
 
@@ -88,7 +88,7 @@ private:
     Scheduler flip_scheduler;
     Swapchain swapchain;
     std::unique_ptr<Rasterizer> rasterizer;
-    VideoCore::TextureCache texture_cache;
+    VideoCore::TextureCache& texture_cache;
     vk::UniqueCommandPool command_pool;
     std::vector<Frame> present_frames;
     std::queue<Frame*> free_queue;

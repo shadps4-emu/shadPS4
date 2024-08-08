@@ -5,7 +5,6 @@
 
 #include <tsl/robin_map.h>
 #include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/object_pool.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -51,8 +50,8 @@ private:
     Shader::Profile profile{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};
-    Shader::ObjectPool<Shader::IR::Inst> inst_pool;
-    Shader::ObjectPool<Shader::IR::Block> block_pool;
+    Common::ObjectPool<Shader::IR::Inst> inst_pool;
+    Common::ObjectPool<Shader::IR::Block> block_pool;
 };
 
 } // namespace Vulkan

@@ -7,7 +7,6 @@
 #include "shader_recompiler/ir/abstract_syntax_list.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/value.h"
-#include "shader_recompiler/object_pool.h"
 
 namespace Shader {
 struct Info;
@@ -16,8 +15,8 @@ struct Profile;
 
 namespace Shader::Gcn {
 
-[[nodiscard]] IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool,
-                                              ObjectPool<IR::Block>& block_pool, CFG& cfg,
+[[nodiscard]] IR::AbstractSyntaxList BuildASL(Common::ObjectPool<IR::Inst>& inst_pool,
+                                              Common::ObjectPool<IR::Block>& block_pool, CFG& cfg,
                                               Info& info, const Profile& profile);
 
 } // namespace Shader::Gcn

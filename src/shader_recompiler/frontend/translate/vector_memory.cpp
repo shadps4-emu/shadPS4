@@ -338,6 +338,11 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_forma
     if (is_typed) {
         info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
         info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
+        ASSERT(info.nfmt == AmdGpu::NumberFormat::Float &&
+               (info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
+                info.dmft == AmdGpu::DataFormat::Format32_32_32 ||
+                info.dmft == AmdGpu::DataFormat::Format32_32 ||
+                info.dmft == AmdGpu::DataFormat::Format32));
     }
 
     const IR::Value handle =

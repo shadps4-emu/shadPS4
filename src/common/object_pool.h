@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-namespace Shader {
+namespace Common {
 
 template <typename T>
     requires std::is_destructible_v<T>
@@ -104,4 +104,4 @@ private:
     size_t new_chunk_size{};
 };
 
-} // namespace Shader
+} // namespace Common

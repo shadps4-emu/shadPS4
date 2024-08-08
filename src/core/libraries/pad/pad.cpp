@@ -470,7 +470,7 @@ int PS4_SYSV_ABI scePadSetUserColor() {
 }
 
 int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pParam) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_DEBUG(Lib_Pad, "(STUBBED) called");
     return ORBIS_OK;
 }
 

@@ -3,103 +3,22 @@
 
 #include <xxhash.h>
 #include "common/assert.h"
-#include "common/config.h"
-#include "core/virtual_memory.h"
+#include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
-#ifndef _WIN64
-#include <signal.h>
-#include <sys/mman.h>
-
-#define PAGE_NOACCESS PROT_NONE
-#define PAGE_READWRITE (PROT_READ | PROT_WRITE)
-#define PAGE_READONLY PROT_READ
-#else
-#include <windows.h>
-
-void mprotect(void* addr, size_t len, int prot) {
-    DWORD old_prot{};
-    BOOL result = VirtualProtect(addr, len, prot, &old_prot);
-    ASSERT_MSG(result != 0, "Region protection failed");
-}
-
-#endif
-
 namespace VideoCore {
-
-static TextureCache* g_texture_cache = nullptr;
-
-#ifndef _WIN64
-void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
-    ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
-    const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
-
-#ifdef __APPLE__
-    const u32 err = ctx->uc_mcontext->__es.__err;
-#else
-    const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
-#endif
-
-    if (err & 0x2) {
-        g_texture_cache->OnCpuWrite(address);
-    } else {
-        // Read not supported!
-        UNREACHABLE();
-    }
-}
-#else
-LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
-    const u32 ec = pExp->ExceptionRecord->ExceptionCode;
-    if (ec == EXCEPTION_ACCESS_VIOLATION) {
-        const auto info = pExp->ExceptionRecord->ExceptionInformation;
-        if (info[0] == 1) { // Write violation
-            g_texture_cache->OnCpuWrite(info[1]);
-            return EXCEPTION_CONTINUE_EXECUTION;
-        } /* else {
-            UNREACHABLE();
-        }*/
-    }
-    return EXCEPTION_CONTINUE_SEARCH; // pass further
-}
-#endif
 
 static constexpr u64 StreamBufferSize = 512_MB;
 static constexpr u64 PageShift = 12;
 
-TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
-    : instance{instance_}, scheduler{scheduler_},
-      staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
-              Vulkan::BufferType::Upload},
+TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
+                           BufferCache& buffer_cache_, PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
+      staging{instance, scheduler, MemoryUsage::Upload, StreamBufferSize},
       tile_manager{instance, scheduler} {
-
-#ifndef _WIN64
-#ifdef __APPLE__
-    // Read-only memory write results in SIGBUS on Apple.
-    static constexpr int SignalType = SIGBUS;
-#else
-    static constexpr int SignalType = SIGSEGV;
-#endif
-
-    sigset_t signal_mask;
-    sigemptyset(&signal_mask);
-    sigaddset(&signal_mask, SignalType);
-
-    using HandlerType = decltype(sigaction::sa_sigaction);
-
-    struct sigaction guest_access_fault {};
-    guest_access_fault.sa_flags = SA_SIGINFO | SA_ONSTACK;
-    guest_access_fault.sa_sigaction = &GuestFaultSignalHandler;
-    guest_access_fault.sa_mask = signal_mask;
-    sigaction(SignalType, &guest_access_fault, nullptr);
-#else
-    veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
-    ASSERT_MSG(veh_handle, "Failed to register an exception handler");
-#endif
-    g_texture_cache = this;
-
     ImageInfo info;
     info.pixel_format = vk::Format::eR8G8B8A8Unorm;
     info.type = vk::ImageType::e2D;
@@ -110,15 +29,11 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
 }
 
-TextureCache::~TextureCache() {
-#if _WIN64
-    RemoveVectoredExceptionHandler(veh_handle);
-#endif
-}
+TextureCache::~TextureCache() = default;
 
-void TextureCache::OnCpuWrite(VAddr address) {
-    std::unique_lock lock{m_page_table};
-    ForEachImageInRegion(address, 1 << PageShift, [&](ImageId image_id, Image& image) {
+void TextureCache::InvalidateMemory(VAddr address, size_t size) {
+    std::unique_lock lock{mutex};
+    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
@@ -126,8 +41,28 @@ void TextureCache::OnCpuWrite(VAddr address) {
     });
 }
 
+void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
+    std::scoped_lock lk{mutex};
+
+    boost::container::small_vector<ImageId, 16> deleted_images;
+    ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
+    for (const ImageId id : deleted_images) {
+        Image& image = slot_images[id];
+        if (True(image.flags & ImageFlagBits::Tracked)) {
+            UntrackImage(image, id);
+        }
+        // TODO: Download image data back to host.
+        UnregisterImage(id);
+        DeleteImage(id);
+    }
+}
+
 ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
-    std::unique_lock lock{m_page_table};
+    if (info.guest_address == 0) [[unlikely]] {
+        return NULL_IMAGE_VIEW_ID;
+    }
+
+    std::unique_lock lock{mutex};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(
         info.guest_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
@@ -183,10 +118,6 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 }
 
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
-    if (info.guest_address == 0) [[unlikely]] {
-        return slot_image_views[NULL_IMAGE_VIEW_ID];
-    }
-
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;
@@ -310,10 +241,7 @@ void TextureCache::RefreshImage(Image& image) {
         buffer = *upload_buffer;
     } else {
         // Upload data to the staging buffer.
-        const auto [data, offset_, _] = staging.Map(image.info.guest_size_bytes, 16);
-        std::memcpy(data, (void*)image.info.guest_address, image.info.guest_size_bytes);
-        staging.Commit(image.info.guest_size_bytes);
-        offset = offset_;
+        offset = staging.Copy(image.info.guest_address, image.info.guest_size_bytes, 16);
     }
 
     const auto& num_layers = image.info.resources.layers;
@@ -344,9 +272,6 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
-
-    image.Transit(vk::ImageLayout::eGeneral,
-                  vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
@@ -362,8 +287,6 @@ void TextureCache::RegisterImage(ImageId image_id) {
     image.flags |= ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
-
-    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eNone);
 }
 
 void TextureCache::UnregisterImage(ImageId image_id) {
@@ -373,11 +296,11 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     image.flags &= ~ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
-        if (page_it == page_table.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageShift);
+        if (page_it == nullptr) {
+            UNREACHABLE_MSG("Unregistering unregistered page=0x{:x}", page << PageShift);
             return;
         }
-        auto& image_ids = page_it.value();
+        auto& image_ids = *page_it;
         const auto vector_it = std::ranges::find(image_ids, image_id);
         if (vector_it == image_ids.end()) {
             ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageShift);
@@ -393,7 +316,7 @@ void TextureCache::TrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags |= ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
+    tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
 }
 
 void TextureCache::UntrackImage(Image& image, ImageId image_id) {
@@ -401,40 +324,34 @@ void TextureCache::UntrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags &= ~ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
+    tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
 }
 
-void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
-    std::scoped_lock lk{mutex};
-    const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
-    const u64 page_start = addr >> PageShift;
-    const u64 page_end = page_start + num_pages;
+void TextureCache::DeleteImage(ImageId image_id) {
+    Image& image = slot_images[image_id];
+    ASSERT_MSG(False(image.flags & ImageFlagBits::Tracked), "Image was not untracked");
+    ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
 
-    const auto pages_interval =
-        decltype(cached_pages)::interval_type::right_open(page_start, page_end);
-    if (delta > 0) {
-        cached_pages.add({pages_interval, delta});
+    // Remove any registered meta areas.
+    const auto& meta_info = image.info.meta_info;
+    if (meta_info.cmask_addr) {
+        surface_metas.erase(meta_info.cmask_addr);
+    }
+    if (meta_info.fmask_addr) {
+        surface_metas.erase(meta_info.fmask_addr);
+    }
+    if (meta_info.htile_addr) {
+        surface_metas.erase(meta_info.htile_addr);
     }
 
-    const auto& range = cached_pages.equal_range(pages_interval);
-    for (const auto& [range, count] : boost::make_iterator_range(range)) {
-        const auto interval = range & pages_interval;
-        const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
-        const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
-        const u32 interval_size = interval_end_addr - interval_start_addr;
-        void* addr = reinterpret_cast<void*>(interval_start_addr);
-        if (delta > 0 && count == delta) {
-            mprotect(addr, interval_size, PAGE_READONLY);
-        } else if (delta < 0 && count == -delta) {
-            mprotect(addr, interval_size, PAGE_READWRITE);
-        } else {
-            ASSERT(count >= 0);
+    // Reclaim image and any image views it references.
+    scheduler.DeferOperation([this, image_id] {
+        Image& image = slot_images[image_id];
+        for (const ImageViewId image_view_id : image.image_view_ids) {
+            slot_image_views.erase(image_view_id);
         }
-    }
-
-    if (delta < 0) {
-        cached_pages.add({pages_interval, delta});
-    }
+        slot_images.erase(image_id);
+    });
 }
 
 } // namespace VideoCore
