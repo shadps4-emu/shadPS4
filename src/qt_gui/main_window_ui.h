@@ -56,6 +56,7 @@ public:
     QPushButton* stopButton;
     QPushButton* settingsButton;
     QPushButton* controllerButton;
+    QPushButton* keyboardButton;
 
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
@@ -188,6 +189,10 @@ public:
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));
         controllerButton->setIconSize(QSize(40, 40));
+        keyboardButton = new QPushButton(centralWidget);
+        keyboardButton->setFlat(true);
+        keyboardButton->setIcon(QIcon(":images/keyboard_icon.png"));
+        keyboardButton->setIconSize(QSize(40, 40));
 
         sizeSliderContainer = new QWidget(centralWidget);
         sizeSliderContainer->setObjectName("sizeSliderContainer");

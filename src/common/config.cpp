@@ -43,6 +43,7 @@ u32 m_window_size_H = 720;
 std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
+std::map<Uint32, KeysMapping> m_keyboard_binding_map;
 
 bool isLleLibc() {
     return isLibc;
@@ -156,6 +157,14 @@ void setElfViewer(std::vector<std::string> elfList) {
 void setRecentFiles(std::vector<std::string> recentFiles) {
     m_recent_files.resize(recentFiles.size());
     m_recent_files = recentFiles;
+}
+
+void setKeyboardBindingMap(std::map<Uint32, KeysMapping> map) {
+    m_keyboard_binding_map = map;
+}
+
+std::map<Uint32, KeysMapping> getKeyboardBindingMap() {
+    return m_keyboard_binding_map;
 }
 
 u32 getMainWindowGeometryX() {
@@ -299,6 +308,34 @@ void load(const std::filesystem::path& path) {
             m_table_mode = toml::find_or<toml::integer>(gui, "gameTableMode", 0);
         }
     }
+
+    if (data.contains("Controls")) {
+        auto controls = toml::find<toml::table>(data, "Controls");
+
+        toml::table keyboardBindings{};
+        auto it = controls.find("keyboardBindings");
+        if (it != controls.end() && it->second.is_table()) {
+            keyboardBindings = it->second.as_table();
+        }
+
+        // Convert TOML table to std::map<Uint32, KeysMapping>
+        for (const auto& [key, value] : keyboardBindings) {
+            try {
+                Uint32 int_key = static_cast<Uint32>(std::stoll(key));
+                if (value.is_integer()) {
+                    // Convert the TOML integer value to KeysMapping (int)
+                    int int_value = value.as_integer();
+
+                    // Add to the map
+                    m_keyboard_binding_map[int_key] = static_cast<KeysMapping>(int_value);
+                } else {
+                    fmt::print("Unexpected type for value: expected integer, got other type\n");
+                }
+            } catch (const std::exception& e) {
+                fmt::print("Error processing key-value pair: {}\n", e.what());
+            }
+        }
+    }
 }
 void save(const std::filesystem::path& path) {
     toml::basic_value<toml::preserve_comments> data;
@@ -352,6 +389,15 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
+
+    // Create a TOML table with keyboard bindings
+    toml::table keyboardBindingsTable;
+    // Serialize the map to the TOML table
+    for (const auto& [key, value] : m_keyboard_binding_map) {
+        keyboardBindingsTable[std::to_string(key)] = static_cast<int>(value);
+    }
+
+    data["Controls"]["keyboardBindings"] = keyboardBindingsTable;
 
     std::ofstream file(path, std::ios::out);
     file << data;
