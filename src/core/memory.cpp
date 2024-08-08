@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {
 
