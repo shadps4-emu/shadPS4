@@ -6,19 +6,15 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
-namespace Core {
-class MemoryManager;
-}
-
 namespace VideoCore {
+class BufferCache;
 class TextureCache;
-}
+} // namespace VideoCore
 
 namespace Vulkan {
 
 class Instance;
 class Scheduler;
-class StreamBuffer;
 
 class ComputePipeline {
 public:
@@ -31,7 +27,7 @@ public:
         return *pipeline;
     }
 
-    bool BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+    bool BindResources(VideoCore::BufferCache& buffer_cache,
                        VideoCore::TextureCache& texture_cache) const;
 
 private:

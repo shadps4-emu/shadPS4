@@ -363,6 +363,10 @@ struct Sampler {
         return raw0 != 0 || raw1 != 0;
     }
 
+    bool operator==(const Sampler& other) const noexcept {
+        return std::memcmp(this, &other, sizeof(Sampler)) == 0;
+    }
+
     float LodBias() const noexcept {
         return static_cast<float>(static_cast<int16_t>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /
                256.0f;

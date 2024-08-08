@@ -183,10 +183,12 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eB8G8R8A8Srgb:
     case vk::Format::eB8G8R8A8Unorm:
     case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR8G8B8A8Uint:
     case vk::Format::eR32Sfloat:
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
         return vk::Format::eR32Uint;
+    case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
     case vk::Format::eBc4UnormBlock:
     case vk::Format::eR32G32Sfloat:
@@ -200,11 +202,20 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc5UnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
+    case vk::Format::eBc6HUfloatBlock:
+    case vk::Format::eR32G32B32A32Sfloat:
         return vk::Format::eR32G32B32A32Uint;
     default:
         break;
     }
-    LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+
+    // Log missing formats only once to avoid spamming the log.
+    static constexpr size_t MaxFormatIndex = 256;
+    static std::array<bool, MaxFormatIndex> logged_formats{};
+    if (const u32 index = u32(format); !logged_formats[index]) {
+        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+        logged_formats[index] = true;
+    }
     return format;
 }
 
@@ -236,8 +247,11 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
+static constexpr size_t StreamBufferSize = 128_MB;
+
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
-    : instance{instance}, scheduler{scheduler} {
+    : instance{instance}, scheduler{scheduler},
+      stream_buffer{instance, scheduler, MemoryUsage::Stream, StreamBufferSize} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
@@ -336,8 +350,7 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
                              : static_cast<VmaAllocationCreateFlags>(0),
-        .usage = is_large_buffer ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST
-                                 : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         .requiredFlags = !is_storage ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                                      : static_cast<VkMemoryPropertyFlags>(0),
     };
@@ -373,37 +386,46 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
 
     const auto* detiler = GetDetiler(image);
     if (!detiler) {
-        LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
-                  vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
+        if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled) {
+            LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
+                      vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
+        }
         return std::nullopt;
     }
 
     // Prepare input buffer
-    auto in_buffer = AllocBuffer(image.info.guest_size_bytes);
-    Upload(in_buffer, reinterpret_cast<const void*>(image.info.guest_address),
-           image.info.guest_size_bytes);
+    const u32 image_size = image.info.guest_size_bytes;
+    const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
+        // Use stream buffer for smaller textures.
+        if (image_size <= StreamBufferSize) {
+            u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
+            return {stream_buffer.Handle(), offset};
+        }
+        // Request temporary host buffer for larger sizes.
+        auto in_buffer = AllocBuffer(image_size);
+        const auto addr = reinterpret_cast<const void*>(image.info.guest_address);
+        Upload(in_buffer, addr, image_size);
+        scheduler.DeferOperation([=, this]() { FreeBuffer(in_buffer); });
+        return {in_buffer.first, 0};
+    }();
 
     // Prepare output buffer
-    auto out_buffer = AllocBuffer(image.info.guest_size_bytes, true);
-
-    scheduler.DeferOperation([=, this]() {
-        FreeBuffer(in_buffer);
-        FreeBuffer(out_buffer);
-    });
+    auto out_buffer = AllocBuffer(image_size, true);
+    scheduler.DeferOperation([=, this]() { FreeBuffer(out_buffer); });
 
     auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *detiler->pl);
 
     const vk::DescriptorBufferInfo input_buffer_info{
-        .buffer = in_buffer.first,
-        .offset = 0,
-        .range = image.info.guest_size_bytes,
+        .buffer = in_buffer,
+        .offset = in_offset,
+        .range = image_size,
     };
 
     const vk::DescriptorBufferInfo output_buffer_info{
         .buffer = out_buffer.first,
         .offset = 0,
-        .range = image.info.guest_size_bytes,
+        .range = image_size,
     };
 
     std::vector<vk::WriteDescriptorSet> set_writes{
@@ -442,16 +464,16 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
     cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
                          &params);
 
-    ASSERT((image.info.guest_size_bytes % 64) == 0);
+    ASSERT((image_size % 64) == 0);
     const auto bpp = image.info.num_bits * (image.info.props.is_block ? 16u : 1u);
-    const auto num_tiles = image.info.guest_size_bytes / (64 * (bpp / 8));
+    const auto num_tiles = image_size / (64 * (bpp / 8));
     cmdbuf.dispatch(num_tiles, 1, 1);
 
     const vk::BufferMemoryBarrier post_barrier{
         .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
         .dstAccessMask = vk::AccessFlagBits::eTransferRead,
         .buffer = out_buffer.first,
-        .size = image.info.guest_size_bytes,
+        .size = image_size,
     };
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,

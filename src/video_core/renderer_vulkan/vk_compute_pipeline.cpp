@@ -3,11 +3,10 @@
 
 #include <boost/container/small_vector.hpp>
 #include "common/alignment.h"
-#include "core/memory.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/renderer_vulkan/vk_stream_buffer.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
@@ -51,6 +50,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         });
     }
 
+    const vk::PushConstantRange push_constants = {
+        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        .offset = 0,
+        .size = sizeof(Shader::PushData),
+    };
+
     const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
         .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
         .bindingCount = static_cast<u32>(bindings.size()),
@@ -62,8 +67,8 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 1U,
         .pSetLayouts = &set_layout,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = 1U,
+        .pPushConstantRanges = &push_constants,
     };
     pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
 
@@ -82,35 +87,18 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
 ComputePipeline::~ComputePipeline() = default;
 
-bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& staging,
+bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                                     VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
+    Shader::PushData push_data{};
     u32 binding{};
 
-    for (const auto& buffer : info.buffers) {
+    for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto vsharp = buffer.GetVsharp(info);
-        const u32 size = vsharp.GetSize();
         const VAddr address = vsharp.base_address;
-        if (buffer.is_storage) {
-            texture_cache.OnCpuWrite(address);
-        }
-        const u32 offset = staging.Copy(address, size,
-                                        buffer.is_storage ? instance.StorageMinAlignment()
-                                                          : instance.UniformMinAlignment());
-        buffer_infos.emplace_back(staging.Handle(), offset, size);
-        set_writes.push_back({
-            .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                : vk::DescriptorType::eUniformBuffer,
-            .pBufferInfo = &buffer_infos.back(),
-        });
-
         // Most of the time when a metadata is updated with a shader it gets cleared. It means we
         // can skip the whole dispatch and update the tracked state instead. Also, it is not
         // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
@@ -125,6 +113,31 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
                 LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
             }
         }
+        const u32 size = vsharp.GetSize();
+        if (buffer.is_written) {
+            texture_cache.InvalidateMemory(address, size);
+        }
+        const u32 alignment =
+            buffer.is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
+        const auto [vk_buffer, offset] =
+            buffer_cache.ObtainBuffer(address, size, buffer.is_written);
+        const u32 offset_aligned = Common::AlignDown(offset, alignment);
+        const u32 adjust = offset - offset_aligned;
+        if (adjust != 0) {
+            ASSERT(adjust % 4 == 0);
+            push_data.AddOffset(i, adjust);
+        }
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
+                                                : vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
+        i++;
     }
 
     for (const auto& image_desc : info.images) {
@@ -168,6 +181,8 @@ bool ComputePipeline::BindResources(Core::MemoryManager* memory, StreamBuffer& s
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(push_data),
+                         &push_data);
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, set_writes);
     return true;
 }

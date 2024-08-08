@@ -447,6 +447,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
                 .is_instance_data = true,
             });
             instance_buf_handle = s32(info.buffers.size() - 1);
+            info.uses_step_rates = true;
         }
 
         const u32 num_components = AmdGpu::NumComponents(buffer.GetDataFmt());

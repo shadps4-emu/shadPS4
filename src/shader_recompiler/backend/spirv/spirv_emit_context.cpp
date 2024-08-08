@@ -46,9 +46,9 @@ EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& bin
       stage{program.info.stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
-    DefineInterfaces(program);
-    DefineBuffers(info);
-    DefineImagesAndSamplers(info);
+    DefineInterfaces();
+    DefineBuffers();
+    DefineImagesAndSamplers();
     DefineSharedMemory();
 }
 
@@ -117,9 +117,10 @@ void EmitContext::DefineArithmeticTypes() {
     full_result_u32x2 = Name(TypeStruct(U32[1], U32[1]), "full_result_u32x2");
 }
 
-void EmitContext::DefineInterfaces(const IR::Program& program) {
-    DefineInputs(program.info);
-    DefineOutputs(program.info);
+void EmitContext::DefineInterfaces() {
+    DefinePushDataBlock();
+    DefineInputs();
+    DefineOutputs();
 }
 
 Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
@@ -164,6 +165,16 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     throw InvalidArgument("Invalid attribute type {}", fmt);
 }
 
+Id EmitContext::GetBufferOffset(u32 binding) {
+    const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+    const u32 comp = (binding & 0xf) >> 2;
+    const u32 offset = (binding & 0x3) << 3;
+    const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                               push_data_block, ConstU32(half), ConstU32(comp))};
+    const Id value{OpLoad(U32[1], ptr)};
+    return OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+}
+
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
     switch (default_value) {
     case 0:
@@ -179,23 +190,12 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
     }
 }
 
-void EmitContext::DefineInputs(const Info& info) {
+void EmitContext::DefineInputs() {
     switch (stage) {
     case Stage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
-
-        // Create push constants block for instance steps rates
-        const Id struct_type{Name(TypeStruct(U32[1], U32[1]), "instance_step_rates")};
-        Decorate(struct_type, spv::Decoration::Block);
-        MemberName(struct_type, 0, "sr0");
-        MemberName(struct_type, 1, "sr1");
-        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-        MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
-        instance_step_rates = DefineVar(struct_type, spv::StorageClass::PushConstant);
-        Name(instance_step_rates, "step_rates");
-        interfaces.push_back(instance_step_rates);
 
         for (const auto& input : info.vs_inputs) {
             const Id type{GetAttributeType(*this, input.fmt)};
@@ -260,19 +260,20 @@ void EmitContext::DefineInputs(const Info& info) {
     }
 }
 
-void EmitContext::DefineOutputs(const Info& info) {
+void EmitContext::DefineOutputs() {
     switch (stage) {
     case Stage::Vertex: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value,
-                                     f32_zero_value, f32_zero_value, f32_zero_value,
-                                     f32_zero_value, f32_zero_value};
-        const Id type{TypeArray(F32[1], ConstU32(8U))};
-        const Id initializer{ConstantComposite(type, zero)};
-        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
-                                        initializer);
-        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
-                                        initializer);
+        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
+                                          info.stores.Get(IR::Attribute::Position2) ||
+                                          info.stores.Get(IR::Attribute::Position3);
+        if (has_extra_pos_stores) {
+            const Id type{TypeArray(F32[1], ConstU32(8U))};
+            clip_distances =
+                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
+            cull_distances =
+                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
+        }
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -304,7 +305,24 @@ void EmitContext::DefineOutputs(const Info& info) {
     }
 }
 
-void EmitContext::DefineBuffers(const Info& info) {
+void EmitContext::DefinePushDataBlock() {
+    // Create push constants block for instance steps rates
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4]), "AuxData")};
+    Decorate(struct_type, spv::Decoration::Block);
+    MemberName(struct_type, 0, "sr0");
+    MemberName(struct_type, 1, "sr1");
+    MemberName(struct_type, 2, "buf_offsets0");
+    MemberName(struct_type, 3, "buf_offsets1");
+    MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+    MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
+    MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, 3, spv::Decoration::Offset, 24U);
+    push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
+    Name(push_data_block, "push_data");
+    interfaces.push_back(push_data_block);
+}
+
+void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
@@ -322,8 +340,8 @@ void EmitContext::DefineBuffers(const Info& info) {
             Decorate(struct_type, spv::Decoration::Block);
             MemberName(struct_type, 0, "data");
             MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+            type_ids.push_back(record_array_type);
         }
-        type_ids.push_back(record_array_type);
 
         const auto storage_class =
             buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
@@ -430,7 +448,7 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     throw InvalidArgument("Invalid texture type {}", desc.type);
 }
 
-void EmitContext::DefineImagesAndSamplers(const Info& info) {
+void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
         const VectorIds* data_types = [&] {
             switch (image_desc.nfmt) {

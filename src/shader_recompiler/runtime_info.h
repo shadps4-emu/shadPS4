@@ -77,8 +77,11 @@ struct BufferResource {
     u32 length;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
-    bool is_storage{false};
-    bool is_instance_data{false};
+    AmdGpu::DataFormat dfmt;
+    AmdGpu::NumberFormat nfmt;
+    bool is_storage{};
+    bool is_instance_data{};
+    bool is_written{};
 
     constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
 };
@@ -104,6 +107,19 @@ struct SamplerResource {
     constexpr AmdGpu::Sampler GetSsharp(const Info& info) const noexcept;
 };
 using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
+
+struct PushData {
+    static constexpr size_t BufOffsetIndex = 2;
+
+    u32 step0;
+    u32 step1;
+    std::array<u8, 32> buf_offsets;
+
+    void AddOffset(u32 binding, u32 offset) {
+        ASSERT(offset < 64 && binding < 32);
+        buf_offsets[binding] = offset;
+    }
+};
 
 struct Info {
     struct VsInput {
@@ -182,6 +198,7 @@ struct Info {
     bool uses_shared_u8{};
     bool uses_shared_u16{};
     bool uses_fp16{};
+    bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
 
     template <typename T>
