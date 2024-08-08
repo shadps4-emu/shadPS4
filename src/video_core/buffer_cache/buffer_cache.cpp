@@ -228,18 +228,20 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     const VAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
     for (u64 page = addr >> CACHING_PAGEBITS; page < page_end;) {
-        const BufferId buffer_id = page_table[page];
-        if (!buffer_id) {
-            ++page;
-            continue;
+        if (page_table.contains_page(page)) {
+            const BufferId buffer_id = page_table[page];
+            if (buffer_id) {
+                const Buffer& buffer = slot_buffers[buffer_id];
+                const VAddr buf_start_addr = buffer.CpuAddr();
+                const VAddr buf_end_addr = buf_start_addr + buffer.SizeBytes();
+                if (buf_start_addr < end_addr && addr < buf_end_addr) {
+                    return true;
+                }
+                page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
+                continue;
+            }
         }
-        Buffer& buffer = slot_buffers[buffer_id];
-        const VAddr buf_start_addr = buffer.CpuAddr();
-        const VAddr buf_end_addr = buf_start_addr + buffer.SizeBytes();
-        if (buf_start_addr < end_addr && addr < buf_end_addr) {
-            return true;
-        }
-        page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
+        ++page;
     }
     return false;
 }

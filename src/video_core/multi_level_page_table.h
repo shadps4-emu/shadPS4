@@ -31,6 +31,10 @@ public:
     ~MultiLevelPageTable() noexcept = default;
 
     [[nodiscard]] Entry* find(size_t page) {
+        if (!contains_page(page)) {
+            return nullptr;
+        }
+
         const size_t l1_page = page >> SecondLevelBits;
         const size_t l2_page = page & (NumEntriesPerL1Page - 1);
         if (!first_level_map[l1_page]) {
@@ -55,6 +59,11 @@ public:
             first_level_map[l1_page] = page_alloc.Create();
         }
         return (*first_level_map[l1_page])[l2_page];
+    }
+
+    [[nodiscard]] const bool contains_page(size_t page) const {
+        const size_t l1_page = page >> SecondLevelBits;
+        return l1_page < first_level_map.size();
     }
 
 private:
