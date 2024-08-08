@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
-#include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
 
@@ -312,7 +311,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 }
 
 void Translator::V_MOV(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc(inst.src[0]));
+    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
 }
 
 void Translator::V_SAD(const GcnInst& inst) {
@@ -321,14 +320,14 @@ void Translator::V_SAD(const GcnInst& inst) {
 }
 
 void Translator::V_MAC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPFma(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true),
-                                 GetSrc(inst.dst[0], true)));
+    SetDst(inst.dst[0], ir.FPFma(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]),
+                                 GetSrc<IR::F32>(inst.dst[0])));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::Value vec_f32 =
-        ir.CompositeConstruct(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true));
+        ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
     ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_f32));
 }
 
@@ -339,13 +338,13 @@ void Translator::V_CVT_F32_F16(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_F16_F32(const GcnInst& inst) {
-    const IR::F32 src0 = GetSrc(inst.src[0], true);
+    const IR::F32 src0 = GetSrc<IR::F32>(inst.src[0]);
     const IR::F16 src0fp16 = ir.FPConvert(16, src0);
     SetDst(inst.dst[0], ir.UConvert(32, ir.BitCast<IR::U16>(src0fp16)));
 }
 
 void Translator::V_MUL_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPMul(GetSrc(inst.src[0], true), GetSrc(inst.src[1], true)));
+    SetDst(inst.dst[0], ir.FPMul(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1])));
 }
 
 void Translator::V_CNDMASK_B32(const GcnInst& inst) {
@@ -363,16 +362,13 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     };
     const bool has_flt_source =
         is_float_const(inst.src[0].field) || is_float_const(inst.src[1].field);
-    IR::U32F32 src0 = GetSrc(inst.src[0], has_flt_source);
-    IR::U32F32 src1 = GetSrc(inst.src[1], has_flt_source);
-    if (src0.Type() == IR::Type::F32 && src1.Type() == IR::Type::U32) {
-        src1 = ir.BitCast<IR::F32, IR::U32>(src1);
+    if (has_flt_source) {
+        const IR::Value result = ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
+        ir.SetVectorReg(dst_reg, IR::U32F32{result});
+    } else {
+        const IR::Value result = ir.Select(flag, GetSrc(inst.src[1]), GetSrc(inst.src[0]));
+        ir.SetVectorReg(dst_reg, IR::U32F32{result});
     }
-    if (src1.Type() == IR::Type::F32 && src0.Type() == IR::Type::U32) {
-        src0 = ir.BitCast<IR::F32, IR::U32>(src0);
-    }
-    const IR::Value result = ir.Select(flag, src1, src0);
-    ir.SetVectorReg(dst_reg, IR::U32F32{result});
 }
 
 void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
@@ -448,21 +444,21 @@ void Translator::V_CVT_F32_U32(const GcnInst& inst) {
 }
 
 void Translator::V_MAD_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
     SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.Fract(src0));
 }
 
 void Translator::V_ADD_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPAdd(src0, src1));
 }
 
@@ -476,9 +472,9 @@ void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
 }
 
 void Translator::V_MED3_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
     const IR::F32 mmx = ir.FPMin(ir.FPMax(src0, src1), src2);
     SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
 }
@@ -492,32 +488,32 @@ void Translator::V_MED3_I32(const GcnInst& inst) {
 }
 
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
     ir.SetVectorReg(dst_reg, ir.FPFloor(src0));
 }
 
 void Translator::V_SUB_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPSub(src0, src1));
 }
 
 void Translator::V_RCP_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPRecip(src0));
 }
 
 void Translator::V_FMA_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
     SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
 void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::F:
@@ -557,8 +553,8 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
 }
 
 void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
 }
 
@@ -569,40 +565,40 @@ void Translator::V_MAX_U32(bool is_signed, const GcnInst& inst) {
 }
 
 void Translator::V_RSQ_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
 }
 
 void Translator::V_SIN_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPSin(src0));
 }
 
 void Translator::V_LOG_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPLog2(src0));
 }
 
 void Translator::V_EXP_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPExp2(src0));
 }
 
 void Translator::V_SQRT_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPSqrt(src0));
 }
 
 void Translator::V_MIN_F32(const GcnInst& inst, bool is_legacy) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPMin(src0, src1, is_legacy));
 }
 
 void Translator::V_MIN3_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
     SetDst(inst.dst[0], ir.FPMin(src0, ir.FPMin(src1, src2)));
 }
 
@@ -614,9 +610,9 @@ void Translator::V_MIN3_I32(const GcnInst& inst) {
 }
 
 void Translator::V_MADMK_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 k{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 k{GetSrc<IR::F32>(inst.src[2])};
     SetDst(inst.dst[0], ir.FPFma(src0, k, src1));
 }
 
@@ -625,25 +621,25 @@ void Translator::V_CUBEMA_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CUBESC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc(inst.src[0], true));
+    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
 }
 
 void Translator::V_CUBETC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc(inst.src[1], true));
+    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[1]));
 }
 
 void Translator::V_CUBEID_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc(inst.src[2], true));
+    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[2]));
 }
 
 void Translator::V_CVT_U32_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertFToU(32, src0));
 }
 
 void Translator::V_SUBREV_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPSub(src1, src0));
 }
 
@@ -783,7 +779,7 @@ void Translator::V_MAD_U32_U24(const GcnInst& inst) {
 }
 
 void Translator::V_RNDNE_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPRoundEven(src0));
 }
 
@@ -794,14 +790,14 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_COS_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPCos(src0));
 }
 
 void Translator::V_MAX3_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
-    const IR::F32 src1{GetSrc(inst.src[1], true)};
-    const IR::F32 src2{GetSrc(inst.src[2], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
     SetDst(inst.dst[0], ir.FPMax(src0, ir.FPMax(src1, src2)));
 }
 
@@ -813,7 +809,7 @@ void Translator::V_MAX3_U32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_I32_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertFToS(32, src0));
 }
 
@@ -830,12 +826,12 @@ void Translator::V_MUL_LO_U32(const GcnInst& inst) {
 }
 
 void Translator::V_TRUNC_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPTrunc(src0));
 }
 
 void Translator::V_CEIL_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPCeil(src0));
 }
 
@@ -899,18 +895,18 @@ void Translator::V_BFREV_B32(const GcnInst& inst) {
 }
 
 void Translator::V_LDEXP_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.FPLdexp(src0, src1));
 }
 
 void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc(inst.src[0], true)};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertFToI(32, true, ir.FPFloor(src0)));
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
-    const IR::F32F64 src0{GetSrc(inst.src[0])};
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     IR::U1 value;
     if (src1.IsImmediate()) {
