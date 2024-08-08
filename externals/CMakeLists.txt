@@ -59,7 +59,14 @@ endif()
 
 # SDL3
 if (NOT TARGET SDL3::SDL3)
+    set(SDL_DIRECTX OFF)
+    set(SDL_MMX OFF)
+    set(SDL_OPENGL OFF)
+    set(SDL_OPENGLES OFF)
     set(SDL_PIPEWIRE OFF)
+    set(SDL_RENDER_D3D OFF)
+    set(SDL_WASAPI OFF)
+    set(SDL_XINPUT OFF)
     add_subdirectory(sdl3)
 endif()
 

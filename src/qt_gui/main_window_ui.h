@@ -297,7 +297,7 @@ public:
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
         exitAct->setText(QCoreApplication::translate("MainWindow", "Exit", nullptr));
 #if QT_CONFIG(tooltip)
-        exitAct->setToolTip(QCoreApplication::translate("MainWindow", "Exit Shadps4", nullptr));
+        exitAct->setToolTip(QCoreApplication::translate("MainWindow", "Exit shadPS4", nullptr));
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(statustip)
         exitAct->setStatusTip(
