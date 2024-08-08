@@ -577,6 +577,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
 void MainWindow::InstallDirectory() {
     GameInstallDialog dlg;
     dlg.exec();
+    RefreshGameTable();
 }
 
 void MainWindow::SetLastUsedTheme() {
