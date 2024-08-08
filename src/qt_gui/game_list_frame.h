@@ -20,7 +20,6 @@
 #include "game_info.h"
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
-#include "main_window.h"
 
 class GameListFrame : public QTableWidget {
     Q_OBJECT
