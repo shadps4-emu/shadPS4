@@ -33,6 +33,8 @@ public:
 private:
     void RefreshGraphicsKey();
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, std::string_view ext);
+    std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage,
+                                                   std::string_view ext);
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline();
     std::unique_ptr<ComputePipeline> CreateComputePipeline();

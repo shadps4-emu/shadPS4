@@ -25,6 +25,7 @@ bool isLleLibc();
 bool showSplash();
 bool nullGpu();
 bool dumpShaders();
+bool patchShaders();
 bool dumpPM4();
 bool isRdocEnabled();
 u32 vblankDiv();

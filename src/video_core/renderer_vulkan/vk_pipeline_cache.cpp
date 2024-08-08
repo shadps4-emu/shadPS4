@@ -274,7 +274,15 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
 
             // Compile IR to SPIR-V
             auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
-            if (Config::dumpShaders()) {
+            bool patched = false;
+            if (Config::patchShaders()) {
+                auto patch = GetShaderPatch(hash, stage, "spv");
+                if (patch) {
+                    spv_code = *patch;
+                    patched = true;
+                }
+            }
+            if (Config::dumpShaders() && !patched) {
                 DumpShader(spv_code, hash, stage, "spv");
             }
             stages[i] = CompileSPV(spv_code, instance.GetDevice());
@@ -315,8 +323,16 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
 
         // Compile IR to SPIR-V
         u32 binding{};
-        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
-        if (Config::dumpShaders()) {
+        auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
+        bool patched = false;
+        if (Config::patchShaders()) {
+            auto patch = GetShaderPatch(compute_key, Shader::Stage::Compute, "spv");
+            if (patch) {
+                spv_code = *patch;
+                patched = true;
+            }
+        }
+        if (Config::dumpShaders() && !patched) {
             DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
         }
         const auto module = CompileSPV(spv_code, instance.GetDevice());
@@ -341,6 +357,24 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
+}
+
+std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
+                                                              std::string_view ext) {
+    using namespace Common::FS;
+    const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
+    if (!std::filesystem::exists(patch_dir)) {
+        std::filesystem::create_directories(patch_dir);
+    }
+    const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
+    const auto filepath = patch_dir / filename;
+    if (!std::filesystem::exists(filepath)) {
+        return {};
+    }
+    const auto file = IOFile{patch_dir / filename, FileAccessMode::Read};
+    std::vector<u32> code(file.GetSize() / sizeof(u32));
+    file.Read(code);
+    return code;
 }
 
 } // namespace Vulkan
