@@ -58,6 +58,7 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
         if (chunkIds[i] <= playgo->GetPlaygoHeader().mchunk_count) {
             outLoci[i] = OrbisPlayGoLocusValue::ORBIS_PLAYGO_LOCUS_LOCAL_FAST;
         } else {
+            outLoci[i] = ORBIS_PLAYGO_LOCUS_NOT_DOWNLOADED;
             return ORBIS_PLAYGO_ERROR_BAD_CHUNK_ID;
         }
     }
@@ -70,12 +71,13 @@ s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayG
               handle, *chunkIds, numberOfEntries);
     outProgress->progressSize = 0x10000; // todo?
     outProgress->totalSize = 0x10000;
-    return 0;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo* outTodoList,
                                       u32 numberOfEntries, u32* outEntries) {
-    LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
+    LOG_ERROR(Lib_PlayGo, "(STUBBED)called handle = {} numberOfEntries = {}", handle,
+              numberOfEntries);
     if (handle != 1)
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     if (outTodoList == nullptr)

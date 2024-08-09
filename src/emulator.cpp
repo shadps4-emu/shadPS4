@@ -128,6 +128,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::filesystem::create_directory(mount_temp_dir);
     }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
+    mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
         Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
@@ -182,7 +183,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
+    constexpr std::array<SysModules, 9> ModulesToLoad{
         {{"libSceNgs2.sprx", nullptr},
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
@@ -191,8 +192,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr},
-         {"libSceJson2.sprx", nullptr}},
+         {"libSceJpegEnc.sprx", nullptr}},
     };
 
     std::vector<std::filesystem::path> found_modules;
