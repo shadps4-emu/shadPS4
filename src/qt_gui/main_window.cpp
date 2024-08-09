@@ -408,7 +408,7 @@ void MainWindow::SearchGameTable(const QString& text) {
 }
 
 void MainWindow::ShowGameList() {
-    if (ui->showGameListAct->isChecked()){
+    if (ui->showGameListAct->isChecked()) {
         RefreshGameTable();
     } else {
         m_game_grid_frame->clearContents();
