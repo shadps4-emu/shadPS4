@@ -31,16 +31,71 @@ void Translator::EmitDataShare(const GcnInst& inst) {
 }
 
 void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
-    const u8 offset0 = inst.control.ds.offset0;
-    const u8 offset1 = inst.control.ds.offset1;
+    const u16 offset = (inst.control.ds.offset1 << 8) | inst.control.ds.offset0;
     const IR::U32 src{GetSrc(inst.src[1])};
-    ASSERT(offset1 & 0x80);
     const IR::U32 lane_id = ir.LaneId();
-    const IR::U32 id_in_group = ir.BitwiseAnd(lane_id, ir.Imm32(0b11));
-    const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
-    const IR::U32 index =
-        ir.IAdd(lane_id, ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2)));
-    SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+
+    if (offset >= 0xe000) {
+        // FFT Mode
+        const u8 mask = offset & 0x1f; // offset[4:0]
+        IR::U32 j = ir.BitwiseAnd(lane_id, ir.Imm32(0x1f));
+        j = ir.ShiftRightLogical(j, ir.BitCount(ir.Imm32(mask)));
+        j = ir.BitwiseOr(j, ir.BitwiseAnd(lane_id, ir.Imm32(mask)));
+        j = ir.BitwiseOr(j, ir.BitwiseAnd(lane_id, ir.Imm32(0x20)));
+        SetDst(inst.dst[0], ir.QuadShuffle(src, j));
+
+    } else if (offset >= 0xc000) {
+        // Rotate Mode
+        const u8 rotate = (offset >> 5) & 0x1f;           // offset[9:5]
+        const u8 mask = offset & 0x1f;                    // offset[4:0]
+        const bool rotate_right = (offset & 0x8000) != 0; // offset[15]
+
+        IR::U32 j;
+        if (rotate_right) {
+            j = ir.BitwiseOr(ir.BitwiseAnd(lane_id, ir.Imm32(mask)),
+                             ir.BitwiseAnd(ir.ISub(lane_id, ir.Imm32(mask)), ir.Imm32(~mask)));
+            j = ir.BitwiseOr(j, ir.BitwiseAnd(lane_id, ir.Imm32(0x20)));
+        } else {
+            j = ir.BitwiseOr(ir.BitwiseAnd(lane_id, ir.Imm32(mask)),
+                             ir.BitwiseAnd(ir.IAdd(lane_id, ir.Imm32(~mask)), ir.Imm32(~mask)));
+            j = ir.BitwiseOr(j, ir.BitwiseAnd(lane_id, ir.Imm32(0x20)));
+        }
+        SetDst(inst.dst[0], ir.QuadShuffle(src, j));
+
+    } else if (offset & 0x8000) {
+        // Full Data Sharing Mode (offset[15] == 1)
+        static const std::array<u8, 4> offsets = {0, 1, 2, 3};
+
+        const IR::U32 group_id = ir.BitwiseAnd(lane_id, ir.Imm32(0x3));
+        const u32 group_id_value = group_id.F32();
+
+        if (group_id_value < offsets.size()) {
+            const u8 base_offset_value = offsets[static_cast<std::size_t>(group_id_value)];
+            const IR::U32 base_offset = ir.Imm32(base_offset_value);
+            const IR::U32 index = ir.IAdd(ir.BitwiseAnd(lane_id, ir.Imm32(~0x3)), base_offset);
+
+            SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+        } else {
+            // Handling the case where group_id_value is out of bounds
+            // Optionally log an error or handle it in a defined way
+            const IR::U32 base_offset = ir.Imm32(0);
+            const IR::U32 index = ir.IAdd(ir.BitwiseAnd(lane_id, ir.Imm32(~0x3)), base_offset);
+
+            SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+        }
+    } else {
+        // Limited Data Sharing Mode (offset[15] == 0)
+        const u8 xor_mask = (offset >> 10) & 0x1f; // offset[14:10]
+        const u8 or_mask = (offset >> 5) & 0x1f;   // offset[9:5]
+        const u8 and_mask = offset & 0x1f;         // offset[4:0]
+
+        IR::U32 masked_lanes = ir.BitwiseAnd(lane_id, ir.Imm32(and_mask));
+        IR::U32 j = ir.BitwiseOr(masked_lanes, ir.Imm32(or_mask));
+        j = ir.BitwiseXor(j, ir.Imm32(xor_mask));
+        j = ir.BitwiseOr(j, ir.BitwiseAnd(lane_id, ir.Imm32(0x20)));
+
+        SetDst(inst.dst[0], ir.QuadShuffle(src, j));
+    }
 }
 
 void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst) {
