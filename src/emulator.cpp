@@ -128,6 +128,7 @@ void Emulator::Run(const std::filesystem::path& file) {
         std::filesystem::create_directory(mount_temp_dir);
     }
     mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
+    mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
         Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
