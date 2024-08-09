@@ -15,6 +15,7 @@
 #include "core/loader.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
+#include "sdl_window_manager.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -184,6 +185,8 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
+
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
         if (isTableList) {
@@ -390,6 +393,10 @@ void MainWindow::StartGame() {
         Core::Emulator emulator;
         emulator.Run(gamePath.toUtf8().constData());
     }
+}
+
+void MainWindow::StopGame() {
+    Frontend::QuitAllSDLWindows();
 }
 
 void MainWindow::SearchGameTable(const QString& text) {
