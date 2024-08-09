@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/address_space.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/linker.h"
@@ -198,6 +199,37 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
+int PS4_SYSV_ABI sceKernelMProtect(void* addr, size_t size, int prot) {
+
+    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    if (!memory_manager) {
+        LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = memory_manager->MProtect(std::bit_cast<VAddr>(addr), size, prot);
+    if (result != ORBIS_OK) {
+        LOG_ERROR(Kernel_Vmm, "MProtect failed with result {}", result);
+    }
+    return result;
+}
+
+int PS4_SYSV_ABI sceKernelMTypeProtect(void* addr, size_t size, int mtype, int prot) {
+
+    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    if (!memory_manager) {
+        LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    int result = memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
+                                              static_cast<Core::VMAType>(mtype), prot);
+    if (result != ORBIS_OK) {
+        LOG_ERROR(Kernel_Vmm, "MTypeProtect failed with result {}", result);
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize) {
     LOG_WARNING(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
@@ -264,6 +296,30 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
+        } else if (entries[i].operation ==
+                   MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT) { // MTYPEPROTECT
+            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
+                                           entries[i].protection);
+            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
+                     i, entries[i].operation, entries[i].length, result);
+            if (result != ORBIS_OK) {
+                LOG_ERROR(Kernel_Vmm, "BatchMap: MProtect failed on entry {} with result {}", i,
+                          result);
+            }
+            if (result == 0) {
+                processed++;
+            }
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT) { // MPROTECT
+            result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
+            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
+                     i, entries[i].operation, entries[i].length, result);
+            if (result != ORBIS_OK) {
+                LOG_ERROR(Kernel_Vmm, "BatchMap: MProtect failed on entry {} with result {}", i,
+                          result);
+            }
+            if (result == 0) {
+                processed++;
+            }
         } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
@@ -278,6 +334,8 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
         }
     }
+    LOG_INFO(Kernel_Vmm, "sceKernelBatchMap2 finished: processed = {}, result = {}", processed,
+             result);
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.
         *numEntriesOut = processed;
     }

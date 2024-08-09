@@ -7,6 +7,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {
@@ -259,6 +260,102 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
     if (prot != nullptr) {
         *prot = static_cast<u32>(vma.prot);
     }
+    return ORBIS_OK;
+}
+
+int MemoryManager::MProtect(VAddr addr, size_t size, int prot) {
+    std::scoped_lock lk{mutex};
+
+    // Find the virtual memory area that contains the specified address range.
+    auto it = FindVMA(addr);
+    if (it == vma_map.end() || !it->second.Contains(addr, size)) {
+        LOG_ERROR(Core, "Address range not mapped");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    VirtualMemoryArea& vma = it->second;
+    if (vma.type == VMAType::Free) {
+        LOG_ERROR(Core, "Cannot change protection on free memory region");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Check if the new protection flags are valid.
+    if ((static_cast<int>(prot) &
+         ~(static_cast<int>(MemoryProt::NoAccess) | static_cast<int>(MemoryProt::CpuRead) |
+           static_cast<int>(MemoryProt::CpuReadWrite) | static_cast<int>(MemoryProt::GpuRead) |
+           static_cast<int>(MemoryProt::GpuWrite) | static_cast<int>(MemoryProt::GpuReadWrite))) !=
+        0) {
+        LOG_ERROR(Core, "Invalid protection flags, prot: {:#x}, GpuWrite: {:#x}",
+                  static_cast<uint32_t>(prot), static_cast<uint32_t>(MemoryProt::GpuWrite));
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Change the protection on the specified address range.
+    vma.prot = static_cast<MemoryProt>(prot);
+
+    // Use the Protect function from the AddressSpace class.
+    Core::MemoryPermission perms;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::CpuRead)) != 0)
+        perms |= Core::MemoryPermission::Read;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::CpuReadWrite)) != 0)
+        perms |= Core::MemoryPermission::ReadWrite;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuRead)) != 0)
+        perms |= Core::MemoryPermission::Read;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuWrite)) != 0)
+        perms |= Core::MemoryPermission::Write;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuReadWrite)) != 0)
+        perms |= Core::MemoryPermission::ReadWrite; // Add this line
+    impl.Protect(addr, size, perms);
+
+    return ORBIS_OK;
+}
+
+int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot) {
+    std::scoped_lock lk{mutex};
+
+    // Find the virtual memory area that contains the specified address range.
+    auto it = FindVMA(addr);
+    if (it == vma_map.end() || !it->second.Contains(addr, size)) {
+        LOG_ERROR(Core, "Address range not mapped");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    VirtualMemoryArea& vma = it->second;
+
+    if (vma.type == VMAType::Free) {
+        LOG_ERROR(Core, "Cannot change protection on free memory region");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Check if the new protection flags are valid.
+    if ((static_cast<int>(prot) &
+         ~(static_cast<int>(MemoryProt::NoAccess) | static_cast<int>(MemoryProt::CpuRead) |
+           static_cast<int>(MemoryProt::CpuReadWrite) | static_cast<int>(MemoryProt::GpuRead) |
+           static_cast<int>(MemoryProt::GpuWrite) | static_cast<int>(MemoryProt::GpuReadWrite))) !=
+        0) {
+        LOG_ERROR(Core, "Invalid protection flags, prot: {:#x}, GpuWrite: {:#x}",
+                  static_cast<uint32_t>(prot), static_cast<uint32_t>(MemoryProt::GpuWrite));
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Change the type and protection on the specified address range.
+    vma.type = mtype;
+    vma.prot = static_cast<MemoryProt>(prot);
+
+    // Use the Protect function from the AddressSpace class.
+    Core::MemoryPermission perms;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::CpuRead)) != 0)
+        perms |= Core::MemoryPermission::Read;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::CpuReadWrite)) != 0)
+        perms |= Core::MemoryPermission::ReadWrite;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuRead)) != 0)
+        perms |= Core::MemoryPermission::Read;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuWrite)) != 0)
+        perms |= Core::MemoryPermission::Write;
+    if ((static_cast<int>(prot) & static_cast<int>(MemoryProt::GpuReadWrite)) != 0)
+        perms |= Core::MemoryPermission::ReadWrite;
+    impl.Protect(addr, size, perms);
+
     return ORBIS_OK;
 }
 

@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #endif
+#include "libraries/error_codes.h"
 
 #ifdef __APPLE__
 // Reserve space for the system address space using a zerofill section.
@@ -217,14 +218,18 @@ struct AddressSpace::Impl {
 
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
-        if (read && write) {
+        if (read && write && execute) {
+            new_flags = PAGE_EXECUTE_READWRITE;
+        } else if (read && write) {
             new_flags = PAGE_READWRITE;
         } else if (read && !write) {
             new_flags = PAGE_READONLY;
-        } else if (!read && !write) {
+        } else if (execute && !read && !write) {
+            new_flags = PAGE_EXECUTE;
+        } else if (!read && !write && !execute) {
             new_flags = PAGE_NOACCESS;
         } else {
-            UNIMPLEMENTED_MSG("Protection flag combination read={} write={}", read, write);
+            LOG_CRITICAL(Common_Memory, "Unsupported protection flag combination");
         }
 
         const VAddr virtual_end = virtual_addr + size;
@@ -459,7 +464,12 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
-    return impl->Protect(virtual_addr, size, true, true, true);
+    bool read = static_cast<int>(perms & MemoryPermission::Read) != 0;
+    bool write = static_cast<int>(perms & MemoryPermission::Write) != 0;
+    bool execute = static_cast<int>(perms & MemoryPermission::Execute) !=
+                   0; // Assuming you have an Execute permission
+
+    return impl->Protect(virtual_addr, size, read, write, execute);
 }
 
 } // namespace Core
