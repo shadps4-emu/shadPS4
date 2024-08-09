@@ -7,6 +7,7 @@
 #include "common/types.h"
 
 struct SDL_Window;
+struct SDL_Gamepad;
 union SDL_Event;
 
 namespace Input {
@@ -66,6 +67,7 @@ public:
 private:
     void onResize();
     void onKeyPress(const SDL_Event* event);
+    void onGamepadEvent(const SDL_Event* event);
 
 private:
     s32 width;
@@ -75,6 +77,7 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
+    SDL_Gamepad* gamepad{nullptr};
 };
 
 } // namespace Frontend

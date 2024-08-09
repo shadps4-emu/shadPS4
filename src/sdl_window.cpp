@@ -43,6 +43,19 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 
     SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
 
+    SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+
+    int gamepad_count;
+    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
+    if (gamepad_count > 0) {
+        gamepad = SDL_OpenGamepad(gamepads[0]);
+    }
+    SDL_free(gamepads);
+    
+    if (gamepad != nullptr) {
+        SDL_SetGamepadLED(gamepad, 0, 0, 255);
+    }
+
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
     window_info.render_surface = SDL_GetPointerProperty(SDL_GetWindowProperties(window),
@@ -91,6 +104,11 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
         onKeyPress(&event);
+        break;
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        onGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
         is_open = false;
@@ -273,6 +291,51 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     }
     if (axis != Input::Axis::AxisMax) {
         controller->Axis(0, axis, ax);
+    }
+}
+
+void WindowSDL::onGamepadEvent(const SDL_Event* event) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    u32 button = 0;
+    Input::Axis axis = Input::Axis::AxisMax;
+    switch (event->type) { 
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+        button = 
+            event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_DOWN ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_UP ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_LEFT ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_RIGHT ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_SOUTH ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_NORTH ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_WEST ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_EAST ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_START ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_LEFT_SHOULDER ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_LEFT_STICK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_RIGHT_STICK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD
+            : event->gbutton.button == SDL_GAMEPAD_BUTTON_BACK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD
+            : 0;
+        if (button != 0) {
+            controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+        }
+        break;
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        axis = 
+            event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX ? Input::Axis::LeftX
+            : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY ? Input::Axis::LeftY
+            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTX ? Input::Axis::RightX
+            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTY ? Input::Axis::RightY
+            : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? Input::Axis::TriggerLeft
+            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ? Input::Axis::TriggerRight
+            : Input::Axis::AxisMax;
+        if (axis != Input::Axis::AxisMax) {
+            controller->Axis(0, axis, Input::GetAxis(-0x8000, 0x8000, event->gaxis.value));
+        }
+        break;
     }
 }
 
