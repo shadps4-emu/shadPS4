@@ -397,7 +397,7 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
     const u32 image_size = image.info.guest_size_bytes;
     const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
         // Use stream buffer for smaller textures.
-        if (image_size <= StreamBufferSize) {
+        if (image_size <= stream_buffer.GetFreeSize()) {
             u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
             return {stream_buffer.Handle(), offset};
         }
