@@ -201,8 +201,7 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 }
 
 int PS4_SYSV_ABI sceKernelMProtect(void* addr, size_t size, int prot) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
-             prot);
+
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     if (!memory_manager) {
         LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
@@ -217,8 +216,7 @@ int PS4_SYSV_ABI sceKernelMProtect(void* addr, size_t size, int prot) {
 }
 
 int PS4_SYSV_ABI sceKernelMTypeProtect(void* addr, size_t size, int mtype, int prot) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, mtype = {:#x}, prot = {:#x}",
-             fmt::ptr(addr), size, mtype, prot);
+
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     if (!memory_manager) {
         LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
