@@ -15,6 +15,7 @@
 #include "core/loader.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
+#include "settings_dialog.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -184,6 +185,11 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
+
+    connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
+        auto settingsDialog = new SettingsDialog(this);
+        settingsDialog->exec();
+    });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
         if (isTableList) {
