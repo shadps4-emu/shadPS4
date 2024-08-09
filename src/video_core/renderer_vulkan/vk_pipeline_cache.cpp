@@ -209,6 +209,10 @@ void PipelineCache::RefreshGraphicsKey() {
             continue;
         }
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo->Valid()) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         key.stage_hashes[i] = bininfo->shader_hash;
     }
 }

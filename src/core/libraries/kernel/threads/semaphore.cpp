@@ -9,7 +9,6 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -82,7 +81,6 @@ public:
 
 public:
     struct WaitingThread : public ListBaseHook {
-        std::string name;
         std::condition_variable cv;
         u32 priority;
         s32 need_count;
@@ -90,7 +88,6 @@ public:
         bool was_cancled{};
 
         explicit WaitingThread(s32 need_count, bool is_fifo) : need_count{need_count} {
-            name = scePthreadSelf()->name;
             if (is_fifo) {
                 return;
             }
