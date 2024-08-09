@@ -933,18 +933,14 @@ F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
     }
 }
 
-U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::IAdd32, a, b);
-    case Type::U64:
-        return Inst<U64>(Opcode::IAdd64, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
+template <>
+U32 IREmitter::IAdd(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::IAdd32, a, b);
+}
+
+template <>
+U64 IREmitter::IAdd(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::IAdd64, a, b);
 }
 
 Value IREmitter::IAddCary(const U32& a, const U32& b) {
@@ -959,36 +955,28 @@ Value IREmitter::IAddCary(const U32& a, const U32& b) {
     }
 }
 
-U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::ISub32, a, b);
-    case Type::U64:
-        return Inst<U64>(Opcode::ISub64, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
+template <>
+U32 IREmitter::ISub(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::ISub32, a, b);
+}
+
+template <>
+U64 IREmitter::ISub(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::ISub64, a, b);
 }
 
 IR::Value IREmitter::IMulExt(const U32& a, const U32& b, bool is_signed) {
     return Inst(is_signed ? Opcode::SMulExt : Opcode::UMulExt, a, b);
 }
 
-U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::IMul32, a, b);
-    case Type::U64:
-        return Inst<U64>(Opcode::IMul64, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
+template <>
+U32 IREmitter::IMul(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::IMul32, a, b);
+}
+
+template <>
+U64 IREmitter::IMul(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::IMul64, a, b);
 }
 
 U32 IREmitter::IDiv(const U32& a, const U32& b, bool is_signed) {
@@ -1010,55 +998,45 @@ U32 IREmitter::IAbs(const U32& value) {
     return Inst<U32>(Opcode::IAbs32, value);
 }
 
-U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
-    switch (base.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::ShiftLeftLogical32, base, shift);
-    case Type::U64:
-        return Inst<U64>(Opcode::ShiftLeftLogical64, base, shift);
-    default:
-        ThrowInvalidType(base.Type());
-    }
+template <>
+U32 IREmitter::ShiftLeftLogical(const U32& base, const U32& shift) {
+    return Inst<U32>(Opcode::ShiftLeftLogical32, base, shift);
+}
+template <>
+U64 IREmitter::ShiftLeftLogical(const U64& base, const U32& shift) {
+    return Inst<U64>(Opcode::ShiftLeftLogical64, base, shift);
 }
 
-U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
-    switch (base.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::ShiftRightLogical32, base, shift);
-    case Type::U64:
-        return Inst<U64>(Opcode::ShiftRightLogical64, base, shift);
-    default:
-        ThrowInvalidType(base.Type());
-    }
+template <>
+U32 IREmitter::ShiftRightLogical(const U32& base, const U32& shift) {
+    return Inst<U32>(Opcode::ShiftRightLogical32, base, shift);
+}
+template <>
+U64 IREmitter::ShiftRightLogical(const U64& base, const U32& shift) {
+    return Inst<U64>(Opcode::ShiftRightLogical64, base, shift);
 }
 
-U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
-    switch (base.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::ShiftRightArithmetic32, base, shift);
-    case Type::U64:
-        return Inst<U64>(Opcode::ShiftRightArithmetic64, base, shift);
-    default:
-        ThrowInvalidType(base.Type());
-    }
+template <>
+U32 IREmitter::ShiftRightArithmetic(const U32& base, const U32& shift) {
+    return Inst<U32>(Opcode::ShiftRightArithmetic32, base, shift);
+}
+template <>
+U64 IREmitter::ShiftRightArithmetic(const U64& base, const U32& shift) {
+    return Inst<U64>(Opcode::ShiftRightArithmetic64, base, shift);
 }
 
 U32 IREmitter::BitwiseAnd(const U32& a, const U32& b) {
     return Inst<U32>(Opcode::BitwiseAnd32, a, b);
 }
 
-U32U64 IREmitter::BitwiseOr(const U32U64& a, const U32U64& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst<U32>(Opcode::BitwiseOr32, a, b);
-    case Type::U64:
-        return Inst<U64>(Opcode::BitwiseOr64, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
+template <>
+U32 IREmitter::BitwiseOr(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::BitwiseOr32, a, b);
+}
+
+template <>
+U64 IREmitter::BitwiseOr(const U64& a, const U64& b) {
+    return Inst<U64>(Opcode::BitwiseOr64, a, b);
 }
 
 U32 IREmitter::BitwiseXor(const U32& a, const U32& b) {

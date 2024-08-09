@@ -211,10 +211,13 @@ public:
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
 private:
-    template <typename T = IR::U32F32>
-    [[nodiscard]] T GetSrc(const InstOperand& operand, bool flt_zero = false);
-    template <typename T = IR::U64F64>
-    [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
+    struct SrcValue;
+    [[nodiscard]] IR::U32F32 GetSrcRaw(const InstOperand& operand, bool integer);
+    [[nodiscard]] IR::U64F64 GetSrcRaw64(const InstOperand& operand, bool integer);
+
+    template <typename T = SrcValue>
+    [[nodiscard]] T GetSrc(const InstOperand& operand);
+
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
@@ -226,6 +229,29 @@ private:
     const Profile& profile;
     IR::U32 m0_value;
     bool opcode_missing = false;
+
+    /**
+     * This is a wrapper for IR::Value returned by GetSrc to lazy
+     * evaluate the correct type and auto-cast to integer if needed.
+     */
+    class SrcValue {
+        Translator& translator;
+        const InstOperand& operand;
+
+    public:
+        SrcValue(Translator& translator, const InstOperand& operand)
+            : translator(translator), operand(operand) {}
+
+        explicit(false) operator IR::Value() const;
+
+        explicit(false) operator IR::U32F32() const;
+        explicit(false) operator IR::U32() const;
+        explicit(false) operator IR::F32() const;
+
+        explicit(false) operator IR::U64F64() const;
+        explicit(false) operator IR::U64() const;
+        explicit(false) operator IR::F64() const;
+    };
 };
 
 void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,

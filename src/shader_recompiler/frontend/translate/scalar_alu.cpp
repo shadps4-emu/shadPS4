@@ -110,20 +110,20 @@ void Translator::S_MOVK(const GcnInst& inst) {
 
 void Translator::S_ADDK_I32(const GcnInst& inst) {
     const s32 simm16 = inst.control.sopk.simm;
-    SetDst(inst.dst[0], ir.IAdd(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
+    SetDst(inst.dst[0], ir.IAdd(GetSrc<IR::U32>(inst.dst[0]), ir.Imm32(simm16)));
 }
 
 void Translator::S_MULK_I32(const GcnInst& inst) {
     const s32 simm16 = inst.control.sopk.simm;
-    SetDst(inst.dst[0], ir.IMul(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
+    SetDst(inst.dst[0], ir.IMul(GetSrc<IR::U32>(inst.dst[0]), ir.Imm32(simm16)));
 }
 
 void Translator::S_MOV(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc(inst.src[0]));
+    SetDst(inst.dst[0], GetSrc<IR::U32>(inst.src[0]));
 }
 
 void Translator::S_MUL_I32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.IMul(GetSrc(inst.src[0]), GetSrc(inst.src[1])));
+    SetDst(inst.dst[0], ir.IMul(GetSrc<IR::U32>(inst.src[0]), GetSrc<IR::U32>(inst.src[1])));
 }
 
 void Translator::S_CMP(ConditionOp cond, bool is_signed, const GcnInst& inst) {
