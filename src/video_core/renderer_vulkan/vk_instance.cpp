@@ -73,7 +73,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
             const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
             const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
             if (left_prop.apiVersion >= TargetVulkanApiVersion &&
-                right_prop.apiVersion < TargetVulkanApiVersion) {
+                right_prop.apiVersion < left_prop.apiVersion) {
                 return true;
             }
             if (left_prop.deviceType != right_prop.deviceType) {
