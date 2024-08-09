@@ -114,6 +114,70 @@ bool vkValidationSyncEnabled() {
     return vkValidationSync;
 }
 
+void setScreenWidth(u32 width) {
+    screenWidth = width;
+}
+
+void setScreenHeight(u32 height) {
+    screenHeight = height;
+}
+
+void setDebugDump(bool enable) {
+    isDebugDump = enable;
+}
+
+void setShowSplash(bool enable) {
+    isShowSplash = enable;
+}
+
+void setNullGpu(bool enable) {
+    isNullGpu = enable;
+}
+
+void setDumpShaders(bool enable) {
+    shouldDumpShaders = enable;
+}
+
+void setDumpPM4(bool enable) {
+    shouldDumpPM4 = enable;
+}
+
+void setVkValidation(bool enable) {
+    vkValidation = enable;
+}
+
+void setVkSyncValidation(bool enable) {
+    vkValidationSync = enable;
+}
+
+void setRdocEnabled(bool enable) {
+    rdocEnable = enable;
+}
+
+void setVblankDiv(u32 value) {
+    vblankDivider = value;
+}
+
+void setFullscreenMode(bool enable) {
+    isFullscreen = enable;
+}
+
+void setLanguage(u32 language) {
+    m_language = language;
+}
+
+void setNeoMode(bool enable) {
+    isNeo = enable;
+}
+
+void setLogType(std::string type) {
+    logType = type;
+}
+
+void setLogFilter(std::string type) {
+    logFilter = type;
+}
+
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_x = x;
     main_window_geometry_y = y;
@@ -356,4 +420,23 @@ void save(const std::filesystem::path& path) {
     file << data;
     file.close();
 }
+
+void setDefaultValues() {
+    isNeo = false;
+    isFullscreen = false;
+    screenWidth = 1280;
+    screenHeight = 720;
+    logFilter = "";
+    logType = "async";
+    isDebugDump = false;
+    isShowSplash = false;
+    isNullGpu = false;
+    shouldDumpShaders = false;
+    shouldDumpPM4 = false;
+    vblankDivider = 1;
+    vkValidation = false;
+    rdocEnable = false;
+    m_language = 1;
+}
+
 } // namespace Config

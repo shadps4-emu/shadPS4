@@ -103,6 +103,8 @@ if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
 endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
@@ -546,10 +548,13 @@ set(QT_GUI
     src/qt_gui/elf_viewer.h
     src/qt_gui/main_window_themes.cpp
     src/qt_gui/main_window_themes.h
+    src/qt_gui/settings_dialog.cpp
+    src/qt_gui/settings_dialog.h
+    src/qt_gui/settings_dialog.ui
     src/qt_gui/main.cpp
     ${EMULATOR}
     ${RESOURCE_FILES}
-    )
+)
 endif()
 
 if (ENABLE_QT_GUI)
