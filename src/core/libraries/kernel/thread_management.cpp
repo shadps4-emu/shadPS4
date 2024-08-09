@@ -434,7 +434,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
         if (*mutex_attr == nullptr) {
             attr = g_pthread_cxt->getDefaultMutexattr();
         } else {
-            attr = *mutex_attr;
+            attr = mutex_attr;
         }
     }
 
