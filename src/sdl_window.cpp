@@ -11,6 +11,7 @@
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+#include "sdl_window_manager.h"
 #include "video_core/renderdoc.h"
 
 #ifdef __APPLE__
@@ -264,6 +265,11 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
         break;
     case SDLK_SPACE:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+        break;
+    case SDLK_ESCAPE:
+        if (event->type == SDL_EVENT_KEY_UP) {
+            Frontend::QuitAllSDLWindows();
+        }
         break;
     default:
         break;
