@@ -54,7 +54,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
 
     // Add the allocated region to the list and commit its pages.
-    auto& area = CarveDmemArea(free_addr, size);
+    auto& area = CarveDmemArea(free_addr, size)->second;
     area.memory_type = memory_type;
     area.is_free = false;
     return free_addr;
@@ -63,9 +63,8 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
 void MemoryManager::Free(PAddr phys_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    const auto dmem_area = FindDmemArea(phys_addr);
-    ASSERT(dmem_area != dmem_map.end() && dmem_area->second.base == phys_addr &&
-           dmem_area->second.size == size);
+    auto dmem_area = CarveDmemArea(phys_addr, size);
+    ASSERT(dmem_area != dmem_map.end() && dmem_area->second.size >= size);
 
     // Release any dmem mappings that reference this physical block.
     std::vector<std::pair<VAddr, u64>> remove_list;
@@ -74,10 +73,11 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
             continue;
         }
         if (mapping.phys_base <= phys_addr && phys_addr < mapping.phys_base + mapping.size) {
-            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}", addr,
-                     mapping.size);
+            auto vma_segment_start_addr = phys_addr - mapping.phys_base + addr;
+            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}",
+                     vma_segment_start_addr, size);
             // Unmaping might erase from vma_map. We can't do it here.
-            remove_list.emplace_back(addr, mapping.size);
+            remove_list.emplace_back(vma_segment_start_addr, size);
         }
     }
     for (const auto& [addr, size] : remove_list) {
@@ -104,8 +104,6 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
         const auto& vma = FindVMA(mapped_addr)->second;
         // If the VMA is mapped, unmap the region first.
         if (vma.IsMapped()) {
-            ASSERT_MSG(vma.base == mapped_addr && vma.size == size,
-                       "Region must match when reserving a mapped region");
             UnmapMemory(mapped_addr, size);
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
@@ -169,6 +167,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     new_vma.prot = prot;
     new_vma.name = name;
     new_vma.type = type;
+    new_vma.is_exec = is_exec;
 
     if (type == VMAType::Direct) {
         new_vma.phys_base = phys_addr;
@@ -216,10 +215,16 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
     const auto it = FindVMA(virtual_addr);
-    ASSERT_MSG(it->second.Contains(virtual_addr, size),
+    const auto& vma_base = it->second;
+    ASSERT_MSG(vma_base.Contains(virtual_addr, size),
                "Existing mapping does not contain requested unmap range");
 
-    const auto type = it->second.type;
+    const auto vma_base_addr = vma_base.base;
+    const auto vma_base_size = vma_base.size;
+    const auto phys_base = vma_base.phys_base;
+    const bool is_exec = vma_base.is_exec;
+    const auto start_in_vma = virtual_addr - vma_base_addr;
+    const auto type = vma_base.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
     if (type == VMAType::Direct) {
         rasterizer->UnmapMemory(virtual_addr, size);
@@ -239,7 +244,8 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
-    impl.Unmap(virtual_addr, size, has_backing);
+    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
+               has_backing);
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
@@ -397,13 +403,12 @@ MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size
     return vma_handle;
 }
 
-DirectMemoryArea& MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
+MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
     auto dmem_handle = FindDmemArea(addr);
     ASSERT_MSG(dmem_handle != dmem_map.end(), "Physical address not in dmem_map");
 
     const DirectMemoryArea& area = dmem_handle->second;
-    ASSERT_MSG(area.is_free && area.base <= addr,
-               "Adding an allocation to already allocated region");
+    ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
 
     const PAddr start_in_area = addr - area.base;
     const PAddr end_in_vma = start_in_area + size;
@@ -418,7 +423,7 @@ DirectMemoryArea& MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
         dmem_handle = Split(dmem_handle, start_in_area);
     }
 
-    return dmem_handle->second;
+    return dmem_handle;
 }
 
 MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, size_t offset_in_vma) {
