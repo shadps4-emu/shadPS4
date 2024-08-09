@@ -248,6 +248,19 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
+std::pair<const Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
+    const u64 page = gpu_addr >> CACHING_PAGEBITS;
+    const BufferId buffer_id = page_table[page];
+    if (buffer_id) {
+        const Buffer& buffer = slot_buffers[buffer_id];
+        if (buffer.IsInBounds(gpu_addr, size)) {
+            return {&buffer, buffer.Offset(gpu_addr)};
+        }
+    }
+    const u32 offset = staging_buffer.Copy(gpu_addr, size, 16);
+    return {&staging_buffer, offset};
+}
+
 bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     const VAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
@@ -270,6 +283,10 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
     return memory_tracker.IsRegionCpuModified(addr, size);
+}
+
+bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
+    return memory_tracker.IsRegionGpuModified(addr, size);
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
