@@ -64,4 +64,7 @@ std::vector<std::string> getPkgViewer();
 std::vector<std::string> getElfViewer();
 std::vector<std::string> getRecentFiles();
 
+// settings
+u32 GetLanguage();
+
 }; // namespace Config

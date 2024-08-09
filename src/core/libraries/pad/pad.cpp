@@ -251,9 +251,6 @@ int PS4_SYSV_ABI scePadOutputReport() {
 }
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
-    if (handle != 1) {
-        UNREACHABLE_MSG("unknown handle");
-    }
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
@@ -320,9 +317,6 @@ int PS4_SYSV_ABI scePadReadHistory() {
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     auto* controller = Common::Singleton<Input::GameController>::Instance();
-    if (handle != 1) {
-        UNREACHABLE_MSG("unknown handle");
-    }
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;

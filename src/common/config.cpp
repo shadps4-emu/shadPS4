@@ -43,6 +43,8 @@ u32 m_window_size_H = 720;
 std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
+// Settings
+u32 m_language = 1; // english
 
 bool isLleLibc() {
     return isLibc;
@@ -207,6 +209,9 @@ std::vector<std::string> getRecentFiles() {
     return m_recent_files;
 }
 
+u32 GetLanguage() {
+    return m_language;
+}
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -285,6 +290,12 @@ void load(const std::filesystem::path& path) {
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
     }
+
+    if (data.contains("Settings")) {
+        const toml::value& settings = data.at("Settings");
+
+        m_language = toml::find_or<int>(settings, "language", 1);
+    }
 }
 void save(const std::filesystem::path& path) {
     toml::value data;
@@ -338,6 +349,8 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
+
+    data["Settings"]["language"] = m_language;
 
     std::ofstream file(path, std::ios::out);
     file << data;
