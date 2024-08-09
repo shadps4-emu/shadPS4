@@ -17,7 +17,7 @@ endif()
 
 project(shadPS4)
 
-option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
+option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" ON)
 
 # This function should be passed a list of all files in a target. It will automatically generate file groups
 # following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
