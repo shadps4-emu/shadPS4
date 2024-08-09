@@ -6,12 +6,11 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/address_space.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/linker.h"
 #include "core/memory.h"
-#include "core/address_space.h"
-
 
 namespace Libraries::Kernel {
 

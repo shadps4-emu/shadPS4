@@ -279,7 +279,7 @@ int MemoryManager::MProtect(VAddr addr, size_t size, int prot) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-// Check if the new protection flags are valid.
+    // Check if the new protection flags are valid.
     if ((static_cast<int>(prot) &
          ~(static_cast<int>(MemoryProt::NoAccess) | static_cast<int>(MemoryProt::CpuRead) |
            static_cast<int>(MemoryProt::CpuReadWrite) | static_cast<int>(MemoryProt::GpuRead) |
@@ -313,7 +313,6 @@ int MemoryManager::MProtect(VAddr addr, size_t size, int prot) {
 int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot) {
     std::scoped_lock lk{mutex};
 
-
     // Find the virtual memory area that contains the specified address range.
     auto it = FindVMA(addr);
     if (it == vma_map.end() || !it->second.Contains(addr, size)) {
@@ -322,7 +321,6 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot
     }
 
     VirtualMemoryArea& vma = it->second;
-
 
     if (vma.type == VMAType::Free) {
         LOG_ERROR(Core, "Cannot change protection on free memory region");
@@ -360,9 +358,6 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot
 
     return ORBIS_OK;
 }
-
-
-
 
 int MemoryManager::VirtualQuery(VAddr addr, int flags,
                                 ::Libraries::Kernel::OrbisVirtualQueryInfo* info) {
