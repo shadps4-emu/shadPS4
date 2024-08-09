@@ -401,6 +401,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
         for (const auto& sampler : stage.samplers) {
             auto ssharp = sampler.GetSsharp(stage);
+            if (ssharp.force_degamma) {
+                LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
+            }
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {

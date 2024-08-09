@@ -27,10 +27,12 @@ bool nullGpu();
 bool dumpShaders();
 bool dumpPM4();
 bool isRdocEnabled();
+bool isMarkersEnabled();
 u32 vblankDiv();
 
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
+bool vkValidationGpuEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);

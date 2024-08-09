@@ -376,9 +376,11 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
         return -1;
     }
     // We have found this pattern. Build the sharp.
-    std::array<u64, 2> buffer;
+    std::array<u32, 4> buffer;
     buffer[0] = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
-    buffer[1] = handle->Arg(2).U32() | handle->Arg(3).U64() << 32;
+    buffer[1] = 0;
+    buffer[2] = handle->Arg(2).U32();
+    buffer[3] = handle->Arg(3).U32();
     cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
     // Assign a binding to this sharp.
     return descriptors.Add(BufferResource{

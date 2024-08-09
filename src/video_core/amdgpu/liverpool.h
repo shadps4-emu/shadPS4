@@ -766,7 +766,7 @@ struct Liverpool {
         }
 
         TilingMode GetTilingMode() const {
-            return attrib.tile_mode_index;
+            return info.linear_general ? TilingMode::Display_Linear : attrib.tile_mode_index;
         }
 
         bool IsTiled() const {
@@ -994,6 +994,11 @@ struct Liverpool {
     std::array<CbDbExtent, NumColorBuffers> last_cb_extent{};
     CbDbExtent last_db_extent{};
 
+    enum class GpuThreadCommand : u32 {
+        Nop,       /// Do nothing, just wake up the thread.
+        FlipRelay, /// Flush the scheduler and issue a flip request to VideoOut driver
+    };
+
 public:
     Liverpool();
     ~Liverpool();
@@ -1022,6 +1027,13 @@ public:
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
+    }
+
+    void SendCommand(GpuThreadCommand cmd) {
+        std::scoped_lock lk{submit_mutex};
+        command_queue.push(cmd);
+        ++num_commands;
+        submit_cv.notify_one();
     }
 
 private:
@@ -1092,9 +1104,11 @@ private:
     Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
+    std::queue<GpuThreadCommand> command_queue{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

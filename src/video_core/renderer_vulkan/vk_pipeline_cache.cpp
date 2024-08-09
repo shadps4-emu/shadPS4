@@ -188,6 +188,7 @@ void PipelineCache::RefreshGraphicsKey() {
         if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
             continue;
         }
+
         const auto base_format =
             LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
         const auto is_vo_surface = renderer->IsVideoOutSurface(col_buf);

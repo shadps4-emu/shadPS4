@@ -96,6 +96,10 @@ void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;
 
+    if (regs.color_control.degamma_enable) {
+        LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
+    }
+
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
         if (!col_buf) {
@@ -152,7 +156,8 @@ void Rasterizer::BeginRendering() {
                                                           .stencil = regs.stencil_clear}},
         };
         texture_cache.TouchMeta(htile_address, false);
-        state.num_depth_attachments++;
+        state.has_depth = true;
+        state.has_stencil = image.info.usage.stencil;
     }
     scheduler.BeginRendering(state);
 }
@@ -230,16 +235,42 @@ void Rasterizer::UpdateDepthStencilState() {
     cmdbuf.setDepthBoundsTestEnable(depth.depth_bounds_enable);
 }
 
-void Rasterizer::ScopeMarkerBegin(const std::string& str) {
+void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
+    if (!Config::isMarkersEnabled()) {
+        return;
+    }
+
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
-        .pLabelName = str.c_str(),
+        .pLabelName = str.data(),
     });
 }
 
 void Rasterizer::ScopeMarkerEnd() {
+    if (!Config::isMarkersEnabled()) {
+        return;
+    }
+
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.endDebugUtilsLabelEXT();
+}
+
+void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
+    if (!Config::isMarkersEnabled()) {
+        return;
+    }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+        .pLabelName = str.data(),
+    });
+}
+
+void Rasterizer::Breadcrumb(u64 id) {
+    if (!instance.HasNvCheckpoints()) {
+        return;
+    }
+    scheduler.CommandBuffer().setCheckpointNV(id);
 }
 
 } // namespace Vulkan

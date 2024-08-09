@@ -92,6 +92,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
                              bool is_vo_surface) noexcept {
     const auto base_format =
         Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
+    range.base.layer = col_buffer.view.slice_start;
+    range.extent.layers = col_buffer.NumSlices();
     format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(
         base_format, col_buffer.info.comp_swap.Value(), is_vo_surface);
 }

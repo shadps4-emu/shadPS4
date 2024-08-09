@@ -29,6 +29,17 @@ struct ImageInfo {
     bool IsPacked() const;
     bool IsDepthStencil() const;
 
+    bool IsMipOf(const ImageInfo& info) const;
+    bool IsSliceOf(const ImageInfo& info) const;
+
+    /// Verifies if images are compatible for subresource merging.
+    bool IsCompatible(const ImageInfo& info) const {
+        return (pixel_format == info.pixel_format && tiling_idx == info.tiling_idx &&
+                num_samples == info.num_samples && num_bits == info.num_bits);
+    }
+
+    void UpdateSize();
+
     struct {
         VAddr cmask_addr;
         VAddr fmask_addr;
@@ -69,6 +80,7 @@ struct ImageInfo {
     boost::container::small_vector<MipInfo, 14> mips_layout;
     VAddr guest_address{0};
     u32 guest_size_bytes{0};
+    u32 tiling_idx{0}; // TODO: merge with existing!
 };
 
 } // namespace VideoCore

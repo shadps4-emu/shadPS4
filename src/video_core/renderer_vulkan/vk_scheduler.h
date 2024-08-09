@@ -20,7 +20,8 @@ struct RenderState {
     vk::RenderingAttachmentInfo depth_attachment{};
     vk::Image depth_image{};
     u32 num_color_attachments{};
-    u32 num_depth_attachments{};
+    bool has_depth{};
+    bool has_stencil{};
     u32 width = std::numeric_limits<u32>::max();
     u32 height = std::numeric_limits<u32>::max();
 

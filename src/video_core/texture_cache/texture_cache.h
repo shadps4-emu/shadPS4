@@ -44,7 +44,7 @@ public:
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info, bool refresh_on_create = true);
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
     [[nodiscard]] ImageView& FindTexture(const ImageInfo& image_info,
@@ -58,8 +58,25 @@ public:
     [[nodiscard]] ImageView& FindDepthTarget(const ImageInfo& image_info,
                                              const ImageViewInfo& view_info);
 
+    [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
+                                         ImageId merged_image_id);
+
+    [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
+
+    /// Updates image contents if it was modified by CPU.
+    void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
+        Image& image = slot_images[image_id];
+
+        if (False(image.flags & ImageFlagBits::CpuModified)) {
+            return;
+        }
+
+        RefreshImage(image, custom_scheduler);
+        TrackImage(image_id);
+    }
+
     /// Reuploads image contents.
-    void RefreshImage(Image& image);
+    void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
@@ -157,13 +174,19 @@ private:
     void UnregisterImage(ImageId image);
 
     /// Track CPU reads and writes for image
-    void TrackImage(Image& image, ImageId image_id);
+    void TrackImage(ImageId image_id);
 
     /// Stop tracking CPU reads and writes for image
-    void UntrackImage(Image& image, ImageId image_id);
+    void UntrackImage(ImageId image_id);
 
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
+
+    void FreeImage(ImageId image_id) {
+        UntrackImage(image_id);
+        UnregisterImage(image_id);
+        DeleteImage(image_id);
+    }
 
 private:
     const Vulkan::Instance& instance;
