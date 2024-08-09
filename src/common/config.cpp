@@ -294,7 +294,7 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
 
-        m_language = toml::find_or<int>(settings, "language", 1);
+        m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
 }
 void save(const std::filesystem::path& path) {
@@ -350,7 +350,7 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 
-    data["Settings"]["language"] = m_language;
+    data["Settings"]["consoleLanguage"] = m_language;
 
     std::ofstream file(path, std::ios::out);
     file << data;
