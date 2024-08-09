@@ -1898,7 +1898,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(int param_id, int* value) {
     }
     switch (param_id) {
     case ORBIS_SYSTEM_SERVICE_PARAM_ID_LANG:
-        *value = ORBIS_SYSTEM_PARAM_LANG_ENGLISH_US;
+        *value = Config::GetLanguage();
         break;
     case ORBIS_SYSTEM_SERVICE_PARAM_ID_DATE_FORMAT:
         *value = ORBIS_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY;
