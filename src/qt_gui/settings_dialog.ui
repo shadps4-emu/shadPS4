@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
+
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -54,31 +57,182 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
-      <widget class="QWidget" name="gpuTab">
+      <widget class="QWidget" name="emulatorTab">
        <attribute name="title">
-        <string>GPU</string>
+        <string>Emulator</string>
        </attribute>
-       <layout class="QVBoxLayout" name="gpuTabLayout" stretch="0,0">
+       <layout class="QVBoxLayout" name="emulatorTabVLayout" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="gpuTabLayout" stretch="1,1,1">
+         <layout class="QHBoxLayout" name="emulatorTabHLayout" stretch="1,1,1">
           <item>
-           <layout class="QVBoxLayout" name="gpuTabLayoutLeft">
+           <layout class="QVBoxLayout" name="emulatorTabLayoutLeft">
             <item>
-             <widget class="QGroupBox" name="graphicsAdapterGroupBox">
+             <widget class="QGroupBox" name="consoleLanguageGroupBox">
               <property name="title">
-               <string>Graphics Device</string>
+               <string>Console Language</string>
               </property>
-              <layout class="QVBoxLayout" name="graphicsAdapterLayout">
+              <layout class="QVBoxLayout" name="settingsLayout">
                <item>
-                <widget class="QComboBox" name="graphicsAdapterBox"/>
+                <widget class="QComboBox" name="consoleLanguageComboBox">
+                 <item>
+                  <property name="text">
+                   <string>Japanese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>English (United States)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>French (France)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Spanish (Spain)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>German</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Italian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Dutch</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Portuguese (Portugal)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Russian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Korean</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Traditional Chinese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Simplified Chinese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Finnish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Swedish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Danish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Norwegian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Polish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Portuguese (Brazil)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>English (United Kingdom)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Turkish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Spanish (Latin America)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Arabic</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>French (Canada)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Czech</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Hungarian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Greek</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Romanian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Thai</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Vietnamese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Indonesian</string>
+                  </property>
+                 </item>
+                </widget>
                </item>
               </layout>
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widgetGpuTop" native="true">
+             <widget class="QWidget" name="widgetSettingsTop" native="true">
               <layout class="QHBoxLayout" name="widgetGpuTopLayout">
                <property name="leftMargin">
                 <number>0</number>
@@ -96,8 +250,116 @@
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widgetGpuBottom" native="true">
+             <widget class="QWidget" name="widgetSettingsBottom" native="true">
               <layout class="QHBoxLayout" name="widgetGpuBottomLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="emulator_tab_layout_right_spacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle_2"/>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutRight">
+            <property name="rightMargin">
+             <number>12</number>
+            </property>
+            <property name="bottomMargin">
+             <number>12</number>
+            </property>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="emulatorTabSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="gpuTab">
+       <attribute name="title">
+        <string>GPU</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="gpuTabVLayout" stretch="0,0">
+        <item>
+         <layout class="QHBoxLayout" name="gpuTabHLayout" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="gpuTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="graphicsAdapterGroupBox">
+              <property name="title">
+               <string>Graphics Device</string>
+              </property>
+              <layout class="QVBoxLayout" name="graphicsAdapterLayout">
+               <item>
+                <widget class="QComboBox" name="graphicsAdapterBox"/>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetGpuTop" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuTopHLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetGpuBottom" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuBottomHLayout">
                <property name="leftMargin">
                 <number>0</number>
                </property>
@@ -294,7 +556,7 @@
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
-              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+              <layout class="QVBoxLayout" name="additionalSettingsLayout">
                <item>
                 <widget class="QCheckBox" name="dumpShadersCheckBox">
                  <property name="text">

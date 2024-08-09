@@ -38,6 +38,7 @@ void setVblankDiv(u32 value);
 void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
+void setLanguage(u32 language);
 void setNeoMode(bool enable);
 
 void setLogType(std::string type);

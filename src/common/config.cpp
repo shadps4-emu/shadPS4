@@ -162,6 +162,10 @@ void setFullscreenMode(bool enable) {
     isFullscreen = enable;
 }
 
+void setLanguage(u32 language) {
+    m_language = language;
+}
+
 void setNeoMode(bool enable) {
     isNeo = enable;
 }
@@ -432,6 +436,7 @@ void setDefaultValues() {
     vblankDivider = 1;
     vkValidation = false;
     rdocEnable = false;
+    m_language = 1;
 }
 
 } // namespace Config

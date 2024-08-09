@@ -32,6 +32,12 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Se
         ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
     });
 
+    // EMULATOR TAB
+    {
+        connect(ui->consoleLanguageComboBox, &QComboBox::currentIndexChanged, this,
+                [](int index) { Config::setLanguage(index); });
+    }
+
     // GPU TAB
     {
         // TODO: Implement graphics device changing
@@ -90,6 +96,8 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Se
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
+    ui->consoleLanguageComboBox->setCurrentIndex(Config::GetLanguage());
+
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
     ui->vblankSpinBox->setValue(Config::vblankDiv());
