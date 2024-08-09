@@ -45,21 +45,21 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
-    window_info.render_surface =
-        SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    window_info.render_surface = SDL_GetPointerProperty(SDL_GetWindowProperties(window),
+                                                        SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
 #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
         window_info.type = WindowSystemType::X11;
-        window_info.display_connection = SDL_GetProperty(SDL_GetWindowProperties(window),
-                                                         SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        window_info.display_connection = SDL_GetPointerProperty(
+            SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
         window_info.render_surface = (void*)SDL_GetNumberProperty(
             SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     } else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
         window_info.type = WindowSystemType::Wayland;
-        window_info.display_connection = SDL_GetProperty(
+        window_info.display_connection = SDL_GetPointerProperty(
             SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
-        window_info.render_surface = SDL_GetProperty(SDL_GetWindowProperties(window),
-                                                     SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+        window_info.render_surface = SDL_GetPointerProperty(
+            SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     }
 #elif defined(SDL_PLATFORM_MACOS)
     window_info.type = WindowSystemType::Metal;
