@@ -8,6 +8,7 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
@@ -87,6 +88,15 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
 }
 
 bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
+    boost::container::small_vector<vk::VertexInputAttributeDescription2EXT, 16> attributes;
+    boost::container::small_vector<vk::VertexInputBindingDescription2EXT, 16> bindings;
+    SCOPE_EXIT {
+        if (instance.IsVertexInputDynamicState()) {
+            const auto cmdbuf = scheduler.CommandBuffer();
+            cmdbuf.setVertexInputEXT(bindings, attributes);
+        }
+    };
+
     if (vs_info.vs_inputs.empty()) {
         return false;
     }
@@ -122,6 +132,20 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
         guest_buffers.emplace_back(buffer);
         ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
+        attributes.push_back({
+            .location = input.binding,
+            .binding = input.binding,
+            .format = Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+            .offset = 0,
+        });
+        bindings.push_back({
+            .binding = input.binding,
+            .stride = buffer.GetStride(),
+            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+                             ? vk::VertexInputRate::eVertex
+                             : vk::VertexInputRate::eInstance,
+            .divisor = 1,
+        });
     }
 
     std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {

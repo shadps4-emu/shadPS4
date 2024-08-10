@@ -202,6 +202,8 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
+    vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
@@ -319,6 +321,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceSynchronization2Features{
             .synchronization2 = true,
         },
+        vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
+            .vertexInputDynamicState = true,
+        },
     };
 
     if (!color_write_en) {
@@ -331,8 +336,8 @@ bool Instance::CreateDevice() {
     } else {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
-    if (!has_sync2) {
-        device_chain.unlink<vk::PhysicalDeviceSynchronization2Features>();
+    if (!vertex_input_dynamic_state) {
+        device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
     }
 
     try {
