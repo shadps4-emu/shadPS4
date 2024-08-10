@@ -165,14 +165,18 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     throw InvalidArgument("Invalid attribute type {}", fmt);
 }
 
-Id EmitContext::GetBufferOffset(u32 binding) {
-    const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
-    const u32 comp = (binding & 0xf) >> 2;
-    const u32 offset = (binding & 0x3) << 3;
-    const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                               push_data_block, ConstU32(half), ConstU32(comp))};
-    const Id value{OpLoad(U32[1], ptr)};
-    return OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+void EmitContext::DefineBufferOffsets() {
+    for (auto& buffer : buffers) {
+        const u32 binding = buffer.binding;
+        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
+        buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+        buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
+    }
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -354,7 +358,7 @@ void EmitContext::DefineBuffers() {
 
         buffers.push_back({
             .id = id,
-            .global_binding = binding++,
+            .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
             .buffer = buffer.GetVsharp(info),
