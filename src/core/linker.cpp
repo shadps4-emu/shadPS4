@@ -305,7 +305,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         // Module was just loaded by above code. Allocate TLS block for it.
         Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest = reinterpret_cast<u8*>(heap_api_func(module->tls.image_size));
+        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -335,8 +335,8 @@ void Linker::InitTlsForThread(bool is_primary) {
             &addr_out, tls_aligned, 3, 0, "SceKernelPrimaryTcbTls");
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
-        if (heap_api_func) {
-            addr_out = heap_api_func(total_tls_size);
+        if (heap_api) {
+            addr_out = heap_api->heap_malloc(total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
         }
