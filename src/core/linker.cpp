@@ -336,9 +336,17 @@ void Linker::InitTlsForThread(bool is_primary) {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
-            addr_out = heap_api->heap_malloc(total_tls_size);
-        } else {
+            LOG_ERROR(Core_Linker, "TLS user malloc called, using std::malloc");
+            // TODO: ref rtld_tls_block_malloc, tls malloc replacement
+            //addr_out = heap_api->heap_malloc(total_tls_size);
             addr_out = std::malloc(total_tls_size);
+            if (!addr_out) {
+                auto pth_id = pthread_self();
+                auto handle = pthread_gethandle(pth_id);
+                ASSERT_MSG(addr_out,
+                           "Cannot allocate TLS block defined for handle=%x, index=%d size=%d",
+                           handle, pth_id, total_tls_size);
+            }
         }
     }
 
