@@ -168,7 +168,7 @@ void MainWindow::GetPhysicalDevices() {
             auto prop = physical_device.getProperties();
             QString name = QString::fromUtf8(prop.deviceName, -1);
             if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
-                name += " * Unsupported API Version";
+                name += " * Unsupported Vulkan Version";
             }
             m_physical_devices.push_back(name);
         }
