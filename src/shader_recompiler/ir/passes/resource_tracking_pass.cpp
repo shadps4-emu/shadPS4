@@ -593,7 +593,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
                inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ||
                inst.GetOpcode() == IR::Opcode::ImageSampleDrefExplicitLod);
         const u32 pos = inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ? 2 : 3;
-        inst.SetArg(pos, arg);
+        const IR::Value value = inst_info.force_level0 ? ir.Imm32(0.f) : arg;
+        inst.SetArg(pos, value);
     }
 }
 

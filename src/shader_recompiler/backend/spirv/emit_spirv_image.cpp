@@ -53,13 +53,13 @@ Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, 
 }
 
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, Id offset) {
+                                  Id lod, Id offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     return ctx.OpImageSampleDrefExplicitLod(ctx.F32[1], sampled_image, coords, dref,
-                                            spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
+                                            spv::ImageOperandsMask::Lod, lod);
 }
 
 Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2) {
