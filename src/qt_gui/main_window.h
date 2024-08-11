@@ -81,7 +81,7 @@ private:
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
     // Available GPU devices
-	std::vector<QString> m_physical_devices;
+    std::vector<QString> m_physical_devices;
 
 
     PSF psf;
