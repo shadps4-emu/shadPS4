@@ -4,7 +4,7 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-SettingsDialog::SettingsDialog(QWidget* parent, std::vector<QString>* physical_devices) 
+SettingsDialog::SettingsDialog(QWidget* parent, std::vector<QString>* physical_devices)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);

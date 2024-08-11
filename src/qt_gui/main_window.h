@@ -83,7 +83,6 @@ private:
     // Available GPU devices
     std::vector<QString> m_physical_devices;
 
-
     PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
