@@ -3,14 +3,19 @@
 
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
-#include "video_core/renderer_vulkan/vk_instance.h"
 
-SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::SettingsDialog) {
+SettingsDialog::SettingsDialog(QWidget* parent, std::vector<QString>* physical_devices) : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
+
+    // Add list of available GPUs
+    ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
+    for (auto device = physical_devices->begin(); device != physical_devices->end(); ++device) {
+        ui->graphicsAdapterBox->addItem(*device);
+    }
 
     LoadValuesFromConfig();
 
@@ -101,15 +106,6 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Se
 
 void SettingsDialog::LoadValuesFromConfig() {
     ui->consoleLanguageComboBox->setCurrentIndex(Config::GetLanguage());
-
-    // Add list of available GPUs
-    ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
-    Vulkan::Instance instance(false, false);
-    auto physical_devices = instance.GetPhysicalDevices();
-    for (const vk::PhysicalDevice physical_device : physical_devices) {
-        const QString name = QString::fromUtf8(physical_device.getProperties().deviceName, -1);
-        ui->graphicsAdapterBox->addItem(name);
-    }
 
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());

@@ -16,6 +16,7 @@
 #include "game_install_dialog.h"
 #include "main_window.h"
 #include "settings_dialog.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -39,6 +40,7 @@ bool MainWindow::Init() {
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
+    GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -158,6 +160,17 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::GetPhysicalDevices() {
+    if (m_physical_devices.size() == 0) {
+        Vulkan::Instance instance(false, false);
+        auto physical_devices = instance.GetPhysicalDevices();
+        for (const vk::PhysicalDevice physical_device : physical_devices) {
+            const QString name = QString::fromUtf8(physical_device.getProperties().deviceName, -1);
+            m_physical_devices.push_back(name);
+        }
+    }
+}
+
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
@@ -187,7 +200,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(this);
+        auto settingsDialog = new SettingsDialog(this, &m_physical_devices);
         settingsDialog->exec();
     });
 

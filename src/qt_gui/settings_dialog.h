@@ -16,7 +16,8 @@ class SettingsDialog;
 class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit SettingsDialog(QWidget* parent = nullptr,
+                            std::vector<QString>* physical_devices = nullptr);
     ~SettingsDialog();
 
     int exec() override;
