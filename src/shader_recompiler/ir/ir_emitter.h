@@ -242,18 +242,18 @@ public:
                                             const Value& value, TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
-                                               const F32& bias, const Value& offset,
+                                               const F32& bias, const U32& offset,
                                                TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& body,
-                                               const Value& offset, TextureInstInfo info);
+                                               const U32& offset, TextureInstInfo info);
 
     [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
                                                  const F32& dref, const F32& bias,
-                                                 const Value& offset, TextureInstInfo info);
+                                                 const U32& offset, TextureInstInfo info);
 
     [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
-                                                 const F32& dref, const Value& offset,
+                                                 const F32& dref, const U32& offset,
                                                  TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,

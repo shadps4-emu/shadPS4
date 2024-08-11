@@ -1375,24 +1375,24 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
-                                        const Value& offset, TextureInstInfo info) {
+                                        const U32& offset, TextureInstInfo info) {
     return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const Value& offset,
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
                                         TextureInstInfo info) {
     return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, offset);
 }
 
 F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const F32& bias, const Value& offset,
+                                          const F32& bias, const U32& offset,
                                           TextureInstInfo info) {
     return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
                      offset);
 }
 
 F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
-                                          const Value& offset, TextureInstInfo info) {
+                                          const U32& offset, TextureInstInfo info) {
     return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, offset);
 }
 

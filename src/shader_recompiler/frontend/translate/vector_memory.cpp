@@ -135,8 +135,8 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
 
     // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
     // Set Architecture
-    const IR::Value offset =
-        flags.test(MimgModifier::Offset) ? ir.GetVectorReg(addr_reg++) : IR::Value{};
+    const IR::U32 offset =
+        flags.test(MimgModifier::Offset) ? ir.GetVectorReg<IR::U32>(addr_reg++) : IR::U32{};
     const IR::F32 bias =
         flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
     const IR::F32 dref =

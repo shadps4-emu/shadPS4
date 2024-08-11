@@ -567,19 +567,36 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_offset) {
         // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
-        const bool is_gather = inst.GetOpcode() == IR::Opcode::ImageGather ||
-                               inst.GetOpcode() == IR::Opcode::ImageGatherDref;
-        const u32 arg_pos = is_gather ? 2 : (inst_info.is_depth ? 4 : 3);
+        const bool is_second = inst.GetOpcode() == IR::Opcode::ImageGather ||
+                               inst.GetOpcode() == IR::Opcode::ImageGatherDref ||
+                               inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ||
+                               inst.GetOpcode() == IR::Opcode::ImageSampleDrefExplicitLod;
+        const u32 arg_pos = [&]() -> u32 {
+            switch (inst.GetOpcode()) {
+            case IR::Opcode::ImageGather:
+            case IR::Opcode::ImageGatherDref:
+            case IR::Opcode::ImageSampleExplicitLod:
+                return 2;
+            case IR::Opcode::ImageSampleImplicitLod:
+            case IR::Opcode::ImageSampleDrefExplicitLod:
+                return 3;
+            case IR::Opcode::ImageSampleDrefImplicitLod:
+                return 4;
+            default:
+                break;
+            }
+            return inst_info.is_depth ? 4 : 3;
+        }();
         const IR::Value arg = inst.Arg(arg_pos);
         ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
-        const auto sign_ext = [&](u32 value) { return ir.Imm32(s32(value << 24) >> 24); };
-        union {
-            u32 raw;
-            BitField<0, 6, u32> x;
-            BitField<8, 6, u32> y;
-            BitField<16, 6, u32> z;
-        } offset{arg.U32()};
-        const IR::Value value = ir.CompositeConstruct(sign_ext(offset.x), sign_ext(offset.y));
+        const auto f = [&](IR::Value value, u32 offset) -> auto {
+            return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(offset), ir.Imm32(6), true);
+        };
+
+        const auto x = f(arg, 0);
+        const auto y = f(arg, 6);
+        const auto z = f(arg, 16);
+        const IR::Value value = ir.CompositeConstruct(x, y, z);
         inst.SetArg(arg_pos, value);
     }
 
