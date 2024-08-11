@@ -165,7 +165,11 @@ void MainWindow::GetPhysicalDevices() {
         Vulkan::Instance instance(false, false);
         auto physical_devices = instance.GetPhysicalDevices();
         for (const vk::PhysicalDevice physical_device : physical_devices) {
-            const QString name = QString::fromUtf8(physical_device.getProperties().deviceName, -1);
+            auto prop = physical_device.getProperties();
+            QString name = QString::fromUtf8(prop.deviceName, -1);
+            if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
+                name += " * Unsupported API Version";
+            }
             m_physical_devices.push_back(name);
         }
     }
