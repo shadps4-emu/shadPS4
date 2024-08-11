@@ -338,7 +338,7 @@ void Linker::InitTlsForThread(bool is_primary) {
         if (heap_api) {
             LOG_ERROR(Core_Linker, "TLS user malloc called, using std::malloc");
             // TODO: ref rtld_tls_block_malloc, tls malloc replacement
-            //addr_out = heap_api->heap_malloc(total_tls_size);
+            // addr_out = heap_api->heap_malloc(total_tls_size);
             addr_out = std::malloc(total_tls_size);
             if (!addr_out) {
                 auto pth_id = pthread_self();
