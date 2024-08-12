@@ -164,7 +164,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceColorWriteEnableFeaturesEXT, vk::PhysicalDeviceVulkan12Features,
         vk::PhysicalDeviceVulkan13Features,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
+        vk::PhysicalDeviceDepthClipControlFeaturesEXT, vk::PhysicalDeviceRobustness2FeaturesEXT>();
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
         vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties>();
@@ -325,7 +325,10 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();
         device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
-    if (!robustness) {
+    if (robustness) {
+        device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =
+            feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor;
+    } else {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
     if (!has_sync2) {
