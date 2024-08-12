@@ -60,7 +60,7 @@ struct HeapAPI {
     PS4_SYSV_ABI size_t (*heap_malloc_usable_size)(void*);
 };
 
-typedef HeapAPI* AppHeapAPI;
+using AppHeapAPI = HeapAPI*;
 
 class Linker {
 public:

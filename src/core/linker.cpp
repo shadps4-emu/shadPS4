@@ -305,6 +305,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         // Module was just loaded by above code. Allocate TLS block for it.
         Module* module = m_modules[module_index - 1].get();
         const u32 init_image_size = module->tls.init_image_size;
+        // TODO: Determine if Windows will crash from this
         u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
@@ -336,9 +337,13 @@ void Linker::InitTlsForThread(bool is_primary) {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
+#ifndef WIN32
+            addr_out = heap_api->heap_malloc(total_tls_size);
+        } else {
+            addr_out = std::malloc(total_tls_size);
+#else
+            // TODO: Windows tls malloc replacement, refer to rtld_tls_block_malloc
             LOG_ERROR(Core_Linker, "TLS user malloc called, using std::malloc");
-            // TODO: ref rtld_tls_block_malloc, tls malloc replacement
-            // addr_out = heap_api->heap_malloc(total_tls_size);
             addr_out = std::malloc(total_tls_size);
             if (!addr_out) {
                 auto pth_id = pthread_self();
@@ -347,6 +352,7 @@ void Linker::InitTlsForThread(bool is_primary) {
                            "Cannot allocate TLS block defined for handle=%x, index=%d size=%d",
                            handle, pth_id, total_tls_size);
             }
+#endif
         }
     }
 
