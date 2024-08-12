@@ -49,8 +49,15 @@ struct EntryParams {
 struct HeapAPI {
     PS4_SYSV_ABI void* (*heap_malloc)(size_t);
     PS4_SYSV_ABI void (*heap_free)(void*);
-    PS4_SYSV_ABI void* unkn[4];
-    PS4_SYSV_ABI int (*posix_memalign)(size_t, void**, size_t);
+    PS4_SYSV_ABI void* (*heap_calloc)(size_t, size_t);
+    PS4_SYSV_ABI void* (*heap_realloc)(void*, size_t);
+    PS4_SYSV_ABI void* (*heap_memalign)(size_t, size_t);
+    PS4_SYSV_ABI int (*heap_posix_memalign)(void**, size_t, size_t);
+    // NOTE: Fields below may be inaccurate
+    PS4_SYSV_ABI int (*heap_reallocalign)(void);
+    PS4_SYSV_ABI void (*heap_malloc_stats)(void);
+    PS4_SYSV_ABI int (*heap_malloc_stats_fast)(void);
+    PS4_SYSV_ABI size_t (*heap_malloc_usable_size)(void*);
 };
 
 typedef HeapAPI* AppHeapAPI;
