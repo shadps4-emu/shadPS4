@@ -180,6 +180,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
                 break;
             }
+            case PM4CmdNop::PayloadType::DebugMarkerPush: {
+                const auto marker_sz = nop->header.count.Value() * 2;
+                const std::string_view label{reinterpret_cast<const char*>(&nop->data_block[1]),
+                                             marker_sz};
+                rasterizer->ScopeMarkerBegin(label);
+                break;
+            }
+            case PM4CmdNop::PayloadType::DebugMarkerPop: {
+                rasterizer->ScopeMarkerEnd();
+                break;
+            }
             default:
                 break;
             }
@@ -295,8 +306,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:DrawIndex2", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndex2", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(true);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -308,8 +320,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index_off->index_count;
             regs.draw_initiator = draw_index_off->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(fmt::format(
-                    "dcb:{}:DrawIndexOffset2", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexOffset2", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(true, draw_index_off->index_offset);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -320,8 +333,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:DrawIndexAuto", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexAuto", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(false);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -334,8 +348,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:Dispatch", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:Dispatch", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }
@@ -486,8 +501,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
-                rasterizer->ScopeMarkerBegin(fmt::format(
-                    "acb[{}]:{}:Dispatch", vqid, reinterpret_cast<const void*>(acb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }

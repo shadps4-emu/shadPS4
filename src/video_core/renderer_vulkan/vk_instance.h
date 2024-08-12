@@ -88,6 +88,10 @@ public:
         return profiler_context;
     }
 
+    bool HasNvCheckpoints() const {
+        return has_nv_checkpoints;
+    }
+
     /// Returns true when a known debugging tool is attached.
     bool HasDebuggingToolAttached() const {
         return has_renderdoc || has_nsight_graphics;
@@ -259,6 +263,7 @@ private:
     bool debug_utils_supported{};
     bool has_nsight_graphics{};
     bool has_renderdoc{};
+    bool has_nv_checkpoints{};
 };
 
 } // namespace Vulkan
