@@ -33,15 +33,13 @@ public:
     static int PS4_SYSV_ABI ReadOffsetFile(void* handle, u8* buffer, u64 position, u32 length);
     static u64 PS4_SYSV_ABI SizeFile(void* handle);
 
-    AvPlayer();
-
-    void Init(const SceAvPlayerInitData& data, const ThreadPriorities& priorities);
+    AvPlayer(const SceAvPlayerInitData& data, const ThreadPriorities& priorities);
 
     s32 PostInit(const SceAvPlayerPostInitData& data);
     s32 AddSource(std::string_view filename);
     s32 GetStreamCount();
     s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
-    s32 EnableStream(u32 stream_id);
+    s32 EnableStream(u32 stream_index);
     s32 Start();
     bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
     bool GetVideoData(SceAvPlayerFrameInfo& video_info);

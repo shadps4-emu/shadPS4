@@ -38,11 +38,13 @@ class FrameBuffer {
 public:
     FrameBuffer(const SceAvPlayerMemAllocator& memory_replacement, u32 align, u32 size) noexcept
         : m_memory_replacement(memory_replacement),
-          m_data(Allocate(memory_replacement, align, size), size) {}
+          m_data(Allocate(memory_replacement, align, size)) {
+        ASSERT_MSG(m_data, "Could not allocated frame buffer.");
+    }
 
     ~FrameBuffer() {
-        if (!m_data.empty()) {
-            Deallocate(m_memory_replacement, m_data.data());
+        if (m_data != nullptr) {
+            Deallocate(m_memory_replacement, m_data);
             m_data = {};
         }
     }
@@ -52,17 +54,16 @@ public:
 
     FrameBuffer(FrameBuffer&& r) noexcept
         : m_memory_replacement(r.m_memory_replacement), m_data(r.m_data) {
-        r.m_data = {};
+        r.m_data = nullptr;
     };
 
     FrameBuffer& operator=(FrameBuffer&& r) noexcept {
-        m_memory_replacement = r.m_memory_replacement;
         std::swap(m_data, r.m_data);
         return *this;
     }
 
     u8* GetBuffer() const noexcept {
-        return m_data.data();
+        return m_data;
     }
 
 private:
@@ -75,23 +76,26 @@ private:
         memory_replacement.deallocate(memory_replacement.object_ptr, ptr);
     }
 
-    SceAvPlayerMemAllocator m_memory_replacement;
-    std::span<u8> m_data;
+    const SceAvPlayerMemAllocator& m_memory_replacement;
+    u8* m_data = nullptr;
+};
+
+struct Frame {
+    FrameBuffer buffer;
+    SceAvPlayerFrameInfoEx info;
 };
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state);
+    AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
+                   const SceAvPlayerInitData& init_data, ThreadPriorities& priorities,
+                   SceAvPlayerSourceType source_type);
     ~AvPlayerSource();
-
-    s32 Init(std::string_view path, SceAvPlayerMemAllocator& memory_replacement,
-             SceAvPlayerFileReplacement& file_replacement, ThreadPriorities& priorities,
-             SceAvPlayerSourceType source_type);
 
     bool FindStreamInfo();
     s32 GetStreamCount();
     s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
-    s32 EnableStream(u32 stream_index);
+    bool EnableStream(u32 stream_index);
     void SetLooping(bool is_looping);
     std::optional<bool> HasFrames(u32 num_frames);
     s32 Start();
@@ -114,52 +118,55 @@ private:
     static void ReleaseAVCodecContext(AVCodecContext* context);
     static void ReleaseSWRContext(SwrContext* context);
     static void ReleaseSWSContext(SwsContext* context);
+    static void ReleaseAVFormatContext(AVFormatContext* context);
 
     using AVPacketPtr = std::unique_ptr<AVPacket, decltype(&ReleaseAVPacket)>;
     using AVFramePtr = std::unique_ptr<AVFrame, decltype(&ReleaseAVFrame)>;
     using AVCodecContextPtr = std::unique_ptr<AVCodecContext, decltype(&ReleaseAVCodecContext)>;
     using SWRContextPtr = std::unique_ptr<SwrContext, decltype(&ReleaseSWRContext)>;
     using SWSContextPtr = std::unique_ptr<SwsContext, decltype(&ReleaseSWSContext)>;
-
-    u8* GetVideoBuffer(AVFrame* frame);
-    u8* GetAudioBuffer(AVFrame* frame);
+    using AVFormatContextPtr = std::unique_ptr<AVFormatContext, decltype(&ReleaseAVFormatContext)>;
 
     AVFramePtr ConvertAudioFrame(const AVFrame& frame);
     AVFramePtr ConvertVideoFrame(const AVFrame& frame);
 
-    u64 m_last_video_timestamp{};
+    Frame PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame);
+    Frame PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
 
-    ThreadPriorities m_priorities;
-    SceAvPlayerMemAllocator m_memory_replacement;
+    ThreadPriorities m_priorities{};
+    SceAvPlayerMemAllocator m_memory_replacement{};
+    u64 m_num_output_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
     std::atomic_bool m_is_eof = false;
     std::atomic_bool m_is_stop = false;
+
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
 
-    AVFormatContext* m_avformat_context{};
+    AvPlayerQueue<FrameBuffer> m_audio_buffers;
+    AvPlayerQueue<FrameBuffer> m_video_buffers;
 
     AvPlayerQueue<AVPacketPtr> m_audio_packets;
     AvPlayerQueue<AVPacketPtr> m_video_packets;
 
-    AvPlayerQueue<AVFramePtr> m_audio_frames;
-    AvPlayerQueue<AVFramePtr> m_video_frames;
+    AvPlayerQueue<Frame> m_audio_frames;
+    AvPlayerQueue<Frame> m_video_frames;
 
-    std::span<u8> m_video_frame_storage;
-    std::span<u8> m_audio_frame_storage;
+    std::optional<FrameBuffer> m_current_video_frame;
+    std::optional<FrameBuffer> m_current_audio_frame;
 
-    AVCodecContextPtr m_video_codec_context{nullptr, &ReleaseAVCodecContext};
-    AVCodecContextPtr m_audio_codec_context{nullptr, &ReleaseAVCodecContext};
-
-    std::optional<int> m_video_stream_index{};
-    std::optional<int> m_audio_stream_index{};
+    std::optional<s32> m_video_stream_index{};
+    std::optional<s32> m_audio_stream_index{};
 
     ScePthread m_demuxer_thread{};
     ScePthread m_video_decoder_thread{};
     ScePthread m_audio_decoder_thread{};
 
+    AVFormatContextPtr m_avformat_context{nullptr, &ReleaseAVFormatContext};
+    AVCodecContextPtr m_video_codec_context{nullptr, &ReleaseAVCodecContext};
+    AVCodecContextPtr m_audio_codec_context{nullptr, &ReleaseAVCodecContext};
     SWRContextPtr m_swr_context{nullptr, &ReleaseSWRContext};
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 

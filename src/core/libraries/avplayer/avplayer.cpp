@@ -9,7 +9,9 @@
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 
-#include <mutex>
+#include <algorithm> // std::max, std::min
+
+#include <stdarg.h> // va_list
 
 namespace Libraries::AvPlayer {
 
@@ -148,9 +150,7 @@ SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
     // priorities.file_streaming_priority = GetPriority(priorities.http_streaming_priority, 15);
     // priorities.maxPriority = priorities.http_streaming_priority;
 
-    const auto player = new AvPlayer();
-    player->Init(*data, priorities);
-    return player;
+    return new AvPlayer(*data, priorities);
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
@@ -225,9 +225,7 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
     // }
     // priorities.http_streaming_affinity = p_data->http_streaming_affinity;
 
-    const auto player = new AvPlayer();
-    player->Init(data, priorities);
-    *p_player = player;
+    *p_player = new AvPlayer(data, priorities);
     return ORBIS_OK;
 }
 
@@ -290,13 +288,13 @@ s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(SceAvPlayerHandle handle,
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(SceAvPlayerLogCallback logCb, void* user_data) {
+s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(SceAvPlayerLogCallback log_cb, void* user_data) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called, looping = {}", loop_flag);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }

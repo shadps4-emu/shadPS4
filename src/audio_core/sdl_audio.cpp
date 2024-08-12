@@ -100,7 +100,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     int result = SDL_PutAudioStreamData(port.stream, ptr,
                                         port.samples_num * port.sample_size * port.channels_num);
     // TODO find a correct value 8192 is estimated
-    while (SDL_GetAudioStreamAvailable(port.stream) > 8192) {
+    while (SDL_GetAudioStreamAvailable(port.stream) > 65536) {
         SDL_Delay(0);
     }
 

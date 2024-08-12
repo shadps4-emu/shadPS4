@@ -24,7 +24,7 @@ public:
     s32 AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
     s32 GetStreamCount();
     s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
-    s32 EnableStream(u32 stream_id);
+    bool EnableStream(u32 stream_index);
     s32 Start();
     bool Stop();
     bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
@@ -54,6 +54,8 @@ private:
     static void* PS4_SYSV_ABI AvControllerThread(void* p_user_data);
 
     void AddSourceEvent();
+    void WarningEvent(s32 id);
+
     int StartControllerThread();
     int ProcessEvent();
     int UpdateBufferingState();
@@ -61,15 +63,13 @@ private:
 
     std::unique_ptr<AvPlayerSource> m_up_source;
 
-    SceAvPlayerMemAllocator m_memory_replacement{};
-    SceAvPlayerFileReplacement m_file_replacement{};
+    SceAvPlayerInitData m_init_data{};
     SceAvPlayerEventReplacement m_event_replacement{};
-    SceAvPlayerEventReplacement m_user_event_replacement{};
     ThreadPriorities m_thread_priorities{};
     bool m_auto_start{};
     u8 m_default_language[4]{};
 
-    std::atomic_int32_t m_quit;
+    std::atomic_bool m_quit;
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
     u32 m_thread_priority;

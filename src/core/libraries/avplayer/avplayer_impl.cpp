@@ -77,11 +77,9 @@ u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
     return size(ptr);
 }
 
-AvPlayer::AvPlayer() : m_file_io_mutex(PTHREAD_MUTEX_ERRORCHECK, "SceAvPlayerFileIOLock") {}
-
-void AvPlayer::Init(const SceAvPlayerInitData& data, const ThreadPriorities& priorities) {
-    m_init_data = data;
-    m_init_data_original = data;
+AvPlayer::AvPlayer(const SceAvPlayerInitData& data, const ThreadPriorities& priorities)
+    : m_file_io_mutex(PTHREAD_MUTEX_ERRORCHECK, "AvPlayer_FileIO"), m_init_data(data),
+      m_init_data_original(data) {
 
     m_init_data.memory_replacement.object_ptr = this;
     m_init_data.memory_replacement.allocate = &AvPlayer::Allocate;
@@ -120,6 +118,9 @@ s32 AvPlayer::AddSource(std::string_view path) {
 }
 
 s32 AvPlayer::GetStreamCount() {
+    if (m_state == nullptr) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
     return m_state->GetStreamCount();
 }
 
@@ -130,11 +131,14 @@ s32 AvPlayer::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
     return ORBIS_OK;
 }
 
-s32 AvPlayer::EnableStream(u32 stream_id) {
+s32 AvPlayer::EnableStream(u32 stream_index) {
     if (m_state == nullptr) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
-    return m_state->EnableStream(stream_id);
+    if (!m_state->EnableStream(stream_index)) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
 }
 
 s32 AvPlayer::Start() {

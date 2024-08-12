@@ -12,42 +12,35 @@ extern "C" {
 #include <libavformat/avio.h>
 }
 
+#include <algorithm> // std::max, std::min
+
 #define AVPLAYER_AVIO_BUFFER_SIZE 4096
 
 namespace Libraries::AvPlayer {
 
-AvPlayerFileStreamer::AvPlayerFileStreamer(SceAvPlayerFileReplacement& file_replacement,
+AvPlayerFileStreamer::AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement,
                                            std::string_view path)
     : m_file_replacement(file_replacement) {
-    Init(path);
+    const auto ptr = m_file_replacement.object_ptr;
+    m_fd = m_file_replacement.open(ptr, path.data());
+    ASSERT(m_fd >= 0);
+    m_file_size = m_file_replacement.size(ptr);
+    // avio_buffer is deallocated in `avio_context_free`
+    const auto avio_buffer = reinterpret_cast<u8*>(av_malloc(AVPLAYER_AVIO_BUFFER_SIZE));
+    m_avio_context =
+        avio_alloc_context(avio_buffer, AVPLAYER_AVIO_BUFFER_SIZE, 0, this,
+                           &AvPlayerFileStreamer::ReadPacket, nullptr, &AvPlayerFileStreamer::Seek);
 }
 
 AvPlayerFileStreamer::~AvPlayerFileStreamer() {
     if (m_avio_context != nullptr) {
         avio_context_free(&m_avio_context);
     }
-    if (m_avio_buffer != nullptr) {
-        av_free(m_avio_buffer);
-    }
     if (m_file_replacement.close != nullptr && m_fd >= 0) {
         const auto close = m_file_replacement.close;
         const auto ptr = m_file_replacement.object_ptr;
         close(ptr);
     }
-}
-
-s32 AvPlayerFileStreamer::Init(std::string_view path) {
-    const auto ptr = m_file_replacement.object_ptr;
-    m_fd = m_file_replacement.open(ptr, path.data());
-    if (m_fd < 0) {
-        return -1;
-    }
-    m_file_size = m_file_replacement.size(ptr);
-    m_avio_buffer = reinterpret_cast<u8*>(av_malloc(AVPLAYER_AVIO_BUFFER_SIZE));
-    m_avio_context =
-        avio_alloc_context(m_avio_buffer, AVPLAYER_AVIO_BUFFER_SIZE, 0, this,
-                           &AvPlayerFileStreamer::ReadPacket, nullptr, &AvPlayerFileStreamer::Seek);
-    return 0;
 }
 
 s32 AvPlayerFileStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
@@ -61,7 +54,7 @@ s32 AvPlayerFileStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
     const auto read_offset = self->m_file_replacement.readOffset;
     const auto ptr = self->m_file_replacement.object_ptr;
     const auto bytes_read = read_offset(ptr, buffer, self->m_position, size);
-    if (size != 0 && bytes_read == 0) {
+    if (bytes_read == 0 && size != 0) {
         return AVERROR_EOF;
     }
     self->m_position += bytes_read;

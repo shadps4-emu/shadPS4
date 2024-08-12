@@ -15,7 +15,7 @@ namespace Libraries::AvPlayer {
 
 class AvPlayerFileStreamer : public IDataStreamer {
 public:
-    AvPlayerFileStreamer(SceAvPlayerFileReplacement& file_replacement, std::string_view path);
+    AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement, std::string_view path);
     ~AvPlayerFileStreamer();
 
     AVIOContext* GetContext() override {
@@ -23,8 +23,6 @@ public:
     }
 
 private:
-    s32 Init(std::string_view path);
-
     static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
     static s64 Seek(void* opaque, s64 buffer, int whence);
 
@@ -33,7 +31,6 @@ private:
     int m_fd = -1;
     u64 m_position{};
     u64 m_file_size{};
-    u8* m_avio_buffer{};
     AVIOContext* m_avio_context{};
 };
 
