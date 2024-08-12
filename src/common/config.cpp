@@ -25,6 +25,7 @@ static bool shouldDumpPM4 = false;
 static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
+static bool vkValidationGpu = false;
 static bool rdocEnable = false;
 static bool rdocMarkersEnable = false;
 // Gui
@@ -117,6 +118,10 @@ bool vkValidationEnabled() {
 
 bool vkValidationSyncEnabled() {
     return vkValidationSync;
+}
+
+bool vkValidationGpuEnabled() {
+    return vkValidationGpu;
 }
 
 void setScreenWidth(u32 width) {
@@ -324,6 +329,7 @@ void load(const std::filesystem::path& path) {
         gpuId = toml::find_or<int>(vk, "gpuId", -1);
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
+        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
         rdocMarkersEnable = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
     }
@@ -400,6 +406,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Vulkan"]["rdocMarkersEnable"] = rdocMarkersEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
