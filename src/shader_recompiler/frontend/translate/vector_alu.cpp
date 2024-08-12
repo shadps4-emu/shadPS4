@@ -709,9 +709,17 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    const IR::U32 max{ir.IMax(src0, src1, false)};
-    const IR::U32 min{ir.IMin(src0, src1, false)};
-    SetDst(inst.dst[0], ir.IAdd(ir.ISub(max, min), src2));
+    IR::U32 result;
+    if (src0.IsImmediate() && src0.U32() == 0U) {
+        result = src1;
+    } else if (src1.IsImmediate() && src1.U32() == 0U) {
+        result = src0;
+    } else {
+        const IR::U32 max{ir.IMax(src0, src1, false)};
+        const IR::U32 min{ir.IMin(src0, src1, false)};
+        result = ir.ISub(max, min);
+    }
+    SetDst(inst.dst[0], ir.IAdd(result, src2));
 }
 
 void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
