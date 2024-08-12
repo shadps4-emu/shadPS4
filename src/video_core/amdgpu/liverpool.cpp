@@ -180,6 +180,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
                 break;
             }
+            case PM4CmdNop::PayloadType::DebugMarkerPush: {
+                const auto marker_sz = nop->header.count.Value() * 2;
+                const std::string_view label{reinterpret_cast<const char*>(&nop->data_block[1]),
+                                             marker_sz};
+                rasterizer->ScopeMarkerBegin(label);
+                break;
+            }
+            case PM4CmdNop::PayloadType::DebugMarkerPop: {
+                rasterizer->ScopeMarkerEnd();
+                break;
+            }
             default:
                 break;
             }

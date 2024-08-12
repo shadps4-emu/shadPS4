@@ -27,6 +27,7 @@ bool nullGpu();
 bool dumpShaders();
 bool dumpPM4();
 bool isRdocEnabled();
+bool isMarkersEnabled();
 u32 vblankDiv();
 
 void setDebugDump(bool enable);
