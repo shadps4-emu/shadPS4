@@ -1381,7 +1381,7 @@ Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, 
 
 Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
                                         TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, offset);
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
 }
 
 F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
@@ -1393,7 +1393,8 @@ F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body
 
 F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
                                           const U32& offset, TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, offset);
+    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
+                     offset);
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
