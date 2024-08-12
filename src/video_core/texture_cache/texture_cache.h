@@ -38,7 +38,7 @@ public:
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr address, size_t size);
+    void InvalidateMemory(VAddr address, size_t size, bool from_compute = false);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
