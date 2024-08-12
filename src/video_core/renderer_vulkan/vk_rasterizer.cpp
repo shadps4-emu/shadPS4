@@ -152,7 +152,8 @@ void Rasterizer::BeginRendering() {
                                                           .stencil = regs.stencil_clear}},
         };
         texture_cache.TouchMeta(htile_address, false);
-        state.num_depth_attachments++;
+        state.has_depth = true;
+        state.has_stencil = image.info.usage.stencil;
     }
     scheduler.BeginRendering(state);
 }

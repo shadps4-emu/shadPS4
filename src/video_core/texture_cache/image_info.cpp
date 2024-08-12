@@ -189,6 +189,8 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     resources.layers = num_slices;
     meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
     usage.depth_target = true;
+    usage.stencil =
+        buffer.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
 
     guest_address = buffer.Address();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();

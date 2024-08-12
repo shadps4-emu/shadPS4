@@ -38,8 +38,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.color_attachments.data(),
-        .pDepthAttachment =
-            render_state.num_depth_attachments ? &render_state.depth_attachment : nullptr,
+        .pDepthAttachment = render_state.has_depth ? &render_state.depth_attachment : nullptr,
     };
 
     current_cmdbuf.beginRendering(rendering_info);
@@ -50,6 +49,8 @@ void Scheduler::EndRendering() {
         return;
     }
     is_rendering = false;
+    current_cmdbuf.endRendering();
+
     boost::container::static_vector<vk::ImageMemoryBarrier, 9> barriers;
     for (size_t i = 0; i < render_state.num_color_attachments; ++i) {
         barriers.push_back(vk::ImageMemoryBarrier{
@@ -70,10 +71,35 @@ void Scheduler::EndRendering() {
                 },
         });
     }
-    current_cmdbuf.endRendering();
+    if (render_state.has_depth) {
+        barriers.push_back(vk::ImageMemoryBarrier{
+            .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+            .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
+            .oldLayout = render_state.depth_attachment.imageLayout,
+            .newLayout = render_state.depth_attachment.imageLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = render_state.depth_image,
+            .subresourceRange =
+                {
+                    .aspectMask = vk::ImageAspectFlagBits::eDepth |
+                                  (render_state.has_stencil ? vk::ImageAspectFlagBits::eStencil
+                                                            : vk::ImageAspectFlagBits::eNone),
+                    .baseMipLevel = 0,
+                    .levelCount = VK_REMAINING_MIP_LEVELS,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+        });
+    }
+
     if (!barriers.empty()) {
-        current_cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                       vk::PipelineStageFlagBits::eFragmentShader,
+        const auto src_stages =
+            vk::PipelineStageFlagBits::eColorAttachmentOutput |
+            (render_state.has_depth ? vk::PipelineStageFlagBits::eLateFragmentTests |
+                                          vk::PipelineStageFlagBits::eEarlyFragmentTests
+                                    : vk::PipelineStageFlagBits::eNone);
+        current_cmdbuf.pipelineBarrier(src_stages, vk::PipelineStageFlagBits::eFragmentShader,
                                        vk::DependencyFlagBits::eByRegion, {}, {}, barriers);
     }
 }
