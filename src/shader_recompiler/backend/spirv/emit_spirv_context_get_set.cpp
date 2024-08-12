@@ -386,19 +386,12 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
                 if (is_signed) {
                     value = ctx.OpBitFieldSExtract(ctx.S32[1], value, comp_offset,
                                                    ctx.ConstU32(bit_width));
-                    value = ctx.OpConvertSToF(ctx.F32[1], value);
                 } else {
                     value = ctx.OpBitFieldUExtract(ctx.U32[1], value, comp_offset,
                                                    ctx.ConstU32(bit_width));
-                    value = ctx.OpConvertUToF(ctx.F32[1], value);
-                }
-            } else {
-                if (is_signed) {
-                    value = ctx.OpConvertSToF(ctx.F32[1], value);
-                } else {
-                    value = ctx.OpConvertUToF(ctx.F32[1], value);
                 }
             }
+            value = ctx.OpBitcast(ctx.F32[1], value);
             return ConvertValue(ctx, value, num_format, bit_width);
         }
         break;
