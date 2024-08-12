@@ -317,7 +317,7 @@ bool Instance::CreateDevice() {
             .nullDescriptor = true,
         },
         vk::PhysicalDeviceSynchronization2Features{
-            .synchronization2 = has_sync2,
+            .synchronization2 = true,
         },
     };
 
@@ -328,11 +328,17 @@ bool Instance::CreateDevice() {
     if (!robustness) {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
+    if (!has_sync2) {
+        device_chain.unlink<vk::PhysicalDeviceSynchronization2Features>();
+    }
 
     try {
         device = physical_device.createDeviceUnique(device_chain.get());
     } catch (vk::ExtensionNotPresentError& err) {
         LOG_CRITICAL(Render_Vulkan, "Some required extensions are not available {}", err.what());
+        return false;
+    } catch (vk::FeatureNotPresentError& err) {
+        LOG_CRITICAL(Render_Vulkan, "Some required features are not available {}", err.what());
         return false;
     }
 
