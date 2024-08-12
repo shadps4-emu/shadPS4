@@ -194,6 +194,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32G32Sfloat:
     case vk::Format::eR32G32Uint:
     case vk::Format::eR16G16B16A16Unorm:
+    case vk::Format::eR16G16B16A16Sfloat:
         return vk::Format::eR32G32Uint;
     case vk::Format::eBc2SrgbBlock:
     case vk::Format::eBc2UnormBlock:
@@ -397,7 +398,7 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
     const u32 image_size = image.info.guest_size_bytes;
     const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
         // Use stream buffer for smaller textures.
-        if (image_size <= StreamBufferSize) {
+        if (image_size <= stream_buffer.GetFreeSize()) {
             u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
             return {stream_buffer.Handle(), offset};
         }

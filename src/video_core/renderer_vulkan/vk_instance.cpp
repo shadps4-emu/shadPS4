@@ -8,6 +8,7 @@
 #include <fmt/ranges.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -213,6 +214,13 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
+    const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+    if (has_sync2) {
+        has_nv_checkpoints = Config::isMarkersEnabled()
+                                 ? add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME)
+                                 : false;
+    }
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -307,6 +315,9 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
             .nullDescriptor = true,
+        },
+        vk::PhysicalDeviceSynchronization2Features{
+            .synchronization2 = has_sync2,
         },
     };
 
