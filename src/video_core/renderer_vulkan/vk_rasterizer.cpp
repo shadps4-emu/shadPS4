@@ -261,4 +261,11 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
     });
 }
 
+void Rasterizer::Breadcrumb(u64 id) {
+    if (!instance.HasNvCheckpoints()) {
+        return;
+    }
+    scheduler.CommandBuffer().setCheckpointNV(id);
+}
+
 } // namespace Vulkan

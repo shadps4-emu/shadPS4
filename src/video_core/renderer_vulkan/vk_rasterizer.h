@@ -38,6 +38,7 @@ public:
     void ScopeMarkerBegin(const std::string_view& str);
     void ScopeMarkerEnd();
     void ScopedMarkerInsert(const std::string_view& str);
+    void Breadcrumb(u64 id);
 
     void InvalidateMemory(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
