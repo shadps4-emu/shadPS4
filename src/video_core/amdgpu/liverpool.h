@@ -766,7 +766,7 @@ struct Liverpool {
         }
 
         TilingMode GetTilingMode() const {
-            return attrib.tile_mode_index;
+            return info.linear_general ? TilingMode::Display_Linear : attrib.tile_mode_index;
         }
 
         bool IsTiled() const {
