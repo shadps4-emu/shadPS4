@@ -94,6 +94,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         return S_MAX_U32(inst);
     case Opcode::S_WQM_B64:
         break;
+    case Opcode::S_CMPK_EQ_U32:
+        return S_CMPK_EQ_U32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -461,6 +463,12 @@ void Translator::S_MIN_U32(const GcnInst& inst) {
     const IR::U32 result = ir.UMin(src0, src1);
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.IEqual(result, src0));
+}
+
+void Translator::S_CMPK_EQ_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    ir.SetScc(ir.IEqual(src0, src1));
 }
 
 } // namespace Shader::Gcn
