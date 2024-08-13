@@ -8,7 +8,6 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
-#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
