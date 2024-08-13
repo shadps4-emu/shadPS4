@@ -203,7 +203,17 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
-    bool flip_result = true;
+    u32 num_requests_pending{};
+    {
+        std::scoped_lock lock{mutex};
+        num_requests_pending = requests.size();
+    }
+
+    if (index != -1 && num_requests_pending >= port->NumRegisteredBuffers()) {
+        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
+        return false;
+    }
+
     if (!is_eop) {
         // Before processing the flip we need to ask GPU thread to flush command list as at this
         // point VO surface is ready to be presented, and we will need have an actual state of
@@ -213,12 +223,16 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
             SubmitFlipInternal(port, index, flip_arg, is_eop);
         });
     } else {
-        flip_result = SubmitFlipInternal(port, index, flip_arg, is_eop);
+        SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
-    return flip_result;
+
+    port->flip_status.flipPendingNum = num_requests_pending + 1;
+    port->flip_status.gcQueueNum = 0;
+
+    return true;
 }
 
-bool VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
+void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
                                         bool is_eop /*= false*/) {
     Vulkan::Frame* frame;
     if (index == -1) {
@@ -227,11 +241,6 @@ bool VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
         frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
-    }
-
-    if (index != -1 && requests.size() >= port->NumRegisteredBuffers()) {
-        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
-        return false;
     }
 
     std::scoped_lock lock{mutex};
@@ -243,11 +252,6 @@ bool VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         .submit_tsc = Libraries::Kernel::sceKernelReadTsc(),
         .eop = is_eop,
     });
-
-    port->flip_status.flipPendingNum = static_cast<int>(requests.size());
-    port->flip_status.gcQueueNum = 0;
-
-    return true;
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
