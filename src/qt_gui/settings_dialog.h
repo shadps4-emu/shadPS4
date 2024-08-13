@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <span>
 #include <QDialog>
 #include <QPushButton>
-#include <span>
 
 #include "common/config.h"
 #include "common/path_util.h"
