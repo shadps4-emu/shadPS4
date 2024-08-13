@@ -212,9 +212,9 @@ s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* out_size) {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func) {
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]) {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->SetHeapApiFunc(func);
+    linker->SetHeapAPI(func);
 }
 
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,

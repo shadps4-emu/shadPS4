@@ -106,10 +106,8 @@ Buffer::Buffer(const Vulkan::Instance& instance_, MemoryUsage usage_, VAddr cpu_
     VmaAllocationInfo alloc_info{};
     buffer.Create(buffer_ci, usage, &alloc_info);
 
-    if (instance->HasDebuggingToolAttached()) {
-        const auto device = instance->GetDevice();
-        Vulkan::SetObjectName(device, Handle(), "Buffer {:#x} {} KiB", cpu_addr, size_bytes / 1024);
-    }
+    const auto device = instance->GetDevice();
+    Vulkan::SetObjectName(device, Handle(), "Buffer {:#x}:{:#x}", cpu_addr, size_bytes);
 
     // Map it if it is host visible.
     VkMemoryPropertyFlags property_flags{};
@@ -152,10 +150,8 @@ StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& 
     ReserveWatches(current_watches, WATCHES_INITIAL_RESERVE);
     ReserveWatches(previous_watches, WATCHES_INITIAL_RESERVE);
     const auto device = instance.GetDevice();
-    if (instance.HasDebuggingToolAttached()) {
-        Vulkan::SetObjectName(device, Handle(), "StreamBuffer({}): {} KiB", BufferTypeName(usage),
-                              size_bytes / 1024);
-    }
+    Vulkan::SetObjectName(device, Handle(), "StreamBuffer({}):{:#x}", BufferTypeName(usage),
+                          size_bytes);
 }
 
 std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment) {

@@ -421,13 +421,21 @@ ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     return addr;
 }
 
-int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* mutex_attr,
                                      const char* name) {
+    const ScePthreadMutexattr* attr;
+
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (attr == nullptr) {
+    if (mutex_attr == nullptr) {
         attr = g_pthread_cxt->getDefaultMutexattr();
+    } else {
+        if (*mutex_attr == nullptr) {
+            attr = g_pthread_cxt->getDefaultMutexattr();
+        } else {
+            attr = mutex_attr;
+        }
     }
 
     *mutex = new PthreadMutexInternal{};

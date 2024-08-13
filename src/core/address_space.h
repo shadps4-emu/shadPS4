@@ -91,7 +91,8 @@ public:
     void* MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, size_t size, bool has_backing);
+    void Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
+               PAddr phys_base, bool is_exec, bool has_backing);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 

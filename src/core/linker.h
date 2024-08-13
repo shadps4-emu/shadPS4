@@ -46,7 +46,21 @@ struct EntryParams {
     const char* argv[3];
 };
 
-using HeapApiFunc = PS4_SYSV_ABI void* (*)(size_t);
+struct HeapAPI {
+    PS4_SYSV_ABI void* (*heap_malloc)(size_t);
+    PS4_SYSV_ABI void (*heap_free)(void*);
+    PS4_SYSV_ABI void* (*heap_calloc)(size_t, size_t);
+    PS4_SYSV_ABI void* (*heap_realloc)(void*, size_t);
+    PS4_SYSV_ABI void* (*heap_memalign)(size_t, size_t);
+    PS4_SYSV_ABI int (*heap_posix_memalign)(void**, size_t, size_t);
+    // NOTE: Fields below may be inaccurate
+    PS4_SYSV_ABI int (*heap_reallocalign)(void);
+    PS4_SYSV_ABI void (*heap_malloc_stats)(void);
+    PS4_SYSV_ABI int (*heap_malloc_stats_fast)(void);
+    PS4_SYSV_ABI size_t (*heap_malloc_usable_size)(void*);
+};
+
+using AppHeapAPI = HeapAPI*;
 
 class Linker {
 public:
@@ -75,8 +89,8 @@ public:
         }
     }
 
-    void SetHeapApiFunc(void* func) {
-        heap_api_func = *reinterpret_cast<HeapApiFunc*>(func);
+    void SetHeapAPI(void* func[]) {
+        heap_api = reinterpret_cast<AppHeapAPI>(func);
     }
 
     void AdvanceGenerationCounter() noexcept {
@@ -104,7 +118,7 @@ private:
     size_t static_tls_size{};
     u32 max_tls_index{};
     u32 num_static_modules{};
-    HeapApiFunc heap_api_func{};
+    AppHeapAPI heap_api{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
 };

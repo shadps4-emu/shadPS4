@@ -145,6 +145,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         dynamic_states.push_back(vk::DynamicState::eColorWriteEnableEXT);
         dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
     }
+    if (instance.IsVertexInputDynamicState()) {
+        dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
+    }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
