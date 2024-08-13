@@ -115,6 +115,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 }
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
+    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+        return nullptr;
+    }
     RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
@@ -203,6 +207,10 @@ void PipelineCache::RefreshGraphicsKey() {
     }
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
+        if (!regs.stage_enable.IsStageEnabled(i)) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         auto* pgm = regs.ProgramForStage(i);
         if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;

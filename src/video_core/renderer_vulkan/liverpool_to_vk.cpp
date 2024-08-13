@@ -81,6 +81,8 @@ vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type) {
         return vk::PrimitiveTopology::eTriangleListWithAdjacency;
     case Liverpool::PrimitiveType::AdjTriangleStrip:
         return vk::PrimitiveTopology::eTriangleStripWithAdjacency;
+    case Liverpool::PrimitiveType::PatchPrimitive:
+        return vk::PrimitiveTopology::ePatchList;
     case Liverpool::PrimitiveType::QuadList:
         // Needs to generate index buffer on the fly.
         return vk::PrimitiveTopology::eTriangleList;
