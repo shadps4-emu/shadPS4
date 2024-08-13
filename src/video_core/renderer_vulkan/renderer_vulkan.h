@@ -48,13 +48,14 @@ public:
                         VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(info);
+        texture_cache.UpdateImage(image_id, is_eop ? nullptr : &flip_scheduler);
         auto& image = texture_cache.GetImage(image_id);
         return PrepareFrameInternal(image, is_eop);
     }
 
-    Frame* PrepareBlankFrame() {
+    Frame* PrepareBlankFrame(bool is_eop) {
         auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
-        return PrepareFrameInternal(image, true);
+        return PrepareFrameInternal(image, is_eop);
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
@@ -74,6 +75,11 @@ public:
     bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame);
     void RecreateFrame(Frame* frame, u32 width, u32 height);
+
+    void FlushDraw() {
+        SubmitInfo info{};
+        draw_scheduler.Flush(info);
+    }
 
 private:
     Frame* PrepareFrameInternal(VideoCore::Image& image, bool is_eop = true);

@@ -9,6 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
+#include "core/platform.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
@@ -202,9 +203,26 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
+    bool flip_result = true;
+    if (!is_eop) {
+        // Before processing the flip we need to ask GPU thread to flush command list as at this
+        // point VO surface is ready to be presented, and we will need have an actual state of
+        // Vulkan image at the time of frame presentation.
+        liverpool->SendCommand([=, this]() {
+            renderer->FlushDraw();
+            SubmitFlipInternal(port, index, flip_arg, is_eop);
+        });
+    } else {
+        flip_result = SubmitFlipInternal(port, index, flip_arg, is_eop);
+    }
+    return flip_result;
+}
+
+bool VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
+                                        bool is_eop /*= false*/) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = renderer->PrepareBlankFrame();
+        frame = renderer->PrepareBlankFrame(is_eop);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];

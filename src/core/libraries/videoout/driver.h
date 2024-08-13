@@ -102,6 +102,7 @@ private:
     };
 
     std::chrono::microseconds Flip(const Request& req);
+    bool SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
     void PresentThread(std::stop_token token);
 
     std::mutex mutex;
