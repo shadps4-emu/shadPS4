@@ -26,15 +26,9 @@ OPCODE(WorkgroupMemoryBarrier,                              Void,               
 OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
 
 // Shared memory operations
-OPCODE(LoadSharedU8,                                        U32,            U32,                                                                            )
-OPCODE(LoadSharedS8,                                        U32,            U32,                                                                            )
-OPCODE(LoadSharedU16,                                       U32,            U32,                                                                            )
-OPCODE(LoadSharedS16,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
 OPCODE(LoadSharedU128,                                      U32x4,          U32,                                                                            )
-OPCODE(WriteSharedU8,                                       Void,           U32,            U32,                                                            )
-OPCODE(WriteSharedU16,                                      Void,           U32,            U32,                                                            )
 OPCODE(WriteSharedU32,                                      Void,           U32,            U32,                                                            )
 OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
 OPCODE(WriteSharedU128,                                     Void,           U32,            U32x4,                                                          )
