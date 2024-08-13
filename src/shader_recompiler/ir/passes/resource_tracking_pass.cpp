@@ -494,6 +494,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     const auto tsharp = TrackSharp(tsharp_handle);
     const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    if (!image.Valid()) {
+        LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        inst.ReplaceUsesWith(
+            ir.CompositeConstruct(ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f)));
+        return;
+    }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
