@@ -157,6 +157,10 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
         break;
     }
 
+#ifdef __APPLE__
+    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
+
     if (window_type != Frontend::WindowSystemType::Headless) {
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     }
@@ -221,12 +225,61 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
 
     vk::Bool32 enable_sync =
         enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
-    vk::LayerSettingEXT layer_set = {
-        .pLayerName = VALIDATION_LAYER_NAME,
-        .pSettingName = "validate_sync",
-        .type = vk::LayerSettingTypeEXT::eBool32,
-        .valueCount = 1,
-        .pValues = &enable_sync,
+    vk::Bool32 enable_gpuav =
+        enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;
+    const char* gpuav_mode = enable_validation && Config::vkValidationGpuEnabled()
+                                 ? "GPU_BASED_GPU_ASSISTED"
+                                 : "GPU_BASED_NONE";
+    const std::array layer_setings = {
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "validate_sync",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_sync,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "sync_queue_submit",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_sync,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "validate_gpu_based",
+            .type = vk::LayerSettingTypeEXT::eString,
+            .valueCount = 1,
+            .pValues = &gpuav_mode,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "gpuav_reserve_binding_slot",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_gpuav,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "gpuav_descriptor_checks",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_gpuav,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "gpuav_validate_indirect_buffer",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_gpuav,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = VALIDATION_LAYER_NAME,
+            .pSettingName = "gpuav_buffer_copies",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_gpuav,
+        },
     };
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
@@ -236,10 +289,13 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
+#ifdef __APPLE__
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+#endif
         },
         vk::LayerSettingsCreateInfoEXT{
-            .settingCount = 1,
-            .pSettings = &layer_set,
+            .settingCount = layer_setings.size(),
+            .pSettings = layer_setings.data(),
         },
     };
 

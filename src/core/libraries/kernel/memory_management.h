@@ -98,7 +98,7 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize);
 s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* sizeOut);
-void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func);
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]);
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,
                                               void** directMemoryStartOut,
                                               void** directMemoryEndOut);

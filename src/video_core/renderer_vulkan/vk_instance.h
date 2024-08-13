@@ -88,6 +88,10 @@ public:
         return profiler_context;
     }
 
+    bool HasNvCheckpoints() const {
+        return has_nv_checkpoints;
+    }
+
     /// Returns true when a known debugging tool is attached.
     bool HasDebuggingToolAttached() const {
         return has_renderdoc || has_nsight_graphics;
@@ -126,6 +130,11 @@ public:
     /// Returns true when VK_EXT_color_write_enable is supported
     bool IsColorWriteEnableSupported() const {
         return color_write_en;
+    }
+
+    /// Returns true when VK_EXT_vertex_input_dynamic_state is supported.
+    bool IsVertexInputDynamicState() const {
+        return vertex_input_dynamic_state;
     }
 
     /// Returns the vendor ID of the physical device
@@ -253,12 +262,14 @@ private:
     bool external_memory_host{};
     bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
+    bool vertex_input_dynamic_state{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};
     bool debug_utils_supported{};
     bool has_nsight_graphics{};
     bool has_renderdoc{};
+    bool has_nv_checkpoints{};
 };
 
 } // namespace Vulkan
