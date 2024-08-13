@@ -161,17 +161,17 @@ void MainWindow::LoadGameLists() {
 }
 
 void MainWindow::GetPhysicalDevices() {
-        Vulkan::Instance instance(false, false);
-        auto physical_devices = instance.GetPhysicalDevices();
-        for (const vk::PhysicalDevice physical_device : physical_devices) {
-            auto prop = physical_device.getProperties();
-            QString name = QString::fromUtf8(prop.deviceName, -1);
-            if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
-                name += " * Unsupported Vulkan Version";
-            }
-            m_physical_devices.push_back(name);
-        }
-    }
+	Vulkan::Instance instance(false, false);
+	auto physical_devices = instance.GetPhysicalDevices();
+	for (const vk::PhysicalDevice physical_device : physical_devices) {
+		auto prop = physical_device.getProperties();
+		QString name = QString::fromUtf8(prop.deviceName, -1);
+		if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
+			name += " * Unsupported Vulkan Version";
+		}
+		m_physical_devices.push_back(name);
+	}
+}
 
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
