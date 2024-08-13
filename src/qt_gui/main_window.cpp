@@ -161,7 +161,6 @@ void MainWindow::LoadGameLists() {
 }
 
 void MainWindow::GetPhysicalDevices() {
-    if (m_physical_devices.size() == 0) {
         Vulkan::Instance instance(false, false);
         auto physical_devices = instance.GetPhysicalDevices();
         for (const vk::PhysicalDevice physical_device : physical_devices) {
@@ -173,7 +172,6 @@ void MainWindow::GetPhysicalDevices() {
             m_physical_devices.push_back(name);
         }
     }
-}
 
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
