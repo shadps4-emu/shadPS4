@@ -353,7 +353,8 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     const IR::U1 flag = inst.src[2].field == OperandField::ScalarGPR
                             ? ir.GetThreadBitScalarReg(flag_reg)
                             : ir.GetVcc();
-    const IR::Value result = ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
+    const IR::Value result =
+        ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
     ir.SetVectorReg(dst_reg, IR::U32F32{result});
 }
 

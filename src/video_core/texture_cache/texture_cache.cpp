@@ -3,8 +3,8 @@
 
 #include <xxhash.h>
 #include "common/assert.h"
-#include "video_core/page_manager.h"
 #include "video_core/buffer_cache/buffer_cache.h"
+#include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -255,10 +255,10 @@ void TextureCache::RefreshImage(Image& image) {
             .bufferRowLength = static_cast<u32>(mip_pitch),
             .bufferImageHeight = static_cast<u32>(mip_height),
             .imageSubresource{
-              .aspectMask = vk::ImageAspectFlagBits::eColor,
-              .mipLevel = m,
-              .baseArrayLayer = 0,
-              .layerCount = num_layers,
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, depth},

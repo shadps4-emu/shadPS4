@@ -134,7 +134,8 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
-            .format = Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+            .format =
+                Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back({

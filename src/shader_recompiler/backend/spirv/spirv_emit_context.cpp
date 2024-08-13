@@ -331,8 +331,9 @@ void EmitContext::DefineBuffers() {
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const Id record_array_type{buffer.is_storage ? TypeRuntimeArray(data_type) :
-                                                       TypeArray(data_type, ConstU32(buffer.length))};
+        const Id record_array_type{buffer.is_storage
+                                       ? TypeRuntimeArray(data_type)
+                                       : TypeArray(data_type, ConstU32(buffer.length))};
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
