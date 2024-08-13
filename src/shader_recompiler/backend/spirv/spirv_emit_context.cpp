@@ -165,14 +165,18 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     throw InvalidArgument("Invalid attribute type {}", fmt);
 }
 
-Id EmitContext::GetBufferOffset(u32 binding) {
-    const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
-    const u32 comp = (binding & 0xf) >> 2;
-    const u32 offset = (binding & 0x3) << 3;
-    const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                               push_data_block, ConstU32(half), ConstU32(comp))};
-    const Id value{OpLoad(U32[1], ptr)};
-    return OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+void EmitContext::DefineBufferOffsets() {
+    for (auto& buffer : buffers) {
+        const u32 binding = buffer.binding;
+        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
+        buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+        buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
+    }
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -327,7 +331,9 @@ void EmitContext::DefineBuffers() {
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const Id record_array_type{TypeArray(data_type, ConstU32(buffer.length))};
+        const Id record_array_type{buffer.is_storage
+                                       ? TypeRuntimeArray(data_type)
+                                       : TypeArray(data_type, ConstU32(buffer.length))};
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
@@ -354,7 +360,7 @@ void EmitContext::DefineBuffers() {
 
         buffers.push_back({
             .id = id,
-            .global_binding = binding++,
+            .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
             .buffer = buffer.GetVsharp(info),

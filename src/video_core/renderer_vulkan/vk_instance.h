@@ -132,6 +132,11 @@ public:
         return color_write_en;
     }
 
+    /// Returns true when VK_EXT_vertex_input_dynamic_state is supported.
+    bool IsVertexInputDynamicState() const {
+        return vertex_input_dynamic_state;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -257,6 +262,7 @@ private:
     bool external_memory_host{};
     bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
+    bool vertex_input_dynamic_state{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};

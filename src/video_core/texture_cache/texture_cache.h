@@ -38,13 +38,13 @@ public:
     ~TextureCache();
 
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr address, size_t size);
+    void InvalidateMemory(VAddr address, size_t size, bool from_compute = false);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info, bool refresh_on_create = true);
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info);
 
     /// Retrieves an image view with the properties of the specified image descriptor.
     [[nodiscard]] ImageView& FindTexture(const ImageInfo& image_info,
@@ -57,6 +57,16 @@ public:
     /// Retrieves the depth target with specified properties
     [[nodiscard]] ImageView& FindDepthTarget(const ImageInfo& image_info,
                                              const ImageViewInfo& view_info);
+
+    /// Updates image contents if it was modified by CPU.
+    void UpdateImage(ImageId image_id) {
+        Image& image = slot_images[image_id];
+        if (False(image.flags & ImageFlagBits::CpuModified)) {
+            return;
+        }
+        RefreshImage(image);
+        TrackImage(image, image_id);
+    }
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
@@ -170,7 +180,6 @@ private:
     Vulkan::Scheduler& scheduler;
     BufferCache& buffer_cache;
     PageManager& tracker;
-    StreamBuffer staging;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;

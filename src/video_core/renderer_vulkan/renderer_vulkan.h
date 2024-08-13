@@ -47,7 +47,7 @@ public:
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                         VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, false);
+        const auto image_id = texture_cache.FindImage(info);
         auto& image = texture_cache.GetImage(image_id);
         return PrepareFrameInternal(image, is_eop);
     }
@@ -61,7 +61,7 @@ public:
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
         vo_buffers_addr.emplace_back(cpu_address);
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, false);
+        const auto image_id = texture_cache.FindImage(info);
         return texture_cache.GetImage(image_id);
     }
 
