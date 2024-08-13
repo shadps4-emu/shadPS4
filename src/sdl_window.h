@@ -69,6 +69,8 @@ private:
     void onKeyPress(const SDL_Event* event);
     void onGamepadEvent(const SDL_Event* event);
 
+    int sdlGamepadToOrbisButton(u8 button);
+
 private:
     s32 width;
     s32 height;
@@ -77,7 +79,6 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
-    SDL_Gamepad* gamepad{nullptr};
 };
 
 } // namespace Frontend

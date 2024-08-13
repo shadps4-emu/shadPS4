@@ -44,17 +44,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     SDL_SetWindowFullscreen(window, Config::isFullscreenMode());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-
-    int gamepad_count;
-    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
-    if (gamepad_count > 0) {
-        gamepad = SDL_OpenGamepad(gamepads[0]);
-    }
-    SDL_free(gamepads);
-    
-    if (gamepad != nullptr) {
-        SDL_SetGamepadLED(gamepad, 0, 0, 255);
-    }
+    controller->TryOpenSDLController();
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
@@ -302,40 +292,62 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
     switch (event->type) { 
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        button = 
-            event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_DOWN ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_UP ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_LEFT ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_DPAD_RIGHT ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_SOUTH ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_NORTH ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_WEST ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_EAST ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_START ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_LEFT_SHOULDER ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_LEFT_STICK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_RIGHT_STICK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD
-            : event->gbutton.button == SDL_GAMEPAD_BUTTON_BACK ? OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD
-            : 0;
+        button = sdlGamepadToOrbisButton(event->gbutton.button);
         if (button != 0) {
             controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
         }
         break;
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        axis = 
-            event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX ? Input::Axis::LeftX
-            : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY ? Input::Axis::LeftY
-            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTX ? Input::Axis::RightX
-            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTY ? Input::Axis::RightY
-            : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ? Input::Axis::TriggerLeft
-            : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ? Input::Axis::TriggerRight
-            : Input::Axis::AxisMax;
+        axis = event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX           ? Input::Axis::LeftX
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY         ? Input::Axis::LeftY
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTX        ? Input::Axis::RightX
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTY        ? Input::Axis::RightY
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER  ? Input::Axis::TriggerLeft
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ? Input::Axis::TriggerRight
+                                                                     : Input::Axis::AxisMax;
         if (axis != Input::Axis::AxisMax) {
             controller->Axis(0, axis, Input::GetAxis(-0x8000, 0x8000, event->gaxis.value));
         }
         break;
+    }
+}
+
+int WindowSDL::sdlGamepadToOrbisButton(u8 button) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    switch (button) {
+        case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
+        case SDL_GAMEPAD_BUTTON_DPAD_UP:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
+        case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
+        case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
+        case SDL_GAMEPAD_BUTTON_SOUTH:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
+        case SDL_GAMEPAD_BUTTON_NORTH:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
+        case SDL_GAMEPAD_BUTTON_WEST:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
+        case SDL_GAMEPAD_BUTTON_EAST:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
+        case SDL_GAMEPAD_BUTTON_START:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+        case SDL_GAMEPAD_BUTTON_BACK:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+        case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+        case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+        case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+        case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+            return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+        default:
+            return 0;
     }
 }
 
