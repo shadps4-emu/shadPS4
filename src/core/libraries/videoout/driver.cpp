@@ -174,14 +174,19 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
     // Update flip status.
     auto* port = req.port;
-    auto& flip_status = port->flip_status;
-    flip_status.count++;
-    flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
-    flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
-    flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
-    flip_status.flipArg = req.flip_arg;
-    flip_status.currentBuffer = req.index;
-    flip_status.flipPendingNum = static_cast<int>(requests.size());
+    {
+        std::unique_lock lock{port->port_mutex};
+        auto& flip_status = port->flip_status;
+        flip_status.count++;
+        flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+        flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+        flip_status.flipArg = req.flip_arg;
+        flip_status.currentBuffer = req.index;
+        if (req.eop) {
+            --flip_status.gcQueueNum;
+        }
+        --flip_status.flipPendingNum;
+    }
 
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
@@ -203,15 +208,18 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
-    u32 num_requests_pending{};
     {
-        std::scoped_lock lock{mutex};
-        num_requests_pending = requests.size();
-    }
+        std::unique_lock lock{port->port_mutex};
+        if (index != -1 && port->flip_status.flipPendingNum >= port->NumRegisteredBuffers()) {
+            LOG_ERROR(Lib_VideoOut, "Flip queue is full");
+            return false;
+        }
 
-    if (index != -1 && num_requests_pending >= port->NumRegisteredBuffers()) {
-        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
-        return false;
+        if (is_eop) {
+            ++port->flip_status.gcQueueNum;
+        }
+        ++port->flip_status.flipPendingNum; // integral GPU and CPU pending flips counter
+        port->flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
     }
 
     if (!is_eop) {
@@ -225,9 +233,6 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     } else {
         SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
-
-    port->flip_status.flipPendingNum = num_requests_pending + 1;
-    port->flip_status.gcQueueNum = 0;
 
     return true;
 }
@@ -249,7 +254,6 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         .port = port,
         .index = index,
         .flip_arg = flip_arg,
-        .submit_tsc = Libraries::Kernel::sceKernelReadTsc(),
         .eop = is_eop,
     });
 }

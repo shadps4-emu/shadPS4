@@ -29,6 +29,7 @@ struct VideoOutPort {
     std::vector<Kernel::SceKernelEqueue> flip_events;
     std::vector<Kernel::SceKernelEqueue> vblank_events;
     std::mutex vo_mutex;
+    std::mutex port_mutex;
     std::condition_variable vo_cv;
     std::condition_variable vblank_cv;
     int flip_rate = 0;
@@ -93,7 +94,6 @@ private:
         VideoOutPort* port;
         s32 index;
         s64 flip_arg;
-        u64 submit_tsc;
         bool eop;
 
         operator bool() const noexcept {
