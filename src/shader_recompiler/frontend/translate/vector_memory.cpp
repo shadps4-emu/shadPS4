@@ -135,8 +135,8 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
 
     // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
     // Set Architecture
-    const IR::Value offset =
-        flags.test(MimgModifier::Offset) ? ir.GetVectorReg(addr_reg++) : IR::Value{};
+    const IR::U32 offset =
+        flags.test(MimgModifier::Offset) ? ir.GetVectorReg<IR::U32>(addr_reg++) : IR::U32{};
     const IR::F32 bias =
         flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
     const IR::F32 dref =
@@ -168,18 +168,17 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
-        const IR::F32 lod = flags.test(MimgModifier::Level0) ? ir.Imm32(0.f) : IR::F32{};
         if (!flags.test(MimgModifier::Pcf)) {
             if (explicit_lod) {
-                return ir.ImageSampleExplicitLod(handle, body, lod, offset, info);
+                return ir.ImageSampleExplicitLod(handle, body, offset, info);
             } else {
-                return ir.ImageSampleImplicitLod(handle, body, bias, offset, {}, info);
+                return ir.ImageSampleImplicitLod(handle, body, bias, offset, info);
             }
         }
         if (explicit_lod) {
-            return ir.ImageSampleDrefExplicitLod(handle, body, dref, lod, offset, info);
+            return ir.ImageSampleDrefExplicitLod(handle, body, dref, offset, info);
         }
-        return ir.ImageSampleDrefImplicitLod(handle, body, dref, bias, offset, {}, info);
+        return ir.ImageSampleDrefImplicitLod(handle, body, dref, bias, offset, info);
     }();
 
     for (u32 i = 0; i < 4; i++) {

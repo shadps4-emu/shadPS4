@@ -357,14 +357,14 @@ Id EmitConvertF64U64(EmitContext& ctx, Id value);
 Id EmitConvertU16U32(EmitContext& ctx, Id value);
 Id EmitConvertU32U16(EmitContext& ctx, Id value);
 
-Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
+Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,
                               Id offset);
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
                               Id offset);
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, const IR::Value& offset);
+                                  Id bias, Id offset);
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, Id offset);
+                                  Id lod, Id offset);
 Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2);
 Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset,
                        Id offset2, Id dref);

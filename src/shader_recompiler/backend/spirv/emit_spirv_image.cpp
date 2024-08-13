@@ -21,14 +21,19 @@ struct ImageOperands {
     boost::container::static_vector<Id, 4> operands;
 };
 
-Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
+Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,
                               Id offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
-    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    if (Sirit::ValidId(bias)) {
+        operands.Add(spv::ImageOperandsMask::Bias, bias);
+    }
+    if (Sirit::ValidId(offset)) {
+        operands.Add(spv::ImageOperandsMask::Offset, offset);
+    }
     return ctx.OpImageSampleImplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
                                         operands.operands);
 }
@@ -39,27 +44,49 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleExplicitLod(ctx.F32[4], sampled_image, coords,
-                                        spv::ImageOperandsMask::Lod, lod);
+    ImageOperands operands;
+    if (Sirit::ValidId(lod)) {
+        operands.Add(spv::ImageOperandsMask::Lod, lod);
+    }
+    if (Sirit::ValidId(offset)) {
+        operands.Add(spv::ImageOperandsMask::Offset, offset);
+    }
+    return ctx.OpImageSampleExplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
+                                        operands.operands);
 }
 
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, const IR::Value& offset) {
+                                  Id bias, Id offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleDrefImplicitLod(ctx.F32[1], sampled_image, coords, dref);
+    ImageOperands operands;
+    if (Sirit::ValidId(bias)) {
+        operands.Add(spv::ImageOperandsMask::Bias, bias);
+    }
+    if (Sirit::ValidId(offset)) {
+        operands.Add(spv::ImageOperandsMask::Offset, offset);
+    }
+    return ctx.OpImageSampleDrefImplicitLod(ctx.F32[1], sampled_image, coords, dref, operands.mask,
+                                            operands.operands);
 }
 
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, Id offset) {
+                                  Id lod, Id offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleDrefExplicitLod(ctx.F32[1], sampled_image, coords, dref,
-                                            spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
+    ImageOperands operands;
+    if (Sirit::ValidId(lod)) {
+        operands.Add(spv::ImageOperandsMask::Lod, lod);
+    }
+    if (Sirit::ValidId(offset)) {
+        operands.Add(spv::ImageOperandsMask::Offset, offset);
+    }
+    return ctx.OpImageSampleDrefExplicitLod(ctx.F32[1], sampled_image, coords, dref, operands.mask,
+                                            operands.operands);
 }
 
 Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2) {

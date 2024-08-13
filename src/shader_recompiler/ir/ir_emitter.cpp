@@ -16,18 +16,6 @@ namespace {
     UNREACHABLE_MSG("Invalid type = {}, functionName = {}, line = {}", u32(type), functionName,
                     lineNumber);
 }
-
-Value MakeLodClampPair(IREmitter& ir, const F32& bias_lod, const F32& lod_clamp) {
-    if (!bias_lod.IsEmpty() && !lod_clamp.IsEmpty()) {
-        return ir.CompositeConstruct(bias_lod, lod_clamp);
-    } else if (!bias_lod.IsEmpty()) {
-        return bias_lod;
-    } else if (!lod_clamp.IsEmpty()) {
-        return lod_clamp;
-    } else {
-        return Value{};
-    }
-}
 } // Anonymous namespace
 
 U1 IREmitter::Imm1(bool value) const {
@@ -1386,30 +1374,26 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
-                                        const Value& offset, const F32& lod_clamp,
+Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
+                                        const U32& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
+}
+
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
                                         TextureInstInfo info) {
-    const Value bias_lc{MakeLodClampPair(*this, bias, lod_clamp)};
-    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, coords, bias_lc, offset);
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& coords, const F32& lod,
-                                        const Value& offset, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, coords, lod, offset);
-}
-
-F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& coords, const F32& dref,
-                                          const F32& bias, const Value& offset,
-                                          const F32& lod_clamp, TextureInstInfo info) {
-    const Value bias_lc{MakeLodClampPair(*this, bias, lod_clamp)};
-    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, coords, dref, bias_lc,
+F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
+                                          const F32& bias, const U32& offset,
+                                          TextureInstInfo info) {
+    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
                      offset);
 }
 
-F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& coords, const F32& dref,
-                                          const F32& lod, const Value& offset,
-                                          TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, coords, dref, lod,
+F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
+                                          const U32& offset, TextureInstInfo info) {
+    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
                      offset);
 }
 

@@ -241,19 +241,21 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& coords,
-                                               const F32& bias, const Value& offset,
-                                               const F32& lod_clamp, TextureInstInfo info);
-    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& coords,
-                                               const F32& lod, const Value& offset,
+    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
+                                               const F32& bias, const U32& offset,
                                                TextureInstInfo info);
-    [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& coords,
+
+    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& body,
+                                               const U32& offset, TextureInstInfo info);
+
+    [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
                                                  const F32& dref, const F32& bias,
-                                                 const Value& offset, const F32& lod_clamp,
+                                                 const U32& offset, TextureInstInfo info);
+
+    [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
+                                                 const F32& dref, const U32& offset,
                                                  TextureInstInfo info);
-    [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& coords,
-                                                 const F32& dref, const F32& lod,
-                                                 const Value& offset, TextureInstInfo info);
+
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
                                             const IR::U1& skip_mips);
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
