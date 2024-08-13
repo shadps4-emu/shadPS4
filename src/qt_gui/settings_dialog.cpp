@@ -4,7 +4,7 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-SettingsDialog::SettingsDialog(QWidget* parent, std::vector<QString>* physical_devices)
+SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
@@ -14,8 +14,8 @@ SettingsDialog::SettingsDialog(QWidget* parent, std::vector<QString>* physical_d
 
     // Add list of available GPUs
     ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
-    for (auto device = physical_devices->begin(); device != physical_devices->end(); ++device) {
-        ui->graphicsAdapterBox->addItem(*device);
+    for (const auto& device : physical_devices) {
+        ui->graphicsAdapterBox->addItem(device);
     }
 
     LoadValuesFromConfig();

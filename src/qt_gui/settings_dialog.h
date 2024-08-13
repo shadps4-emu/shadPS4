@@ -5,6 +5,7 @@
 
 #include <QDialog>
 #include <QPushButton>
+#include <span>
 
 #include "common/config.h"
 #include "common/path_util.h"
@@ -16,8 +17,7 @@ class SettingsDialog;
 class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr,
-                            std::vector<QString>* physical_devices = nullptr);
+    explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
     int exec() override;

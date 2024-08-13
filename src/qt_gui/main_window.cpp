@@ -202,7 +202,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(this, &m_physical_devices);
+        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
         settingsDialog->exec();
     });
 
