@@ -187,7 +187,7 @@ public:
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
     void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
-    void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
+    void BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst);
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
@@ -199,6 +199,7 @@ public:
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
     void DS_MAX_U32(const GcnInst& inst);
     void DS_MIN_U32(const GcnInst& inst);
+    void DS_ADD_U32(const GcnInst& inst);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);

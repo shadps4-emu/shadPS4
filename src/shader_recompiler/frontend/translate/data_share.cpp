@@ -29,6 +29,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_MAX_U32(inst);
     case Opcode::DS_MIN_U32:
         return DS_MIN_U32(inst);
+    case Opcode::DS_ADD_U32:
+        return DS_ADD_U32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -141,6 +143,21 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
 
     if (inst.dst[0].type != ScalarType::Undefined) {
         SetDst(inst.dst[0], old_value);
+    }
+}
+
+void Translator::DS_ADD_U32(const GcnInst& inst) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset = ir.Imm32(
+        u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::U32 aligned_addr = ir.BitwiseAnd(addr_offset, ir.Imm32(~3));
+    const IR::U32 old_value = IR::U32(ir.LoadShared(32, false, aligned_addr));
+    const IR::U32 new_value = ir.IAdd(old_value, data);
+    ir.WriteShared(32, new_value, aligned_addr);
+    if (inst.dst[0].type != ScalarType::Undefined) {
+        SetDst(inst.dst[0], new_value);
     }
 }
 
