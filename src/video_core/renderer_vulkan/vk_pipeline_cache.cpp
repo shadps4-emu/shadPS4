@@ -322,6 +322,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
         Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
         info.pgm_base = cs_pgm.Address<uintptr_t>();
+        info.pgm_hash = compute_key;
         auto program =
             Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 

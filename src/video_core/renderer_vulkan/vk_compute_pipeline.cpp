@@ -114,7 +114,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
         }
         const u32 size = vsharp.GetSize();
-        if (buffer.is_written) {
+        if (buffer.is_written && compute_key != 0xe991ee280187cbc) {
             texture_cache.InvalidateMemory(address, size, true);
         }
         const u32 alignment =
