@@ -421,6 +421,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
+                      src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
