@@ -15,6 +15,7 @@ bool isNeoMode();
 bool isFullscreenMode();
 std::string getLogFilter();
 std::string getLogType();
+std::string getUserName();
 
 u32 getScreenWidth();
 u32 getScreenHeight();
