@@ -429,6 +429,12 @@ int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pPar
     if (pParam != nullptr) {
         LOG_INFO(Lib_Pad, "scePadSetLightBar called handle = {} rgb = {} {} {}", handle, pParam->r,
                  pParam->g, pParam->b);
+
+        if (pParam->r < 0xD && pParam->g < 0xD && pParam->b < 0xD) {
+            LOG_INFO(Lib_Pad, "Invalid lightbar setting");
+            return ORBIS_PAD_ERROR_INVALID_LIGHTBAR_SETTING;
+        }
+
         auto* controller = Common::Singleton<Input::GameController>::Instance();
         controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
         return ORBIS_OK;
