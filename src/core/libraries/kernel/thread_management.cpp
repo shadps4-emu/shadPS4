@@ -1094,6 +1094,19 @@ int PS4_SYSV_ABI scePthreadAttrGetstack(ScePthreadAttr* attr, void** addr, size_
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI scePthreadAttrSetstack(ScePthreadAttr* attr, void* addr, size_t size) {
+    if (attr == nullptr || *attr == nullptr || addr == nullptr || size < 0x4000) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, size);
+    LOG_INFO(Kernel_Pthread, "scePthreadAttrSetstack: result = {}", result);
+
+    if (result == 0) {
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_EINVAL;
+}
+
 int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res) {
     int result = pthread_join(thread->pth, res);
     LOG_INFO(Kernel_Pthread, "scePthreadJoin result = {}", result);
@@ -1550,6 +1563,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("B5GmVDKwpn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_yield);
 
     LIB_FUNCTION("-quPa4SEJUw", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstack);
+    LIB_FUNCTION("Bvn74vj6oLo", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstack);
     LIB_FUNCTION("Ru36fiTtJzA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstackaddr);
     LIB_FUNCTION("-fA+7ZlGDQs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstacksize);
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", 1, 1, scePthreadOnce);

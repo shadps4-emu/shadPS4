@@ -11,6 +11,22 @@ class SymbolsResolver;
 
 namespace Libraries::NpManager {
 
+constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
+
+typedef int OrbisUserServiceUserId;
+
+struct OrbisNpOnlineId {
+    char data[ORBIS_NP_ONLINEID_MAX_LENGTH];
+    char term;
+    char dummy[3];
+};
+
+struct OrbisNpId {
+    OrbisNpOnlineId handle;
+    u8 opt[8];
+    u8 reserved[8];
+};
+
 int PS4_SYSV_ABI Func_EF4378573542A508();
 int PS4_SYSV_ABI _sceNpIpcCreateMemoryFromKernel();
 int PS4_SYSV_ABI _sceNpIpcCreateMemoryFromPool();
@@ -204,7 +220,7 @@ int PS4_SYSV_ABI sceNpGetAccountLanguage2();
 int PS4_SYSV_ABI sceNpGetAccountLanguageA();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatus();
 int PS4_SYSV_ABI sceNpGetGamePresenceStatusA();
-int PS4_SYSV_ABI sceNpGetNpId();
+int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId);
 int PS4_SYSV_ABI sceNpGetNpReachabilityState();
 int PS4_SYSV_ABI sceNpGetOnlineId();
 int PS4_SYSV_ABI sceNpGetParentalControlInfo();

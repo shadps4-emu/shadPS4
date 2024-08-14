@@ -16,18 +16,6 @@ void Visit(Info& info, IR::Inst& inst) {
         info.stores.Set(inst.Arg(0).Attribute(), inst.Arg(2).U32());
         break;
     }
-    case IR::Opcode::LoadSharedS8:
-    case IR::Opcode::LoadSharedU8:
-    case IR::Opcode::WriteSharedU8:
-        info.uses_shared_u8 = true;
-        info.uses_shared = true;
-        break;
-    case IR::Opcode::LoadSharedS16:
-    case IR::Opcode::LoadSharedU16:
-    case IR::Opcode::WriteSharedU16:
-        info.uses_shared_u16 = true;
-        info.uses_shared = true;
-        break;
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU32:

@@ -93,6 +93,7 @@ bool Swapchain::AcquireNextImage() {
     case vk::Result::eSuboptimalKHR:
     case vk::Result::eErrorSurfaceLostKHR:
     case vk::Result::eErrorOutOfDateKHR:
+    case vk::Result::eErrorUnknown:
         needs_recreation = true;
         break;
     default:
