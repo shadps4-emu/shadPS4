@@ -25,12 +25,12 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_WRITE(32, false, true, inst);
     case Opcode::DS_WRITE2_B64:
         return DS_WRITE(64, false, true, inst);
-    case Opcode::DS_MAX_U32:
-        return DS_MAX_U32(inst);
-    case Opcode::DS_MIN_U32:
-        return DS_MIN_U32(inst);
     case Opcode::DS_ADD_U32:
         return DS_ADD_U32(inst);
+    case Opcode::DS_MIN_U32:
+        return DS_MIN_U32(inst);
+    case Opcode::DS_MAX_U32:
+        return DS_MAX_U32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -116,19 +116,16 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnI
     }
 }
 
-void Translator::DS_MAX_U32(const GcnInst& inst) {
+void Translator::DS_ADD_U32(const GcnInst& inst) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
 
-    const IR::U32 old_value = IR::U32(ir.LoadShared(32, false, addr_offset));
-    const IR::U32 new_value = ir.UMax(old_value, data);
-    ir.WriteShared(32, new_value, addr_offset);
+    const IR::U32 value = ir.SharedAtomicIAdd(addr_offset, data);
+    ir.WriteShared(32, value, addr_offset);
 
-    if (inst.dst[0].type != ScalarType::Undefined) {
-        SetDst(inst.dst[0], old_value);
-    }
+    SetDst(inst.dst[0], value);
 }
 
 void Translator::DS_MIN_U32(const GcnInst& inst) {
@@ -137,27 +134,22 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
 
-    const IR::U32 old_value = IR::U32(ir.LoadShared(32, false, addr_offset));
-    const IR::U32 new_value = ir.UMin(old_value, data);
-    ir.WriteShared(32, new_value, addr_offset);
+    const IR::U32 value = ir.SharedAtomicUMax(addr_offset, data);
+    ir.WriteShared(32, value, addr_offset);
 
-    if (inst.dst[0].type != ScalarType::Undefined) {
-        SetDst(inst.dst[0], old_value);
-    }
+    SetDst(inst.dst[0], value);
 }
 
-void Translator::DS_ADD_U32(const GcnInst& inst) {
+void Translator::DS_MAX_U32(const GcnInst& inst) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const IR::U32 aligned_addr = ir.BitwiseAnd(addr_offset, ir.Imm32(~3));
-    const IR::U32 old_value = IR::U32(ir.LoadShared(32, false, aligned_addr));
-    const IR::U32 new_value = ir.IAdd(old_value, data);
-    ir.WriteShared(32, new_value, aligned_addr);
-    if (inst.dst[0].type != ScalarType::Undefined) {
-        SetDst(inst.dst[0], new_value);
-    }
+
+    const IR::U32 value = ir.SharedAtomicUMax(addr_offset, data);
+    ir.WriteShared(32, value, addr_offset);
+
+    SetDst(inst.dst[0], value);
 }
 
 void Translator::S_BARRIER() {

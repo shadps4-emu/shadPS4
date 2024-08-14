@@ -33,6 +33,13 @@ OPCODE(WriteSharedU32,                                      Void,           U32,
 OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
 OPCODE(WriteSharedU128,                                     Void,           U32,            U32x4,                                                          )
 
+// Shared atomic operations
+OPCODE(SharedAtomicIAdd32,                                  U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMin32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicUMin32,                                  U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMax32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicUMax32,                                  U32,            U32,            U32,                                                            )
+
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
 OPCODE(GetThreadBitScalarReg,                               U1,             ScalarReg,                                                                      )

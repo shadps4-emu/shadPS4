@@ -12,6 +12,15 @@ std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
     return {scope, semantics};
 }
 
+Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
+                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
+    const Id shift_id{ctx.ConstU32(2U)};
+    const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+}
+
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     auto& buffer = ctx.buffers[handle];
@@ -30,6 +39,26 @@ Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 } // Anonymous namespace
+
+Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicIAdd);
+}
+
+Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicUMax);
+}
+
+Id EmitSharedAtomicSMax32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicSMax);
+}
+
+Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicUMin);
+}
+
+Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicSMin);
+}
 
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicIAdd);

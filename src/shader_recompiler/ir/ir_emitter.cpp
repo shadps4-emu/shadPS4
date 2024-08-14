@@ -286,6 +286,42 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     }
 }
 
+U32U64 IREmitter::SharedAtomicIAdd(const U32U64& a, const U32U64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicIAdd32, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
+}
+
+U32 IREmitter::SharedAtomicSMin(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SharedAtomicSMin32, a, b);
+}
+
+U32 IREmitter::SharedAtomicUMin(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SharedAtomicUMin32, a, b);
+}
+
+U32 IREmitter::SharedAtomicIMin(const U32& a, const U32& b, bool is_signed) {
+    return is_signed ? SharedAtomicSMin(a, b) : SharedAtomicUMin(a, b);
+}
+
+U32 IREmitter::SharedAtomicSMax(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SharedAtomicSMax32, a, b);
+}
+
+U32 IREmitter::SharedAtomicUMax(const U32& a, const U32& b) {
+    return Inst<U32>(Opcode::SharedAtomicUMax32, a, b);
+}
+
+U32 IREmitter::SharedAtomicIMax(const U32& a, const U32& b, bool is_signed) {
+    return is_signed ? SharedAtomicSMax(a, b) : SharedAtomicUMax(a, b);
+}
+
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
