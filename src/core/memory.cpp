@@ -273,10 +273,10 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     std::scoped_lock lk{mutex};
 
     auto it = FindVMA(addr);
-    if (!it->second.IsMapped() && flags == 1) {
+    if (it->second.type == VMAType::Free && flags == 1) {
         it++;
     }
-    if (!it->second.IsMapped()) {
+    if (it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
