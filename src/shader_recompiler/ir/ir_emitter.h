@@ -101,6 +101,8 @@ public:
                                          BufferInstInfo info);
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
+    void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                           const Value& data, BufferInstInfo info);
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a,
                                          const Value& b, BufferInstInfo info);

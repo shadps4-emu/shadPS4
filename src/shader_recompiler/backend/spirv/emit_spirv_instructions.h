@@ -76,6 +76,10 @@ void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address
 void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+void EmitStoreBufferFormatF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+void EmitStoreBufferFormatF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+void EmitStoreBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
