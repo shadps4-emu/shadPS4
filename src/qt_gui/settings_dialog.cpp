@@ -4,12 +4,19 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::SettingsDialog) {
+SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
+    : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
+
+    // Add list of available GPUs
+    ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
+    for (const auto& device : physical_devices) {
+        ui->graphicsAdapterBox->addItem(device);
+    }
 
     LoadValuesFromConfig();
 
@@ -40,7 +47,10 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Se
 
     // GPU TAB
     {
-        // TODO: Implement graphics device changing
+        // First options is auto selection -1, so gpuId on the GUI will always have to subtract 1
+        // when setting and add 1 when getting to select the correct gpu in Qt
+        connect(ui->graphicsAdapterBox, &QComboBox::currentIndexChanged, this,
+                [](int index) { Config::setGpuId(index - 1); });
 
         connect(ui->widthSpinBox, &QSpinBox::valueChanged, this,
                 [](int val) { Config::setScreenWidth(val); });
@@ -98,6 +108,7 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent), ui(new Ui::Se
 void SettingsDialog::LoadValuesFromConfig() {
     ui->consoleLanguageComboBox->setCurrentIndex(Config::GetLanguage());
 
+    ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
     ui->vblankSpinBox->setValue(Config::vblankDiv());

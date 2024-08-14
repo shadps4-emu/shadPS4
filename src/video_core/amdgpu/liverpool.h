@@ -867,6 +867,33 @@ struct Liverpool {
         }
     };
 
+    union ShaderStageEnable {
+        u32 raw;
+        BitField<0, 2, u32> ls_en;
+        BitField<2, 1, u32> hs_en;
+        BitField<3, 2, u32> es_en;
+        BitField<5, 1, u32> gs_en;
+        BitField<6, 1, u32> vs_en;
+
+        bool IsStageEnabled(u32 stage) {
+            switch (stage) {
+            case 0:
+            case 1:
+                return true;
+            case 2:
+                return gs_en.Value();
+            case 3:
+                return es_en.Value();
+            case 4:
+                return hs_en.Value();
+            case 5:
+                return ls_en.Value();
+            default:
+                UNREACHABLE();
+            }
+        }
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -945,7 +972,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A1 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2DF - 0xA2A9 - 1);
+            INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
+            ShaderStageEnable stage_enable;
+            INSERT_PADDING_WORDS(9);
             PolygonOffset poly_offset;
             INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
             AaConfig aa_config;
@@ -1140,6 +1169,7 @@ static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);

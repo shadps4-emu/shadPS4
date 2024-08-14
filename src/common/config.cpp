@@ -124,6 +124,10 @@ bool vkValidationGpuEnabled() {
     return vkValidationGpu;
 }
 
+void setGpuId(s32 selectedGpuId) {
+    gpuId = selectedGpuId;
+}
+
 void setScreenWidth(u32 width) {
     screenWidth = width;
 }
@@ -451,6 +455,7 @@ void setDefaultValues() {
     vkValidation = false;
     rdocEnable = false;
     m_language = 1;
+    gpuId = -1;
 }
 
 } // namespace Config

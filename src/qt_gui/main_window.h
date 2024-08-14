@@ -54,6 +54,7 @@ private:
     void CreateActions();
     void CreateRecentGameActions();
     void CreateDockWindows();
+    void GetPhysicalDevices();
     void LoadGameLists();
     void CreateConnects();
     void SetLastUsedTheme();
@@ -79,6 +80,8 @@ private:
     QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
+    // Available GPU devices
+    std::vector<QString> m_physical_devices;
 
     PSF psf;
 

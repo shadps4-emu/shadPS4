@@ -36,6 +36,7 @@ void setNullGpu(bool enable);
 void setDumpShaders(bool enable);
 void setDumpPM4(bool enable);
 void setVblankDiv(u32 value);
+void setGpuId(s32 selectedGpuId);
 void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
