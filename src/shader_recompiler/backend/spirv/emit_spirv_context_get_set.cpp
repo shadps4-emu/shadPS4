@@ -215,6 +215,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
     if (attr == IR::Attribute::Position1) {
+        LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
         return;
     }
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
