@@ -347,6 +347,26 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
+void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                                  const Value& data, BufferInstInfo info) {
+    switch (num_dwords) {
+    case 1:
+        Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
+        break;
+    case 2:
+        Inst(Opcode::StoreBufferFormatF32x2, Flags{info}, handle, address, data);
+        break;
+    case 3:
+        Inst(Opcode::StoreBufferFormatF32x3, Flags{info}, handle, address, data);
+        break;
+    case 4:
+        Inst(Opcode::StoreBufferFormatF32x4, Flags{info}, handle, address, data);
+        break;
+    default:
+        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
+    }
+}
+
 U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
 }

@@ -53,6 +53,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_GET_RESINFO:
         return IMAGE_GET_RESINFO(inst);
 
+        // Buffer load operations
     case Opcode::TBUFFER_LOAD_FORMAT_X:
         return BUFFER_LOAD_FORMAT(1, true, true, inst);
     case Opcode::TBUFFER_LOAD_FORMAT_XY:
@@ -61,6 +62,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_LOAD_FORMAT(3, true, true, inst);
     case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
         return BUFFER_LOAD_FORMAT(4, true, true, inst);
+
     case Opcode::BUFFER_LOAD_FORMAT_X:
         return BUFFER_LOAD_FORMAT(1, false, true, inst);
     case Opcode::BUFFER_LOAD_FORMAT_XY:
@@ -69,6 +71,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_LOAD_FORMAT(3, false, true, inst);
     case Opcode::BUFFER_LOAD_FORMAT_XYZW:
         return BUFFER_LOAD_FORMAT(4, false, true, inst);
+
     case Opcode::BUFFER_LOAD_DWORD:
         return BUFFER_LOAD_FORMAT(1, false, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX2:
@@ -77,16 +80,25 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_LOAD_FORMAT(3, false, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX4:
         return BUFFER_LOAD_FORMAT(4, false, false, inst);
+
+        // Buffer store operations
     case Opcode::BUFFER_STORE_FORMAT_X:
-    case Opcode::BUFFER_STORE_DWORD:
-        return BUFFER_STORE_FORMAT(1, false, inst);
-    case Opcode::BUFFER_STORE_DWORDX2:
-        return BUFFER_STORE_FORMAT(2, false, inst);
-    case Opcode::BUFFER_STORE_DWORDX3:
-        return BUFFER_STORE_FORMAT(3, false, inst);
+        return BUFFER_STORE_FORMAT(1, false, true, inst);
+    case Opcode::BUFFER_STORE_FORMAT_XY:
+        return BUFFER_STORE_FORMAT(2, false, true, inst);
+    case Opcode::BUFFER_STORE_FORMAT_XYZ:
+        return BUFFER_STORE_FORMAT(3, false, true, inst);
     case Opcode::BUFFER_STORE_FORMAT_XYZW:
+        return BUFFER_STORE_FORMAT(4, false, true, inst);
+
+    case Opcode::BUFFER_STORE_DWORD:
+        return BUFFER_STORE_FORMAT(1, false, false, inst);
+    case Opcode::BUFFER_STORE_DWORDX2:
+        return BUFFER_STORE_FORMAT(2, false, false, inst);
+    case Opcode::BUFFER_STORE_DWORDX3:
+        return BUFFER_STORE_FORMAT(3, false, false, inst);
     case Opcode::BUFFER_STORE_DWORDX4:
-        return BUFFER_STORE_FORMAT(4, false, inst);
+        return BUFFER_STORE_FORMAT(4, false, false, inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -359,7 +371,8 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_forma
     }
 }
 
-void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst) {
+void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format,
+                                     const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
@@ -410,7 +423,11 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnIns
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    ir.StoreBuffer(num_dwords, handle, address, value, info);
+    if (is_format) {
+        ir.StoreBufferFormat(num_dwords, handle, address, value, info);
+    } else {
+        ir.StoreBuffer(num_dwords, handle, address, value, info);
+    }
 }
 
 void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
