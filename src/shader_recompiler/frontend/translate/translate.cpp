@@ -149,8 +149,6 @@ T Translator::GetSrc(const InstOperand& operand) {
         } else {
             return m0_value;
         }
-    case OperandField::Undefined:
-        break;
     default:
         UNREACHABLE();
     }
