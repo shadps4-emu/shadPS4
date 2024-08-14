@@ -74,11 +74,11 @@ int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -90,35 +90,35 @@ int PS4_SYSV_ABI scePthreadAttrDestroy(ScePthreadAttr* attr) {
     *attr = nullptr;
 
     if (result == 0) {
-        return SCE_OK;
+        return ORBIS_OK;
     }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetguardsize(ScePthreadAttr* attr, size_t guard_size) {
     if (attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     (*attr)->guard_size = guard_size;
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetguardsize(const ScePthreadAttr* attr, size_t* guard_size) {
     if (guard_size == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     *guard_size = (*attr)->guard_size;
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetinheritsched(const ScePthreadAttr* attr, int* inherit_sched) {
 
     if (inherit_sched == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_attr_getinheritsched(&(*attr)->pth_attr, inherit_sched);
@@ -134,12 +134,12 @@ int PS4_SYSV_ABI scePthreadAttrGetinheritsched(const ScePthreadAttr* attr, int* 
         UNREACHABLE();
     }
 
-    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+    return (result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL);
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetdetachstate(const ScePthreadAttr* attr, int* state) {
     if (state == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     // int result = pthread_attr_getdetachstate(&(*attr)->pth_attr, state);
@@ -157,12 +157,12 @@ int PS4_SYSV_ABI scePthreadAttrGetdetachstate(const ScePthreadAttr* attr, int* s
         UNREACHABLE();
     }
 
-    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+    return (result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL);
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate) {
     if (attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int pstate = PTHREAD_CREATE_JOINABLE;
@@ -180,12 +180,12 @@ int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachst
     // int result = pthread_attr_setdetachstate(&(*attr)->pth_attr, pstate);
     int result = 0;
     (*attr)->detached = (pstate == PTHREAD_CREATE_DETACHED);
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched) {
     if (attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int pinherit_sched = PTHREAD_INHERIT_SCHED;
@@ -202,14 +202,14 @@ int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inherit
 
     int result = pthread_attr_setinheritsched(&(*attr)->pth_attr, pinherit_sched);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetschedparam(const ScePthreadAttr* attr,
                                              SceKernelSchedParam* param) {
 
     if (param == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_attr_getschedparam(&(*attr)->pth_attr, param);
@@ -222,13 +222,13 @@ int PS4_SYSV_ABI scePthreadAttrGetschedparam(const ScePthreadAttr* attr,
         param->sched_priority = 700;
     }
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
                                              const SceKernelSchedParam* param) {
     if (param == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     SceKernelSchedParam pparam{};
@@ -243,12 +243,12 @@ int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
     // We always use SCHED_OTHER for now, so don't call this for now.
     // int result = pthread_attr_setschedparam(&(*attr)->pth_attr, &pparam);
     int result = 0;
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetschedpolicy(const ScePthreadAttr* attr, int* policy) {
     if (policy == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_attr_getschedpolicy(&(*attr)->pth_attr, policy);
@@ -267,12 +267,12 @@ int PS4_SYSV_ABI scePthreadAttrGetschedpolicy(const ScePthreadAttr* attr, int* p
         UNREACHABLE();
     }
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) {
     if (attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int ppolicy = SCHED_OTHER; // winpthreads only supports SCHED_OTHER
@@ -282,7 +282,7 @@ int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy) 
 
     (*attr)->policy = policy;
     int result = pthread_attr_setschedpolicy(&(*attr)->pth_attr, ppolicy);
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 ScePthread PS4_SYSV_ABI scePthreadSelf() {
@@ -294,51 +294,51 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
     LOG_INFO(Kernel_Pthread, "called");
 
     if (pattr == nullptr || *pattr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     (*pattr)->affinity = mask;
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetaffinity(const ScePthreadAttr* pattr,
                                            /* SceKernelCpumask*/ u64* mask) {
     if (pattr == nullptr || *pattr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     *mask = (*pattr)->affinity;
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetstackaddr(const ScePthreadAttr* attr, void** stack_addr) {
 
     if (stack_addr == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     size_t stack_size = 0;
     int result = pthread_attr_getstack(&(*attr)->pth_attr, stack_addr, &stack_size);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetstacksize(const ScePthreadAttr* attr, size_t* stack_size) {
 
     if (stack_size == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_attr_getstacksize(&(*attr)->pth_attr, stack_size);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
 
     if (addr == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     size_t stack_size = 0;
@@ -346,25 +346,25 @@ int PS4_SYSV_ABI scePthreadAttrSetstackaddr(ScePthreadAttr* attr, void* addr) {
 
     int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, stack_size);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetstacksize(ScePthreadAttr* attr, size_t stack_size) {
 
     if (stack_size == 0 || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_attr_setstacksize(&(*attr)->pth_attr, stack_size);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_init(ScePthreadAttr* attr) {
     int result = scePthreadAttrInit(attr);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -374,8 +374,8 @@ int PS4_SYSV_ABI posix_pthread_attr_init(ScePthreadAttr* attr) {
 int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t stacksize) {
     int result = scePthreadAttrSetstacksize(attr, stacksize);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -386,7 +386,7 @@ int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpuma
     LOG_INFO(Kernel_Pthread, "called");
 
     if (thread == nullptr) {
-        return SCE_KERNEL_ERROR_ESRCH;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
 
     auto result = scePthreadAttrSetaffinity(&thread->attr, mask);
@@ -398,7 +398,7 @@ int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u
     LOG_INFO(Kernel_Pthread, "called");
 
     if (thread == nullptr) {
-        return SCE_KERNEL_ERROR_ESRCH;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
 
     auto result = scePthreadAttrGetaffinity(&thread->attr, mask);
@@ -426,7 +426,7 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
     const ScePthreadMutexattr* attr;
 
     if (mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (mutex_attr == nullptr) {
         attr = g_pthread_cxt->getDefaultMutexattr();
@@ -453,22 +453,22 @@ int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMut
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     case EINVAL:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadMutexDestroy(ScePthreadMutex* mutex) {
 
     if (mutex == nullptr || *mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutex_destroy(&(*mutex)->pth_mutex);
@@ -480,12 +480,12 @@ int PS4_SYSV_ABI scePthreadMutexDestroy(ScePthreadMutex* mutex) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EBUSY:
-        return SCE_KERNEL_ERROR_EBUSY;
+        return ORBIS_KERNEL_ERROR_EBUSY;
     case EINVAL:
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
@@ -498,11 +498,11 @@ int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -525,7 +525,7 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
 
     int result = pthread_mutexattr_settype(&(*attr)->pth_mutex_attr, ptype);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol) {
@@ -550,13 +550,13 @@ int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int p
     int result = pthread_mutexattr_setprotocol(&(*attr)->pth_mutex_attr, pprotocol);
 #endif
     (*attr)->pprotocol = pprotocol;
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
     mutex = createMutex(mutex);
     if (mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutex_lock(&(*mutex)->pth_mutex);
@@ -566,22 +566,22 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     case EINVAL:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     case EDEADLK:
-        return SCE_KERNEL_ERROR_EDEADLK;
+        return ORBIS_KERNEL_ERROR_EDEADLK;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
     mutex = createMutex(mutex);
     if (mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutex_unlock(&(*mutex)->pth_mutex);
@@ -591,13 +591,13 @@ int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EINVAL:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     case EPERM:
-        return SCE_KERNEL_ERROR_EPERM;
+        return ORBIS_KERNEL_ERROR_EPERM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -609,11 +609,11 @@ int PS4_SYSV_ABI scePthreadMutexattrDestroy(ScePthreadMutexattr* attr) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -635,7 +635,7 @@ ScePthreadCond* createCond(ScePthreadCond* addr) {
 int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondattr* attr,
                                     const char* name) {
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (attr == nullptr) {
@@ -658,15 +658,15 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     case EINVAL:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -677,34 +677,34 @@ int PS4_SYSV_ABI scePthreadCondattrInit(ScePthreadCondattr* attr) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadCondBroadcast(ScePthreadCond* cond) {
     cond = createCond(cond);
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_cond_broadcast(&(*cond)->cond);
 
     LOG_TRACE(Kernel_Pthread, "called name={}, result={}", (*cond)->name, result);
 
-    return (result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL);
+    return (result == 0 ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL);
 }
 
 int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* mutex, u64 usec) {
     cond = createCond(cond);
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (mutex == nullptr || *mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     timespec time{};
     time.tv_sec = usec / 1000000;
@@ -715,21 +715,21 @@ int PS4_SYSV_ABI scePthreadCondTimedwait(ScePthreadCond* cond, ScePthreadMutex* 
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ETIMEDOUT:
-        return SCE_KERNEL_ERROR_ETIMEDOUT;
+        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
     case EINTR:
-        return SCE_KERNEL_ERROR_EINTR;
+        return ORBIS_KERNEL_ERROR_EINTR;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_cond_destroy(&(*cond)->cond);
 
@@ -740,11 +740,11 @@ int PS4_SYSV_ABI scePthreadCondDestroy(ScePthreadCond* cond) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EBUSY:
-        return SCE_KERNEL_ERROR_EBUSY;
+        return ORBIS_KERNEL_ERROR_EBUSY;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -752,8 +752,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_init(ScePthreadMutex* mutex, const ScePthre
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
     int result = scePthreadMutexInit(mutex, attr, nullptr);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -764,8 +764,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_lock redirect to scePthreadMutexLock");
     int result = scePthreadMutexLock(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -776,8 +776,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_unlock redirect to scePthreadMutexUnlock");
     int result = scePthreadMutexUnlock(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -787,8 +787,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex) {
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(ScePthreadMutex* mutex) {
     int result = scePthreadMutexDestroy(mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -798,8 +798,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_destroy(ScePthreadMutex* mutex) {
 int PS4_SYSV_ABI posix_pthread_cond_wait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
     int result = scePthreadCondWait(cond, mutex);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -810,8 +810,8 @@ int PS4_SYSV_ABI posix_pthread_cond_timedwait(ScePthreadCond* cond, ScePthreadMu
                                               u64 usec) {
     int result = scePthreadCondTimedwait(cond, mutex, usec);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -821,8 +821,8 @@ int PS4_SYSV_ABI posix_pthread_cond_timedwait(ScePthreadCond* cond, ScePthreadMu
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
     int result = scePthreadCondBroadcast(cond);
     if (result != 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -832,8 +832,8 @@ int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond) {
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
     int result = scePthreadMutexattrInit(attr);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -843,8 +843,8 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_init(ScePthreadMutexattr* attr) {
 int PS4_SYSV_ABI posix_pthread_mutexattr_settype(ScePthreadMutexattr* attr, int type) {
     int result = scePthreadMutexattrSettype(attr, type);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -905,7 +905,7 @@ static int pthread_mutex_timedlock(pthread_mutex_t* mutex, const struct timespec
 int PS4_SYSV_ABI scePthreadMutexTimedlock(ScePthreadMutex* mutex, u64 usec) {
     mutex = createMutex(mutex);
     if (mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     timespec time{};
@@ -915,21 +915,21 @@ int PS4_SYSV_ABI scePthreadMutexTimedlock(ScePthreadMutex* mutex, u64 usec) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ETIMEDOUT:
-        return SCE_KERNEL_ERROR_ETIMEDOUT;
+        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
     case EINTR:
-        return SCE_KERNEL_ERROR_EINTR;
+        return ORBIS_KERNEL_ERROR_EINTR;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* src) {
     if (dst == nullptr || *dst == nullptr || src == nullptr || *src == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     u64 mask = 0;
@@ -970,7 +970,7 @@ static int pthread_copy_attributes(ScePthreadAttr* dst, const ScePthreadAttr* sr
 
 int PS4_SYSV_ABI scePthreadAttrGet(ScePthread thread, ScePthreadAttr* attr) {
     if (thread == nullptr || attr == nullptr || *attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     return pthread_copy_attributes(attr, &thread->attr);
@@ -1003,7 +1003,7 @@ static void* run_thread(void* arg) {
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   PthreadEntryFunc start_routine, void* arg, const char* name) {
     if (thread == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
@@ -1040,17 +1040,17 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     case EDEADLK:
-        return SCE_KERNEL_ERROR_EDEADLK;
+        return ORBIS_KERNEL_ERROR_EDEADLK;
     case EPERM:
-        return SCE_KERNEL_ERROR_EPERM;
+        return ORBIS_KERNEL_ERROR_EPERM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -1089,9 +1089,9 @@ int PS4_SYSV_ABI scePthreadAttrGetstack(ScePthreadAttr* attr, void** addr, size_
     LOG_INFO(Kernel_Pthread, "scePthreadAttrGetstack: result = {}", result);
 
     if (result == 0) {
-        return SCE_OK;
+        return ORBIS_OK;
     }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetstack(ScePthreadAttr* attr, void* addr, size_t size) {
@@ -1134,7 +1134,7 @@ ScePthread PS4_SYSV_ABI posix_pthread_self() {
 int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
     cond = createCond(cond);
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_cond_signal(&(*cond)->cond);
@@ -1143,21 +1143,21 @@ int PS4_SYSV_ABI scePthreadCondSignal(ScePthreadCond* cond) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EBUSY:
-        return SCE_KERNEL_ERROR_EBUSY;
+        return ORBIS_KERNEL_ERROR_EBUSY;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex) {
     cond = createCond(cond);
     if (cond == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (mutex == nullptr || *mutex == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_cond_wait(&(*cond)->cond, &(*mutex)->pth_mutex);
 
@@ -1165,19 +1165,19 @@ int PS4_SYSV_ABI scePthreadCondWait(ScePthreadCond* cond, ScePthreadMutex* mutex
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case EINTR:
-        return SCE_KERNEL_ERROR_EINTR;
+        return ORBIS_KERNEL_ERROR_EINTR;
     case EAGAIN:
-        return SCE_KERNEL_ERROR_EAGAIN;
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
 int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     if (attr == nullptr) {
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int result = pthread_condattr_destroy(&(*attr)->cond_attr);
 
@@ -1185,11 +1185,11 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
 
     switch (result) {
     case 0:
-        return SCE_OK;
+        return ORBIS_OK;
     case ENOMEM:
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     default:
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 }
 
@@ -1254,8 +1254,8 @@ int PS4_SYSV_ABI posix_pthread_mutex_trylock(ScePthreadMutex* mutex) {
 int PS4_SYSV_ABI posix_pthread_attr_destroy(ScePthreadAttr* attr) {
     int result = scePthreadAttrDestroy(attr);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1266,8 +1266,8 @@ int PS4_SYSV_ABI posix_pthread_attr_setschedparam(ScePthreadAttr* attr,
                                                   const SceKernelSchedParam* param) {
     int result = scePthreadAttrSetschedparam(attr, param);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1277,8 +1277,8 @@ int PS4_SYSV_ABI posix_pthread_attr_setschedparam(ScePthreadAttr* attr,
 int PS4_SYSV_ABI posix_pthread_attr_setinheritsched(ScePthreadAttr* attr, int inheritSched) {
     int result = scePthreadAttrSetinheritsched(attr, inheritSched);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1288,8 +1288,8 @@ int PS4_SYSV_ABI posix_pthread_attr_setinheritsched(ScePthreadAttr* attr, int in
 int PS4_SYSV_ABI posix_pthread_setprio(ScePthread thread, int prio) {
     int result = scePthreadSetprio(thread, prio);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1300,8 +1300,8 @@ int PS4_SYSV_ABI posix_pthread_attr_setdetachstate(ScePthreadAttr* attr, int det
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutexattr_init redirect to scePthreadMutexattrInit");
     int result = scePthreadAttrSetdetachstate(attr, detachstate);
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1313,8 +1313,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(ScePthread* thread, const ScePthre
                                               const char* name) {
     int result = scePthreadCreate(thread, attr, start_routine, arg, name);
     if (result != 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1347,8 +1347,8 @@ int PS4_SYSV_ABI posix_pthread_cond_init(ScePthreadCond* cond, const ScePthreadC
     // LOG_INFO(Kernel_Pthread, "posix pthread_mutex_init redirect to scePthreadMutexInit");
     int result = scePthreadCondInit(cond, attr, "NoName");
     if (result < 0) {
-        int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                     ? result + -SCE_KERNEL_ERROR_UNKNOWN
+        int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                     ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                      : POSIX_EOTHER;
         return rt;
     }
@@ -1491,7 +1491,7 @@ int PS4_SYSV_ABI posix_pthread_condattr_destroy(ScePthreadCondattr* attr) {
 
 int PS4_SYSV_ABI posix_pthread_condattr_setclock(ScePthreadCondattr* attr, clockid_t clock) {
     (*attr)->clock = clock;
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_pthread_getschedparam(ScePthread thread, int* policy,
@@ -1511,7 +1511,7 @@ int PS4_SYSV_ABI posix_pthread_attr_getschedpolicy(const ScePthreadAttr* attr, i
 int PS4_SYSV_ABI scePthreadRename(ScePthread thread, const char* name) {
     thread->name = name;
     LOG_INFO(Kernel_Pthread, "scePthreadRename: name = {}", thread->name);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {

@@ -136,7 +136,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     // Certain games perform flexible mappings on loop to determine
     // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
-        return SCE_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
     // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed

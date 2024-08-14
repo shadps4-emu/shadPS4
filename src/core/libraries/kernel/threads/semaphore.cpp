@@ -100,15 +100,15 @@ public:
 
         int GetResult(bool timed_out) {
             if (timed_out) {
-                return SCE_KERNEL_ERROR_ETIMEDOUT;
+                return ORBIS_KERNEL_ERROR_ETIMEDOUT;
             }
             if (was_deleted) {
-                return SCE_KERNEL_ERROR_EACCES;
+                return ORBIS_KERNEL_ERROR_EACCES;
             }
             if (was_cancled) {
-                return SCE_KERNEL_ERROR_ECANCELED;
+                return ORBIS_KERNEL_ERROR_ECANCELED;
             }
-            return SCE_OK;
+            return ORBIS_OK;
         }
 
         int Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
@@ -203,7 +203,7 @@ int PS4_SYSV_ABI sceKernelCancelSema(OrbisKernelSema sem, s32 setCount, s32* pNu
 
 int PS4_SYSV_ABI sceKernelDeleteSema(OrbisKernelSema sem) {
     if (!sem) {
-        return SCE_KERNEL_ERROR_ESRCH;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
     delete sem;
     return ORBIS_OK;

@@ -11,7 +11,7 @@ namespace Libraries::Random {
 s32 PS4_SYSV_ABI sceRandomGetRandomNumber(u8* buf, size_t size) {
     LOG_TRACE(Lib_Random, "called");
     if (size > SCE_RANDOM_MAX_SIZE) {
-        return SCE_RANDOM_ERROR_INVALID;
+        return ORBIS_RANDOM_ERROR_INVALID;
     }
 
     for (auto i = 0; i < size; ++i) {

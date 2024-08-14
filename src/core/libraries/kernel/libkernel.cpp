@@ -90,7 +90,7 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     }
     auto* memory = Core::Memory::Instance();
     memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 struct iovec {
@@ -114,15 +114,15 @@ int* PS4_SYSV_ABI __Error() {
 }
 
 void ErrSceToPosix(int result) {
-    const int rt = result > SCE_KERNEL_ERROR_UNKNOWN && result <= SCE_KERNEL_ERROR_ESTOP
-                       ? result + -SCE_KERNEL_ERROR_UNKNOWN
+    const int rt = result > ORBIS_KERNEL_ERROR_UNKNOWN && result <= ORBIS_KERNEL_ERROR_ESTOP
+                       ? result + -ORBIS_KERNEL_ERROR_UNKNOWN
                        : POSIX_EOTHER;
     g_posix_errno = rt;
 }
 
 int ErrnoToSceKernelError(int e) {
-    const auto res = SCE_KERNEL_ERROR_UNKNOWN + e;
-    return res > SCE_KERNEL_ERROR_ESTOP ? SCE_KERNEL_ERROR_UNKNOWN : res;
+    const auto res = ORBIS_KERNEL_ERROR_UNKNOWN + e;
+    return res > ORBIS_KERNEL_ERROR_ESTOP ? ORBIS_KERNEL_ERROR_UNKNOWN : res;
 }
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
@@ -285,7 +285,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
                                                  OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
-        return SCE_KERNEL_ERROR_EINVAL;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (!info) {
         return ORBIS_KERNEL_ERROR_EFAULT;

@@ -177,7 +177,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
 
 s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus* status) {
     if (status == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
     auto* port = driver->GetPort(handle);

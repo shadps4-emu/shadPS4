@@ -96,7 +96,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->connectedCount = 1;
         pInfo->connected = false;
         pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
-        return SCE_OK;
+        return ORBIS_OK;
     }
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
@@ -107,7 +107,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->connectedCount = 1;
     pInfo->connected = 1;
     pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadGetDataInternal() {
@@ -350,7 +350,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->connectedCount = 1; // connectedCount;
     pData->deviceUniqueDataLen = 0;
 
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadReadStateExt() {
