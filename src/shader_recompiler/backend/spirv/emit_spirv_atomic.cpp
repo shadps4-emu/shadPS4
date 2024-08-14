@@ -12,14 +12,11 @@ std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
     return {scope, semantics};
 }
 
-
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     auto& buffer = ctx.buffers[handle];
-    address =
-        ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-    const Id index =
-        ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     const Id pointer{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
@@ -55,13 +52,13 @@ Id EmitBufferAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 }
 
 Id EmitBufferAtomicInc32(EmitContext&, IR::Inst*, u32, Id, Id) {
-    // TODO: This is not yet implemented
-    throw NotImplementedException("SPIR-V Instruction");
+    // TODO
+    UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicInc32);
 }
 
-Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id) {
-    // TODO: This is not yet implemented
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id){
+    // TODO
+    UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicDec32);
 }
 
 Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {

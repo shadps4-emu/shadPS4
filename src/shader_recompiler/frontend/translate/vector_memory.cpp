@@ -424,10 +424,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
 
     const IR::Value address = [&]() -> IR::Value {
         if (mtbuf.idxen && mtbuf.offen) {
-           return ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1));
+            return ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1));
         }
         if (mtbuf.idxen || mtbuf.offen) {
-           return ir.GetVectorReg(addr_reg);
+            return ir.GetVectorReg(addr_reg);
         }
         return IR::Value{};
     }();
@@ -439,7 +439,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
-                             ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
     const IR::Value value = ir.GetVectorReg(src_reg);
 
     const IR::Value result = [&] {
