@@ -82,6 +82,10 @@ OPCODE(StoreBufferF32,                                      Void,           Opaq
 OPCODE(StoreBufferF32x2,                                    Void,           Opaque,         Opaque,         F32x2,                                          )
 OPCODE(StoreBufferF32x3,                                    Void,           Opaque,         Opaque,         F32x3,                                          )
 OPCODE(StoreBufferF32x4,                                    Void,           Opaque,         Opaque,         F32x4,                                          )
+OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32,                                            )
+OPCODE(StoreBufferFormatF32x2,                              Void,           Opaque,         Opaque,         F32x2,                                          )
+OPCODE(StoreBufferFormatF32x3,                              Void,           Opaque,         Opaque,         F32x3,                                          )
+OPCODE(StoreBufferFormatF32x4,                              Void,           Opaque,         Opaque,         F32x4,                                          )
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Vector utility
