@@ -104,20 +104,20 @@ public:
     void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
                            const Value& data, BufferInstInfo info);
 
-    [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a,
-                                         const Value& b, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicSMin(const Value& handle, const Value& a,
-                                         const Value& b, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicUMin(const Value& handle, const Value& a,
-                                         const Value& b, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& a,
-                                         const Value& b, bool is_signed, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicSMax(const Value& handle, const Value& a,
-                                         const Value& b, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicUMax(const Value& handle, const Value& a,
-                                         const Value& b, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& a,
-                                         const Value& b, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a, const Value& b,
+                                         BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSMin(const Value& handle, const Value& a, const Value& b,
+                                         BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicUMin(const Value& handle, const Value& a, const Value& b,
+                                         BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& a, const Value& b,
+                                         bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSMax(const Value& handle, const Value& a, const Value& b,
+                                         BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicUMax(const Value& handle, const Value& a, const Value& b,
+                                         BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& a, const Value& b,
+                                         bool is_signed, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
