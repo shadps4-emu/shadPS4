@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "sdl_audio.h"
+
+#include "common/assert.h"
+#include "core/libraries/error_codes.h"
+
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_timer.h>
-#include "common/assert.h"
-#include "core/libraries/error_codes.h"
-#include "sdl_audio.h"
+
+#include <mutex> // std::unique_lock
 
 namespace Audio {
 

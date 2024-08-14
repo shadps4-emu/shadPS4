@@ -8,15 +8,14 @@
 #include "avplayer_data_streamer.h"
 
 #include "common/types.h"
+#include "common/polyfill_thread.h"
 #include "core/libraries/kernel/thread_management.h"
 
 #include <atomic>
 #include <chrono>
 #include <mutex>
 #include <optional>
-#include <stop_token>
 #include <string>
-#include <thread>
 
 struct AVCodecContext;
 struct AVFormatContext;

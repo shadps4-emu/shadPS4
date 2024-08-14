@@ -792,11 +792,10 @@ int PS4_SYSV_ABI sceSaveDataTransferringMount() {
 }
 
 s32 PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint) {
-    if (mountPoint->data == nullptr) {
-        LOG_WARNING(Lib_SaveData, "mountPoint = nullptr");
+    LOG_INFO(Lib_SaveData, "mountPoint = {}", mountPoint->data);
+    if (std::string_view(mountPoint->data).empty()) {
         return ORBIS_SAVE_DATA_ERROR_NOT_MOUNTED;
     }
-    LOG_INFO(Lib_SaveData, "mountPoint = {}", mountPoint->data);
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
                             std::to_string(1) / game_serial / mountPoint->data;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();

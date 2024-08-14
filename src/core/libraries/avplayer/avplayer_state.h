@@ -7,12 +7,11 @@
 #include "avplayer_data_streamer.h"
 #include "avplayer_source.h"
 
+#include "common/polyfill_thread.h"
 #include "core/libraries/kernel/thread_management.h"
 
 #include <memory>
 #include <mutex>
-#include <stop_token>
-#include <thread>
 
 namespace Libraries::AvPlayer {
 

@@ -9,8 +9,6 @@
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 
-#include <algorithm> // std::max, std::min
-
 namespace Libraries::AvPlayer {
 
 using namespace Kernel;
@@ -117,11 +115,6 @@ bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle,
     const auto res = handle->GetVideoData(*video_info);
     LOG_TRACE(Lib_AvPlayer, "returning {}", res);
     return res;
-}
-
-constexpr u32 GetPriority(u32 base, u32 offset) {
-    // (27D <= base_priority <= 2FC) + offset <= 2FF
-    return std::min(std::min(std::max(637u, base), 764u) + offset, 767u);
 }
 
 SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
