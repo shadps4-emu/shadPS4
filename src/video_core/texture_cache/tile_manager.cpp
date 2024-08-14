@@ -186,7 +186,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32Sfloat:
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
-    case vk::Format::eR16G16Unorm :
+    case vk::Format::eR16G16Unorm:
         return vk::Format::eR32Uint;
     case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
