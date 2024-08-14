@@ -493,6 +493,7 @@ static void EmitStoreBufferFormatF32xN(EmitContext& ctx, u32 handle, Id address,
     case AmdGpu::DataFormat::FormatInvalid:
         return;
     case AmdGpu::DataFormat::Format8_8_8_8:
+    case AmdGpu::DataFormat::Format16:
     case AmdGpu::DataFormat::Format32:
     case AmdGpu::DataFormat::Format32_32_32_32: {
         ASSERT(N == AmdGpu::NumComponents(format));
@@ -520,8 +521,6 @@ static void EmitStoreBufferFormatF32xN(EmitContext& ctx, u32 handle, Id address,
                     ctx.OpStore(ptr, comp);
                 }
             } else {
-                ASSERT(bit_width == 8);
-
                 if (i == 0) {
                     packed_value = comp;
                 } else {
