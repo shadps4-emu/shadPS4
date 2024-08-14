@@ -149,8 +149,7 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
 void Translator::DS_ADD_U32(const GcnInst& inst) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
-    const IR::U32 offset = ir.Imm32(
-        u32(inst.control.ds.offset0));
+    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     const IR::U32 aligned_addr = ir.BitwiseAnd(addr_offset, ir.Imm32(~3));
     const IR::U32 old_value = IR::U32(ir.LoadShared(32, false, aligned_addr));
