@@ -56,7 +56,7 @@ Id EmitBufferAtomicInc32(EmitContext&, IR::Inst*, u32, Id, Id) {
     UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicInc32);
 }
 
-Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id){
+Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id) {
     // TODO
     UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicDec32);
 }
