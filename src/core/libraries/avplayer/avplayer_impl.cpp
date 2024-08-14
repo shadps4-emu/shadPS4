@@ -77,28 +77,29 @@ u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
     return size(ptr);
 }
 
-AvPlayer::AvPlayer(const SceAvPlayerInitData& data, const ThreadPriorities& priorities)
-    : m_file_io_mutex(PTHREAD_MUTEX_ERRORCHECK, "AvPlayer_FileIO"), m_init_data(data),
-      m_init_data_original(data) {
-
-    m_init_data.memory_replacement.object_ptr = this;
-    m_init_data.memory_replacement.allocate = &AvPlayer::Allocate;
-    m_init_data.memory_replacement.deallocate = &AvPlayer::Deallocate;
-    m_init_data.memory_replacement.allocate_texture = &AvPlayer::AllocateTexture;
-    m_init_data.memory_replacement.deallocate_texture = &AvPlayer::DeallocateTexture;
+SceAvPlayerInitData AvPlayer::StubInitData(const SceAvPlayerInitData& data) {
+    SceAvPlayerInitData result = data;
+    result.memory_replacement.object_ptr = this;
+    result.memory_replacement.allocate = &AvPlayer::Allocate;
+    result.memory_replacement.deallocate = &AvPlayer::Deallocate;
+    result.memory_replacement.allocate_texture = &AvPlayer::AllocateTexture;
+    result.memory_replacement.deallocate_texture = &AvPlayer::DeallocateTexture;
     if (data.file_replacement.open == nullptr || data.file_replacement.close == nullptr ||
         data.file_replacement.readOffset == nullptr || data.file_replacement.size == nullptr) {
-        m_init_data.file_replacement = {};
+        result.file_replacement = {};
     } else {
-        m_init_data.file_replacement.object_ptr = this;
-        m_init_data.file_replacement.open = &AvPlayer::OpenFile;
-        m_init_data.file_replacement.close = &AvPlayer::CloseFile;
-        m_init_data.file_replacement.readOffset = &AvPlayer::ReadOffsetFile;
-        m_init_data.file_replacement.size = &AvPlayer::SizeFile;
+        result.file_replacement.object_ptr = this;
+        result.file_replacement.open = &AvPlayer::OpenFile;
+        result.file_replacement.close = &AvPlayer::CloseFile;
+        result.file_replacement.readOffset = &AvPlayer::ReadOffsetFile;
+        result.file_replacement.size = &AvPlayer::SizeFile;
     }
-
-    m_state = std::make_unique<AvPlayerState>(m_init_data, priorities);
+    return result;
 }
+
+AvPlayer::AvPlayer(const SceAvPlayerInitData& data)
+    : m_init_data(StubInitData(data)), m_init_data_original(data),
+      m_state(std::make_unique<AvPlayerState>(m_init_data)) {}
 
 s32 AvPlayer::PostInit(const SceAvPlayerPostInitData& data) {
     m_post_init_data = data;
@@ -109,11 +110,9 @@ s32 AvPlayer::AddSource(std::string_view path) {
     if (path.empty()) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-
     if (AVPLAYER_IS_ERROR(m_state->AddSource(path, GetSourceType(path)))) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
-
     return ORBIS_OK;
 }
 
@@ -121,7 +120,11 @@ s32 AvPlayer::GetStreamCount() {
     if (m_state == nullptr) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
-    return m_state->GetStreamCount();
+    const auto res = m_state->GetStreamCount();
+    if (AVPLAYER_IS_ERROR(res)) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return res;
 }
 
 s32 AvPlayer::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {

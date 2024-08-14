@@ -69,14 +69,14 @@ s64 AvPlayerFileStreamer::Seek(void* opaque, s64 offset, int whence) {
 
     if (whence == SEEK_CUR) {
         self->m_position =
-            std::min(u64(std::max(0ll, s64(self->m_position) + offset)), self->m_file_size);
+            std::min(u64(std::max(0i64, s64(self->m_position) + offset)), self->m_file_size);
         return self->m_position;
     } else if (whence == SEEK_SET) {
-        self->m_position = std::min(u64(std::max(0ll, offset)), self->m_file_size);
+        self->m_position = std::min(u64(std::max(0i64, offset)), self->m_file_size);
         return self->m_position;
     } else if (whence == SEEK_END) {
         self->m_position =
-            std::min(u64(std::max(0ll, s64(self->m_file_size) + offset)), self->m_file_size);
+            std::min(u64(std::max(0i64, s64(self->m_file_size) + offset)), self->m_file_size);
         return self->m_position;
     }
 

@@ -10,6 +10,9 @@
 #include "core/libraries/kernel/thread_management.h"
 
 #include <memory>
+#include <mutex>
+#include <stop_token>
+#include <thread>
 
 namespace Libraries::AvPlayer {
 
@@ -18,7 +21,7 @@ class AvDecoder;
 
 class AvPlayerState : public AvPlayerStateCallback {
 public:
-    AvPlayerState(const SceAvPlayerInitData& init_data, const ThreadPriorities& priorities);
+    AvPlayerState(const SceAvPlayerInitData& init_data);
     ~AvPlayerState();
 
     s32 AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
@@ -51,34 +54,32 @@ private:
     void EmitEvent(SceAvPlayerEvents event_id, void* event_data = nullptr);
     bool SetState(AvState state);
 
-    static void* PS4_SYSV_ABI AvControllerThread(void* p_user_data);
+    void AvControllerThread(std::stop_token stop);
 
     void AddSourceEvent();
     void WarningEvent(s32 id);
 
-    int StartControllerThread();
-    int ProcessEvent();
-    int UpdateBufferingState();
+    void StartControllerThread();
+    void ProcessEvent();
+    void UpdateBufferingState();
     bool IsStateTransitionValid(AvState state);
 
     std::unique_ptr<AvPlayerSource> m_up_source;
 
     SceAvPlayerInitData m_init_data{};
     SceAvPlayerEventReplacement m_event_replacement{};
-    ThreadPriorities m_thread_priorities{};
     bool m_auto_start{};
     u8 m_default_language[4]{};
 
-    std::atomic_bool m_quit;
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
     u32 m_thread_priority;
     u32 m_thread_affinity;
     std::atomic_uint32_t m_some_event_result{};
 
-    PthreadMutex m_state_machine_mutex{};
-    PthreadMutex m_event_handler_mutex{};
-    ScePthread m_controller_thread{};
+    std::mutex m_state_machine_mutex{};
+    std::mutex m_event_handler_mutex{};
+    std::jthread m_controller_thread{};
     AvPlayerQueue<AvPlayerEvent> m_event_queue{};
 };
 

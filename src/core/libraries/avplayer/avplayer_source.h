@@ -12,8 +12,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <mutex>
 #include <optional>
+#include <stop_token>
 #include <string>
+#include <thread>
 
 struct AVCodecContext;
 struct AVFormatContext;
@@ -88,8 +91,7 @@ struct Frame {
 class AvPlayerSource {
 public:
     AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
-                   const SceAvPlayerInitData& init_data, ThreadPriorities& priorities,
-                   SceAvPlayerSourceType source_type);
+                   const SceAvPlayerInitData& init_data, SceAvPlayerSourceType source_type);
     ~AvPlayerSource();
 
     bool FindStreamInfo();
@@ -109,10 +111,6 @@ public:
 private:
     using ScePthread = Kernel::ScePthread;
 
-    static void* PS4_SYSV_ABI DemuxerThread(void* opaque);
-    static void* PS4_SYSV_ABI VideoDecoderThread(void* opaque);
-    static void* PS4_SYSV_ABI AudioDecoderThread(void* opaque);
-
     static void ReleaseAVPacket(AVPacket* packet);
     static void ReleaseAVFrame(AVFrame* frame);
     static void ReleaseAVCodecContext(AVCodecContext* context);
@@ -127,6 +125,12 @@ private:
     using SWSContextPtr = std::unique_ptr<SwsContext, decltype(&ReleaseSWSContext)>;
     using AVFormatContextPtr = std::unique_ptr<AVFormatContext, decltype(&ReleaseAVFormatContext)>;
 
+    void DemuxerThread(std::stop_token stop);
+    void VideoDecoderThread(std::stop_token stop);
+    void AudioDecoderThread(std::stop_token stop);
+
+    bool HasRunningThreads() const;
+
     AVFramePtr ConvertAudioFrame(const AVFrame& frame);
     AVFramePtr ConvertVideoFrame(const AVFrame& frame);
 
@@ -135,13 +139,11 @@ private:
 
     AvPlayerStateCallback& m_state;
 
-    ThreadPriorities m_priorities{};
     SceAvPlayerMemAllocator m_memory_replacement{};
     u64 m_num_output_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
     std::atomic_bool m_is_eof = false;
-    std::atomic_bool m_is_stop = false;
 
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
 
@@ -160,9 +162,10 @@ private:
     std::optional<s32> m_video_stream_index{};
     std::optional<s32> m_audio_stream_index{};
 
-    ScePthread m_demuxer_thread{};
-    ScePthread m_video_decoder_thread{};
-    ScePthread m_audio_decoder_thread{};
+    std::mutex m_state_mutex;
+    std::jthread m_demuxer_thread{};
+    std::jthread m_video_decoder_thread{};
+    std::jthread m_audio_decoder_thread{};
 
     AVFormatContextPtr m_avformat_context{nullptr, &ReleaseAVFormatContext};
     AVCodecContextPtr m_video_codec_context{nullptr, &ReleaseAVCodecContext};

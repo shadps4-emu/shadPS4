@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 
+#include <stdarg.h> // va_list
 #include <stddef.h> // size_t
 
 namespace Core::Loader {

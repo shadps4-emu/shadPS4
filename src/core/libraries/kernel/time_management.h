@@ -50,7 +50,6 @@ u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency();
 u64 PS4_SYSV_ABI sceKernelReadTsc();
-int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds);
 
 void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym);
 

@@ -11,8 +11,6 @@
 
 #include <algorithm> // std::max, std::min
 
-#include <stdarg.h> // va_list
-
 namespace Libraries::AvPlayer {
 
 using namespace Kernel;
@@ -140,17 +138,7 @@ SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
         return nullptr;
     }
 
-    ThreadPriorities priorities{};
-    const u32 base_priority = data->base_priority != 0 ? data->base_priority : 700;
-    priorities.video_decoder_priority = GetPriority(base_priority, 5);
-    priorities.audio_decoder_priority = GetPriority(base_priority, 6);
-    priorities.demuxer_priority = GetPriority(base_priority, 9);
-    priorities.controller_priority = GetPriority(base_priority, 2);
-    // priorities.http_streaming_priority = GetPriority(base_priority, 10);
-    // priorities.file_streaming_priority = GetPriority(priorities.http_streaming_priority, 15);
-    // priorities.maxPriority = priorities.http_streaming_priority;
-
-    return new AvPlayer(*data, priorities);
+    return new AvPlayer(*data);
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
@@ -176,56 +164,7 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
     data.num_output_video_framebuffers = p_data->num_output_video_framebuffers;
     data.auto_start = p_data->auto_start;
 
-    ThreadPriorities priorities{};
-    s32 base_priority = 0;
-    const auto res = scePthreadGetprio(scePthreadSelf(), &base_priority);
-    if (res != 0 || base_priority == 0) {
-        base_priority = 700;
-    }
-
-    if (p_data->video_decoder_priority != 0) {
-        priorities.video_decoder_priority = p_data->video_decoder_priority;
-    } else {
-        priorities.video_decoder_priority = GetPriority(base_priority, 5);
-    }
-    priorities.video_decoder_affinity = p_data->video_decoder_affinity;
-
-    if (p_data->audio_decoder_priority != 0) {
-        priorities.audio_decoder_priority = p_data->audio_decoder_priority;
-    } else {
-        priorities.audio_decoder_priority = GetPriority(base_priority, 6);
-    }
-    priorities.audio_decoder_affinity = p_data->audio_decoder_affinity;
-
-    if (p_data->controller_priority != 0) {
-        priorities.controller_priority = p_data->controller_priority;
-    } else {
-        priorities.controller_priority = GetPriority(base_priority, 2);
-    }
-    priorities.controller_affinity = p_data->controller_affinity;
-
-    if (p_data->demuxer_priority != 0) {
-        priorities.demuxer_priority = p_data->demuxer_priority;
-    } else {
-        priorities.demuxer_priority = GetPriority(base_priority, 9);
-    }
-    priorities.demuxer_affinity = p_data->demuxer_affinity;
-
-    // if (p_data->http_streaming_priority != 0) {
-    //     priorities.http_streaming_priority = p_data->http_streaming_priority;
-    // } else {
-    //     priorities.http_streaming_priority = GetPriority(base_priority, 10);
-    // }
-    // priorities.http_streaming_affinity = p_data->http_streaming_affinity;
-
-    // if (p_data->file_streaming_priority != 0) {
-    //     priorities.file_streaming_priority = p_data->file_streaming_priority;
-    // } else {
-    //     priorities.file_streaming_priority = GetPriority(base_priority, 15);
-    // }
-    // priorities.http_streaming_affinity = p_data->http_streaming_affinity;
-
-    *p_player = new AvPlayer(data, priorities);
+    *p_player = new AvPlayer(data);
     return ORBIS_OK;
 }
 
@@ -320,7 +259,7 @@ s32 PS4_SYSV_ABI sceAvPlayerStart(SceAvPlayerHandle handle) {
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerStop(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }

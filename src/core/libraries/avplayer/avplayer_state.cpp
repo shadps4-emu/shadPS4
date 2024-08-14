@@ -89,12 +89,8 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, s32 event_i
 }
 
 // Called inside GAME thread
-AvPlayerState::AvPlayerState(const SceAvPlayerInitData& init_data,
-                             const ThreadPriorities& priorities)
-    : m_init_data(init_data), m_event_replacement(init_data.event_replacement),
-      m_thread_priorities(priorities),
-      m_event_handler_mutex(PTHREAD_MUTEX_ERRORCHECK, "AvPlayer_EventHandler"),
-      m_state_machine_mutex(PTHREAD_MUTEX_ERRORCHECK, "AvPlayer_StateMachine") {
+AvPlayerState::AvPlayerState(const SceAvPlayerInitData& init_data)
+    : m_init_data(init_data), m_event_replacement(init_data.event_replacement) {
     if (m_event_replacement.event_callback == nullptr || init_data.auto_start) {
         m_auto_start = true;
         m_init_data.event_replacement.event_callback = &AvPlayerState::AutoPlayEventCallback;
@@ -111,10 +107,9 @@ AvPlayerState::~AvPlayerState() {
     if (m_up_source && m_current_state == AvState::Play) {
         m_up_source->Stop();
     }
-    m_quit = true;
-    if (m_controller_thread != nullptr) {
-        void* res = nullptr;
-        scePthreadJoin(m_controller_thread, &res);
+    if (m_controller_thread.joinable()) {
+        m_controller_thread.request_stop();
+        m_controller_thread.join();
     }
     m_event_queue.Clear();
 }
@@ -131,8 +126,7 @@ s32 AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source
         return -1;
     }
 
-    m_up_source = std::make_unique<AvPlayerSource>(*this, path, m_init_data, m_thread_priorities,
-                                                   source_type);
+    m_up_source = std::make_unique<AvPlayerSource>(*this, path, m_init_data, source_type);
     AddSourceEvent();
     return 0;
 }
@@ -166,17 +160,17 @@ s32 AvPlayerState::Start() {
     return 0;
 }
 
-void* AvPlayerState::AvControllerThread(void* p_user_data) {
-    AvPlayerState* self = reinterpret_cast<AvPlayerState*>(p_user_data);
-    while (!self->m_quit) {
-        if (self->m_event_queue.Size() != 0) {
-            self->ProcessEvent();
+void AvPlayerState::AvControllerThread(std::stop_token stop) {
+    using std::chrono::milliseconds;
+
+    while (!stop.stop_requested()) {
+        if (m_event_queue.Size() != 0) {
+            ProcessEvent();
             continue;
         }
-        sceKernelUsleep(5000);
-        self->UpdateBufferingState();
+        std::this_thread::sleep_for(milliseconds(5));
+        UpdateBufferingState();
     }
-    scePthreadExit(0);
 }
 
 // Called inside GAME thread
@@ -198,22 +192,9 @@ void AvPlayerState::WarningEvent(s32 id) {
 }
 
 // Called inside GAME thread
-int AvPlayerState::StartControllerThread() {
-    m_quit.store(0);
-
-    ThreadParameters params{
-        .p_user_data = this,
-        .thread_name = "AvPlayer_Controller",
-        .stack_size = 0x4000,
-        .priority = m_thread_priority,
-        .affinity = m_thread_affinity,
-    };
-    m_controller_thread = CreateThread(&AvControllerThread, params);
-    if (m_controller_thread == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "Could not create CONTROLLER thread.");
-        return -1;
-    }
-    return 0;
+void AvPlayerState::StartControllerThread() {
+    m_controller_thread =
+        std::jthread([this](std::stop_token stop) { this->AvControllerThread(stop); });
 }
 
 // Called inside GAME thread
@@ -262,7 +243,7 @@ bool AvPlayerState::IsActive() {
         return false;
     }
     return m_current_state != AvState::Stop && m_current_state != AvState::Error &&
-           m_up_source->IsActive();
+           m_current_state != AvState::EndOfFile && m_up_source->IsActive();
 }
 
 u64 AvPlayerState::CurrentTime() {
@@ -284,7 +265,9 @@ void AvPlayerState::OnError() {
     OnPlaybackStateChanged(AvState::Error);
 }
 
-void AvPlayerState::OnEOF() {}
+void AvPlayerState::OnEOF() {
+    SetState(AvState::EndOfFile);
+}
 
 // Called inside CONTROLLER thread
 void AvPlayerState::OnPlaybackStateChanged(AvState state) {
@@ -347,16 +330,16 @@ void AvPlayerState::EmitEvent(SceAvPlayerEvents event_id, void* event_data) {
 }
 
 // Called inside CONTROLLER thread
-int AvPlayerState::ProcessEvent() {
+void AvPlayerState::ProcessEvent() {
     if (m_current_state == AvState::Jump) {
-        return -2;
+        return;
     }
 
     std::lock_guard guard(m_event_handler_mutex);
 
     auto event = m_event_queue.Pop();
     if (!event.has_value()) {
-        return -1;
+        return;
     }
     switch (event->event) {
     case AvEventType::WarningId: {
@@ -385,16 +368,14 @@ int AvPlayerState::ProcessEvent() {
     default:
         break;
     }
-
-    return 0;
 }
 
 // Called inside CONTROLLER thread
-int AvPlayerState::UpdateBufferingState() {
+void AvPlayerState::UpdateBufferingState() {
     if (m_current_state == AvState::Buffering) {
         const auto has_frames = OnBufferingCheckEvent(10);
         if (!has_frames.has_value()) {
-            return -1;
+            return;
         }
         if (has_frames.value()) {
             const auto state =
@@ -405,14 +386,13 @@ int AvPlayerState::UpdateBufferingState() {
     } else if (m_current_state == AvState::Play) {
         const auto has_frames = OnBufferingCheckEvent(0);
         if (!has_frames.has_value()) {
-            return -1;
+            return;
         }
         if (!has_frames.value()) {
             SetState(AvState::Buffering);
             OnPlaybackStateChanged(AvState::Buffering);
         }
     }
-    return 0;
 }
 
 bool AvPlayerState::IsStateTransitionValid(AvState state) {

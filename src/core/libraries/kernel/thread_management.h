@@ -158,24 +158,19 @@ void init_pthreads();
 void pthreadInitSelfMainThread();
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr);
-int PS4_SYSV_ABI scePthreadAttrDestroy(ScePthreadAttr* attr);
 int PS4_SYSV_ABI scePthreadAttrSetdetachstate(ScePthreadAttr* attr, int detachstate);
 int PS4_SYSV_ABI scePthreadAttrSetinheritsched(ScePthreadAttr* attr, int inheritSched);
 int PS4_SYSV_ABI scePthreadAttrSetschedparam(ScePthreadAttr* attr,
                                              const SceKernelSchedParam* param);
 int PS4_SYSV_ABI scePthreadAttrSetschedpolicy(ScePthreadAttr* attr, int policy);
+ScePthread PS4_SYSV_ABI scePthreadSelf();
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask);
-int PS4_SYSV_ABI scePthreadAttrSetstacksize(ScePthreadAttr* attr, size_t stack_size);
-
-ScePthread PS4_SYSV_ABI scePthreadSelf();
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask);
 int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u64* mask);
 int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr,
                                   PthreadEntryFunc start_routine, void* arg, const char* name);
-[[noreturn]] void PS4_SYSV_ABI scePthreadExit(void* value_ptr);
-int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res);
-int PS4_SYSV_ABI scePthreadGetprio(ScePthread thread, int* prio);
+
 int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio);
 
 /***
@@ -183,14 +178,11 @@ int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio);
  */
 int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
                                      const char* name);
-int PS4_SYSV_ABI scePthreadMutexDestroy(ScePthreadMutex* mutex);
-int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
-int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
-
-int PS4_SYSV_ABI scePthreadMutexattrDestroy(ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr);
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type);
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol);
+int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex);
+int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex);
 /****
  * Cond calls
  */
