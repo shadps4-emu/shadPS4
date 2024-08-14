@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "*.mod": "go",
-        "*.inc": "cpp"
-    }
-}
