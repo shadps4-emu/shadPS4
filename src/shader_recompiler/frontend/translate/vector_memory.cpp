@@ -80,6 +80,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_STORE_FORMAT_X:
     case Opcode::BUFFER_STORE_DWORD:
         return BUFFER_STORE_FORMAT(1, false, inst);
+    case Opcode::BUFFER_STORE_FORMAT_XY:
     case Opcode::BUFFER_STORE_DWORDX2:
         return BUFFER_STORE_FORMAT(2, false, inst);
     case Opcode::BUFFER_STORE_DWORDX3:
@@ -87,6 +88,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_STORE_FORMAT_XYZW:
     case Opcode::BUFFER_STORE_DWORDX4:
         return BUFFER_STORE_FORMAT(4, false, inst);
+    case Opcode::BUFFER_ATOMIC_ADD:
+        return BUFFER_ATOMIC(AtomicOp::Add, inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -411,6 +414,64 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnIns
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
     ir.StoreBuffer(num_dwords, handle, address, value, info);
+}
+
+void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
+    const auto& mtbuf = inst.control.mtbuf;
+    IR::VectorReg src_reg{inst.src[1].code};
+    IR::VectorReg addr_reg{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+
+    const IR::Value address = [&]() -> IR::Value {
+        if (mtbuf.idxen && mtbuf.offen) {
+           return ir.CompositeConstruct(ir.GetVectorReg(addr_reg), ir.GetVectorReg(addr_reg + 1));
+        }
+        if (mtbuf.idxen || mtbuf.offen) {
+           return ir.GetVectorReg(addr_reg);
+        }
+        return IR::Value{};
+    }();
+
+    IR::BufferInstInfo info{};
+    info.index_enable.Assign(mtbuf.idxen);
+    info.offset_enable.Assign(mtbuf.offen);
+    info.inst_offset.Assign(mtbuf.offset);
+
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                             ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value value = ir.GetVectorReg(src_reg);
+
+    const IR::Value result = [&] {
+        switch (op) {
+        case AtomicOp::Swap:
+            return ir.BufferAtomicExchange(handle, address, value, info);
+        case AtomicOp::Add:
+            return ir.BufferAtomicIAdd(handle, address, value, info);
+        case AtomicOp::Smin:
+            return ir.BufferAtomicIMin(handle, address, value, true, info);
+        case AtomicOp::Umin:
+            return ir.BufferAtomicUMin(handle, address, value, info);
+        case AtomicOp::Smax:
+            return ir.BufferAtomicIMax(handle, address, value, true, info);
+        case AtomicOp::Umax:
+            return ir.BufferAtomicUMax(handle, address, value, info);
+        case AtomicOp::And:
+            return ir.BufferAtomicAnd(handle, address, value, info);
+        case AtomicOp::Or:
+            return ir.BufferAtomicOr(handle, address, value, info);
+        case AtomicOp::Xor:
+            return ir.BufferAtomicXor(handle, address, value, info);
+        case AtomicOp::Inc:
+            return ir.BufferAtomicInc(handle, address, value, info);
+        case AtomicOp::Dec:
+            return ir.BufferAtomicDec(handle, address, value, info);
+        default:
+            UNREACHABLE();
+        }
+    }();
+    const IR::U32F32 c_result = static_cast<IR::U32F32>(result);
+    ir.SetVectorReg(src_reg, c_result);
 }
 
 void Translator::IMAGE_GET_LOD(const GcnInst& inst) {

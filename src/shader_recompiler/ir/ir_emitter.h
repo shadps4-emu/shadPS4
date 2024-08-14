@@ -94,6 +94,34 @@ public:
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
 
+    [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSMin(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicUMin(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address,
+                                         const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSMax(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicUMax(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address,
+                                         const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
+                                        const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
+                                        const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicAnd(const Value& handle, const Value& address,
+                                        const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicOr(const Value& handle, const Value& address,
+                                       const Value& value,
+                                       BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicXor(const Value& handle, const Value& address,
+                                        const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicExchange(const Value& handle, const Value& address,
+                                            const Value& value, BufferInstInfo info);
+
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
