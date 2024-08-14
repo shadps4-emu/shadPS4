@@ -37,6 +37,16 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
         instance.GetPresentQueueFamilyIndex(),
     };
 
+    const auto modes = instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
+    const auto find_mode = [&modes](vk::PresentModeKHR requested) {
+        const auto it =
+            std::find_if(modes.begin(), modes.end(),
+                         [&requested](vk::PresentModeKHR mode) { return mode == requested; });
+
+        return it != modes.end();
+    };
+    const bool has_mailbox = find_mode(vk::PresentModeKHR::eMailbox);
+
     const bool exclusive = queue_family_indices[0] == queue_family_indices[1];
     const u32 queue_family_indices_count = exclusive ? 1u : 2u;
     const vk::SharingMode sharing_mode =
@@ -55,7 +65,7 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
         .pQueueFamilyIndices = queue_family_indices.data(),
         .preTransform = transform,
         .compositeAlpha = composite_alpha,
-        .presentMode = vk::PresentModeKHR::eMailbox,
+        .presentMode = has_mailbox ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate,
         .clipped = true,
         .oldSwapchain = nullptr,
     };
@@ -83,6 +93,7 @@ bool Swapchain::AcquireNextImage() {
     case vk::Result::eSuboptimalKHR:
     case vk::Result::eErrorSurfaceLostKHR:
     case vk::Result::eErrorOutOfDateKHR:
+    case vk::Result::eErrorUnknown:
         needs_recreation = true;
         break;
     default:

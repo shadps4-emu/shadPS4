@@ -25,7 +25,9 @@ static bool shouldDumpPM4 = false;
 static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
+static bool vkValidationGpu = false;
 static bool rdocEnable = false;
+static bool rdocMarkersEnable = false;
 // Gui
 std::string settings_install_dir = "";
 u32 main_window_geometry_x = 400;
@@ -102,6 +104,10 @@ bool isRdocEnabled() {
     return rdocEnable;
 }
 
+bool isMarkersEnabled() {
+    return rdocMarkersEnable;
+}
+
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -112,6 +118,78 @@ bool vkValidationEnabled() {
 
 bool vkValidationSyncEnabled() {
     return vkValidationSync;
+}
+
+bool vkValidationGpuEnabled() {
+    return vkValidationGpu;
+}
+
+void setGpuId(s32 selectedGpuId) {
+    gpuId = selectedGpuId;
+}
+
+void setScreenWidth(u32 width) {
+    screenWidth = width;
+}
+
+void setScreenHeight(u32 height) {
+    screenHeight = height;
+}
+
+void setDebugDump(bool enable) {
+    isDebugDump = enable;
+}
+
+void setShowSplash(bool enable) {
+    isShowSplash = enable;
+}
+
+void setNullGpu(bool enable) {
+    isNullGpu = enable;
+}
+
+void setDumpShaders(bool enable) {
+    shouldDumpShaders = enable;
+}
+
+void setDumpPM4(bool enable) {
+    shouldDumpPM4 = enable;
+}
+
+void setVkValidation(bool enable) {
+    vkValidation = enable;
+}
+
+void setVkSyncValidation(bool enable) {
+    vkValidationSync = enable;
+}
+
+void setRdocEnabled(bool enable) {
+    rdocEnable = enable;
+}
+
+void setVblankDiv(u32 value) {
+    vblankDivider = value;
+}
+
+void setFullscreenMode(bool enable) {
+    isFullscreen = enable;
+}
+
+void setLanguage(u32 language) {
+    m_language = language;
+}
+
+void setNeoMode(bool enable) {
+    isNeo = enable;
+}
+
+void setLogType(std::string type) {
+    logType = type;
+}
+
+void setLogFilter(std::string type) {
+    logFilter = type;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -255,7 +333,9 @@ void load(const std::filesystem::path& path) {
         gpuId = toml::find_or<int>(vk, "gpuId", -1);
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
+        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
+        rdocMarkersEnable = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
     }
 
     if (data.contains("Debug")) {
@@ -330,7 +410,9 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
     data["Vulkan"]["rdocEnable"] = rdocEnable;
+    data["Vulkan"]["rdocMarkersEnable"] = rdocMarkersEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
     data["GUI"]["theme"] = mw_themes;
@@ -356,4 +438,24 @@ void save(const std::filesystem::path& path) {
     file << data;
     file.close();
 }
+
+void setDefaultValues() {
+    isNeo = false;
+    isFullscreen = false;
+    screenWidth = 1280;
+    screenHeight = 720;
+    logFilter = "";
+    logType = "async";
+    isDebugDump = false;
+    isShowSplash = false;
+    isNullGpu = false;
+    shouldDumpShaders = false;
+    shouldDumpPM4 = false;
+    vblankDivider = 1;
+    vkValidation = false;
+    rdocEnable = false;
+    m_language = 1;
+    gpuId = -1;
+}
+
 } // namespace Config

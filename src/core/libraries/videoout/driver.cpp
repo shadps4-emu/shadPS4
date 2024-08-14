@@ -9,6 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
+#include "core/platform.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
@@ -173,14 +174,19 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
     // Update flip status.
     auto* port = req.port;
-    auto& flip_status = port->flip_status;
-    flip_status.count++;
-    flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
-    flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
-    flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
-    flip_status.flipArg = req.flip_arg;
-    flip_status.currentBuffer = req.index;
-    flip_status.flipPendingNum = static_cast<int>(requests.size());
+    {
+        std::unique_lock lock{port->port_mutex};
+        auto& flip_status = port->flip_status;
+        flip_status.count++;
+        flip_status.processTime = Libraries::Kernel::sceKernelGetProcessTime();
+        flip_status.tsc = Libraries::Kernel::sceKernelReadTsc();
+        flip_status.flipArg = req.flip_arg;
+        flip_status.currentBuffer = req.index;
+        if (req.eop) {
+            --flip_status.gcQueueNum;
+        }
+        --flip_status.flipPendingNum;
+    }
 
     // Trigger flip events for the port.
     for (auto& event : port->flip_events) {
@@ -202,18 +208,44 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
+    {
+        std::unique_lock lock{port->port_mutex};
+        if (index != -1 && port->flip_status.flipPendingNum >= port->NumRegisteredBuffers()) {
+            LOG_ERROR(Lib_VideoOut, "Flip queue is full");
+            return false;
+        }
+
+        if (is_eop) {
+            ++port->flip_status.gcQueueNum;
+        }
+        ++port->flip_status.flipPendingNum; // integral GPU and CPU pending flips counter
+        port->flip_status.submitTsc = Libraries::Kernel::sceKernelReadTsc();
+    }
+
+    if (!is_eop) {
+        // Before processing the flip we need to ask GPU thread to flush command list as at this
+        // point VO surface is ready to be presented, and we will need have an actual state of
+        // Vulkan image at the time of frame presentation.
+        liverpool->SendCommand([=, this]() {
+            renderer->FlushDraw();
+            SubmitFlipInternal(port, index, flip_arg, is_eop);
+        });
+    } else {
+        SubmitFlipInternal(port, index, flip_arg, is_eop);
+    }
+
+    return true;
+}
+
+void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
+                                        bool is_eop /*= false*/) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = renderer->PrepareBlankFrame();
+        frame = renderer->PrepareBlankFrame(is_eop);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
         frame = renderer->PrepareFrame(group, buffer.address_left, is_eop);
-    }
-
-    if (index != -1 && requests.size() >= port->NumRegisteredBuffers()) {
-        LOG_ERROR(Lib_VideoOut, "Flip queue is full");
-        return false;
     }
 
     std::scoped_lock lock{mutex};
@@ -222,14 +254,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
         .port = port,
         .index = index,
         .flip_arg = flip_arg,
-        .submit_tsc = Libraries::Kernel::sceKernelReadTsc(),
         .eop = is_eop,
     });
-
-    port->flip_status.flipPendingNum = static_cast<int>(requests.size());
-    port->flip_status.gcQueueNum = 0;
-
-    return true;
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {

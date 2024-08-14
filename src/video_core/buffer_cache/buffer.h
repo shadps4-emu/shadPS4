@@ -146,6 +146,10 @@ public:
         return offset;
     }
 
+    u64 GetFreeSize() const {
+        return size_bytes - offset - mapped_size;
+    }
+
 private:
     struct Watch {
         u64 tick{};

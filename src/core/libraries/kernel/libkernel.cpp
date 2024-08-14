@@ -360,7 +360,6 @@ int PS4_SYSV_ABI posix_connect() {
 }
 
 int PS4_SYSV_ABI _sigprocmask() {
-    LOG_DEBUG(Lib_Kernel, "STUBBED");
     return ORBIS_OK;
 }
 

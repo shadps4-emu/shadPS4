@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <SDL3/SDL.h>
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
@@ -115,6 +116,31 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
     }
 
     AddState(state);
+}
+
+void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
+    if (m_sdl_gamepad != nullptr) {
+        SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
+    }
+}
+
+bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
+    if (m_sdl_gamepad != nullptr) {
+        return SDL_RumbleGamepad(m_sdl_gamepad, (smallMotor / 255.0f) * 0xFFFF,
+                                 (largeMotor / 255.0f) * 0xFFFF, -1) == 0;
+    }
+    return true;
+}
+
+void GameController::TryOpenSDLController() {
+    if (m_sdl_gamepad == nullptr || !SDL_GamepadConnected(m_sdl_gamepad)) {
+        int gamepad_count;
+        SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
+        m_sdl_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
+        SDL_free(gamepads);
+    }
+
+    SetLightBarRGB(0, 0, 255);
 }
 
 } // namespace Input

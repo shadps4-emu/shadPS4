@@ -27,10 +27,32 @@ bool nullGpu();
 bool dumpShaders();
 bool dumpPM4();
 bool isRdocEnabled();
+bool isMarkersEnabled();
 u32 vblankDiv();
+
+void setDebugDump(bool enable);
+void setShowSplash(bool enable);
+void setNullGpu(bool enable);
+void setDumpShaders(bool enable);
+void setDumpPM4(bool enable);
+void setVblankDiv(u32 value);
+void setGpuId(s32 selectedGpuId);
+void setScreenWidth(u32 width);
+void setScreenHeight(u32 height);
+void setFullscreenMode(bool enable);
+void setLanguage(u32 language);
+void setNeoMode(bool enable);
+
+void setLogType(std::string type);
+void setLogFilter(std::string type);
+
+void setVkValidation(bool enable);
+void setVkSyncValidation(bool enable);
+void setRdocEnabled(bool enable);
 
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
+bool vkValidationGpuEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
@@ -64,7 +86,8 @@ std::vector<std::string> getPkgViewer();
 std::vector<std::string> getElfViewer();
 std::vector<std::string> getRecentFiles();
 
+void setDefaultValues();
+
 // settings
 u32 GetLanguage();
-
 }; // namespace Config

@@ -116,7 +116,7 @@ struct PushData {
     std::array<u8, 32> buf_offsets;
 
     void AddOffset(u32 binding, u32 offset) {
-        ASSERT(offset < 64 && binding < 32);
+        ASSERT(offset < 256 && binding < buf_offsets.size());
         buf_offsets[binding] = offset;
     }
 };
@@ -195,8 +195,6 @@ struct Info {
     bool has_image_query{};
     bool uses_group_quad{};
     bool uses_shared{};
-    bool uses_shared_u8{};
-    bool uses_shared_u16{};
     bool uses_fp16{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions

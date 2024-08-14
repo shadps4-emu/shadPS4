@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
+
+<ui version="4.0">
+ <class>SettingsDialog</class>
+ <widget class="QDialog" name="SettingsDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModality::WindowModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1024</width>
+    <height>768</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>Settings</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/images/shadps4.ico</normaloff>:/images/shadps4.ico</iconset>
+  </property>
+  <layout class="QVBoxLayout" name="settingsDialogLayout">
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QTabWidget" name="tabWidgetSettings">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>1006</width>
+        <height>720</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="emulatorTab">
+       <attribute name="title">
+        <string>Emulator</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="emulatorTabVLayout" stretch="0,0">
+        <item>
+         <layout class="QHBoxLayout" name="emulatorTabHLayout" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="consoleLanguageGroupBox">
+              <property name="title">
+               <string>Console Language</string>
+              </property>
+              <layout class="QVBoxLayout" name="settingsLayout">
+               <item>
+                <widget class="QComboBox" name="consoleLanguageComboBox">
+                 <item>
+                  <property name="text">
+                   <string>Japanese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>English (United States)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>French (France)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Spanish (Spain)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>German</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Italian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Dutch</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Portuguese (Portugal)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Russian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Korean</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Traditional Chinese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Simplified Chinese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Finnish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Swedish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Danish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Norwegian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Polish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Portuguese (Brazil)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>English (United Kingdom)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Turkish</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Spanish (Latin America)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Arabic</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>French (Canada)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Czech</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Hungarian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Greek</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Romanian</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Thai</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Vietnamese</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Indonesian</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetSettingsTop" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuTopLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetSettingsBottom" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuBottomLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="emulator_tab_layout_right_spacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle_2"/>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutRight">
+            <property name="rightMargin">
+             <number>12</number>
+            </property>
+            <property name="bottomMargin">
+             <number>12</number>
+            </property>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="emulatorTabSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="gpuTab">
+       <attribute name="title">
+        <string>GPU</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="gpuTabVLayout" stretch="0,0">
+        <item>
+         <layout class="QHBoxLayout" name="gpuTabHLayout" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="gpuTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="graphicsAdapterGroupBox">
+              <property name="title">
+               <string>Graphics Device</string>
+              </property>
+              <layout class="QVBoxLayout" name="graphicsAdapterLayout">
+               <item>
+                <widget class="QComboBox" name="graphicsAdapterBox"/>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetGpuTop" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuTopHLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="widgetGpuBottom" native="true">
+              <layout class="QHBoxLayout" name="widgetGpuBottomHLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="gpu_tab_layout_right_spacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="gpuTabLayoutMiddle">
+            <item>
+             <layout class="QVBoxLayout" name="layoutResolution">
+              <property name="spacing">
+               <number>6</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="resolutionLayout">
+                <item>
+                 <widget class="QGroupBox" name="widthGroupBox">
+                  <property name="title">
+                   <string>Width</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="widthLayout">
+                   <item>
+                    <widget class="QSpinBox" name="widthSpinBox">
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>1280</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="heightGroupBox">
+                  <property name="title">
+                   <string>Height</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="heightLayout">
+                   <item>
+                    <widget class="QSpinBox" name="heightSpinBox">
+                     <property name="frame">
+                      <bool>true</bool>
+                     </property>
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>720</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="vLayoutVblank">
+              <property name="spacing">
+               <number>6</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="hLayoutVblank">
+                <item>
+                 <widget class="QGroupBox" name="heightDivider">
+                  <property name="title">
+                   <string>Vblank Divider</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="vblankLayout">
+                   <item>
+                    <widget class="QSpinBox" name="vblankSpinBox">
+                     <property name="frame">
+                      <bool>true</bool>
+                     </property>
+                     <property name="accelerated">
+                      <bool>true</bool>
+                     </property>
+                     <property name="correctionMode">
+                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                     </property>
+                     <property name="keyboardTracking">
+                      <bool>false</bool>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>9999</number>
+                     </property>
+                     <property name="value">
+                      <number>1</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="gpuTabLayoutMiddleSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="gpuTabLayoutRight">
+            <property name="rightMargin">
+             <number>12</number>
+            </property>
+            <property name="bottomMargin">
+             <number>12</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="additionalSettingsGroupBox">
+              <property name="title">
+               <string>Additional Settings</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsLayout">
+               <item>
+                <widget class="QCheckBox" name="dumpShadersCheckBox">
+                 <property name="text">
+                  <string>Enable Shaders Dumping</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="nullGpuCheckBox">
+                 <property name="text">
+                  <string>Enable NULL GPU</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="dumpPM4CheckBox">
+                 <property name="text">
+                  <string>Enable PM4 Dumping</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="additionalSettingsSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="gpuTabSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="generalTab">
+       <attribute name="title">
+        <string>General</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,1">
+        <item>
+         <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
+          <item>
+           <layout class="QVBoxLayout" name="generalTabLayoutLeft">
+            <item>
+             <widget class="QGroupBox" name="emuSettings">
+              <property name="title">
+               <string>Emulator Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="emuSettingsLayout">
+               <item>
+                <widget class="QCheckBox" name="fullscreenCheckBox">
+                 <property name="text">
+                  <string>Enable Fullscreen</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="showSplashCheckBox">
+                 <property name="text">
+                  <string>Show Splash</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="ps4proCheckBox">
+                 <property name="text">
+                  <string>Is PS4 Pro</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="emulatorTabSpacerLeft">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
+            <item>
+             <widget class="QGroupBox" name="loggerGroupBox">
+              <property name="title">
+               <string>Logger Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="loggerLayout">
+               <item>
+                <widget class="QWidget" name="LogTypeWidget" native="true">
+                 <layout class="QVBoxLayout" name="LogTypeLayout">
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QGroupBox" name="logTypeGroupBox">
+                    <property name="title">
+                     <string>Log Type</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="logTypeBoxLayout">
+                     <item>
+                      <widget class="QComboBox" name="logTypeComboBox">
+                       <item>
+                        <property name="text">
+                         <string>async</string>
+                        </property>
+                       </item>
+                       <item>
+                        <property name="text">
+                         <string>sync</string>
+                        </property>
+                       </item>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="vLayoutLogFilter">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <layout class="QHBoxLayout" name="hLayoutLogFilter">
+                   <item>
+                    <widget class="QGroupBox" name="logFilter">
+                     <property name="title">
+                      <string>Log Filter</string>
+                     </property>
+                     <layout class="QVBoxLayout" name="logFilterLayout">
+                      <item>
+                       <widget class="QLineEdit" name="logFilterLineEdit"/>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="generalTabLayoutRight">
+            <item>
+             <widget class="QGroupBox" name="additionalSettings">
+              <property name="title">
+               <string>Additional Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+               <item>
+                <spacer name="emulatorTabSpacerRight">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="emulatorTabSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="debugTab">
+       <attribute name="title">
+        <string>Debug</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,1">
+        <item>
+         <layout class="QHBoxLayout" name="debugTabHLayout" stretch="1">
+          <item>
+           <widget class="QGroupBox" name="debugTabGroupBox">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="title">
+             <string>General</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+            </property>
+            <layout class="QVBoxLayout" name="debugTabLayout">
+             <item alignment="Qt::AlignmentFlag::AlignTop">
+              <widget class="QCheckBox" name="debugDump">
+               <property name="text">
+                <string>Enable Debug Dumping</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer">
+               <property name="orientation">
+                <enum>Qt::Orientation::Vertical</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="vkValidationCheckBox">
+               <property name="text">
+                <string>Enable Vulkan Validation Layers</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="vkSyncValidationCheckBox">
+               <property name="text">
+                <string>Enable Vulkan Synchronization Validation</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="rdocCheckBox">
+               <property name="text">
+                <string>Enable RenderDoc Debugging</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="debugTabSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::StandardButton::Apply|QDialogButtonBox::StandardButton::Close|QDialogButtonBox::StandardButton::RestoreDefaults|QDialogButtonBox::StandardButton::Save</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
