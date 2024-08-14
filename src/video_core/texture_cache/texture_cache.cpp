@@ -223,7 +223,7 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
     return RegisterImageView(image_id, view_info);
 }
 
-void TextureCache::RefreshImage(Image& image) {
+void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
@@ -269,8 +269,10 @@ void TextureCache::RefreshImage(Image& image) {
         return;
     }
 
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
+    auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
+    sched_ptr->EndRendering();
+
+    const auto cmdbuf = sched_ptr->CommandBuffer();
     image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite, cmdbuf);
 
     const VAddr image_addr = image.info.guest_address;

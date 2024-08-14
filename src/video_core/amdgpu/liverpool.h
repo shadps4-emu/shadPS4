@@ -11,10 +11,12 @@
 #include <span>
 #include <thread>
 #include <queue>
+
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
 #include "common/types.h"
+#include "common/unique_function.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -1054,6 +1056,13 @@ public:
         rasterizer = rasterizer_;
     }
 
+    void SendCommand(Common::UniqueFunction<void>&& func) {
+        std::scoped_lock lk{submit_mutex};
+        command_queue.emplace(std::move(func));
+        ++num_commands;
+        submit_cv.notify_one();
+    }
+
 private:
     struct Task {
         struct promise_type {
@@ -1122,9 +1131,11 @@ private:
     Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
+    std::queue<Common::UniqueFunction<void>> command_queue{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);

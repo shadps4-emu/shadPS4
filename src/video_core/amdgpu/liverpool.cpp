@@ -35,7 +35,7 @@ void Liverpool::Process(std::stop_token stoken) {
         {
             std::unique_lock lk{submit_mutex};
             Common::CondvarWait(submit_cv, lk, stoken,
-                                [this] { return num_submits != 0 || submit_done; });
+                                [this] { return num_commands || num_submits || submit_done; });
         }
         if (stoken.stop_requested()) {
             break;
@@ -45,7 +45,23 @@ void Liverpool::Process(std::stop_token stoken) {
 
         int qid = -1;
 
-        while (num_submits) {
+        while (num_submits || num_commands) {
+
+            // Process incoming commands with high priority
+            while (num_commands) {
+
+                Common::UniqueFunction<void> callback{};
+                {
+                    std::unique_lock lk{submit_mutex};
+                    callback = std::move(command_queue.back());
+                    command_queue.pop();
+                }
+
+                callback();
+
+                --num_commands;
+            }
+
             qid = (qid + 1) % NumTotalQueues;
 
             auto& queue = mapped_queues[qid];
@@ -219,7 +235,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             // In the case of HW, render target memory has alignment as color block operates on
             // tiles. There is no information of actual resource extents stored in CB context
             // regs, so any deduction of it from slices/pitch will lead to a larger surface created.
-            // The same applies to the depth targets. Fortunatelly, the guest always sends
+            // The same applies to the depth targets. Fortunately, the guest always sends
             // a trailing NOP packet right after the context regs setup, so we can use the heuristic
             // below and extract the hint to determine actual resource dims.
 

@@ -59,17 +59,17 @@ public:
                                              const ImageViewInfo& view_info);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id) {
+    void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
         Image& image = slot_images[image_id];
         if (False(image.flags & ImageFlagBits::CpuModified)) {
             return;
         }
-        RefreshImage(image);
+        RefreshImage(image, custom_scheduler);
         TrackImage(image, image_id);
     }
 
     /// Reuploads image contents.
-    void RefreshImage(Image& image);
+    void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
