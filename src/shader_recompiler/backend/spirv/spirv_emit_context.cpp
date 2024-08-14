@@ -407,6 +407,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rgba16f;
     }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::Rgba16;
+    }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::R8;
