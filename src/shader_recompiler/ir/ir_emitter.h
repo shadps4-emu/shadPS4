@@ -256,18 +256,17 @@ public:
                                                  const F32& dref, const U32& offset,
                                                  TextureInstInfo info);
 
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
-                                            const IR::U1& skip_mips);
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
-                                            const IR::U1& skip_mips, TextureInstInfo info);
+    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
+                                            const U1& skip_mips);
+    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
+                                            const U1& skip_mips, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryLod(const Value& handle, const Value& coords,
                                       TextureInstInfo info);
     [[nodiscard]] Value ImageGather(const Value& handle, const Value& coords, const Value& offset,
-                                    const Value& offset2, TextureInstInfo info);
+                                    TextureInstInfo info);
     [[nodiscard]] Value ImageGatherDref(const Value& handle, const Value& coords,
-                                        const Value& offset, const Value& offset2, const F32& dref,
-                                        TextureInstInfo info);
+                                        const Value& offset, const F32& dref, TextureInstInfo info);
     [[nodiscard]] Value ImageFetch(const Value& handle, const Value& coords, const Value& offset,
                                    const U32& lod, const U32& multisampling, TextureInstInfo info);
     [[nodiscard]] Value ImageGradient(const Value& handle, const Value& coords,

@@ -259,10 +259,6 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
 
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
-    case 8:
-        return Inst<U32>(is_signed ? Opcode::LoadSharedS8 : Opcode::LoadSharedU8, offset);
-    case 16:
-        return Inst<U32>(is_signed ? Opcode::LoadSharedS16 : Opcode::LoadSharedU16, offset);
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
@@ -276,12 +272,6 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
     switch (bit_size) {
-    case 8:
-        Inst(Opcode::WriteSharedU8, offset, value);
-        break;
-    case 16:
-        Inst(Opcode::WriteSharedU16, offset, value);
-        break;
     case 32:
         Inst(Opcode::WriteSharedU32, offset, value);
         break;
@@ -1398,13 +1388,13 @@ F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
-                             const Value& offset2, TextureInstInfo info) {
-    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset, offset2);
+                             TextureInstInfo info) {
+    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset);
 }
 
 Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const Value& offset,
-                                 const Value& offset2, const F32& dref, TextureInstInfo info) {
-    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, offset2, dref);
+                                 const F32& dref, TextureInstInfo info) {
+    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, dref);
 }
 
 Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const Value& offset,

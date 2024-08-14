@@ -250,10 +250,10 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     const IR::Value texel = [&]() -> IR::Value {
         const IR::F32 lod = flags.test(MimgModifier::Level0) ? ir.Imm32(0.f) : IR::F32{};
         if (!flags.test(MimgModifier::Pcf)) {
-            return ir.ImageGather(handle, body, offset, {}, info);
+            return ir.ImageGather(handle, body, offset, info);
         }
         ASSERT(mimg.dmask & 1); // should be always 1st (R) component
-        return ir.ImageGatherDref(handle, body, offset, {}, dref, info);
+        return ir.ImageGatherDref(handle, body, offset, dref, info);
     }();
 
     // For gather4 instructions dmask selects which component to read and must have
