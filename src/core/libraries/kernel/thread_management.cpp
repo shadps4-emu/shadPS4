@@ -1087,13 +1087,16 @@ int PS4_SYSV_ABI scePthreadAttrGetstack(ScePthreadAttr* attr, void** addr, size_
 }
 
 int PS4_SYSV_ABI scePthreadAttrSetstack(ScePthreadAttr* attr, void* addr, size_t size) {
+    if (attr == nullptr || *attr == nullptr || addr == nullptr || size > 0x4000) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, size);
     LOG_INFO(Kernel_Pthread, "scePthreadAttrSetstack: result = {}", result);
 
     if (result == 0) {
-        return SCE_OK;
+        return ORBIS_OK;
     }
-    return SCE_KERNEL_ERROR_EINVAL;
+    return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
 int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res) {
