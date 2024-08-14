@@ -235,6 +235,9 @@ int PS4_SYSV_ABI sceAudioOutGetSystemState() {
 }
 
 int PS4_SYSV_ABI sceAudioOutInit() {
+    if (audio != nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
+    }
     audio = std::make_unique<Audio::SDLAudio>();
     LOG_INFO(Lib_AudioOut, "called");
     return ORBIS_OK;

@@ -26,15 +26,9 @@ OPCODE(WorkgroupMemoryBarrier,                              Void,               
 OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
 
 // Shared memory operations
-OPCODE(LoadSharedU8,                                        U32,            U32,                                                                            )
-OPCODE(LoadSharedS8,                                        U32,            U32,                                                                            )
-OPCODE(LoadSharedU16,                                       U32,            U32,                                                                            )
-OPCODE(LoadSharedS16,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
 OPCODE(LoadSharedU128,                                      U32x4,          U32,                                                                            )
-OPCODE(WriteSharedU8,                                       Void,           U32,            U32,                                                            )
-OPCODE(WriteSharedU16,                                      Void,           U32,            U32,                                                            )
 OPCODE(WriteSharedU32,                                      Void,           U32,            U32,                                                            )
 OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
 OPCODE(WriteSharedU128,                                     Void,           U32,            U32x4,                                                          )
@@ -88,6 +82,10 @@ OPCODE(StoreBufferF32,                                      Void,           Opaq
 OPCODE(StoreBufferF32x2,                                    Void,           Opaque,         Opaque,         F32x2,                                          )
 OPCODE(StoreBufferF32x3,                                    Void,           Opaque,         Opaque,         F32x3,                                          )
 OPCODE(StoreBufferF32x4,                                    Void,           Opaque,         Opaque,         F32x4,                                          )
+OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32,                                            )
+OPCODE(StoreBufferFormatF32x2,                              Void,           Opaque,         Opaque,         F32x2,                                          )
+OPCODE(StoreBufferFormatF32x3,                              Void,           Opaque,         Opaque,         F32x3,                                          )
+OPCODE(StoreBufferFormatF32x4,                              Void,           Opaque,         Opaque,         F32x4,                                          )
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Vector utility
@@ -298,12 +296,12 @@ OPCODE(ConvertU16U32,                                       U16,            U32,
 OPCODE(ConvertU32U16,                                       U32,            U16,                                                                            )
 
 // Image operations
-OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
-OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
-OPCODE(ImageSampleDrefImplicitLod,                          F32,            Opaque,         Opaque,         F32,            Opaque,         Opaque,         )
-OPCODE(ImageSampleDrefExplicitLod,                          F32,            Opaque,         Opaque,         F32,            Opaque,         Opaque,         )
-OPCODE(ImageGather,                                         F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
-OPCODE(ImageGatherDref,                                     F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         F32,            )
+OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )
+OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         U32,            Opaque,                         )
+OPCODE(ImageSampleDrefImplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         F32,            Opaque,         )
+OPCODE(ImageSampleDrefExplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
+OPCODE(ImageGather,                                         F32x4,          Opaque,         Opaque,         Opaque,                                         )
+OPCODE(ImageGatherDref,                                     F32x4,          Opaque,         Opaque,         Opaque,         F32,                            )
 OPCODE(ImageFetch,                                          F32x4,          Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
 OPCODE(ImageQueryDimensions,                                U32x4,          Opaque,         U32,            U1,                                             )
 OPCODE(ImageQueryLod,                                       F32x4,          Opaque,         Opaque,                                                         )

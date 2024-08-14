@@ -974,8 +974,11 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetNpId() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId userId, OrbisNpId* npId) {
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called");
+
+    std::string name = "shadps4";
+    strcpy(npId->handle.data, name.c_str());
     return ORBIS_OK;
 }
 

@@ -93,6 +93,8 @@ public:
                                          BufferInstInfo info);
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
+    void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                           const Value& data, BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
@@ -241,31 +243,32 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& coords,
-                                               const F32& bias, const Value& offset,
-                                               const F32& lod_clamp, TextureInstInfo info);
-    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& coords,
-                                               const F32& lod, const Value& offset,
+    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
+                                               const F32& bias, const U32& offset,
                                                TextureInstInfo info);
-    [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& coords,
+
+    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& body,
+                                               const U32& offset, TextureInstInfo info);
+
+    [[nodiscard]] F32 ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
                                                  const F32& dref, const F32& bias,
-                                                 const Value& offset, const F32& lod_clamp,
+                                                 const U32& offset, TextureInstInfo info);
+
+    [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
+                                                 const F32& dref, const U32& offset,
                                                  TextureInstInfo info);
-    [[nodiscard]] F32 ImageSampleDrefExplicitLod(const Value& handle, const Value& coords,
-                                                 const F32& dref, const F32& lod,
-                                                 const Value& offset, TextureInstInfo info);
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
-                                            const IR::U1& skip_mips);
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const IR::U32& lod,
-                                            const IR::U1& skip_mips, TextureInstInfo info);
+
+    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
+                                            const U1& skip_mips);
+    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
+                                            const U1& skip_mips, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryLod(const Value& handle, const Value& coords,
                                       TextureInstInfo info);
     [[nodiscard]] Value ImageGather(const Value& handle, const Value& coords, const Value& offset,
-                                    const Value& offset2, TextureInstInfo info);
+                                    TextureInstInfo info);
     [[nodiscard]] Value ImageGatherDref(const Value& handle, const Value& coords,
-                                        const Value& offset, const Value& offset2, const F32& dref,
-                                        TextureInstInfo info);
+                                        const Value& offset, const F32& dref, TextureInstInfo info);
     [[nodiscard]] Value ImageFetch(const Value& handle, const Value& coords, const Value& offset,
                                    const U32& lod, const U32& multisampling, TextureInstInfo info);
     [[nodiscard]] Value ImageGradient(const Value& handle, const Value& coords,

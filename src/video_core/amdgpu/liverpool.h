@@ -11,10 +11,12 @@
 #include <span>
 #include <thread>
 #include <queue>
+
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
 #include "common/types.h"
+#include "common/unique_function.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -766,7 +768,8 @@ struct Liverpool {
         }
 
         TilingMode GetTilingMode() const {
-            return attrib.tile_mode_index;
+            return info.linear_general ? TilingMode::Display_Linear
+                                       : attrib.tile_mode_index.Value();
         }
 
         bool IsTiled() const {
@@ -866,6 +869,33 @@ struct Liverpool {
         }
     };
 
+    union ShaderStageEnable {
+        u32 raw;
+        BitField<0, 2, u32> ls_en;
+        BitField<2, 1, u32> hs_en;
+        BitField<3, 2, u32> es_en;
+        BitField<5, 1, u32> gs_en;
+        BitField<6, 1, u32> vs_en;
+
+        bool IsStageEnabled(u32 stage) {
+            switch (stage) {
+            case 0:
+            case 1:
+                return true;
+            case 2:
+                return gs_en.Value();
+            case 3:
+                return es_en.Value();
+            case 4:
+                return hs_en.Value();
+            case 5:
+                return ls_en.Value();
+            default:
+                UNREACHABLE();
+            }
+        }
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -944,7 +974,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A1 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2DF - 0xA2A9 - 1);
+            INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
+            ShaderStageEnable stage_enable;
+            INSERT_PADDING_WORDS(9);
             PolygonOffset poly_offset;
             INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
             AaConfig aa_config;
@@ -1024,6 +1056,13 @@ public:
         rasterizer = rasterizer_;
     }
 
+    void SendCommand(Common::UniqueFunction<void>&& func) {
+        std::scoped_lock lk{submit_mutex};
+        command_queue.emplace(std::move(func));
+        ++num_commands;
+        submit_cv.notify_one();
+    }
+
 private:
     struct Task {
         struct promise_type {
@@ -1092,9 +1131,11 @@ private:
     Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
+    std::queue<Common::UniqueFunction<void>> command_queue{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
@@ -1139,6 +1180,7 @@ static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
