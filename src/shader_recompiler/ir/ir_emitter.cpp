@@ -1388,13 +1388,13 @@ F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
-                             const Value& offset2, TextureInstInfo info) {
-    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset, offset2);
+                             TextureInstInfo info) {
+    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset);
 }
 
 Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const Value& offset,
-                                 const Value& offset2, const F32& dref, TextureInstInfo info) {
-    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, offset2, dref);
+                                 const F32& dref, TextureInstInfo info) {
+    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, dref);
 }
 
 Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const Value& offset,

@@ -171,6 +171,22 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
     }
 }
 
+u32 ImageOffsetArgumentPosition(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::ImageGather:
+    case IR::Opcode::ImageGatherDref:
+        return 2;
+    case IR::Opcode::ImageSampleExplicitLod:
+    case IR::Opcode::ImageSampleImplicitLod:
+        return 3;
+    case IR::Opcode::ImageSampleDrefExplicitLod:
+    case IR::Opcode::ImageSampleDrefImplicitLod:
+        return 4;
+    default:
+        UNREACHABLE();
+    }
+}
+
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
@@ -574,33 +590,29 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_offset) {
         // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
-        const u32 arg_pos = [&]() -> u32 {
-            switch (inst.GetOpcode()) {
-            case IR::Opcode::ImageGather:
-            case IR::Opcode::ImageGatherDref:
-                return 2;
-            case IR::Opcode::ImageSampleExplicitLod:
-            case IR::Opcode::ImageSampleImplicitLod:
-                return 3;
-            case IR::Opcode::ImageSampleDrefExplicitLod:
-            case IR::Opcode::ImageSampleDrefImplicitLod:
-                return 4;
-            default:
-                break;
-            }
-            return inst_info.is_depth ? 4 : 3;
-        }();
+        const u32 arg_pos = ImageOffsetArgumentPosition(inst);
         const IR::Value arg = inst.Arg(arg_pos);
         ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
-        const auto f = [&](IR::Value value, u32 offset) -> auto {
+
+        const auto read = [&](u32 offset) -> auto {
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(offset), ir.Imm32(6), true);
         };
 
-        const auto x = f(arg, 0);
-        const auto y = f(arg, 8);
-        const auto z = f(arg, 16);
-        const IR::Value value = ir.CompositeConstruct(x, y, z);
-        inst.SetArg(arg_pos, value);
+        switch (image.GetType()) {
+        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color1DArray:
+            inst.SetArg(arg_pos, read(0));
+            break;
+        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color2DArray:
+            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8)));
+            break;
+        case AmdGpu::ImageType::Color3D:
+            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8), read(16)));
+            break;
+        default:
+            UNREACHABLE();
+        }
     }
 
     if (inst_info.has_lod_clamp) {

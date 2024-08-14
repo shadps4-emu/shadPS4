@@ -292,12 +292,12 @@ OPCODE(ConvertU16U32,                                       U16,            U32,
 OPCODE(ConvertU32U16,                                       U32,            U16,                                                                            )
 
 // Image operations
-OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            U32,                            )
-OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         U32,            U32,                            )
-OPCODE(ImageSampleDrefImplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         F32,            U32,            )
-OPCODE(ImageSampleDrefExplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         U32,            U32,            )
-OPCODE(ImageGather,                                         F32x4,          Opaque,         Opaque,         Opaque,         Opaque,                         )
-OPCODE(ImageGatherDref,                                     F32x4,          Opaque,         Opaque,         Opaque,         Opaque,         F32,            )
+OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )
+OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         U32,            Opaque,                         )
+OPCODE(ImageSampleDrefImplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         F32,            Opaque,         )
+OPCODE(ImageSampleDrefExplicitLod,                          F32,            Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
+OPCODE(ImageGather,                                         F32x4,          Opaque,         Opaque,         Opaque,                                         )
+OPCODE(ImageGatherDref,                                     F32x4,          Opaque,         Opaque,         Opaque,         F32,                            )
 OPCODE(ImageFetch,                                          F32x4,          Opaque,         Opaque,         Opaque,         U32,            Opaque,         )
 OPCODE(ImageQueryDimensions,                                U32x4,          Opaque,         U32,            U1,                                             )
 OPCODE(ImageQueryLod,                                       F32x4,          Opaque,         Opaque,                                                         )

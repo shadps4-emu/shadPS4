@@ -352,18 +352,19 @@ Id EmitConvertU16U32(EmitContext& ctx, Id value);
 Id EmitConvertU32U16(EmitContext& ctx, Id value);
 
 Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,
-                              Id offset);
+                              const IR::Value& offset);
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
-                              Id offset);
+                              const IR::Value& offset);
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias, Id offset);
+                                  Id bias, const IR::Value& offset);
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id lod, Id offset);
-Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2);
-Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset,
-                       Id offset2, Id dref);
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
-                  Id ms);
+                                  Id lod, const IR::Value& offset);
+Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+                   const IR::Value& offset);
+Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+                       const IR::Value& offset, Id dref);
+Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const IR::Value& offset,
+                  Id lod, Id ms);
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips);
 Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords);
 Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
