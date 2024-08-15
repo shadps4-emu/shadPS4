@@ -200,7 +200,6 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
                                  const void* param) {
     LOG_INFO(Lib_VideoOut, "called");
-    ASSERT(userId == UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || userId == 0);
     ASSERT(busType == SCE_VIDEO_OUT_BUS_TYPE_MAIN);
 
     if (index != 0) {
