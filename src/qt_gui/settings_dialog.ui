@@ -668,7 +668,7 @@
                    <item>
                     <widget class="QGroupBox" name="userName">
                      <property name="title">
-                      <string>User Name</string>
+                      <string>Username</string>
                      </property>
                      <layout class="QVBoxLayout" name="userNameLayout">
                       <item>
