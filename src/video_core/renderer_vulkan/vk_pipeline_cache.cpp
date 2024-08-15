@@ -93,6 +93,8 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
         info.num_user_data = cs_pgm.settings.num_user_regs;
         info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                cs_pgm.num_thread_z.full};
+        info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
+                            cs_pgm.IsTgidEnabled(2)};
         info.shared_memory_size = cs_pgm.SharedMemSize();
         break;
     }

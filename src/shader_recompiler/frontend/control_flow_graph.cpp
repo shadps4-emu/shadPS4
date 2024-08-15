@@ -146,9 +146,6 @@ void CFG::EmitDivergenceLabels() {
 
     // Sort labels to make sure block insertion is correct.
     std::ranges::sort(labels);
-    for (const auto label : labels) {
-        LOG_INFO(Render_Vulkan, "Emitting label {:#x}", label);
-    }
 }
 
 void CFG::EmitBlocks() {
@@ -165,7 +162,7 @@ void CFG::EmitBlocks() {
         const Label end = *next_it;
         const size_t end_index = GetIndex(end) - 1;
         const auto& end_inst = inst_list[end_index];
-        LOG_INFO(Render_Vulkan, "Emitting block {:#x}-{:#x}", start, end);
+
         // Insert block between the labels using the last instruction
         // as an indicator for branching type.
         Block* block = block_pool.Create();

@@ -180,10 +180,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             UNREACHABLE_MSG("Invalid PM4 type {}", type);
         }
 
-        if (VAddr(dcb.data()) == 0x3c24df50) {
-            printf("bad\n");
-        }
-
         const u32 count = header->type3.NumWords();
         const PM4ItOpcode opcode = header->type3.opcode;
         switch (opcode) {
