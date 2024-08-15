@@ -30,6 +30,7 @@ QT_BEGIN_NAMESPACE
 class Ui_MainWindow {
 public:
     QAction* bootInstallPkgAct;
+    QAction* bootGameAct;
     QAction* addElfFolderAct;
     QAction* exitAct;
     QAction* showGameListAct;
@@ -92,6 +93,8 @@ public:
         bootInstallPkgAct = new QAction(MainWindow);
         bootInstallPkgAct->setObjectName("bootInstallPkgAct");
         bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
+        bootGameAct = new QAction(MainWindow);
+        bootGameAct->setObjectName("bootGameAct");
         addElfFolderAct = new QAction(MainWindow);
         addElfFolderAct->setObjectName("addElfFolderAct");
         exitAct = new QAction(MainWindow);
@@ -251,6 +254,7 @@ public:
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
         menuFile->addAction(bootInstallPkgAct);
+        menuFile->addAction(bootGameAct);
         menuFile->addAction(addElfFolderAct);
         menuFile->addSeparator();
         menuFile->addAction(menuRecent->menuAction());
@@ -290,6 +294,7 @@ public:
             QCoreApplication::translate("MainWindow", "Open/Add Elf Folder", nullptr));
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
+        bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(
             "MainWindow", "Install application from a .pkg file", nullptr));
