@@ -107,7 +107,7 @@ if(ENABLE_QT_GUI)
     set(CMAKE_AUTOUIC ON)
 endif()
 
-set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
+set(AUDIO_CORE src/audio_core/sdl_audio.cpp
                src/audio_core/sdl_audio.h
 )
 
@@ -527,34 +527,33 @@ set(EMULATOR src/emulator.cpp
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 
-set(QT_GUI 
-    src/qt_gui/main_window_ui.h
-    src/qt_gui/main_window.cpp
-    src/qt_gui/main_window.h
-    src/qt_gui/gui_context_menus.h
-    src/qt_gui/game_list_utils.h
-    src/qt_gui/game_info.cpp
-    src/qt_gui/game_info.h
-    src/qt_gui/game_list_frame.cpp
-    src/qt_gui/game_list_frame.h
-    src/qt_gui/game_grid_frame.cpp
-    src/qt_gui/game_grid_frame.h
-    src/qt_gui/game_install_dialog.cpp
-    src/qt_gui/game_install_dialog.h
-    src/qt_gui/pkg_viewer.cpp
-    src/qt_gui/pkg_viewer.h
-    src/qt_gui/trophy_viewer.cpp
-    src/qt_gui/trophy_viewer.h
-    src/qt_gui/elf_viewer.cpp
-    src/qt_gui/elf_viewer.h
-    src/qt_gui/main_window_themes.cpp
-    src/qt_gui/main_window_themes.h
-    src/qt_gui/settings_dialog.cpp
-    src/qt_gui/settings_dialog.h
-    src/qt_gui/settings_dialog.ui
-    src/qt_gui/main.cpp
-    ${EMULATOR}
-    ${RESOURCE_FILES}
+set(QT_GUI src/qt_gui/main_window_ui.h
+           src/qt_gui/main_window.cpp
+           src/qt_gui/main_window.h
+           src/qt_gui/gui_context_menus.h
+           src/qt_gui/game_list_utils.h
+           src/qt_gui/game_info.cpp
+           src/qt_gui/game_info.h
+           src/qt_gui/game_list_frame.cpp
+           src/qt_gui/game_list_frame.h
+           src/qt_gui/game_grid_frame.cpp
+           src/qt_gui/game_grid_frame.h
+           src/qt_gui/game_install_dialog.cpp
+           src/qt_gui/game_install_dialog.h
+           src/qt_gui/pkg_viewer.cpp
+           src/qt_gui/pkg_viewer.h
+           src/qt_gui/trophy_viewer.cpp
+           src/qt_gui/trophy_viewer.h
+           src/qt_gui/elf_viewer.cpp
+           src/qt_gui/elf_viewer.h
+           src/qt_gui/main_window_themes.cpp
+           src/qt_gui/main_window_themes.h
+           src/qt_gui/settings_dialog.cpp
+           src/qt_gui/settings_dialog.h
+           src/qt_gui/settings_dialog.ui
+           src/qt_gui/main.cpp
+           ${EMULATOR}
+           ${RESOURCE_FILES}
 )
 endif()
 

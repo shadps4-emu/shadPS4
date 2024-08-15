@@ -15,6 +15,7 @@ bool isNeoMode();
 bool isFullscreenMode();
 std::string getLogFilter();
 std::string getLogType();
+std::string getUserName();
 
 u32 getScreenWidth();
 u32 getScreenHeight();
@@ -42,6 +43,7 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
+void setUserName(std::string type);
 
 void setLogType(std::string type);
 void setLogFilter(std::string type);
