@@ -39,6 +39,7 @@ struct GraphicsPipelineKey {
     Liverpool::StencilRefMask stencil_ref_front;
     Liverpool::StencilRefMask stencil_ref_back;
     Liverpool::PrimitiveType prim_type;
+    u32 prim_restart_index;
     Liverpool::PolygonMode polygon_mode;
     Liverpool::CullMode cull_mode;
     Liverpool::FrontFace front_face;
