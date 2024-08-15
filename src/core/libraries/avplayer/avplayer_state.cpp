@@ -104,8 +104,9 @@ AvPlayerState::AvPlayerState(const SceAvPlayerInitData& init_data)
 }
 
 AvPlayerState::~AvPlayerState() {
-    if (m_up_source && m_current_state == AvState::Play) {
-        m_up_source->Stop();
+    {
+        std::unique_lock lock(m_source_mutex);
+        m_up_source.reset();
     }
     if (m_controller_thread.joinable()) {
         m_controller_thread.request_stop();
@@ -121,18 +122,22 @@ s32 AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source
         return -1;
     }
 
-    if (m_up_source != nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "Only one source is supported.");
-        return -1;
-    }
+    {
+        std::unique_lock lock(m_source_mutex);
+        if (m_up_source != nullptr) {
+            LOG_ERROR(Lib_AvPlayer, "Only one source is supported.");
+            return -1;
+        }
 
-    m_up_source = std::make_unique<AvPlayerSource>(*this, path, m_init_data, source_type);
+        m_up_source = std::make_unique<AvPlayerSource>(*this, path, m_init_data, source_type);
+    }
     AddSourceEvent();
     return 0;
 }
 
 // Called inside GAME thread
 s32 AvPlayerState::GetStreamCount() {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream count. No source.");
         return -1;
@@ -142,6 +147,7 @@ s32 AvPlayerState::GetStreamCount() {
 
 // Called inside GAME thread
 s32 AvPlayerState::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info. No source.", stream_index);
         return -1;
@@ -151,6 +157,7 @@ s32 AvPlayerState::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) 
 
 // Called inside GAME thread
 s32 AvPlayerState::Start() {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr || m_up_source->Start() < 0) {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback.");
         return -1;
@@ -199,6 +206,7 @@ void AvPlayerState::StartControllerThread() {
 
 // Called inside GAME thread
 bool AvPlayerState::EnableStream(u32 stream_index) {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
     }
@@ -207,6 +215,7 @@ bool AvPlayerState::EnableStream(u32 stream_index) {
 
 // Called inside GAME thread
 bool AvPlayerState::Stop() {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr || m_current_state == AvState::Stop) {
         return false;
     }
@@ -218,6 +227,7 @@ bool AvPlayerState::Stop() {
 }
 
 bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfo& video_info) {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
     }
@@ -225,6 +235,7 @@ bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfo& video_info) {
 }
 
 bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
     }
@@ -232,6 +243,7 @@ bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
 }
 
 bool AvPlayerState::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
     }
@@ -239,6 +251,7 @@ bool AvPlayerState::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
 }
 
 bool AvPlayerState::IsActive() {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
     }
@@ -247,11 +260,22 @@ bool AvPlayerState::IsActive() {
 }
 
 u64 AvPlayerState::CurrentTime() {
+    std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get current time. No source.");
         return 0;
     }
     return m_up_source->CurrentTime();
+}
+
+bool AvPlayerState::SetLooping(bool is_looping) {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr) {
+        LOG_ERROR(Lib_AvPlayer, "Could not set loop flag. No source.");
+        return false;
+    }
+    m_up_source->SetLooping(is_looping);
+    return true;
 }
 
 // May be called from different threads
@@ -313,6 +337,7 @@ bool AvPlayerState::SetState(AvState state) {
 
 // Called inside CONTROLLER thread
 std::optional<bool> AvPlayerState::OnBufferingCheckEvent(u32 num_frames) {
+    std::shared_lock lock(m_source_mutex);
     if (!m_up_source) {
         return std::nullopt;
     }
@@ -351,6 +376,7 @@ void AvPlayerState::ProcessEvent() {
         break;
     }
     case AvEventType::AddSource: {
+        std::shared_lock lock(m_source_mutex);
         if (m_up_source->FindStreamInfo()) {
             SetState(AvState::Ready);
             OnPlaybackStateChanged(AvState::Ready);

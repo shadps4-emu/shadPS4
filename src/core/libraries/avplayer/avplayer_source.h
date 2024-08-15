@@ -7,12 +7,13 @@
 #include "avplayer_common.h"
 #include "avplayer_data_streamer.h"
 
-#include "common/types.h"
 #include "common/polyfill_thread.h"
+#include "common/types.h"
 #include "core/libraries/kernel/thread_management.h"
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -87,6 +88,36 @@ struct Frame {
     SceAvPlayerFrameInfoEx info;
 };
 
+class EventCV {
+public:
+    template <class Pred>
+    void Wait(Pred pred) {
+        std::unique_lock lock(m_mutex);
+        m_cv.wait(lock, std::move(pred));
+    }
+
+    template <class Pred>
+    bool Wait(std::stop_token stop, Pred pred) {
+        std::unique_lock lock(m_mutex);
+        return m_cv.wait(lock, std::move(stop), std::move(pred));
+    }
+
+    template <class Pred, class Rep, class Period>
+    bool WaitFor(std::chrono::duration<Rep, Period> timeout, Pred pred) {
+        std::unique_lock lock(m_mutex);
+        return m_cv.wait_for(lock, timeout, std::move(pred));
+    }
+
+    void Notify() {
+        std::unique_lock lock(m_mutex);
+        m_cv.notify_all();
+    }
+
+private:
+    std::mutex m_mutex{};
+    std::condition_variable_any m_cv{};
+};
+
 class AvPlayerSource {
 public:
     AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
@@ -139,7 +170,7 @@ private:
     AvPlayerStateCallback& m_state;
 
     SceAvPlayerMemAllocator m_memory_replacement{};
-    u64 m_num_output_video_framebuffers{};
+    u32 m_num_output_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
     std::atomic_bool m_is_eof = false;
@@ -161,7 +192,17 @@ private:
     std::optional<s32> m_video_stream_index{};
     std::optional<s32> m_audio_stream_index{};
 
-    std::mutex m_state_mutex;
+    EventCV m_audio_packets_cv{};
+    EventCV m_audio_frames_cv{};
+    EventCV m_audio_buffers_cv{};
+
+    EventCV m_video_packets_cv{};
+    EventCV m_video_frames_cv{};
+    EventCV m_video_buffers_cv{};
+
+    EventCV m_stop_cv{};
+
+    std::mutex m_state_mutex{};
     std::jthread m_demuxer_thread{};
     std::jthread m_video_decoder_thread{};
     std::jthread m_audio_decoder_thread{};

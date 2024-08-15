@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 
 namespace Libraries::AvPlayer {
 
@@ -34,6 +35,7 @@ public:
     bool GetVideoData(SceAvPlayerFrameInfoEx& video_info);
     bool IsActive();
     u64 CurrentTime();
+    bool SetLooping(bool is_looping);
 
 private:
     using ScePthreadMutex = Kernel::ScePthreadMutex;
@@ -76,6 +78,7 @@ private:
     u32 m_thread_affinity;
     std::atomic_uint32_t m_some_event_result{};
 
+    std::shared_mutex m_source_mutex{};
     std::mutex m_state_machine_mutex{};
     std::mutex m_event_handler_mutex{};
     std::jthread m_controller_thread{};

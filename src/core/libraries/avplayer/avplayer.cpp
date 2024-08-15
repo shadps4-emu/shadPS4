@@ -230,6 +230,9 @@ s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag)
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
+    if (!handle->SetLooping(loop_flag)) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
     return ORBIS_OK;
 }
 
@@ -256,7 +259,9 @@ s32 PS4_SYSV_ABI sceAvPlayerStop(SceAvPlayerHandle handle) {
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return handle->Stop();
+    const auto res = handle->Stop();
+    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
+    return res;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerStreamCount(SceAvPlayerHandle handle) {

@@ -37,6 +37,7 @@ public:
     bool IsActive();
     u64 CurrentTime();
     s32 Stop();
+    bool SetLooping(bool is_looping);
 
 private:
     using ScePthreadMutex = Kernel::ScePthreadMutex;

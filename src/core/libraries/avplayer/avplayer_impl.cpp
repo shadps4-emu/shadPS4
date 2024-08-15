@@ -190,4 +190,11 @@ s32 AvPlayer::Stop() {
     return ORBIS_OK;
 }
 
+bool AvPlayer::SetLooping(bool is_looping) {
+    if (m_state == nullptr) {
+        return false;
+    }
+    return m_state->SetLooping(is_looping);
+}
+
 } // namespace Libraries::AvPlayer
