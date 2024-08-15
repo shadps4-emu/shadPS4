@@ -298,28 +298,14 @@ U32U64 IREmitter::SharedAtomicIAdd(const U32U64& a, const U32U64& b) {
     }
 }
 
-U32 IREmitter::SharedAtomicSMin(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SharedAtomicSMin32, a, b);
-}
-
-U32 IREmitter::SharedAtomicUMin(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SharedAtomicUMin32, a, b);
-}
-
 U32 IREmitter::SharedAtomicIMin(const U32& a, const U32& b, bool is_signed) {
-    return is_signed ? SharedAtomicSMin(a, b) : SharedAtomicUMin(a, b);
-}
-
-U32 IREmitter::SharedAtomicSMax(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SharedAtomicSMax32, a, b);
-}
-
-U32 IREmitter::SharedAtomicUMax(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::SharedAtomicUMax32, a, b);
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMin32, a, b)
+                     : Inst<U32>(Opcode::SharedAtomicUMin32, a, b);
 }
 
 U32 IREmitter::SharedAtomicIMax(const U32& a, const U32& b, bool is_signed) {
-    return is_signed ? SharedAtomicSMax(a, b) : SharedAtomicUMax(a, b);
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, a, b)
+                     : Inst<U32>(Opcode::SharedAtomicUMax32, a, b);
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
@@ -388,36 +374,16 @@ Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, con
     return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicSMin(const Value& handle, const Value& address, const Value& value,
-                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value);
-}
-
-Value IREmitter::BufferAtomicUMin(const Value& handle, const Value& address, const Value& value,
-                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
-}
-
 Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? BufferAtomicSMin(handle, address, value, info)
-                     : BufferAtomicUMin(handle, address, value, info);
-}
-
-Value IREmitter::BufferAtomicSMax(const Value& handle, const Value& address, const Value& value,
-                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value);
-}
-
-Value IREmitter::BufferAtomicUMax(const Value& handle, const Value& address, const Value& value,
-                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? BufferAtomicSMax(handle, address, value, info)
-                     : BufferAtomicUMax(handle, address, value, info);
+    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,

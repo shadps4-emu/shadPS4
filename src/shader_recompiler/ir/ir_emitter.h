@@ -85,11 +85,7 @@ public:
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
     [[nodiscard]] U32U64 SharedAtomicIAdd(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 SharedAtomicSMin(const U32& a, const U32& b);
-    [[nodiscard]] U32 SharedAtomicUMin(const U32& a, const U32& b);
     [[nodiscard]] U32 SharedAtomicIMin(const U32& a, const U32& b, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicSMax(const U32& a, const U32& b);
-    [[nodiscard]] U32 SharedAtomicUMax(const U32& a, const U32& b);
     [[nodiscard]] U32 SharedAtomicIMax(const U32& a, const U32& b, bool is_signed);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
@@ -106,16 +102,8 @@ public:
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a, const Value& b,
                                          BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicSMin(const Value& handle, const Value& a, const Value& b,
-                                         BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicUMin(const Value& handle, const Value& a, const Value& b,
-                                         BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& a, const Value& b,
                                          bool is_signed, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicSMax(const Value& handle, const Value& a, const Value& b,
-                                         BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicUMax(const Value& handle, const Value& a, const Value& b,
-                                         BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& a, const Value& b,
                                          bool is_signed, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,

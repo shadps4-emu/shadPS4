@@ -437,6 +437,7 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_form
 void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::VectorReg vdata{inst.src[1].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value address = [&] -> IR::Value {
         if (mtbuf.idxen && mtbuf.offen) {
@@ -459,7 +460,7 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
 
-    const IR::Value value = ir.LoadBufferFormat(num_dwords, handle, address, info);
+    const IR::Value value = ir.GetVectorReg(vdata);
 
     const IR::Value result = [&] {
         switch (op) {
@@ -470,11 +471,11 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
         case AtomicOp::Smin:
             return ir.BufferAtomicIMin(handle, address, value, true, info);
         case AtomicOp::Umin:
-            return ir.BufferAtomicUMin(handle, address, value, info);
+            return ir.BufferAtomicIMin(handle, address, value, false, info);
         case AtomicOp::Smax:
             return ir.BufferAtomicIMax(handle, address, value, true, info);
         case AtomicOp::Umax:
-            return ir.BufferAtomicUMax(handle, address, value, info);
+            return ir.BufferAtomicIMax(handle, address, value, false, info);
         case AtomicOp::And:
             return ir.BufferAtomicAnd(handle, address, value, info);
         case AtomicOp::Or:
@@ -490,9 +491,9 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
         }
     }();
 
-    // TODO: Check if unused
-    // const IR::VectorReg dst_reg{inst.src[1].code};
-    ir.StoreBuffer(num_dwords, handle, address, value, info);
+    if (mtbuf.glc) {
+        ir.SetVectorReg(vdata, IR::U32{result});
+    }
 }
 
 void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
