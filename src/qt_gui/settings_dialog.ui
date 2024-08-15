@@ -232,6 +232,32 @@
              </widget>
             </item>
             <item>
+             <layout class="QVBoxLayout" name="vLayoutUserName">
+              <property name="spacing">
+               <number>6</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QHBoxLayout" name="hLayoutUserName">
+                <item>
+                 <widget class="QGroupBox" name="userName">
+                  <property name="title">
+                   <string>Username</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="userNameLayout">
+                   <item>
+                    <widget class="QLineEdit" name="userNameLineEdit"/>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
              <widget class="QWidget" name="widgetSettingsTop" native="true">
               <layout class="QHBoxLayout" name="widgetGpuTopLayout">
                <property name="leftMargin">

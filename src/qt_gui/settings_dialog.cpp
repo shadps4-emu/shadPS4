@@ -43,6 +43,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     {
         connect(ui->consoleLanguageComboBox, &QComboBox::currentIndexChanged, this,
                 [](int index) { Config::setLanguage(index); });
+
+        connect(ui->userNameLineEdit, &QLineEdit::textChanged, this,
+                [](const QString& text) { Config::setUserName(text.toStdString()); });
     }
 
     // GPU TAB
@@ -121,6 +124,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());
     ui->logTypeComboBox->setCurrentText(QString::fromStdString(Config::getLogType()));
     ui->logFilterLineEdit->setText(QString::fromStdString(Config::getLogFilter()));
+    ui->userNameLineEdit->setText(QString::fromStdString(Config::getUserName()));
 
     ui->debugDump->setChecked(Config::debugDump());
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());

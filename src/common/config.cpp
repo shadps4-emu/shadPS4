@@ -197,6 +197,10 @@ void setLogFilter(std::string type) {
     logFilter = type;
 }
 
+void setUserName(std::string type) {
+    userName = type;
+}
+
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_x = x;
     main_window_geometry_y = y;
@@ -453,6 +457,7 @@ void setDefaultValues() {
     screenHeight = 720;
     logFilter = "";
     logType = "async";
+    userName = "shadPS4";
     isDebugDump = false;
     isShowSplash = false;
     isNullGpu = false;
