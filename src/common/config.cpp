@@ -81,7 +81,7 @@ std::string getLogType() {
     return logType;
 }
 
-std::string getUserName() {
+std::string setUserName() {
     return userName;
 }
 
