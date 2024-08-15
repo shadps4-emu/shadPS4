@@ -103,7 +103,8 @@ void CFG::EmitDivergenceLabels() {
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
-               inst.opcode == Opcode::S_CBRANCH_EXECZ;
+               inst.opcode == Opcode::S_CBRANCH_EXECZ ||
+               inst.opcode == Opcode::S_ANDN2_B64;
     };
 
     // Since we will be adding new labels, avoid iterating those as well.
@@ -120,21 +121,10 @@ void CFG::EmitDivergenceLabels() {
         s32 curr_begin = -1;
         for (size_t index = GetIndex(start); index < end_index; index++) {
             const auto& inst = inst_list[index];
-            // Mark a potential start of an exec scope.
-            if (is_open_scope(inst)) {
-                curr_begin = index;
-                continue;
-            }
             if (is_close_scope(inst) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
                 if (index - curr_begin == 1) {
                     curr_begin = -1;
-                    continue;
-                }
-                // Ensure the register holding EXEC is the same as the one saved.
-                const u32 backup_sreg = inst_list[curr_begin].dst[0].code;
-                const u32 restore_sreg = inst.src[0].code;
-                if (inst.opcode == Opcode::S_MOV_B64 && backup_sreg != restore_sreg) {
                     continue;
                 }
                 // Add a label to the instruction right after the open scope call.
@@ -144,13 +134,21 @@ void CFG::EmitDivergenceLabels() {
                 AddLabel(label);
                 // Add a label to the close scope instruction as well.
                 AddLabel(index_to_pc[index]);
+                // Reset scope begin.
                 curr_begin = -1;
+            }
+            // Mark a potential start of an exec scope.
+            if (is_open_scope(inst)) {
+                curr_begin = index;
             }
         }
     }
 
     // Sort labels to make sure block insertion is correct.
     std::ranges::sort(labels);
+    for (const auto label : labels) {
+        LOG_INFO(Render_Vulkan, "Emitting label {:#x}", label);
+    }
 }
 
 void CFG::EmitBlocks() {
@@ -167,7 +165,7 @@ void CFG::EmitBlocks() {
         const Label end = *next_it;
         const size_t end_index = GetIndex(end) - 1;
         const auto& end_inst = inst_list[end_index];
-
+        LOG_INFO(Render_Vulkan, "Emitting block {:#x}-{:#x}", start, end);
         // Insert block between the labels using the last instruction
         // as an indicator for branching type.
         Block* block = block_pool.Create();
