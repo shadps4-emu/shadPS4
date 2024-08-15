@@ -10,6 +10,7 @@
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
+#include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/file_format/playgo_chunk.h"
@@ -26,7 +27,6 @@
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
-#include "src/common/scm_rev.h"
 #include "video_core/renderdoc.h"
 
 Frontend::WindowSDL* g_window = nullptr;

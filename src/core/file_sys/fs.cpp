@@ -54,6 +54,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
 
     // If the path does not exist attempt to verify this.
     // Retrieve parent path until we find one that exists.
+    std::scoped_lock lk{m_mutex};
     path_parts.clear();
     auto current_path = host_path;
     while (!std::filesystem::exists(current_path)) {

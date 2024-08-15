@@ -419,8 +419,14 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 }
 
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    if (pParam != nullptr) {
+        LOG_INFO(Lib_Pad, "scePadSetLightBar called handle = {} rgb = {} {} {}", handle, pParam->r,
+                 pParam->g, pParam->b);
+        auto* controller = Common::Singleton<Input::GameController>::Instance();
+        controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
+        return ORBIS_OK;
+    }
+    return ORBIS_PAD_ERROR_INVALID_ARG;
 }
 
 int PS4_SYSV_ABI scePadSetLightBarBaseBrightness() {
@@ -479,8 +485,14 @@ int PS4_SYSV_ABI scePadSetUserColor() {
 }
 
 int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pParam) {
-    LOG_DEBUG(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    if (pParam != nullptr) {
+        LOG_INFO(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
+                 pParam->smallMotor, pParam->largeMotor);
+        auto* controller = Common::Singleton<Input::GameController>::Instance();
+        controller->SetVibration(pParam->smallMotor, pParam->largeMotor);
+        return ORBIS_OK;
+    }
+    return ORBIS_PAD_ERROR_INVALID_ARG;
 }
 
 int PS4_SYSV_ABI scePadSetVibrationForce() {

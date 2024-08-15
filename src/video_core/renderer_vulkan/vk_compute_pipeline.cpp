@@ -97,7 +97,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     Shader::PushData push_data{};
     u32 binding{};
 
-    for (u32 i = 0; const auto& buffer : info.buffers) {
+    for (const auto& buffer : info.buffers) {
         const auto vsharp = buffer.GetVsharp(info);
         const VAddr address = vsharp.base_address;
         // Most of the time when a metadata is updated with a shader it gets cleared. It means we
@@ -116,7 +116,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         }
         const u32 size = vsharp.GetSize();
         if (buffer.is_written) {
-            texture_cache.InvalidateMemory(address, size);
+            texture_cache.InvalidateMemory(address, size, true);
         }
         const u32 alignment =
             buffer.is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
@@ -138,7 +138,6 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                                                 : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
-        i++;
     }
 
     image_infos.reserve(info.images.size() + info.samplers.size());

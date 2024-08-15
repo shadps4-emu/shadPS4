@@ -186,7 +186,7 @@ public:
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
-    void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);
@@ -211,10 +211,10 @@ public:
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
 
 private:
-    template <typename T = IR::U32F32>
-    [[nodiscard]] T GetSrc(const InstOperand& operand, bool flt_zero = false);
-    template <typename T = IR::U64F64>
-    [[nodiscard]] T GetSrc64(const InstOperand& operand, bool flt_zero = false);
+    template <typename T = IR::U32>
+    [[nodiscard]] T GetSrc(const InstOperand& operand);
+    template <typename T = IR::U64>
+    [[nodiscard]] T GetSrc64(const InstOperand& operand);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 

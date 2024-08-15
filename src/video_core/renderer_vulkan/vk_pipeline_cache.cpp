@@ -115,6 +115,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 }
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
+    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+        return nullptr;
+    }
     RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
@@ -161,6 +165,7 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
+    key.prim_restart_index = regs.primitive_reset_index;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
@@ -203,12 +208,20 @@ void PipelineCache::RefreshGraphicsKey() {
     }
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
+        if (!regs.stage_enable.IsStageEnabled(i)) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         auto* pgm = regs.ProgramForStage(i);
         if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
             continue;
         }
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo->Valid()) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         key.stage_hashes[i] = bininfo->shader_hash;
     }
 }

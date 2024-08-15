@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <span>
 #include <QDialog>
 #include <QPushButton>
 
@@ -16,7 +17,7 @@ class SettingsDialog;
 class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
     int exec() override;

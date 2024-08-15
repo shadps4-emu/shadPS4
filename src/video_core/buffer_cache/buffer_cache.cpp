@@ -87,6 +87,15 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
 }
 
 bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
+    boost::container::small_vector<vk::VertexInputAttributeDescription2EXT, 16> attributes;
+    boost::container::small_vector<vk::VertexInputBindingDescription2EXT, 16> bindings;
+    SCOPE_EXIT {
+        if (instance.IsVertexInputDynamicState()) {
+            const auto cmdbuf = scheduler.CommandBuffer();
+            cmdbuf.setVertexInputEXT(bindings, attributes);
+        }
+    };
+
     if (vs_info.vs_inputs.empty()) {
         return false;
     }
@@ -122,6 +131,21 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
         guest_buffers.emplace_back(buffer);
         ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
+        attributes.push_back({
+            .location = input.binding,
+            .binding = input.binding,
+            .format =
+                Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
+            .offset = 0,
+        });
+        bindings.push_back({
+            .binding = input.binding,
+            .stride = buffer.GetStride(),
+            .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
+                             ? vk::VertexInputRate::eVertex
+                             : vk::VertexInputRate::eInstance,
+            .divisor = 1,
+        });
     }
 
     std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
@@ -224,6 +248,19 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
+std::pair<const Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
+    const u64 page = gpu_addr >> CACHING_PAGEBITS;
+    const BufferId buffer_id = page_table[page];
+    if (buffer_id) {
+        const Buffer& buffer = slot_buffers[buffer_id];
+        if (buffer.IsInBounds(gpu_addr, size)) {
+            return {&buffer, buffer.Offset(gpu_addr)};
+        }
+    }
+    const u32 offset = staging_buffer.Copy(gpu_addr, size, 16);
+    return {&staging_buffer, offset};
+}
+
 bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     const VAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
@@ -246,6 +283,10 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
     return memory_tracker.IsRegionCpuModified(addr, size);
+}
+
+bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
+    return memory_tracker.IsRegionGpuModified(addr, size);
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {

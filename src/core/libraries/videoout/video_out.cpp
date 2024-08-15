@@ -113,7 +113,9 @@ s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
 
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     LOG_INFO(Lib_VideoOut, "called");
-    s32 pending = driver->GetPort(handle)->flip_status.flipPendingNum;
+    auto* port = driver->GetPort(handle);
+    std::unique_lock lock{port->port_mutex};
+    s32 pending = port->flip_status.flipPendingNum;
     return pending;
 }
 
@@ -161,6 +163,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
+    std::unique_lock lock{port->port_mutex};
     *status = port->flip_status;
 
     LOG_INFO(Lib_VideoOut,
@@ -197,7 +200,6 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
                                  const void* param) {
     LOG_INFO(Lib_VideoOut, "called");
-    ASSERT(userId == UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || userId == 0);
     ASSERT(busType == SCE_VIDEO_OUT_BUS_TYPE_MAIN);
 
     if (index != 0) {

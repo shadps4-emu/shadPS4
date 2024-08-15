@@ -37,6 +37,10 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::StoreBufferF32x2:
     case IR::Opcode::StoreBufferF32x3:
     case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32x2:
+    case IR::Opcode::StoreBufferFormatF32x3:
+    case IR::Opcode::StoreBufferFormatF32x4:
     case IR::Opcode::StoreBufferU32:
         return true;
     default:
@@ -73,6 +77,10 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::LoadBufferFormatF32x2:
     case IR::Opcode::LoadBufferFormatF32x3:
     case IR::Opcode::LoadBufferFormatF32x4:
+    case IR::Opcode::StoreBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32x2:
+    case IR::Opcode::StoreBufferFormatF32x3:
+    case IR::Opcode::StoreBufferFormatF32x4:
         switch (num_format) {
         case AmdGpu::NumberFormat::Unorm:
         case AmdGpu::NumberFormat::Snorm:
@@ -112,6 +120,10 @@ bool IsBufferStore(const IR::Inst& inst) {
     case IR::Opcode::StoreBufferF32x2:
     case IR::Opcode::StoreBufferF32x3:
     case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32x2:
+    case IR::Opcode::StoreBufferFormatF32x3:
+    case IR::Opcode::StoreBufferFormatF32x4:
     case IR::Opcode::StoreBufferU32:
         return true;
     default:
@@ -168,6 +180,22 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
         return true;
     default:
         return false;
+    }
+}
+
+u32 ImageOffsetArgumentPosition(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::ImageGather:
+    case IR::Opcode::ImageGatherDref:
+        return 2;
+    case IR::Opcode::ImageSampleExplicitLod:
+    case IR::Opcode::ImageSampleImplicitLod:
+        return 3;
+    case IR::Opcode::ImageSampleDrefExplicitLod:
+    case IR::Opcode::ImageSampleDrefImplicitLod:
+        return 4;
+    default:
+        UNREACHABLE();
     }
 }
 
@@ -376,9 +404,11 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
         return -1;
     }
     // We have found this pattern. Build the sharp.
-    std::array<u64, 2> buffer;
+    std::array<u32, 4> buffer;
     buffer[0] = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
-    buffer[1] = handle->Arg(2).U32() | handle->Arg(3).U64() << 32;
+    buffer[1] = 0;
+    buffer[2] = handle->Arg(2).U32();
+    buffer[3] = handle->Arg(3).U32();
     cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
     // Assign a binding to this sharp.
     return descriptors.Add(BufferResource{
@@ -492,6 +522,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     const auto tsharp = TrackSharp(tsharp_handle);
     const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    if (!image.Valid()) {
+        LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        inst.ReplaceUsesWith(
+            ir.CompositeConstruct(ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f)));
+        return;
+    }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
@@ -565,25 +602,43 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     if (inst_info.has_offset) {
         // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
-        const bool is_gather = inst.GetOpcode() == IR::Opcode::ImageGather ||
-                               inst.GetOpcode() == IR::Opcode::ImageGatherDref;
-        const u32 arg_pos = is_gather ? 2 : (inst_info.is_depth ? 4 : 3);
+        const u32 arg_pos = ImageOffsetArgumentPosition(inst);
         const IR::Value arg = inst.Arg(arg_pos);
         ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
-        const auto sign_ext = [&](u32 value) { return ir.Imm32(s32(value << 24) >> 24); };
-        union {
-            u32 raw;
-            BitField<0, 6, u32> x;
-            BitField<8, 6, u32> y;
-            BitField<16, 6, u32> z;
-        } offset{arg.U32()};
-        const IR::Value value = ir.CompositeConstruct(sign_ext(offset.x), sign_ext(offset.y));
-        inst.SetArg(arg_pos, value);
+
+        const auto read = [&](u32 offset) -> auto {
+            return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(offset), ir.Imm32(6), true);
+        };
+
+        switch (image.GetType()) {
+        case AmdGpu::ImageType::Color1D:
+        case AmdGpu::ImageType::Color1DArray:
+            inst.SetArg(arg_pos, read(0));
+            break;
+        case AmdGpu::ImageType::Color2D:
+        case AmdGpu::ImageType::Color2DArray:
+            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8)));
+            break;
+        case AmdGpu::ImageType::Color3D:
+            inst.SetArg(arg_pos, ir.CompositeConstruct(read(0), read(8), read(16)));
+            break;
+        default:
+            UNREACHABLE();
+        }
     }
 
     if (inst_info.has_lod_clamp) {
-        // Final argument contains lod_clamp
-        const u32 arg_pos = inst_info.is_depth ? 5 : 4;
+        const u32 arg_pos = [&]() -> u32 {
+            switch (inst.GetOpcode()) {
+            case IR::Opcode::ImageSampleImplicitLod:
+                return 2;
+            case IR::Opcode::ImageSampleDrefImplicitLod:
+                return 3;
+            default:
+                break;
+            }
+            return inst_info.is_depth ? 5 : 4;
+        }();
         inst.SetArg(arg_pos, arg);
     }
     if (inst_info.explicit_lod) {
@@ -591,7 +646,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
                inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ||
                inst.GetOpcode() == IR::Opcode::ImageSampleDrefExplicitLod);
         const u32 pos = inst.GetOpcode() == IR::Opcode::ImageSampleExplicitLod ? 2 : 3;
-        inst.SetArg(pos, arg);
+        const IR::Value value = inst_info.force_level0 ? ir.Imm32(0.f) : arg;
+        inst.SetArg(pos, value);
     }
 }
 

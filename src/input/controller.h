@@ -6,6 +6,8 @@
 #include <mutex>
 #include "common/types.h"
 
+struct SDL_Gamepad;
+
 namespace Input {
 
 enum class Axis {
@@ -43,6 +45,9 @@ public:
     void CheckButton(int id, u32 button, bool isPressed);
     void AddState(const State& state);
     void Axis(int id, Input::Axis axis, int value);
+    void SetLightBarRGB(u8 r, u8 g, u8 b);
+    bool SetVibration(u8 smallMotor, u8 largeMotor);
+    void TryOpenSDLController();
 
 private:
     struct StateInternal {
@@ -57,6 +62,8 @@ private:
     u32 m_first_state = 0;
     std::array<State, MAX_STATES> m_states;
     std::array<StateInternal, MAX_STATES> m_private;
+
+    SDL_Gamepad* m_sdl_gamepad = nullptr;
 };
 
 } // namespace Input
