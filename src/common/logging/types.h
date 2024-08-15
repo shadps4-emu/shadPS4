@@ -79,6 +79,7 @@ enum class Class : u8 {
     Lib_ErrorDialog,    ///< The LibSceErrorDialog implementation.
     Lib_ImeDialog,      ///< The LibSceImeDialog implementation.
     Lib_AvPlayer,       ///< The LibSceAvPlayer implementation.
+    Lib_Ngs2,           ///< The LibSceNgs2 implementation.
     Frontend,           ///< Emulator UI
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend

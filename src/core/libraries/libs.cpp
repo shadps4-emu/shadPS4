@@ -38,6 +38,7 @@
 #include "src/core/libraries/dialogs/error_dialog.h"
 #include "src/core/libraries/dialogs/ime_dialog.h"
 #include "src/core/libraries/libpng/pngdec.h"
+#include "src/core/libraries/ngs2/ngs2.h"
 
 namespace Libraries {
 
@@ -79,6 +80,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ErrorDialog::RegisterlibSceErrorDialog(sym);
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
     Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
+    Libraries::Ngs2::RegisterlibSceNgs2(sym);
 }
 
 } // namespace Libraries
