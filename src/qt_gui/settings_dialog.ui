@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
-
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -46,8 +45,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1006</width>
-        <height>720</height>
+        <width>1002</width>
+        <height>710</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -59,271 +58,426 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="emulatorTab">
+      <widget class="QWidget" name="generalTab">
        <attribute name="title">
-        <string>Emulator</string>
+        <string>General</string>
        </attribute>
-       <layout class="QVBoxLayout" name="emulatorTabVLayout" stretch="0,0">
+       <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,1,0,0,0,0,0">
         <item>
-         <layout class="QHBoxLayout" name="emulatorTabHLayout" stretch="1,1,1">
+         <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
           <item>
-           <layout class="QVBoxLayout" name="emulatorTabLayoutLeft">
+           <layout class="QVBoxLayout" name="generalTabLayoutLeft">
             <item>
-             <widget class="QGroupBox" name="consoleLanguageGroupBox">
+             <widget class="QGroupBox" name="emuSettings">
               <property name="title">
-               <string>Console Language</string>
+               <string>Emulator Settings</string>
               </property>
-              <layout class="QVBoxLayout" name="settingsLayout">
+              <layout class="QVBoxLayout" name="emuSettingsLayout">
                <item>
-                <widget class="QComboBox" name="consoleLanguageComboBox">
+                <layout class="QVBoxLayout" name="vLayoutUserName">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
                  <item>
-                  <property name="text">
-                   <string>Japanese</string>
-                  </property>
+                  <layout class="QHBoxLayout" name="hLayoutUserName">
+                   <item>
+                    <widget class="QGroupBox" name="userName">
+                     <property name="title">
+                      <string>Username</string>
+                     </property>
+                     <layout class="QVBoxLayout" name="userNameLayout">
+                      <item>
+                       <widget class="QLineEdit" name="userNameLineEdit"/>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
-                 <item>
-                  <property name="text">
-                   <string>English (United States)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>French (France)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Spanish (Spain)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>German</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Italian</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Dutch</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Portuguese (Portugal)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Russian</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Korean</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Traditional Chinese</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Simplified Chinese</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Finnish</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Swedish</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Danish</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Norwegian</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Polish</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Portuguese (Brazil)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>English (United Kingdom)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Turkish</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Spanish (Latin America)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Arabic</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>French (Canada)</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Czech</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Hungarian</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Greek</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Romanian</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Thai</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Vietnamese</string>
-                  </property>
-                 </item>
-                 <item>
-                  <property name="text">
-                   <string>Indonesian</string>
-                  </property>
-                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="consoleLanguageGroupBox">
+                 <property name="title">
+                  <string>Console Language</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="settingsLayout">
+                  <item>
+                   <widget class="QComboBox" name="consoleLanguageComboBox">
+                    <item>
+                     <property name="text">
+                      <string>Japanese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>English (United States)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>French (France)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Spanish (Spain)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>German</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Italian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Dutch</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Portuguese (Portugal)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Russian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Korean</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Traditional Chinese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Simplified Chinese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Finnish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Swedish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Danish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Norwegian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Polish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Portuguese (Brazil)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>English (United Kingdom)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Turkish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Spanish (Latin America)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Arabic</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>French (Canada)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Czech</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Hungarian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Greek</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Romanian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Thai</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Vietnamese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Indonesian</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="fullscreenCheckBox">
+                 <property name="text">
+                  <string>Enable Fullscreen</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="showSplashCheckBox">
+                 <property name="text">
+                  <string>Show Splash</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="ps4proCheckBox">
+                 <property name="text">
+                  <string>Is PS4 Pro</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="emulatorTabSpacerLeft">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>
             </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
             <item>
-             <layout class="QVBoxLayout" name="vLayoutUserName">
-              <property name="spacing">
-               <number>6</number>
+             <widget class="QGroupBox" name="loggerGroupBox">
+              <property name="title">
+               <string>Logger Settings</string>
               </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <layout class="QHBoxLayout" name="hLayoutUserName">
-                <item>
-                 <widget class="QGroupBox" name="userName">
-                  <property name="title">
-                   <string>Username</string>
+              <layout class="QVBoxLayout" name="loggerLayout">
+               <item>
+                <widget class="QWidget" name="LogTypeWidget" native="true">
+                 <layout class="QVBoxLayout" name="LogTypeLayout">
+                  <property name="leftMargin">
+                   <number>0</number>
                   </property>
-                  <layout class="QVBoxLayout" name="userNameLayout">
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QGroupBox" name="logTypeGroupBox">
+                    <property name="title">
+                     <string>Log Type</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="logTypeBoxLayout">
+                     <item>
+                      <widget class="QComboBox" name="logTypeComboBox">
+                       <item>
+                        <property name="text">
+                         <string>async</string>
+                        </property>
+                       </item>
+                       <item>
+                        <property name="text">
+                         <string>sync</string>
+                        </property>
+                       </item>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <layout class="QVBoxLayout" name="vLayoutLogFilter">
+                 <property name="spacing">
+                  <number>6</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <layout class="QHBoxLayout" name="hLayoutLogFilter">
                    <item>
-                    <widget class="QLineEdit" name="userNameLineEdit"/>
+                    <widget class="QGroupBox" name="logFilter">
+                     <property name="title">
+                      <string>Log Filter</string>
+                     </property>
+                     <layout class="QVBoxLayout" name="logFilterLayout">
+                      <item>
+                       <widget class="QLineEdit" name="logFilterLineEdit"/>
+                      </item>
+                     </layout>
+                    </widget>
                    </item>
                   </layout>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QWidget" name="widgetSettingsTop" native="true">
-              <layout class="QHBoxLayout" name="widgetGpuTopLayout">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
+                 </item>
+                </layout>
+               </item>
               </layout>
              </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="widgetSettingsBottom" native="true">
-              <layout class="QHBoxLayout" name="widgetGpuBottomLayout">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <spacer name="emulator_tab_layout_right_spacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Vertical</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-             </spacer>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle_2"/>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="emulatorTabLayoutRight">
-            <property name="rightMargin">
-             <number>12</number>
-            </property>
-            <property name="bottomMargin">
-             <number>12</number>
-            </property>
+           <layout class="QVBoxLayout" name="generalTabLayoutRight">
+            <item>
+             <widget class="QGroupBox" name="additionalSettings">
+              <property name="title">
+               <string>Additional Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+               <item>
+                <spacer name="emulatorTabSpacerRight">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
            </layout>
           </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QWidget" name="widgetSettingsTop" native="true">
+          <layout class="QHBoxLayout" name="widgetGpuTopLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="widgetSettingsBottom" native="true">
+          <layout class="QHBoxLayout" name="widgetGpuBottomLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="emulator_tab_layout_right_spacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle_2"/>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="emulatorTabLayoutRight">
+          <property name="rightMargin">
+           <number>12</number>
+          </property>
+          <property name="bottomMargin">
+           <number>12</number>
+          </property>
          </layout>
         </item>
         <item>
@@ -629,192 +783,6 @@
         </item>
         <item>
          <spacer name="gpuTabSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="generalTab">
-       <attribute name="title">
-        <string>General</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,1">
-        <item>
-         <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
-          <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutLeft">
-            <item>
-             <widget class="QGroupBox" name="emuSettings">
-              <property name="title">
-               <string>Emulator Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="emuSettingsLayout">
-               <item>
-                <widget class="QCheckBox" name="fullscreenCheckBox">
-                 <property name="text">
-                  <string>Enable Fullscreen</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="showSplashCheckBox">
-                 <property name="text">
-                  <string>Show Splash</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="ps4proCheckBox">
-                 <property name="text">
-                  <string>Is PS4 Pro</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="emulatorTabSpacerLeft">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
-            <item>
-             <widget class="QGroupBox" name="loggerGroupBox">
-              <property name="title">
-               <string>Logger Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="loggerLayout">
-               <item>
-                <widget class="QWidget" name="LogTypeWidget" native="true">
-                 <layout class="QVBoxLayout" name="LogTypeLayout">
-                  <property name="leftMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <widget class="QGroupBox" name="logTypeGroupBox">
-                    <property name="title">
-                     <string>Log Type</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="logTypeBoxLayout">
-                     <item>
-                      <widget class="QComboBox" name="logTypeComboBox">
-                       <item>
-                        <property name="text">
-                         <string>async</string>
-                        </property>
-                       </item>
-                       <item>
-                        <property name="text">
-                         <string>sync</string>
-                        </property>
-                       </item>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="vLayoutLogFilter">
-                 <property name="spacing">
-                  <number>6</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <layout class="QHBoxLayout" name="hLayoutLogFilter">
-                   <item>
-                    <widget class="QGroupBox" name="logFilter">
-                     <property name="title">
-                      <string>Log Filter</string>
-                     </property>
-                     <layout class="QVBoxLayout" name="logFilterLayout">
-                      <item>
-                       <widget class="QLineEdit" name="logFilterLineEdit"/>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutRight">
-            <item>
-             <widget class="QGroupBox" name="additionalSettings">
-              <property name="title">
-               <string>Additional Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
-               <item>
-                <spacer name="emulatorTabSpacerRight">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="emulatorTabSpacer">
           <property name="orientation">
            <enum>Qt::Orientation::Vertical</enum>
           </property>
