@@ -124,7 +124,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());
     ui->logTypeComboBox->setCurrentText(QString::fromStdString(Config::getLogType()));
     ui->logFilterLineEdit->setText(QString::fromStdString(Config::getLogFilter()));
-    ui->userNameLineEdit->setText(QString::fromStdString(Config::setUserName()));
+    ui->userNameLineEdit->setText(QString::fromStdString(Config::getUserName()));
 
     ui->debugDump->setChecked(Config::debugDump());
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());
