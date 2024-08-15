@@ -404,6 +404,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         file.WriteRaw<u8>(code, fetch_size);
     }
 
+    info.vs_inputs.reserve(attribs.size());
     for (const auto& attrib : attribs) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};

@@ -23,6 +23,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+    bindings.reserve(info.buffers.size() + info.images.size() + info.samplers.size());
     for (const auto& buffer : info.buffers) {
         bindings.push_back({
             .binding = binding++,
@@ -140,6 +141,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         i++;
     }
 
+    image_infos.reserve(info.images.size() + info.samplers.size());
+    set_writes.reserve(info.images.size() + info.samplers.size());
     for (const auto& image_desc : info.images) {
         const auto tsharp =
             info.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);

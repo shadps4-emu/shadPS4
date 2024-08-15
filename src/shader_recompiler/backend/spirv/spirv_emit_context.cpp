@@ -193,6 +193,7 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
 void EmitContext::DefineInputs() {
     switch (stage) {
     case Stage::Vertex: {
+        ReserveInterfaces<3>(); // 3 define vars
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
@@ -225,6 +226,7 @@ void EmitContext::DefineInputs() {
         break;
     }
     case Stage::Fragment:
+        ReserveInterfaces<4>(); // 4 define vars
         subgroup_local_invocation_id = DefineVariable(
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
@@ -251,6 +253,7 @@ void EmitContext::DefineInputs() {
         }
         break;
     case Stage::Compute:
+        ReserveInterfaces<2>(); // 2 define vars
         workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
         local_invocation_id =
             DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
@@ -324,6 +327,9 @@ void EmitContext::DefinePushDataBlock() {
 
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
+    type_ids.reserve(info.buffers.size());
+    buffers.reserve(info.buffers.size());
+    interfaces.reserve(info.buffers.size());
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
@@ -449,6 +455,8 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 }
 
 void EmitContext::DefineImagesAndSamplers() {
+    images.reserve(info.images.size());
+    interfaces.reserve(info.images.size());
     for (const auto& image_desc : info.images) {
         const VectorIds* data_types = [&] {
             switch (image_desc.nfmt) {
@@ -487,6 +495,8 @@ void EmitContext::DefineImagesAndSamplers() {
 
     sampler_type = TypeSampler();
     sampler_pointer_type = TypePointer(spv::StorageClass::UniformConstant, sampler_type);
+    samplers.reserve(info.samplers.size());
+    interfaces.reserve(info.samplers.size());
     for (const auto& samp_desc : info.samplers) {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding);
@@ -535,6 +545,7 @@ void EmitContext::DefineSharedMemory() {
             AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
             std::tie(shared_memory_u16, shared_u16, std::ignore) = make(U16, 2);
         }
+        ReserveInterfaces<3>();
         std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make(U32[1], 4);
         std::tie(shared_memory_u32x2, shared_u32x2, std::ignore) = make(U32[2], 8);
         std::tie(shared_memory_u32x4, shared_u32x4, std::ignore) = make(U32[4], 16);

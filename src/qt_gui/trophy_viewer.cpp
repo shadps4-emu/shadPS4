@@ -51,7 +51,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         QDir iconsDir(iconsPath);
         QFileInfoList iconDirList = iconsDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
         std::vector<QImage> icons;
-
+        icons.reserve(iconDirList.count());
         for (const QFileInfo& iconInfo : iconDirList) {
             QImage icon =
                 QImage(iconInfo.absoluteFilePath())

@@ -124,6 +124,11 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    template <size_t N>
+    [[nodiscard]] void ReserveInterfaces() {
+        interfaces.reserve(N);
+    }
+
     Info& info;
     const Profile& profile;
     Stage stage{};
