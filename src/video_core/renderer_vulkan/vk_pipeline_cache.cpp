@@ -165,8 +165,8 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
-    key.enable_primitive_restart = regs.enable_primitive_restart;
-    key.primitive_restart_index = regs.primitive_restart_index & 1;
+    key.enable_primitive_restart = regs.enable_primitive_restart & 1;
+    key.primitive_restart_index = regs.primitive_restart_index;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
