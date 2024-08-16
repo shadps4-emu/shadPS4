@@ -102,7 +102,7 @@ void CFG::EmitBlocks() {
     // [0,1], [1,2], [2,3], [3,4], [4,5] 
     for (int i = 0; i < labels.size() - 2; ++i)
     {
-        const Label start = lables[i];
+        const Label start = labels[i];
         const Label end = labels[i+1];
 
         // TODO: Investigate how to make sure this does not go out of bounds. 
