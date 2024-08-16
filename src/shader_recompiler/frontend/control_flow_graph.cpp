@@ -94,25 +94,25 @@ void CFG::EmitBlocks() {
         return std::distance(index_to_pc.begin(), it_index);
     };
 
-    for (auto it = labels.begin(); it != labels.end(); it++) {
-        const Label start = *it;
-        const auto next_it = std::next(it);
-        const bool is_last = next_it == labels.end();
-        if (is_last) {
-            // Last label is special.
-            return;
-        }
-        const Label end = *next_it;
-        const size_t end_index = get_index(end) - 1;
-        const auto& end_inst = inst_list[end_index];
+    // Check to make sure there are lables in the vector and that they have data.
+    ASSERT(!lables.empty() && lables.size() > 2);
 
-        // Insert block between the labels using the last instruction
-        // as an indicator for branching type.
+    // Loop through every pair except the last two: 
+    // [0,1,2,3,4,5,6]
+    // [0,1], [1,2], [2,3], [3,4], [4,5] 
+    for (int i = 0; i < labels.size() - 2; ++i)
+    {
+        const Label start = lables[i];
+        const Label end = labels[i+1];
+
+        // TODO: Investigate how to make sure this does not go out of bounds. 
+        //       Is inst_list always the size of labels? 
+        const auto& end_inst = inst_list[i+1]; 
+
         Block* block = block_pool.Create();
         block->begin = start;
-        block->end = end;
-        block->begin_index = get_index(start);
-        block->end_index = end_index;
+        block->begin_index = i;
+        block->end_index = i + 1;
         block->end_inst = end_inst;
         block->cond = MakeCondition(end_inst.opcode);
         blocks.insert(*block);
