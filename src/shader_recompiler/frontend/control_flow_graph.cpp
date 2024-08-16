@@ -95,7 +95,7 @@ void CFG::EmitBlocks() {
     };
 
     // Check to make sure there are lables in the vector and that they have data.
-    ASSERT(!lables.empty() && lables.size() > 2);
+    ASSERT(!labels.empty() && labels.size() > 2);
 
     // Loop through every pair except the last two: 
     // [0,1,2,3,4,5,6]
