@@ -61,3 +61,6 @@
 [submodule "externals/date"]
 	path = externals/date
 	url = https://github.com/HowardHinnant/date.git
+[submodule "externals/ffmpeg-core"]
+	path = externals/ffmpeg-core
+	url = https://github.com/shadps4-emu/ext-ffmpeg-core
