@@ -67,6 +67,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
+find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.1 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
@@ -607,7 +608,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API ffmpeg)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
