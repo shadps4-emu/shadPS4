@@ -107,13 +107,14 @@ void CFG::EmitBlocks() {
 
         // TODO: Investigate how to make sure this does not go out of bounds. 
         //       Is inst_list always the size of labels? 
-        const auto& end_inst = inst_list[i+1]; 
+        const size_t end_index = getindex(end) - 1;
+        const auto& end_inst = inst_list[end_index]; 
 
         Block* block = block_pool.Create();
         block->begin = start;
         block->end = end;
-        block->begin_index = i;
-        block->end_index = i + 1;
+        block->begin_index = getindex(start);
+        block->end_index = end_index;
         block->end_inst = end_inst;
         block->cond = MakeCondition(end_inst.opcode);
         blocks.insert(*block);
