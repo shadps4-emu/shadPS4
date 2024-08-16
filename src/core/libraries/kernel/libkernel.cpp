@@ -126,7 +126,7 @@ int ErrnoToSceKernelError(int e) {
 }
 
 void SetPosixErrno(int e) {
-    //Some error numbers are different between supported OSes or the PS4
+    // Some error numbers are different between supported OSes or the PS4
     switch (e) {
     case EPERM:
         g_posix_errno = POSIX_EPERM;
@@ -146,7 +146,7 @@ void SetPosixErrno(int e) {
     case ERANGE:
         g_posix_errno = POSIX_ERANGE;
         break;
-    case EDEADLK: 
+    case EDEADLK:
         g_posix_errno = POSIX_EDEADLK;
         break;
     case ETIMEDOUT:
