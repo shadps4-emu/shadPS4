@@ -1428,7 +1428,7 @@ int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
         case EPERM:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
             break;
-        case EAGAIN :
+        case EAGAIN:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EAGAIN);
             break;
         case EINVAL:
