@@ -40,6 +40,7 @@ public:
     ~EmitContext();
 
     Id Def(const IR::Value& value);
+    void DefineBufferOffsets();
 
     [[nodiscard]] Id DefineInput(Id type, u32 location) {
         const Id input_id{DefineVar(type, spv::StorageClass::Input)};
@@ -168,7 +169,7 @@ public:
     Id output_position{};
     Id vertex_index{};
     Id instance_id{};
-    Id instance_step_rates{};
+    Id push_data_block{};
     Id base_vertex{};
     Id frag_coord{};
     Id front_facing{};
@@ -201,14 +202,17 @@ public:
 
     struct BufferDefinition {
         Id id;
+        Id offset;
+        Id offset_dwords;
+        u32 binding;
         const VectorIds* data_types;
         Id pointer_type;
         AmdGpu::Buffer buffer;
     };
 
     u32& binding;
-    boost::container::small_vector<BufferDefinition, 4> buffers;
-    boost::container::small_vector<TextureDefinition, 4> images;
+    boost::container::small_vector<BufferDefinition, 16> buffers;
+    boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 
     Id sampler_type{};
@@ -219,6 +223,7 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        bool is_default{};
         s32 buffer_handle{-1};
     };
     std::array<SpirvAttribute, 32> input_params{};
@@ -226,12 +231,13 @@ public:
 
 private:
     void DefineArithmeticTypes();
-    void DefineInterfaces(const IR::Program& program);
-    void DefineInputs(const Info& info);
-    void DefineOutputs(const Info& info);
-    void DefineBuffers(const Info& info);
-    void DefineImagesAndSamplers(const Info& info);
-    void DefineSharedMemory(const Info& info);
+    void DefineInterfaces();
+    void DefineInputs();
+    void DefineOutputs();
+    void DefinePushDataBlock();
+    void DefineBuffers();
+    void DefineImagesAndSamplers();
+    void DefineSharedMemory();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id);
 };

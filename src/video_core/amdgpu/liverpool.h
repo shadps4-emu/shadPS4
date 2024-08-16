@@ -6,19 +6,26 @@
 #include <array>
 #include <condition_variable>
 #include <coroutine>
+#include <exception>
 #include <mutex>
 #include <span>
 #include <thread>
 #include <queue>
+
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/polyfill_thread.h"
 #include "common/types.h"
+#include "common/unique_function.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Vulkan {
 class Rasterizer;
+}
+
+namespace Libraries::VideoOut {
+struct VideoOutPort;
 }
 
 namespace AmdGpu {
@@ -31,6 +38,7 @@ namespace AmdGpu {
     [[maybe_unused]] std::array<u32, num_words> CONCAT2(pad, __LINE__)
 
 struct Liverpool {
+    static constexpr u32 GfxQueueId = 0u;
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
     static constexpr u32 NumComputePipes = 7u; // actually 8, but #7 is reserved by system software
     static constexpr u32 NumQueuesPerPipe = 8u;
@@ -372,9 +380,13 @@ struct Liverpool {
             return 1u << z_info.num_samples; // spec doesn't say it is a log2
         }
 
+        u32 NumBits() const {
+            return z_info.format == ZFormat::Z32Float ? 32 : 16;
+        }
+
         size_t GetDepthSliceSize() const {
             ASSERT(z_info.format != ZFormat::Invalid);
-            const auto bpe = z_info.format == ZFormat::Z32Float ? 4 : 2;
+            const auto bpe = NumBits() >> 3; // in bytes
             return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
         }
     };
@@ -486,7 +498,7 @@ struct Liverpool {
 
         template <typename T = VAddr>
         T Address() const {
-            return reinterpret_cast<T>((base_addr_lo & ~1U) | u64(base_addr_hi) << 32);
+            return std::bit_cast<T>((base_addr_lo & ~1U) | u64(base_addr_hi) << 32);
         }
     };
 
@@ -756,7 +768,8 @@ struct Liverpool {
         }
 
         TilingMode GetTilingMode() const {
-            return attrib.tile_mode_index;
+            return info.linear_general ? TilingMode::Display_Linear
+                                       : attrib.tile_mode_index.Value();
         }
 
         bool IsTiled() const {
@@ -856,6 +869,33 @@ struct Liverpool {
         }
     };
 
+    union ShaderStageEnable {
+        u32 raw;
+        BitField<0, 2, u32> ls_en;
+        BitField<2, 1, u32> hs_en;
+        BitField<3, 2, u32> es_en;
+        BitField<5, 1, u32> gs_en;
+        BitField<6, 1, u32> vs_en;
+
+        bool IsStageEnabled(u32 stage) {
+            switch (stage) {
+            case 0:
+            case 1:
+                return true;
+            case 2:
+                return gs_en.Value();
+            case 3:
+                return es_en.Value();
+            case 4:
+                return hs_en.Value();
+            case 5:
+                return ls_en.Value();
+            default:
+                UNREACHABLE();
+            }
+        }
+    };
+
     union Regs {
         struct {
             INSERT_PADDING_WORDS(0x2C08);
@@ -892,7 +932,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA094 - 0xA08E - 2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
-            INSERT_PADDING_WORDS(0xA105 - 0xA0D4);
+            INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
+            u32 primitive_reset_index;
+            INSERT_PADDING_WORDS(1);
             BlendConstants blend_constants;
             INSERT_PADDING_WORDS(0xA10B - 0xA105 - 4);
             StencilControl stencil_control;
@@ -934,7 +976,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA2A8 - 0xA2A1 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
-            INSERT_PADDING_WORDS(0xA2DF - 0xA2A9 - 1);
+            INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
+            ShaderStageEnable stage_enable;
+            INSERT_PADDING_WORDS(9);
             PolygonOffset poly_offset;
             INSERT_PADDING_WORDS(0xA2F8 - 0xA2DF - 5);
             AaConfig aa_config;
@@ -991,12 +1035,34 @@ public:
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
     void SubmitAsc(u32 vqid, std::span<const u32> acb);
 
+    void SubmitDone() noexcept {
+        std::scoped_lock lk{submit_mutex};
+        submit_done = true;
+        submit_cv.notify_one();
+    }
+
+    void WaitGpuIdle() noexcept {
+        std::unique_lock lk{submit_mutex};
+        submit_cv.wait(lk, [this] { return num_submits == 0; });
+    }
+
     bool IsGpuIdle() const {
         return num_submits == 0;
     }
 
+    void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
+        vo_port = port;
+    }
+
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
+    }
+
+    void SendCommand(Common::UniqueFunction<void>&& func) {
+        std::scoped_lock lk{submit_mutex};
+        command_queue.emplace(std::move(func));
+        ++num_commands;
+        submit_cv.notify_one();
     }
 
 private:
@@ -1015,7 +1081,11 @@ private:
                 return {};
             }
             void unhandled_exception() {
-                UNREACHABLE();
+                try {
+                    std::rethrow_exception(std::current_exception());
+                } catch (const std::exception& e) {
+                    UNREACHABLE_MSG("Unhandled exception: {}", e.what());
+                }
             }
             void return_void() {}
             struct empty {};
@@ -1037,6 +1107,7 @@ private:
     struct GpuQueue {
         std::mutex m_access{};
         std::queue<Task::Handle> submits{};
+        ComputeProgram cs_state{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
 
@@ -1059,10 +1130,14 @@ private:
     } cblock{};
 
     Vulkan::Rasterizer* rasterizer{};
+    Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<u32> num_commands{};
+    std::atomic<bool> submit_done{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
+    std::queue<Common::UniqueFunction<void>> command_queue{};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
@@ -1085,6 +1160,7 @@ static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
+static_assert(GFX6_3D_REG_INDEX(primitive_reset_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
@@ -1107,6 +1183,7 @@ static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
+static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);

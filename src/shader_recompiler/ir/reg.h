@@ -5,6 +5,7 @@
 
 #include "common/assert.h"
 #include "common/bit_field.h"
+#include "common/enum.h"
 #include "common/types.h"
 #include "video_core/amdgpu/pixel_format.h"
 
@@ -23,6 +24,23 @@ enum class FpDenormMode : u32 {
     InFlushOutAllow = 2,
     InOutAllow = 3,
 };
+
+enum class FloatClassFunc : u32 {
+    SignalingNan = 1 << 0,
+    QuietNan = 1 << 1,
+    NegativeInfinity = 1 << 2,
+    NegativeNormal = 1 << 3,
+    NegativeDenorm = 1 << 4,
+    NegativeZero = 1 << 5,
+    PositiveZero = 1 << 6,
+    PositiveDenorm = 1 << 7,
+    PositiveNormal = 1 << 8,
+    PositiveInfinity = 1 << 9,
+
+    NaN = SignalingNan | QuietNan,
+    Infinity = PositiveInfinity | NegativeInfinity,
+};
+DECLARE_ENUM_FLAG_OPERATORS(FloatClassFunc)
 
 union Mode {
     BitField<0, 4, FpRoundMode> fp_round;

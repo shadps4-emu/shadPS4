@@ -259,4 +259,8 @@ Id EmitConvertU16U32(EmitContext& ctx, Id value) {
     return ctx.OpUConvert(ctx.U16, value);
 }
 
+Id EmitConvertU32U16(EmitContext& ctx, Id value) {
+    return ctx.OpUConvert(ctx.U32[1], value);
+}
+
 } // namespace Shader::Backend::SPIRV

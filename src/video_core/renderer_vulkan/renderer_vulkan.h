@@ -26,9 +26,15 @@ struct Frame {
     VmaAllocation allocation;
     vk::Image image;
     vk::ImageView image_view;
-    vk::Semaphore render_ready;
     vk::Fence present_done;
-    vk::CommandBuffer cmdbuf;
+    vk::Semaphore ready_semaphore;
+    u64 ready_tick;
+};
+
+enum SchedulerType {
+    Draw,
+    Present,
+    CpuFlip,
 };
 
 class Rasterizer;
@@ -39,47 +45,56 @@ public:
     ~RendererVulkan();
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                        VAddr cpu_address) {
+                        VAddr cpu_address, bool is_eop) {
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, cpu_address);
+        const auto image_id = texture_cache.FindImage(info);
+        texture_cache.UpdateImage(image_id, is_eop ? nullptr : &flip_scheduler);
         auto& image = texture_cache.GetImage(image_id);
-        return PrepareFrameInternal(image);
+        return PrepareFrameInternal(image, is_eop);
     }
 
-    Frame* PrepareBlankFrame() {
+    Frame* PrepareBlankFrame(bool is_eop) {
         auto& image = texture_cache.GetImage(VideoCore::NULL_IMAGE_ID);
-        return PrepareFrameInternal(image);
+        return PrepareFrameInternal(image, is_eop);
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
         vo_buffers_addr.emplace_back(cpu_address);
         const auto info = VideoCore::ImageInfo{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(info, cpu_address);
+        const auto image_id = texture_cache.FindImage(info);
         return texture_cache.GetImage(image_id);
     }
 
     bool IsVideoOutSurface(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
-        return std::find_if(vo_buffers_addr.cbegin(), vo_buffers_addr.cend(), [&](VAddr vo_buffer) {
+        return std::ranges::find_if(vo_buffers_addr, [&](VAddr vo_buffer) {
                    return vo_buffer == color_buffer.Address();
-               }) != vo_buffers_addr.cend();
+               }) != vo_buffers_addr.end();
     }
 
     bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame);
     void RecreateFrame(Frame* frame, u32 width, u32 height);
 
+    void FlushDraw() {
+        SubmitInfo info{};
+        draw_scheduler.Flush(info);
+    }
+
 private:
-    Frame* PrepareFrameInternal(VideoCore::Image& image);
+    Frame* PrepareFrameInternal(VideoCore::Image& image, bool is_eop = true);
     Frame* GetRenderFrame();
 
 private:
     Frontend::WindowSDL& window;
+    AmdGpu::Liverpool* liverpool;
     Instance instance;
-    Scheduler scheduler;
+    Scheduler draw_scheduler;
+    Scheduler present_scheduler;
+    Scheduler flip_scheduler;
     Swapchain swapchain;
     std::unique_ptr<Rasterizer> rasterizer;
-    VideoCore::TextureCache texture_cache;
+    VideoCore::TextureCache& texture_cache;
     vk::UniqueCommandPool command_pool;
     std::vector<Frame> present_frames;
     std::queue<Frame*> free_queue;

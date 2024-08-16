@@ -33,8 +33,8 @@ class TRP {
 public:
     TRP();
     ~TRP();
-    bool Extract(std::filesystem::path trophyPath);
-    void GetNPcommID(std::filesystem::path trophyPath, int index);
+    bool Extract(const std::filesystem::path& trophyPath);
+    void GetNPcommID(const std::filesystem::path& trophyPath, int index);
 
 private:
     Crypto crypto;

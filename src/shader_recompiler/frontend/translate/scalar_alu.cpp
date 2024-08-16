@@ -5,13 +5,117 @@
 
 namespace Shader::Gcn {
 
+void Translator::EmitScalarAlu(const GcnInst& inst) {
+    switch (inst.opcode) {
+    case Opcode::S_MOVK_I32:
+        return S_MOVK(inst);
+    case Opcode::S_MOV_B32:
+        return S_MOV(inst);
+    case Opcode::S_MUL_I32:
+        return S_MUL_I32(inst);
+    case Opcode::S_AND_SAVEEXEC_B64:
+        return S_AND_SAVEEXEC_B64(inst);
+    case Opcode::S_MOV_B64:
+        return S_MOV_B64(inst);
+    case Opcode::S_CMP_LT_U32:
+        return S_CMP(ConditionOp::LT, false, inst);
+    case Opcode::S_CMP_LE_U32:
+        return S_CMP(ConditionOp::LE, false, inst);
+    case Opcode::S_CMP_LG_U32:
+        return S_CMP(ConditionOp::LG, false, inst);
+    case Opcode::S_CMP_LT_I32:
+        return S_CMP(ConditionOp::LT, true, inst);
+    case Opcode::S_CMP_LG_I32:
+        return S_CMP(ConditionOp::LG, true, inst);
+    case Opcode::S_CMP_GT_I32:
+        return S_CMP(ConditionOp::GT, true, inst);
+    case Opcode::S_CMP_GE_I32:
+        return S_CMP(ConditionOp::GE, true, inst);
+    case Opcode::S_CMP_EQ_I32:
+        return S_CMP(ConditionOp::EQ, true, inst);
+    case Opcode::S_CMP_EQ_U32:
+        return S_CMP(ConditionOp::EQ, false, inst);
+    case Opcode::S_CMP_GE_U32:
+        return S_CMP(ConditionOp::GE, false, inst);
+    case Opcode::S_CMP_GT_U32:
+        return S_CMP(ConditionOp::GT, false, inst);
+    case Opcode::S_OR_B64:
+        return S_OR_B64(NegateMode::None, false, inst);
+    case Opcode::S_NOR_B64:
+        return S_OR_B64(NegateMode::Result, false, inst);
+    case Opcode::S_XOR_B64:
+        return S_OR_B64(NegateMode::None, true, inst);
+    case Opcode::S_ORN2_B64:
+        return S_OR_B64(NegateMode::Src1, false, inst);
+    case Opcode::S_AND_B64:
+        return S_AND_B64(NegateMode::None, inst);
+    case Opcode::S_NAND_B64:
+        return S_AND_B64(NegateMode::Result, inst);
+    case Opcode::S_ANDN2_B64:
+        return S_AND_B64(NegateMode::Src1, inst);
+    case Opcode::S_NOT_B64:
+        return S_NOT_B64(inst);
+    case Opcode::S_ADD_I32:
+        return S_ADD_I32(inst);
+    case Opcode::S_AND_B32:
+        return S_AND_B32(inst);
+    case Opcode::S_ASHR_I32:
+        return S_ASHR_I32(inst);
+    case Opcode::S_OR_B32:
+        return S_OR_B32(inst);
+    case Opcode::S_LSHL_B32:
+        return S_LSHL_B32(inst);
+    case Opcode::S_LSHR_B32:
+        return S_LSHR_B32(inst);
+    case Opcode::S_CSELECT_B32:
+        return S_CSELECT_B32(inst);
+    case Opcode::S_CSELECT_B64:
+        return S_CSELECT_B64(inst);
+    case Opcode::S_BFE_U32:
+        return S_BFE_U32(inst);
+    case Opcode::S_BFM_B32:
+        return S_BFM_B32(inst);
+    case Opcode::S_BREV_B32:
+        return S_BREV_B32(inst);
+    case Opcode::S_ADD_U32:
+        return S_ADD_U32(inst);
+    case Opcode::S_ADDC_U32:
+        return S_ADDC_U32(inst);
+    case Opcode::S_ADDK_I32:
+        return S_ADDK_I32(inst);
+    case Opcode::S_MULK_I32:
+        return S_MULK_I32(inst);
+    case Opcode::S_SUB_U32:
+    case Opcode::S_SUB_I32:
+        return S_SUB_U32(inst);
+    case Opcode::S_MIN_U32:
+        return S_MIN_U32(inst);
+    case Opcode::S_MAX_U32:
+        return S_MAX_U32(inst);
+    case Opcode::S_WQM_B64:
+        break;
+    default:
+        LogMissingOpcode(inst);
+    }
+}
+
 void Translator::S_MOVK(const GcnInst& inst) {
-    const auto simm16 = inst.control.sopk.simm.Value();
+    const auto simm16 = inst.control.sopk.simm;
     if (simm16 & (1 << 15)) {
         // TODO: need to verify the case of imm sign extension
         UNREACHABLE();
     }
     SetDst(inst.dst[0], ir.Imm32(simm16));
+}
+
+void Translator::S_ADDK_I32(const GcnInst& inst) {
+    const s32 simm16 = inst.control.sopk.simm;
+    SetDst(inst.dst[0], ir.IAdd(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
+}
+
+void Translator::S_MULK_I32(const GcnInst& inst) {
+    const s32 simm16 = inst.control.sopk.simm;
+    SetDst(inst.dst[0], ir.IMul(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
 }
 
 void Translator::S_MOV(const GcnInst& inst) {
@@ -62,15 +166,10 @@ void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
         }
     }();
 
-    // Mark destination SPGR as an EXEC context. This means we will use 1-bit
-    // IR instruction whenever it's loaded.
     switch (inst.dst[0].field) {
-    case OperandField::ScalarGPR: {
-        const u32 reg = inst.dst[0].code;
-        exec_contexts[reg] = true;
-        ir.SetThreadBitScalarReg(IR::ScalarReg(reg), exec);
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), exec);
         break;
-    }
     case OperandField::VccLo:
         ir.SetVcc(exec);
         break;
@@ -79,27 +178,37 @@ void Translator::S_AND_SAVEEXEC_B64(const GcnInst& inst) {
     }
 
     // Update EXEC.
-    ir.SetExec(ir.LogicalAnd(exec, src));
+    const IR::U1 result = ir.LogicalAnd(exec, src);
+    ir.SetExec(result);
+    ir.SetScc(result);
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
-    // TODO: Using VCC as EXEC context.
-    if (inst.src[0].field == OperandField::VccLo || inst.dst[0].field == OperandField::VccLo) {
-        return;
-    }
-    if (inst.dst[0].field == OperandField::ScalarGPR && inst.src[0].field == OperandField::ExecLo) {
-        // Exec context push
-        exec_contexts[inst.dst[0].code] = true;
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
-    } else if (inst.dst[0].field == OperandField::ExecLo &&
-               inst.src[0].field == OperandField::ScalarGPR) {
-        // Exec context pop
-        exec_contexts[inst.src[0].code] = false;
-        ir.SetExec(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
-    } else if (inst.dst[0].field == OperandField::ExecLo &&
-               inst.src[0].field == OperandField::ConstZero) {
-        ir.SetExec(ir.Imm1(false));
-    } else {
+    const IR::U1 src = [&] {
+        switch (inst.src[0].field) {
+        case OperandField::VccLo:
+            return ir.GetVcc();
+        case OperandField::ExecLo:
+            return ir.GetExec();
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
+        default:
+            UNREACHABLE();
+        }
+    }();
+    switch (inst.dst[0].field) {
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), src);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(src);
+        break;
+    case OperandField::VccLo:
+        ir.SetVcc(src);
+        break;
+    default:
         UNREACHABLE();
     }
 }
@@ -336,6 +445,22 @@ void Translator::S_ADDC_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), ir.GetSccLo()));
+}
+
+void Translator::S_MAX_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result = ir.UMax(src0, src1);
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.IEqual(result, src0));
+}
+
+void Translator::S_MIN_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result = ir.UMin(src0, src1);
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.IEqual(result, src0));
 }
 
 } // namespace Shader::Gcn

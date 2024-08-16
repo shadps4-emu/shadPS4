@@ -9,7 +9,7 @@
 
 namespace Shader::IR {
 
-Block::Block(ObjectPool<Inst>& inst_pool_) : inst_pool{&inst_pool_} {}
+Block::Block(Common::ObjectPool<Inst>& inst_pool_) : inst_pool{&inst_pool_} {}
 
 Block::~Block() = default;
 

@@ -5,6 +5,7 @@
 #include <thread>
 #include <QProgressDialog>
 #include <QtConcurrent/QtConcurrent>
+
 #include "game_info.h"
 
 GameInfoClass::GameInfoClass() = default;

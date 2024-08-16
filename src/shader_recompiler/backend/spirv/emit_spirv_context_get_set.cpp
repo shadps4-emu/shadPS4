@@ -21,6 +21,7 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     case VsOutput::ClipDist7: {
         const u32 index = u32(output) - u32(VsOutput::ClipDist0);
         const Id clip_num{ctx.ConstU32(index)};
+        ASSERT_MSG(Sirit::ValidId(ctx.clip_distances), "Clip distance used but not defined");
         return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
     }
     case VsOutput::CullDist0:
@@ -33,6 +34,7 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
     case VsOutput::CullDist7: {
         const u32 index = u32(output) - u32(VsOutput::CullDist0);
         const Id cull_num{ctx.ConstU32(index)};
+        ASSERT_MSG(Sirit::ValidId(ctx.cull_distances), "Cull distance used but not defined");
         return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
     }
     default:
@@ -120,11 +122,13 @@ void EmitGetGotoVariable(EmitContext&) {
 }
 
 Id EmitReadConst(EmitContext& ctx) {
+    return ctx.u32_zero_value;
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    index = ctx.OpIAdd(ctx.U32[1], index, buffer.offset_dwords);
     const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
     return ctx.OpLoad(buffer.data_types->Get(1), ptr);
 }
@@ -136,7 +140,7 @@ Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
     return ctx.OpLoad(
         ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                      ctx.instance_step_rates,
+                                      ctx.push_data_block,
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
@@ -148,6 +152,9 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
             if (!ValidId(param.id)) {
                 // Attribute is disabled or varying component is not written
                 return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
+            }
+            if (param.is_default) {
+                return ctx.OpCompositeExtract(param.component_type, param.id, comp);
             }
 
             if (param.num_components > 1) {
@@ -207,8 +214,12 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 }
 
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
+    if (attr == IR::Attribute::Position1) {
+        LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
+        return;
+    }
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    ctx.OpStore(pointer, value);
+    ctx.OpStore(pointer, ctx.OpBitcast(ctx.F32[1], value));
 }
 
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
@@ -217,7 +228,8 @@ Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
 
 template <u32 N>
 static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
@@ -310,7 +322,7 @@ static Id ComponentOffset(EmitContext& ctx, Id address, u32 stride, u32 bit_offs
 }
 
 static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 comp) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
     const auto format = buffer.buffer.GetDataFmt();
     switch (format) {
     case AmdGpu::DataFormat::FormatInvalid:
@@ -371,19 +383,12 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
                 if (is_signed) {
                     value = ctx.OpBitFieldSExtract(ctx.S32[1], value, comp_offset,
                                                    ctx.ConstU32(bit_width));
-                    value = ctx.OpConvertSToF(ctx.F32[1], value);
                 } else {
                     value = ctx.OpBitFieldUExtract(ctx.U32[1], value, comp_offset,
                                                    ctx.ConstU32(bit_width));
-                    value = ctx.OpConvertUToF(ctx.F32[1], value);
-                }
-            } else {
-                if (is_signed) {
-                    value = ctx.OpConvertSToF(ctx.F32[1], value);
-                } else {
-                    value = ctx.OpConvertUToF(ctx.F32[1], value);
                 }
             }
+            value = ctx.OpBitcast(ctx.F32[1], value);
             return ConvertValue(ctx, value, num_format, bit_width);
         }
         break;
@@ -395,6 +400,8 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
 
 template <u32 N>
 static Id EmitLoadBufferFormatF32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    auto& buffer = ctx.buffers[handle];
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     if constexpr (N == 1) {
         return GetBufferFormatValue(ctx, handle, address, 0);
     } else {
@@ -424,7 +431,8 @@ Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
 
 template <u32 N>
 static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
-    const auto& buffer = ctx.buffers[handle];
+    auto& buffer = ctx.buffers[handle];
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
     if constexpr (N == 1) {
         const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
@@ -457,6 +465,98 @@ void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     EmitStoreBufferF32xN<1>(ctx, handle, address, value);
+}
+
+static Id ConvertF32ToFormat(EmitContext& ctx, Id value, AmdGpu::NumberFormat format,
+                             u32 bit_width) {
+    switch (format) {
+    case AmdGpu::NumberFormat::Unorm:
+        return ctx.OpConvertFToU(
+            ctx.U32[1], ctx.OpFMul(ctx.F32[1], value, ctx.ConstF32(float(UXBitsMax(bit_width)))));
+    case AmdGpu::NumberFormat::Uint:
+        return ctx.OpBitcast(ctx.U32[1], value);
+    case AmdGpu::NumberFormat::Float:
+        return value;
+    default:
+        UNREACHABLE_MSG("Unsupported number fromat for conversion: {}",
+                        magic_enum::enum_name(format));
+    }
+}
+
+template <u32 N>
+static void EmitStoreBufferFormatF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
+    auto& buffer = ctx.buffers[handle];
+    const auto format = buffer.buffer.GetDataFmt();
+    const auto num_format = buffer.buffer.GetNumberFmt();
+
+    switch (format) {
+    case AmdGpu::DataFormat::FormatInvalid:
+        return;
+    case AmdGpu::DataFormat::Format8_8_8_8:
+    case AmdGpu::DataFormat::Format16:
+    case AmdGpu::DataFormat::Format32:
+    case AmdGpu::DataFormat::Format32_32_32_32: {
+        ASSERT(N == AmdGpu::NumComponents(format));
+
+        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+        const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+        const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
+
+        Id packed_value{};
+        for (u32 i = 0; i < N; i++) {
+            const u32 bit_width = AmdGpu::ComponentBits(format, i);
+            const u32 bit_offset = AmdGpu::ComponentOffset(format, i) % 32;
+
+            const Id comp{ConvertF32ToFormat(
+                ctx, N == 1 ? value : ctx.OpCompositeExtract(ctx.F32[1], value, i), num_format,
+                bit_width)};
+
+            if (bit_width == 32) {
+                if constexpr (N == 1) {
+                    ctx.OpStore(ptr, comp);
+                } else {
+                    const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
+                    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id,
+                                                     ctx.u32_zero_value, index_i);
+                    ctx.OpStore(ptr, comp);
+                }
+            } else {
+                if (i == 0) {
+                    packed_value = comp;
+                } else {
+                    packed_value =
+                        ctx.OpBitFieldInsert(ctx.U32[1], packed_value, comp,
+                                             ctx.ConstU32(bit_offset), ctx.ConstU32(bit_width));
+                }
+
+                if (i == N - 1) {
+                    ctx.OpStore(ptr, packed_value);
+                }
+            }
+        }
+    } break;
+    default:
+        UNREACHABLE_MSG("Invalid format for conversion: {}", magic_enum::enum_name(format));
+    }
+}
+
+void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferFormatF32xN<1>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferFormatF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
+                                Id value) {
+    EmitStoreBufferFormatF32xN<2>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferFormatF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
+                                Id value) {
+    EmitStoreBufferFormatF32xN<3>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
+                                Id value) {
+    EmitStoreBufferFormatF32xN<4>(ctx, handle, address, value);
 }
 
 } // namespace Shader::Backend::SPIRV

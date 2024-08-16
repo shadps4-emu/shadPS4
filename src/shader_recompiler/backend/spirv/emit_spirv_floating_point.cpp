@@ -385,4 +385,8 @@ Id EmitFPIsInf64(EmitContext& ctx, Id value) {
     return ctx.OpIsInf(ctx.U1[1], value);
 }
 
+void EmitFPCmpClass32(EmitContext&) {
+    UNREACHABLE();
+}
+
 } // namespace Shader::Backend::SPIRV

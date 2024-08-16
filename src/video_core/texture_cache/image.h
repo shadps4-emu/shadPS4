@@ -105,13 +105,13 @@ struct Image {
     VAddr cpu_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
-    std::optional<ImageView> view_for_detiler;
 
     // Resource state tracking
     vk::ImageUsageFlags usage;
     vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;
     vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;
+    boost::container::small_vector<u64, 14> mip_hashes;
 };
 
 } // namespace VideoCore

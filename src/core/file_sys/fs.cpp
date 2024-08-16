@@ -25,24 +25,28 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory) {
-    const MntPair* mount = GetMount(guest_directory);
+std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory) {
+    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
+    std::string corrected_path(guest_directory);
+    size_t pos = corrected_path.find("//");
+    while (pos != std::string::npos) {
+        corrected_path.replace(pos, 2, "/");
+        pos = corrected_path.find("//", pos + 1);
+    }
+
+    const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
-        return guest_directory;
+        return "";
     }
 
     // Nothing to do if getting the mount itself.
-    if (guest_directory == mount->mount) {
+    if (corrected_path == mount->mount) {
         return mount->host_path;
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    u32 pos = mount->mount.size() + 1;
-    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    if (guest_directory[pos] == '/') {
-        pos++;
-    }
-    const auto rel_path = std::string_view(guest_directory).substr(pos);
+    pos = mount->mount.size() + 1;
+    const auto rel_path = std::string_view(corrected_path).substr(pos);
     const auto host_path = mount->host_path / rel_path;
     if (!NeedsCaseInsensiveSearch) {
         return host_path;
@@ -50,6 +54,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
 
     // If the path does not exist attempt to verify this.
     // Retrieve parent path until we find one that exists.
+    std::scoped_lock lk{m_mutex};
     path_parts.clear();
     auto current_path = host_path;
     while (!std::filesystem::exists(current_path)) {
@@ -66,7 +71,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
     // exist in filesystem but in different case.
     auto guest_path = current_path;
     while (!path_parts.empty()) {
-        const auto& part = path_parts.back();
+        const auto part = path_parts.back();
         const auto add_match = [&](const auto& host_part) {
             current_path /= host_part;
             guest_path /= part;

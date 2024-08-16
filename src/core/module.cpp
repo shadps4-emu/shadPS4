@@ -88,6 +88,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                       aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
                       MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
+    LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
     // Initialize trampoline generator.
     void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);

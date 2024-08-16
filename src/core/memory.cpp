@@ -4,11 +4,10 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/debug.h"
-#include "common/scope_exit.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
-#include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {
 
@@ -55,7 +54,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
 
     // Add the allocated region to the list and commit its pages.
-    auto& area = AddDmemAllocation(free_addr, size);
+    auto& area = CarveDmemArea(free_addr, size)->second;
     area.memory_type = memory_type;
     area.is_free = false;
     return free_addr;
@@ -64,9 +63,8 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
 void MemoryManager::Free(PAddr phys_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    const auto dmem_area = FindDmemArea(phys_addr);
-    ASSERT(dmem_area != dmem_map.end() && dmem_area->second.base == phys_addr &&
-           dmem_area->second.size == size);
+    auto dmem_area = CarveDmemArea(phys_addr, size);
+    ASSERT(dmem_area != dmem_map.end() && dmem_area->second.size >= size);
 
     // Release any dmem mappings that reference this physical block.
     std::vector<std::pair<VAddr, u64>> remove_list;
@@ -75,10 +73,11 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
             continue;
         }
         if (mapping.phys_base <= phys_addr && phys_addr < mapping.phys_base + mapping.size) {
-            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}", addr,
-                     mapping.size);
+            auto vma_segment_start_addr = phys_addr - mapping.phys_base + addr;
+            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}",
+                     vma_segment_start_addr, size);
             // Unmaping might erase from vma_map. We can't do it here.
-            remove_list.emplace_back(addr, mapping.size);
+            remove_list.emplace_back(vma_segment_start_addr, size);
         }
     }
     for (const auto& [addr, size] : remove_list) {
@@ -100,29 +99,30 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     alignment = alignment > 0 ? alignment : 16_KB;
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
 
+    // Fixed mapping means the virtual address must exactly match the provided one.
+    if (True(flags & MemoryMapFlags::Fixed)) {
+        const auto& vma = FindVMA(mapped_addr)->second;
+        // If the VMA is mapped, unmap the region first.
+        if (vma.IsMapped()) {
+            UnmapMemory(mapped_addr, size);
+        }
+        const size_t remaining_size = vma.base + vma.size - mapped_addr;
+        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
+    }
+
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(mapped_addr);
-        // If the VMA is free and contains the requested mapping we are done.
-        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
-            mapped_addr = virtual_addr;
-        } else {
-            // Search for the first free VMA that fits our mapping.
-            while (it->second.type != VMAType::Free || it->second.size < size) {
-                it++;
-            }
-            ASSERT(it != vma_map.end());
-            const auto& vma = it->second;
-            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
-        }
+        mapped_addr = SearchFree(mapped_addr, size, alignment);
     }
 
     // Add virtual memory area
-    auto& new_vma = AddMapping(mapped_addr, size);
+    const auto new_vma_handle = CarveVMA(mapped_addr, size);
+    auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = MemoryProt::NoAccess;
     new_vma.name = "";
     new_vma.type = VMAType::Reserved;
+    MergeAdjacent(vma_map, new_vma_handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -132,6 +132,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
     std::scoped_lock lk{mutex};
+
+    // Certain games perform flexible mappings on loop to determine
+    // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
         return SCE_KERNEL_ERROR_ENOMEM;
     }
@@ -140,91 +143,64 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     // flag so we will take the branch that searches for free (or reserved) mappings.
     virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 16_KB;
-
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
-    SCOPE_EXIT {
-        auto& new_vma = AddMapping(mapped_addr, size);
-        new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
-        new_vma.prot = prot;
-        new_vma.name = name;
-        new_vma.type = type;
-
-        if (type == VMAType::Direct) {
-            new_vma.phys_base = phys_addr;
-            MapVulkanMemory(mapped_addr, size);
-        }
-        if (type == VMAType::Flexible) {
-            flexible_usage += size;
-        }
-    };
 
     // Fixed mapping means the virtual address must exactly match the provided one.
-    if (True(flags & MemoryMapFlags::Fixed) && True(flags & MemoryMapFlags::NoOverwrite)) {
+    if (True(flags & MemoryMapFlags::Fixed)) {
         // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
         const auto& vma = FindVMA(mapped_addr)->second;
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
+        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
     }
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(mapped_addr);
-        // If the VMA is free and contains the requested mapping we are done.
-        if (it->second.type == VMAType::Free && it->second.Contains(virtual_addr, size)) {
-            mapped_addr = virtual_addr;
-        } else {
-            // Search for the first free VMA that fits our mapping.
-            while (it->second.type != VMAType::Free || it->second.size < size) {
-                it++;
-            }
-            ASSERT(it != vma_map.end());
-            const auto& vma = it->second;
-            mapped_addr = alignment > 0 ? Common::AlignUp(vma.base, alignment) : vma.base;
-        }
+        mapped_addr = SearchFree(mapped_addr, size, alignment);
     }
 
     // Perform the mapping.
     *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
     TRACK_ALLOC(*out_addr, size, "VMEM");
+
+    auto& new_vma = CarveVMA(mapped_addr, size)->second;
+    new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
+    new_vma.prot = prot;
+    new_vma.name = name;
+    new_vma.type = type;
+    new_vma.is_exec = is_exec;
+
+    if (type == VMAType::Direct) {
+        new_vma.phys_base = phys_addr;
+        rasterizer->MapMemory(mapped_addr, size);
+    }
+    if (type == VMAType::Flexible) {
+        flexible_usage += size;
+    }
+
     return ORBIS_OK;
 }
 
 int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
                            MemoryMapFlags flags, uintptr_t fd, size_t offset) {
-    if (virtual_addr == 0) {
-        virtual_addr = impl.SystemManagedVirtualBase();
-    } else {
-        LOG_INFO(Kernel_Vmm, "Virtual addr {:#x} with size {:#x}", virtual_addr, size);
-    }
-
-    VAddr mapped_addr = 0;
+    VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     const size_t size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        auto it = FindVMA(virtual_addr);
-        while (it->second.type != VMAType::Free || it->second.size < size_aligned) {
-            it++;
-        }
-        ASSERT(it != vma_map.end());
-
-        mapped_addr = it->second.base;
+        mapped_addr = SearchFree(mapped_addr, size_aligned, 1);
     }
 
     if (True(flags & MemoryMapFlags::Fixed)) {
         const auto& vma = FindVMA(virtual_addr)->second;
         const size_t remaining_size = vma.base + vma.size - virtual_addr;
-        ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
-                   remaining_size >= size);
-
-        mapped_addr = virtual_addr;
+        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
     }
 
     // Map the file.
     impl.MapFile(mapped_addr, size, offset, std::bit_cast<u32>(prot), fd);
 
     // Add virtual memory area
-    auto& new_vma = AddMapping(mapped_addr, size_aligned);
+    auto& new_vma = CarveVMA(mapped_addr, size_aligned)->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = "File";
@@ -238,29 +214,38 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
 void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    // TODO: Partial unmaps are technically supported by the guest.
-    const auto it = vma_map.find(virtual_addr);
-    ASSERT_MSG(it != vma_map.end() && it->first == virtual_addr,
-               "Attempting to unmap partially mapped range");
+    const auto it = FindVMA(virtual_addr);
+    const auto& vma_base = it->second;
+    ASSERT_MSG(vma_base.Contains(virtual_addr, size),
+               "Existing mapping does not contain requested unmap range");
 
-    const auto type = it->second.type;
+    const auto vma_base_addr = vma_base.base;
+    const auto vma_base_size = vma_base.size;
+    const auto phys_base = vma_base.phys_base;
+    const bool is_exec = vma_base.is_exec;
+    const auto start_in_vma = virtual_addr - vma_base_addr;
+    const auto type = vma_base.type;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
     if (type == VMAType::Direct) {
-        UnmapVulkanMemory(virtual_addr, size);
+        rasterizer->UnmapMemory(virtual_addr, size);
     }
     if (type == VMAType::Flexible) {
         flexible_usage -= size;
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
-    auto& vma = it->second;
+    const auto new_it = CarveVMA(virtual_addr, size);
+    auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
-    MergeAdjacent(vma_map, it);
+    vma.disallow_merge = false;
+    vma.name = "";
+    MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
-    impl.Unmap(virtual_addr, size, has_backing);
+    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
+               has_backing);
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
@@ -284,7 +269,7 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
 }
 
 int MemoryManager::VirtualQuery(VAddr addr, int flags,
-                                Libraries::Kernel::OrbisVirtualQueryInfo* info) {
+                                ::Libraries::Kernel::OrbisVirtualQueryInfo* info) {
     std::scoped_lock lk{mutex};
 
     auto it = FindVMA(addr);
@@ -302,6 +287,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
     info->is_commited.Assign(vma.type != VMAType::Free);
+    vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
         ASSERT(dmem_it != dmem_map.end());
@@ -313,7 +299,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
 }
 
 int MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
-                                     Libraries::Kernel::OrbisQueryInfo* out_info) {
+                                     ::Libraries::Kernel::OrbisQueryInfo* out_info) {
     std::scoped_lock lk{mutex};
 
     auto dmem_area = FindDmemArea(addr);
@@ -353,21 +339,53 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     return ORBIS_OK;
 }
 
-std::pair<vk::Buffer, size_t> MemoryManager::GetVulkanBuffer(VAddr addr) {
-    auto it = mapped_memories.upper_bound(addr);
-    it = std::prev(it);
-    ASSERT(it != mapped_memories.end() && it->first <= addr);
-    return std::make_pair(*it->second.buffer, addr - it->first);
+void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name) {
+    auto it = FindVMA(virtual_addr);
+
+    ASSERT_MSG(it->second.Contains(virtual_addr, size),
+               "Range provided is not fully containted in vma");
+    it->second.name = name;
+}
+VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
+    // If the requested address is below the mapped range, start search from the lowest address
+    auto min_search_address = impl.SystemManagedVirtualBase();
+    if (virtual_addr < min_search_address) {
+        virtual_addr = min_search_address;
+    }
+
+    auto it = FindVMA(virtual_addr);
+    ASSERT_MSG(it != vma_map.end(), "Specified mapping address was not found!");
+
+    // If the VMA is free and contains the requested mapping we are done.
+    if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
+        return virtual_addr;
+    }
+    // Search for the first free VMA that fits our mapping.
+    const auto is_suitable = [&] {
+        if (!it->second.IsFree()) {
+            return false;
+        }
+        const auto& vma = it->second;
+        virtual_addr = Common::AlignUp(vma.base, alignment);
+        // Sometimes the alignment itself might be larger than the VMA.
+        if (virtual_addr > vma.base + vma.size) {
+            return false;
+        }
+        const size_t remaining_size = vma.base + vma.size - virtual_addr;
+        return remaining_size >= size;
+    };
+    while (!is_suitable()) {
+        it++;
+    }
+    return virtual_addr;
 }
 
-VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
+MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {
     auto vma_handle = FindVMA(virtual_addr);
     ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
-    ASSERT_MSG((vma.type == VMAType::Free || vma.type == VMAType::Reserved) &&
-                   vma.base <= virtual_addr,
-               "Adding a mapping to already mapped region");
+    ASSERT_MSG(vma.base <= virtual_addr, "Adding a mapping to already mapped region");
 
     const VAddr start_in_vma = virtual_addr - vma.base;
     const VAddr end_in_vma = start_in_vma + size;
@@ -382,16 +400,15 @@ VirtualMemoryArea& MemoryManager::AddMapping(VAddr virtual_addr, size_t size) {
         vma_handle = Split(vma_handle, start_in_vma);
     }
 
-    return vma_handle->second;
+    return vma_handle;
 }
 
-DirectMemoryArea& MemoryManager::AddDmemAllocation(PAddr addr, size_t size) {
+MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
     auto dmem_handle = FindDmemArea(addr);
     ASSERT_MSG(dmem_handle != dmem_map.end(), "Physical address not in dmem_map");
 
     const DirectMemoryArea& area = dmem_handle->second;
-    ASSERT_MSG(area.is_free && area.base <= addr,
-               "Adding an allocation to already allocated region");
+    ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
 
     const PAddr start_in_area = addr - area.base;
     const PAddr end_in_vma = start_in_area + size;
@@ -406,7 +423,7 @@ DirectMemoryArea& MemoryManager::AddDmemAllocation(PAddr addr, size_t size) {
         dmem_handle = Split(dmem_handle, start_in_area);
     }
 
-    return dmem_handle->second;
+    return dmem_handle;
 }
 
 MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, size_t offset_in_vma) {
@@ -435,85 +452,6 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, size_t of
 
     return dmem_map.emplace_hint(std::next(dmem_handle), new_area.base, new_area);
 };
-
-void MemoryManager::MapVulkanMemory(VAddr addr, size_t size) {
-    return;
-    const vk::Device device = instance->GetDevice();
-    const auto memory_props = instance->GetPhysicalDevice().getMemoryProperties();
-    void* host_pointer = reinterpret_cast<void*>(addr);
-    const auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(
-        vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, host_pointer);
-    ASSERT(host_mem_props.memoryTypeBits != 0);
-
-    int mapped_memory_type = -1;
-    auto find_mem_type_with_flag = [&](const vk::MemoryPropertyFlags flags) {
-        u32 host_mem_types = host_mem_props.memoryTypeBits;
-        while (host_mem_types != 0) {
-            // Try to find a cached memory type
-            mapped_memory_type = std::countr_zero(host_mem_types);
-            host_mem_types -= (1 << mapped_memory_type);
-
-            if ((memory_props.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags) {
-                return;
-            }
-        }
-
-        mapped_memory_type = -1;
-    };
-
-    // First try to find a memory that is both coherent and cached
-    find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent |
-                            vk::MemoryPropertyFlagBits::eHostCached);
-    if (mapped_memory_type == -1)
-        // Then only coherent (lower performance)
-        find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent);
-
-    if (mapped_memory_type == -1) {
-        LOG_CRITICAL(Render_Vulkan, "No coherent memory available for memory mapping");
-        mapped_memory_type = std::countr_zero(host_mem_props.memoryTypeBits);
-    }
-
-    const vk::StructureChain alloc_info = {
-        vk::MemoryAllocateInfo{
-            .allocationSize = size,
-            .memoryTypeIndex = static_cast<uint32_t>(mapped_memory_type),
-        },
-        vk::ImportMemoryHostPointerInfoEXT{
-            .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
-            .pHostPointer = host_pointer,
-        },
-    };
-
-    const auto [it, new_memory] = mapped_memories.try_emplace(addr);
-    ASSERT_MSG(new_memory, "Attempting to remap already mapped vulkan memory");
-
-    auto& memory = it->second;
-    memory.backing = device.allocateMemoryUnique(alloc_info.get());
-
-    constexpr vk::BufferUsageFlags MapFlags =
-        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
-        vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst |
-        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer;
-
-    const vk::StructureChain buffer_info = {
-        vk::BufferCreateInfo{
-            .size = size,
-            .usage = MapFlags,
-            .sharingMode = vk::SharingMode::eExclusive,
-        },
-        vk::ExternalMemoryBufferCreateInfoKHR{
-            .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
-        }};
-    memory.buffer = device.createBufferUnique(buffer_info.get());
-    device.bindBufferMemory(*memory.buffer, *memory.backing, 0);
-}
-
-void MemoryManager::UnmapVulkanMemory(VAddr addr, size_t size) {
-    return;
-    const auto it = mapped_memories.find(addr);
-    ASSERT(it != mapped_memories.end() && it->second.buffer_size == size);
-    mapped_memories.erase(it);
-}
 
 int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {

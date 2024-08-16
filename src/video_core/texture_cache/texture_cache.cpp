@@ -3,103 +3,21 @@
 
 #include <xxhash.h>
 #include "common/assert.h"
-#include "common/config.h"
-#include "core/virtual_memory.h"
+#include "video_core/buffer_cache/buffer_cache.h"
+#include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
-#ifndef _WIN64
-#include <signal.h>
-#include <sys/mman.h>
-
-#define PAGE_NOACCESS PROT_NONE
-#define PAGE_READWRITE (PROT_READ | PROT_WRITE)
-#define PAGE_READONLY PROT_READ
-#else
-#include <windows.h>
-
-void mprotect(void* addr, size_t len, int prot) {
-    DWORD old_prot{};
-    BOOL result = VirtualProtect(addr, len, prot, &old_prot);
-    ASSERT_MSG(result != 0, "Region protection failed");
-}
-
-#endif
-
 namespace VideoCore {
 
-static TextureCache* g_texture_cache = nullptr;
-
-#ifndef _WIN64
-void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
-    ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
-    const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
-
-#ifdef __APPLE__
-    const u32 err = ctx->uc_mcontext->__es.__err;
-#else
-    const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
-#endif
-
-    if (err & 0x2) {
-        g_texture_cache->OnCpuWrite(address);
-    } else {
-        // Read not supported!
-        UNREACHABLE();
-    }
-}
-#else
-LONG WINAPI GuestFaultSignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
-    const u32 ec = pExp->ExceptionRecord->ExceptionCode;
-    if (ec == EXCEPTION_ACCESS_VIOLATION) {
-        const auto info = pExp->ExceptionRecord->ExceptionInformation;
-        if (info[0] == 1) { // Write violation
-            g_texture_cache->OnCpuWrite(info[1]);
-            return EXCEPTION_CONTINUE_EXECUTION;
-        } /* else {
-            UNREACHABLE();
-        }*/
-    }
-    return EXCEPTION_CONTINUE_SEARCH; // pass further
-}
-#endif
-
-static constexpr u64 StreamBufferSize = 512_MB;
 static constexpr u64 PageShift = 12;
 
-TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
-    : instance{instance_}, scheduler{scheduler_},
-      staging{instance, scheduler, vk::BufferUsageFlagBits::eTransferSrc, StreamBufferSize,
-              Vulkan::BufferType::Upload},
+TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
+                           BufferCache& buffer_cache_, PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
       tile_manager{instance, scheduler} {
-
-#ifndef _WIN64
-#ifdef __APPLE__
-    // Read-only memory write results in SIGBUS on Apple.
-    static constexpr int SignalType = SIGBUS;
-#else
-    static constexpr int SignalType = SIGSEGV;
-#endif
-
-    sigset_t signal_mask;
-    sigemptyset(&signal_mask);
-    sigaddset(&signal_mask, SignalType);
-
-    using HandlerType = decltype(sigaction::sa_sigaction);
-
-    struct sigaction guest_access_fault {};
-    guest_access_fault.sa_flags = SA_SIGINFO | SA_ONSTACK;
-    guest_access_fault.sa_sigaction = &GuestFaultSignalHandler;
-    guest_access_fault.sa_mask = signal_mask;
-    sigaction(SignalType, &guest_access_fault, nullptr);
-#else
-    veh_handle = AddVectoredExceptionHandler(0, GuestFaultSignalHandler);
-    ASSERT_MSG(veh_handle, "Failed to register an exception handler");
-#endif
-    g_texture_cache = this;
-
     ImageInfo info;
     info.pixel_format = vk::Format::eR8G8B8A8Unorm;
     info.type = vk::ImageType::e2D;
@@ -110,15 +28,14 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
 }
 
-TextureCache::~TextureCache() {
-#if _WIN64
-    RemoveVectoredExceptionHandler(veh_handle);
-#endif
-}
+TextureCache::~TextureCache() = default;
 
-void TextureCache::OnCpuWrite(VAddr address) {
-    std::unique_lock lock{m_page_table};
-    ForEachImageInRegion(address, 1 << PageShift, [&](ImageId image_id, Image& image) {
+void TextureCache::InvalidateMemory(VAddr address, size_t size, bool from_compute) {
+    std::unique_lock lock{mutex};
+    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
+        if (from_compute && !image.Overlaps(address, size)) {
+            return;
+        }
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
@@ -126,8 +43,28 @@ void TextureCache::OnCpuWrite(VAddr address) {
     });
 }
 
-ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
-    std::unique_lock lock{m_page_table};
+void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
+    std::scoped_lock lk{mutex};
+
+    boost::container::small_vector<ImageId, 16> deleted_images;
+    ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
+    for (const ImageId id : deleted_images) {
+        Image& image = slot_images[id];
+        if (True(image.flags & ImageFlagBits::Tracked)) {
+            UntrackImage(image, id);
+        }
+        // TODO: Download image data back to host.
+        UnregisterImage(id);
+        DeleteImage(id);
+    }
+}
+
+ImageId TextureCache::FindImage(const ImageInfo& info) {
+    if (info.guest_address == 0) [[unlikely]] {
+        return NULL_IMAGE_VIEW_ID;
+    }
+
+    std::unique_lock lock{mutex};
     boost::container::small_vector<ImageId, 2> image_ids;
     ForEachImageInRegion(
         info.guest_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
@@ -142,22 +79,14 @@ ImageId TextureCache::FindImage(const ImageInfo& info, bool refresh_on_create) {
             image_ids.push_back(image_id);
         });
 
-    ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
+    // ASSERT_MSG(image_ids.size() <= 1, "Overlapping images not allowed!");
 
     ImageId image_id{};
     if (image_ids.empty()) {
         image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
     } else {
-        image_id = image_ids[0];
-    }
-
-    RegisterMeta(info, image_id);
-
-    Image& image = slot_images[image_id];
-    if (True(image.flags & ImageFlagBits::CpuModified) && refresh_on_create) {
-        RefreshImage(image);
-        TrackImage(image, image_id);
+        image_id = image_ids[image_ids.size() > 1 ? 1 : 0];
     }
 
     return image_id;
@@ -184,14 +113,15 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindTexture(const AmdGpu::Image& desc, bool is_storage) {
-    const ImageInfo info{desc};
+ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
+    UpdateImage(image_id);
     Image& image = slot_images[image_id];
     auto& usage = image.info.usage;
 
-    if (is_storage) {
-        image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+    if (view_info.is_storage) {
+        image.Transit(vk::ImageLayout::eGeneral,
+                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
         usage.storage = true;
     } else {
         const auto new_layout = image.info.IsDepthStencil()
@@ -201,110 +131,167 @@ ImageView& TextureCache::FindTexture(const AmdGpu::Image& desc, bool is_storage)
         usage.texture = true;
     }
 
-    const ImageViewInfo view_info{desc, is_storage};
-    return RegisterImageView(image_id, view_info);
+    // These changes are temporary and should be removed once texture cache will handle subresources
+    // merging
+    auto view_info_tmp = view_info;
+    if (view_info_tmp.range.base.level > image.info.resources.levels - 1 ||
+        view_info_tmp.range.base.layer > image.info.resources.layers - 1 ||
+        view_info_tmp.range.extent.levels > image.info.resources.levels ||
+        view_info_tmp.range.extent.layers > image.info.resources.layers) {
+
+        LOG_DEBUG(Render_Vulkan,
+                  "Subresource range ({}~{},{}~{}) exceeds base image extents ({},{})",
+                  view_info_tmp.range.base.level, view_info_tmp.range.extent.levels,
+                  view_info_tmp.range.base.layer, view_info_tmp.range.extent.layers,
+                  image.info.resources.levels, image.info.resources.layers);
+
+        view_info_tmp.range.base.level =
+            std::min(view_info_tmp.range.base.level, image.info.resources.levels - 1);
+        view_info_tmp.range.base.layer =
+            std::min(view_info_tmp.range.base.layer, image.info.resources.layers - 1);
+        view_info_tmp.range.extent.levels =
+            std::min(view_info_tmp.range.extent.levels, image.info.resources.levels);
+        view_info_tmp.range.extent.layers =
+            std::min(view_info_tmp.range.extent.layers, image.info.resources.layers);
+    }
+
+    return RegisterImageView(image_id, view_info_tmp);
 }
 
-ImageView& TextureCache::FindRenderTarget(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                                          const AmdGpu::Liverpool::CbDbExtent& hint) {
-    const ImageInfo info{buffer, hint};
-    const ImageId image_id = FindImage(info);
+ImageView& TextureCache::FindRenderTarget(const ImageInfo& image_info,
+                                          const ImageViewInfo& view_info) {
+    const ImageId image_id = FindImage(image_info);
     Image& image = slot_images[image_id];
-    image.flags &= ~ImageFlagBits::CpuModified;
+    image.flags |= ImageFlagBits::GpuModified;
+    UpdateImage(image_id);
 
     image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
                   vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eColorAttachmentRead);
 
+    // Register meta data for this color buffer
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (image_info.meta_info.cmask_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.cmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
+            image.info.meta_info.cmask_addr = image_info.meta_info.cmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+
+        if (image_info.meta_info.fmask_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.fmask_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
+            image.info.meta_info.fmask_addr = image_info.meta_info.fmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+    }
+
+    // Update tracked image usage
     image.info.usage.render_target = true;
 
-    ImageViewInfo view_info{buffer, !!image.info.usage.vo_buffer};
     return RegisterImageView(image_id, view_info);
 }
 
-ImageView& TextureCache::FindDepthTarget(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                                         u32 num_slices, VAddr htile_address,
-                                         const AmdGpu::Liverpool::CbDbExtent& hint,
-                                         bool write_enabled) {
-    const ImageInfo info{buffer, num_slices, htile_address, hint};
-    const ImageId image_id = FindImage(info, false);
+ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
+                                         const ImageViewInfo& view_info) {
+    const ImageId image_id = FindImage(image_info);
     Image& image = slot_images[image_id];
+    image.flags |= ImageFlagBits::GpuModified;
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    const auto new_layout = write_enabled ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-                                          : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    const auto new_layout = view_info.is_storage ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                                 : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     image.Transit(new_layout, vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                                   vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
+    // Register meta data for this depth buffer
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (image_info.meta_info.htile_addr) {
+            surface_metas.emplace(
+                image_info.meta_info.htile_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
+            image.info.meta_info.htile_addr = image_info.meta_info.htile_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
+    }
+
+    // Update tracked image usage
     image.info.usage.depth_target = true;
 
-    ImageViewInfo view_info;
-    view_info.format = info.pixel_format;
     return RegisterImageView(image_id, view_info);
 }
 
-void TextureCache::RefreshImage(Image& image) {
+void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
-    {
-        if (!tile_manager.TryDetile(image)) {
-            // Upload data to the staging buffer.
-            const auto offset = staging.Copy(image.cpu_addr, image.info.guest_size_bytes, 4);
-            // Copy to the image.
-            image.Upload(staging.Handle(), offset);
-        }
+    const auto& num_layers = image.info.resources.layers;
+    const auto& num_mips = image.info.resources.levels;
+    ASSERT(num_mips == image.info.mips_layout.size());
 
-        image.Transit(vk::ImageLayout::eGeneral,
-                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
-        return;
-    }
-
-    ASSERT(image.info.resources.levels == image.info.mips_layout.size());
-    const u8* image_data = reinterpret_cast<const u8*>(image.cpu_addr);
-    for (u32 m = 0; m < image.info.resources.levels; m++) {
+    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
+    for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
-        const u32 depth = image.info.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const u32 map_size = image.info.mips_layout[m].second * image.info.resources.layers;
+        const u32 depth =
+            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
 
-        // Upload data to the staging buffer.
-        const auto [data, offset, _] = staging.Map(map_size, 16);
-        if (image.info.is_tiled) {
-            ConvertTileToLinear(data, image_data, width, height, Config::isNeoMode());
-        } else {
-            std::memcpy(data,
-                        image_data + image.info.mips_layout[m].first * image.info.resources.layers,
-                        map_size);
+        // Protect GPU modified resources from accidental reuploads.
+        if (True(image.flags & ImageFlagBits::GpuModified) &&
+            !buffer_cache.IsRegionGpuModified(image.info.guest_address + mip_ofs, mip_size)) {
+            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+            const u64 hash = XXH3_64bits(addr + mip_ofs, mip_size);
+            if (image.mip_hashes[m] == hash) {
+                continue;
+            }
+            image.mip_hashes[m] = hash;
         }
-        staging.Commit(map_size);
 
-        // Copy to the image.
-        const vk::BufferImageCopy image_copy = {
-            .bufferOffset = offset,
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
+        image_copy.push_back({
+            .bufferOffset = mip_ofs * num_layers,
+            .bufferRowLength = static_cast<u32>(mip_pitch),
+            .bufferImageHeight = static_cast<u32>(mip_height),
             .imageSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
-                .layerCount = u32(image.info.resources.layers),
+                .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, depth},
-        };
-
-        scheduler.EndRendering();
-
-        const auto cmdbuf = scheduler.CommandBuffer();
-        image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
-
-        cmdbuf.copyBufferToImage(staging.Handle(), image.image,
-                                 vk::ImageLayout::eTransferDstOptimal, image_copy);
-
-        image.Transit(vk::ImageLayout::eGeneral,
-                      vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+        });
     }
+
+    if (image_copy.empty()) {
+        return;
+    }
+
+    auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
+    sched_ptr->EndRendering();
+
+    const auto cmdbuf = sched_ptr->CommandBuffer();
+    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite, cmdbuf);
+
+    const VAddr image_addr = image.info.guest_address;
+    const size_t image_size = image.info.guest_size_bytes;
+    vk::Buffer buffer{};
+    u32 offset{};
+    if (auto upload_buffer = tile_manager.TryDetile(image); upload_buffer) {
+        buffer = *upload_buffer;
+    } else {
+        const auto [vk_buffer, buf_offset] = buffer_cache.ObtainTempBuffer(image_addr, image_size);
+        buffer = vk_buffer->Handle();
+        offset = buf_offset;
+    }
+
+    for (auto& copy : image_copy) {
+        copy.bufferOffset += offset;
+    }
+
+    cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
@@ -322,47 +309,6 @@ void TextureCache::RegisterImage(ImageId image_id) {
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
 }
 
-void TextureCache::RegisterMeta(const ImageInfo& info, ImageId image_id) {
-    Image& image = slot_images[image_id];
-
-    if (image.flags & ImageFlagBits::MetaRegistered) {
-        return;
-    }
-
-    bool registered = true;
-    // Current resource tracking implementation allows us to detect usage of meta only in the last
-    // moment, so we likely will miss its first clear. To avoid this and make first frame, where
-    // the meta is encountered, looks correct we set its state to "cleared" at registrations time.
-    if (info.usage.render_target) {
-        if (info.meta_info.cmask_addr) {
-            surface_metas.emplace(
-                info.meta_info.cmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::CMask, .is_cleared = true});
-            image.info.meta_info.cmask_addr = info.meta_info.cmask_addr;
-        }
-
-        if (info.meta_info.fmask_addr) {
-            surface_metas.emplace(
-                info.meta_info.fmask_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::FMask, .is_cleared = true});
-            image.info.meta_info.fmask_addr = info.meta_info.fmask_addr;
-        }
-    } else if (info.usage.depth_target) {
-        if (info.meta_info.htile_addr) {
-            surface_metas.emplace(
-                info.meta_info.htile_addr,
-                MetaDataInfo{.type = MetaDataInfo::Type::HTile, .is_cleared = true});
-            image.info.meta_info.htile_addr = info.meta_info.htile_addr;
-        }
-    } else {
-        registered = false;
-    }
-
-    if (registered) {
-        image.flags |= ImageFlagBits::MetaRegistered;
-    }
-}
-
 void TextureCache::UnregisterImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
@@ -370,11 +316,11 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     image.flags &= ~ImageFlagBits::Registered;
     ForEachPage(image.cpu_addr, image.info.guest_size_bytes, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
-        if (page_it == page_table.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered page=0x{:x}", page << PageShift);
+        if (page_it == nullptr) {
+            UNREACHABLE_MSG("Unregistering unregistered page=0x{:x}", page << PageShift);
             return;
         }
-        auto& image_ids = page_it.value();
+        auto& image_ids = *page_it;
         const auto vector_it = std::ranges::find(image_ids, image_id);
         if (vector_it == image_ids.end()) {
             ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageShift);
@@ -390,7 +336,7 @@ void TextureCache::TrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags |= ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
+    tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, 1);
 }
 
 void TextureCache::UntrackImage(Image& image, ImageId image_id) {
@@ -398,40 +344,34 @@ void TextureCache::UntrackImage(Image& image, ImageId image_id) {
         return;
     }
     image.flags &= ~ImageFlagBits::Tracked;
-    UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
+    tracker.UpdatePagesCachedCount(image.cpu_addr, image.info.guest_size_bytes, -1);
 }
 
-void TextureCache::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
-    std::scoped_lock lk{mutex};
-    const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
-    const u64 page_start = addr >> PageShift;
-    const u64 page_end = page_start + num_pages;
+void TextureCache::DeleteImage(ImageId image_id) {
+    Image& image = slot_images[image_id];
+    ASSERT_MSG(False(image.flags & ImageFlagBits::Tracked), "Image was not untracked");
+    ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
 
-    const auto pages_interval =
-        decltype(cached_pages)::interval_type::right_open(page_start, page_end);
-    if (delta > 0) {
-        cached_pages.add({pages_interval, delta});
+    // Remove any registered meta areas.
+    const auto& meta_info = image.info.meta_info;
+    if (meta_info.cmask_addr) {
+        surface_metas.erase(meta_info.cmask_addr);
+    }
+    if (meta_info.fmask_addr) {
+        surface_metas.erase(meta_info.fmask_addr);
+    }
+    if (meta_info.htile_addr) {
+        surface_metas.erase(meta_info.htile_addr);
     }
 
-    const auto& range = cached_pages.equal_range(pages_interval);
-    for (const auto& [range, count] : boost::make_iterator_range(range)) {
-        const auto interval = range & pages_interval;
-        const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
-        const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
-        const u32 interval_size = interval_end_addr - interval_start_addr;
-        void* addr = reinterpret_cast<void*>(interval_start_addr);
-        if (delta > 0 && count == delta) {
-            mprotect(addr, interval_size, PAGE_READONLY);
-        } else if (delta < 0 && count == -delta) {
-            mprotect(addr, interval_size, PAGE_READWRITE);
-        } else {
-            ASSERT(count >= 0);
+    // Reclaim image and any image views it references.
+    scheduler.DeferOperation([this, image_id] {
+        Image& image = slot_images[image_id];
+        for (const ImageViewId image_view_id : image.image_view_ids) {
+            slot_image_views.erase(image_view_id);
         }
-    }
-
-    if (delta < 0) {
-        cached_pages.add({pages_interval, delta});
-    }
+        slot_images.erase(image_id);
+    });
 }
 
 } // namespace VideoCore

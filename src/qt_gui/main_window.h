@@ -9,13 +9,14 @@
 #include <QMainWindow>
 #include <QMimeData>
 #include <QScopedPointer>
-#include <emulator.h>
 #include <fmt/core.h>
+
 #include "common/config.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "elf_viewer.h"
+#include "emulator.h"
 #include "game_grid_frame.h"
 #include "game_info.h"
 #include "game_list_frame.h"
@@ -38,6 +39,7 @@ public:
     bool Init();
     void InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg);
     void InstallDirectory();
+    void StartGame();
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
@@ -52,6 +54,7 @@ private:
     void CreateActions();
     void CreateRecentGameActions();
     void CreateDockWindows();
+    void GetPhysicalDevices();
     void LoadGameLists();
     void CreateConnects();
     void SetLastUsedTheme();
@@ -77,6 +80,8 @@ private:
     QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
+    // Available GPU devices
+    std::vector<QString> m_physical_devices;
 
     PSF psf;
 

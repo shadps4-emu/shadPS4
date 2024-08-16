@@ -21,6 +21,8 @@ template <typename T>
         return value.F32();
     } else if constexpr (std::is_same_v<T, u64>) {
         return value.U64();
+    } else if constexpr (std::is_same_v<T, s64>) {
+        return static_cast<s64>(value.U64());
     }
 }
 
@@ -236,6 +238,18 @@ void FoldBooleanConvert(IR::Inst& inst) {
     }
 }
 
+void FoldCmpClass(IR::Inst& inst) {
+    ASSERT_MSG(inst.Arg(1).IsImmediate(), "Unable to resolve compare operation");
+    const auto class_mask = static_cast<IR::FloatClassFunc>(inst.Arg(1).U32());
+    if ((class_mask & IR::FloatClassFunc::NaN) == IR::FloatClassFunc::NaN) {
+        inst.ReplaceOpcode(IR::Opcode::FPIsNan32);
+    } else if ((class_mask & IR::FloatClassFunc::Infinity) == IR::FloatClassFunc::Infinity) {
+        inst.ReplaceOpcode(IR::Opcode::FPIsInf32);
+    } else {
+        UNREACHABLE();
+    }
+}
+
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::IAdd32:
@@ -248,6 +262,9 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return;
     case IR::Opcode::IMul32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a * b; });
+        return;
+    case IR::Opcode::FPCmpClass32:
+        FoldCmpClass(inst);
         return;
     case IR::Opcode::ShiftRightArithmetic32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return static_cast<u32>(a >> b); });
@@ -281,11 +298,17 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldLogicalOr(inst);
     case IR::Opcode::LogicalNot:
         return FoldLogicalNot(inst);
-    case IR::Opcode::SLessThan:
+    case IR::Opcode::SLessThan32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a < b; });
         return;
-    case IR::Opcode::ULessThan:
+    case IR::Opcode::SLessThan64:
+        FoldWhenAllImmediates(inst, [](s64 a, s64 b) { return a < b; });
+        return;
+    case IR::Opcode::ULessThan32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a < b; });
+        return;
+    case IR::Opcode::ULessThan64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a < b; });
         return;
     case IR::Opcode::SLessThanEqual:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a <= b; });

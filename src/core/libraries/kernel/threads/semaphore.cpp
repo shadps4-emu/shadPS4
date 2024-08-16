@@ -9,7 +9,6 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -41,7 +40,6 @@ public:
         AddWaiter(waiter);
 
         // Perform the wait.
-        std::exchange(lk, std::unique_lock{waiter.mutex});
         return waiter.Wait(lk, timeout);
     }
 
@@ -59,10 +57,9 @@ public:
                 it++;
                 continue;
             }
-            std::scoped_lock lk2{waiter.mutex};
+            it = wait_list.erase(it);
             token_count -= waiter.need_count;
             waiter.cv.notify_one();
-            it = wait_list.erase(it);
         }
 
         return true;
@@ -84,8 +81,6 @@ public:
 
 public:
     struct WaitingThread : public ListBaseHook {
-        std::mutex mutex;
-        std::string name;
         std::condition_variable cv;
         u32 priority;
         s32 need_count;
@@ -93,7 +88,6 @@ public:
         bool was_cancled{};
 
         explicit WaitingThread(s32 need_count, bool is_fifo) : need_count{need_count} {
-            name = scePthreadSelf()->name;
             if (is_fifo) {
                 return;
             }
@@ -177,10 +171,16 @@ s32 PS4_SYSV_ABI sceKernelCreateSema(OrbisKernelSema* sem, const char* pName, u3
 }
 
 s32 PS4_SYSV_ABI sceKernelWaitSema(OrbisKernelSema sem, s32 needCount, u32* pTimeout) {
+    if (!sem) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     return sem->Wait(true, needCount, pTimeout);
 }
 
 s32 PS4_SYSV_ABI sceKernelSignalSema(OrbisKernelSema sem, s32 signalCount) {
+    if (!sem) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     if (!sem->Signal(signalCount)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -188,10 +188,16 @@ s32 PS4_SYSV_ABI sceKernelSignalSema(OrbisKernelSema sem, s32 signalCount) {
 }
 
 s32 PS4_SYSV_ABI sceKernelPollSema(OrbisKernelSema sem, s32 needCount) {
+    if (!sem) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     return sem->Wait(false, needCount, nullptr);
 }
 
 int PS4_SYSV_ABI sceKernelCancelSema(OrbisKernelSema sem, s32 setCount, s32* pNumWaitThreads) {
+    if (!sem) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     return sem->Cancel(setCount, pNumWaitThreads);
 }
 

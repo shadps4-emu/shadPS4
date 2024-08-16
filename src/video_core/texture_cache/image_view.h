@@ -18,10 +18,11 @@ class Scheduler;
 namespace VideoCore {
 
 struct ImageViewInfo {
-    explicit ImageViewInfo() = default;
-    explicit ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
-    explicit ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
-                           bool is_vo_surface) noexcept;
+    ImageViewInfo() = default;
+    ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
+    ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer, bool is_vo_surface) noexcept;
+    ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
+                  AmdGpu::Liverpool::DepthView view, AmdGpu::Liverpool::DepthControl ctl);
 
     vk::ImageViewType type = vk::ImageViewType::e2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
@@ -33,6 +34,8 @@ struct ImageViewInfo {
 };
 
 struct Image;
+
+constexpr Common::SlotId NULL_IMAGE_VIEW_ID{0};
 
 struct ImageView {
     explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,

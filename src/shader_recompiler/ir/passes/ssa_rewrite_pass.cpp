@@ -129,19 +129,19 @@ IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccLoTag&) noexcept {
+IR::Opcode UndefOpcode(const VccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const SccLoTag&) noexcept {
+IR::Opcode UndefOpcode(const SccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccHiTag&) noexcept {
+IR::Opcode UndefOpcode(const VccHiTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const FlagTag&) noexcept {
+IR::Opcode UndefOpcode(const FlagTag) noexcept {
     return IR::Opcode::UndefU1;
 }
 
@@ -348,13 +348,15 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        inst.ReplaceUsesWith(
-            pass.ReadVariable(reg, block, opcode == IR::Opcode::GetThreadBitScalarReg));
+        const bool thread_bit = opcode == IR::Opcode::GetThreadBitScalarReg;
+        const IR::Value value = pass.ReadVariable(reg, block, thread_bit);
+        inst.ReplaceUsesWith(value);
         break;
     }
     case IR::Opcode::GetVectorRegister: {
         const IR::VectorReg reg{inst.Arg(0).VectorReg()};
-        inst.ReplaceUsesWith(pass.ReadVariable(reg, block));
+        const IR::Value value = pass.ReadVariable(reg, block);
+        inst.ReplaceUsesWith(value);
         break;
     }
     case IR::Opcode::GetGotoVariable:

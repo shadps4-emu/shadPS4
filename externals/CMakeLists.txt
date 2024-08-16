@@ -47,6 +47,11 @@ else()
     endif()
 endif()
 
+if (NOT TARGET ffmpeg)
+    set(ARCHITECTURE "x86_64")
+    add_subdirectory(ffmpeg-core)
+endif()
+
 # Zlib-Ng
 if (NOT TARGET zlib-ng::zlib)
     set(ZLIB_ENABLE_TESTS OFF)
@@ -72,6 +77,13 @@ endif()
 # VMA
 if (NOT TARGET GPUOpen::VulkanMemoryAllocator)
     add_subdirectory(vma)
+endif()
+
+# RenderDoc
+if (NOT TARGET RenderDoc::API)
+    add_library(renderdoc INTERFACE)
+    target_include_directories(renderdoc SYSTEM INTERFACE ./renderdoc)
+    add_library(RenderDoc::API ALIAS renderdoc)
 endif()
 
 # glslang

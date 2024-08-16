@@ -106,6 +106,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, DiscMap)                                                                              \
     SUB(Lib, Png)                                                                                  \
     SUB(Lib, PlayGo)                                                                               \
+    SUB(Lib, Random)                                                                               \
     SUB(Lib, Usbd)                                                                                 \
     SUB(Lib, Ajm)                                                                                  \
     SUB(Lib, ErrorDialog)                                                                          \

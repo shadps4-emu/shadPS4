@@ -8,12 +8,15 @@
 #include <QProgressDialog>
 #include <QStatusBar>
 #include <QtConcurrent>
+
 #include "common/io_file.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
+#include "settings_dialog.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -37,6 +40,7 @@ bool MainWindow::Init() {
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
+    GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -50,8 +54,8 @@ bool MainWindow::Init() {
     this->setStatusBar(statusBar.data());
     // Update status bar
     int numGames = m_game_info->m_games.size();
-    QString statusMessage = "Games: " + QString::number(numGames) + " (" +
-                            QString::number(duration.count()) + "ms). Ready.";
+    QString statusMessage =
+        "Games: " + QString::number(numGames) + " (" + QString::number(duration.count()) + "ms)";
     statusBar->showMessage(statusMessage);
     return true;
 }
@@ -71,8 +75,8 @@ void MainWindow::CreateActions() {
 
     // create action group for themes
     m_theme_act_group = new QActionGroup(this);
-    m_theme_act_group->addAction(ui->setThemeLight);
     m_theme_act_group->addAction(ui->setThemeDark);
+    m_theme_act_group->addAction(ui->setThemeLight);
     m_theme_act_group->addAction(ui->setThemeGreen);
     m_theme_act_group->addAction(ui->setThemeBlue);
     m_theme_act_group->addAction(ui->setThemeViolet);
@@ -156,6 +160,19 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::GetPhysicalDevices() {
+    Vulkan::Instance instance(false, false);
+    auto physical_devices = instance.GetPhysicalDevices();
+    for (const vk::PhysicalDevice physical_device : physical_devices) {
+        auto prop = physical_device.getProperties();
+        QString name = QString::fromUtf8(prop.deviceName, -1);
+        if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
+            name += " * Unsupported Vulkan Version";
+        }
+        m_physical_devices.push_back(name);
+    }
+}
+
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
@@ -178,31 +195,15 @@ void MainWindow::CreateConnects() {
         }
     });
 
-    connect(ui->playButton, &QPushButton::clicked, this, [this]() {
-        QString gamePath = "";
-        int table_mode = Config::getTableMode();
-        if (table_mode == 0) {
-            if (m_game_list_frame->currentItem()) {
-                int itemID = m_game_list_frame->currentItem()->row();
-                gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
-            }
-        } else if (table_mode == 1) {
-            if (m_game_grid_frame->cellClicked) {
-                int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
-                             m_game_grid_frame->crtColumn;
-                gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
-            }
-        } else {
-            if (m_elf_viewer->currentItem()) {
-                int itemID = m_elf_viewer->currentItem()->row();
-                gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
-            }
-        }
-        if (gamePath != "") {
-            AddRecentFiles(gamePath);
-            Core::Emulator emulator;
-            emulator.Run(gamePath.toUtf8().constData());
-        }
+    connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
+            &MainWindow::StartGame);
+    connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
+            &MainWindow::StartGame);
+
+    connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
+        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+        settingsDialog->exec();
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
@@ -343,20 +344,20 @@ void MainWindow::CreateConnects() {
     });
 
     // Themes
-    connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
-        m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
-        if (!isIconBlack) {
-            SetUiIcons(true);
-            isIconBlack = true;
-        }
-    });
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
         Config::setMainWindowTheme(static_cast<int>(Theme::Dark));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
+        }
+    });
+    connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
+        if (!isIconBlack) {
+            SetUiIcons(true);
+            isIconBlack = true;
         }
     });
     connect(ui->setThemeGreen, &QAction::triggered, &m_window_themes, [this]() {
@@ -383,6 +384,33 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+}
+
+void MainWindow::StartGame() {
+    QString gamePath = "";
+    int table_mode = Config::getTableMode();
+    if (table_mode == 0) {
+        if (m_game_list_frame->currentItem()) {
+            int itemID = m_game_list_frame->currentItem()->row();
+            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+        }
+    } else if (table_mode == 1) {
+        if (m_game_grid_frame->cellClicked) {
+            int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
+                         m_game_grid_frame->crtColumn;
+            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+        }
+    } else {
+        if (m_elf_viewer->currentItem()) {
+            int itemID = m_elf_viewer->currentItem()->row();
+            gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
+        }
+    }
+    if (gamePath != "") {
+        AddRecentFiles(gamePath);
+        Core::Emulator emulator;
+        emulator.Run(gamePath.toUtf8().constData());
+    }
 }
 
 void MainWindow::SearchGameTable(const QString& text) {
@@ -414,7 +442,7 @@ void MainWindow::RefreshGameTable() {
     m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
     statusBar->clearMessage();
     int numGames = m_game_info->m_games.size();
-    QString statusMessage = "Games: " + QString::number(numGames) + ". Ready.";
+    QString statusMessage = "Games: " + QString::number(numGames);
     statusBar->showMessage(statusMessage);
 }
 
@@ -576,6 +604,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
 void MainWindow::InstallDirectory() {
     GameInstallDialog dlg;
     dlg.exec();
+    RefreshGameTable();
 }
 
 void MainWindow::SetLastUsedTheme() {

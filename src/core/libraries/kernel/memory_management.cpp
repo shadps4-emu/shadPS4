@@ -3,6 +3,7 @@
 
 #include <bit>
 #include "common/alignment.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
@@ -73,13 +74,22 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
                                                     size_t* sizeOut) {
     LOG_WARNING(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
                 searchStart, searchEnd, alignment);
+
+    if (searchEnd <= searchStart) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (searchEnd > SCE_KERNEL_MAIN_DMEM_SIZE) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     auto* memory = Core::Memory::Instance();
 
     PAddr physAddr;
-    s32 size = memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
+    s32 result =
+        memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
     *physAddrOut = static_cast<u64>(physAddr);
 
-    return size;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
@@ -211,9 +221,9 @@ s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* out_size) {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func) {
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]) {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->SetHeapApiFunc(func);
+    linker->SetHeapAPI(func);
 }
 
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,
@@ -225,4 +235,77 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
                                        directMemoryEndOut);
 }
 
+s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                   int* numEntriesOut) {
+    return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
+                              MemoryFlags::SCE_KERNEL_MAP_FIXED); // 0x10, 0x410?
+}
+
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
+
+s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
+                                    int* numEntriesOut, int flags) {
+    int processed = 0;
+    int result = 0;
+    for (int i = 0; i < numEntries; i++) {
+        if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
+            result = ORBIS_KERNEL_ERROR_EINVAL;
+            break; // break and assign a value to numEntriesOut.
+        }
+
+        if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT) {
+            result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
+                                                   entries[i].protection, flags,
+                                                   static_cast<s64>(entries[i].offset), 0, "");
+            LOG_INFO(
+                Kernel_Vmm,
+                "BatchMap: entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
+                "result = {}",
+                i, entries[i].operation, entries[i].length, entries[i].offset, (u8)entries[i].type,
+                result);
+
+            if (result == 0)
+                processed++;
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP) {
+            result = sceKernelMunmap(entries[i].start, entries[i].length);
+            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
+                     i, entries[i].operation, entries[i].length, result);
+
+            if (result == 0)
+                processed++;
+        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+            result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
+                                                     entries[i].protection, flags, "");
+            LOG_INFO(Kernel_Vmm,
+                     "BatchMap: entry = {}, operation = {}, len = {:#x}, type = {}, "
+                     "result = {}",
+                     i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
+
+            if (result == 0)
+                processed++;
+        } else {
+            UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
+        }
+    }
+    if (numEntriesOut != NULL) { // can be zero. do not return an error code.
+        *numEntriesOut = processed;
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
+    static constexpr size_t MaxNameSize = 32;
+    if (std::strlen(name) > MaxNameSize) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
+    }
+
+    if (name == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "name is invalid!");
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    auto* memory = Core::Memory::Instance();
+    memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
+    return ORBIS_OK;
+}
 } // namespace Libraries::Kernel

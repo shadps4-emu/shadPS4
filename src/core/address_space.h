@@ -22,7 +22,7 @@ constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
 
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
-constexpr VAddr SYSTEM_RESERVED_MIN = 0x800000000ULL;
+constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;
 #ifdef __APPLE__
 // Can only comfortably reserve the first 0x7C0000000 of system reserved space.
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
@@ -34,10 +34,7 @@ constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
 
 static constexpr size_t SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
 static constexpr size_t SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
-// User area size is normally larger than this. However games are unlikely to map to high
-// regions of that area, so by default we allocate a smaller virtual address space (about 1/4th).
-// to save space on page tables.
-static constexpr size_t UserSize = 1ULL << 39;
+static constexpr size_t UserSize = 1ULL << 40;
 
 /**
  * Represents the user virtual address space backed by a dmem memory block
@@ -94,7 +91,8 @@ public:
     void* MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, size_t size, bool has_backing);
+    void Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
+               PAddr phys_base, bool is_exec, bool has_backing);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
 

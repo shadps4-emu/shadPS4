@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QDialog>
+
 #include "common/config.h"
 #include "common/path_util.h"
 

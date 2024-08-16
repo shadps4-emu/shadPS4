@@ -287,7 +287,7 @@ bool NeedsLift(Node goto_stmt, Node label_stmt) noexcept {
  */
 class GotoPass {
 public:
-    explicit GotoPass(CFG& cfg, ObjectPool<Statement>& stmt_pool) : pool{stmt_pool} {
+    explicit GotoPass(CFG& cfg, Common::ObjectPool<Statement>& stmt_pool) : pool{stmt_pool} {
         std::vector gotos{BuildTree(cfg)};
         const auto end{gotos.rend()};
         for (auto goto_stmt = gotos.rbegin(); goto_stmt != end; ++goto_stmt) {
@@ -563,7 +563,7 @@ private:
         return parent_tree.insert(std::next(loop), *new_goto);
     }
 
-    ObjectPool<Statement>& pool;
+    Common::ObjectPool<Statement>& pool;
     Statement root_stmt{FunctionTag{}};
 };
 
@@ -597,16 +597,17 @@ private:
 
 class TranslatePass {
 public:
-    TranslatePass(ObjectPool<IR::Inst>& inst_pool_, ObjectPool<IR::Block>& block_pool_,
-                  ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
+    TranslatePass(Common::ObjectPool<IR::Inst>& inst_pool_,
+                  Common::ObjectPool<IR::Block>& block_pool_,
+                  Common::ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
                   IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
-                  Info& info_)
+                  Info& info_, const Profile& profile_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
-          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_} {
+          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_}, profile{profile_} {
         Visit(root_stmt, nullptr, nullptr);
 
         IR::Block& first_block{*syntax_list.front().data.block};
-        Translator{&first_block, info}.EmitPrologue();
+        Translator{&first_block, info, profile}.EmitPrologue();
     }
 
 private:
@@ -635,7 +636,7 @@ private:
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
                     Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),
-                              info);
+                              info, profile);
                 }
                 break;
             }
@@ -808,23 +809,26 @@ private:
         return block_pool.Create(inst_pool);
     }
 
-    ObjectPool<Statement>& stmt_pool;
-    ObjectPool<IR::Inst>& inst_pool;
-    ObjectPool<IR::Block>& block_pool;
+    Common::ObjectPool<Statement>& stmt_pool;
+    Common::ObjectPool<IR::Inst>& inst_pool;
+    Common::ObjectPool<IR::Block>& block_pool;
     IR::AbstractSyntaxList& syntax_list;
     const Block dummy_flow_block{.is_dummy = true};
     std::span<const GcnInst> inst_list;
     Info& info;
+    const Profile& profile;
 };
 } // Anonymous namespace
 
-IR::AbstractSyntaxList BuildASL(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                                CFG& cfg, Info& info) {
-    ObjectPool<Statement> stmt_pool{64};
+IR::AbstractSyntaxList BuildASL(Common::ObjectPool<IR::Inst>& inst_pool,
+                                Common::ObjectPool<IR::Block>& block_pool, CFG& cfg, Info& info,
+                                const Profile& profile) {
+    Common::ObjectPool<Statement> stmt_pool{64};
     GotoPass goto_pass{cfg, stmt_pool};
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;
-    TranslatePass{inst_pool, block_pool, stmt_pool, root, syntax_list, cfg.inst_list, info};
+    TranslatePass{inst_pool,   block_pool,    stmt_pool, root,
+                  syntax_list, cfg.inst_list, info,      profile};
     ASSERT_MSG(!info.translation_failed, "Shader translation has failed");
     return syntax_list;
 }

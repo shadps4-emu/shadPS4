@@ -9,10 +9,10 @@
 #include <vector>
 #include <boost/intrusive/list.hpp>
 
+#include "common/object_pool.h"
 #include "common/types.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
-#include "shader_recompiler/object_pool.h"
 
 namespace Shader::IR {
 
@@ -25,7 +25,7 @@ public:
     using reverse_iterator = InstructionList::reverse_iterator;
     using const_reverse_iterator = InstructionList::const_reverse_iterator;
 
-    explicit Block(ObjectPool<Inst>& inst_pool_);
+    explicit Block(Common::ObjectPool<Inst>& inst_pool_);
     ~Block();
 
     Block(const Block&) = delete;
@@ -153,7 +153,7 @@ public:
 
 private:
     /// Memory pool for instruction list
-    ObjectPool<Inst>* inst_pool;
+    Common::ObjectPool<Inst>* inst_pool;
 
     /// List of instructions in this block
     InstructionList instructions;

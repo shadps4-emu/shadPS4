@@ -282,6 +282,13 @@ enum class InterruptSelect : u32 {
     IrqUndocumented = 3,
 };
 
+static u64 GetGpuClock64() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto duration = now.time_since_epoch();
+    auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+    return static_cast<u64>(ticks);
+}
+
 struct PM4CmdEventWriteEop {
     PM4Type3Header header;
     union {
@@ -323,6 +330,10 @@ struct PM4CmdEventWriteEop {
         }
         case DataSelect::Data64: {
             *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::GpuClock64: {
+            *Address<u64>() = GetGpuClock64();
             break;
         }
         case DataSelect::PerfCounter: {
@@ -404,8 +415,9 @@ struct PM4CmdWaitRegMem {
     u32 mask;
     u32 poll_interval;
 
-    u32* Address() const {
-        return reinterpret_cast<u32*>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+    template <typename T = u32*>
+    T Address() const {
+        return reinterpret_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
     }
 
     bool Test() const {
@@ -464,8 +476,8 @@ struct PM4CmdWriteData {
     }
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>(addr64);
+    T Address() const {
+        return reinterpret_cast<T>(addr64);
     }
 };
 
@@ -494,8 +506,9 @@ struct PM4CmdEventWriteEos {
         BitField<16, 16, u32> size; ///< Number of DWs to read from the GDS
     };
 
-    u32* Address() const {
-        return reinterpret_cast<u32*>(address_lo | u64(address_hi) << 32);
+    template <typename T = u32*>
+    T Address() const {
+        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -658,6 +671,10 @@ struct PM4CmdReleaseMem {
         }
         case DataSelect::Data64: {
             *Address<u64>() = DataQWord();
+            break;
+        }
+        case DataSelect::GpuClock64: {
+            *Address<u64>() = GetGpuClock64();
             break;
         }
         case DataSelect::PerfCounter: {

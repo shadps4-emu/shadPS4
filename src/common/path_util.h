@@ -18,6 +18,8 @@ enum class PathType {
     TempDataDir,    // Where game temp data is stored.
     GameDataDir,    // Where game data is stored.
     SysModuleDir,   // Where system modules are stored.
+    DownloadDir,    // Where downloads/temp files are stored.
+    CapturesDir,    // Where rdoc captures are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -31,6 +33,8 @@ constexpr auto SAVEDATA_DIR = "savedata";
 constexpr auto GAMEDATA_DIR = "data";
 constexpr auto TEMPDATA_DIR = "temp";
 constexpr auto SYSMODULES_DIR = "sys_modules";
+constexpr auto DOWNLOAD_DIR = "download";
+constexpr auto CAPTURES_DIR = "captures";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

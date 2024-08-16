@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
 #include <QApplication>
 #include <QLineEdit>
 #include <QWidget>
 
 enum class Theme : int {
-    Light,
     Dark,
+    Light,
     Green,
     Blue,
     Violet,

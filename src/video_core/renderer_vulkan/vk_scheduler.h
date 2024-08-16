@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <boost/container/static_vector.hpp>
 #include "common/types.h"
+#include "common/unique_function.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
 
@@ -15,9 +16,12 @@ class Instance;
 
 struct RenderState {
     std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
+    std::array<vk::Image, 8> color_images{};
     vk::RenderingAttachmentInfo depth_attachment{};
+    vk::Image depth_image{};
     u32 num_color_attachments{};
-    u32 num_depth_attachments{};
+    bool has_depth{};
+    bool has_stencil{};
     u32 width = std::numeric_limits<u32>::max();
     u32 height = std::numeric_limits<u32>::max();
 
@@ -26,16 +30,39 @@ struct RenderState {
     }
 };
 
+struct SubmitInfo {
+    boost::container::static_vector<vk::Semaphore, 3> wait_semas;
+    boost::container::static_vector<u64, 3> wait_ticks;
+    boost::container::static_vector<vk::Semaphore, 3> signal_semas;
+    boost::container::static_vector<u64, 3> signal_ticks;
+    vk::Fence fence;
+
+    void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
+        wait_semas.emplace_back(semaphore);
+        wait_ticks.emplace_back(tick);
+    }
+
+    void AddSignal(vk::Semaphore semaphore, u64 tick = 1) {
+        signal_semas.emplace_back(semaphore);
+        signal_ticks.emplace_back(tick);
+    }
+
+    void AddSignal(vk::Fence fence) {
+        this->fence = fence;
+    }
+};
+
 class Scheduler {
 public:
     explicit Scheduler(const Instance& instance);
     ~Scheduler();
 
-    /// Sends the current execution context to the GPU.
-    void Flush(vk::Semaphore signal = nullptr, vk::Semaphore wait = nullptr);
+    /// Sends the current execution context to the GPU
+    /// and increments the scheduler timeline semaphore.
+    void Flush(SubmitInfo& info);
 
     /// Sends the current execution context to the GPU and waits for it to complete.
-    void Finish(vk::Semaphore signal = nullptr, vk::Semaphore wait = nullptr);
+    void Finish();
 
     /// Waits for the given tick to trigger on the GPU.
     void Wait(u64 tick);
@@ -72,16 +99,16 @@ public:
     }
 
     /// Defers an operation until the gpu has reached the current cpu tick.
-    void DeferOperation(auto&& func) {
-        pending_ops.emplace(func, CurrentTick());
+    void DeferOperation(Common::UniqueFunction<void>&& func) {
+        pending_ops.emplace(std::move(func), CurrentTick());
     }
 
-    std::mutex submit_mutex;
+    static std::mutex submit_mutex;
 
 private:
     void AllocateWorkerCommandBuffers();
 
-    void SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore);
+    void SubmitExecution(SubmitInfo& info);
 
 private:
     const Instance& instance;
@@ -90,7 +117,7 @@ private:
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
     struct PendingOp {
-        std::function<void()> callback;
+        Common::UniqueFunction<void> callback;
         u64 gpu_tick;
     };
     std::queue<PendingOp> pending_ops;

@@ -5,7 +5,6 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/image_view.h"
-#include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
 #include "video_core/host_shaders/detile_m32x1_comp.h"
@@ -16,6 +15,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum.hpp>
+#include <vk_mem_alloc.h>
 
 namespace VideoCore {
 
@@ -176,17 +176,26 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
         return vk::Format::eR8Uint;
     case vk::Format::eR8G8Unorm:
     case vk::Format::eR16Sfloat:
+    case vk::Format::eR16Unorm:
         return vk::Format::eR8G8Uint;
     case vk::Format::eR8G8B8A8Srgb:
     case vk::Format::eB8G8R8A8Srgb:
     case vk::Format::eB8G8R8A8Unorm:
     case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eR8G8B8A8Uint:
     case vk::Format::eR32Sfloat:
     case vk::Format::eR32Uint:
+    case vk::Format::eR16G16Sfloat:
+    case vk::Format::eR16G16Unorm:
         return vk::Format::eR32Uint;
+    case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
     case vk::Format::eBc4UnormBlock:
     case vk::Format::eR32G32Sfloat:
+    case vk::Format::eR32G32Uint:
+    case vk::Format::eR16G16B16A16Unorm:
+    case vk::Format::eR16G16B16A16Uint:
+    case vk::Format::eR16G16B16A16Sfloat:
         return vk::Format::eR32G32Uint;
     case vk::Format::eBc2SrgbBlock:
     case vk::Format::eBc2UnormBlock:
@@ -195,11 +204,20 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc5UnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
+    case vk::Format::eBc6HUfloatBlock:
+    case vk::Format::eR32G32B32A32Sfloat:
         return vk::Format::eR32G32B32A32Uint;
     default:
         break;
     }
-    LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+
+    // Log missing formats only once to avoid spamming the log.
+    static constexpr size_t MaxFormatIndex = 256;
+    static std::array<bool, MaxFormatIndex> logged_formats{};
+    if (const u32 index = u32(format); !logged_formats[index]) {
+        LOG_ERROR(Render_Vulkan, "Unexpected format for demotion {}", vk::to_string(format));
+        logged_formats[index] = true;
+    }
     return format;
 }
 
@@ -225,14 +243,17 @@ const DetilerContext* TileManager::GetDetiler(const Image& image) const {
     return nullptr;
 }
 
-static constexpr vk::BufferUsageFlags StagingFlags = vk::BufferUsageFlagBits::eTransferDst |
-                                                     vk::BufferUsageFlagBits::eUniformBuffer |
-                                                     vk::BufferUsageFlagBits::eStorageBuffer;
+struct DetilerParams {
+    u32 num_levels;
+    u32 pitch0;
+    u32 sizes[14];
+};
+
+static constexpr size_t StreamBufferSize = 128_MB;
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler},
-      staging{instance, scheduler, StagingFlags, 128_MB, Vulkan::BufferType::Upload} {
-
+      stream_buffer{instance, scheduler, MemoryUsage::Stream, StreamBufferSize} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
@@ -264,7 +285,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             },
             {
                 .binding = 1,
-                .descriptorType = vk::DescriptorType::eStorageImage,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
                 .descriptorCount = 1,
                 .stageFlags = vk::ShaderStageFlagBits::eCompute,
             },
@@ -281,7 +302,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
         const vk::PushConstantRange push_constants = {
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
             .offset = 0,
-            .size = sizeof(u32),
+            .size = sizeof(DetilerParams),
         };
 
         const vk::DescriptorSetLayout set_layout = *desc_layout;
@@ -312,35 +333,101 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
 
 TileManager::~TileManager() = default;
 
-bool TileManager::TryDetile(Image& image) {
-    if (!image.info.is_tiled) {
-        return false;
+TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*= false*/) {
+    const auto usage = vk::BufferUsageFlagBits::eStorageBuffer |
+                       (is_storage ? vk::BufferUsageFlagBits::eTransferSrc
+                                   : vk::BufferUsageFlagBits::eTransferDst);
+    const vk::BufferCreateInfo buffer_ci{
+        .size = size,
+        .usage = usage,
+    };
+
+#ifdef __APPLE__
+    // Fix for detiler artifacts on macOS
+    const bool is_large_buffer = true;
+#else
+    const bool is_large_buffer = size > 128_MB;
+#endif
+    VmaAllocationCreateInfo alloc_info{
+        .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
+                                   VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+                             : static_cast<VmaAllocationCreateFlags>(0),
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        .requiredFlags = !is_storage ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                     : static_cast<VkMemoryPropertyFlags>(0),
+    };
+
+    VkBuffer buffer;
+    VmaAllocation allocation;
+    const auto buffer_ci_unsafe = static_cast<VkBufferCreateInfo>(buffer_ci);
+    const auto result = vmaCreateBuffer(instance.GetAllocator(), &buffer_ci_unsafe, &alloc_info,
+                                        &buffer, &allocation, nullptr);
+    ASSERT(result == VK_SUCCESS);
+    return {buffer, allocation};
+}
+
+void TileManager::Upload(ScratchBuffer buffer, const void* data, size_t size) {
+    VmaAllocationInfo alloc_info{};
+    vmaGetAllocationInfo(instance.GetAllocator(), buffer.second, &alloc_info);
+    ASSERT(size <= alloc_info.size);
+    void* ptr{};
+    const auto result = vmaMapMemory(instance.GetAllocator(), buffer.second, &ptr);
+    ASSERT(result == VK_SUCCESS);
+    std::memcpy(ptr, data, size);
+    vmaUnmapMemory(instance.GetAllocator(), buffer.second);
+}
+
+void TileManager::FreeBuffer(ScratchBuffer buffer) {
+    vmaDestroyBuffer(instance.GetAllocator(), buffer.first, buffer.second);
+}
+
+std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
+    if (!image.info.props.is_tiled) {
+        return std::nullopt;
     }
 
     const auto* detiler = GetDetiler(image);
     if (!detiler) {
-        LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
-                  vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
-        return false;
+        if (image.info.tiling_mode != AmdGpu::TilingMode::Texture_MacroTiled) {
+            LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
+                      vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
+        }
+        return std::nullopt;
     }
 
-    const auto offset =
-        staging.Copy(image.cpu_addr, image.info.guest_size_bytes, instance.StorageMinAlignment());
-    image.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits::eShaderWrite);
+    // Prepare input buffer
+    const u32 image_size = image.info.guest_size_bytes;
+    const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
+        // Use stream buffer for smaller textures.
+        if (image_size <= stream_buffer.GetFreeSize()) {
+            u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
+            return {stream_buffer.Handle(), offset};
+        }
+        // Request temporary host buffer for larger sizes.
+        auto in_buffer = AllocBuffer(image_size);
+        const auto addr = reinterpret_cast<const void*>(image.info.guest_address);
+        Upload(in_buffer, addr, image_size);
+        scheduler.DeferOperation([=, this]() { FreeBuffer(in_buffer); });
+        return {in_buffer.first, 0};
+    }();
+
+    // Prepare output buffer
+    auto out_buffer = AllocBuffer(image_size, true);
+    scheduler.DeferOperation([=, this]() { FreeBuffer(out_buffer); });
 
     auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *detiler->pl);
 
     const vk::DescriptorBufferInfo input_buffer_info{
-        .buffer = staging.Handle(),
-        .offset = offset,
-        .range = image.info.guest_size_bytes,
+        .buffer = in_buffer,
+        .offset = in_offset,
+        .range = image_size,
     };
 
-    ASSERT(image.view_for_detiler.has_value());
-    const vk::DescriptorImageInfo output_image_info{
-        .imageView = *image.view_for_detiler->image_view,
-        .imageLayout = image.layout,
+    const vk::DescriptorBufferInfo output_buffer_info{
+        .buffer = out_buffer.first,
+        .offset = 0,
+        .range = image_size,
     };
 
     std::vector<vk::WriteDescriptorSet> set_writes{
@@ -357,20 +444,44 @@ bool TileManager::TryDetile(Image& image) {
             .dstBinding = 1,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = vk::DescriptorType::eStorageImage,
-            .pImageInfo = &output_image_info,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &output_buffer_info,
         },
     };
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-    cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u,
-                         sizeof(image.info.pitch), &image.info.pitch);
+    DetilerParams params;
+    params.pitch0 = image.info.pitch >> (image.info.props.is_block ? 2u : 0u);
+    params.num_levels = image.info.resources.levels;
 
-    cmdbuf.dispatch((image.info.size.width * image.info.size.height) / 64, 1,
-                    1); // round to 64
+    ASSERT(image.info.resources.levels <= 14);
+    std::memset(&params.sizes, 0, sizeof(params.sizes));
+    for (int m = 0; m < image.info.resources.levels; ++m) {
+        params.sizes[m] = image.info.mips_layout[m].size * image.info.resources.layers +
+                          (m > 0 ? params.sizes[m - 1] : 0);
+    }
 
-    return true;
+    auto pitch = image.info.pitch;
+    cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
+                         &params);
+
+    ASSERT((image_size % 64) == 0);
+    const auto bpp = image.info.num_bits * (image.info.props.is_block ? 16u : 1u);
+    const auto num_tiles = image_size / (64 * (bpp / 8));
+    cmdbuf.dispatch(num_tiles, 1, 1);
+
+    const vk::BufferMemoryBarrier post_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+        .buffer = out_buffer.first,
+        .size = image_size,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
+                           {}, post_barrier, {});
+
+    return {out_buffer.first};
 }
 
 } // namespace VideoCore

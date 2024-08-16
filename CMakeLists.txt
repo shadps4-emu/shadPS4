@@ -19,12 +19,11 @@ project(shadPS4)
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
-# This function should be passed a list of all files in a target. It will automatically generate
-# file groups following the directory hierarchy, so that the layout of the files in IDEs matches the
-# one in the filesystem.
+# This function should be passed a list of all files in a target. It will automatically generate file groups
+# following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
 function(create_target_directory_groups target_name)
-    # Place any files that aren't in the source list in a separate group so that they don't get in
-    # the way.
+
+    # Place any files that aren't in the source list in a separate group so that they don't get in the way.
     source_group("Other Files" REGULAR_EXPRESSION ".")
 
     get_target_property(target_sources "${target_name}" SOURCES)
@@ -39,14 +38,6 @@ endfunction()
 
 # Setup a custom clang-format target (if clang-format can be found) that will run
 # against all the src files. This should be used before making a pull request.
-# =======================================================================
-
-set(CLANG_FORMAT_POSTFIX "-17")
-find_program(CLANG_FORMAT
-    NAMES clang-format${CLANG_FORMAT_POSTFIX}
-          clang-format
-    PATHS ${PROJECT_BINARY_DIR}/externals)
-
 if (CLANG_FORMAT)
     set(SRCS ${PROJECT_SOURCE_DIR}/src)
     set(CCOMMENT "Running clang format against all the .h and .cpp files in src/")
@@ -65,6 +56,15 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# generate git revision information
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/externals/cmake-modules/")
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REF_SPEC GIT_REV)
+git_describe(GIT_DESC --always --long --dirty)
+git_branch_name(GIT_BRANCH)
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp" @ONLY)
+
 find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
 find_package(fmt 10.2.1 CONFIG)
@@ -79,16 +79,30 @@ find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(zlib-ng 2.2.0 MODULE)
 find_package(Zydis 4.1.0 CONFIG)
+find_package(RenderDoc MODULE)
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
 endif()
 
+# Note: Windows always has these functions through winpthreads
 include(CheckSymbolExists)
 check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-# Windows always has the function through winpthreads
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
+endif()
+check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
+if(HAVE_SEM_TIMEDWAIT OR WIN32)
+    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
+    include(CheckCXXSymbolExists)
+    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+    if(LIBCPP)
+        add_compile_options(-fexperimental-library)
+    endif()
 endif()
 
 add_subdirectory(externals)
@@ -98,9 +112,11 @@ if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
 endif()
 
-set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
+set(AUDIO_CORE src/audio_core/sdl_audio.cpp
                src/audio_core/sdl_audio.h
 )
 
@@ -177,6 +193,16 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
+                src/core/libraries/avplayer/avplayer_common.cpp
+                src/core/libraries/avplayer/avplayer_common.h
+                src/core/libraries/avplayer/avplayer_file_streamer.cpp
+                src/core/libraries/avplayer/avplayer_file_streamer.h
+                src/core/libraries/avplayer/avplayer_impl.cpp
+                src/core/libraries/avplayer/avplayer_impl.h
+                src/core/libraries/avplayer/avplayer_source.cpp
+                src/core/libraries/avplayer/avplayer_source.h
+                src/core/libraries/avplayer/avplayer_state.cpp
+                src/core/libraries/avplayer/avplayer_state.h
                 src/core/libraries/avplayer/avplayer.cpp
                 src/core/libraries/avplayer/avplayer.h
 )
@@ -224,6 +250,10 @@ set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
 set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo.h
                src/core/libraries/playgo/playgo_types.h
+)
+
+set(RANDOM_LIB src/core/libraries/random/random.cpp
+               src/core/libraries/random/random.h
 )
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
@@ -274,6 +304,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/native_clock.h
            src/common/path_util.cpp
            src/common/path_util.h
+           src/common/object_pool.h
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
@@ -285,9 +316,12 @@ set(COMMON src/common/logging/backend.cpp
            src/common/thread.h
            src/common/types.h
            src/common/uint128.h
+           src/common/unique_function.h
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
+           src/common/scm_rev.cpp
+           src/common/scm_rev.h
 )
 
 set(CORE src/core/aerolib/stubs.cpp
@@ -308,6 +342,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
+         src/core/file_format/playgo_chunk.cpp
+         src/core/file_format/playgo_chunk.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
          src/core/file_format/splash.h
@@ -336,6 +372,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${NP_LIBS}
          ${PNG_LIB}
          ${PLAYGO_LIB}
+         ${RANDOM_LIB}
          ${USBD_LIB}
          ${MISC_LIBS}
          ${DIALOGS_LIB}
@@ -353,7 +390,6 @@ set(CORE src/core/aerolib/stubs.cpp
 )
 
 set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/object_pool.h
                       src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
@@ -404,6 +440,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
+                      src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
@@ -437,6 +474,13 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/buffer_cache/buffer.cpp
+               src/video_core/buffer_cache/buffer.h
+               src/video_core/buffer_cache/buffer_cache.cpp
+               src/video_core/buffer_cache/buffer_cache.h
+               src/video_core/buffer_cache/memory_tracker_base.h
+               src/video_core/buffer_cache/range_set.h
+               src/video_core/buffer_cache/word_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
                src/video_core/renderer_vulkan/renderer_vulkan.cpp
@@ -465,8 +509,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
-               src/video_core/renderer_vulkan/vk_stream_buffer.cpp
-               src/video_core/renderer_vulkan/vk_stream_buffer.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
                src/video_core/texture_cache/image.cpp
@@ -482,6 +524,11 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/tile_manager.cpp
                src/video_core/texture_cache/tile_manager.h
                src/video_core/texture_cache/types.h
+               src/video_core/page_manager.cpp
+               src/video_core/page_manager.h
+               src/video_core/multi_level_page_table.h
+               src/video_core/renderdoc.cpp
+               src/video_core/renderdoc.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -494,37 +541,39 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
-# the above is shared in sdl and qt version (TODO share them all)
+# The above is shared in SDL and Qt version (TODO share them all)
 
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 
-set(QT_GUI 
-    src/qt_gui/main_window_ui.h
-    src/qt_gui/main_window.cpp
-    src/qt_gui/main_window.h
-    src/qt_gui/gui_context_menus.h
-    src/qt_gui/game_list_utils.h
-    src/qt_gui/game_info.cpp
-    src/qt_gui/game_info.h
-    src/qt_gui/game_list_frame.cpp
-    src/qt_gui/game_list_frame.h
-    src/qt_gui/game_grid_frame.cpp
-    src/qt_gui/game_grid_frame.h
-    src/qt_gui/game_install_dialog.cpp
-    src/qt_gui/game_install_dialog.h
-    src/qt_gui/pkg_viewer.cpp
-    src/qt_gui/pkg_viewer.h
-    src/qt_gui/trophy_viewer.cpp
-    src/qt_gui/trophy_viewer.h
-    src/qt_gui/elf_viewer.cpp
-    src/qt_gui/elf_viewer.h
-    src/qt_gui/main_window_themes.cpp
-    src/qt_gui/main_window_themes.h
-    src/qt_gui/main.cpp
-    ${EMULATOR}
-    ${RESOURCE_FILES}
-    )
+set(QT_GUI src/qt_gui/main_window_ui.h
+           src/qt_gui/main_window.cpp
+           src/qt_gui/main_window.h
+           src/qt_gui/gui_context_menus.h
+           src/qt_gui/game_list_utils.h
+           src/qt_gui/game_info.cpp
+           src/qt_gui/game_info.h
+           src/qt_gui/game_list_frame.cpp
+           src/qt_gui/game_list_frame.h
+           src/qt_gui/game_grid_frame.cpp
+           src/qt_gui/game_grid_frame.h
+           src/qt_gui/game_install_dialog.cpp
+           src/qt_gui/game_install_dialog.h
+           src/qt_gui/pkg_viewer.cpp
+           src/qt_gui/pkg_viewer.h
+           src/qt_gui/trophy_viewer.cpp
+           src/qt_gui/trophy_viewer.h
+           src/qt_gui/elf_viewer.cpp
+           src/qt_gui/elf_viewer.h
+           src/qt_gui/main_window_themes.cpp
+           src/qt_gui/main_window_themes.h
+           src/qt_gui/settings_dialog.cpp
+           src/qt_gui/settings_dialog.h
+           src/qt_gui/settings_dialog.ui
+           src/qt_gui/main.cpp
+           ${EMULATOR}
+           ${RESOURCE_FILES}
+)
 endif()
 
 if (ENABLE_QT_GUI)
@@ -537,6 +586,7 @@ if (ENABLE_QT_GUI)
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+        src/images/shadPS4.icns
     )
 else()
     add_executable(shadps4
@@ -557,7 +607,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
@@ -623,6 +673,10 @@ target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
-#        WIN32_EXECUTABLE ON
-        MACOSX_BUNDLE ON)
+#       WIN32_EXECUTABLE ON
+        MACOSX_BUNDLE ON
+        MACOSX_BUNDLE_ICON_FILE shadPS4.icns)
+
+    set_source_files_properties(src/images/shadPS4.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
 endif()

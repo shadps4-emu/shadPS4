@@ -12,16 +12,16 @@
 namespace Shader::IR {
 
 template <typename Pred>
-auto BreadthFirstSearch(const Value& value, Pred&& pred)
-    -> std::invoke_result_t<Pred, const Inst*> {
-    if (value.IsImmediate()) {
-        // Nothing to do with immediates
-        return std::nullopt;
+auto BreadthFirstSearch(const Inst* inst, Pred&& pred) -> std::invoke_result_t<Pred, const Inst*> {
+    // Most often case the instruction is the desired already.
+    if (const std::optional result = pred(inst)) {
+        return result;
     }
+
     // Breadth-first search visiting the right most arguments first
     boost::container::small_vector<const Inst*, 2> visited;
     std::queue<const Inst*> queue;
-    queue.push(value.InstRecursive());
+    queue.push(inst);
 
     while (!queue.empty()) {
         // Pop one instruction from the queue
@@ -47,6 +47,16 @@ auto BreadthFirstSearch(const Value& value, Pred&& pred)
     }
     // SSA tree has been traversed and the result hasn't been found
     return std::nullopt;
+}
+
+template <typename Pred>
+auto BreadthFirstSearch(const Value& value, Pred&& pred)
+    -> std::invoke_result_t<Pred, const Inst*> {
+    if (value.IsImmediate()) {
+        // Nothing to do with immediates
+        return std::nullopt;
+    }
+    return BreadthFirstSearch(value.InstRecursive(), pred);
 }
 
 } // namespace Shader::IR

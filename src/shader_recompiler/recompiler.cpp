@@ -27,8 +27,9 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
     return blocks;
 }
 
-IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                             std::span<const u32> token, const Info&& info) {
+IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
+                             Common::ObjectPool<IR::Block>& block_pool, std::span<const u32> token,
+                             const Info&& info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
@@ -44,12 +45,12 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     }
 
     // Create control flow graph
-    ObjectPool<Gcn::Block> gcn_block_pool{64};
+    Common::ObjectPool<Gcn::Block> gcn_block_pool{64};
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
     program.info = std::move(info);
-    program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, program.info);
+    program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, program.info, profile);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
@@ -57,12 +58,13 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    if (program.info.stage != Stage::Compute) {
+        Shader::Optimization::LowerSharedMemToRegisters(program);
+    }
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);
-
-    fmt::print("Post passes\n\n{}\n", Shader::IR::DumpProgram(program));
-    std::fflush(stdout);
+    LOG_DEBUG(Render_Vulkan, "{}", Shader::IR::DumpProgram(program));
 
     return program;
 }
