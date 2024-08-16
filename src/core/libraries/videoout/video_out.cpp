@@ -153,7 +153,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
 
 int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
     if (ev == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
@@ -163,7 +163,7 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
 
 int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
     if (ev == nullptr || data == nullptr) {
-        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
     if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
