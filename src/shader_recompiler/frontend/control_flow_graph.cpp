@@ -103,8 +103,7 @@ void CFG::EmitDivergenceLabels() {
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
-               inst.opcode == Opcode::S_CBRANCH_EXECZ ||
-               inst.opcode == Opcode::S_ANDN2_B64;
+               inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ANDN2_B64;
     };
 
     // Since we will be adding new labels, avoid iterating those as well.
