@@ -111,6 +111,7 @@ void CFG::EmitBlocks() {
 
         Block* block = block_pool.Create();
         block->begin = start;
+        block->end = end;
         block->begin_index = i;
         block->end_index = i + 1;
         block->end_inst = end_inst;
