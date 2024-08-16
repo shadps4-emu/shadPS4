@@ -172,8 +172,8 @@ bool PS4_SYSV_ABI sceAvPlayerIsActive(SceAvPlayerHandle handle) {
     return res;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t jump_time_msec) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) {
+    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called, time (msec) = {}", time);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
@@ -226,7 +226,7 @@ s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(SceAvPlayerLogCallback log_cb, void* 
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called, looping = {}", loop_flag);
+    LOG_TRACE(Lib_AvPlayer, "called, looping = {}", loop_flag);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
