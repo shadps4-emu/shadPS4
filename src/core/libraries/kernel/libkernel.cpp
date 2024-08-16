@@ -125,6 +125,37 @@ int ErrnoToSceKernelError(int e) {
     return res > SCE_KERNEL_ERROR_ESTOP ? SCE_KERNEL_ERROR_UNKNOWN : res;
 }
 
+void SetPosixErrno(int e) {
+    //Some error numbers are different between supported OSes or the PS4
+    switch (e) {
+    case EPERM:
+        g_posix_errno = POSIX_EPERM;
+        break;
+    case EAGAIN:
+        g_posix_errno = POSIX_EAGAIN;
+        break;
+    case ENOMEM:
+        g_posix_errno = POSIX_ENOMEM;
+        break;
+    case EINVAL:
+        g_posix_errno = POSIX_EINVAL;
+        break;
+    case ENOSPC:
+        g_posix_errno = POSIX_ENOSPC;
+        break;
+    case ERANGE:
+        g_posix_errno = POSIX_ERANGE;
+        break;
+    case EDEADLK: 
+        g_posix_errno = POSIX_EDEADLK;
+        break;
+    case ETIMEDOUT:
+        g_posix_errno = POSIX_ETIMEDOUT;
+        break;
+    default:
+        g_posix_errno = e;
+    }
+}
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
                                void** res) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",

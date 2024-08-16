@@ -1377,21 +1377,7 @@ int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
 int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
     int result = sem_init(sem, pshared, value);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ENOSPC:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOSPC);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1399,21 +1385,7 @@ int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
 int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
     int result = sem_wait(sem);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ETIMEDOUT:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1421,21 +1393,7 @@ int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
 int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
     int result = sem_trywait(sem);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case EAGAIN:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EAGAIN);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1473,21 +1431,7 @@ int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
 int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
     int result = sem_timedwait(sem, t);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ETIMEDOUT:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1495,21 +1439,7 @@ int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
 int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
     int result = sem_post(sem);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ERANGE:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ERANGE);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1517,24 +1447,7 @@ int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
 int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
     int result = sem_destroy(sem);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ETIMEDOUT:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
-            break;
-        case EDEADLK:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EDEADLK);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
@@ -1542,24 +1455,7 @@ int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
 int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
     int result = sem_getvalue(sem, sval);
     if (result == -1) {
-        switch (errno) {
-        case ENOMEM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOMEM);
-            break;
-        case EPERM:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EPERM);
-            break;
-        case ETIMEDOUT:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
-            break;
-        case EDEADLK:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EDEADLK);
-            break;
-        case EINVAL:
-        default:
-            ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
-            break;
-        }
+        SetPosixErrno(errno);
     }
     return result;
 }
