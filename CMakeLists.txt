@@ -96,6 +96,15 @@ if(HAVE_SEM_TIMEDWAIT OR WIN32)
     add_compile_options(-DHAVE_SEM_TIMEDWAIT)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
+    include(CheckCXXSymbolExists)
+    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+    if(LIBCPP)
+        add_compile_options(-fexperimental-library)
+    endif()
+endif()
+
 add_subdirectory(externals)
 include_directories(src)
 
