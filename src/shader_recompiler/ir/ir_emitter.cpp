@@ -369,51 +369,51 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
-Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& value,
                                   BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicIAdd32, /*Flags{info},*/ handle, value);
 }
 
-Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
-                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
+    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, value)
+                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
-                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, value)
+                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& value,
                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& value,
                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& value,
                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicAnd32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicAnd32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicOr(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicOr(const Value& handle, const Value& value,
                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicOr32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicOr32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicXor(const Value& handle, const Value& value,
                                  BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, value);
 }
 
-Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& address, const Value& value,
+Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& value,
                                       BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, value);
 }
 
 void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,

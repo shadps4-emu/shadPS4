@@ -100,23 +100,23 @@ public:
     void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
                            const Value& data, BufferInstInfo info);
 
-    [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a, const Value& b,
+    [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& a,
                                          BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& a, const Value& b,
+    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& a,
                                          bool is_signed, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& a, const Value& b,
+    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& a,
                                          bool is_signed, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicInc(const Value& handle,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicDec(const Value& handle,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicAnd(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicAnd(const Value& handle,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicOr(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicOr(const Value& handle,
                                        const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicXor(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicXor(const Value& handle,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicExchange(const Value& handle, const Value& address,
+    [[nodiscard]] Value BufferAtomicExchange(const Value& handle,
                                              const Value& value, BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();

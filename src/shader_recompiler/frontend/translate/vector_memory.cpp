@@ -435,64 +435,79 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_form
 }
 
 void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst) {
-    const auto& mtbuf = inst.control.mtbuf;
+    const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
-    const IR::VectorReg vdata{inst.src[1].code};
-    const IR::ScalarReg sharp{inst.src[2].code * 4};
-    const IR::Value address = [&] -> IR::Value {
-        if (mtbuf.idxen && mtbuf.offen) {
+    const IR::ScalarReg srsrc{inst.src[2].code * 4};
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
+                              ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
+    /*const IR::Value address = [&] -> IR::Value {
+        if (mubuf.idxen && mubuf.offen) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
         }
-        if (mtbuf.idxen || mtbuf.offen) {
+        if (mubuf.idxen || mubuf.offen) {
             return ir.GetVectorReg(vaddr);
         }
         return {};
-    }();
+    }();*/
     const IR::Value soffset{GetSrc(inst.src[3])};
     ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
     IR::BufferInstInfo info{};
-    info.index_enable.Assign(mtbuf.idxen);
-    info.offset_enable.Assign(mtbuf.offen);
-    info.inst_offset.Assign(mtbuf.offset);
+    info.index_enable.Assign(mubuf.idxen);
+    info.offset_enable.Assign(mubuf.offen);
+    info.inst_offset.Assign(mubuf.offset);
 
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
-                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value tst{GetSrc(inst.src[1])};
 
-    const IR::Value value = ir.GetVectorReg(vdata);
+    IR::Value value{};
+    const IR::VectorReg src_reg{inst.src[1].code};
+    switch (num_dwords) {
+    case 1:
+        value = ir.GetVectorReg<Shader::IR::F32>(src_reg);
+        break;
+    case 2:
+        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
+                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1));
+        break;
+    }
+    const IR::Value handle{GetSrc(inst.src[2])};
 
     const IR::Value result = [&] {
         switch (op) {
         case AtomicOp::Swap:
-            return ir.BufferAtomicExchange(handle, address, value, info);
+            return ir.BufferAtomicExchange(handle, value, info);
         case AtomicOp::Add:
-            return ir.BufferAtomicIAdd(handle, address, value, info);
+            if (num_dwords == 1) {
+                return ir.BufferAtomicIAdd(handle, tst, info);
+            } else if (num_dwords == 2) {
+                // return ir.BufferAtomicFAdd(handle, final_address, value, info);
+            }
         case AtomicOp::Smin:
-            return ir.BufferAtomicIMin(handle, address, value, true, info);
+            return ir.BufferAtomicIMin(handle, value, true, info);
         case AtomicOp::Umin:
-            return ir.BufferAtomicIMin(handle, address, value, false, info);
+            return ir.BufferAtomicIMin(handle, value, false, info);
         case AtomicOp::Smax:
-            return ir.BufferAtomicIMax(handle, address, value, true, info);
+            return ir.BufferAtomicIMax(handle, value, true, info);
         case AtomicOp::Umax:
-            return ir.BufferAtomicIMax(handle, address, value, false, info);
+            return ir.BufferAtomicIMax(handle, value, false, info);
         case AtomicOp::And:
-            return ir.BufferAtomicAnd(handle, address, value, info);
+            return ir.BufferAtomicAnd(handle, value, info);
         case AtomicOp::Or:
-            return ir.BufferAtomicOr(handle, address, value, info);
+            return ir.BufferAtomicOr(handle, value, info);
         case AtomicOp::Xor:
-            return ir.BufferAtomicXor(handle, address, value, info);
+            return ir.BufferAtomicXor(handle, value, info);
         case AtomicOp::Inc:
-            return ir.BufferAtomicInc(handle, address, value, info);
+            return ir.BufferAtomicInc(handle, value, info);
         case AtomicOp::Dec:
-            return ir.BufferAtomicDec(handle, address, value, info);
+            return ir.BufferAtomicDec(handle, value, info);
         default:
             UNREACHABLE();
         }
     }();
 
-    if (mtbuf.glc) {
-        ir.SetVectorReg(vdata, IR::U32{result});
+    if (mubuf.glc) {
+        ir.SetVectorReg(src_reg, IR::U32{result});
     }
 }
 
