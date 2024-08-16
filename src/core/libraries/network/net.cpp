@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include <common/assert.h>
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"

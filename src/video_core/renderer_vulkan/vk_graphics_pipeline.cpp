@@ -86,8 +86,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = false,
+        .primitiveRestartEnable = key.enable_primitive_restart != 0,
     };
+    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF,
+               "Primitive restart index other than 0xFFFF is not supported yet");
 
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
         .depthClampEnable = false,

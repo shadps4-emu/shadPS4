@@ -61,6 +61,7 @@ private:
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
     void InstallPkg();
+    void BootGame();
     void AddRecentFiles(QString filePath);
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;

@@ -363,7 +363,9 @@ void EmitContext::DefineBuffers() {
             .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
-            .buffer = buffer.GetVsharp(info),
+            .dfmt = buffer.dfmt,
+            .nfmt = buffer.nfmt,
+            .stride = buffer.GetVsharp(info).GetStride(),
         });
         interfaces.push_back(id);
         i++;
@@ -394,6 +396,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::R16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::R16ui;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {

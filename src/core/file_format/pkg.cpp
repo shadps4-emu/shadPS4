@@ -350,7 +350,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
     return true;
 }
 
-void PKG::ExtractFiles(const int& index) {
+void PKG::ExtractFiles(const int index) {
     int inode_number = fsTable[index].inode;
     int inode_type = fsTable[index].type;
     std::string inode_name = fsTable[index].name;

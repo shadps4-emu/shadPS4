@@ -112,6 +112,15 @@ int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 
     return result;
 }
 
+int PS4_SYSV_ABI open(const char* filename, const char* mode) {
+    LOG_INFO(Kernel_Fs, "open redirect to sceKernelOpen");
+    int result = sceKernelOpen(filename, ORBIS_KERNEL_O_RDWR, 0);
+    if (result < 0) {
+        return -1;
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelClose(int d) {
     if (d < 3) { // d probably hold an error code
         return ORBIS_KERNEL_ERROR_EPERM;
@@ -498,6 +507,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
+    LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", 1, 1, open);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
     LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("bY-PO6JhzhQ", "libScePosix", 1, "libkernel", 1, 1, posix_close);

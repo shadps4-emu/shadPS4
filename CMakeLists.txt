@@ -67,9 +67,11 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
+find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.1 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
+find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
 find_package(toml11 3.8.1 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -79,7 +81,6 @@ find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(zlib-ng 2.2.0 MODULE)
 find_package(Zydis 4.1.0 CONFIG)
-find_package(RenderDoc MODULE)
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -96,6 +97,15 @@ if(HAVE_SEM_TIMEDWAIT OR WIN32)
     add_compile_options(-DHAVE_SEM_TIMEDWAIT)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
+    include(CheckCXXSymbolExists)
+    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+    if(LIBCPP)
+        add_compile_options(-fexperimental-library)
+    endif()
+endif()
+
 add_subdirectory(externals)
 include_directories(src)
 
@@ -107,7 +117,7 @@ if(ENABLE_QT_GUI)
     set(CMAKE_AUTOUIC ON)
 endif()
 
-set(AUDIO_CORE src/audio_core/sdl_audio.cpp 
+set(AUDIO_CORE src/audio_core/sdl_audio.cpp
                src/audio_core/sdl_audio.h
 )
 
@@ -182,6 +192,16 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/rtc/rtc.h
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
+                src/core/libraries/avplayer/avplayer_common.cpp
+                src/core/libraries/avplayer/avplayer_common.h
+                src/core/libraries/avplayer/avplayer_file_streamer.cpp
+                src/core/libraries/avplayer/avplayer_file_streamer.h
+                src/core/libraries/avplayer/avplayer_impl.cpp
+                src/core/libraries/avplayer/avplayer_impl.h
+                src/core/libraries/avplayer/avplayer_source.cpp
+                src/core/libraries/avplayer/avplayer_source.h
+                src/core/libraries/avplayer/avplayer_state.cpp
+                src/core/libraries/avplayer/avplayer_state.h
                 src/core/libraries/avplayer/avplayer.cpp
                 src/core/libraries/avplayer/avplayer.h
 )
@@ -524,34 +544,33 @@ set(EMULATOR src/emulator.cpp
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 
-set(QT_GUI 
-    src/qt_gui/main_window_ui.h
-    src/qt_gui/main_window.cpp
-    src/qt_gui/main_window.h
-    src/qt_gui/gui_context_menus.h
-    src/qt_gui/game_list_utils.h
-    src/qt_gui/game_info.cpp
-    src/qt_gui/game_info.h
-    src/qt_gui/game_list_frame.cpp
-    src/qt_gui/game_list_frame.h
-    src/qt_gui/game_grid_frame.cpp
-    src/qt_gui/game_grid_frame.h
-    src/qt_gui/game_install_dialog.cpp
-    src/qt_gui/game_install_dialog.h
-    src/qt_gui/pkg_viewer.cpp
-    src/qt_gui/pkg_viewer.h
-    src/qt_gui/trophy_viewer.cpp
-    src/qt_gui/trophy_viewer.h
-    src/qt_gui/elf_viewer.cpp
-    src/qt_gui/elf_viewer.h
-    src/qt_gui/main_window_themes.cpp
-    src/qt_gui/main_window_themes.h
-    src/qt_gui/settings_dialog.cpp
-    src/qt_gui/settings_dialog.h
-    src/qt_gui/settings_dialog.ui
-    src/qt_gui/main.cpp
-    ${EMULATOR}
-    ${RESOURCE_FILES}
+set(QT_GUI src/qt_gui/main_window_ui.h
+           src/qt_gui/main_window.cpp
+           src/qt_gui/main_window.h
+           src/qt_gui/gui_context_menus.h
+           src/qt_gui/game_list_utils.h
+           src/qt_gui/game_info.cpp
+           src/qt_gui/game_info.h
+           src/qt_gui/game_list_frame.cpp
+           src/qt_gui/game_list_frame.h
+           src/qt_gui/game_grid_frame.cpp
+           src/qt_gui/game_grid_frame.h
+           src/qt_gui/game_install_dialog.cpp
+           src/qt_gui/game_install_dialog.h
+           src/qt_gui/pkg_viewer.cpp
+           src/qt_gui/pkg_viewer.h
+           src/qt_gui/trophy_viewer.cpp
+           src/qt_gui/trophy_viewer.h
+           src/qt_gui/elf_viewer.cpp
+           src/qt_gui/elf_viewer.h
+           src/qt_gui/main_window_themes.cpp
+           src/qt_gui/main_window_themes.h
+           src/qt_gui/settings_dialog.cpp
+           src/qt_gui/settings_dialog.h
+           src/qt_gui/settings_dialog.ui
+           src/qt_gui/main.cpp
+           ${EMULATOR}
+           ${RESOURCE_FILES}
 )
 endif()
 
@@ -586,7 +605,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)

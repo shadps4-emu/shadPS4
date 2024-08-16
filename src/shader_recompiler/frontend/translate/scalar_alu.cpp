@@ -29,6 +29,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         return S_CMP(ConditionOp::LG, true, inst);
     case Opcode::S_CMP_GT_I32:
         return S_CMP(ConditionOp::GT, true, inst);
+    case Opcode::S_CMP_LE_I32:
+        return S_CMP(ConditionOp::LE, true, inst);
     case Opcode::S_CMP_GE_I32:
         return S_CMP(ConditionOp::GE, true, inst);
     case Opcode::S_CMP_EQ_I32:

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <mutex>
 #include <boost/container/small_vector.hpp>
 #include <boost/icl/interval_map.hpp>
