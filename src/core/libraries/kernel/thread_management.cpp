@@ -1388,8 +1388,7 @@ int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_ENOSPC);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1411,8 +1410,7 @@ int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1434,8 +1432,7 @@ int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EAGAIN);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1487,8 +1484,7 @@ int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_ETIMEDOUT);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1510,8 +1506,7 @@ int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_ERANGE);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1536,8 +1531,7 @@ int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EDEADLK);
             break;
         case EINVAL:
-
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
@@ -1562,8 +1556,7 @@ int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EDEADLK);
             break;
         case EINVAL:
-        
-        default: 
+        default:
             ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
             break;
         }
