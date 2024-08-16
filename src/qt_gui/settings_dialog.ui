@@ -11,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>768</height>
+    <width>1280</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,6 +20,12 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>10</pointsize>
+    <bold>false</bold>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Settings</string>
@@ -45,8 +51,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1002</width>
-        <height>710</height>
+        <width>1258</width>
+        <height>660</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -66,11 +72,11 @@
         <item>
          <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
           <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutLeft">
+           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
             <item>
              <widget class="QGroupBox" name="emuSettings">
               <property name="title">
-               <string>Emulator Settings</string>
+               <string>System</string>
               </property>
               <layout class="QVBoxLayout" name="emuSettingsLayout">
                <item>
@@ -263,27 +269,6 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="fullscreenCheckBox">
-                 <property name="text">
-                  <string>Enable Fullscreen</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="showSplashCheckBox">
-                 <property name="text">
-                  <string>Show Splash</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="ps4proCheckBox">
-                 <property name="text">
-                  <string>Is PS4 Pro</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <spacer name="emulatorTabSpacerLeft">
                  <property name="orientation">
                   <enum>Qt::Orientation::Vertical</enum>
@@ -307,9 +292,56 @@
           <item>
            <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
             <item>
+             <widget class="QGroupBox" name="emulatorSettingsGroupBox">
+              <property name="title">
+               <string>Emulator</string>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+               <item>
+                <widget class="QCheckBox" name="fullscreenCheckBox">
+                 <property name="text">
+                  <string>Enable Fullscreen</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="showSplashCheckBox">
+                 <property name="text">
+                  <string>Show Splash</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="ps4proCheckBox">
+                 <property name="text">
+                  <string>Is PS4 Pro</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="emulatorSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="loggerTabLayoutRight">
+            <item>
              <widget class="QGroupBox" name="loggerGroupBox">
               <property name="title">
-               <string>Logger Settings</string>
+               <string>Logger</string>
               </property>
               <layout class="QVBoxLayout" name="loggerLayout">
                <item>
@@ -384,35 +416,6 @@
             </item>
            </layout>
           </item>
-          <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutRight">
-            <item>
-             <widget class="QGroupBox" name="additionalSettings">
-              <property name="title">
-               <string>Additional Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
-               <item>
-                <spacer name="emulatorTabSpacerRight">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
          </layout>
         </item>
         <item>
@@ -430,6 +433,19 @@
            <property name="bottomMargin">
             <number>0</number>
            </property>
+           <item>
+            <spacer name="generalTabSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
         </item>
