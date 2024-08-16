@@ -151,6 +151,28 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
+    if (ev == nullptr) {
+        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+    if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+    }
+    return ev->ident;
+}
+
+int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
+    if (ev == nullptr || data == nullptr) {
+        return SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+    if (ev->filter != Kernel::SceKernelEvent::Filter::VideoOut) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
+    }
+
+    *data = ev->data;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
     if (!status) {
         LOG_ERROR(Lib_VideoOut, "Flip status is null");
@@ -302,6 +324,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("kGVLc3htQE8", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetDeviceCapabilityInfo);
     LIB_FUNCTION("j6RaAUlaLv0", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutWaitVblank);
+    LIB_FUNCTION("U2JJtSqNKZI", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutGetEventId);
+    LIB_FUNCTION("rWUTcKdkUzQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutGetEventData);
 
     // openOrbis appears to have libSceVideoOut_v1 module libSceVideoOut_v1.1
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutOpen);
