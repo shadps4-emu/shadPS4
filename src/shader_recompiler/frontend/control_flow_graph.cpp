@@ -108,8 +108,10 @@ void CFG::EmitBlocks() {
         // TODO: Investigate how to make sure this does not go out of bounds. 
         //       Is inst_list always the size of labels? 
         const size_t end_index = get_index(end) - 1;
-        const auto& end_inst = inst_list[end_index]; 
-
+        const auto& end_inst = inst_list[end_index];
+        
+        // Insert block between the labels using the last instruction
+        // as an indicator for branching type.
         Block* block = block_pool.Create();
         block->begin = start;
         block->end = end;
