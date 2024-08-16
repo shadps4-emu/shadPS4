@@ -226,7 +226,7 @@ struct fmt::formatter<Shader::Stage> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
-    auto format(const Shader::Stage& stage, format_context& ctx) const {
+    auto format(const Shader::Stage stage, format_context& ctx) const {
         constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
         return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
     }
