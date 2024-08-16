@@ -180,6 +180,7 @@ struct Info {
     SamplerResourceList samplers;
 
     std::array<u32, 3> workgroup_size{};
+    std::array<bool, 3> tgid_enable;
 
     u32 num_user_data;
     u32 num_input_vgprs;

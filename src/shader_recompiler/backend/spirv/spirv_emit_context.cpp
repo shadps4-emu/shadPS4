@@ -363,7 +363,9 @@ void EmitContext::DefineBuffers() {
             .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
-            .buffer = buffer.GetVsharp(info),
+            .dfmt = buffer.dfmt,
+            .nfmt = buffer.nfmt,
+            .stride = buffer.GetVsharp(info).GetStride(),
         });
         interfaces.push_back(id);
         i++;
