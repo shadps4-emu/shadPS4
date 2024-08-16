@@ -212,6 +212,19 @@ struct OrbisPadControllerInformation {
     u8 reserve[8];
 };
 
+struct OrbisPadExtendedControllerInformation {
+    OrbisPadControllerInformation base;
+    u16 padType1;
+    u16 padType2;
+    u8 capability;
+
+    union {
+        u8 quantityOfSelectorSwitch;
+        int maxPhysicalWheelAngle;
+        u8 data[8];
+    };
+};
+
 struct OrbisPadOpenParam {
     u8 reserve[8];
 };
@@ -248,7 +261,8 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
 int PS4_SYSV_ABI scePadGetDataInternal();
 int PS4_SYSV_ABI scePadGetDeviceId();
 int PS4_SYSV_ABI scePadGetDeviceInfo();
-int PS4_SYSV_ABI scePadGetExtControllerInformation();
+int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
+                                                   OrbisPadExtendedControllerInformation* pInfo);
 int PS4_SYSV_ABI scePadGetExtensionUnitInfo();
 int PS4_SYSV_ABI scePadGetFeatureReport();
 int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index);

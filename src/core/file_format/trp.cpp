@@ -6,7 +6,7 @@
 TRP::TRP() = default;
 TRP::~TRP() = default;
 
-void TRP::GetNPcommID(std::filesystem::path trophyPath, int index) {
+void TRP::GetNPcommID(const std::filesystem::path& trophyPath, int index) {
     std::filesystem::path trpPath = trophyPath / "sce_sys/npbind.dat";
     Common::FS::IOFile npbindFile(trpPath, Common::FS::FileAccessMode::Read);
     if (!npbindFile.IsOpen()) {
@@ -27,7 +27,7 @@ static void removePadding(std::vector<u8>& vec) {
     }
 }
 
-bool TRP::Extract(std::filesystem::path trophyPath) {
+bool TRP::Extract(const std::filesystem::path& trophyPath) {
     std::string title = trophyPath.filename().string();
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
     if (!std::filesystem::exists(gameSysDir)) {

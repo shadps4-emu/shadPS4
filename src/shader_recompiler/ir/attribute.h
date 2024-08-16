@@ -105,7 +105,7 @@ struct fmt::formatter<Shader::IR::Attribute> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
-    auto format(const Shader::IR::Attribute& attribute, format_context& ctx) const {
+    auto format(const Shader::IR::Attribute attribute, format_context& ctx) const {
         return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(attribute));
     }
 };

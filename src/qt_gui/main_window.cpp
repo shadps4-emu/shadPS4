@@ -328,6 +328,7 @@ void MainWindow::CreateConnects() {
 
     // Package install.
     connect(ui->bootInstallPkgAct, &QAction::triggered, this, &MainWindow::InstallPkg);
+    connect(ui->bootGameAct, &QAction::triggered, this, &MainWindow::BootGame);
     connect(ui->gameInstallPathAct, &QAction::triggered, this, &MainWindow::InstallDirectory);
 
     // elf viewer
@@ -480,6 +481,27 @@ void MainWindow::InstallPkg() {
             path = std::filesystem::path(file.toStdWString());
 #endif
             MainWindow::InstallDragDropPkg(path, pkgNum, nPkg);
+        }
+    }
+}
+
+void MainWindow::BootGame() {
+    QFileDialog dialog;
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("ELF files (*.bin *.elf *.oelf)"));
+    if (dialog.exec()) {
+        QStringList fileNames = dialog.selectedFiles();
+        int nFiles = fileNames.size();
+
+        if (nFiles > 1) {
+            QMessageBox::critical(nullptr, "Game Boot", QString("Only one file can be selected!"));
+        } else {
+            std::filesystem::path path(fileNames[0].toStdString());
+#ifdef _WIN64
+            path = std::filesystem::path(fileNames[0].toStdWString());
+#endif
+            Core::Emulator emulator;
+            emulator.Run(path);
         }
     }
 }

@@ -105,7 +105,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->stickInfo.deadZoneRight = 2;
     pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
     pInfo->connectedCount = 1;
-    pInfo->connected = 1;
+    pInfo->connected = true;
     pInfo->deviceClass = ORBIS_PAD_DEVICE_CLASS_STANDARD;
     return SCE_OK;
 }
@@ -125,9 +125,16 @@ int PS4_SYSV_ABI scePadGetDeviceInfo() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetExtControllerInformation() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
+                                                   OrbisPadExtendedControllerInformation* pInfo) {
+    LOG_INFO(Lib_Pad, "called handle = {}", handle);
+
+    pInfo->padType1 = 0;
+    pInfo->padType2 = 0;
+    pInfo->capability = 0;
+
+    auto res = scePadGetControllerInformation(handle, &pInfo->base);
+    return res;
 }
 
 int PS4_SYSV_ABI scePadGetExtensionUnitInfo() {
@@ -237,7 +244,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
 
 int PS4_SYSV_ABI scePadOpenExt() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return 1; // dummy
 }
 
 int PS4_SYSV_ABI scePadOpenExt2() {
@@ -422,6 +429,12 @@ int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pPar
     if (pParam != nullptr) {
         LOG_INFO(Lib_Pad, "scePadSetLightBar called handle = {} rgb = {} {} {}", handle, pParam->r,
                  pParam->g, pParam->b);
+
+        if (pParam->r < 0xD && pParam->g < 0xD && pParam->b < 0xD) {
+            LOG_INFO(Lib_Pad, "Invalid lightbar setting");
+            return ORBIS_PAD_ERROR_INVALID_LIGHTBAR_SETTING;
+        }
+
         auto* controller = Common::Singleton<Input::GameController>::Instance();
         controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
         return ORBIS_OK;

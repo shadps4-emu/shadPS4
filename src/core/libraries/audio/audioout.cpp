@@ -175,7 +175,6 @@ int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
 }
 
 int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
-
     int type = 0;
     int channels_num = 0;
 
@@ -235,11 +234,11 @@ int PS4_SYSV_ABI sceAudioOutGetSystemState() {
 }
 
 int PS4_SYSV_ABI sceAudioOutInit() {
+    LOG_TRACE(Lib_AudioOut, "called");
     if (audio != nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
     audio = std::make_unique<Audio::SDLAudio>();
-    LOG_INFO(Lib_AudioOut, "called");
     return ORBIS_OK;
 }
 

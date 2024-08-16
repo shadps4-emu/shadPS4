@@ -130,6 +130,7 @@ struct Liverpool {
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
             BitField<33, 5, u64> num_user_regs;
+            BitField<39, 3, u64> tgid_enable;
             BitField<47, 9, u64> lds_dwords;
         } settings;
         INSERT_PADDING_WORDS(1);
@@ -146,6 +147,10 @@ struct Liverpool {
         u32 SharedMemSize() const noexcept {
             // lds_dwords is in units of 128 dwords. We return bytes.
             return settings.lds_dwords.Value() * 128 * 4;
+        }
+
+        bool IsTgidEnabled(u32 i) const noexcept {
+            return (settings.tgid_enable.Value() >> i) & 1;
         }
 
         std::span<const u32> Code() const {
@@ -932,7 +937,9 @@ struct Liverpool {
             INSERT_PADDING_WORDS(0xA094 - 0xA08E - 2);
             std::array<ViewportScissor, NumViewports> viewport_scissors;
             std::array<ViewportDepth, NumViewports> viewport_depths;
-            INSERT_PADDING_WORDS(0xA105 - 0xA0D4);
+            INSERT_PADDING_WORDS(0xA103 - 0xA0D4);
+            u32 primitive_restart_index;
+            INSERT_PADDING_WORDS(1);
             BlendConstants blend_constants;
             INSERT_PADDING_WORDS(0xA10B - 0xA105 - 4);
             StencilControl stencil_control;
@@ -971,7 +978,9 @@ struct Liverpool {
             IndexBufferType index_buffer_type;
             INSERT_PADDING_WORDS(0xA2A1 - 0xA29E - 2);
             u32 enable_primitive_id;
-            INSERT_PADDING_WORDS(0xA2A8 - 0xA2A1 - 1);
+            INSERT_PADDING_WORDS(3);
+            u32 enable_primitive_restart;
+            INSERT_PADDING_WORDS(0xA2A8 - 0xA2A5 - 1);
             u32 vgt_instance_step_rate_0;
             u32 vgt_instance_step_rate_1;
             INSERT_PADDING_WORDS(0xA2D5 - 0xA2A9 - 1);
@@ -1158,6 +1167,7 @@ static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
 static_assert(GFX6_3D_REG_INDEX(color_shader_mask) == 0xA08F);
 static_assert(GFX6_3D_REG_INDEX(viewport_scissors) == 0xA094);
+static_assert(GFX6_3D_REG_INDEX(primitive_restart_index) == 0xA103);
 static_assert(GFX6_3D_REG_INDEX(stencil_control) == 0xA10B);
 static_assert(GFX6_3D_REG_INDEX(viewports) == 0xA10F);
 static_assert(GFX6_3D_REG_INDEX(clip_user_data) == 0xA16F);
@@ -1178,6 +1188,7 @@ static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);
+static_assert(GFX6_3D_REG_INDEX(enable_primitive_restart) == 0xA2A5);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_0) == 0xA2A8);
 static_assert(GFX6_3D_REG_INDEX(vgt_instance_step_rate_1) == 0xA2A9);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);

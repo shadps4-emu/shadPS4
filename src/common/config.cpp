@@ -16,6 +16,7 @@ static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
 static std::string logType = "async";
+static std::string userName = "shadPS4";
 static bool isDebugDump = false;
 static bool isLibc = true;
 static bool isShowSplash = false;
@@ -78,6 +79,10 @@ std::string getLogFilter() {
 
 std::string getLogType() {
     return logType;
+}
+
+std::string getUserName() {
+    return userName;
 }
 
 bool debugDump() {
@@ -190,6 +195,10 @@ void setLogType(std::string type) {
 
 void setLogFilter(std::string type) {
     logFilter = type;
+}
+
+void setUserName(std::string type) {
+    userName = type;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -313,6 +322,7 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
+        userName = toml::find_or<std::string>(general, "userName", "shadPS4");
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
     }
 
@@ -400,6 +410,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
+    data["General"]["userName"] = userName;
     data["General"]["showSplash"] = isShowSplash;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
@@ -446,6 +457,7 @@ void setDefaultValues() {
     screenHeight = 720;
     logFilter = "";
     logType = "async";
+    userName = "shadPS4";
     isDebugDump = false;
     isShowSplash = false;
     isNullGpu = false;
