@@ -28,6 +28,7 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+#include <core/libraries/ngs2/ngs2.h>
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -184,7 +185,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     constexpr std::array<SysModules, 9> ModulesToLoad{
-        {{"libSceNgs2.sprx", nullptr},
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
