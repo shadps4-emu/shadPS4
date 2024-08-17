@@ -96,11 +96,11 @@ OPCODE(StoreBufferFormatF32x4,                              Void,           Opaq
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,									Opaque,			Opaque,			Opaque,			Opaque											)
-OPCODE(BufferAtomicSMin32,                                  U32,            U32,			U32,															)
-OPCODE(BufferAtomicUMin32,                                  U32,            U32,			U32,															)
-OPCODE(BufferAtomicSMax32,                                  U32,            U32,			U32,															)
-OPCODE(BufferAtomicUMax32,                                  U32,            U32,			U32,															)
+OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32											)
+OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
+OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
+OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
+OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicInc32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicDec32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)

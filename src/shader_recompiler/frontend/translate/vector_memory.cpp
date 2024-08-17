@@ -458,7 +458,7 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
     info.inst_offset.Assign(mubuf.offset);
     info.offset_enable.Assign(mubuf.offen);
 
-    // Get vdata value(s)
+    // Get vdata value
     IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
 
     // Get address of vdata
@@ -469,18 +469,13 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
 
-    // Get current srsrc value (incorrect)
-    IR::U32 prev_val = ir.GetScalarReg(srsrc);
-
     // Apply atomic op
-    // derefs srsrc buffer and adds vdata value to it
-    const IR::U32 new_vdata = IR::U32{ir.BufferAtomicIAdd(handle, address, vdata_val, info)};
+    // derefs srsrc buffer and adds vdata value to it, then returns 
+    const IR::Value original_val = ir.BufferAtomicIAdd(handle, address, vdata_val, info);
 
     if (mubuf.glc) {
-        ir.SetVectorReg(vdata, prev_val);
+        ir.SetVectorReg(vdata, IR::U32{original_val});
     }
-
-    return;
 }
 
 void Translator::IMAGE_GET_LOD(const GcnInst& inst) {

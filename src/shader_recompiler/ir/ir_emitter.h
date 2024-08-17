@@ -84,9 +84,9 @@ public:
     [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
-    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 SharedAtomicIMin(const U32& a, const U32& b, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicIMax(const U32& a, const U32& b, bool is_signed);
+    [[nodiscard]] U32F32 SharedAtomicIAdd(const U32& address, const U32F32& data);
+    [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
+    [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] F32 ReadConstBuffer(const Value& handle, const U32& index);

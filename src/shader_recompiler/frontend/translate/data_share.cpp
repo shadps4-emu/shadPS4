@@ -121,10 +121,12 @@ void Translator::DS_ADD_U32(const GcnInst& inst) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
 
-    const IR::U32 value = ir.SharedAtomicIAdd(addr_offset, data);
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
+    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
 
-    SetDst(inst.dst[0], value);
+    ir.SetVectorReg(dst_reg, IR::U32{original_val});
 }
 
 void Translator::DS_MIN_U32(const GcnInst& inst) {
@@ -132,10 +134,12 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
 
-    const IR::U32 value = ir.SharedAtomicIMax(addr_offset, data, false);
+    const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
+    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
 
-    SetDst(inst.dst[0], value);
+    ir.SetVectorReg(dst_reg, IR::U32{original_val});
 }
 
 void Translator::DS_MAX_U32(const GcnInst& inst) {
@@ -143,10 +147,12 @@ void Translator::DS_MAX_U32(const GcnInst& inst) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
 
-    const IR::U32 value = ir.SharedAtomicIMax(addr_offset, data, false);
+    const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
+    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
 
-    SetDst(inst.dst[0], value);
+    ir.SetVectorReg(dst_reg, IR::U32{original_val});
 }
 
 void Translator::S_BARRIER() {
