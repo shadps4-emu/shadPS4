@@ -11,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>768</height>
+    <width>854</width>
+    <height>480</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,6 +20,12 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="font">
+   <font>
+    <pointsize>11</pointsize>
+    <bold>false</bold>
+   </font>
   </property>
   <property name="windowTitle">
    <string>Settings</string>
@@ -45,8 +51,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1002</width>
-        <height>710</height>
+        <width>832</width>
+        <height>418</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -62,15 +68,15 @@
        <attribute name="title">
         <string>General</string>
        </attribute>
-       <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,1,0,0,0,0,0">
+       <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0,0">
         <item>
          <layout class="QHBoxLayout" name="generalTabHLayout" stretch="1,1,1">
           <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutLeft">
+           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
             <item>
              <widget class="QGroupBox" name="emuSettings">
               <property name="title">
-               <string>Emulator Settings</string>
+               <string>System</string>
               </property>
               <layout class="QVBoxLayout" name="emuSettingsLayout">
                <item>
@@ -263,27 +269,6 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="fullscreenCheckBox">
-                 <property name="text">
-                  <string>Enable Fullscreen</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="showSplashCheckBox">
-                 <property name="text">
-                  <string>Show Splash</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="ps4proCheckBox">
-                 <property name="text">
-                  <string>Is PS4 Pro</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <spacer name="emulatorTabSpacerLeft">
                  <property name="orientation">
                   <enum>Qt::Orientation::Vertical</enum>
@@ -307,9 +292,56 @@
           <item>
            <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
             <item>
+             <widget class="QGroupBox" name="emulatorSettingsGroupBox">
+              <property name="title">
+               <string>Emulator</string>
+              </property>
+              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
+               <item>
+                <widget class="QCheckBox" name="fullscreenCheckBox">
+                 <property name="text">
+                  <string>Enable Fullscreen</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="showSplashCheckBox">
+                 <property name="text">
+                  <string>Show Splash</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="ps4proCheckBox">
+                 <property name="text">
+                  <string>Is PS4 Pro</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="emulatorSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Vertical</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>20</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="loggerTabLayoutRight">
+            <item>
              <widget class="QGroupBox" name="loggerGroupBox">
               <property name="title">
-               <string>Logger Settings</string>
+               <string>Logger</string>
               </property>
               <layout class="QVBoxLayout" name="loggerLayout">
                <item>
@@ -379,31 +411,15 @@
                  </item>
                 </layout>
                </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="generalTabLayoutRight">
-            <item>
-             <widget class="QGroupBox" name="additionalSettings">
-              <property name="title">
-               <string>Additional Settings</string>
-              </property>
-              <layout class="QVBoxLayout" name="additionalSettingsVLayout">
                <item>
-                <spacer name="emulatorTabSpacerRight">
+                <spacer name="logSpacer">
                  <property name="orientation">
                   <enum>Qt::Orientation::Vertical</enum>
                  </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                 </property>
                  <property name="sizeHint" stdset="0">
                   <size>
-                   <width>0</width>
-                   <height>0</height>
+                   <width>20</width>
+                   <height>40</height>
                   </size>
                  </property>
                 </spacer>
@@ -414,24 +430,6 @@
            </layout>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QWidget" name="widgetSettingsTop" native="true">
-          <layout class="QHBoxLayout" name="widgetGpuTopLayout">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-          </layout>
-         </widget>
         </item>
         <item>
          <widget class="QWidget" name="widgetSettingsBottom" native="true">
@@ -451,58 +449,13 @@
           </layout>
          </widget>
         </item>
-        <item>
-         <spacer name="emulator_tab_layout_right_spacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle_2"/>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="emulatorTabLayoutRight">
-          <property name="rightMargin">
-           <number>12</number>
-          </property>
-          <property name="bottomMargin">
-           <number>12</number>
-          </property>
-         </layout>
-        </item>
-        <item>
-         <spacer name="emulatorTabSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="gpuTab">
        <attribute name="title">
         <string>GPU</string>
        </attribute>
-       <layout class="QVBoxLayout" name="gpuTabVLayout" stretch="0,0">
+       <layout class="QVBoxLayout" name="gpuTabVLayout" stretch="0">
         <item>
          <layout class="QHBoxLayout" name="gpuTabHLayout" stretch="1,1,1">
           <item>
@@ -780,22 +733,6 @@
            </layout>
           </item>
          </layout>
-        </item>
-        <item>
-         <spacer name="gpuTabSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Vertical</enum>
-          </property>
-          <property name="sizeType">
-           <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
