@@ -1,19 +1,23 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "sdl_audio.h"
+
+#include "common/assert.h"
+#include "core/libraries/error_codes.h"
+
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_timer.h>
-#include "common/assert.h"
-#include "core/libraries/error_codes.h"
-#include "sdl_audio.h"
+
+#include <mutex> // std::unique_lock
 
 namespace Audio {
 
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParamFormat format) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
-    std::scoped_lock lock{m_mutex};
+    std::unique_lock lock{m_mutex};
     for (int id = 0; id < portsOut.size(); id++) {
         auto& port = portsOut[id];
         if (!port.isOpen) {
@@ -88,7 +92,7 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
 }
 
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
-    std::scoped_lock lock{m_mutex};
+    std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
@@ -100,7 +104,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     int result = SDL_PutAudioStreamData(port.stream, ptr,
                                         port.samples_num * port.sample_size * port.channels_num);
     // TODO find a correct value 8192 is estimated
-    while (SDL_GetAudioStreamAvailable(port.stream) > 8192) {
+    while (SDL_GetAudioStreamAvailable(port.stream) > 65536) {
         SDL_Delay(0);
     }
 
@@ -109,7 +113,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
 
 bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
     using Libraries::AudioOut::OrbisAudioOutParamFormat;
-    std::scoped_lock lock{m_mutex};
+    std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
@@ -147,7 +151,7 @@ bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
 }
 
 bool SDLAudio::AudioOutGetStatus(s32 handle, int* type, int* channels_num) {
-    std::scoped_lock lock{m_mutex};
+    std::shared_lock lock{m_mutex};
     auto& port = portsOut[handle - 1];
     *type = port.type;
     *channels_num = port.channels_num;

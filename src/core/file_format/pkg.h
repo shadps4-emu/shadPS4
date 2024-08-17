@@ -104,7 +104,7 @@ public:
     ~PKG();
 
     bool Open(const std::filesystem::path& filepath);
-    void ExtractFiles(const int& index);
+    void ExtractFiles(const int index);
     bool Extract(const std::filesystem::path& filepath, const std::filesystem::path& extract,
                  std::string& failreason);
 

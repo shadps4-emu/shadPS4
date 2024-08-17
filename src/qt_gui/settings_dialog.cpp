@@ -39,13 +39,28 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
     });
 
-    // EMULATOR TAB
+    // GENERAL TAB
     {
+        connect(ui->userNameLineEdit, &QLineEdit::textChanged, this,
+                [](const QString& text) { Config::setUserName(text.toStdString()); });
+
         connect(ui->consoleLanguageComboBox, &QComboBox::currentIndexChanged, this,
                 [](int index) { Config::setLanguage(index); });
 
-        connect(ui->userNameLineEdit, &QLineEdit::textChanged, this,
-                [](const QString& text) { Config::setUserName(text.toStdString()); });
+        connect(ui->fullscreenCheckBox, &QCheckBox::stateChanged, this,
+                [](int val) { Config::setFullscreenMode(val); });
+
+        connect(ui->showSplashCheckBox, &QCheckBox::stateChanged, this,
+                [](int val) { Config::setShowSplash(val); });
+
+        connect(ui->ps4proCheckBox, &QCheckBox::stateChanged, this,
+                [](int val) { Config::setNeoMode(val); });
+
+        connect(ui->logTypeComboBox, &QComboBox::currentTextChanged, this,
+                [](const QString& text) { Config::setLogType(text.toStdString()); });
+
+        connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
+                [](const QString& text) { Config::setLogFilter(text.toStdString()); });
     }
 
     // GPU TAB
@@ -72,24 +87,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->dumpPM4CheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setDumpPM4(val); });
-    }
-
-    // GENERAL TAB
-    {
-        connect(ui->fullscreenCheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setFullscreenMode(val); });
-
-        connect(ui->showSplashCheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setShowSplash(val); });
-
-        connect(ui->ps4proCheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setNeoMode(val); });
-
-        connect(ui->logTypeComboBox, &QComboBox::currentTextChanged, this,
-                [](const QString& text) { Config::setLogType(text.toStdString()); });
-
-        connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
-                [](const QString& text) { Config::setLogFilter(text.toStdString()); });
     }
 
     // DEBUG TAB

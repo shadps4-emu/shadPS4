@@ -323,7 +323,7 @@ static Id ComponentOffset(EmitContext& ctx, Id address, u32 stride, u32 bit_offs
 
 static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 comp) {
     auto& buffer = ctx.buffers[handle];
-    const auto format = buffer.buffer.GetDataFmt();
+    const auto format = buffer.dfmt;
     switch (format) {
     case AmdGpu::DataFormat::FormatInvalid:
         return ctx.f32_zero_value;
@@ -348,7 +348,7 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
 
         // uint index = address / 4;
         Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-        const u32 stride = buffer.buffer.GetStride();
+        const u32 stride = buffer.stride;
         if (stride > 4) {
             const u32 index_offset = u32(AmdGpu::ComponentOffset(format, comp) / 32);
             if (index_offset > 0) {
@@ -360,7 +360,7 @@ static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 com
 
         const u32 bit_offset = AmdGpu::ComponentOffset(format, comp) % 32;
         const u32 bit_width = AmdGpu::ComponentBits(format, comp);
-        const auto num_format = buffer.buffer.GetNumberFmt();
+        const auto num_format = buffer.nfmt;
         if (num_format == AmdGpu::NumberFormat::Float) {
             if (bit_width == 32) {
                 return ctx.OpLoad(ctx.F32[1], ptr);
@@ -486,8 +486,8 @@ static Id ConvertF32ToFormat(EmitContext& ctx, Id value, AmdGpu::NumberFormat fo
 template <u32 N>
 static void EmitStoreBufferFormatF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     auto& buffer = ctx.buffers[handle];
-    const auto format = buffer.buffer.GetDataFmt();
-    const auto num_format = buffer.buffer.GetNumberFmt();
+    const auto format = buffer.dfmt;
+    const auto num_format = buffer.nfmt;
 
     switch (format) {
     case AmdGpu::DataFormat::FormatInvalid:
