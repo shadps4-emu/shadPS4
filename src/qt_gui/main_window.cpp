@@ -9,6 +9,7 @@
 #include <QStatusBar>
 #include <QtConcurrent>
 
+#include "about_dialog.h"
 #include "common/io_file.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
@@ -204,6 +205,11 @@ void MainWindow::CreateConnects() {
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
         settingsDialog->exec();
+    });
+
+    connect(ui->aboutAct, &QAction::triggered, this, [this]() {
+        auto aboutDialog = new AboutDialog(this);
+        aboutDialog->exec();
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
