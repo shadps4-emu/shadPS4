@@ -122,9 +122,7 @@ void Translator::DS_ADD_U32(const GcnInst& inst) {
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     IR::VectorReg dst_reg{inst.dst[0].code};
-
     const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
-    
     SetDst(inst.dst[0], IR::U32{original_val});
 }
 
@@ -134,9 +132,7 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     IR::VectorReg dst_reg{inst.dst[0].code};
-
     const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
-    
     SetDst(inst.dst[0], IR::U32{original_val});
 }
 
@@ -146,9 +142,7 @@ void Translator::DS_MAX_U32(const GcnInst& inst) {
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
     IR::VectorReg dst_reg{inst.dst[0].code};
-
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
-    
     SetDst(inst.dst[0], IR::U32{original_val});
 }
 

@@ -470,7 +470,8 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
 
     // Apply atomic op
-    // derefs srsrc buffer and adds vdata value to it, then returns 
+    // derefs srsrc buffer and adds vdata value to it
+    // then returns original srsrc buffer value
     const IR::Value original_val = ir.BufferAtomicIAdd(handle, address, vdata_val, info);
 
     if (mubuf.glc) {
