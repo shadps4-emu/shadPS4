@@ -68,18 +68,21 @@ int64_t sceNgs2SystemSetupCore(void* stackBuffer, SystemOptions* options, System
 
     // Validate maxGrainSamples
     if (maxGrainSamples < 64 || maxGrainSamples > 1024 || (maxGrainSamples & 0x3F) != 0) {
-        // return sceNgs2ReportError(0, 2152333392, "Invalid system option (maxGrainSamples=%d:%d~%d,x64)", maxGrainSamples);
+        // return sceNgs2ReportError(0, 2152333392, "Invalid system option
+        // (maxGrainSamples=%d:%d~%d,x64)", maxGrainSamples);
     }
 
     // Validate numGrainSamples
     if (numGrainSamples < 64 || numGrainSamples > 1024 || (numGrainSamples & 0x3F) != 0) {
-        // return sceNgs2ReportError(0, 2152333393, "Invalid system option (numGrainSamples=%d:%d~%d,x64)", numGrainSamples);
+        // return sceNgs2ReportError(0, 2152333393, "Invalid system option
+        // (numGrainSamples=%d:%d~%d,x64)", numGrainSamples);
     }
 
     // Validate sampleRate
     if (sampleRate != 11025 && sampleRate != 12000 && sampleRate != 22050 && sampleRate != 24000 &&
         sampleRate != 44100 && sampleRate != 48000 && sampleRate != 88200 && sampleRate != 96000) {
-        // return sceNgs2ReportError(0, 2152333825, "Invalid system option (sampleRate=%d:44.1/48kHz series)", sampleRate);
+        // return sceNgs2ReportError(0, 2152333825, "Invalid system option(sampleRate=%d:44.1/48kHz
+        // series)", sampleRate);
     }
 
     int result = ORBIS_OK;
@@ -421,7 +424,8 @@ int PS4_SYSV_ABI sceNgs2VoiceRunCommands() {
 
 void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3pCNbVM11UA", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2CalcWaveformBlock);
-    LIB_FUNCTION("6qN1zaEZuN0", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2CustomRackGetModuleInfo);
+    LIB_FUNCTION("6qN1zaEZuN0", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2CustomRackGetModuleInfo);
     LIB_FUNCTION("Kg1MA5j7KFk", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2FftInit);
     LIB_FUNCTION("D8eCqBxSojA", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2FftProcess);
     LIB_FUNCTION("-YNfTO6KOMY", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2FftQuerySize);
@@ -430,7 +434,8 @@ void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7Lcfo8SmpsU", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2GeomResetListenerParam);
     LIB_FUNCTION("0lbbayqDNoE", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2GeomResetSourceParam);
     LIB_FUNCTION("ekGJmmoc8j4", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2GetWaveformFrameInfo);
-    LIB_FUNCTION("BcoPfWfpvVI", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2JobSchedulerResetOption);
+    LIB_FUNCTION("BcoPfWfpvVI", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2JobSchedulerResetOption);
     LIB_FUNCTION("EEemGEQCjO8", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ModuleArrayEnumItems);
     LIB_FUNCTION("TaoNtmMKkXQ", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ModuleEnumConfigs);
     LIB_FUNCTION("ve6bZi+1sYQ", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ModuleQueueEnumItems);
@@ -440,7 +445,8 @@ void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("iprCTXPVWMI", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ParseWaveformFile);
     LIB_FUNCTION("t9T0QM17Kvo", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ParseWaveformUser);
     LIB_FUNCTION("cLV4aiT9JpA", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackCreate);
-    LIB_FUNCTION("U546k6orxQo", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackCreateWithAllocator);
+    LIB_FUNCTION("U546k6orxQo", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2RackCreateWithAllocator);
     LIB_FUNCTION("lCqD7oycmIM", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackDestroy);
     LIB_FUNCTION("M4LYATRhRUE", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackGetInfo);
     LIB_FUNCTION("Mn4XNDg03XY", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackGetUserData);
@@ -452,9 +458,11 @@ void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JNTMIaBIbV4", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackSetUserData);
     LIB_FUNCTION("++YZ7P9e87U", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2RackUnlock);
     LIB_FUNCTION("uBIN24Tv2MI", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ReportRegisterHandler);
-    LIB_FUNCTION("nPzb7Ly-VjE", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2ReportUnregisterHandler);
+    LIB_FUNCTION("nPzb7Ly-VjE", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2ReportUnregisterHandler);
     LIB_FUNCTION("koBbCMvOKWw", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemCreate);
-    LIB_FUNCTION("mPYgU4oYpuY", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemCreateWithAllocator);
+    LIB_FUNCTION("mPYgU4oYpuY", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2SystemCreateWithAllocator);
     LIB_FUNCTION("u-WrYDaJA3k", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemDestroy);
     LIB_FUNCTION("vubFP0T6MP0", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemEnumHandles);
     LIB_FUNCTION("U-+7HsswcIs", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemEnumRackHandles);
@@ -472,7 +480,8 @@ void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("GZB2v0XnG0k", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemSetUserData);
     LIB_FUNCTION("JXRC5n0RQls", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2SystemUnlock);
     LIB_FUNCTION("sU2St3agdjg", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2StreamCreate);
-    LIB_FUNCTION("I+RLwaauggA", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2StreamCreateWithAllocator);
+    LIB_FUNCTION("I+RLwaauggA", "libSceNgs2", 1, "libSceNgs2", 1, 1,
+                 sceNgs2StreamCreateWithAllocator);
     LIB_FUNCTION("bfoMXnTRtwE", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2StreamDestroy);
     LIB_FUNCTION("dxulc33msHM", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2StreamQueryBufferSize);
     LIB_FUNCTION("rfw6ufRsmow", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2StreamQueryInfo);
