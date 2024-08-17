@@ -19,6 +19,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/kernel/thread_management.h"
+#include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
@@ -28,7 +29,6 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
-#include <core/libraries/ngs2/ngs2.h>
 
 Frontend::WindowSDL* g_window = nullptr;
 
