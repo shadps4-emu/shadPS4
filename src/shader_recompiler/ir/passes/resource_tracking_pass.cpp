@@ -69,15 +69,6 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::ReadConstBufferU32:
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-    case IR::Opcode::StoreBufferFormatF32x2:
-    case IR::Opcode::StoreBufferFormatF32x3:
-    case IR::Opcode::StoreBufferFormatF32x4:
-    case IR::Opcode::StoreBufferU32:
         return true;
     default:
         return IsBufferStore(inst);
