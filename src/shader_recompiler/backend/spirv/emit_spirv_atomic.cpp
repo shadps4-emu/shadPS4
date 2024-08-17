@@ -21,7 +21,6 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
-
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     // Get srsrc buffer

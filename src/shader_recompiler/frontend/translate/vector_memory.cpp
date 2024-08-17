@@ -469,7 +469,7 @@ void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst)
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
 
-    // Get current srsrc value
+    // Get current srsrc value (incorrect)
     IR::U32 prev_val = ir.GetScalarReg(srsrc);
 
     // Apply atomic op
