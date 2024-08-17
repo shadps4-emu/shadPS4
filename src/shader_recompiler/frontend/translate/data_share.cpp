@@ -124,9 +124,8 @@ void Translator::DS_ADD_U32(const GcnInst& inst) {
     IR::VectorReg dst_reg{inst.dst[0].code};
 
     const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
-    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
-
-    ir.SetVectorReg(dst_reg, IR::U32{original_val});
+    
+    SetDst(inst.dst[0], IR::U32{original_val});
 }
 
 void Translator::DS_MIN_U32(const GcnInst& inst) {
@@ -137,9 +136,8 @@ void Translator::DS_MIN_U32(const GcnInst& inst) {
     IR::VectorReg dst_reg{inst.dst[0].code};
 
     const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
-    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
-
-    ir.SetVectorReg(dst_reg, IR::U32{original_val});
+    
+    SetDst(inst.dst[0], IR::U32{original_val});
 }
 
 void Translator::DS_MAX_U32(const GcnInst& inst) {
@@ -150,9 +148,8 @@ void Translator::DS_MAX_U32(const GcnInst& inst) {
     IR::VectorReg dst_reg{inst.dst[0].code};
 
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
-    // const IR::Value original_val = ir.LoadShared(32, false, addr_offset);
-
-    ir.SetVectorReg(dst_reg, IR::U32{original_val});
+    
+    SetDst(inst.dst[0], IR::U32{original_val});
 }
 
 void Translator::S_BARRIER() {
