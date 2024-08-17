@@ -286,6 +286,25 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     }
 }
 
+U32F32 IREmitter::SharedAtomicIAdd(const U32& address, const U32F32& data) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+U32 IREmitter::SharedAtomicIMin(const U32& address, const U32& data, bool is_signed) {
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMin32, address, data)
+                     : Inst<U32>(Opcode::SharedAtomicUMin32, address, data);
+}
+
+U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_signed) {
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, address, data)
+                     : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
+}
+
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
@@ -345,6 +364,53 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
+}
+
+Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
+                                  bool is_signed, BufferInstInfo info) {
+    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
+                                  bool is_signed, BufferInstInfo info) {
+    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicAnd32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicOr(const Value& handle, const Value& address, const Value& value,
+                                BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicOr32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& address, const Value& value,
+                                      BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, address, value);
 }
 
 void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
