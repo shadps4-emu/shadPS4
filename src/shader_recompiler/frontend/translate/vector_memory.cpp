@@ -440,80 +440,47 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_form
 }
 
 void Translator::BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst) {
+    // Get controls for mubuf-specific instructions
     const auto& mubuf = inst.control.mubuf;
+    // Get vaddr register
     const IR::VectorReg vaddr{inst.src[0].code};
+    // Get vdata register
+    const IR::VectorReg vdata{inst.src[1].code};
+    // Get srsrc register
     const IR::ScalarReg srsrc{inst.src[2].code * 4};
+    // Get offset value from soffset register
+    const IR::U32 soffset{GetSrc(inst.src[3])}; // TODO: Use this maybe?
+    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
+
+    // Setup instruction info from controls
+    IR::BufferInstInfo info{};
+    info.index_enable.Assign(mubuf.idxen);
+    info.inst_offset.Assign(mubuf.offset);
+    info.offset_enable.Assign(mubuf.offen);
+
+    // Get vdata value(s)
+    IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
+
+    // Get address of vdata
+    const IR::U32 address = ir.GetVectorReg(vaddr);
+
+    // Construct srsrc SGPRs
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
-    /*const IR::Value address = [&] -> IR::Value {
-        if (mubuf.idxen && mubuf.offen) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
-        }
-        if (mubuf.idxen || mubuf.offen) {
-            return ir.GetVectorReg(vaddr);
-        }
-        return {};
-    }();*/
-    const IR::Value soffset{GetSrc(inst.src[3])};
-    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
-    IR::BufferInstInfo info{};
-    info.index_enable.Assign(mubuf.idxen);
-    info.offset_enable.Assign(mubuf.offen);
-    info.inst_offset.Assign(mubuf.offset);
+    // Get current srsrc value
+    IR::U32 prev_val = GetSrc(inst.src[2]);
 
-    const IR::Value tst{GetSrc(inst.src[1])};
-
-    IR::Value value{};
-    const IR::VectorReg src_reg{inst.src[1].code};
-    switch (num_dwords) {
-    case 1:
-        value = ir.GetVectorReg<Shader::IR::F32>(src_reg);
-        break;
-    case 2:
-        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1));
-        break;
-    }
-    const IR::Value handle{GetSrc(inst.src[2])};
-
-    const IR::Value result = [&] {
-        switch (op) {
-        case AtomicOp::Swap:
-            return ir.BufferAtomicExchange(handle, value, info);
-        case AtomicOp::Add:
-            if (num_dwords == 1) {
-                return ir.BufferAtomicIAdd(handle, tst, info);
-            } else if (num_dwords == 2) {
-                // return ir.BufferAtomicFAdd(handle, final_address, value, info);
-            }
-        case AtomicOp::Smin:
-            return ir.BufferAtomicIMin(handle, value, true, info);
-        case AtomicOp::Umin:
-            return ir.BufferAtomicIMin(handle, value, false, info);
-        case AtomicOp::Smax:
-            return ir.BufferAtomicIMax(handle, value, true, info);
-        case AtomicOp::Umax:
-            return ir.BufferAtomicIMax(handle, value, false, info);
-        case AtomicOp::And:
-            return ir.BufferAtomicAnd(handle, value, info);
-        case AtomicOp::Or:
-            return ir.BufferAtomicOr(handle, value, info);
-        case AtomicOp::Xor:
-            return ir.BufferAtomicXor(handle, value, info);
-        case AtomicOp::Inc:
-            return ir.BufferAtomicInc(handle, value, info);
-        case AtomicOp::Dec:
-            return ir.BufferAtomicDec(handle, value, info);
-        default:
-            UNREACHABLE();
-        }
-    }();
+    // Apply atomic op
+    // derefs srsrc buffer and adds vdata value to it
+    const IR::U32 new_vdata = IR::U32{ir.BufferAtomicIAdd(handle, address, vdata_val, info)};
 
     if (mubuf.glc) {
-        ir.SetVectorReg(src_reg, IR::U32{result});
+        ir.SetVectorReg(vdata, new_vdata);
     }
+
+    return;
 }
 
 void Translator::IMAGE_GET_LOD(const GcnInst& inst) {

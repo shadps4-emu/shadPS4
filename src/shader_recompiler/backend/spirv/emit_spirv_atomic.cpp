@@ -21,11 +21,19 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
-Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value,
+
+Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
-    const Id pointer{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, ctx.ConstU32(0U))};
+    // Get srsrc buffer
+    auto& buffer = ctx.buffers[handle];
+    // Get address of vdata by vaddr + buffer offset
+    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    // Get first index of data (4-aligned indices, addr >> 2)
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    // Get pointer to first data value in buffer using index
+    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
 }
 
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
@@ -57,50 +65,50 @@ Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicSMin);
 }
 
-Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicIAdd);
+Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicIAdd);
 }
 
-Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicSMin);
+Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMin);
 }
 
-Id EmitBufferAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicUMin);
+Id EmitBufferAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMin);
 }
 
-Id EmitBufferAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicSMax);
+Id EmitBufferAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMax);
 }
 
-Id EmitBufferAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicUMax);
+Id EmitBufferAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMax);
 }
 
-Id EmitBufferAtomicInc32(EmitContext&, IR::Inst*, u32, Id) {
+Id EmitBufferAtomicInc32(EmitContext&, IR::Inst*, u32, Id, Id) {
     // TODO
     UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicInc32);
 }
 
-Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id) {
+Id EmitBufferAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id) {
     // TODO
     UNREACHABLE_MSG("Unsupported BUFFER_ATOMIC opcode: ", IR::Opcode::BufferAtomicDec32);
 }
 
-Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicAnd);
+Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicAnd);
 }
 
-Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicOr);
+Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicOr);
 }
 
-Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicXor);
+Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicXor);
 }
 
-Id EmitBufferAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id value) {
-    return BufferAtomicU32(ctx, inst, handle, value, &Sirit::Module::OpAtomicExchange);
+Id EmitBufferAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicExchange);
 }
 
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
