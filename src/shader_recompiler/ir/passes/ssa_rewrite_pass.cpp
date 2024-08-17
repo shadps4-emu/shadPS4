@@ -129,19 +129,19 @@ IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccLoTag&) noexcept {
+IR::Opcode UndefOpcode(const VccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const SccLoTag&) noexcept {
+IR::Opcode UndefOpcode(const SccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccHiTag&) noexcept {
+IR::Opcode UndefOpcode(const VccHiTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const FlagTag&) noexcept {
+IR::Opcode UndefOpcode(const FlagTag) noexcept {
     return IR::Opcode::UndefU1;
 }
 

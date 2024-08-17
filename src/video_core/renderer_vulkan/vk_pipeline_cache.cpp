@@ -93,6 +93,8 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
         info.num_user_data = cs_pgm.settings.num_user_regs;
         info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                cs_pgm.num_thread_z.full};
+        info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
+                            cs_pgm.IsTgidEnabled(2)};
         info.shared_memory_size = cs_pgm.SharedMemSize();
         break;
     }
@@ -165,6 +167,8 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
+    key.enable_primitive_restart = regs.enable_primitive_restart & 1;
+    key.primitive_restart_index = regs.primitive_restart_index;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
@@ -322,6 +326,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
         Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
         info.pgm_base = cs_pgm.Address<uintptr_t>();
+        info.pgm_hash = compute_key;
         auto program =
             Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 

@@ -208,4 +208,7 @@ int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
     return ORBIS_OK;
 }
 
+s16 PS4_SYSV_ABI sceKernelGetEventFilter(const SceKernelEvent* ev) {
+    return ev->filter;
+}
 } // namespace Libraries::Kernel
