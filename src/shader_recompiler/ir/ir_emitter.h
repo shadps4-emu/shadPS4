@@ -102,11 +102,9 @@ public:
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address,
-                                         const Value& a,
+    [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address, const Value& a,
                                          bool is_signed, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address,
-                                         const Value& a,
+    [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address, const Value& a,
                                          bool is_signed, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
                                         const Value& value, BufferInstInfo info);
