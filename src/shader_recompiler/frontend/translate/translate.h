@@ -187,7 +187,7 @@ public:
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
     void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
-    void BUFFER_ATOMIC(u32 num_dwords, AtomicOp op, const GcnInst& inst);
+    void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Vector interpolation
     void V_INTERP_P2_F32(const GcnInst& inst);

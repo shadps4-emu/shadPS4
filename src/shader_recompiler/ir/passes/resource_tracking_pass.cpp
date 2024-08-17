@@ -20,6 +20,42 @@ struct SharpLocation {
     auto operator<=>(const SharpLocation&) const = default;
 };
 
+bool IsBufferAtomic(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::BufferAtomicIAdd32:
+    case IR::Opcode::BufferAtomicSMin32:
+    case IR::Opcode::BufferAtomicUMin32:
+    case IR::Opcode::BufferAtomicSMax32:
+    case IR::Opcode::BufferAtomicUMax32:
+    case IR::Opcode::BufferAtomicInc32:
+    case IR::Opcode::BufferAtomicDec32:
+    case IR::Opcode::BufferAtomicAnd32:
+    case IR::Opcode::BufferAtomicOr32:
+    case IR::Opcode::BufferAtomicXor32:
+    case IR::Opcode::BufferAtomicExchange32:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool IsBufferStore(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::StoreBufferF32:
+    case IR::Opcode::StoreBufferF32x2:
+    case IR::Opcode::StoreBufferF32x3:
+    case IR::Opcode::StoreBufferF32x4:
+    case IR::Opcode::StoreBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32x2:
+    case IR::Opcode::StoreBufferFormatF32x3:
+    case IR::Opcode::StoreBufferFormatF32x4:
+    case IR::Opcode::StoreBufferU32:
+        return true;
+    default:
+        return IsBufferAtomic(inst);
+    }
+}
+
 bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferF32:
@@ -42,20 +78,9 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::StoreBufferFormatF32x3:
     case IR::Opcode::StoreBufferFormatF32x4:
     case IR::Opcode::StoreBufferU32:
-    case IR::Opcode::BufferAtomicIAdd32:
-    case IR::Opcode::BufferAtomicSMin32:
-    case IR::Opcode::BufferAtomicUMin32:
-    case IR::Opcode::BufferAtomicSMax32:
-    case IR::Opcode::BufferAtomicUMax32:
-    case IR::Opcode::BufferAtomicInc32:
-    case IR::Opcode::BufferAtomicDec32:
-    case IR::Opcode::BufferAtomicAnd32:
-    case IR::Opcode::BufferAtomicOr32:
-    case IR::Opcode::BufferAtomicXor32:
-    case IR::Opcode::BufferAtomicExchange32:
         return true;
     default:
-        return false;
+        return IsBufferStore(inst);
     }
 }
 
@@ -123,23 +148,6 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
         return IR::Type::U32;
     default:
         UNREACHABLE();
-    }
-}
-
-bool IsBufferStore(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-    case IR::Opcode::StoreBufferFormatF32x2:
-    case IR::Opcode::StoreBufferFormatF32x3:
-    case IR::Opcode::StoreBufferFormatF32x4:
-    case IR::Opcode::StoreBufferU32:
-        return true;
-    default:
-        return false;
     }
 }
 

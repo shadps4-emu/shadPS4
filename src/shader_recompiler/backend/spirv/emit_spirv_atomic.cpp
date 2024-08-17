@@ -23,13 +23,9 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
 
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
-    // Get srsrc buffer
     auto& buffer = ctx.buffers[handle];
-    // Get address of vdata by vaddr + buffer offset
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-    // Get first index of data (4-aligned indices, addr >> 2)
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    // Get pointer to first data value in buffer using index
     const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
