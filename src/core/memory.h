@@ -30,6 +30,7 @@ enum class MemoryProt : u32 {
     GpuWrite = 32,
     GpuReadWrite = 38,
 };
+DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 
 enum class MemoryMapFlags : u32 {
     NoFlags = 0,
@@ -161,9 +162,9 @@ public:
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
-    int MProtect(VAddr addr, size_t size, int prot);
+    int Protect(VAddr addr, size_t size, MemoryProt prot);
 
-    int MTypeProtect(VAddr addr, size_t size, VMAType mtype, int prot);
+    int MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryProt prot);
 
     int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 

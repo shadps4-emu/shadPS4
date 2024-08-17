@@ -208,31 +208,29 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
-int PS4_SYSV_ABI sceKernelMProtect(void* addr, size_t size, int prot) {
+int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
 
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
-    if (!memory_manager) {
-        LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
 
-    int result = memory_manager->MProtect(std::bit_cast<VAddr>(addr), size, prot);
+    // Cast the 'prot' integer to 'MemoryProt' enum type
+    Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
+
+    int result = memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
     if (result != ORBIS_OK) {
         LOG_ERROR(Kernel_Vmm, "MProtect failed with result {}", result);
     }
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelMTypeProtect(void* addr, size_t size, int mtype, int prot) {
+int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
 
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
-    if (!memory_manager) {
-        LOG_ERROR(Kernel_Vmm, "Failed to get MemoryManager instance");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
+
+    // Cast the 'prot' integer to 'MemoryProt' enum type
+    Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
 
     int result = memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
-                                              static_cast<Core::VMAType>(mtype), prot);
+                                              static_cast<Core::VMAType>(mtype), protection_flags);
     if (result != ORBIS_OK) {
         LOG_ERROR(Kernel_Vmm, "MTypeProtect failed with result {}", result);
     }
