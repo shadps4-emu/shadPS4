@@ -1,8 +1,43 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QCompleter>
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
+
+QStringList languageNames = {"Arabic",
+                             "Czech",
+                             "Danish",
+                             "Dutch",
+                             "English (United Kingdom)",
+                             "English (United States)",
+                             "Finnish",
+                             "French (Canada)",
+                             "French (France)",
+                             "German",
+                             "Greek",
+                             "Hungarian",
+                             "Indonesian",
+                             "Italian",
+                             "Japanese",
+                             "Korean",
+                             "Norwegian",
+                             "Polish",
+                             "Portuguese (Brazil)",
+                             "Portuguese (Portugal)",
+                             "Romanian",
+                             "Russian",
+                             "Simplified Chinese",
+                             "Spanish (Latin America)",
+                             "Spanish (Spain)",
+                             "Swedish",
+                             "Thai",
+                             "Traditional Chinese",
+                             "Turkish",
+                             "Vietnamese"};
+
+const QVector<int> languageIndexes = {21, 23, 14, 6,  18, 1,  12, 22, 2,  4, 25, 24, 29, 5,  0,
+                                      9,  15, 16, 17, 7,  26, 8,  11, 20, 3, 13, 27, 10, 19, 28};
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
@@ -17,6 +52,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     for (const auto& device : physical_devices) {
         ui->graphicsAdapterBox->addItem(device);
     }
+
+    ui->consoleLanguageComboBox->addItems(languageNames);
+
+    QCompleter* completer = new QCompleter(languageNames, this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    ui->consoleLanguageComboBox->setCompleter(completer);
 
     LoadValuesFromConfig();
 
@@ -44,8 +85,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->userNameLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setUserName(text.toStdString()); });
 
-        connect(ui->consoleLanguageComboBox, &QComboBox::currentIndexChanged, this,
-                [](int index) { Config::setLanguage(index); });
+        connect(ui->consoleLanguageComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < languageIndexes.size()) {
+                        int languageCode = languageIndexes[index];
+                        Config::setLanguage(languageCode);
+                    }
+                });
 
         connect(ui->fullscreenCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setFullscreenMode(val); });
@@ -106,8 +152,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
-    ui->consoleLanguageComboBox->setCurrentIndex(Config::GetLanguage());
-
+    ui->consoleLanguageComboBox->setCurrentIndex(
+        std::distance(
+            languageIndexes.begin(),
+            std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
+        languageIndexes.size());
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
