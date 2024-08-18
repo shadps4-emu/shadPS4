@@ -33,7 +33,7 @@ s32 Ngs2::ReportInvalid(u32 handle_type) const {
 }
 
 s32 Ngs2::HandleSetup(Ngs2Handle* handle, void* data, std::atomic<u32>* atomic, u32 type,
-                        u32 flags) {
+                      u32 flags) {
     handle->dataPointer = data;
     handle->atomicPtr = atomic;
     handle->handleType = type;
@@ -99,7 +99,7 @@ s32 Ngs2::HandleLeave(Ngs2Handle* handle) {
 }
 
 s32 Ngs2::StackBufferOpen(StackBuffer* buf, void* base_addr, size_t size, void** stackTop,
-                    bool verify) {
+                          bool verify) {
     buf->top = stackTop;
     buf->base = base_addr;
     buf->curr = base_addr;
@@ -147,11 +147,9 @@ s32 Ngs2::SystemSetupCore(StackBuffer* buf, SystemOptions* options, Ngs2Handle**
     }
 
     // Validate sampleRate
-    if (sampleRate != 11025 && sampleRate != 12000 && sampleRate != 22050 &&
-        sampleRate != 24000 && sampleRate != 44100 && sampleRate != 48000 &&
-        sampleRate != 88200 && sampleRate != 96000) {
-        LOG_ERROR(Lib_Ngs2, "Invalid system option(sampleRate={}:44.1/48kHz series)",
-                    sampleRate);
+    if (sampleRate != 11025 && sampleRate != 12000 && sampleRate != 22050 && sampleRate != 24000 &&
+        sampleRate != 44100 && sampleRate != 48000 && sampleRate != 88200 && sampleRate != 96000) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system option(sampleRate={}:44.1/48kHz series)", sampleRate);
         return ORBIS_NGS2_ERROR_INVALID_SAMPLE_RATE;
     }
 
