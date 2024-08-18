@@ -4,6 +4,39 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
+const QVector<int> languageIndexes = {
+    21, // Arabic
+    23, // Czech
+    14, // Danish
+    6,  // Dutch
+    18, // English (United Kingdom)
+    1,  // English (United States)
+    12, // Finnish
+    22, // French (Canada)
+    2,  // French (France)
+    4,  // German
+    25, // Greek
+    24, // Hungarian
+    29, // Indonesian
+    5,  // Italian
+    0,  // Japanese
+    9,  // Korean
+    15, // Norwegian
+    16, // Polish
+    17, // Portuguese (Brazil)
+    7,  // Portuguese (Portugal)
+    26, // Romanian
+    8,  // Russian
+    11, // Simplified Chinese
+    20, // Spanish (Latin America)
+    3,  // Spanish (Spain)
+    13, // Swedish
+    27, // Thai
+    10, // Traditional Chinese
+    19, // Turkish
+    28, // Vietnamese
+};
+
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
@@ -44,8 +77,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->userNameLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setUserName(text.toStdString()); });
 
-        connect(ui->consoleLanguageComboBox, &QComboBox::currentIndexChanged, this,
-                [](int index) { Config::setLanguage(index); });
+        connect(ui->consoleLanguageComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, [this](int index) {
+                    if (index >= 0 && index < languageIndexes.size()) {
+                        int languageCode = languageIndexes[index];
+                        Config::setLanguage(languageCode);
+                    }
+                });
 
         connect(ui->fullscreenCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setFullscreenMode(val); });
@@ -106,8 +144,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
-    ui->consoleLanguageComboBox->setCurrentIndex(Config::GetLanguage());
-
+    ui->consoleLanguageComboBox->setCurrentIndex(
+        std::distance(
+            languageIndexes.begin(),
+            std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
+        languageIndexes.size());
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
