@@ -115,32 +115,17 @@
                    <widget class="QComboBox" name="consoleLanguageComboBox">
                     <item>
                      <property name="text">
-                      <string>Japanese</string>
+                      <string>Arabic</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>English (United States)</string>
+                      <string>Czech</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>French (France)</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Spanish (Spain)</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>German</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Italian</string>
+                      <string>Danish</string>
                      </property>
                     </item>
                     <item>
@@ -150,27 +135,12 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>Portuguese (Portugal)</string>
+                      <string>English (United Kingdom)</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>Russian</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Korean</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Traditional Chinese</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Simplified Chinese</string>
+                      <string>English (United States)</string>
                      </property>
                     </item>
                     <item>
@@ -180,12 +150,47 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>Swedish</string>
+                      <string>French (Canada)</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>Danish</string>
+                      <string>French (France)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>German</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Greek</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Hungarian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Indonesian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Italian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Japanese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Korean</string>
                      </property>
                     </item>
                     <item>
@@ -205,42 +210,7 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>English (United Kingdom)</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Turkish</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Spanish (Latin America)</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Arabic</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>French (Canada)</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Czech</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Hungarian</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Greek</string>
+                      <string>Portuguese (Portugal)</string>
                      </property>
                     </item>
                     <item>
@@ -250,17 +220,47 @@
                     </item>
                     <item>
                      <property name="text">
+                      <string>Russian</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Simplified Chinese</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Spanish (Latin America)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Spanish (Spain)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Swedish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
                       <string>Thai</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>Vietnamese</string>
+                      <string>Traditional Chinese</string>
                      </property>
                     </item>
                     <item>
                      <property name="text">
-                      <string>Indonesian</string>
+                      <string>Turkish</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Vietnamese</string>
                      </property>
                     </item>
                    </widget>
