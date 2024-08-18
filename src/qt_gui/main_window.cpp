@@ -202,6 +202,11 @@ void MainWindow::CreateConnects() {
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
 
+    connect(ui->configureAct, &QAction::triggered, this, [this]() {
+        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+        settingsDialog->exec();
+    });
+
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
         settingsDialog->exec();

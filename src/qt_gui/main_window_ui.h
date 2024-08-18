@@ -46,6 +46,7 @@ public:
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
     QAction* aboutAct;
+    QAction* configureAct;
     QAction* setThemeDark;
     QAction* setThemeLight;
     QAction* setThemeGreen;
@@ -143,6 +144,8 @@ public:
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
+        configureAct = new QAction(MainWindow);
+        configureAct->setObjectName("configureAct");
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
@@ -285,6 +288,7 @@ public:
         menuGame_List_Mode->addAction(setlistModeListAct);
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuGame_List_Mode->addAction(setlistElfAct);
+        menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(dumpGameListAct);
@@ -303,7 +307,8 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
-        aboutAct->setText(QCoreApplication::translate("MainWindow", "About", nullptr));
+        aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
+        configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(
             "MainWindow", "Install application from a .pkg file", nullptr));
