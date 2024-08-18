@@ -101,7 +101,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         const auto src_sharp = src.GetVsharp(info);
         const auto& dst = info.buffers[1];
         const auto dst_sharp = dst.GetVsharp(info);
-        if (dst_sharp.base_address == 0x510e0000 || dst_sharp.base_address == 0x1926e0000) {
+        if (dst_sharp.base_address == 0x510e0000 || dst_sharp.base_address == 0x1926e0000 || dst_sharp.base_address == 0x1d42e0000) {
             VideoCore::ImageViewInfo view_info;
             view_info.format = vk::Format::eR8G8B8A8Unorm;
             view_info.type = vk::ImageViewType::e2D;
