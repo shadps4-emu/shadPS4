@@ -39,6 +39,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.color_attachments.data(),
         .pDepthAttachment = render_state.has_depth ? &render_state.depth_attachment : nullptr,
+        .pStencilAttachment = render_state.has_stencil ? &render_state.depth_attachment : nullptr,
     };
 
     current_cmdbuf.beginRendering(rendering_info);
