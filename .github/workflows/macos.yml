@@ -43,10 +43,10 @@ jobs:
         mv ${{github.workspace}}/build/shadps4 upload
         cp $(arch -x86_64 /usr/local/bin/brew --prefix)/opt/molten-vk/lib/libMoltenVK.dylib upload
         install_name_tool -add_rpath "@loader_path" upload/shadps4
-        tar cf shadps4-macos.tar.gz -C upload .
+        tar cf shadps4-macos-sdl.tar.gz -C upload .
 
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-macos
-        path: shadps4-macos.tar.gz
+        name: shadps4-macos-sdl
+        path: shadps4-macos-sdl.tar.gz

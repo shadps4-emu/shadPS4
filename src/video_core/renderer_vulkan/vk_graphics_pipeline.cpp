@@ -172,10 +172,17 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .reference = key.stencil_ref_front.stencil_test_val,
         },
         .back{
-            .failOp = LiverpoolToVK::StencilOp(key.stencil.stencil_fail_back),
-            .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_back),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_back),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth.stencil_bf_func),
+            .failOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+                                                   ? key.stencil.stencil_fail_back
+                                                   : key.stencil.stencil_fail_front),
+            .passOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+                                                   ? key.stencil.stencil_zpass_back
+                                                   : key.stencil.stencil_zpass_front),
+            .depthFailOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+                                                        ? key.stencil.stencil_zfail_back
+                                                        : key.stencil.stencil_zfail_front),
+            .compareOp = LiverpoolToVK::CompareOp(
+                key.depth.backface_enable ? key.depth.stencil_bf_func : key.depth.stencil_ref_func),
             .compareMask = key.stencil_ref_back.stencil_mask,
             .writeMask = key.stencil_ref_back.stencil_write_mask,
             .reference = key.stencil_ref_back.stencil_test_val,
@@ -207,7 +214,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .colorAttachmentCount = num_color_formats,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
-        .stencilAttachmentFormat = vk::Format::eUndefined,
+        .stencilAttachmentFormat =
+            key.depth.stencil_enable ? key.depth_format : vk::Format::eUndefined,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
