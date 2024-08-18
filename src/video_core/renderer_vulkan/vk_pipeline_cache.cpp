@@ -270,6 +270,10 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             DumpShader(code, hash, stage, "bin");
         }
 
+        if (hash == 0x8ccd4c7 || hash == 3273382176) {
+            return nullptr;
+        }
+
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
@@ -319,6 +323,10 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
 
     block_pool.ReleaseContents();
     inst_pool.ReleaseContents();
+
+    if (compute_key == 0xa509af23 || compute_key == 0x4ca76892 || compute_key == 0xa954e79d) {
+        return nullptr;
+    }
 
     // Recompile shader to IR.
     try {
