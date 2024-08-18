@@ -270,7 +270,8 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             DumpShader(code, hash, stage, "bin");
         }
 
-        if (hash == 0x8ccd4c7 || hash == 3273382176) {
+        if (hash == 0x8ccd4c7 || hash == 3273382176 || hash == 1253917491 || hash == 3568414570 ||
+            hash == 886182625 || hash == 2876255299 || hash == 2153234908 || hash == 0xc0cbc309) {
             return nullptr;
         }
 
