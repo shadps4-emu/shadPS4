@@ -5,8 +5,8 @@
 
 #include "common/types.h"
 
-#include <memory>
 #include <atomic>
+#include <memory>
 
 namespace Core::Loader {
 class SymbolsResolver;
