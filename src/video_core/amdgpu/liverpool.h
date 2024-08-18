@@ -452,7 +452,7 @@ struct Liverpool {
         BitField<11, 1, u32> enable_polygon_offset_front;
         BitField<12, 1, u32> enable_polygon_offset_back;
         BitField<13, 1, u32> enable_polygon_offset_para;
-        BitField<13, 1, u32> enable_window_offset;
+        BitField<16, 1, u32> enable_window_offset;
         BitField<19, 1, ProvokingVtxLast> provoking_vtx_last;
 
         PolygonMode PolyMode() const {
