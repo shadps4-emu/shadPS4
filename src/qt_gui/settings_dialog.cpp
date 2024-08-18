@@ -1,41 +1,43 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QCompleter>
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-const QVector<int> languageIndexes = {
-    21, // Arabic
-    23, // Czech
-    14, // Danish
-    6,  // Dutch
-    18, // English (United Kingdom)
-    1,  // English (United States)
-    12, // Finnish
-    22, // French (Canada)
-    2,  // French (France)
-    4,  // German
-    25, // Greek
-    24, // Hungarian
-    29, // Indonesian
-    5,  // Italian
-    0,  // Japanese
-    9,  // Korean
-    15, // Norwegian
-    16, // Polish
-    17, // Portuguese (Brazil)
-    7,  // Portuguese (Portugal)
-    26, // Romanian
-    8,  // Russian
-    11, // Simplified Chinese
-    20, // Spanish (Latin America)
-    3,  // Spanish (Spain)
-    13, // Swedish
-    27, // Thai
-    10, // Traditional Chinese
-    19, // Turkish
-    28, // Vietnamese
-};
+QStringList languageNames = {"Arabic",
+                             "Czech",
+                             "Danish",
+                             "Dutch",
+                             "English (United Kingdom)",
+                             "English (United States)",
+                             "Finnish",
+                             "French (Canada)",
+                             "French (France)",
+                             "German",
+                             "Greek",
+                             "Hungarian",
+                             "Indonesian",
+                             "Italian",
+                             "Japanese",
+                             "Korean",
+                             "Norwegian",
+                             "Polish",
+                             "Portuguese (Brazil)",
+                             "Portuguese (Portugal)",
+                             "Romanian",
+                             "Russian",
+                             "Simplified Chinese",
+                             "Spanish (Latin America)",
+                             "Spanish (Spain)",
+                             "Swedish",
+                             "Thai",
+                             "Traditional Chinese",
+                             "Turkish",
+                             "Vietnamese"};
+
+const QVector<int> languageIndexes = {21, 23, 14, 6,  18, 1,  12, 22, 2,  4, 25, 24, 29, 5,  0,
+                                      9,  15, 16, 17, 7,  26, 8,  11, 20, 3, 13, 27, 10, 19, 28};
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
@@ -50,6 +52,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     for (const auto& device : physical_devices) {
         ui->graphicsAdapterBox->addItem(device);
     }
+
+    ui->consoleLanguageComboBox->addItems(languageNames);
+
+    QCompleter* completer = new QCompleter(languageNames, this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    ui->consoleLanguageComboBox->setCompleter(completer);
 
     LoadValuesFromConfig();
 
