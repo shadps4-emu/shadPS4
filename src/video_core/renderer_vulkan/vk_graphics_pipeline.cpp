@@ -173,16 +173,17 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         },
         .back{
             .failOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
-                                                   ? key.stencil.stencil_fail_back
-                                                   : key.stencil.stencil_fail_front),
+                                                   ? key.stencil.stencil_fail_back.Value()
+                                                   : key.stencil.stencil_fail_front.Value()),
             .passOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
-                                                   ? key.stencil.stencil_zpass_back
-                                                   : key.stencil.stencil_zpass_front),
+                                                   ? key.stencil.stencil_zpass_back.Value()
+                                                   : key.stencil.stencil_zpass_front.Value()),
             .depthFailOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
-                                                        ? key.stencil.stencil_zfail_back
-                                                        : key.stencil.stencil_zfail_front),
-            .compareOp = LiverpoolToVK::CompareOp(
-                key.depth.backface_enable ? key.depth.stencil_bf_func : key.depth.stencil_ref_func),
+                                                        ? key.stencil.stencil_zfail_back.Value()
+                                                        : key.stencil.stencil_zfail_front.Value()),
+            .compareOp = LiverpoolToVK::CompareOp(key.depth.backface_enable
+                                                      ? key.depth.stencil_bf_func.Value()
+                                                      : key.depth.stencil_ref_func.Value()),
             .compareMask = key.stencil_ref_back.stencil_mask,
             .writeMask = key.stencil_ref_back.stencil_write_mask,
             .reference = key.stencil_ref_back.stencil_test_val,
