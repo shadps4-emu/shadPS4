@@ -5,6 +5,7 @@
 
 #include <tsl/robin_map.h>
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
@@ -32,6 +33,7 @@ public:
 
 private:
     void RefreshGraphicsKey();
+    void RefreshPrograms();
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, std::string_view ext);
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline();
@@ -43,10 +45,10 @@ private:
     AmdGpu::Liverpool* liverpool;
     vk::UniquePipelineCache pipeline_cache;
     vk::UniquePipelineLayout pipeline_layout;
-    tsl::robin_map<size_t, vk::UniqueShaderModule> module_map;
-    std::array<vk::ShaderModule, MaxShaderStages> stages{};
+    tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
     tsl::robin_map<size_t, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    std::array<const Program*, MaxShaderStages> programs{};
     Shader::Profile profile{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};
