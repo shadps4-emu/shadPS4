@@ -73,7 +73,7 @@ find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
-find_package(toml11 3.8.1 CONFIG)
+find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
 find_package(VulkanHeaders 1.3.289 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
@@ -127,6 +127,8 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/ajm/ajm.cpp
               src/core/libraries/ajm/ajm.h
+              src/core/libraries/ngs2/ngs2.cpp
+              src/core/libraries/ngs2/ngs2.h
 )
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp

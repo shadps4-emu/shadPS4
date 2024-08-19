@@ -25,6 +25,18 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_WRITE(32, false, true, inst);
     case Opcode::DS_WRITE2_B64:
         return DS_WRITE(64, false, true, inst);
+    case Opcode::DS_ADD_U32:
+        return DS_ADD_U32(inst, false);
+    case Opcode::DS_MIN_U32:
+        return DS_MIN_U32(inst, false);
+    case Opcode::DS_MAX_U32:
+        return DS_MAX_U32(inst, false);
+    case Opcode::DS_ADD_RTN_U32:
+        return DS_ADD_U32(inst, true);
+    case Opcode::DS_MIN_RTN_U32:
+        return DS_MIN_U32(inst, true);
+    case Opcode::DS_MAX_RTN_U32:
+        return DS_MAX_U32(inst, true);
     default:
         LogMissingOpcode(inst);
     }
@@ -107,6 +119,42 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnI
     } else {
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0)));
         ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
+    }
+}
+
+void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_MIN_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
+    const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_MAX_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    IR::VectorReg dst_reg{inst.dst[0].code};
+    const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
     }
 }
 

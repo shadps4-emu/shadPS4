@@ -46,6 +46,7 @@ public:
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
     QAction* aboutAct;
+    QAction* configureAct;
     QAction* setThemeDark;
     QAction* setThemeLight;
     QAction* setThemeGreen;
@@ -97,8 +98,10 @@ public:
         bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
         bootGameAct = new QAction(MainWindow);
         bootGameAct->setObjectName("bootGameAct");
+        bootGameAct->setIcon(QIcon(":images/play_icon.png"));
         addElfFolderAct = new QAction(MainWindow);
         addElfFolderAct->setObjectName("addElfFolderAct");
+        addElfFolderAct->setIcon(QIcon(":images/folder_icon.png"));
         exitAct = new QAction(MainWindow);
         exitAct->setObjectName("exitAct");
         exitAct->setIcon(QIcon(":images/exit_icon.png"));
@@ -143,6 +146,10 @@ public:
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
+        aboutAct->setIcon(QIcon(":images/about_icon.png"));
+        configureAct = new QAction(MainWindow);
+        configureAct->setObjectName("configureAct");
+        configureAct->setIcon(QIcon(":images/settings_icon.png"));
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
@@ -285,6 +292,7 @@ public:
         menuGame_List_Mode->addAction(setlistModeListAct);
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuGame_List_Mode->addAction(setlistElfAct);
+        menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(dumpGameListAct);
@@ -303,7 +311,8 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
-        aboutAct->setText(QCoreApplication::translate("MainWindow", "About", nullptr));
+        aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
+        configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(
             "MainWindow", "Install application from a .pkg file", nullptr));
