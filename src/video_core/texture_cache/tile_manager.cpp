@@ -249,11 +249,11 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
-static constexpr size_t StreamBufferSize = 128_MB;
+static constexpr size_t StreamBufferSize = 1_GB;
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler},
-      stream_buffer{instance, scheduler, MemoryUsage::Stream, StreamBufferSize} {
+      stream_buffer{instance, scheduler, MemoryUsage::Upload, StreamBufferSize} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
