@@ -36,8 +36,8 @@ struct PlaygoHeader {
 
     chunk_t chunk_attrs; // [0;32000]
     chunk_t chunk_mchunks;
-    chunk_t chunk_labels; // [0;16000]
-    chunk_t mchunk_attrs; // [0;12800]
+    chunk_t chunk_labels;   // [0;16000]
+    chunk_t mchunk_attrs;   // [0;12800]
     chunk_t scenario_attrs; // [0;1024]
     chunk_t scenario_chunks;
     chunk_t scenario_labels;
@@ -67,7 +67,7 @@ struct playgo_chunk_attr_entry_t {
     u16 mchunk_count;
     u64 language_mask;
     u32 mchunks_offset; //<-chunk_mchunks
-    u32 label_offset; //<-chunk_labels
+    u32 label_offset;   //<-chunk_labels
 } __attribute__((packed));
 
 struct playgo_chunk_loc_t {

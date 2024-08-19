@@ -19,7 +19,8 @@ s32 PS4_SYSV_ABI scePlayGoGetChunkId(OrbisPlayGoHandle handle, OrbisPlayGoChunkI
                                      u32 numberOfEntries, u32* outEntries);
 s32 PS4_SYSV_ABI scePlayGoGetEta(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,
                                  u32 numberOfEntries, OrbisPlayGoEta* outEta);
-s32 PS4_SYSV_ABI scePlayGoGetInstallSpeed(OrbisPlayGoHandle handle, OrbisPlayGoInstallSpeed* outSpeed);
+s32 PS4_SYSV_ABI scePlayGoGetInstallSpeed(OrbisPlayGoHandle handle,
+                                          OrbisPlayGoInstallSpeed* outSpeed);
 s32 PS4_SYSV_ABI scePlayGoGetLanguageMask(OrbisPlayGoHandle handle,
                                           OrbisPlayGoLanguageMask* outLanguageMask);
 s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,

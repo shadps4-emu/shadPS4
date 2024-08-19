@@ -27,7 +27,7 @@ bool PlaygoFile::LoadChunks(const Common::FS::IOFile& file) {
 
             if (ret) {
                 chunks.resize(playgoHeader.chunk_count);
-               
+
                 auto chunk_attrs =
                     reinterpret_cast<playgo_chunk_attr_entry_t*>(&chunk_attrs_data[0]);
                 auto chunk_mchunks = reinterpret_cast<u16*>(&chunk_mchunks_data[0]);
@@ -61,7 +61,7 @@ bool PlaygoFile::LoadChunks(const Common::FS::IOFile& file) {
 }
 
 bool PlaygoFile::load_chunk_data(const Common::FS::IOFile& file, const chunk_t& chunk,
-                            std::string& data) {
+                                 std::string& data) {
     if (file.IsOpen()) {
         if (file.Seek(chunk.offset)) {
             data.resize(chunk.length);
@@ -70,6 +70,6 @@ bool PlaygoFile::load_chunk_data(const Common::FS::IOFile& file, const chunk_t& 
                 return true;
             }
         }
-    }        
+    }
     return false;
 }
