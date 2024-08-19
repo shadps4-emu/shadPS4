@@ -447,7 +447,7 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
             .dword_offset = sharp.dword_offset,
             .length = BufferLength(buffer),
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
-            .is_storage = is_store || buffer.GetSize() > MaxUboSize,
+            .is_storage = true || is_store || buffer.GetSize() > MaxUboSize,
             .is_written = is_store,
         });
     }
