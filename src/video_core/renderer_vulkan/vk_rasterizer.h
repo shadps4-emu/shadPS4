@@ -52,6 +52,7 @@ private:
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();
     void UpdateDepthStencilState();
+    bool HasRenderTargets();
 
 private:
     const Instance& instance;

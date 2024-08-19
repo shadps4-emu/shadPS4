@@ -214,8 +214,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .colorAttachmentCount = num_color_formats,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
-        .stencilAttachmentFormat =
-            key.depth.stencil_enable ? key.depth_format : vk::Format::eUndefined,
+        .stencilAttachmentFormat = key.stencil_format,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;

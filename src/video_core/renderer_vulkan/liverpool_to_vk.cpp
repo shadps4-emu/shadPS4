@@ -5,6 +5,8 @@
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
+#include <magic_enum.hpp>
+
 namespace Vulkan::LiverpoolToVK {
 
 using DepthBuffer = Liverpool::DepthBuffer;
@@ -588,6 +590,8 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
             return is_vo_surface ? vk::Format::eB8G8R8A8Unorm : vk::Format::eB8G8R8A8Srgb;
         case vk::Format::eB8G8R8A8Srgb:
             return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
+        default:
+            break;
         }
     } else {
         if (is_vo_surface && base_format == vk::Format::eR8G8B8A8Srgb) {
@@ -601,27 +605,29 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
 }
 
 vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat stencil_format) {
-    if (z_format == DepthBuffer::ZFormat::Z32Float &&
-        stencil_format == DepthBuffer::StencilFormat::Stencil8) {
+    using ZFormat = DepthBuffer::ZFormat;
+    using StencilFormat = DepthBuffer::StencilFormat;
+
+    if (z_format == ZFormat::Z32Float && stencil_format == StencilFormat::Stencil8) {
         return vk::Format::eD32SfloatS8Uint;
     }
-    if (z_format == DepthBuffer::ZFormat::Z32Float &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Z32Float && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eD32Sfloat;
     }
-    if (z_format == DepthBuffer::ZFormat::Z16 &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Z16 && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eD16Unorm;
     }
-    if (z_format == DepthBuffer::ZFormat::Z16 &&
-        stencil_format == DepthBuffer::StencilFormat::Stencil8) {
+    if (z_format == ZFormat::Z16 && stencil_format == StencilFormat::Stencil8) {
         return vk::Format::eD16UnormS8Uint;
     }
-    if (z_format == DepthBuffer::ZFormat::Invalid &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Invalid && stencil_format == StencilFormat::Stencil8) {
+        return vk::Format::eD32SfloatS8Uint;
+    }
+    if (z_format == ZFormat::Invalid && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eUndefined;
     }
-    UNREACHABLE();
+    UNREACHABLE_MSG("Unsupported depth/stencil format. depth = {} stencil = {}",
+                    magic_enum::enum_name(z_format), magic_enum::enum_name(stencil_format));
 }
 
 void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {

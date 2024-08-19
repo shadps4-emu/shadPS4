@@ -366,6 +366,9 @@ bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
 }
 
 u64 AvPlayerSource::CurrentTime() {
+    if (!IsActive()) {
+        return 0;
+    }
     using namespace std::chrono;
     return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
 }

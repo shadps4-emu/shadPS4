@@ -10,6 +10,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
+#include "vk_rasterizer.h"
 
 namespace Vulkan {
 
@@ -30,6 +31,10 @@ Rasterizer::~Rasterizer() = default;
 
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
+
+    if (!HasRenderTargets()) {
+        return;
+    }
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto& regs = liverpool->regs;
@@ -129,8 +134,12 @@ void Rasterizer::BeginRendering() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
 
-    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invalid &&
-        regs.depth_buffer.Address() != 0) {
+    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
+    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
+    if (regs.depth_buffer.Address() != 0 &&
+        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
+         regs.depth_control.stencil_enable &&
+             regs.depth_buffer.stencil_info.format != StencilFormat::Invalid)) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
@@ -152,8 +161,10 @@ void Rasterizer::BeginRendering() {
                                                           .stencil = regs.stencil_clear}},
         };
         texture_cache.TouchMeta(htile_address, false);
-        state.has_depth = true;
-        state.has_stencil = regs.depth_control.stencil_enable;
+        state.has_depth =
+            regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
+        state.has_stencil = regs.depth_buffer.stencil_info.format !=
+                            AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
     scheduler.BeginRendering(state);
 }
@@ -229,6 +240,25 @@ void Rasterizer::UpdateDepthStencilState() {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setDepthBoundsTestEnable(depth.depth_bounds_enable);
+}
+
+bool Rasterizer::HasRenderTargets() {
+    const auto& regs = liverpool->regs;
+    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
+    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
+    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
+        const auto& col_buf = regs.color_buffers[col_buf_id];
+        if (col_buf && regs.color_target_mask.GetMask(col_buf_id)) {
+            return true;
+        }
+    }
+    if (regs.depth_buffer.Address() != 0 &&
+        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
+         regs.depth_control.stencil_enable &&
+             regs.depth_buffer.stencil_info.format != StencilFormat::Invalid)) {
+        return true;
+    }
+    return false;
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {

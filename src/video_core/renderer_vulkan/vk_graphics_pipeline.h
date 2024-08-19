@@ -26,6 +26,7 @@ struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
     vk::Format depth_format;
+    vk::Format stencil_format;
 
     Liverpool::DepthControl depth;
     float depth_bounds_min;

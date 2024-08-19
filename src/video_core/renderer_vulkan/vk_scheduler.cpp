@@ -72,7 +72,7 @@ void Scheduler::EndRendering() {
                 },
         });
     }
-    if (render_state.has_depth) {
+    if (render_state.has_depth || render_state.has_stencil) {
         barriers.push_back(vk::ImageMemoryBarrier{
             .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
             .dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite,
