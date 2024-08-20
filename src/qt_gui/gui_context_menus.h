@@ -138,7 +138,7 @@ public:
             }
         }
 
-if (selected == &openCheats) {
+        if (selected == &openCheats) {
             const auto& CHEATS_DIR = Common::FS::GetUserPath(Common::FS::PathType::CheatsDir);
             QString CHEATS_DIR_QString = QString::fromStdString(CHEATS_DIR.string());
             const QString NameCheatJson = QString::fromStdString(m_games[itemID].serial) + "_" +
@@ -391,7 +391,6 @@ if (selected == &openCheats) {
             cheatWidget->setLayout(mainLayout);
             cheatWidget->show();
         }
-
 
         if (selected == &openTrophyViewer) {
             QString trophyPath = QString::fromStdString(m_games[itemID].serial);
