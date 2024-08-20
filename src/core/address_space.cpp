@@ -232,16 +232,9 @@ struct AddressSpace::Impl {
             LOG_CRITICAL(Common_Memory, "Unsupported protection flag combination");
         }
 
-        const VAddr virtual_end = virtual_addr + size;
-        auto [it, end] = placeholders.equal_range({virtual_addr, virtual_end});
-        while (it != end) {
-            const size_t offset = std::max(it->lower(), virtual_addr);
-            const size_t protect_length = std::min(it->upper(), virtual_end) - offset;
-            DWORD old_flags{};
-            if (!VirtualProtect(virtual_base + offset, protect_length, new_flags, &old_flags)) {
-                LOG_CRITICAL(Common_Memory, "Failed to change virtual memory protect rules");
-            }
-            ++it;
+        DWORD old_flags{};
+        if (!VirtualProtect(reinterpret_cast<void*>(virtual_addr), size, new_flags, &old_flags)) {
+            LOG_CRITICAL(Common_Memory, "Failed to change virtual memory protection");
         }
     }
 
