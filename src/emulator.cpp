@@ -111,9 +111,8 @@ void Emulator::Run(const std::filesystem::path& file) {
         window_title =
             fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
     }
-    window = std::make_unique<Frontend::WindowSDL>(Config::getScreenWidth(),
-                                                   Config::getScreenHeight(),
-                                                   controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(
+        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
 
     g_window = window.get();
 
