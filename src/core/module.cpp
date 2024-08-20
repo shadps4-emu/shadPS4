@@ -11,6 +11,7 @@
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
+#include "qt_gui/cheats_patches.h"
 
 namespace Core {
 
@@ -89,6 +90,12 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                       MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
+
+    if (cheats_eboot_address == 0) {
+        if (name == "eboot") {
+            cheats_eboot_address = base_virtual_addr;
+        }
+    }
 
     // Initialize trampoline generator.
     void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);

@@ -22,6 +22,8 @@
 #include "cheats_patches.h"
 #include "common/path_util.h"
 
+uintptr_t cheats_eboot_address = 0;
+
 CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
                              const QString& gameVersion, const QString& gameSize,
                              const QPixmap& gameImage, QWidget* parent)
@@ -234,7 +236,23 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
 
         LOG_INFO(Loader, "Cheat applied:{}, Offset:{}, Value:{}", modNameStr, offsetStr, valueStr);
 
-        // Implement
         // Send a request to modify the process memory.
+        if (cheats_eboot_address == 0) {
+            LOG_INFO(Loader, "Can't apply mod until a game has been started");
+            return;
+        }
+
+        void* cheatAddress = reinterpret_cast<void*>(cheats_eboot_address + std::stoi(offsetStr, 0, 16));
+
+        std::vector<unsigned char> bytePatch;
+
+        for (size_t i = 0; i < valueStr.length(); i += 2) {
+            unsigned char byte =
+                static_cast<unsigned char>(std::strtol(valueStr.substr(i, 2).c_str(), nullptr, 16));
+
+            bytePatch.push_back(byte);
+        }
+    
+        std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
     }
 }
