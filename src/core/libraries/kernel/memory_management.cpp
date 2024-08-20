@@ -209,32 +209,16 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 }
 
 int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
-
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
-
-    // Cast the 'prot' integer to 'MemoryProt' enum type
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
-
-    int result = memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
-    if (result != ORBIS_OK) {
-        LOG_ERROR(Kernel_Vmm, "MProtect failed with result {}", result);
-    }
-    return result;
+    return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
 }
 
 int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
-
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
-
-    // Cast the 'prot' integer to 'MemoryProt' enum type
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
-
-    int result = memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
-                                              static_cast<Core::VMAType>(mtype), protection_flags);
-    if (result != ORBIS_OK) {
-        LOG_ERROR(Kernel_Vmm, "MTypeProtect failed with result {}", result);
-    }
-    return result;
+    return memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
+                                        static_cast<Core::VMAType>(mtype), protection_flags);
 }
 
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,

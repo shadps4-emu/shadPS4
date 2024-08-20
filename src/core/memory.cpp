@@ -286,12 +286,14 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     }
 
     // Validate protection flags
-    MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuReadWrite |
-                             MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
+    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
+                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
+                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
 
-    if ((prot & ~valid_flags) != MemoryProt::NoAccess) {
-        LOG_ERROR(Core, "Invalid protection flags, prot: {:#x}, GpuWrite: {:#x}",
-                  static_cast<uint32_t>(prot), static_cast<uint32_t>(MemoryProt::GpuWrite));
+    MemoryProt invalid_flags = prot & ~valid_flags;
+    if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
+        LOG_ERROR(Core, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
+                  invalid_flags);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -301,19 +303,19 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     // Set permissions
     Core::MemoryPermission perms{};
 
-    if ((prot & MemoryProt::CpuRead) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::CpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if ((prot & MemoryProt::CpuReadWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::CpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
-    if ((prot & MemoryProt::GpuRead) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if ((prot & MemoryProt::GpuWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuWrite)) {
         perms |= Core::MemoryPermission::Write;
     }
-    if ((prot & MemoryProt::GpuReadWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
 
@@ -340,12 +342,14 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryPr
     }
 
     // Validate protection flags
-    MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuReadWrite |
-                             MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
+    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
+                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
+                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
 
-    if ((prot & ~valid_flags) != MemoryProt::NoAccess) {
-        LOG_ERROR(Core, "Invalid protection flags, prot: {:#x}, GpuWrite: {:#x}",
-                  static_cast<uint32_t>(prot), static_cast<uint32_t>(MemoryProt::GpuWrite));
+    MemoryProt invalid_flags = prot & ~valid_flags;
+    if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
+        LOG_ERROR(Core, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
+                  invalid_flags);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -356,19 +360,19 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryPr
     // Set permissions
     Core::MemoryPermission perms{};
 
-    if ((prot & MemoryProt::CpuRead) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::CpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if ((prot & MemoryProt::CpuReadWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::CpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
-    if ((prot & MemoryProt::GpuRead) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if ((prot & MemoryProt::GpuWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuWrite)) {
         perms |= Core::MemoryPermission::Write;
     }
-    if ((prot & MemoryProt::GpuReadWrite) != MemoryProt::NoAccess) {
+    if (True(prot & MemoryProt::GpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
 

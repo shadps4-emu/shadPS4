@@ -218,24 +218,36 @@ struct AddressSpace::Impl {
 
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
+
         if (read && write && execute) {
             new_flags = PAGE_EXECUTE_READWRITE;
         } else if (read && write) {
             new_flags = PAGE_READWRITE;
         } else if (read && !write) {
             new_flags = PAGE_READONLY;
-        } else if (execute && !read && !write) {
+        } else if (execute && !read && not write) {
             new_flags = PAGE_EXECUTE;
         } else if (!read && !write && !execute) {
             new_flags = PAGE_NOACCESS;
         } else {
-            LOG_CRITICAL(Common_Memory, "Unsupported protection flag combination");
+            LOG_CRITICAL(Common_Memory,
+                         "Unsupported protection flag combination for address {:#x}, size {}",
+                         virtual_addr, size);
+            return;
         }
 
         DWORD old_flags{};
-        if (!VirtualProtect(reinterpret_cast<void*>(virtual_addr), size, new_flags, &old_flags)) {
-            LOG_CRITICAL(Common_Memory, "Failed to change virtual memory protection");
+        bool success =
+            VirtualProtect(reinterpret_cast<void*>(virtual_addr), size, new_flags, &old_flags);
+
+        if (!success) {
+            LOG_ERROR(Common_Memory,
+                      "Failed to change virtual memory protection for address {:#x}, size {}",
+                      virtual_addr, size);
         }
+
+        // Use assert to ensure success in debug builds
+        assert(success && "Failed to change virtual memory protection");
     }
 
     HANDLE process{};
@@ -477,10 +489,11 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VA
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
-    bool read = static_cast<int>(perms & MemoryPermission::Read) != 0;
-    bool write = static_cast<int>(perms & MemoryPermission::Write) != 0;
-    bool execute = static_cast<int>(perms & MemoryPermission::Execute) !=
-                   0; // Assuming you have an Execute permission
+    const bool read = True(perms & MemoryPermission::Read);
+
+    const bool write = True(perms & MemoryPermission::Write);
+
+    const bool execute = True(perms & MemoryPermission::Execute);
 
     return impl->Protect(virtual_addr, size, read, write, execute);
 }
