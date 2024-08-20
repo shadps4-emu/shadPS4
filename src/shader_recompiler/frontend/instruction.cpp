@@ -7,7 +7,7 @@
 namespace Shader::Gcn {
 
 u32 GcnInst::BranchTarget(u32 pc) const {
-    const s16 simm = static_cast<s16>(control.sopp.simm * 4);
+    const s32 simm = static_cast<s32>(control.sopp.simm) * 4;
     const u32 target = pc + simm + 4;
     return target;
 }
