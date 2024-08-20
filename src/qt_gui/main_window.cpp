@@ -179,6 +179,7 @@ void MainWindow::CreateConnects() {
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
@@ -444,6 +445,15 @@ void MainWindow::SearchGameTable(const QString& text) {
         m_game_grid_frame->PopulateGameGrid(filteredGames, true);
     }
 }
+
+void MainWindow::ShowGameList() {
+    if (ui->showGameListAct->isChecked()) {
+        RefreshGameTable();
+    } else {
+        m_game_grid_frame->clearContents();
+        m_game_list_frame->clearContents();
+    }
+};
 
 void MainWindow::RefreshGameTable() {
     // m_game_info->m_games.clear();
