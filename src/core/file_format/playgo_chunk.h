@@ -4,6 +4,7 @@
 #pragma once
 #include <filesystem>
 #include <mutex>
+#include <vector>
 #include "common/io_file.h"
 #include "core/libraries/playgo/playgo_types.h"
 
@@ -92,7 +93,7 @@ struct PlaygoChunk {
     u64 language_mask;
     u64 total_size;
     std::string label_name;
-} __attribute__((packed));
+};
 
 class PlaygoFile {
 public:
