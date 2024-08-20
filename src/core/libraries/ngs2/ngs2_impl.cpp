@@ -58,24 +58,24 @@ s32 Ngs2::HandleCleanup(Ngs2Handle* handle, u32 hType, void* dataOut) {
             }
         }
     }
-    return HandleReportInvalid(handle, hType);
+    return this.HandleReportInvalid(handle, hType);
 }
 
 s32 Ngs2::HandleEnter(Ngs2Handle* handle, u32 hType, Ngs2Handle* handleOut) {
     if (!handle) {
-        return HandleReportInvalid(handle, 0);
+        return this.HandleReportInvalid(handle, 0);
     }
 
     if (handle->selfPointer != handle || !handle->atomicPtr || !handle->dataPointer ||
         (~hType & handle->handleType)) {
-        return HandleReportInvalid(handle, handle->handleType);
+        return this.HandleReportInvalid(handle, handle->handleType);
     }
 
     std::atomic<u32>* atomic = handle->atomicPtr;
     while (true) {
         u32 i = atomic->load();
         if (i == 0) {
-            return HandleReportInvalid(handle, handle->handleType);
+            return this.HandleReportInvalid(handle, handle->handleType);
         }
         if (atomic->compare_exchange_strong(i, i + 1)) {
             break;
