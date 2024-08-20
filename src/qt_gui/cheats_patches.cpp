@@ -30,7 +30,8 @@ CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
     : QWidget(parent), m_gameName(gameName), m_gameSerial(gameSerial), m_gameVersion(gameVersion),
       m_gameSize(gameSize), m_gameImage(gameImage) {
     setupUI();
-    resize(800, 400);
+    resize(850, 400);
+    setWindowTitle("Cheats / Patches");
 }
 
 CheatsPatches::~CheatsPatches() {}
@@ -84,10 +85,10 @@ void CheatsPatches::setupUI() {
     QVBoxLayout* patchesLayout = new QVBoxLayout();
 
     // Setup the cheats tab
-    QGroupBox* cheatsGroupBox = new QGroupBox("Cheats");
+    QGroupBox* cheatsGroupBox = new QGroupBox();
     rightLayout = new QVBoxLayout(cheatsGroupBox);
-    checkBoxStyle = "QCheckBox { font-size: 19px; }";
-    buttonStyle = "QPushButton { font-size: 19px; }";
+    checkBoxStyle = "QCheckBox { font-size: 17px; }";
+    buttonStyle = "QPushButton { font-size: 17px; }";
     rightLayout->setAlignment(Qt::AlignTop);
 
     loadCheats(m_cheatFilePath);
@@ -100,6 +101,7 @@ void CheatsPatches::setupUI() {
     // Add a check for updates button
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     QPushButton* checkUpdateButton = new QPushButton("Download Cheats");
+    checkUpdateButton->setStyleSheet(buttonStyle);
     connect(checkUpdateButton, &QPushButton::clicked, [=]() {
         if (QFile::exists(m_cheatFilePath)) {
             QMessageBox::StandardButton reply;
@@ -129,8 +131,8 @@ void CheatsPatches::setupUI() {
                     loadCheats(m_cheatFilePath);
                 }
             } else {
-                QMessageBox::warning(this, "Cheats/Patches not found",
-                                     "No Cheats/Patches found for this game in this version.");
+                QMessageBox::warning(this, "Cheats not found",
+                                     "No Cheats found for this game in this version.");
             }
             reply->deleteLater();
         });
@@ -165,6 +167,8 @@ void CheatsPatches::addMods(const QJsonArray& modsArray) {
     }
     m_cheats.clear();
 
+    int maxWidthButton = 0;
+
     for (const QJsonValue& modValue : modsArray) {
         QJsonObject modObject = modValue.toObject();
         QString modName = modObject["name"].toString();
@@ -195,14 +199,53 @@ void CheatsPatches::addMods(const QJsonArray& modsArray) {
         } else if (modType == "button") {
             QPushButton* cheatButton = new QPushButton(modName);
             cheatButton->setStyleSheet(buttonStyle);
-            rightLayout->addWidget(cheatButton);
+            cheatButton->adjustSize();
+            int buttonWidth = cheatButton->sizeHint().width();
+            if (buttonWidth > maxWidthButton) {
+                maxWidthButton = buttonWidth;
+            }
+
+            // Create a horizontal layout for buttons
+            QHBoxLayout* buttonLayout = new QHBoxLayout();
+            buttonLayout->setContentsMargins(0, 0, 0, 0);
+            buttonLayout->addWidget(cheatButton);
+            buttonLayout->addStretch();
+
+            rightLayout->addLayout(buttonLayout); // Add the layout to the main layout
             connect(cheatButton, &QPushButton::clicked, [=]() { applyCheat(modName, true); });
+        }
+    }
+
+    // Set minimum and fixed size for all buttons
+    for (int i = 0; i < rightLayout->count(); ++i) {
+        QLayoutItem* layoutItem = rightLayout->itemAt(i);
+        QWidget* widget = layoutItem->widget();
+        if (widget) {
+            QPushButton* button = qobject_cast<QPushButton*>(widget);
+            if (button) {
+                button->setMinimumWidth(maxWidthButton);
+                button->setFixedWidth(maxWidthButton);
+            }
+        } else {
+            QLayout* layout = layoutItem->layout();
+            if (layout) {
+                for (int j = 0; j < layout->count(); ++j) {
+                    QLayoutItem* innerItem = layout->itemAt(j);
+                    QWidget* innerWidget = innerItem->widget();
+                    if (innerWidget) {
+                        QPushButton* button = qobject_cast<QPushButton*>(innerWidget);
+                        if (button) {
+                            button->setMinimumWidth(maxWidthButton);
+                            button->setFixedWidth(maxWidthButton);
+                        }
+                    }
+                }
+            }
         }
     }
 
     QLabel* creditsLabel = new QLabel();
     QString creditsText = "Author: ";
-
     QFile file(m_cheatFilePath);
     if (file.open(QIODevice::ReadOnly)) {
         QByteArray jsonData = file.readAll();
@@ -225,6 +268,12 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
     if (!m_cheats.contains(modName))
         return;
 
+    if (cheats_eboot_address == 0) {
+        QMessageBox::warning(this, "Cheats not found",
+                             "Can't apply mod until a game has been started.");
+        return;
+    }
+
     Cheat cheat = m_cheats[modName];
 
     for (const MemoryMod& memoryMod : cheat.memoryMods) {
@@ -237,12 +286,8 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         LOG_INFO(Loader, "Cheat applied:{}, Offset:{}, Value:{}", modNameStr, offsetStr, valueStr);
 
         // Send a request to modify the process memory.
-        if (cheats_eboot_address == 0) {
-            LOG_INFO(Loader, "Can't apply mod until a game has been started");
-            return;
-        }
-
-        void* cheatAddress = reinterpret_cast<void*>(cheats_eboot_address + std::stoi(offsetStr, 0, 16));
+        void* cheatAddress =
+            reinterpret_cast<void*>(cheats_eboot_address + std::stoi(offsetStr, 0, 16));
 
         std::vector<unsigned char> bytePatch;
 
@@ -252,7 +297,6 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
 
             bytePatch.push_back(byte);
         }
-    
         std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
     }
 }
