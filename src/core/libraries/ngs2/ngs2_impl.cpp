@@ -28,7 +28,7 @@ s32 Ngs2::ReportInvalid(Ngs2Handle* handle, u32 handle_type) const {
         LOG_ERROR(Lib_Ngs2, "Invalid report handle {}", hAddress);
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
     default:
-        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", );
+        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", hAddress);
         return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
 }
