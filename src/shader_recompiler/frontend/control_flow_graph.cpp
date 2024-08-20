@@ -37,6 +37,7 @@ static IR::Condition MakeCondition(Opcode opcode) {
         return IR::Condition::Execnz;
     case Opcode::S_AND_SAVEEXEC_B64:
     case Opcode::S_ANDN2_B64:
+    case Opcode::V_CMPX_NE_U32:
         return IR::Condition::Execnz;
     default:
         return IR::Condition::True;
@@ -93,7 +94,7 @@ void CFG::EmitDivergenceLabels() {
                // While this instruction does not save EXEC it is often used paired
                // with SAVEEXEC to mask the threads that didn't pass the condition
                // of initial branch.
-               inst.opcode == Opcode::S_ANDN2_B64;
+               inst.opcode == Opcode::S_ANDN2_B64 || inst.opcode == Opcode::V_CMPX_NE_U32;
     };
     const auto is_close_scope = [](const GcnInst& inst) {
         // Closing an EXEC scope can be either a branch instruction
@@ -187,7 +188,7 @@ void CFG::LinkBlocks() {
         const auto end_inst{block.end_inst};
         // Handle divergence block inserted here.
         if (end_inst.opcode == Opcode::S_AND_SAVEEXEC_B64 ||
-            end_inst.opcode == Opcode::S_ANDN2_B64) {
+            end_inst.opcode == Opcode::S_ANDN2_B64 || end_inst.opcode == Opcode::V_CMPX_NE_U32) {
             // Blocks are stored ordered by address in the set
             auto next_it = std::next(it);
             auto* target_block = &(*next_it);
