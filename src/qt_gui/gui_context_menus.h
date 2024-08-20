@@ -3,27 +3,22 @@
 
 #pragma once
 
-#include <QCheckBox>
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFile>
-#include <QGroupBox>
 #include <QHeaderView>
 #include <QImage>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPixmap>
-#include <QPushButton>
-#include <QScrollArea>
 #include <QStandardPaths>
 #include <QTableWidget>
 #include <QTextStream>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
 
+#include "cheats_patches.h"
 #include "game_info.h"
 #include "trophy_viewer.h"
 
@@ -139,257 +134,16 @@ public:
         }
 
         if (selected == &openCheats) {
-            const auto& CHEATS_DIR = Common::FS::GetUserPath(Common::FS::PathType::CheatsDir);
-            QString CHEATS_DIR_QString = QString::fromStdString(CHEATS_DIR.string());
-            const QString NameCheatJson = QString::fromStdString(m_games[itemID].serial) + "_" +
-                                          QString::fromStdString(m_games[itemID].version) + ".json";
-            const QString cheatFilePath = CHEATS_DIR_QString + "/" + NameCheatJson;
-
-            QWidget* cheatWidget = new QWidget();
-            cheatWidget->setAttribute(Qt::WA_DeleteOnClose);
-            cheatWidget->setWindowTitle("Cheats/Patches");
-            cheatWidget->resize(700, 300);
-
-            QVBoxLayout* mainLayout = new QVBoxLayout(cheatWidget);
-            QHBoxLayout* horizontalLayout = new QHBoxLayout();
-
-            // GroupBox for game information (Left side)
-            QGroupBox* gameInfoGroupBox = new QGroupBox();
-            QVBoxLayout* leftLayout = new QVBoxLayout(gameInfoGroupBox);
-            leftLayout->setAlignment(Qt::AlignTop);
-
-            // Game image
-            QLabel* gameImage = new QLabel();
-            QPixmap pixmap(QString::fromStdString(m_games[itemID].icon_path));
-            gameImage->setPixmap(pixmap.scaled(250, 250, Qt::KeepAspectRatio));
-            gameImage->setAlignment(Qt::AlignCenter);
-            leftLayout->addWidget(gameImage, 0, Qt::AlignCenter);
-
-            // Game name
-            QLabel* gameName = new QLabel(QString::fromStdString(m_games[itemID].name));
-            gameName->setAlignment(Qt::AlignLeft);
-            gameName->setWordWrap(true);
-            leftLayout->addWidget(gameName);
-
-            // Game serial
-            QLabel* gameSerial =
-                new QLabel("Serial: " + QString::fromStdString(m_games[itemID].serial));
-            gameSerial->setAlignment(Qt::AlignLeft);
-            leftLayout->addWidget(gameSerial);
-
-            // Game version
-            QLabel* gameVersion =
-                new QLabel("Version: " + QString::fromStdString(m_games[itemID].version));
-            gameVersion->setAlignment(Qt::AlignLeft);
-            leftLayout->addWidget(gameVersion);
-
-            // Game size
-            QLabel* gameSize = new QLabel("Size: " + QString::fromStdString(m_games[itemID].size));
-            gameSize->setAlignment(Qt::AlignLeft);
-            leftLayout->addWidget(gameSize);
-
-            // Check for credits and add QLabel if exists
-            QFile file(cheatFilePath);
-            if (file.open(QIODevice::ReadOnly)) {
-                QByteArray jsonData = file.readAll();
-                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                QJsonObject jsonObject = jsonDoc.object();
-
-                if (jsonObject.contains("credits")) {
-                    QJsonArray creditsArray = jsonObject["credits"].toArray();
-                    if (!creditsArray.isEmpty()) {
-                        QStringList creditsList;
-                        for (const QJsonValue& value : creditsArray) {
-                            creditsList.append(value.toString());
-                        }
-                        QString credits = creditsList.join(", ");
-                        QLabel* creditsLabel = new QLabel("Author: " + credits);
-                        creditsLabel->setAlignment(Qt::AlignLeft);
-                        leftLayout->addWidget(creditsLabel);
-                    }
-                }
-            }
-
-            gameInfoGroupBox->setLayout(leftLayout);
-            horizontalLayout->addWidget(gameInfoGroupBox);
-            QScrollArea* scrollArea = new QScrollArea();
-            scrollArea->setWidgetResizable(true);
-
-            // Right
-            QGroupBox* cheatsGroupBox = new QGroupBox();
-            QVBoxLayout* rightLayout = new QVBoxLayout(cheatsGroupBox);
-            QString checkBoxStyle = "QCheckBox { font-size: 19px; }";
-            QString buttonStyle = "QPushButton { font-size: 19px; }";
-            rightLayout->setAlignment(Qt::AlignTop);
-
-            // Function to add checkboxes and buttons to the layout
-            auto addMods = [=](const QJsonArray& modsArray) {
-                // Limpar widgets existentes
-                QLayoutItem* item;
-                while ((item = rightLayout->takeAt(0)) != nullptr) {
-                    delete item->widget();
-                    delete item;
-                }
-
-                for (const QJsonValue& modValue : modsArray) {
-                    QJsonObject modObject = modValue.toObject();
-                    QString modName = modObject["name"].toString();
-                    QString modType = modObject["type"].toString();
-
-                    if (modType == "checkbox") {
-                        bool isEnabled = modObject.contains("is_enabled")
-                                             ? modObject["is_enabled"].toBool()
-                                             : false;
-                        QCheckBox* cheatCheckBox = new QCheckBox(modName);
-                        cheatCheckBox->setStyleSheet(checkBoxStyle);
-                        cheatCheckBox->setChecked(isEnabled);
-                        rightLayout->addWidget(cheatCheckBox);
-
-                        // Connect the toggled(bool) signal to handle state change
-                        connect(cheatCheckBox, &QCheckBox::toggled, [=](bool checked) {
-                            if (checked) {
-                                // Implement action when checkbox is checked
-                            } else {
-                                // Implement action when checkbox is unchecked
-                            }
-                        });
-                    } else if (modType == "button") {
-                        QPushButton* cheatButton = new QPushButton(modName);
-                        cheatButton->setStyleSheet(buttonStyle);
-                        connect(cheatButton, &QPushButton::clicked, [=]() {
-                            // Implementar a ação do botão !!!
-                        });
-                        rightLayout->addWidget(cheatButton);
-                    }
-                }
-            };
-
-            QNetworkAccessManager* manager = new QNetworkAccessManager(cheatWidget);
-
-            auto loadCheats = [=](const QString& filePath) {
-                QFile file(filePath);
-                if (file.open(QIODevice::ReadOnly)) {
-                    QByteArray jsonData = file.readAll();
-                    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                    QJsonObject jsonObject = jsonDoc.object();
-                    QJsonArray modsArray = jsonObject["mods"].toArray();
-                    addMods(modsArray);
-                }
-            };
-
-            loadCheats(cheatFilePath);
-            cheatsGroupBox->setLayout(rightLayout);
-            scrollArea->setWidget(cheatsGroupBox);
-            horizontalLayout->addWidget(scrollArea);
-            mainLayout->addLayout(horizontalLayout);
-
-            QHBoxLayout* buttonLayout = new QHBoxLayout();
-            QPushButton* checkUpdateButton = new QPushButton("Check Update");
-            QPushButton* cancelButton = new QPushButton("Cancel");
-            QPushButton* saveButton = new QPushButton("Save");
-
-            connect(checkUpdateButton, &QPushButton::clicked, [=]() {
-                if (QFile::exists(cheatFilePath)) {
-                    QMessageBox::StandardButton reply;
-                    reply = QMessageBox::question(cheatWidget, "File Exists",
-                                                  "File already exists. Do you want to replace it?",
-                                                  QMessageBox::Yes | QMessageBox::No);
-                    if (reply == QMessageBox::No) {
-                        return;
-                    }
-                }
-
-                // Cheats repository URL, replace with a synced fork of the repository
-                const QString url = "https://raw.githubusercontent.com/GoldHEN/"
-                                    "GoldHEN_Cheat_Repository/main/json/" +
-                                    NameCheatJson;
-
-                QNetworkRequest request(url);
-                QNetworkReply* reply = manager->get(request);
-
-                connect(reply, &QNetworkReply::finished, [=]() {
-                    if (reply->error() == QNetworkReply::NoError) {
-                        QByteArray jsonData = reply->readAll();
-
-                        // Save the JSON file in the cheats folder
-                        QFile cheatFile(cheatFilePath);
-                        if (cheatFile.open(QIODevice::WriteOnly)) {
-                            cheatFile.write(jsonData);
-                            cheatFile.close();
-                        }
-
-                        // Reload and add new widgets
-                        loadCheats(cheatFilePath);
-                    } else {
-                        QMessageBox::warning(
-                            cheatWidget, "Cheats/Patches not found",
-                            "No Cheats/Patches found for this game in this version.");
-                    }
-
-                    reply->deleteLater();
-                });
-            });
-
-            connect(cancelButton, &QPushButton::clicked, [=]() { cheatWidget->close(); });
-
-            connect(saveButton, &QPushButton::clicked, [=]() {
-                QJsonDocument jsonDoc;
-                QFile file(cheatFilePath);
-                if (file.open(QIODevice::ReadOnly)) {
-                    jsonDoc = QJsonDocument::fromJson(file.readAll());
-                    file.close();
-                }
-
-                QJsonObject json = jsonDoc.object();
-                QJsonArray modsArray = json["mods"].toArray();
-
-                QMap<QString, bool> modMap;
-                for (int i = 0; i < rightLayout->count(); ++i) {
-                    QWidget* widget = rightLayout->itemAt(i)->widget();
-                    if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
-                        modMap[checkBox->text()] = checkBox->isChecked();
-                    }
-                    // Buttons don't need state saving, so we ignore them.
-                }
-
-                for (auto it = modMap.begin(); it != modMap.end(); ++it) {
-                    bool found = false;
-                    for (int i = 0; i < modsArray.size(); ++i) {
-                        QJsonObject mod = modsArray[i].toObject();
-                        if (mod["name"].toString() == it.key()) {
-                            mod["is_enabled"] = it.value();
-                            modsArray[i] = mod;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        QJsonObject newMod;
-                        newMod["name"] = it.key();
-                        newMod["is_enabled"] = it.value();
-                        modsArray.append(newMod);
-                    }
-                }
-
-                json["mods"] = modsArray;
-                jsonDoc.setObject(json);
-
-                if (file.open(QIODevice::WriteOnly)) {
-                    file.write(jsonDoc.toJson());
-                    file.close();
-                    QMessageBox::information(cheatWidget, "Save", "Settings saved.");
-                    cheatWidget->close();
-                } else {
-                    QMessageBox::warning(cheatWidget, "Error", "Could not open file for writing.");
-                }
-            });
-
-            buttonLayout->addWidget(checkUpdateButton);
-            buttonLayout->addWidget(cancelButton);
-            buttonLayout->addWidget(saveButton);
-            mainLayout->addLayout(buttonLayout);
-            cheatWidget->setLayout(mainLayout);
-            cheatWidget->show();
+            QString gameName = QString::fromStdString(m_games[itemID].name);
+            QString gameSerial = QString::fromStdString(m_games[itemID].serial);
+            QString gameVersion = QString::fromStdString(m_games[itemID].version);
+            QString gameSize = QString::fromStdString(m_games[itemID].size);
+            QPixmap gameImage(QString::fromStdString(m_games[itemID].icon_path));
+            CheatsPatches* cheatsPatches =
+                new CheatsPatches(gameName, gameSerial, gameVersion, gameSize, gameImage);
+            cheatsPatches->show();
+            connect(widget->parent(), &QWidget::destroyed, cheatsPatches,
+                    [widget, cheatsPatches]() { cheatsPatches->deleteLater(); });
         }
 
         if (selected == &openTrophyViewer) {
