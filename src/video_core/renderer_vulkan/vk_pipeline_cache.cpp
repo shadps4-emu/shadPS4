@@ -324,17 +324,6 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
     const auto& cs_pgm = liverpool->regs.cs_program;
     const auto code = cs_pgm.Code();
 
-    if (compute_key == 0xa509af23 || compute_key == 0x4ca76892 || compute_key == 0xa954e79d) {
-        return nullptr;
-    }
-
-    auto it = program_cache.find(compute_key);
-    if (it != program_cache.end()) {
-        const Program* program = it.value().get();
-        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, compute_key,
-                                                 program);
-    }
-
     // Dump shader code if requested.
     if (Config::dumpShaders()) {
         DumpShader(code, compute_key, Shader::Stage::Compute, "bin");
