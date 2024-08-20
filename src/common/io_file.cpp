@@ -217,7 +217,7 @@ void IOFile::Close() {
     file = nullptr;
 
 #ifdef _WIN64
-    if (file_mapping) {
+    if (file_mapping && file_access_mode == FileAccessMode::ReadWrite) {
         CloseHandle(std::bit_cast<HANDLE>(file_mapping));
     }
 #endif
@@ -259,8 +259,7 @@ uintptr_t IOFile::GetFileMapping() {
         mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT, 0,
                                      NULL, NULL, 0);
     } else {
-        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_READ, PAGE_READONLY, SEC_COMMIT, 0, NULL,
-                                     NULL, 0);
+        mapping = hfile;
     }
 
     file_mapping = std::bit_cast<uintptr_t>(mapping);

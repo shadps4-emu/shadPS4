@@ -242,10 +242,11 @@ void MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
     vma.disallow_merge = false;
     vma.name = "";
     MergeAdjacent(vma_map, new_it);
+    bool readonly = vma.prot == MemoryProt::CpuRead;
 
     // Unmap the memory region.
     impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-               has_backing);
+               has_backing, readonly);
     TRACK_FREE(virtual_addr, "VMEM");
 }
 
