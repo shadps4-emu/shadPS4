@@ -12,22 +12,22 @@ using namespace Libraries::Kernel;
 
 namespace Libraries::Ngs2 {
 
-s32 Ngs2::ReportInvalid(u32 handle_type) const {
+s32 Ngs2::ReportInvalid(Ngs2Handle* handle, u32 handle_type) const {
     switch (handle_type) {
     case 1:
-        LOG_ERROR(Lib_Ngs2, "Invalid system handle {}", this);
+        LOG_ERROR(Lib_Ngs2, "Invalid system handle {}", &handle);
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     case 2:
-        LOG_ERROR(Lib_Ngs2, "Invalid rack handle {}", this);
+        LOG_ERROR(Lib_Ngs2, "Invalid rack handle {}", handle_type);
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     case 4:
-        LOG_ERROR(Lib_Ngs2, "Invalid voice handle {}", this);
+        LOG_ERROR(Lib_Ngs2, "Invalid voice handle {}", handle_type);
         return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
     case 8:
-        LOG_ERROR(Lib_Ngs2, "Invalid report handle {}", this);
+        LOG_ERROR(Lib_Ngs2, "Invalid report handle {}", handle_type);
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
     default:
-        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", this);
+        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", handle_type);
         return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
 }
@@ -58,24 +58,24 @@ s32 Ngs2::HandleCleanup(Ngs2Handle* handle, u32 hType, void* dataOut) {
             }
         }
     }
-    return this.HandleReportInvalid(handle, hType);
+    return this->ReportInvalid(handle, hType);
 }
 
 s32 Ngs2::HandleEnter(Ngs2Handle* handle, u32 hType, Ngs2Handle* handleOut) {
     if (!handle) {
-        return this.HandleReportInvalid(handle, 0);
+        return this->ReportInvalid(handle, 0);
     }
 
     if (handle->selfPointer != handle || !handle->atomicPtr || !handle->dataPointer ||
         (~hType & handle->handleType)) {
-        return this.HandleReportInvalid(handle, handle->handleType);
+        return this->ReportInvalid(handle, handle->handleType);
     }
 
     std::atomic<u32>* atomic = handle->atomicPtr;
     while (true) {
         u32 i = atomic->load();
         if (i == 0) {
-            return this.HandleReportInvalid(handle, handle->handleType);
+            return this->ReportInvalid(handle, handle->handleType);
         }
         if (atomic->compare_exchange_strong(i, i + 1)) {
             break;
@@ -83,7 +83,7 @@ s32 Ngs2::HandleEnter(Ngs2Handle* handle, u32 hType, Ngs2Handle* handleOut) {
     }
 
     if (handleOut) {
-        *handleOut = handle;
+        handleOut = handle;
     }
     return ORBIS_OK;
 }
