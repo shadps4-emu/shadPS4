@@ -34,9 +34,6 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
-static constexpr s32 WindowWidth = 1280;
-static constexpr s32 WindowHeight = 720;
-
 Emulator::Emulator() {
     // Read configuration file.
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -117,8 +114,8 @@ void Emulator::Run(const std::filesystem::path& file) {
         window_title =
             fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
     }
-    window =
-        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(
+        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
 
     g_window = window.get();
 
