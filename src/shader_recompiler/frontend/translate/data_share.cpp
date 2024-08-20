@@ -162,18 +162,22 @@ void Translator::S_BARRIER() {
     ir.Barrier();
 }
 
+// TEMP: for Amplitude 2016
+// These are "warp instructions" and are stubbed to work outside of compute shaders.
+// The game makes use of them and works fine when the assertions are removed.
+
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
+    //ASSERT(info.stage != Stage::Compute);
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
+    //ASSERT(info.stage != Stage::Compute);
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
 void Translator::V_WRITELANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
+    //ASSERT(info.stage != Stage::Compute);
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 

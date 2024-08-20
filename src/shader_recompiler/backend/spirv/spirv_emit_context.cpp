@@ -426,6 +426,14 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         return spv::ImageFormat::Rgba8;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Srgb) {
+        // TEMP: for Amplitude 2016
+        // The game requests a Format8_8_8_8 SRGB image format.
+        // Interpreting it as R16Snorm makes the game draw with no major color deviations.
+        // What should the SRGB format be?
+        return spv::ImageFormat::R16Snorm;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
         return spv::ImageFormat::Rgba8ui;
     }
