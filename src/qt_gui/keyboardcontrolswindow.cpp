@@ -108,7 +108,7 @@ KeyboardControlsWindow::~KeyboardControlsWindow() {
     delete ui;
 }
 
-const std::map<Uint32, KeysMapping>& KeyboardControlsWindow::getKeysMapping() const {
+const std::map<u32, KeysMapping>& KeyboardControlsWindow::getKeysMapping() const {
     return m_keysMap;
 }
 

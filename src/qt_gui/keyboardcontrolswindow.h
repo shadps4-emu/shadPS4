@@ -23,7 +23,7 @@ public:
     KeyboardControlsWindow(QWidget* parent = nullptr);
     ~KeyboardControlsWindow();
 
-    const std::map<Uint32, KeysMapping>& getKeysMapping() const;
+    const std::map<u32, KeysMapping>& getKeysMapping() const;
 
 private slots:
     void onEditingFinished();
@@ -35,6 +35,6 @@ private:
 
     Ui::KeyboardControlsWindow* ui;
     QSet<QKeySequenceEdit*> m_listOfKeySequenceEdits;
-    std::map<Uint32, KeysMapping> m_keysMap;
-    std::map<KeysMapping, Uint32> m_reverseKeysMap;
+    std::map<u32, KeysMapping> m_keysMap;
+    std::map<KeysMapping, u32> m_reverseKeysMap;
 };

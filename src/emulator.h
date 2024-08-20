@@ -9,7 +9,6 @@
 #include "common/singleton.h"
 #include "core/linker.h"
 #include "input/controller.h"
-#include "input/keysmappingprovider.h"
 #include "sdl_window.h"
 
 namespace Core {
@@ -35,6 +34,6 @@ private:
     Input::GameController* controller;
     Core::Linker* linker;
     std::unique_ptr<Frontend::WindowSDL> window;
-    std::unique_ptr<KeysMappingProvider> m_keysMappingProvider;
+    std::map<u32, KeysMapping> m_keysBindingsMap;
 };
 } // namespace Core

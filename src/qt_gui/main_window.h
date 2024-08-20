@@ -42,7 +42,7 @@ public:
     void InstallDirectory();
     void StartGame();
 
-    std::map<Uint32, KeysMapping> getKeysMapping();
+    std::map<u32, KeysMapping> getKeysMapping();
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();

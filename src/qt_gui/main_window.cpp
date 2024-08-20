@@ -649,7 +649,7 @@ void MainWindow::InstallDirectory() {
     RefreshGameTable();
 }
 
-std::map<Uint32, KeysMapping> MainWindow::getKeysMapping() {
+std::map<u32, KeysMapping> MainWindow::getKeysMapping() {
     return m_keyboardControlsDialog->getKeysMapping();
 }
 

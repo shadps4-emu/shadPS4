@@ -48,7 +48,7 @@ std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 // Settings
 u32 m_language = 1; // english
-std::map<Uint32, KeysMapping> m_keyboard_binding_map;
+std::map<u32, KeysMapping> m_keyboard_binding_map;
 
 bool isLleLibc() {
     return isLibc;
@@ -248,11 +248,11 @@ void setRecentFiles(std::vector<std::string> recentFiles) {
     m_recent_files = recentFiles;
 }
 
-void setKeyboardBindingMap(std::map<Uint32, KeysMapping> map) {
+void setKeyboardBindingMap(std::map<u32, KeysMapping> map) {
     m_keyboard_binding_map = map;
 }
 
-std::map<Uint32, KeysMapping> getKeyboardBindingMap() {
+const std::map<u32, KeysMapping>& getKeyboardBindingMap() {
     return m_keyboard_binding_map;
 }
 
@@ -405,10 +405,10 @@ void load(const std::filesystem::path& path) {
             keyboardBindings = it->second.as_table();
         }
 
-        // Convert TOML table to std::map<Uint32, KeysMapping>
+        // Convert TOML table to std::map<u32, KeysMapping>
         for (const auto& [key, value] : keyboardBindings) {
             try {
-                Uint32 int_key = static_cast<Uint32>(std::stoll(key));
+                Uint32 int_key = static_cast<u32>(std::stoll(key));
                 if (value.is_integer()) {
                     // Convert the TOML integer value to KeysMapping (int)
                     int int_value = value.as_integer();

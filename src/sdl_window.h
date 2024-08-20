@@ -3,9 +3,10 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include "common/types.h"
-#include "input/keysmappingprovider.h"
+#include "input/keys_constants.h"
 
 struct SDL_Window;
 struct SDL_Gamepad;
@@ -66,7 +67,7 @@ public:
 
     void waitEvent();
 
-    void setKeysMappingProvider(KeysMappingProvider* provider);
+    void setKeysBindingsMap(const std::map<u32, KeysMapping>& bindingsMap);
 
 private:
     void onResize();
@@ -102,7 +103,7 @@ private:
     Input::GameController* controller;
     WindowSystemInfo window_info{};
     SDL_Window* window{};
-    KeysMappingProvider* keysMappingProvider = nullptr;
+    std::map<u32, KeysMapping> keysBindingsMap;
     bool is_shown{};
     bool is_open{true};
 };

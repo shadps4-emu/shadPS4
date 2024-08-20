@@ -108,8 +108,8 @@ void WindowSDL::waitEvent() {
     }
 }
 
-void WindowSDL::setKeysMappingProvider(KeysMappingProvider* provider) {
-    keysMappingProvider = provider;
+void WindowSDL::setKeysBindingsMap(const std::map<u32, KeysMapping>& bindingsMap) {
+    keysBindingsMap = bindingsMap;
 }
 
 void WindowSDL::onResize() {
@@ -125,8 +125,13 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     int ax = 0;
 
     bool keyHandlingPending = true;
-    if (keysMappingProvider != nullptr) {
-        auto ps4KeyOpt = keysMappingProvider->mapKey(event->key.key);
+    if (!keysBindingsMap.empty()) {
+
+        std::optional<KeysMapping> ps4KeyOpt;
+        auto foundIt = keysBindingsMap.find(event->key.key);
+        if (foundIt != keysBindingsMap.end()) {
+            ps4KeyOpt = foundIt->second;
+        }
 
         // No support for modifiers (yet)
         if (ps4KeyOpt.has_value() && (event->key.mod == SDL_KMOD_NONE)) {
@@ -385,6 +390,73 @@ void WindowSDL::handleRAnalogDownKey(const SDL_Event* event, u32& button, Input:
         axisvalue = 0;
     }
     ax = Input::GetAxis(-0x80, 0x80, axisvalue);
+}
+
+void WindowSDL::onGamepadEvent(const SDL_Event* event) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    u32 button = 0;
+    Input::Axis axis = Input::Axis::AxisMax;
+    switch (event->type) {
+    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
+        button = sdlGamepadToOrbisButton(event->gbutton.button);
+        if (button != 0) {
+            controller->CheckButton(0, button, event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+        }
+        break;
+    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        axis = event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX           ? Input::Axis::LeftX
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY         ? Input::Axis::LeftY
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTX        ? Input::Axis::RightX
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHTY        ? Input::Axis::RightY
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER  ? Input::Axis::TriggerLeft
+               : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ? Input::Axis::TriggerRight
+                                                                     : Input::Axis::AxisMax;
+        if (axis != Input::Axis::AxisMax) {
+            controller->Axis(0, axis, Input::GetAxis(-0x8000, 0x8000, event->gaxis.value));
+        }
+        break;
+    }
+}
+
+int WindowSDL::sdlGamepadToOrbisButton(u8 button) {
+    using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    switch (button) {
+    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_DOWN;
+    case SDL_GAMEPAD_BUTTON_DPAD_UP:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_UP;
+    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_LEFT;
+    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_RIGHT;
+    case SDL_GAMEPAD_BUTTON_SOUTH:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CROSS;
+    case SDL_GAMEPAD_BUTTON_NORTH:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TRIANGLE;
+    case SDL_GAMEPAD_BUTTON_WEST:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_SQUARE;
+    case SDL_GAMEPAD_BUTTON_EAST:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_CIRCLE;
+    case SDL_GAMEPAD_BUTTON_START:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_OPTIONS;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+    case SDL_GAMEPAD_BUTTON_BACK:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
+    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L1;
+    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R1;
+    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L3;
+    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+        return OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R3;
+    default:
+        return 0;
+    }
 }
 
 } // namespace Frontend
