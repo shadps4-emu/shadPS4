@@ -327,6 +327,13 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
         info.pgm_base = cs_pgm.Address<uintptr_t>();
         info.pgm_hash = compute_key;
+
+        // TEMP: for Amplitude 2016:
+        // Skip broken shader with V_MOVREL... instructions:
+        if (compute_key == 0xc7f34c4f) {
+            return nullptr;
+        }
+
         auto program =
             Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 
