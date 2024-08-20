@@ -34,35 +34,35 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # shadPS4
 
-shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++
+shadPS4, **Windows**, **Linux** ve **macOS** için yazılmış, C++ tabanlı erken aşama bir **PlayStation 4** emülatörüdür.
 
-If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
+Herhangi bir sorunla karşılaşırsanız veya sorularınız olursa, [**Hızlı Başlangıç**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md) kılavuzuna göz atabilirsiniz.
 
-To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-emu/shadps4-game-compatibility).
+Bir oyunun çalışıp çalışmadığını kontrol etmek için [**shadPS4 Oyun Uyumluluğu**](https://github.com/shadps4-emu/shadps4-game-compatibility) listesine bakabilirsiniz.
 
-To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
+shadPS4'ün geliştirilmesini tartışmak veya fikir önermek için [**Discord sunucumuza**](https://discord.gg/MyZRaBngxA) katılabilirsiniz.
 
-To get the latest news, go to our [**X (twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
+En son haberler için [**X (twitter)**](https://x.com/shadps4) hesabımıza veya [**web sitemize**](https://shadps4.net/) göz atabilirsiniz.
 
-# Status
+# Durum
 
-In development, small games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) and others...
+Geliştirme aşamasında, [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) ve diğer küçük oyunlar çalışmaktadır...
 
-# Why
+# Neden
 
-The project started as a fun project. Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
+Proje, eğlence amaçlı bir proje olarak başladı. Sınırlı boş zaman nedeniyle, shadPS4'ün düzgün bir şey çalıştırabilmesi muhtemelen biraz zaman alacak, ancak küçük ve düzenli güncellemeler yapmaya çalışıyoruz.
 
-# Build
+# Derleme
 
 ## Windows
 
-Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
+[**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md) için derleme talimatlarını kontrol edin.
 
 ## Linux
 
-Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
+[**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md) için derleme talimatlarını kontrol edin.
 
-## Build status
+## Derleme durumu
 
 <details>
 <summary><b>Windows</b></summary>
@@ -91,7 +91,7 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 |macOS Qt Build|[![macOS-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml)
 </details>
 
-# Keyboard Mapping
+# Klavye Haritası
 
 | Controller button | Keyboard |
 |-------------|-------------|
@@ -120,7 +120,7 @@ R2 | O |
 L3 | X |
 R3 | M |
 
-# Main team
+# Temel ekip
 
 - [**georgemoralis**](https://github.com/georgemoralis)
 - [**raphaelthegreat**](https://github.com/raphaelthegreat)
@@ -129,25 +129,25 @@ R3 | M |
 - [**wheremyfoodat**](https://github.com/wheremyfoodat)
 - [**raziel1000**](https://github.com/raziel1000)
 
-Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
+Logo [**Xphalnos**](https://github.com/Xphalnos) tarafından yapılmıştır.
 
-# Contributing
+# Katkıda bulunma
 
-If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.
+Katkıda bulunmak istiyorsanız, lütfen [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) dosyasına göz atın.
 
-Open a PR and we'll check it :)
+Bir PR açın, biz de kontrol edelim :)
 
-# Contributors
+# Katkıda bulunanlar
 
 <a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
 </a>
 
-# Sister Projects
+# Kardeş Projeler
 
-- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
-- [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
+- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): Yazarlarımızdan wheremyfoodat tarafından geliştirilmiş çoklu platformlu bir 3DS emülatörü.
+- [**hydra**](https://github.com/hydra-emu/hydra): Paris'ten chip-8, GB, NES ve N64 gibi sistemleri destekleyen çoklu platformlu bir emülatör.
 
-# License
+# Lisans
 
 - [**GPL-2.0 license**](https://github.com/shadps4-emu/shadPS4/blob/main/LICENSE)
