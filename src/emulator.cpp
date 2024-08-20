@@ -34,9 +34,6 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
-static constexpr s32 WindowWidth = 1280;
-static constexpr s32 WindowHeight = 720;
-
 Emulator::Emulator() {
     // Read configuration file.
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -91,8 +88,11 @@ void Emulator::Run(const std::filesystem::path& file) {
                 app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
-                playgo->Open(sce_sys_folder.string() + "/playgo-chunk.dat");
+                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
+                auto filepath = sce_sys_folder / "playgo-chunk.dat";
+                if (!playgo->Open(filepath)) {
+                    LOG_ERROR(Loader, "PlayGo: unable to open file");
+                }
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
@@ -114,8 +114,8 @@ void Emulator::Run(const std::filesystem::path& file) {
         window_title =
             fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
     }
-    window =
-        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(
+        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
 
     g_window = window.get();
 
