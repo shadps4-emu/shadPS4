@@ -1,4 +1,4 @@
-﻿# Debugging and reporting issues about shadPS4 and games
+﻿﻿# Debugging and reporting issues about shadPS4 and games
 
 This document covers information about debugging, troubleshooting and reporting developer-side issues related to shadPS4 and games.
 
@@ -43,9 +43,11 @@ Launch games through **Debug > Start debugging** (F5 by default).
 
 You can configure the emulator by editing the `config.toml` file found in the `user` folder created after starting the application.
 
-Here's a list of configuration entries that are worth changing:
+<details>
+   <summary>Some configuration entries worth changing</summary>
 
 - `[General]`
+  
   - `logType`: Configures logging synchronization (`sync`/`async`)
     - By default, the emulator logs messages asynchronously for better performance. Some log messages may end up being received out-of-order.
     - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
@@ -59,8 +61,23 @@ Here's a list of configuration entries that are worth changing:
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Error Render.Vulkan:Info`
+
+   - `Fullscreen`: Display the game in a full screen borderless window.
+     
 - `[GPU]`
+  - `dumpShaders`: Dump shaders that are loaded by the emulator. Dump path: `../user/shader/dumps`
+  - `nullGpu`: Disables rendering.
   - `screenWidth` and `screenHeight`: Configures the game window width and height.
+    
+- `[Vulkan]`
+   - `validation`-related settings: Use when debugging Vulkan.
+   - `rdocEnable`: Automatically hook RenderDoc when installed. Useful for debugging shaders and game rendering.
+   - `rdocMarkersEnable`: Enable automatic RenderDoc event annotation
+     
+- `[LLE]`
+   - `libc`: Use LLE with `libc`.
+   
+</details>
 
 ## Quick analysis
 
