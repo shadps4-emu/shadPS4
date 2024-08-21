@@ -1,6 +1,6 @@
 ﻿# Debugging and reporting issues about shadPS4 and games
 
-This document covers some preliminary information about debugging, troubleshooting and reporting developer-side issues related to shadPS4 and games.
+This document covers information about debugging, troubleshooting and reporting developer-side issues related to shadPS4 and games.
 
 ## Setup
 
@@ -25,11 +25,11 @@ Make sure you have the project set up for building on Windows with Visual Studio
 
 5. Right-click the **shadps4 (executable)** solution once more and click **Add debug configuration**.
 
-6. Place a `,` and add an `"args: []" section into the opened JSON file.\
-   Add your game path as an argument, as if you were launching the non-GUI emulator from the command line.
+6. Add an `"args: []"` section into the first `configurations` entry.\
+   List your game path as an argument, as if you were launching the non-GUI emulator from the command line.
    ![image](https://github.com/user-attachments/assets/8c7c3e69-f38f-4d6b-bdfd-4f1c41c50be7)
 
-7. Set the appropriate CMake configuration for debugging or testing.\
+7. Set the appropriate CMake configuration for debugging or testing.
    - For debugging the emulator and games within it, select `x64-Clang-Debug`.
    - For testing the emulator with compiler optimizations as a release build, it is recommended to select `x64-Clang-RelWithDebInfo`,
      as debug symbols will still be generated in case you encounter release configuration-exclusive bugs/errors.
