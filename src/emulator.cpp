@@ -53,13 +53,6 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
-    LOG_INFO(Config, "General isFullscreen: {}", Config::isFullscreenMode());
-    LOG_INFO(Config, "General logFilter: {}", Config::getLogFilter());
-    LOG_INFO(Config, "General logType: {}", Config::getLogType());
-    LOG_INFO(Config, "General userName: {}", Config::getUserName());
-    LOG_INFO(Config, "General isShowSplash: {}", Config::showSplash());
-    LOG_INFO(Config, "GPU screenWidth: {}", Config::getScreenWidth());
-    LOG_INFO(Config, "GPU screenHeight: {}", Config::getScreenHeight());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU shouldDumpPM4: {}", Config::dumpPM4());
@@ -70,25 +63,7 @@ Emulator::Emulator() {
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
     LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::isMarkersEnabled());
-    LOG_INFO(Config, "Debug isDebugDump: {}", Config::debugDump());
     LOG_INFO(Config, "LLE isLibc: {}," Config::isLleLibc());
-    LOG_INFO(Config, "GUI m_icon_size: {}", Config::getIconSize());
-    LOG_INFO(Config, "GUI m_icon_size_grid: {}", Config::getIconSizeGrid());
-    LOG_INFO(Config, "GUI m_slider_pos: {}", Config::getSliderPositon());
-    LOG_INFO(Config, "GUI m_slider_pos_grid: {}", Config::getSliderPositonGrid());
-    LOG_INFO(Config, "GUI mw_themes: {}", Config::getMainWindowTheme());
-    LOG_INFO(Config, "GUI m_window_size_W: {}", Config::getMainWindowWidth());
-    LOG_INFO(Config, "GUI m_window_size_H: {}", Config::getMainWindowHeight());
-    LOG_INFO(Config, "GUI settings_install_dir: {}", Config::getGameInstallDir());
-    LOG_INFO(Config, "GUI main_window_geometry_x: {}", Config::getMainWindowGeometryX());
-    LOG_INFO(Config, "GUI main_window_geometry_y: {}", Config::getMainWindowGeometryY());
-    LOG_INFO(Config, "GUI main_window_geometry_w: {}", Config::getMainWindowGeometryW());
-    LOG_INFO(Config, "GUI main_window_geometry_h: {}", Config::getMainWindowGeometryH());
-    LOG_INFO(Config, "GUI m_pkg_viwer: {}", Config::getPkgViewer());
-    LOG_INFO(Config, "GUI m_elf_viewer: {}", Config::getElfViewer());
-    LOG_INFO(Config, "GUI m_recent_files: {}", Conifg::getRecentFiles());
-    LOG_INFO(Config, "GUI m_table_mode: {}", Config::getTableMode());
-    LOG_INFO(Config, "Settings m_language: {}", Config::GetLanguage());
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
