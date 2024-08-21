@@ -20,6 +20,10 @@ namespace Vulkan {
 
 using Shader::VsOutput;
 
+[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
+    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
 void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
         if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
@@ -93,6 +97,8 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
         info.num_user_data = cs_pgm.settings.num_user_regs;
         info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                cs_pgm.num_thread_z.full};
+        info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
+                            cs_pgm.IsTgidEnabled(2)};
         info.shared_memory_size = cs_pgm.SharedMemSize();
         break;
     }
@@ -115,6 +121,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 }
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    // Tessellation is unsupported so skip the draw to avoid locking up the driver.
+    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+        return nullptr;
+    }
     RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
@@ -161,6 +171,8 @@ void PipelineCache::RefreshGraphicsKey() {
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
+    key.enable_primitive_restart = regs.enable_primitive_restart & 1;
+    key.primitive_restart_index = regs.primitive_restart_index;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
@@ -203,12 +215,20 @@ void PipelineCache::RefreshGraphicsKey() {
     }
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
+        if (!regs.stage_enable.IsStageEnabled(i)) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         auto* pgm = regs.ProgramForStage(i);
         if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
             continue;
         }
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo->Valid()) {
+            key.stage_hashes[i] = 0;
+            continue;
+        }
         key.stage_hashes[i] = bininfo->shader_hash;
     }
 }
@@ -230,22 +250,13 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
     }
 
     u32 binding{};
-    std::array<Shader::IR::Program, MaxShaderStages> programs;
-    std::array<const Shader::Info*, MaxShaderStages> infos{};
-
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!graphics_key.stage_hashes[i]) {
-            stages[i] = VK_NULL_HANDLE;
+            programs[i] = nullptr;
             continue;
         }
         auto* pgm = regs.ProgramForStage(i);
         const auto code = pgm->Code();
-
-        const auto it = module_map.find(graphics_key.stage_hashes[i]);
-        if (it != module_map.end()) {
-            stages[i] = *it->second;
-            continue;
-        }
 
         // Dump shader code if requested.
         const auto stage = Shader::Stage{i};
@@ -257,39 +268,56 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
-        if (stage != Shader::Stage::Compute && stage != Shader::Stage::Fragment &&
-            stage != Shader::Stage::Vertex) {
+        if (stage != Shader::Stage::Fragment && stage != Shader::Stage::Vertex) {
             LOG_ERROR(Render_Vulkan, "Unsupported shader stage {}. PL creation skipped.", stage);
             return {};
         }
 
+        const u64 lookup_hash = HashCombine(hash, binding);
+        auto it = program_cache.find(lookup_hash);
+        if (it != program_cache.end()) {
+            const Program* program = it.value().get();
+            ASSERT(program->pgm.info.stage == stage);
+            programs[i] = program;
+            binding = program->end_binding;
+            continue;
+        }
+
         // Recompile shader to IR.
         try {
+            auto program = std::make_unique<Program>();
+            block_pool.ReleaseContents();
+            inst_pool.ReleaseContents();
+
             LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
             Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
             info.pgm_base = pgm->Address<uintptr_t>();
             info.pgm_hash = hash;
-            programs[i] =
+            program->pgm =
                 Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 
             // Compile IR to SPIR-V
-            auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);
+            program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
             if (Config::dumpShaders()) {
-                DumpShader(spv_code, hash, stage, "spv");
+                DumpShader(program->spv, hash, stage, "spv");
             }
-            stages[i] = CompileSPV(spv_code, instance.GetDevice());
-            infos[i] = &programs[i].info;
+
+            // Compile module and set name to hash in renderdoc
+            program->end_binding = binding;
+            program->module = CompileSPV(program->spv, instance.GetDevice());
+            const auto name = fmt::format("{}_{:#x}", stage, hash);
+            Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
+
+            // Cache program
+            const auto [it, _] = program_cache.emplace(lookup_hash, std::move(program));
+            programs[i] = it.value().get();
         } catch (const Shader::Exception& e) {
             UNREACHABLE_MSG("{}", e.what());
         }
-
-        // Set module name to hash in renderdoc
-        const auto name = fmt::format("{}_{:#x}", stage, hash);
-        Vulkan::SetObjectName(instance.GetDevice(), stages[i], name);
     }
 
     return std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key, *pipeline_cache,
-                                              infos, stages);
+                                              programs);
 }
 
 std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
@@ -306,25 +334,31 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
 
     // Recompile shader to IR.
     try {
+        auto program = std::make_unique<Program>();
         LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
         Shader::Info info =
             MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
         info.pgm_base = cs_pgm.Address<uintptr_t>();
-        auto program =
+        info.pgm_hash = compute_key;
+        program->pgm =
             Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
 
         // Compile IR to SPIR-V
         u32 binding{};
-        const auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, program, binding);
+        program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
         if (Config::dumpShaders()) {
-            DumpShader(spv_code, compute_key, Shader::Stage::Compute, "spv");
+            DumpShader(program->spv, compute_key, Shader::Stage::Compute, "spv");
         }
-        const auto module = CompileSPV(spv_code, instance.GetDevice());
-        // Set module name to hash in renderdoc
+
+        // Compile module and set name to hash in renderdoc
+        program->module = CompileSPV(program->spv, instance.GetDevice());
         const auto name = fmt::format("cs_{:#x}", compute_key);
-        Vulkan::SetObjectName(instance.GetDevice(), module, name);
-        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
-                                                 &program.info, compute_key, module);
+        Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
+
+        // Cache program
+        const auto [it, _] = program_cache.emplace(compute_key, std::move(program));
+        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, compute_key,
+                                                 it.value().get());
     } catch (const Shader::Exception& e) {
         UNREACHABLE_MSG("{}", e.what());
         return nullptr;

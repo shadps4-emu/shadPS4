@@ -74,13 +74,22 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
                                                     size_t* sizeOut) {
     LOG_WARNING(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
                 searchStart, searchEnd, alignment);
+
+    if (searchEnd <= searchStart) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (searchEnd > SCE_KERNEL_MAIN_DMEM_SIZE) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     auto* memory = Core::Memory::Instance();
 
     PAddr physAddr;
-    s32 size = memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
+    s32 result =
+        memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
     *physAddrOut = static_cast<u64>(physAddr);
 
-    return size;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
@@ -212,9 +221,9 @@ s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* out_size) {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func) {
+void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]) {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->SetHeapApiFunc(func);
+    linker->SetHeapAPI(func);
 }
 
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,

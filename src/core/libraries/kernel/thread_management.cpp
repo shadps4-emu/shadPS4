@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
@@ -421,13 +422,21 @@ ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     return addr;
 }
 
-int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* attr,
+int PS4_SYSV_ABI scePthreadMutexInit(ScePthreadMutex* mutex, const ScePthreadMutexattr* mutex_attr,
                                      const char* name) {
+    const ScePthreadMutexattr* attr;
+
     if (mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
-    if (attr == nullptr) {
+    if (mutex_attr == nullptr) {
         attr = g_pthread_cxt->getDefaultMutexattr();
+    } else {
+        if (*mutex_attr == nullptr) {
+            attr = g_pthread_cxt->getDefaultMutexattr();
+        } else {
+            attr = mutex_attr;
+        }
     }
 
     *mutex = new PthreadMutexInternal{};
@@ -1086,6 +1095,19 @@ int PS4_SYSV_ABI scePthreadAttrGetstack(ScePthreadAttr* attr, void** addr, size_
     return SCE_KERNEL_ERROR_EINVAL;
 }
 
+int PS4_SYSV_ABI scePthreadAttrSetstack(ScePthreadAttr* attr, void* addr, size_t size) {
+    if (attr == nullptr || *attr == nullptr || addr == nullptr || size < 0x4000) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    int result = pthread_attr_setstack(&(*attr)->pth_attr, addr, size);
+    LOG_INFO(Kernel_Pthread, "scePthreadAttrSetstack: result = {}", result);
+
+    if (result == 0) {
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_EINVAL;
+}
+
 int PS4_SYSV_ABI scePthreadJoin(ScePthread thread, void** res) {
     int result = pthread_join(thread->pth, res);
     LOG_INFO(Kernel_Pthread, "scePthreadJoin result = {}", result);
@@ -1353,15 +1375,27 @@ int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
 }
 
 int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
-    return sem_init(sem, pshared, value);
+    int result = sem_init(sem, pshared, value);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
-    return sem_wait(sem);
+    int result = sem_wait(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
-    return sem_trywait(sem);
+    int result = sem_trywait(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 #ifndef HAVE_SEM_TIMEDWAIT
@@ -1395,19 +1429,35 @@ int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
 #endif
 
 int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
-    return sem_timedwait(sem, t);
+    int result = sem_timedwait(sem, t);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
-    return sem_post(sem);
+    int result = sem_post(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
-    return sem_destroy(sem);
+    int result = sem_destroy(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
-    return sem_getvalue(sem, sval);
+    int result = sem_getvalue(sem, sval);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const pthread_attr_t* attr, size_t* size) {
@@ -1542,6 +1592,7 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("B5GmVDKwpn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_yield);
 
     LIB_FUNCTION("-quPa4SEJUw", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstack);
+    LIB_FUNCTION("Bvn74vj6oLo", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrSetstack);
     LIB_FUNCTION("Ru36fiTtJzA", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstackaddr);
     LIB_FUNCTION("-fA+7ZlGDQs", "libkernel", 1, "libkernel", 1, 1, scePthreadAttrGetstacksize);
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", 1, 1, scePthreadOnce);

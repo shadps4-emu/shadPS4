@@ -165,14 +165,18 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     throw InvalidArgument("Invalid attribute type {}", fmt);
 }
 
-Id EmitContext::GetBufferOffset(u32 binding) {
-    const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
-    const u32 comp = (binding & 0xf) >> 2;
-    const u32 offset = (binding & 0x3) << 3;
-    const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                               push_data_block, ConstU32(half), ConstU32(comp))};
-    const Id value{OpLoad(U32[1], ptr)};
-    return OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+void EmitContext::DefineBufferOffsets() {
+    for (auto& buffer : buffers) {
+        const u32 binding = buffer.binding;
+        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
+        buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+        buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
+    }
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -327,7 +331,9 @@ void EmitContext::DefineBuffers() {
     for (u32 i = 0; const auto& buffer : info.buffers) {
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const Id record_array_type{TypeArray(data_type, ConstU32(buffer.length))};
+        const Id record_array_type{buffer.is_storage
+                                       ? TypeRuntimeArray(data_type)
+                                       : TypeArray(data_type, ConstU32(buffer.length))};
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
@@ -354,10 +360,12 @@ void EmitContext::DefineBuffers() {
 
         buffers.push_back({
             .id = id,
-            .global_binding = binding++,
+            .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
-            .buffer = buffer.GetVsharp(info),
+            .dfmt = buffer.dfmt,
+            .nfmt = buffer.nfmt,
+            .stride = buffer.GetVsharp(info).GetStride(),
         });
         interfaces.push_back(id);
         i++;
@@ -389,6 +397,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::R16f;
     }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Uint) {
+        return spv::ImageFormat::R16ui;
+    }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rg16f;
@@ -400,6 +412,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rgba16f;
+    }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
+        return spv::ImageFormat::Rgba16;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
@@ -507,43 +523,9 @@ void EmitContext::DefineSharedMemory() {
     if (info.shared_memory_size == 0) {
         info.shared_memory_size = DefaultSharedMemSize;
     }
-    const auto make{[&](Id element_type, u32 element_size) {
-        const u32 num_elements{Common::DivCeil(info.shared_memory_size, element_size)};
-        const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
-        Decorate(array_type, spv::Decoration::ArrayStride, element_size);
-
-        const Id struct_type{TypeStruct(array_type)};
-        MemberDecorate(struct_type, 0U, spv::Decoration::Offset, 0U);
-        Decorate(struct_type, spv::Decoration::Block);
-
-        const Id pointer{TypePointer(spv::StorageClass::Workgroup, struct_type)};
-        const Id element_pointer{TypePointer(spv::StorageClass::Workgroup, element_type)};
-        const Id variable{AddGlobalVariable(pointer, spv::StorageClass::Workgroup)};
-        Decorate(variable, spv::Decoration::Aliased);
-        interfaces.push_back(variable);
-
-        return std::make_tuple(variable, element_pointer, pointer);
-    }};
-    if (profile.support_explicit_workgroup_layout) {
-        AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
-        AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
-        if (info.uses_shared_u8) {
-            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout8BitAccessKHR);
-            std::tie(shared_memory_u8, shared_u8, std::ignore) = make(U8, 1);
-        }
-        if (info.uses_shared_u16) {
-            AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
-            std::tie(shared_memory_u16, shared_u16, std::ignore) = make(U16, 2);
-        }
-        std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make(U32[1], 4);
-        std::tie(shared_memory_u32x2, shared_u32x2, std::ignore) = make(U32[2], 8);
-        std::tie(shared_memory_u32x4, shared_u32x4, std::ignore) = make(U32[4], 16);
-        return;
-    }
     const u32 num_elements{Common::DivCeil(info.shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
-
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
     shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
     interfaces.push_back(shared_memory_u32);

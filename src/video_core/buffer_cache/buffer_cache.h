@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <mutex>
 #include <boost/container/small_vector.hpp>
 #include <boost/icl/interval_map.hpp>
@@ -69,11 +68,17 @@ public:
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written);
 
+    /// Obtains a temporary buffer for usage in texture cache.
+    [[nodiscard]] std::pair<const Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);
+
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
 
     /// Return true when a CPU region is modified from the CPU
     [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
+
+    /// Return true when a CPU region is modified from the GPU
+    [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
 private:
     template <typename Func>

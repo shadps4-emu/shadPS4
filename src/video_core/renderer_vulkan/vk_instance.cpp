@@ -8,6 +8,7 @@
 #include <fmt/ranges.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -163,7 +164,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceColorWriteEnableFeaturesEXT, vk::PhysicalDeviceVulkan12Features,
         vk::PhysicalDeviceVulkan13Features,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
+        vk::PhysicalDeviceDepthClipControlFeaturesEXT, vk::PhysicalDeviceRobustness2FeaturesEXT,
+        vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
         vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties>();
@@ -197,10 +199,12 @@ bool Instance::CreateDevice() {
     external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-    add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
+    const bool depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
+    vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+
     // The next two extensions are required to be available together in order to support write masks
     color_write_en = add_extension(VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
@@ -210,9 +214,21 @@ bool Instance::CreateDevice() {
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
+    const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+    if (has_sync2) {
+        has_nv_checkpoints = Config::isMarkersEnabled()
+                                 ? add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME)
+                                 : false;
+    }
+
+#ifdef __APPLE__
+    // Required by Vulkan spec if supported.
+    add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -308,20 +324,50 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceRobustness2FeaturesEXT{
             .nullDescriptor = true,
         },
+        vk::PhysicalDeviceSynchronization2Features{
+            .synchronization2 = true,
+        },
+        vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
+            .vertexInputDynamicState = true,
+        },
+#ifdef __APPLE__
+        feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
+#endif
     };
 
+    if (!maintenance4) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
+    }
+    if (!custom_border_color) {
+        device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
+    }
     if (!color_write_en) {
         device_chain.unlink<vk::PhysicalDeviceColorWriteEnableFeaturesEXT>();
         device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
-    if (!robustness) {
+    if (!depth_clip_control) {
+        device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
+    }
+    if (!workgroup_memory_explicit_layout) {
+        device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (robustness) {
+        device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =
+            feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor;
+    } else {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
+    }
+    if (!vertex_input_dynamic_state) {
+        device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
     }
 
     try {
         device = physical_device.createDeviceUnique(device_chain.get());
     } catch (vk::ExtensionNotPresentError& err) {
         LOG_CRITICAL(Render_Vulkan, "Some required extensions are not available {}", err.what());
+        return false;
+    } catch (vk::FeatureNotPresentError& err) {
+        LOG_CRITICAL(Render_Vulkan, "Some required features are not available {}", err.what());
         return false;
     }
 

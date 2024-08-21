@@ -41,6 +41,7 @@ enum class PM4ItOpcode : u32 {
     CondIndirectBuffer = 0x3F,
     CopyData = 0x40,
     CommandProcessorDma = 0x41,
+    PfpSyncMe = 0x42,
     SurfaceSync = 0x43,
     CondWrite = 0x45,
     EventWrite = 0x46,

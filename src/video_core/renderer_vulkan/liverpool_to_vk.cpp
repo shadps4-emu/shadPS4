@@ -81,6 +81,8 @@ vk::PrimitiveTopology PrimitiveType(Liverpool::PrimitiveType type) {
         return vk::PrimitiveTopology::eTriangleListWithAdjacency;
     case Liverpool::PrimitiveType::AdjTriangleStrip:
         return vk::PrimitiveTopology::eTriangleStripWithAdjacency;
+    case Liverpool::PrimitiveType::PatchPrimitive:
+        return vk::PrimitiveTopology::ePatchList;
     case Liverpool::PrimitiveType::QuadList:
         // Needs to generate index buffer on the fly.
         return vk::PrimitiveTopology::eTriangleList;
@@ -327,6 +329,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR16G16Sint,
         vk::Format::eR16G16Snorm,
         vk::Format::eR16Sfloat,
+        vk::Format::eR16Uint,
         vk::Format::eR16Unorm,
         vk::Format::eR32G32B32A32Sfloat,
         vk::Format::eR32G32B32A32Sint,
@@ -339,6 +342,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR32Sint,
         vk::Format::eR32Uint,
         vk::Format::eBc6HUfloatBlock,
+        vk::Format::eBc6HSfloatBlock,
         vk::Format::eR16G16Unorm,
         vk::Format::eR16G16B16A16Sscaled,
         vk::Format::eR16G16Sscaled,
@@ -539,6 +543,9 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     }
     if (data_format == AmdGpu::DataFormat::FormatBc6 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc6HUfloatBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc6 && num_format == AmdGpu::NumberFormat::Snorm) {
+        return vk::Format::eBc6HSfloatBlock;
     }
     if (data_format == AmdGpu::DataFormat::Format8_8_8_8 &&
         num_format == AmdGpu::NumberFormat::Sint) {

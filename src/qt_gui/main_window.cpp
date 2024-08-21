@@ -9,6 +9,7 @@
 #include <QStatusBar>
 #include <QtConcurrent>
 
+#include "about_dialog.h"
 #include "common/io_file.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
@@ -16,6 +17,7 @@
 #include "game_install_dialog.h"
 #include "main_window.h"
 #include "settings_dialog.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -39,6 +41,7 @@ bool MainWindow::Init() {
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
+    GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -158,11 +161,25 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::GetPhysicalDevices() {
+    Vulkan::Instance instance(false, false);
+    auto physical_devices = instance.GetPhysicalDevices();
+    for (const vk::PhysicalDevice physical_device : physical_devices) {
+        auto prop = physical_device.getProperties();
+        QString name = QString::fromUtf8(prop.deviceName, -1);
+        if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
+            name += " * Unsupported Vulkan Version";
+        }
+        m_physical_devices.push_back(name);
+    }
+}
+
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
@@ -186,9 +203,19 @@ void MainWindow::CreateConnects() {
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
 
-    connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(this);
+    connect(ui->configureAct, &QAction::triggered, this, [this]() {
+        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
         settingsDialog->exec();
+    });
+
+    connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
+        auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+        settingsDialog->exec();
+    });
+
+    connect(ui->aboutAct, &QAction::triggered, this, [this]() {
+        auto aboutDialog = new AboutDialog(this);
+        aboutDialog->exec();
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
@@ -313,6 +340,7 @@ void MainWindow::CreateConnects() {
 
     // Package install.
     connect(ui->bootInstallPkgAct, &QAction::triggered, this, &MainWindow::InstallPkg);
+    connect(ui->bootGameAct, &QAction::triggered, this, &MainWindow::BootGame);
     connect(ui->gameInstallPathAct, &QAction::triggered, this, &MainWindow::InstallDirectory);
 
     // elf viewer
@@ -418,6 +446,15 @@ void MainWindow::SearchGameTable(const QString& text) {
     }
 }
 
+void MainWindow::ShowGameList() {
+    if (ui->showGameListAct->isChecked()) {
+        RefreshGameTable();
+    } else {
+        m_game_grid_frame->clearContents();
+        m_game_list_frame->clearContents();
+    }
+};
+
 void MainWindow::RefreshGameTable() {
     // m_game_info->m_games.clear();
     m_game_info->GetGameInfo(this);
@@ -465,6 +502,27 @@ void MainWindow::InstallPkg() {
             path = std::filesystem::path(file.toStdWString());
 #endif
             MainWindow::InstallDragDropPkg(path, pkgNum, nPkg);
+        }
+    }
+}
+
+void MainWindow::BootGame() {
+    QFileDialog dialog;
+    dialog.setFileMode(QFileDialog::ExistingFile);
+    dialog.setNameFilter(tr("ELF files (*.bin *.elf *.oelf)"));
+    if (dialog.exec()) {
+        QStringList fileNames = dialog.selectedFiles();
+        int nFiles = fileNames.size();
+
+        if (nFiles > 1) {
+            QMessageBox::critical(nullptr, "Game Boot", QString("Only one file can be selected!"));
+        } else {
+            std::filesystem::path path(fileNames[0].toStdString());
+#ifdef _WIN64
+            path = std::filesystem::path(fileNames[0].toStdWString());
+#endif
+            Core::Emulator emulator;
+            emulator.Run(path);
         }
     }
 }
@@ -654,7 +712,9 @@ QIcon MainWindow::RecolorIcon(const QIcon& icon, bool isWhite) {
 
 void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
+    ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
+    ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
     ui->gameInstallPathAct->setIcon(RecolorIcon(ui->gameInstallPathAct->icon(), isWhite));
@@ -668,6 +728,8 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
+    ui->configureAct->setIcon(RecolorIcon(ui->configureAct->icon(), isWhite));
+    ui->addElfFolderAct->setIcon(RecolorIcon(ui->addElfFolderAct->icon(), isWhite));
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event) {

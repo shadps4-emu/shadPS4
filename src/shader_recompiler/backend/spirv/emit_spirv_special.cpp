@@ -6,7 +6,9 @@
 
 namespace Shader::Backend::SPIRV {
 
-void EmitPrologue(EmitContext& ctx) {}
+void EmitPrologue(EmitContext& ctx) {
+    ctx.DefineBufferOffsets();
+}
 
 void EmitEpilogue(EmitContext& ctx) {}
 

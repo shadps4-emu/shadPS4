@@ -25,9 +25,9 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory) {
+std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    auto corrected_path = guest_directory;
+    std::string corrected_path(guest_directory);
     size_t pos = corrected_path.find("//");
     while (pos != std::string::npos) {
         corrected_path.replace(pos, 2, "/");
@@ -54,6 +54,7 @@ std::filesystem::path MntPoints::GetHostPath(const std::string& guest_directory)
 
     // If the path does not exist attempt to verify this.
     // Retrieve parent path until we find one that exists.
+    std::scoped_lock lk{m_mutex};
     path_parts.clear();
     auto current_path = host_path;
     while (!std::filesystem::exists(current_path)) {

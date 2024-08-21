@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QClipboard>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFile>
@@ -52,6 +53,18 @@ public:
         menu.addAction(&createShortcut);
         menu.addAction(&openSfoViewer);
         menu.addAction(&openTrophyViewer);
+
+        // "Copy" submenu.
+        QMenu* copyMenu = new QMenu("Copy info", widget);
+        QAction* copyName = new QAction("Copy Name", widget);
+        QAction* copySerial = new QAction("Copy Serial", widget);
+        QAction* copyNameAll = new QAction("Copy All", widget);
+
+        copyMenu->addAction(copyName);
+        copyMenu->addAction(copySerial);
+        copyMenu->addAction(copyNameAll);
+
+        menu.addMenu(copyMenu);
 
         // Show menu.
         auto selected = menu.exec(global_pos);
@@ -190,6 +203,27 @@ public:
                                           QString("Error creating shortcut!\n %1").arg(linkPath));
                 }
             }
+        }
+
+        // Handle the "Copy" actions
+        if (selected == copyName) {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            clipboard->setText(QString::fromStdString(m_games[itemID].name));
+        }
+
+        if (selected == copySerial) {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            clipboard->setText(QString::fromStdString(m_games[itemID].serial));
+        }
+
+        if (selected == copyNameAll) {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            QString combinedText = QString("Name:%1 | Serial:%2 | Version:%3 | Size:%4")
+                                       .arg(QString::fromStdString(m_games[itemID].name))
+                                       .arg(QString::fromStdString(m_games[itemID].serial))
+                                       .arg(QString::fromStdString(m_games[itemID].version))
+                                       .arg(QString::fromStdString(m_games[itemID].size));
+            clipboard->setText(combinedText);
         }
     }
 
