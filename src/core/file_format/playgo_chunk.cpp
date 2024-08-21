@@ -60,7 +60,7 @@ bool PlaygoFile::LoadChunks(const Common::FS::IOFile& file) {
     return false;
 }
 
-bool PlaygoFile::load_chunk_data(const Common::FS::IOFile& file, const chunk_t& chunk,
+bool PlaygoFile::load_chunk_data(const Common::FS::IOFile& file, const chunk_t chunk,
                                  std::string& data) {
     if (file.IsOpen()) {
         if (file.Seek(chunk.offset)) {

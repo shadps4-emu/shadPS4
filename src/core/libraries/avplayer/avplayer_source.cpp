@@ -82,7 +82,7 @@ static s32 CodecTypeToStreamType(AVMediaType codec_type) {
     }
 }
 
-static f32 AVRationalToF32(const AVRational& rational) {
+static f32 AVRationalToF32(const AVRational rational) {
     return f32(rational.num) / rational.den;
 }
 
