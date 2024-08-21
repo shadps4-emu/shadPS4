@@ -1,4 +1,4 @@
-﻿﻿# Debugging and reporting issues about shadPS4 and games
+﻿# Debugging and reporting issues about shadPS4 and games
 
 This document covers information about debugging, troubleshooting and reporting developer-side issues related to shadPS4 and games.
 
