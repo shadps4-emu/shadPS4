@@ -1,4 +1,9 @@
-﻿# Debugging and reporting issues about shadPS4 and games
+<!--
+SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+
+ # Debugging and reporting issues about shadPS4 and games
 
 This document covers information about debugging, troubleshooting and reporting developer-side issues related to shadPS4 and games.
 
