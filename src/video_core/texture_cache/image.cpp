@@ -9,7 +9,10 @@
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/tile_manager.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
+#pragma GCC diagnostic pop
 
 namespace VideoCore {
 

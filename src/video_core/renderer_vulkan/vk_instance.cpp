@@ -14,7 +14,10 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
+#pragma GCC diagnostic pop
 
 namespace Vulkan {
 
