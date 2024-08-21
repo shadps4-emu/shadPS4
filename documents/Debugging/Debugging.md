@@ -60,7 +60,7 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - Valid log levels: `Trace, Debug, Info, Warning, Error, Critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
-      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Error Render.Vulkan:Info`
+      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Critical Render.Vulkan:Info`
 
    - `Fullscreen`: Display the game in a full screen borderless window.
      
