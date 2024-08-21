@@ -406,8 +406,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         return spv::ImageFormat::Rg16f;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8 &&
-        (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-         image.GetNumberFmt() == AmdGpu::NumberFormat::Srgb)) {
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::Rg8;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
@@ -415,18 +414,15 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         return spv::ImageFormat::Rgba16f;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16_16_16 &&
-        (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-         image.GetNumberFmt() == AmdGpu::NumberFormat::Srgb)) {
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::Rgba16;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8 &&
-        (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-         image.GetNumberFmt() == AmdGpu::NumberFormat::Srgb)) {
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::R8;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8 &&
-        (image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-         image.GetNumberFmt() == AmdGpu::NumberFormat::Srgb)) {
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::Rgba8;
     }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8 &&
