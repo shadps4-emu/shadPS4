@@ -193,8 +193,8 @@ public:
     Id shared_memory_u32_type{};
 
     struct TextureDefinition {
-        Id id;
         const VectorIds* data_types;
+        Id id;
         Id sampled_type;
         Id pointer_type;
         Id image_type;
