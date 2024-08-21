@@ -132,7 +132,7 @@ Accurately identifying games will help other developers that own that game recog
 
 - Examples of good naming schemes:
   - Amplitude (2016) `CUSA02480`
-  - Rock Band 4 (`CUSA02480`) v1.0
+  - Rock Band 4 (`CUSA02084`) v1.0
   - inFamous: Second Son \[`CUSA-00004`\]
 - Examples of unideal naming schemes:
   - _The Witness_
