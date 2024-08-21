@@ -481,6 +481,8 @@ bool Instance::IsFormatSupported(const vk::Format format) const {
 vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
     if (format == vk::Format::eB5G6R5UnormPack16) {
         return vk::Format::eR5G6B5UnormPack16;
+    } else if (format == vk::Format::eD16UnormS8Uint) {
+        return vk::Format::eD24UnormS8Uint;
     }
     return format;
 }
