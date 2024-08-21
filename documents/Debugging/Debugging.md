@@ -86,17 +86,18 @@ This section will provide some preliminary steps to take and tips on what to do 
 
 ## Reporting and communicating about issues
 
-- When communicating with the project about game-specific issues, specify an **uniquely identifable game name** along with its `CUSA-xxxxx` code that is specific to the region/variant of the game you're testing.\
-  The version number is also important to add at least in the description, especially if you can verify that the game behaves differently across versions.\
-  Accurately identifying games will help other developers that own that game recognize your issue by its title and jump in to help test and debug it.
-  - Examples of good naming schemes:
-    - Amplitude (2016) `CUSA02480`
-    - Rock Band 4 (`CUSA02480`) v1.0
-    - inFamous: Second Son \[`CUSA-00004`\]
-  - Examples of unideal naming schemes:
-    - _The Witness_
-    - _GTA 5_
-    - _Watch Dogs_
+When communicating with the project about game-specific issues, specify an **uniquely identifable game name** along with its `CUSA-xxxxx` code that is specific to the region/variant of the game you're testing.\
+The version number is also important to add at least in the description, especially if you can verify that the game behaves differently across versions.\
+Accurately identifying games will help other developers that own that game recognize your issue by its title and jump in to help test and debug it.
+
+- Examples of good naming schemes:
+  - Amplitude (2016) `CUSA02480`
+  - Rock Band 4 (`CUSA02480`) v1.0
+  - inFamous: Second Son \[`CUSA-00004`\]
+- Examples of unideal naming schemes:
+  - _The Witness_
+  - _GTA 5_
+  - _Watch Dogs_
    
 - If your issue is small or you aren't sure whether you have properly identified something, [join the Discord server](https://discord.gg/MyZRaBngxA) and use the #development channel
   to concisely explain the issue, as well as any findings you currently have.
