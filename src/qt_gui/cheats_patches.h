@@ -16,8 +16,6 @@
 #include <QVector>
 #include <QWidget>
 
-extern uintptr_t cheats_eboot_address;
-
 class CheatsPatches : public QWidget {
     Q_OBJECT
 

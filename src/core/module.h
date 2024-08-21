@@ -243,4 +243,6 @@ public:
     std::vector<u8> rela_bits;
 };
 
+extern uintptr_t g_eboot_address;
+
 } // namespace Core
