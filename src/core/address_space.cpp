@@ -469,12 +469,12 @@ void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 
 }
 
 void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
-                         PAddr phys_base, bool is_exec, bool has_backing, bool readonly) {
+                         PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file) {
 #ifdef _WIN32
     // There does not appear to be comparable support for partial unmapping on Windows.
     // Unfortunately, a least one title was found to require this. The workaround is to unmap
     // the entire allocation and remap the portions outside of the requested unmapping range.
-    impl->Unmap(virtual_addr, size, has_backing && !readonly);
+    impl->Unmap(virtual_addr, size, has_backing && !readonly_file);
 
     // TODO: Determine if any titles require partial unmapping support for flexible allocations.
     ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
