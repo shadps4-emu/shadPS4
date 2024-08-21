@@ -63,15 +63,16 @@ This section will provide some preliminary steps to take and tips on what to do 
 
    - Default setups of most debuggers include a **Stack trace** window/panel that lists the functions the program has called before breaking.
 
-   - The stack trace entries can be navigated to and will show you the relevant function, as well as switch to the state that the program was in at the time of execution.\
+   - The stack trace entries can be navigated to and will show the relevant function, as well as switch to the state that the program was in at the time of execution.\
      Use the **Locals** and **Watch** windows to investigate variables and other code in these contexts.
 
  3. Identify the reason for the crash
     - **Logs aren't always accurate in determining the reason for a crash.**\
       Some log entries are reported as errors but may not be fatal for the execution to stop. `Critical` entries are most likely to be the cause for crashes.
 
-    - If the stack trace lists functions that are relevant to rendering, it is safe to assume that the issue is with **rendering**.\
-      Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.
+    - Pinpoint the area of the emulator where the crash occured\
+      If the stack trace ends with functions that are relevant to rendering, it is safe to assume that the issue is with **rendering**.\
+      Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.\
 
     - **⚠ Some crashes are intentional**
       - If you identify **Access violations for writing operations** where the function is (or in cases of game libraries, _looks like_ it is) copying memory,
