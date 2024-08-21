@@ -175,6 +175,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     while (!dcb.empty()) {
         const auto* header = reinterpret_cast<const PM4Header*>(dcb.data());
         const u32 type = header->type;
+        if (type == 2) {
+            // Type 2 are filler packets that don't do anything
+            dcb = dcb.subspan(1);
+            continue;
+        }
         if (type != 3) {
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", type);
