@@ -131,11 +131,19 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     usage = ImageUsageFlags(info);
 
-    if (info.pixel_format == vk::Format::eD32Sfloat) {
+    switch (info.pixel_format) {
+    case vk::Format::eD16Unorm:
+    case vk::Format::eD32Sfloat:
+    case vk::Format::eX8D24UnormPack32:
         aspect_mask = vk::ImageAspectFlagBits::eDepth;
-    }
-    if (info.pixel_format == vk::Format::eD32SfloatS8Uint) {
+        break;
+    case vk::Format::eD16UnormS8Uint:
+    case vk::Format::eD24UnormS8Uint:
+    case vk::Format::eD32SfloatS8Uint:
         aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        break;
+    default:
+        break;
     }
 
     const vk::ImageCreateInfo image_ci = {
