@@ -116,7 +116,7 @@ s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     auto bytesPerSecond = 48000 * port.sample_size * port.channels_num;
     const int TARGET_LATENCY_MS = 20; // Arbitrary, but slightly more than one 60fps frame
     auto sizeTarget = (bytesPerSecond * TARGET_LATENCY_MS) / 1000;
-    
+
     while (SDL_GetAudioStreamAvailable(port.stream) > sizeTarget) {
         SDL_Delay(1); // Sleep behaviour is platform-dependent; 1ms may be up to 17ms
     }
