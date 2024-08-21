@@ -72,13 +72,13 @@ This section will provide some preliminary steps to take and tips on what to do 
 
     - Pinpoint the area of the emulator where the crash occured\
       If the stack trace ends with functions that are relevant to rendering, it is safe to assume that the issue is with **rendering**.\
-      Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.\
+      Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.
 
     - **⚠ Some crashes are intentional**
       - If you identify **Access violations for writing operations** where the function is (or in cases of game libraries, _looks like_ it is) copying memory,
       it most likely is an **intentional exception** meant to catch game data being written by the game.
       This is used by the emulator developers to identify procedures that have to do with game data changing.
-        - Debugging tools usually include an option to not break on certain types of exceptions. **Exclude access violations and other intentional exceptions when debugging to skip these exceptions.**
+      - Debugging tools usually include an option to not break on certain types of exceptions. **Exclude access violations and other intentional exceptions when debugging to skip these exceptions.**
       - You can also identify such cases if the game works in Release builds of the emulator. These intentional exceptions are development-time only.
       - Attempt to **Continue** and observe whether the stack trace and/or variables and registers change when you encounter exceptions.
 
