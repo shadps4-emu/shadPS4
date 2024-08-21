@@ -35,7 +35,7 @@ Make sure you have the project set up for building on Windows with Visual Studio
      as debug symbols will still be generated in case you encounter release configuration-exclusive bugs/errors.
    ![image](https://github.com/user-attachments/assets/0d975f7a-7bea-4f89-87ef-5d685bea4381)
 
-Launch games through **Debug > Start debugging** (F5 by default).
+Launch and debug the emulator through **Debug > Start Debugging** (F5 by default), or **Debug > Start Without Debugging** (Ctrl+F5 by default) when testing games for performance.
 
 </details>
 
