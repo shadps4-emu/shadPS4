@@ -91,6 +91,10 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 |macOS Qt Build|[![macOS-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml)
 </details>
 
+# Debugging and reporting issues
+
+For more information on how to test, debug and report issues with the emulator or games, read the [Debugging documentation](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
+
 # Keyboard Mapping
 
 | Controller button | Keyboard |
