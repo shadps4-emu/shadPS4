@@ -88,6 +88,7 @@ Emulator::Emulator() {
     LOG_INFO(Config, "GUI m_elf_viewer: {}", Config::getElfViewer());
     LOG_INFO(Config, "GUI m_recent_files: {}", Conifg::getRecentFiles());
     LOG_INFO(Config, "GUI m_table_mode: {}", Config::getTableMode());
+    LOG_INFO(Config, "Settings m_language: {}", Config::GetLanguage());
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
