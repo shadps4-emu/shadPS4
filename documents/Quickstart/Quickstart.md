@@ -64,14 +64,10 @@ Here's a list of configuration entries that are worth changing:
 
 - `[General]`
   - `logType`: Configures logging synchronization (`sync`/`async`)
-    - By default, the emulator logs messages asynchronously for better performance. Some log messages may end up being received out-of-order.
     - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
-    - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `sync` and send that log as well.
+    - Use when sending logs to developers. See more about [reporting issues](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#reporting-and-communicating-about-issues).
   - `logFilter`: Sets the logging category for various logging classes.
-    - Format: `<class>:<level> ...`
-    - Multiple classes can be set by separating them with a space. (example: `Render:Warning Debug:Critical Lib.Pad:Error`)
-    - Sub-classes can be specified in the same format as seen in the console/log (such as `Core.Linker`).  
-    - All classes and sub-classes can be set by specifying a `*` symbol. (example: `Kernel.*:Critical`)
+    - Format: `<class>:<level> ...`, `<class.*>:<level> <*:level> ...`
     - Valid log levels: `Trace, Debug, Info, Warning, Error, Critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
