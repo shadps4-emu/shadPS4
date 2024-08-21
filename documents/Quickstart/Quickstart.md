@@ -59,7 +59,7 @@ To install PKG files (game and updates), you will need the Qt application (with 
 ## Configure the emulator
 
 You can configure the emulator by editing the `config.toml` file found in the `user` folder created after starting the application.\
-Some settings may be related to more technical development and debugging. For more information on those, see [Debugging](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
+Some settings may be related to more technical development and debugging. For more information on those, see [Debugging](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#configuration).
 
 Here's a list of configuration entries that are worth changing:
 
