@@ -52,6 +52,19 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
 
+    LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
+    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
+    LOG_INFO(Config, "GPU shouldDumpPM4: {}", Config::dumpPM4());
+    LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
+    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
+    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+    LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::isMarkersEnabled());
+    LOG_INFO(Config, "LLE isLibc: {}", Config::isLleLibc());
+
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();
