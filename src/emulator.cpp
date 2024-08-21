@@ -10,6 +10,7 @@
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
+#include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/file_format/playgo_chunk.h"
@@ -21,20 +22,17 @@
 #include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
-#include "src/common/scm_rev.h"
 #include "video_core/renderdoc.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
-
-static constexpr s32 WindowWidth = 1280;
-static constexpr s32 WindowHeight = 720;
 
 Emulator::Emulator() {
     // Read configuration file.
@@ -90,8 +88,11 @@ void Emulator::Run(const std::filesystem::path& file) {
                 app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
-                playgo->Open(sce_sys_folder.string() + "/playgo-chunk.dat");
+                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
+                auto filepath = sce_sys_folder / "playgo-chunk.dat";
+                if (!playgo->Open(filepath)) {
+                    LOG_ERROR(Loader, "PlayGo: unable to open file");
+                }
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
@@ -113,8 +114,8 @@ void Emulator::Run(const std::filesystem::path& file) {
         window_title =
             fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
     }
-    window =
-        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(
+        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
 
     g_window = window.get();
 
@@ -184,7 +185,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     constexpr std::array<SysModules, 9> ModulesToLoad{
-        {{"libSceNgs2.sprx", nullptr},
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},

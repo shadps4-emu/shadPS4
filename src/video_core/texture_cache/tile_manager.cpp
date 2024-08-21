@@ -5,7 +5,6 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/image_view.h"
-#include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
 #include "video_core/host_shaders/detile_m32x1_comp.h"
@@ -187,6 +186,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32Sfloat:
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
+    case vk::Format::eR16G16Unorm:
         return vk::Format::eR32Uint;
     case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
@@ -194,6 +194,8 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32G32Sfloat:
     case vk::Format::eR32G32Uint:
     case vk::Format::eR16G16B16A16Unorm:
+    case vk::Format::eR16G16B16A16Uint:
+    case vk::Format::eR16G16B16A16Sfloat:
         return vk::Format::eR32G32Uint;
     case vk::Format::eBc2SrgbBlock:
     case vk::Format::eBc2UnormBlock:
@@ -247,11 +249,11 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
-static constexpr size_t StreamBufferSize = 128_MB;
+static constexpr size_t StreamBufferSize = 1_GB;
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler},
-      stream_buffer{instance, scheduler, MemoryUsage::Stream, StreamBufferSize} {
+      stream_buffer{instance, scheduler, MemoryUsage::Upload, StreamBufferSize} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
@@ -397,7 +399,7 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
     const u32 image_size = image.info.guest_size_bytes;
     const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
         // Use stream buffer for smaller textures.
-        if (image_size <= StreamBufferSize) {
+        if (image_size <= stream_buffer.GetFreeSize()) {
             u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
             return {stream_buffer.Handle(), offset};
         }

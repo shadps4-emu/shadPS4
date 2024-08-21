@@ -1,6 +1,7 @@
 <RCC>
 	<qresource prefix="/">
 		<file>images/shadps4.ico</file>
+		<file>images/about_icon.png</file>
 		<file>images/play_icon.png</file>
 		<file>images/pause_icon.png</file>
 		<file>images/stop_icon.png</file>

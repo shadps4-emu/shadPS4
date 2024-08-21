@@ -46,6 +46,7 @@ private Q_SLOTS:
     void ConfigureGuiFromSettings();
     void SaveWindowState() const;
     void SearchGameTable(const QString& text);
+    void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
 
@@ -55,12 +56,14 @@ private:
     void CreateActions();
     void CreateRecentGameActions();
     void CreateDockWindows();
+    void GetPhysicalDevices();
     void LoadGameLists();
     void CreateConnects();
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
     void InstallPkg();
+    void BootGame();
     void AddRecentFiles(QString filePath);
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;
@@ -80,6 +83,8 @@ private:
     QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
+    // Available GPU devices
+    std::vector<QString> m_physical_devices;
 
     PSF psf;
 

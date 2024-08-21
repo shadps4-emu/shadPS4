@@ -35,7 +35,7 @@ void Liverpool::Process(std::stop_token stoken) {
         {
             std::unique_lock lk{submit_mutex};
             Common::CondvarWait(submit_cv, lk, stoken,
-                                [this] { return num_submits != 0 || submit_done; });
+                                [this] { return num_commands || num_submits || submit_done; });
         }
         if (stoken.stop_requested()) {
             break;
@@ -45,7 +45,23 @@ void Liverpool::Process(std::stop_token stoken) {
 
         int qid = -1;
 
-        while (num_submits) {
+        while (num_submits || num_commands) {
+
+            // Process incoming commands with high priority
+            while (num_commands) {
+
+                Common::UniqueFunction<void> callback{};
+                {
+                    std::unique_lock lk{submit_mutex};
+                    callback = std::move(command_queue.back());
+                    command_queue.pop();
+                }
+
+                callback();
+
+                --num_commands;
+            }
+
             qid = (qid + 1) % NumTotalQueues;
 
             auto& queue = mapped_queues[qid];
@@ -180,6 +196,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
                 break;
             }
+            case PM4CmdNop::PayloadType::DebugMarkerPush: {
+                const auto marker_sz = nop->header.count.Value() * 2;
+                const std::string_view label{reinterpret_cast<const char*>(&nop->data_block[1]),
+                                             marker_sz};
+                rasterizer->ScopeMarkerBegin(label);
+                break;
+            }
+            case PM4CmdNop::PayloadType::DebugMarkerPop: {
+                rasterizer->ScopeMarkerEnd();
+                break;
+            }
             default:
                 break;
             }
@@ -208,7 +235,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             // In the case of HW, render target memory has alignment as color block operates on
             // tiles. There is no information of actual resource extents stored in CB context
             // regs, so any deduction of it from slices/pitch will lead to a larger surface created.
-            // The same applies to the depth targets. Fortunatelly, the guest always sends
+            // The same applies to the depth targets. Fortunately, the guest always sends
             // a trailing NOP packet right after the context regs setup, so we can use the heuristic
             // below and extract the hint to determine actual resource dims.
 
@@ -226,7 +253,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 ASSERT(col_buf_id < NumColorBuffers);
 
                 const auto nop_offset = header->type3.count;
-                if (nop_offset == 0x0e || nop_offset == 0x0d) {
+                if (nop_offset == 0x0e || nop_offset == 0x0d || nop_offset == 0x0b) {
                     ASSERT_MSG(payload[nop_offset] == 0xc0001000,
                                "NOP hint is missing in CB setup sequence");
                     last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
@@ -295,8 +322,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:DrawIndex2", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndex2", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(true);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -308,8 +336,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index_off->index_count;
             regs.draw_initiator = draw_index_off->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(fmt::format(
-                    "dcb:{}:DrawIndexOffset2", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexOffset2", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(true, draw_index_off->index_offset);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -320,8 +349,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.num_indices = draw_index->index_count;
             regs.draw_initiator = draw_index->draw_initiator;
             if (rasterizer) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:DrawIndexAuto", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexAuto", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->Draw(false);
                 rasterizer->ScopeMarkerEnd();
             }
@@ -334,8 +364,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
-                rasterizer->ScopeMarkerBegin(
-                    fmt::format("dcb:{}:Dispatch", reinterpret_cast<const void*>(dcb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:Dispatch", cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }
@@ -393,7 +424,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
-            ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
+            // ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
             // Optimization: VO label waits are special because the emulator
             // will write to the label when presentation is finished. So if
             // there are no other submits to yield to we can sleep the thread
@@ -486,8 +517,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             regs.cs_program.dim_z = dispatch_direct->dim_z;
             regs.cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
-                rasterizer->ScopeMarkerBegin(fmt::format(
-                    "acb[{}]:{}:Dispatch", vqid, reinterpret_cast<const void*>(acb.data())));
+                const auto cmd_address = reinterpret_cast<const void*>(header);
+                rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
+                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }

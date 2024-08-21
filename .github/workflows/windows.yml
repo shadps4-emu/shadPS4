@@ -29,6 +29,6 @@ jobs:
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-win64
+        name: shadps4-win64-sdl
         path: |
           ${{github.workspace}}/build/Release/shadPS4.exe

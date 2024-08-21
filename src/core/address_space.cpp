@@ -98,7 +98,7 @@ struct AddressSpace::Impl {
         backing_handle =
             CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_WRITE | FILE_MAP_READ,
                                PAGE_READWRITE, SEC_COMMIT, BackingSize, nullptr, nullptr, 0);
-        ASSERT(backing_handle);
+        ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
         // Allocate a virtual memory for the backing file map as placeholder
         backing_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, BackingSize,
                                                       MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
@@ -106,7 +106,7 @@ struct AddressSpace::Impl {
         // Map backing placeholder. This will commit the pages
         void* const ret = MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
                                          MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, nullptr, 0);
-        ASSERT(ret == backing_base);
+        ASSERT_MSG(ret == backing_base, "{}", Common::GetLastErrorMsg());
     }
 
     ~Impl() {
@@ -454,8 +454,28 @@ void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 
 #endif
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
-    return impl->Unmap(virtual_addr, size, has_backing);
+void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
+                         PAddr phys_base, bool is_exec, bool has_backing) {
+#ifdef _WIN32
+    // There does not appear to be comparable support for partial unmapping on Windows.
+    // Unfortunately, a least one title was found to require this. The workaround is to unmap
+    // the entire allocation and remap the portions outside of the requested unmapping range.
+    impl->Unmap(virtual_addr, size, has_backing);
+
+    // TODO: Determine if any titles require partial unmapping support for flexible allocations.
+    ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
+               "Partial unmapping of flexible allocations is not supported");
+
+    if (start_in_vma != 0) {
+        Map(virtual_addr, start_in_vma, 0, phys_base, is_exec);
+    }
+
+    if (end_in_vma != size) {
+        Map(virtual_addr + end_in_vma, size - end_in_vma, 0, phys_base + end_in_vma, is_exec);
+    }
+#else
+    impl->Unmap(virtual_addr + start_in_vma, end_in_vma - start_in_vma, has_backing);
+#endif
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {

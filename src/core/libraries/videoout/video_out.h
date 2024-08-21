@@ -104,6 +104,8 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
                                  const void* param);
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle);
+int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev);
+int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data);
 
 // Internal system functions
 void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr);

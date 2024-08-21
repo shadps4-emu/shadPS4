@@ -16,18 +16,6 @@ namespace {
     UNREACHABLE_MSG("Invalid type = {}, functionName = {}, line = {}", u32(type), functionName,
                     lineNumber);
 }
-
-Value MakeLodClampPair(IREmitter& ir, const F32& bias_lod, const F32& lod_clamp) {
-    if (!bias_lod.IsEmpty() && !lod_clamp.IsEmpty()) {
-        return ir.CompositeConstruct(bias_lod, lod_clamp);
-    } else if (!bias_lod.IsEmpty()) {
-        return bias_lod;
-    } else if (!lod_clamp.IsEmpty()) {
-        return lod_clamp;
-    } else {
-        return Value{};
-    }
-}
 } // Anonymous namespace
 
 U1 IREmitter::Imm1(bool value) const {
@@ -271,10 +259,6 @@ void IREmitter::SetAttribute(IR::Attribute attribute, const F32& value, u32 comp
 
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
-    case 8:
-        return Inst<U32>(is_signed ? Opcode::LoadSharedS8 : Opcode::LoadSharedU8, offset);
-    case 16:
-        return Inst<U32>(is_signed ? Opcode::LoadSharedS16 : Opcode::LoadSharedU16, offset);
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
@@ -288,12 +272,6 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
     switch (bit_size) {
-    case 8:
-        Inst(Opcode::WriteSharedU8, offset, value);
-        break;
-    case 16:
-        Inst(Opcode::WriteSharedU16, offset, value);
-        break;
     case 32:
         Inst(Opcode::WriteSharedU32, offset, value);
         break;
@@ -306,6 +284,25 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
+}
+
+U32F32 IREmitter::SharedAtomicIAdd(const U32& address, const U32F32& data) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+U32 IREmitter::SharedAtomicIMin(const U32& address, const U32& data, bool is_signed) {
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMin32, address, data)
+                     : Inst<U32>(Opcode::SharedAtomicUMin32, address, data);
+}
+
+U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_signed) {
+    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, address, data)
+                     : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
@@ -363,6 +360,73 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
         break;
     case 4:
         Inst(Opcode::StoreBufferF32x4, Flags{info}, handle, address, data);
+        break;
+    default:
+        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
+    }
+}
+
+Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
+                                  bool is_signed, BufferInstInfo info) {
+    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
+                                  bool is_signed, BufferInstInfo info) {
+    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
+                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicAnd32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicOr(const Value& handle, const Value& address, const Value& value,
+                                BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicOr32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, const Value& value,
+                                 BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& address, const Value& value,
+                                      BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, address, value);
+}
+
+void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
+                                  const Value& data, BufferInstInfo info) {
+    switch (num_dwords) {
+    case 1:
+        Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
+        break;
+    case 2:
+        Inst(Opcode::StoreBufferFormatF32x2, Flags{info}, handle, address, data);
+        break;
+    case 3:
+        Inst(Opcode::StoreBufferFormatF32x3, Flags{info}, handle, address, data);
+        break;
+    case 4:
+        Inst(Opcode::StoreBufferFormatF32x4, Flags{info}, handle, address, data);
         break;
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
@@ -1386,41 +1450,37 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
-                                        const Value& offset, const F32& lod_clamp,
+Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& body, const F32& bias,
+                                        const U32& offset, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, body, bias, offset);
+}
+
+Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& body, const U32& offset,
                                         TextureInstInfo info) {
-    const Value bias_lc{MakeLodClampPair(*this, bias, lod_clamp)};
-    return Inst(Opcode::ImageSampleImplicitLod, Flags{info}, handle, coords, bias_lc, offset);
+    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, body, IR::F32{}, offset);
 }
 
-Value IREmitter::ImageSampleExplicitLod(const Value& handle, const Value& coords, const F32& lod,
-                                        const Value& offset, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleExplicitLod, Flags{info}, handle, coords, lod, offset);
-}
-
-F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& coords, const F32& dref,
-                                          const F32& bias, const Value& offset,
-                                          const F32& lod_clamp, TextureInstInfo info) {
-    const Value bias_lc{MakeLodClampPair(*this, bias, lod_clamp)};
-    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, coords, dref, bias_lc,
+F32 IREmitter::ImageSampleDrefImplicitLod(const Value& handle, const Value& body, const F32& dref,
+                                          const F32& bias, const U32& offset,
+                                          TextureInstInfo info) {
+    return Inst<F32>(Opcode::ImageSampleDrefImplicitLod, Flags{info}, handle, body, dref, bias,
                      offset);
 }
 
-F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& coords, const F32& dref,
-                                          const F32& lod, const Value& offset,
-                                          TextureInstInfo info) {
-    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, coords, dref, lod,
+F32 IREmitter::ImageSampleDrefExplicitLod(const Value& handle, const Value& body, const F32& dref,
+                                          const U32& offset, TextureInstInfo info) {
+    return Inst<F32>(Opcode::ImageSampleDrefExplicitLod, Flags{info}, handle, body, dref, IR::F32{},
                      offset);
 }
 
 Value IREmitter::ImageGather(const Value& handle, const Value& coords, const Value& offset,
-                             const Value& offset2, TextureInstInfo info) {
-    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset, offset2);
+                             TextureInstInfo info) {
+    return Inst(Opcode::ImageGather, Flags{info}, handle, coords, offset);
 }
 
 Value IREmitter::ImageGatherDref(const Value& handle, const Value& coords, const Value& offset,
-                                 const Value& offset2, const F32& dref, TextureInstInfo info) {
-    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, offset2, dref);
+                                 const F32& dref, TextureInstInfo info) {
+    return Inst(Opcode::ImageGatherDref, Flags{info}, handle, coords, offset, dref);
 }
 
 Value IREmitter::ImageFetch(const Value& handle, const Value& coords, const Value& offset,

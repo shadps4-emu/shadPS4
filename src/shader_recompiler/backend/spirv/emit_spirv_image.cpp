@@ -17,86 +17,133 @@ struct ImageOperands {
         operands.push_back(value);
     }
 
+    void AddOffset(EmitContext& ctx, const IR::Value& offset,
+                   bool can_use_runtime_offsets = false) {
+        if (offset.IsEmpty()) {
+            return;
+        }
+        if (offset.IsImmediate()) {
+            const s32 operand = offset.U32();
+            Add(spv::ImageOperandsMask::ConstOffset, ctx.ConstS32(operand));
+            return;
+        }
+        IR::Inst* const inst{offset.InstRecursive()};
+        if (inst->AreAllArgsImmediates()) {
+            switch (inst->GetOpcode()) {
+            case IR::Opcode::CompositeConstructU32x2:
+                Add(spv::ImageOperandsMask::ConstOffset,
+                    ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
+                                 static_cast<s32>(inst->Arg(1).U32())));
+                return;
+            case IR::Opcode::CompositeConstructU32x3:
+                Add(spv::ImageOperandsMask::ConstOffset,
+                    ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
+                                 static_cast<s32>(inst->Arg(1).U32()),
+                                 static_cast<s32>(inst->Arg(2).U32())));
+                return;
+            default:
+                break;
+            }
+        }
+        if (can_use_runtime_offsets) {
+            Add(spv::ImageOperandsMask::Offset, ctx.Def(offset));
+        } else {
+            LOG_WARNING(Render_Vulkan,
+                        "Runtime offset provided to unsupported image sample instruction");
+        }
+    }
+
     spv::ImageOperandsMask mask{};
     boost::container::static_vector<Id, 4> operands;
 };
 
-Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
-                              Id offset) {
+Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,
+                              const IR::Value& offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
-    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    operands.Add(spv::ImageOperandsMask::Bias, bias);
+    operands.AddOffset(ctx, offset);
     return ctx.OpImageSampleImplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
                                         operands.operands);
 }
 
-Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias_lc,
-                              Id offset) {
+Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
+                              const IR::Value& offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleExplicitLod(ctx.F32[4], sampled_image, coords,
-                                        spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
+    ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Lod, lod);
+    operands.AddOffset(ctx, offset);
+    return ctx.OpImageSampleExplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
+                                        operands.operands);
 }
 
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, const IR::Value& offset) {
+                                  Id bias, const IR::Value& offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleDrefImplicitLod(ctx.F32[1], sampled_image, coords, dref);
+    ImageOperands operands;
+    operands.Add(spv::ImageOperandsMask::Bias, bias);
+    operands.AddOffset(ctx, offset);
+    return ctx.OpImageSampleDrefImplicitLod(ctx.F32[1], sampled_image, coords, dref, operands.mask,
+                                            operands.operands);
 }
 
 Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
-                                  Id bias_lc, Id offset) {
+                                  Id lod, const IR::Value& offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
-    return ctx.OpImageSampleDrefExplicitLod(ctx.F32[1], sampled_image, coords, dref,
-                                            spv::ImageOperandsMask::Lod, ctx.ConstF32(0.f));
+    ImageOperands operands;
+    operands.AddOffset(ctx, offset);
+    operands.Add(spv::ImageOperandsMask::Lod, lod);
+    return ctx.OpImageSampleDrefExplicitLod(ctx.F32[1], sampled_image, coords, dref, operands.mask,
+                                            operands.operands);
 }
 
-Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id offset2) {
+Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+                   const IR::Value& offset) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     const u32 comp = inst->Flags<IR::TextureInstInfo>().gather_comp.Value();
     ImageOperands operands;
-    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    operands.AddOffset(ctx, offset);
     return ctx.OpImageGather(ctx.F32[4], sampled_image, coords, ctx.ConstU32(comp), operands.mask,
                              operands.operands);
 }
 
-Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset,
-                       Id offset2, Id dref) {
+Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+                       const IR::Value& offset, Id dref) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     ImageOperands operands;
-    operands.Add(spv::ImageOperandsMask::Offset, offset);
+    operands.AddOffset(ctx, offset);
     return ctx.OpImageDrefGather(ctx.F32[4], sampled_image, coords, dref, operands.mask,
                                  operands.operands);
 }
 
-Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id offset, Id lod,
-                  Id ms) {
+Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const IR::Value& offset,
+                  Id lod, Id ms) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id result_type = texture.data_types->Get(4);
-    if (Sirit::ValidId(lod)) {
-        return ctx.OpBitcast(ctx.F32[4], ctx.OpImageFetch(result_type, image, coords,
-                                                          spv::ImageOperandsMask::Lod, lod));
-    } else {
-        return ctx.OpBitcast(ctx.F32[4], ctx.OpImageFetch(result_type, image, coords));
-    }
+    ImageOperands operands;
+    operands.AddOffset(ctx, offset);
+    operands.Add(spv::ImageOperandsMask::Lod, lod);
+    return ctx.OpBitcast(
+        ctx.F32[4], ctx.OpImageFetch(result_type, image, coords, operands.mask, operands.operands));
 }
 
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips) {

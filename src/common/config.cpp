@@ -16,6 +16,7 @@ static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
 static std::string logType = "async";
+static std::string userName = "shadPS4";
 static bool isDebugDump = false;
 static bool isLibc = true;
 static bool isShowSplash = false;
@@ -25,7 +26,9 @@ static bool shouldDumpPM4 = false;
 static u32 vblankDivider = 1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
+static bool vkValidationGpu = false;
 static bool rdocEnable = false;
+static bool rdocMarkersEnable = false;
 // Gui
 std::string settings_install_dir = "";
 u32 main_window_geometry_x = 400;
@@ -78,6 +81,10 @@ std::string getLogType() {
     return logType;
 }
 
+std::string getUserName() {
+    return userName;
+}
+
 bool debugDump() {
     return isDebugDump;
 }
@@ -102,6 +109,10 @@ bool isRdocEnabled() {
     return rdocEnable;
 }
 
+bool isMarkersEnabled() {
+    return rdocMarkersEnable;
+}
+
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -112,6 +123,14 @@ bool vkValidationEnabled() {
 
 bool vkValidationSyncEnabled() {
     return vkValidationSync;
+}
+
+bool vkValidationGpuEnabled() {
+    return vkValidationGpu;
+}
+
+void setGpuId(s32 selectedGpuId) {
+    gpuId = selectedGpuId;
 }
 
 void setScreenWidth(u32 width) {
@@ -176,6 +195,10 @@ void setLogType(std::string type) {
 
 void setLogFilter(std::string type) {
     logFilter = type;
+}
+
+void setUserName(std::string type) {
+    userName = type;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -299,6 +322,7 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
+        userName = toml::find_or<std::string>(general, "userName", "shadPS4");
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
     }
 
@@ -319,7 +343,9 @@ void load(const std::filesystem::path& path) {
         gpuId = toml::find_or<int>(vk, "gpuId", -1);
         vkValidation = toml::find_or<bool>(vk, "validation", false);
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
+        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
+        rdocMarkersEnable = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
     }
 
     if (data.contains("Debug")) {
@@ -384,6 +410,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
+    data["General"]["userName"] = userName;
     data["General"]["showSplash"] = isShowSplash;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
@@ -394,7 +421,9 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
     data["Vulkan"]["rdocEnable"] = rdocEnable;
+    data["Vulkan"]["rdocMarkersEnable"] = rdocMarkersEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["LLE"]["libc"] = isLibc;
     data["GUI"]["theme"] = mw_themes;
@@ -428,6 +457,7 @@ void setDefaultValues() {
     screenHeight = 720;
     logFilter = "";
     logType = "async";
+    userName = "shadPS4";
     isDebugDump = false;
     isShowSplash = false;
     isNullGpu = false;
@@ -437,6 +467,7 @@ void setDefaultValues() {
     vkValidation = false;
     rdocEnable = false;
     m_language = 1;
+    gpuId = -1;
 }
 
 } // namespace Config

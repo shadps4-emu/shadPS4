@@ -30,6 +30,7 @@ QT_BEGIN_NAMESPACE
 class Ui_MainWindow {
 public:
     QAction* bootInstallPkgAct;
+    QAction* bootGameAct;
     QAction* addElfFolderAct;
     QAction* exitAct;
     QAction* showGameListAct;
@@ -44,6 +45,8 @@ public:
     QAction* gameInstallPathAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
+    QAction* aboutAct;
+    QAction* configureAct;
     QAction* setThemeDark;
     QAction* setThemeLight;
     QAction* setThemeGreen;
@@ -69,6 +72,7 @@ public:
     QMenu* menuSettings;
     QMenu* menuUtils;
     QMenu* menuThemes;
+    QMenu* menuAbout;
     QToolBar* toolBar;
 
     void setupUi(QMainWindow* MainWindow) {
@@ -92,8 +96,12 @@ public:
         bootInstallPkgAct = new QAction(MainWindow);
         bootInstallPkgAct->setObjectName("bootInstallPkgAct");
         bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
+        bootGameAct = new QAction(MainWindow);
+        bootGameAct->setObjectName("bootGameAct");
+        bootGameAct->setIcon(QIcon(":images/play_icon.png"));
         addElfFolderAct = new QAction(MainWindow);
         addElfFolderAct->setObjectName("addElfFolderAct");
+        addElfFolderAct->setIcon(QIcon(":images/folder_icon.png"));
         exitAct = new QAction(MainWindow);
         exitAct->setObjectName("exitAct");
         exitAct->setIcon(QIcon(":images/exit_icon.png"));
@@ -136,6 +144,12 @@ public:
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
+        aboutAct = new QAction(MainWindow);
+        aboutAct->setObjectName("aboutAct");
+        aboutAct->setIcon(QIcon(":images/about_icon.png"));
+        configureAct = new QAction(MainWindow);
+        configureAct->setObjectName("configureAct");
+        configureAct->setIcon(QIcon(":images/settings_icon.png"));
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
@@ -242,6 +256,8 @@ public:
         menuThemes = new QMenu(menuView);
         menuThemes->setObjectName("menuThemes");
         menuThemes->setIcon(QIcon(":images/themes_icon.png"));
+        menuAbout = new QMenu(menuBar);
+        menuAbout->setObjectName("menuAbout");
         MainWindow->setMenuBar(menuBar);
         toolBar = new QToolBar(MainWindow);
         toolBar->setObjectName("toolBar");
@@ -250,7 +266,9 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
+        menuBar->addAction(menuAbout->menuAction());
         menuFile->addAction(bootInstallPkgAct);
+        menuFile->addAction(bootGameAct);
         menuFile->addAction(addElfFolderAct);
         menuFile->addSeparator();
         menuFile->addAction(menuRecent->menuAction());
@@ -274,10 +292,12 @@ public:
         menuGame_List_Mode->addAction(setlistModeListAct);
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuGame_List_Mode->addAction(setlistElfAct);
+        menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
+        menuAbout->addAction(aboutAct);
 
         retranslateUi(MainWindow);
 
@@ -290,6 +310,9 @@ public:
             QCoreApplication::translate("MainWindow", "Open/Add Elf Folder", nullptr));
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
+        bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
+        aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
+        configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
         bootInstallPkgAct->setToolTip(QCoreApplication::translate(
             "MainWindow", "Install application from a .pkg file", nullptr));
@@ -332,6 +355,7 @@ public:
         menuSettings->setTitle(QCoreApplication::translate("MainWindow", "Settings", nullptr));
         menuUtils->setTitle(QCoreApplication::translate("MainWindow", "Utils", nullptr));
         menuThemes->setTitle(QCoreApplication::translate("MainWindow", "Themes", nullptr));
+        menuAbout->setTitle(QCoreApplication::translate("MainWindow", "About", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
         setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeGreen->setText(QCoreApplication::translate("MainWindow", "Green", nullptr));
