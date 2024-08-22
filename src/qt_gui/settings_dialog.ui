@@ -51,8 +51,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>832</width>
-        <height>418</height>
+        <width>836</width>
+        <height>428</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -74,7 +74,7 @@
           <item>
            <layout class="QVBoxLayout" name="systemTabLayoutLeft">
             <item>
-             <widget class="QGroupBox" name="emuSettings">
+             <widget class="QGroupBox" name="SystemSettings">
               <property name="title">
                <string>System</string>
               </property>
@@ -112,27 +112,10 @@
                  </property>
                  <layout class="QVBoxLayout" name="settingsLayout">
                   <item>
-                   <widget class="QComboBox" name="consoleLanguageComboBox">
-                   </widget>
+                   <widget class="QComboBox" name="consoleLanguageComboBox"/>
                   </item>
                  </layout>
                 </widget>
-               </item>
-               <item>
-                <spacer name="emulatorTabSpacerLeft">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
-                 </property>
-                 <property name="sizeType">
-                  <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                </spacer>
                </item>
               </layout>
              </widget>
@@ -148,35 +131,39 @@
               </property>
               <layout class="QVBoxLayout" name="additionalSettingsVLayout">
                <item>
-                <widget class="QCheckBox" name="fullscreenCheckBox">
-                 <property name="text">
-                  <string>Enable Fullscreen</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="showSplashCheckBox">
-                 <property name="text">
-                  <string>Show Splash</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="ps4proCheckBox">
-                 <property name="text">
-                  <string>Is PS4 Pro</string>
-                 </property>
-                </widget>
+                <layout class="QVBoxLayout" name="emulatorverticalLayout">
+                 <item>
+                  <widget class="QCheckBox" name="fullscreenCheckBox">
+                   <property name="text">
+                    <string>Enable Fullscreen</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="showSplashCheckBox">
+                   <property name="text">
+                    <string>Show Splash</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="ps4proCheckBox">
+                   <property name="text">
+                    <string>Is PS4 Pro</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <spacer name="emulatorSpacer">
                  <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
+                  <enum>Qt::Orientation::Horizontal</enum>
                  </property>
                  <property name="sizeHint" stdset="0">
                   <size>
-                   <width>20</width>
-                   <height>40</height>
+                   <width>40</width>
+                   <height>20</height>
                   </size>
                  </property>
                 </spacer>
@@ -261,19 +248,6 @@
                  </item>
                 </layout>
                </item>
-               <item>
-                <spacer name="logSpacer">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Vertical</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>20</width>
-                   <height>40</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
               </layout>
              </widget>
             </item>
@@ -282,34 +256,29 @@
          </layout>
         </item>
         <item>
-         <widget class="QWidget" name="widgetSettingsBottom" native="true">
-          <layout class="QHBoxLayout" name="widgetGpuBottomLayout">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-          </layout>
-         </widget>
+         <spacer name="generalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="gpuTab">
+      <widget class="QWidget" name="grphicsTab">
        <attribute name="title">
-        <string>GPU</string>
+        <string>Graphics</string>
        </attribute>
-       <layout class="QVBoxLayout" name="gpuTabVLayout" stretch="0">
+       <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="gpuTabHLayout" stretch="1,1,1">
+         <layout class="QHBoxLayout" name="graphicsTabHLayout" stretch="1,1,1">
           <item>
-           <layout class="QVBoxLayout" name="gpuTabLayoutLeft">
+           <layout class="QVBoxLayout" name="graphicsTabLayoutLeft">
             <item>
              <widget class="QGroupBox" name="graphicsAdapterGroupBox">
               <property name="title">
@@ -323,8 +292,8 @@
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widgetGpuTop" native="true">
-              <layout class="QHBoxLayout" name="widgetGpuTopHLayout">
+             <widget class="QWidget" name="widgetgraphicsBottom" native="true">
+              <layout class="QHBoxLayout" name="widgetgraphicsBottomHLayout">
                <property name="leftMargin">
                 <number>0</number>
                </property>
@@ -339,45 +308,11 @@
                </property>
               </layout>
              </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="widgetGpuBottom" native="true">
-              <layout class="QHBoxLayout" name="widgetGpuBottomHLayout">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <spacer name="gpu_tab_layout_right_spacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Vertical</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-             </spacer>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="gpuTabLayoutMiddle">
+           <layout class="QVBoxLayout" name="graphicsTabLayoutMiddle">
             <item>
              <layout class="QVBoxLayout" name="layoutResolution">
               <property name="spacing">
@@ -505,26 +440,10 @@
               </item>
              </layout>
             </item>
-            <item>
-             <spacer name="gpuTabLayoutMiddleSpacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Vertical</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="gpuTabLayoutRight">
+           <layout class="QVBoxLayout" name="graphicsTabLayoutRight">
             <property name="rightMargin">
              <number>12</number>
             </property>
@@ -534,7 +453,7 @@
             <item>
              <widget class="QGroupBox" name="additionalSettingsGroupBox">
               <property name="title">
-               <string>Additional Settings</string>
+               <string>Advanced</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
@@ -565,17 +484,14 @@
              </widget>
             </item>
             <item>
-             <spacer name="additionalSettingsSpacer">
+             <spacer name="AdvancedSpacer">
               <property name="orientation">
                <enum>Qt::Orientation::Vertical</enum>
               </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-              </property>
               <property name="sizeHint" stdset="0">
                <size>
-                <width>0</width>
-                <height>0</height>
+                <width>20</width>
+                <height>40</height>
                </size>
               </property>
              </spacer>
@@ -583,6 +499,19 @@
            </layout>
           </item>
          </layout>
+        </item>
+        <item>
+         <spacer name="graphicSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
