@@ -15,7 +15,9 @@ namespace Libraries::Kernel {
 
 std::vector<Core::FileSys::DirEntry> GetDirectoryEntries(const std::filesystem::path& path) {
     std::vector<Core::FileSys::DirEntry> files;
-    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+    const auto dirIt = std::filesystem::directory_iterator{path};
+    files.reserve(std::distance(dirIt, std::filesystem::directory_iterator{}));
+    for (const auto& entry : dirIt) {
         auto& dir_entry = files.emplace_back();
         dir_entry.name = entry.path().filename().string();
         dir_entry.isFile = !std::filesystem::is_directory(entry.path().string());

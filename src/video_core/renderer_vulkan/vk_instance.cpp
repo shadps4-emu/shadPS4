@@ -33,6 +33,7 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
 std::unordered_map<vk::Format, vk::FormatProperties> GetFormatProperties(
     vk::PhysicalDevice physical) {
     std::unordered_map<vk::Format, vk::FormatProperties> format_properties;
+    format_properties.reserve(LiverpoolToVK::GetAllFormats().size());
     for (const auto& format : LiverpoolToVK::GetAllFormats()) {
         format_properties.emplace(format, physical.getFormatProperties(format));
     }

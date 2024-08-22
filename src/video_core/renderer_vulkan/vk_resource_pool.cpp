@@ -125,6 +125,7 @@ DescriptorHeap::DescriptorHeap(const Instance& instance, MasterSemaphore* master
     for (const auto& binding : bindings) {
         descriptor_type_counts[binding.descriptorType] += binding.descriptorCount;
     }
+    pool_sizes.reserve(descriptor_type_counts.size());
     for (const auto& [type, count] : descriptor_type_counts) {
         auto& pool_size = pool_sizes.emplace_back();
         pool_size.descriptorCount = count * descriptor_heap_count;
