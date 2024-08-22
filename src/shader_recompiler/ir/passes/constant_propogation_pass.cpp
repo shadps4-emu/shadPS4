@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include <bit>
 #include <optional>
 #include <type_traits>
@@ -250,6 +250,18 @@ void FoldCmpClass(IR::Inst& inst) {
     }
 }
 
+void FoldReadLane(IR::Inst& inst) {
+    const u32 lane = inst.Arg(1).U32();
+    IR::Inst* prod = inst.Arg(0).InstRecursive();
+    while (prod->GetOpcode() == IR::Opcode::WriteLane) {
+        if (prod->Arg(2).U32() == lane) {
+            inst.ReplaceUsesWith(prod->Arg(1));
+            return;
+        }
+        prod = prod->Arg(0).InstRecursive();
+    }
+}
+
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::IAdd32:
@@ -289,6 +301,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::SelectF32:
     case IR::Opcode::SelectF64:
         return FoldSelect(inst);
+    case IR::Opcode::ReadLane:
+        return FoldReadLane(inst);
     case IR::Opcode::FPNeg32:
         FoldWhenAllImmediates(inst, [](f32 a) { return -a; });
         return;

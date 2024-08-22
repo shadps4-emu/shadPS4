@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include "shader_recompiler/ir/basic_block.h"
@@ -345,6 +345,7 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
 
     // Retrieve SGPR pair that holds sbase
     const auto pred1 = [](const IR::Inst* inst) -> std::optional<IR::ScalarReg> {
+        ASSERT(inst->GetOpcode() != IR::Opcode::ReadConst);
         if (inst->GetOpcode() == IR::Opcode::GetUserData) {
             return inst->Arg(0).ScalarReg();
         }
@@ -402,24 +403,13 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
     // is used to define an inline constant buffer
 
     IR::Inst* handle = inst.Arg(0).InstRecursive();
-    IR::Inst* p0 = handle->Arg(0).InstRecursive();
-    if (p0->GetOpcode() != IR::Opcode::IAdd32 || !p0->Arg(0).IsImmediate() ||
-        !p0->Arg(1).IsImmediate()) {
-        return -1;
-    }
-    IR::Inst* p1 = handle->Arg(1).InstRecursive();
-    if (p1->GetOpcode() != IR::Opcode::IAdd32) {
-        return -1;
-    }
-    if (!handle->Arg(3).IsImmediate() || !handle->Arg(2).IsImmediate()) {
+    if (!handle->AreAllArgsImmediates()) {
         return -1;
     }
     // We have found this pattern. Build the sharp.
-    std::array<u32, 4> buffer;
-    buffer[0] = info.pgm_base + p0->Arg(0).U32() + p0->Arg(1).U32();
-    buffer[1] = 0;
-    buffer[2] = handle->Arg(2).U32();
-    buffer[3] = handle->Arg(3).U32();
+    std::array<u64, 2> buffer;
+    buffer[0] = info.pgm_base + (handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32);
+    buffer[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
     cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
     // Assign a binding to this sharp.
     return descriptors.Add(BufferResource{
@@ -617,7 +607,11 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         const IR::Value arg = inst.Arg(arg_pos);
         ASSERT_MSG(arg.Type() == IR::Type::U32, "Unexpected offset type");
 
-        const auto read = [&](u32 offset) -> auto {
+        const auto read = [&](u32 offset) -> IR::U32 {
+            if (arg.IsImmediate()) {
+                const u16 comp = (arg.U32() >> offset) & 0x3F;
+                return ir.Imm32(s32(comp << 26) >> 26);
+            }
             return ir.BitFieldExtract(IR::U32{arg}, ir.Imm32(offset), ir.Imm32(6), true);
         };
 

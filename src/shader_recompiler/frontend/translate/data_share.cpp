@@ -127,7 +127,6 @@ void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
@@ -139,7 +138,6 @@ void Translator::DS_MIN_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
@@ -151,7 +149,6 @@ void Translator::DS_MAX_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
@@ -168,13 +165,18 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
-    SetDst(inst.dst[0], GetSrc(inst.src[0]));
+    const IR::ScalarReg dst{inst.dst[0].code};
+    const IR::U32 value{GetSrc(inst.src[0])};
+    const IR::U32 lane{GetSrc(inst.src[1])};
+    ir.SetScalarReg(dst, ir.ReadLane(value, lane));
 }
 
 void Translator::V_WRITELANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
-    SetDst(inst.dst[0], GetSrc(inst.src[0]));
+    const IR::VectorReg dst{inst.dst[0].code};
+    const IR::U32 value{GetSrc(inst.src[0])};
+    const IR::U32 lane{GetSrc(inst.src[1])};
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    ir.SetVectorReg(dst, ir.WriteLane(old_value, value, lane));
 }
 
 } // namespace Shader::Gcn

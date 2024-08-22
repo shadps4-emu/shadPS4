@@ -219,7 +219,12 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
     guest_address = image.Address();
 
     mips_layout.reserve(resources.levels);
+    tiling_idx = image.tiling_index;
+    UpdateSize();
+}
 
+void ImageInfo::UpdateSize() {
+    mips_layout.clear();
     MipInfo mip_info{};
     guest_size_bytes = 0;
     for (auto mip = 0u; mip < resources.levels; ++mip) {
@@ -265,7 +270,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
             ASSERT(!props.is_block);
             ASSERT(num_samples == 1);
             std::tie(mip_info.pitch, mip_info.size) =
-                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, image.tiling_index);
+                ImageSizeMacroTiled(mip_w, mip_h, bpp, num_samples, tiling_idx);
             break;
         }
         default: {

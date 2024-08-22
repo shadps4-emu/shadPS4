@@ -329,7 +329,7 @@ void EmitContext::DefinePushDataBlock() {
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
     for (u32 i = 0; const auto& buffer : info.buffers) {
-        const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
+        const auto* data_types = &F32;/*True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;*/
         const Id data_type = (*data_types)[1];
         const Id record_array_type{buffer.is_storage
                                        ? TypeRuntimeArray(data_type)

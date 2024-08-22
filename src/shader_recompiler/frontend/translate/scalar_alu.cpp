@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma clang optimize off
 #include "shader_recompiler/frontend/translate/translate.h"
 
 namespace Shader::Gcn {
@@ -440,13 +440,16 @@ void Translator::S_SUB_U32(const GcnInst& inst) {
 void Translator::S_GETPC_B64(u32 pc, const GcnInst& inst) {
     // This only really exists to let resource tracking pass know
     // there is an inline cbuf.
-    SetDst(inst.dst[0], ir.Imm32(pc));
+    const IR::ScalarReg dst{inst.dst[0].code};
+    ir.SetScalarReg(dst, ir.Imm32(pc));
+    ir.SetScalarReg(dst + 1, ir.Imm32(0));
 }
 
 void Translator::S_ADDC_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), ir.GetSccLo()));
+    const IR::U32 carry{ir.Select(ir.GetScc(), ir.Imm32(1U), ir.Imm32(0U))};
+    SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), carry));
 }
 
 void Translator::S_MAX_U32(const GcnInst& inst) {
