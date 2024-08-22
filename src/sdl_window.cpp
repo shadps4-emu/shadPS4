@@ -306,7 +306,13 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
                : event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER ? Input::Axis::TriggerRight
                                                                      : Input::Axis::AxisMax;
         if (axis != Input::Axis::AxisMax) {
-            controller->Axis(0, axis, Input::GetAxis(-0x8000, 0x8000, event->gaxis.value));
+            if (event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ||
+                event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
+                controller->Axis(0, axis, Input::GetAxis(0, 0x8000, event->gaxis.value));
+
+            } else {
+                controller->Axis(0, axis, Input::GetAxis(-0x8000, 0x8000, event->gaxis.value));
+            }
         }
         break;
     }
