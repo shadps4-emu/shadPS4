@@ -180,9 +180,24 @@ void PipelineCache::RefreshGraphicsKey() {
     key.num_samples = regs.aa_config.NumSamples();
 
     const auto& db = regs.depth_buffer;
-    key.depth_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+    const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+
+    if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
+        key.depth_format = ds_format;
+    } else {
+        key.depth_format = vk::Format::eUndefined;
+    }
     if (key.depth.depth_enable) {
         key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
+    }
+
+    if (db.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid) {
+        key.stencil_format = key.depth_format;
+    } else {
+        key.stencil_format = vk::Format::eUndefined;
+    }
+    if (key.depth.stencil_enable) {
+        key.depth.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
     }
 
     const auto skip_cb_binding =

@@ -9,7 +9,7 @@ namespace Libraries::Ngs2 {
 
 class Ngs2 {
 public:
-    s32 ReportInvalid(u32 handle_type) const;
+    s32 ReportInvalid(Ngs2Handle* handle, u32 handle_type) const;
     s32 HandleSetup(Ngs2Handle* handle, void* data, std::atomic<u32>* atomic, u32 type, u32 flags);
     s32 HandleCleanup(Ngs2Handle* handle, u32 hType, void* dataOut);
     s32 HandleEnter(Ngs2Handle* handle, u32 hType, Ngs2Handle* handleOut);

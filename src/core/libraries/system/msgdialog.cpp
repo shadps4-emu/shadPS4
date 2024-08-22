@@ -6,6 +6,8 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/system/msgdialog.h"
 
+#include <magic_enum.hpp>
+
 namespace Libraries::MsgDialog {
 
 int PS4_SYSV_ABI sceMsgDialogClose() {
@@ -30,9 +32,22 @@ int PS4_SYSV_ABI sceMsgDialogInitialize() {
 
 s32 PS4_SYSV_ABI sceMsgDialogOpen(const OrbisMsgDialogParam* param) {
     LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    OrbisMsgDialogUserMessageParam* userMsgParam = param->userMsgParam;
-    const char* msg = userMsgParam->msg;
-    printf("sceMsgDialogOpen msg : %s", msg);
+    switch (param->mode) {
+    case ORBIS_MSG_DIALOG_MODE_USER_MSG:
+        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen userMsg type = %s msg = %s",
+                 magic_enum::enum_name(param->userMsgParam->buttonType), param->userMsgParam->msg);
+        break;
+    case ORBIS_MSG_DIALOG_MODE_PROGRESS_BAR:
+        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen progressBar type = %s msg = %s",
+                 magic_enum::enum_name(param->progBarParam->barType), param->progBarParam->msg);
+        break;
+    case ORBIS_MSG_DIALOG_MODE_SYSTEM_MSG:
+        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen systemMsg type: %s",
+                 magic_enum::enum_name(param->sysMsgParam->sysMsgType));
+        break;
+    default:
+        break;
+    }
     return ORBIS_OK;
 }
 

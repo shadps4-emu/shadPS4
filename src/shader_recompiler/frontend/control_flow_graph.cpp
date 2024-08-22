@@ -37,6 +37,7 @@ static IR::Condition MakeCondition(Opcode opcode) {
         return IR::Condition::Execnz;
     case Opcode::S_AND_SAVEEXEC_B64:
     case Opcode::S_ANDN2_B64:
+    case Opcode::V_CMPX_NE_U32:
         return IR::Condition::Execnz;
     default:
         return IR::Condition::True;

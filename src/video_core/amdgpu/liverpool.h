@@ -848,6 +848,7 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<5, 1, u32> stencil_compress_disable;
         BitField<6, 1, u32> depth_compress_disable;
     };
 
