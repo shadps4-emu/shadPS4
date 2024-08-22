@@ -28,6 +28,8 @@
 #include "cheats_patches.h"
 #include "common/path_util.h"
 #include "core/module.h"
+#include "common/memory_patcher.h"
+
 using namespace Common::FS;
 
 CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
@@ -625,16 +627,6 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
     if (!m_cheats.contains(modName))
         return;
 
-    if (Core::g_eboot_address == 0) {
-        if (showErrorMessage) {
-            QMessageBox::warning(this, "Game Not Started",
-                                 "Cheat cannot be applied until the game has started.");
-            showErrorMessage = false;
-        }
-        uncheckAllCheatCheckBoxes();
-        return;
-    }
-
     Cheat cheat = m_cheats[modName];
 
     for (const MemoryMod& memoryMod : cheat.memoryMods) {
@@ -644,21 +636,17 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         std::string offsetStr = memoryMod.offset.toStdString();
         std::string valueStr = value.toStdString();
 
-        LOG_INFO(Loader, "Cheat applied:{}, Offset:{}, Value:{}", modNameStr, offsetStr, valueStr);
+        if (MemoryPatcher::g_eboot_address == 0) {
+            MemoryPatcher::patchInfo addingPatch;
+            addingPatch.modNameStr = modNameStr;
+            addingPatch.offsetStr = offsetStr;
+            addingPatch.valueStr = valueStr;
 
-        // Send a request to modify the process memory.
-        void* cheatAddress =
-            reinterpret_cast<void*>(Core::g_eboot_address + std::stoi(offsetStr, 0, 16));
-
-        std::vector<unsigned char> bytePatch;
-
-        for (size_t i = 0; i < valueStr.length(); i += 2) {
-            unsigned char byte =
-                static_cast<unsigned char>(std::strtol(valueStr.substr(i, 2).c_str(), nullptr, 16));
-
-            bytePatch.push_back(byte);
+            MemoryPatcher::AddPatchToQueue(addingPatch);
+            continue;
         }
-        std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
+
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr);
     }
 }
 

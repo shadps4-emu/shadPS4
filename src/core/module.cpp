@@ -11,6 +11,7 @@
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
+#include "common/memory_patcher.h"
 
 namespace Core {
 
@@ -18,8 +19,6 @@ using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* para
 
 static u64 LoadOffset = CODE_BASE_OFFSET;
 static constexpr u64 CODE_BASE_INCR = 0x010000000u;
-
-uintptr_t g_eboot_address;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -91,12 +90,6 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                       MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
-
-    if (g_eboot_address == 0) {
-        if (name == "eboot") {
-            g_eboot_address = base_virtual_addr;
-        }
-    }
 
     // Initialize trampoline generator.
     void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);
@@ -200,6 +193,15 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
+
+    if (MemoryPatcher::g_eboot_address == 0) {
+        if (name == "eboot") {
+            MemoryPatcher::g_eboot_address = base_virtual_addr;
+
+            MemoryPatcher::ApplyPendingPatches();
+        }
+    }
+
 }
 
 void Module::LoadDynamicInfo() {

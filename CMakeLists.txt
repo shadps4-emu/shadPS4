@@ -299,6 +299,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/memory_patcher.cpp
+           src/common/memory_patcher.h
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
