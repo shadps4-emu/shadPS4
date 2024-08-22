@@ -8,7 +8,6 @@
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
-#include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
@@ -46,9 +45,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::LibKernel_Register(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
     Libraries::VideoOut::RegisterLib(sym);
-    if (!Config::isLleLibc()) {
-        Libraries::LibC::libcSymbolsRegister(sym);
-    }
 
     // New libraries folder from autogen
     Libraries::UserService::RegisterlibSceUserService(sym);
