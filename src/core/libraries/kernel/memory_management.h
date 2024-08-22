@@ -6,7 +6,7 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 
-constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 6_GB; // ~ 6GB
+constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 4608_MB; // ~ 4.5GB
 
 namespace Libraries::Kernel {
 
