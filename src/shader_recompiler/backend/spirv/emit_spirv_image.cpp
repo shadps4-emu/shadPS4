@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include <boost/container/static_vector.hpp>
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -15,6 +15,12 @@ struct ImageOperands {
         mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
                                                    static_cast<u32>(new_mask));
         operands.push_back(value);
+    }
+    void Add(spv::ImageOperandsMask new_mask, Id value1, Id value2) {
+        mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
+                                                   static_cast<u32>(new_mask));
+        operands.push_back(value1);
+        operands.push_back(value2);
     }
 
     void AddOffset(EmitContext& ctx, const IR::Value& offset,
@@ -51,6 +57,15 @@ struct ImageOperands {
             LOG_WARNING(Render_Vulkan,
                         "Runtime offset provided to unsupported image sample instruction");
         }
+    }
+
+    void AddDerivatives(EmitContext& ctx, Id derivatives) {
+        if (!Sirit::ValidId(derivatives)) {
+            return;
+        }
+        const Id dx{ctx.OpVectorShuffle(ctx.F32[2], derivatives, derivatives, 0, 1)};
+        const Id dy{ctx.OpVectorShuffle(ctx.F32[2], derivatives, derivatives, 2, 3)};
+        Add(spv::ImageOperandsMask::Grad, dx, dy);
     }
 
     spv::ImageOperandsMask mask{};
@@ -181,9 +196,17 @@ Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords) {
     return ctx.OpImageQueryLod(ctx.F32[2], sampled_image, coords);
 }
 
-Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
+Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
                      Id derivatives, const IR::Value& offset, Id lod_clamp) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    const Id sampler = ctx.OpLoad(ctx.sampler_type, ctx.samplers[handle >> 16]);
+    const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
+    ImageOperands operands;
+    operands.AddDerivatives(ctx, derivatives);
+    operands.AddOffset(ctx, offset);
+    return ctx.OpImageSampleExplicitLod(ctx.F32[4], sampled_image, coords, operands.mask,
+                                        operands.operands);
 }
 
 Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords) {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include <xxhash.h>
 #include "common/assert.h"
 #include "video_core/buffer_cache/buffer_cache.h"

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include "shader_recompiler/ir/basic_block.h"
@@ -631,7 +631,10 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
             UNREACHABLE();
         }
     }
-
+    if (inst_info.has_derivatives) {
+        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D,
+                   "User derivatives only supported for 2D images");
+    }
     if (inst_info.has_lod_clamp) {
         const u32 arg_pos = [&]() -> u32 {
             switch (inst.GetOpcode()) {
