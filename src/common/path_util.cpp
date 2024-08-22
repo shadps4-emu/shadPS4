@@ -93,6 +93,7 @@ static auto UserPaths = [] {
         paths.insert_or_assign(shad_path, new_path);
     };
 
+    paths.reserve(11);
     create_path(PathType::UserDir, user_dir);
     create_path(PathType::LogDir, user_dir / LOG_DIR);
     create_path(PathType::ScreenshotsDir, user_dir / SCREENSHOTS_DIR);
