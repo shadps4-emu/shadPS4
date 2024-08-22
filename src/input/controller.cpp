@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
+#include "common/logging/log.h"
 
 namespace Input {
 
@@ -99,18 +100,32 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
 
     state.axes[axis_id] = value;
 
+    // Scaled value is 0 .. 255
+    // Rest point for L2/R2 is usually ~127 but may drift
+    // It may also differ across controllers
+    // Use some hysteresis to avoid glitches. 0->255 will also work just slightly later
+
+    const int ON_THRESHOLD = 150;
+    const int OFF_THRESHOLD = 135;
+
     if (axis == Input::Axis::TriggerLeft) {
-        if (value > 0) {
+        LOG_TRACE(Input, "TriggerLeft {}", value);
+        if (value > ON_THRESHOLD) {
+            LOG_TRACE(Input, "L2 ON");
             state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
-        } else {
+        } else if (value < OFF_THRESHOLD) {
+            LOG_TRACE(Input, "L2 OFF");
             state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_L2;
         }
     }
 
     if (axis == Input::Axis::TriggerRight) {
-        if (value > 0) {
+        LOG_TRACE(Input, "TriggerRight {}", value);
+        if (value > ON_THRESHOLD) {
+            LOG_TRACE(Input, "R2 ON");
             state.buttonsState |= Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
-        } else {
+        } else if (value < OFF_THRESHOLD) {
+            LOG_TRACE(Input, "R2 OFF");
             state.buttonsState &= ~Libraries::Pad::OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_R2;
         }
     }
