@@ -9,7 +9,7 @@ PSF::PSF() = default;
 
 PSF::~PSF() = default;
 
-bool PSF::open(const std::string& filepath, std::vector<u8> psfBuffer) {
+bool PSF::open(const std::string& filepath, const std::vector<u8>& psfBuffer) {
     if (!psfBuffer.empty()) {
         psf.resize(psfBuffer.size());
         psf = psfBuffer;
