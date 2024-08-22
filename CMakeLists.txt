@@ -223,21 +223,7 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/video_out.h
 )
 
-set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
-                 src/core/libraries/libc/libc.h
-                 src/core/libraries/libc/printf.h
-                 src/core/libraries/libc/va_ctx.h
-                 src/core/libraries/libc/libc_cxa.cpp
-                 src/core/libraries/libc/libc_cxa.h
-                 src/core/libraries/libc/libc_stdio.cpp
-                 src/core/libraries/libc/libc_stdio.h
-                 src/core/libraries/libc/libc_math.cpp
-                 src/core/libraries/libc/libc_math.h
-                 src/core/libraries/libc/libc_string.cpp
-                 src/core/libraries/libc/libc_string.h
-                 src/core/libraries/libc/libc_stdlib.cpp
-                 src/core/libraries/libc/libc_stdlib.h
-                 src/core/libraries/libc_internal/libc_internal.cpp
+set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
 )
 

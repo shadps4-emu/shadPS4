@@ -22,7 +22,6 @@ u32 getScreenHeight();
 s32 getGpuId();
 
 bool debugDump();
-bool isLleLibc();
 bool showSplash();
 bool nullGpu();
 bool dumpShaders();

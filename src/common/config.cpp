@@ -18,7 +18,6 @@ static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static bool isDebugDump = false;
-static bool isLibc = true;
 static bool isShowSplash = false;
 static bool isNullGpu = false;
 static bool shouldDumpShaders = false;
@@ -48,10 +47,6 @@ std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 // Settings
 u32 m_language = 1; // english
-
-bool isLleLibc() {
-    return isLibc;
-}
 
 bool isNeoMode() {
     return isNeo;
@@ -354,12 +349,6 @@ void load(const std::filesystem::path& path) {
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
     }
 
-    if (data.contains("LLE")) {
-        const toml::value& lle = data.at("LLE");
-
-        isLibc = toml::find_or<bool>(lle, "libc", true);
-    }
-
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
 
@@ -425,7 +414,6 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Vulkan"]["rdocMarkersEnable"] = rdocMarkersEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
-    data["LLE"]["libc"] = isLibc;
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["iconSize"] = m_icon_size;
     data["GUI"]["sliderPos"] = m_slider_pos;
