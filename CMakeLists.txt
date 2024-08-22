@@ -262,6 +262,7 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_trophy/np_trophy.cpp
             src/core/libraries/np_trophy/np_trophy.h
 )
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
 )
@@ -411,7 +412,6 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/backend/spirv/spirv_emit_context.h
                       src/shader_recompiler/frontend/translate/data_share.cpp
                       src/shader_recompiler/frontend/translate/export.cpp
-                      src/shader_recompiler/frontend/translate/flat_memory.cpp
                       src/shader_recompiler/frontend/translate/scalar_alu.cpp
                       src/shader_recompiler/frontend/translate/scalar_memory.cpp
                       src/shader_recompiler/frontend/translate/translate.cpp

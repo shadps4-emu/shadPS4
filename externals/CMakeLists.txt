@@ -25,11 +25,6 @@ if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
 endif()
 
-# Discord-RPC
-set(BUILD_EXAMPLES OFF CACHE BOOL "")
-add_subdirectory(discord-rpc)
-target_include_directories(discord-rpc INTERFACE ./discord-rpc/include)
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     # If it is clang and MSVC we will add a static lib
     # CryptoPP
