@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <boost/container/static_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 
@@ -33,7 +34,7 @@ namespace Shader::Gcn {
  * We take the reverse way, extract the original input semantics from these instructions.
  **/
 
-std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
+FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
     std::vector<VertexAttribute> attributes;
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
@@ -44,8 +45,9 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
         s32 dst_reg{-1};
     };
     boost::container::static_vector<VsharpLoad, 16> loads;
-    std::array<u32, 16> offsets{};
-    offsets.fill(0xFF);
+
+    s8 fetch_index_sgpr = -1;
+    s8 fetch_offset_sgpr = -1;
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
@@ -62,7 +64,18 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
         }
 
         if (inst.opcode == Opcode::V_ADD_I32) {
-            offsets[inst.dst[0].code] = inst.src[0].code;
+            const auto vgpr = inst.dst[0].code;
+            const auto sgpr = s8(inst.src[0].code);
+            switch (vgpr) {
+            case 0: // V0 is always the index
+                fetch_index_sgpr = sgpr;
+                break;
+            case 3: // V3 is always the offset
+                fetch_offset_sgpr = sgpr;
+                break;
+            default:
+                UNREACHABLE();
+            }
         }
 
         if (inst.inst_class == InstClass::VectorMemBufFmt) {
@@ -74,28 +87,12 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
             const auto it = std::ranges::find_if(
                 loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
 
-            auto mubuf = inst.control.mubuf;
-
             auto& attrib = attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
-            attrib.num_elements = mubuf.count;
+            attrib.num_elements = inst.control.mubuf.count;
             attrib.sgpr_base = it->base_sgpr;
             attrib.dword_offset = it->dword_offset;
-
-            u8 soofs = inst.src[0].code;
-
-            if (mubuf.idxen != 0) {
-                attrib.index_sgpr = offsets[soofs++];
-            } else {
-                attrib.index_sgpr = 0xFF;
-            }
-
-            if (mubuf.offen != 0) {
-                attrib.offset_sgpr = offsets[soofs];
-            } else {
-                attrib.offset_sgpr = 0xFF;
-            }
 
             // Store instance id rate
             attrib.instance_data = inst.src[0].code;
@@ -105,7 +102,11 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
         }
     }
 
-    return attributes;
+    return FetchShaderData{
+        .attributes = std::move(attributes),
+        .fetch_index_sgpr = fetch_index_sgpr,
+        .fetch_offset_sgpr = fetch_offset_sgpr,
+    };
 }
 
 } // namespace Shader::Gcn

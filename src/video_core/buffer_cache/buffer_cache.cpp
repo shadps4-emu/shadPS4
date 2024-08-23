@@ -101,7 +101,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
     }
 
     std::array<vk::Buffer, NUM_VERTEX_BUFFERS> host_buffers;
-    std::array<vk::DeviceSize, NUM_VERTEX_BUFFERS> host_offsets{};
+    std::array<vk::DeviceSize, NUM_VERTEX_BUFFERS> host_offsets;
     boost::container::static_vector<AmdGpu::Buffer, NUM_VERTEX_BUFFERS> guest_buffers;
 
     struct BufferRange {
@@ -131,16 +131,6 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
         guest_buffers.emplace_back(buffer);
         ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
-
-        u32 offset = 0;
-        if (input.index_sgpr != 0xFF) {
-            offset += vs_info.user_data[input.index_sgpr] * buffer.GetStride();
-        }
-        if (input.offset_sgpr != 0xFF) {
-            offset += vs_info.user_data[input.offset_sgpr];
-        }
-        host_offsets[guest_buffers.size() - 1] = offset;
-
         attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
@@ -190,7 +180,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         ASSERT(host_buffer != ranges_merged.cend());
 
         host_buffers[i] = host_buffer->vk_buffer;
-        host_offsets[i] += host_buffer->offset + buffer.base_address - host_buffer->base_address;
+        host_offsets[i] = host_buffer->offset + buffer.base_address - host_buffer->base_address;
     }
 
     if (num_buffers > 0) {

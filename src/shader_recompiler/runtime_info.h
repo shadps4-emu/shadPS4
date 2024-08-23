@@ -135,8 +135,6 @@ struct Info {
         u16 num_components;
         u8 sgpr_base;
         u8 dword_offset;
-        u8 index_sgpr;
-        u8 offset_sgpr;
         InstanceIdType instance_step_rate;
         s32 instance_data_buf;
     };
@@ -176,6 +174,9 @@ struct Info {
     AttributeFlags loads{};
     AttributeFlags stores{};
     boost::container::static_vector<VsOutputMap, 3> vs_outputs;
+
+    s8 fetch_index_sgpr = -1;
+    s8 fetch_offset_sgpr = -1;
 
     BufferResourceList buffers;
     ImageResourceList images;
