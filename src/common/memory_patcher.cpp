@@ -13,7 +13,7 @@ void AddPatchToQueue(patchInfo patchToAdd) {
 
 void ApplyPendingPatches() {
 
-for (size_t i = 0; i < pending_patches.size(); ++i) {
+    for (size_t i = 0; i < pending_patches.size(); ++i) {
         patchInfo currentPatch = pending_patches[i];
         PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
                     currentPatch.isOffset);

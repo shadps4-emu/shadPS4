@@ -663,7 +663,7 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString address = lineObject["Address"].toString();
             QString patchValue = lineObject["Value"].toString();
 
-             if (MemoryPatcher::g_eboot_address == 0) {
+            if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
                 addingPatch.modNameStr = patchName.toStdString();
                 addingPatch.offsetStr = address.toStdString();
