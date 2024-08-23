@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QCompleter>
+
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
@@ -86,7 +87,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 [](const QString& text) { Config::setUserName(text.toStdString()); });
 
         connect(ui->consoleLanguageComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                this, [this](int index) {
+                this, [](int index) {
                     if (index >= 0 && index < languageIndexes.size()) {
                         int languageCode = languageIndexes[index];
                         Config::setLanguage(languageCode);

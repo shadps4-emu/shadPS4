@@ -3,13 +3,8 @@
 
 #pragma once
 
-#include <QAbstractButton>
 #include <QActionGroup>
 #include <QDragEnterEvent>
-#include <QMainWindow>
-#include <QMimeData>
-#include <QScopedPointer>
-#include <fmt/core.h>
 
 #include "common/config.h"
 #include "common/path_util.h"

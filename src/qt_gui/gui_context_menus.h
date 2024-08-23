@@ -4,17 +4,9 @@
 #pragma once
 
 #include <QClipboard>
-#include <QCoreApplication>
 #include <QDesktopServices>
-#include <QFile>
-#include <QHeaderView>
-#include <QImage>
 #include <QMenu>
 #include <QMessageBox>
-#include <QPixmap>
-#include <QStandardPaths>
-#include <QTableWidget>
-#include <QTextStream>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
@@ -84,7 +76,7 @@ public:
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
                 tableWidget->setAttribute(Qt::WA_DeleteOnClose);
                 connect(widget->parent(), &QWidget::destroyed, tableWidget,
-                        [widget, tableWidget]() { tableWidget->deleteLater(); });
+                        [tableWidget]() { tableWidget->deleteLater(); });
 
                 tableWidget->verticalHeader()->setVisible(false); // Hide vertical header
                 int row = 0;
@@ -135,7 +127,7 @@ public:
             TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
-                    [widget, trophyViewer]() { trophyViewer->deleteLater(); });
+                    [trophyViewer]() { trophyViewer->deleteLater(); });
         }
 
         if (selected == &createShortcut) {

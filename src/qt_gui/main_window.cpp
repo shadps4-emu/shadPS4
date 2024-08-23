@@ -1,13 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QDir>
 #include <QDockWidget>
-#include <QFileDialog>
-#include <QMessageBox>
 #include <QProgressDialog>
-#include <QStatusBar>
-#include <QtConcurrent>
 
 #include "about_dialog.h"
 #include "common/io_file.h"

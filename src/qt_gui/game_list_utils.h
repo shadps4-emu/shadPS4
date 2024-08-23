@@ -3,11 +3,6 @@
 
 #pragma once
 
-#include <QDir>
-#include <QDirIterator>
-#include <QImage>
-#include <QString>
-
 struct GameInfo {
     std::string path; // root path of game directory (normaly directory that contains eboot.bin)
     std::string icon_path; // path of icon0.png

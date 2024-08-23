@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QHeaderView>
-#include <QWidget>
-
 #include "pkg_viewer.h"
 
 PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent,
@@ -54,7 +51,7 @@ PKGViewer::PKGViewer(std::shared_ptr<GameInfoClass> game_info_get, QWidget* pare
                                                              InstallDragDropPkg);
             });
 
-    connect(parent, &QWidget::destroyed, this, [parent, this]() { this->deleteLater(); });
+    connect(parent, &QWidget::destroyed, this, [this]() { this->deleteLater(); });
 }
 
 PKGViewer::~PKGViewer() {}
