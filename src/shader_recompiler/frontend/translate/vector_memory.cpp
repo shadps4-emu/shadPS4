@@ -168,10 +168,9 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
             return {};
         }
         addr_reg = addr_reg + 4;
-        return ir.CompositeConstruct(ir.GetVectorReg<IR::F32>(addr_reg - 4),
-                                     ir.GetVectorReg<IR::F32>(addr_reg - 3),
-                                     ir.GetVectorReg<IR::F32>(addr_reg - 2),
-                                     ir.GetVectorReg<IR::F32>(addr_reg - 1));
+        return ir.CompositeConstruct(
+            ir.GetVectorReg<IR::F32>(addr_reg - 4), ir.GetVectorReg<IR::F32>(addr_reg - 3),
+            ir.GetVectorReg<IR::F32>(addr_reg - 2), ir.GetVectorReg<IR::F32>(addr_reg - 1));
     }();
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
