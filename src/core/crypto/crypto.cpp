@@ -51,8 +51,8 @@ CryptoPP::RSA::PrivateKey Crypto::DebugRifKeyset_init() {
     params.SetPrime2(
         CryptoPP::Integer(DebugRifKeyset_keyset.Prime2, sizeof(DebugRifKeyset_keyset.Prime2)));
 
-    params.SetPublicExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PrivateExponent,
-                                               sizeof(DebugRifKeyset_keyset.PrivateExponent)));
+    params.SetPublicExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PublicExponent,
+                                               sizeof(DebugRifKeyset_keyset.PublicExponent)));
     params.SetPrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PrivateExponent,
                                                 sizeof(DebugRifKeyset_keyset.PrivateExponent)));
 
