@@ -396,7 +396,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
         for (const auto& image_desc : stage->images) {
-            const auto tsharp = stage->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            const auto tsharp =
+                stage->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
             if (tsharp) {
                 tsharps.emplace_back(tsharp);
                 VideoCore::ImageInfo image_info{tsharp};
