@@ -45,6 +45,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
     };
     boost::container::static_vector<VsharpLoad, 16> loads;
     std::array<u32, 16> offsets{};
+    offsets.fill(0xFF);
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
