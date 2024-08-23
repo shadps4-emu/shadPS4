@@ -51,7 +51,8 @@ struct PageManager::Impl {
         if (ec == EXCEPTION_ACCESS_VIOLATION) {
             const auto info = pExp->ExceptionRecord->ExceptionInformation;
             if (info[0] == 1) { // Write violation
-                rasterizer->InvalidateMemory(info[1], sizeof(u64));
+                const VAddr addr_aligned = Common::AlignDown(info[1], PAGESIZE);
+                rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);
                 return EXCEPTION_CONTINUE_EXECUTION;
             } /* else {
                 UNREACHABLE();
