@@ -1,29 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-/********************************************************************************
-** Form generated from reading UI file 'main_window.ui'
-**
-** Created by: Qt User Interface Compiler version 6.6.1
-**
-** WARNING! All changes made in this file will be lost when recompiling UI file!
-********************************************************************************/
+#pragma once
 
-#ifndef MAIN_WINDOW_UI_H
-#define MAIN_WINDOW_UI_H
-
-#include <QtCore/QVariant>
-#include <QtGui/QAction>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QMenuBar>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QSlider>
-#include <QtWidgets/QToolBar>
-#include <QtWidgets/QWidget>
+#include <QMenuBar>
+#include <QPushButton>
+#include <QToolBar>
 
 QT_BEGIN_NAMESPACE
 
@@ -370,5 +352,3 @@ class MainWindow : public Ui_MainWindow {};
 } // namespace Ui
 
 QT_END_NAMESPACE
-
-#endif // MAIN_WINDOW_UI_H

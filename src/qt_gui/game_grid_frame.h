@@ -3,17 +3,7 @@
 
 #pragma once
 
-#include <QFutureWatcher>
-#include <QGraphicsBlurEffect>
-#include <QHeaderView>
-#include <QLabel>
-#include <QPixmap>
 #include <QScrollBar>
-#include <QStyleOptionViewItem>
-#include <QTableWidget>
-#include <QVBoxLayout>
-#include <QWidget>
-#include <QtConcurrent/QtConcurrent>
 
 #include "common/config.h"
 #include "game_info.h"
