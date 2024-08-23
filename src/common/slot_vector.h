@@ -107,9 +107,9 @@ private:
     }
 
     void ValidateIndex([[maybe_unused]] SlotId id) const noexcept {
-        ASSERT(id);
-        ASSERT(id.index / 64 < stored_bitset.size());
-        ASSERT(((stored_bitset[id.index / 64] >> (id.index % 64)) & 1) != 0);
+        DEBUG_ASSERT(id);
+        DEBUG_ASSERT(id.index / 64 < stored_bitset.size());
+        DEBUG_ASSERT(((stored_bitset[id.index / 64] >> (id.index % 64)) & 1) != 0);
     }
 
     [[nodiscard]] u32 FreeValueIndex() noexcept {
