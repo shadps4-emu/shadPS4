@@ -1,8 +1,7 @@
-#include "memory_patcher.h"
 #include "common/logging/log.h"
+#include "memory_patcher.h"
 
-namespace MemoryPatcher 
-{
+namespace MemoryPatcher {
 
 uintptr_t g_eboot_address;
 
@@ -25,8 +24,7 @@ void ApplyPendingPatches() {
 
 void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr) {
     // Send a request to modify the process memory.
-    void* cheatAddress =
-        reinterpret_cast<void*>(g_eboot_address + std::stoi(offsetStr, 0, 16));
+    void* cheatAddress = reinterpret_cast<void*>(g_eboot_address + std::stoi(offsetStr, 0, 16));
 
     std::vector<unsigned char> bytePatch;
 
@@ -38,7 +36,8 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
     }
     std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
 
-    LOG_INFO(Loader, "Applied patch:{}, Offset:{}, Value:{}", modNameStr, (uintptr_t)cheatAddress, valueStr);
+    LOG_INFO(Loader, "Applied patch:{}, Offset:{}, Value:{}", modNameStr, (uintptr_t)cheatAddress,
+        valueStr);
 }
 
-}
+} // namespace MemoryPatcher

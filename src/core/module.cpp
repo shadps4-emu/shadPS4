@@ -5,13 +5,13 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/memory_patcher.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
-#include "common/memory_patcher.h"
 
 namespace Core {
 
@@ -197,11 +197,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     if (MemoryPatcher::g_eboot_address == 0) {
         if (name == "eboot") {
             MemoryPatcher::g_eboot_address = base_virtual_addr;
-
             MemoryPatcher::ApplyPendingPatches();
         }
     }
-
 }
 
 void Module::LoadDynamicInfo() {
