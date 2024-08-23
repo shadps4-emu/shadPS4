@@ -100,13 +100,13 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
 
     state.axes[axis_id] = value;
 
+    // Derive digital buttons from the analog trigger
     // Scaled value is 0 .. 255
-    // Rest point for L2/R2 is usually ~127 but may drift
-    // It may also differ across controllers
-    // Use some hysteresis to avoid glitches. 0->255 will also work just slightly later
+    // Rest point for L2/R2 is ideally 0 but may drift
+    // Use some hysteresis to avoid glitches
 
-    const int ON_THRESHOLD = 150;
-    const int OFF_THRESHOLD = 135;
+    const int ON_THRESHOLD = 31; // 255 / 8
+    const int OFF_THRESHOLD = 16; // 255 / 16 + 1
 
     if (axis == Input::Axis::TriggerLeft) {
         LOG_TRACE(Input, "TriggerLeft {}", value);
