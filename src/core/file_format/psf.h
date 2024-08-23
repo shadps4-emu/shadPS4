@@ -35,7 +35,7 @@ public:
     PSF();
     ~PSF();
 
-    bool open(const std::string& filepath, std::vector<u8> psfBuffer);
+    bool open(const std::string& filepath, const std::vector<u8>& psfBuffer);
 
     std::string GetString(const std::string& key);
     u32 GetInteger(const std::string& key);

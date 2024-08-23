@@ -22,7 +22,6 @@ u32 getScreenHeight();
 s32 getGpuId();
 
 bool debugDump();
-bool isLleLibc();
 bool showSplash();
 bool nullGpu();
 bool dumpShaders();
@@ -43,10 +42,10 @@ void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
-void setUserName(std::string type);
+void setUserName(const std::string& type);
 
-void setLogType(std::string type);
-void setLogFilter(std::string type);
+void setLogType(const std::string& type);
+void setLogFilter(const std::string& type);
 
 void setVkValidation(bool enable);
 void setVkSyncValidation(bool enable);
@@ -67,9 +66,9 @@ void setSliderPositonGrid(u32 pos);
 void setTableMode(u32 mode);
 void setMainWindowWidth(u32 width);
 void setMainWindowHeight(u32 height);
-void setPkgViewer(std::vector<std::string> pkgList);
-void setElfViewer(std::vector<std::string> elfList);
-void setRecentFiles(std::vector<std::string> recentFiles);
+void setPkgViewer(const std::vector<std::string>& pkgList);
+void setElfViewer(const std::vector<std::string>& elfList);
+void setRecentFiles(const std::vector<std::string>& recentFiles);
 
 u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();

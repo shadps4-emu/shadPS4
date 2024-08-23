@@ -98,8 +98,10 @@ public:
         bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
         bootGameAct = new QAction(MainWindow);
         bootGameAct->setObjectName("bootGameAct");
+        bootGameAct->setIcon(QIcon(":images/play_icon.png"));
         addElfFolderAct = new QAction(MainWindow);
         addElfFolderAct->setObjectName("addElfFolderAct");
+        addElfFolderAct->setIcon(QIcon(":images/folder_icon.png"));
         exitAct = new QAction(MainWindow);
         exitAct->setObjectName("exitAct");
         exitAct->setIcon(QIcon(":images/exit_icon.png"));
@@ -144,8 +146,10 @@ public:
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
+        aboutAct->setIcon(QIcon(":images/about_icon.png"));
         configureAct = new QAction(MainWindow);
         configureAct->setObjectName("configureAct");
+        configureAct->setIcon(QIcon(":images/settings_icon.png"));
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);

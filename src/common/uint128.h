@@ -94,7 +94,7 @@ namespace Common {
 
 // This function divides a u128 by a u32 value and produces two u64 values:
 // the result of division and the remainder
-[[nodiscard]] static inline std::pair<u64, u64> Divide128On32(u128 dividend, u32 divisor) {
+[[nodiscard]] static inline std::pair<u64, u64> Divide128On32(const u128& dividend, u32 divisor) {
     u64 remainder = dividend[0] % divisor;
     u64 accum = dividend[0] / divisor;
     if (dividend[1] == 0)

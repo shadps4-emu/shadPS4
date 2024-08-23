@@ -1,32 +1,44 @@
+v0.2.0 15/08/2024 - codename validptr
+=================
+- Adding macOS support
+- Big shader recompiler improvements
+- Core improvements
+- GUI improvements
+
+v0.1.0 01/07/2024 - codename madturtle
+=================
+- Added a shader recompiler, with this we have a lot of games that starts to work
+- Rewrote a big part of core
+
 v0.0.3 23/03/2024 - codename salad
 =================
--Switching to std::thread
--Use unique_ptr where possible
--Replace printf/scanf with type safe fmt
--Implemented sceKernelGetProcessTime
--Implemented sceKernelGetProcessTimeCounter , sceKernelGetProcessTimeCounterFrequency
--Pause emu with P button
--Timers rewrote with std::chrono
--Added sceSystemServiceGetStatus
--Initial FileSystem implementation
--Initial TLS work
--New logging implementation
--Some functions implemented for userService,systemService
--Added sceAudioOut module and output using sdl audio
+- Switching to std::thread
+- Use unique_ptr where possible
+- Replace printf/scanf with type safe fmt
+- Implemented sceKernelGetProcessTime
+- Implemented sceKernelGetProcessTimeCounter, sceKernelGetProcessTimeCounterFrequency
+- Pause emu with P button
+- Timers rewrote with std::chrono
+- Added sceSystemServiceGetStatus
+- Initial FileSystem implementation
+- Initial TLS work
+- New logging implementation
+- Some functions implemented for userService, systemService
+- Added sceAudioOut module and output using SDL audio
 
 v0.0.2 21/10/2023
 =================
--using cstdint header in variable types
--run_main_entry: Rewrite in asm for stack setup
--printf libc implementation for work with sysv_abi
--initial pad emulation (only digital pad atm)
--Implemented sceVideoOutIsFlipPending 
--Added auto stubs , now unsupported hle function will resolve as empty stubs
--Rewrote libc_cxa functions
--Libc implementations ( _ZdlPv,_Znwm,rand,_Fsin,qsort,free,strncpy,memmove,atan2f,pow,_Sin)
--ET_SCE_DYNAMIC behaves as valid for execution now.
--Initial FileSystem work (not yet usable).
+- Using cstdint header in variable types
+- run_main_entry: Rewrite in asm for stack setup
+- Printf libc implementation for work with sysv_abi
+- Initial pad emulation (only digital pad atm)
+- Implemented sceVideoOutIsFlipPending
+- Added auto stubs, now unsupported hle function will resolve as empty stubs
+- Rewrote libc_cxa functions
+- Libc implementations ( _ZdlPv,_Znwm,rand,_Fsin,qsort,free,strncpy,memmove,atan2f,pow,_Sin)
+- ET_SCE_DYNAMIC behaves as valid for execution now
+- Initial FileSystem work (not yet usable)
 
 v0.0.1 29/09/2023
 =================
-First public release . Everything is new
+First public release. Everything is new.

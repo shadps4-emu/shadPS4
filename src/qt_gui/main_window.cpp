@@ -179,6 +179,7 @@ void MainWindow::CreateConnects() {
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
@@ -445,6 +446,15 @@ void MainWindow::SearchGameTable(const QString& text) {
     }
 }
 
+void MainWindow::ShowGameList() {
+    if (ui->showGameListAct->isChecked()) {
+        RefreshGameTable();
+    } else {
+        m_game_grid_frame->clearContents();
+        m_game_list_frame->clearContents();
+    }
+};
+
 void MainWindow::RefreshGameTable() {
     // m_game_info->m_games.clear();
     m_game_info->GetGameInfo(this);
@@ -702,7 +712,9 @@ QIcon MainWindow::RecolorIcon(const QIcon& icon, bool isWhite) {
 
 void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
+    ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
+    ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
     ui->gameInstallPathAct->setIcon(RecolorIcon(ui->gameInstallPathAct->icon(), isWhite));
@@ -716,6 +728,8 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
+    ui->configureAct->setIcon(RecolorIcon(ui->configureAct->icon(), isWhite));
+    ui->addElfFolderAct->setIcon(RecolorIcon(ui->addElfFolderAct->icon(), isWhite));
 }
 
 void MainWindow::resizeEvent(QResizeEvent* event) {

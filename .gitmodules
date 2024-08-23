@@ -1,66 +1,84 @@
-[submodule "externals/discord-rpc"]
-	path = externals/discord-rpc
-	url = https://github.com/shadps4-emu/ext-discord-rpc.git
 [submodule "externals/cryptopp-cmake"]
 	path = externals/cryptopp-cmake
 	url = https://github.com/shadps4-emu/ext-cryptopp-cmake.git
+	shallow = true
 [submodule "externals/cryptopp"]
 	path = externals/cryptopp
 	url = https://github.com/shadps4-emu/ext-cryptopp.git
+	shallow = true
 [submodule "externals/cryptoppwin"]
 	path = externals/cryptoppwin
 	url = https://github.com/shadps4-emu/ext-cryptoppwin.git
+	shallow = true
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
+	shallow = true
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadps4-emu/ext-SDL.git
+	shallow = true
 [submodule "externals/fmt"]
 	path = externals/fmt
 	url = https://github.com/shadps4-emu/ext-fmt.git
+	shallow = true
 [submodule "externals/vulkan-headers"]
 	path = externals/vulkan-headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+	shallow = true
 [submodule "externals/vma"]
 	path = externals/vma
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+	shallow = true
 [submodule "externals/glslang"]
 	path = externals/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+	shallow = true
 [submodule "externals/robin-map"]
 	path = externals/robin-map
 	url = https://github.com/Tessil/robin-map.git
+	shallow = true
 [submodule "externals/xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak.git
+	shallow = true
 [submodule "externals/winpthreads"]
 	path = externals/winpthreads
 	url = https://github.com/shadps4-emu/winpthreads.git
+	shallow = true
 [submodule "externals/magic_enum"]
 	path = externals/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
+	shallow = true
 [submodule "externals/toml11"]
 	path = externals/toml11
 	url = https://github.com/ToruNiina/toml11.git
+	shallow = true
 [submodule "externals/zydis"]
 	path = externals/zydis
 	url = https://github.com/zyantific/zydis.git
+	shallow = true
 [submodule "externals/sirit"]
 	path = externals/sirit
 	url = https://github.com/shadps4-emu/sirit.git
+	shallow = true
 [submodule "externals/xxhash"]
 	path = externals/xxhash
 	url = https://github.com/Cyan4973/xxHash.git
+	shallow = true
 [submodule "externals/tracy"]
 	path = externals/tracy
 	url = https://github.com/shadps4-emu/tracy.git
+	shallow = true
 [submodule "externals/ext-boost"]
 	path = externals/ext-boost
 	url = https://github.com/shadps4-emu/ext-boost.git
+	shallow = true
 [submodule "externals/date"]
 	path = externals/date
 	url = https://github.com/HowardHinnant/date.git
+	shallow = true
 [submodule "externals/ffmpeg-core"]
 	path = externals/ffmpeg-core
-	url = https://github.com/shadps4-emu/ext-ffmpeg-core
+	url = https://github.com/shadps4-emu/ext-ffmpeg-core.git
+	shallow = true

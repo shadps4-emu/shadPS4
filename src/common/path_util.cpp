@@ -8,6 +8,7 @@
 
 #ifdef __APPLE__
 #include <CoreFoundation/CFBundle.h>
+#include <dlfcn.h>
 #include <sys/param.h>
 #endif
 
@@ -26,23 +27,52 @@ namespace Common::FS {
 namespace fs = std::filesystem;
 
 #ifdef __APPLE__
+using IsTranslocatedURLFunc = Boolean (*)(CFURLRef path, bool* isTranslocated,
+                                          CFErrorRef* __nullable error);
+using CreateOriginalPathForURLFunc = CFURLRef __nullable (*)(CFURLRef translocatedPath,
+                                                             CFErrorRef* __nullable error);
+
+static CFURLRef UntranslocateBundlePath(const CFURLRef bundle_path) {
+    if (void* security_handle =
+            dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_LAZY)) {
+        SCOPE_EXIT {
+            dlclose(security_handle);
+        };
+
+        const auto IsTranslocatedURL = reinterpret_cast<IsTranslocatedURLFunc>(
+            dlsym(security_handle, "SecTranslocateIsTranslocatedURL"));
+        const auto CreateOriginalPathForURL = reinterpret_cast<CreateOriginalPathForURLFunc>(
+            dlsym(security_handle, "SecTranslocateCreateOriginalPathForURL"));
+
+        bool is_translocated = false;
+        if (IsTranslocatedURL && CreateOriginalPathForURL &&
+            IsTranslocatedURL(bundle_path, &is_translocated, nullptr) && is_translocated) {
+            return CreateOriginalPathForURL(bundle_path, nullptr);
+        }
+    }
+    return nullptr;
+}
+
 static std::filesystem::path GetBundleParentDirectory() {
     if (CFBundleRef bundle_ref = CFBundleGetMainBundle()) {
         if (CFURLRef bundle_url_ref = CFBundleCopyBundleURL(bundle_ref)) {
             SCOPE_EXIT {
                 CFRelease(bundle_url_ref);
             };
-            if (CFStringRef bundle_path_ref =
-                    CFURLCopyFileSystemPath(bundle_url_ref, kCFURLPOSIXPathStyle)) {
-                SCOPE_EXIT {
-                    CFRelease(bundle_path_ref);
-                };
-                char app_bundle_path[MAXPATHLEN];
-                if (CFStringGetFileSystemRepresentation(bundle_path_ref, app_bundle_path,
-                                                        sizeof(app_bundle_path))) {
-                    std::filesystem::path bundle_path{app_bundle_path};
-                    return bundle_path.parent_path();
+
+            CFURLRef untranslocated_url_ref = UntranslocateBundlePath(bundle_url_ref);
+            SCOPE_EXIT {
+                if (untranslocated_url_ref) {
+                    CFRelease(untranslocated_url_ref);
                 }
+            };
+
+            char app_bundle_path[MAXPATHLEN];
+            if (CFURLGetFileSystemRepresentation(
+                    untranslocated_url_ref ? untranslocated_url_ref : bundle_url_ref, true,
+                    reinterpret_cast<u8*>(app_bundle_path), sizeof(app_bundle_path))) {
+                std::filesystem::path bundle_path{app_bundle_path};
+                return bundle_path.parent_path();
             }
         }
     }

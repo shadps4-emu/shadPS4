@@ -12,18 +12,19 @@
 namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
-                                 vk::PipelineCache pipeline_cache, const Shader::Info* info_,
-                                 u64 compute_key_, vk::ShaderModule module)
-    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_}, info{*info_} {
+                                 vk::PipelineCache pipeline_cache, u64 compute_key_,
+                                 const Program* program)
+    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_},
+      info{&program->pgm.info} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
-        .module = module,
+        .module = program->module,
         .pName = "main",
     };
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
-    for (const auto& buffer : info.buffers) {
+    for (const auto& buffer : info->buffers) {
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
@@ -32,7 +33,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
     }
-    for (const auto& image : info.images) {
+    for (const auto& image : info->images) {
         bindings.push_back({
             .binding = binding++,
             .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
@@ -41,7 +42,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
     }
-    for (const auto& sampler : info.samplers) {
+    for (const auto& sampler : info->samplers) {
         bindings.push_back({
             .binding = binding++,
             .descriptorType = vk::DescriptorType::eSampler,
@@ -96,8 +97,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     Shader::PushData push_data{};
     u32 binding{};
 
-    for (const auto& buffer : info.buffers) {
-        const auto vsharp = buffer.GetVsharp(info);
+    for (const auto& buffer : info->buffers) {
+        const auto vsharp = buffer.GetVsharp(*info);
         const VAddr address = vsharp.base_address;
         // Most of the time when a metadata is updated with a shader it gets cleared. It means we
         // can skip the whole dispatch and update the tracked state instead. Also, it is not
@@ -139,9 +140,9 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         });
     }
 
-    for (const auto& image_desc : info.images) {
+    for (const auto& image_desc : info->images) {
         const auto tsharp =
-            info.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            info->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
         VideoCore::ImageInfo image_info{tsharp};
         VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
         const auto& image_view = texture_cache.FindTexture(image_info, view_info);
@@ -161,8 +162,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (texture)");
         }
     }
-    for (const auto& sampler : info.samplers) {
-        const auto ssharp = sampler.GetSsharp(info);
+    for (const auto& sampler : info->samplers) {
+        const auto ssharp = sampler.GetSsharp(*info);
         const auto vk_sampler = texture_cache.GetSampler(ssharp);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({

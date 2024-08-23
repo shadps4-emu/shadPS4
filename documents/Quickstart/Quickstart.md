@@ -58,4 +58,24 @@ To install PKG files (game and updates), you will need the Qt application (with 
 
 ## Configure the emulator
 
-You can configure the emulator in the "user" folder (created after the first start of the application) then in the "config.toml" file. Here you can find lots of parameters to set with True or False.
+You can configure the emulator by editing the `config.toml` file found in the `user` folder created after starting the application.\
+Some settings may be related to more technical development and debugging. For more information on those, see [Debugging](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#configuration).
+
+Here's a list of configuration entries that are worth changing:
+
+- `[General]`
+
+  - `Fullscreen`: Display the game in a full screen borderless window.
+  
+  - `logType`: Configures logging synchronization (`sync`/`async`)
+    - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
+    - Use when sending logs to developers. See more about [reporting issues](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md#reporting-and-communicating-about-issues).
+  - `logFilter`: Sets the logging category for various logging classes.
+    - Format: `<class>:<level> ...`, `<class.*>:<level> <*:level> ...`
+    - Valid log levels: `Trace, Debug, Info, Warning, Error, Critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
+    - Examples:
+      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
+      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Error Render.Vulkan:Info`
+    
+- `[GPU]`
+  - `screenWidth` and `screenHeight`: Configures the game window width and height.

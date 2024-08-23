@@ -19,7 +19,6 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/kernel/thread_management.h"
-#include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -33,9 +32,6 @@
 Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
-
-static constexpr s32 WindowWidth = 1280;
-static constexpr s32 WindowHeight = 720;
 
 Emulator::Emulator() {
     // Read configuration file.
@@ -54,6 +50,18 @@ Emulator::Emulator() {
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
+
+    LOG_INFO(Config, "General isNeo: {}", Config::isNeoMode());
+    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
+    LOG_INFO(Config, "GPU shouldDumpPM4: {}", Config::dumpPM4());
+    LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
+    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
+    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+    LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::isMarkersEnabled());
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
@@ -91,8 +99,11 @@ void Emulator::Run(const std::filesystem::path& file) {
                 app_version = param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
-                auto* playgo = Common::Singleton<PlaygoChunk>::Instance();
-                playgo->Open(sce_sys_folder.string() + "/playgo-chunk.dat");
+                auto* playgo = Common::Singleton<PlaygoFile>::Instance();
+                auto filepath = sce_sys_folder / "playgo-chunk.dat";
+                if (!playgo->Open(filepath)) {
+                    LOG_ERROR(Loader, "PlayGo: unable to open file");
+                }
             } else if (entry.path().filename() == "pic0.png" ||
                        entry.path().filename() == "pic1.png") {
                 auto* splash = Common::Singleton<Splash>::Instance();
@@ -114,8 +125,8 @@ void Emulator::Run(const std::filesystem::path& file) {
         window_title =
             fmt::format("shadPS4 v{} {} | {}", Common::VERSION, Common::g_scm_desc, game_title);
     }
-    window =
-        std::make_unique<Frontend::WindowSDL>(WindowWidth, WindowHeight, controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(
+        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
 
     g_window = window.get();
 
@@ -154,22 +165,13 @@ void Emulator::Run(const std::filesystem::path& file) {
     // check if we have system modules to load
     LoadSystemModules(file);
 
-    // Check if there is a libc.prx in sce_module folder
-    bool found = false;
-    if (Config::isLleLibc()) {
-        std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
-        if (std::filesystem::is_directory(sce_module_folder)) {
-            for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
-                if (entry.path().filename() == "libc.prx") {
-                    found = true;
-                }
-                LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
-                linker->LoadModule(entry.path());
-            }
+    // Load all prx from game's sce_module folder
+    std::filesystem::path sce_module_folder = file.parent_path() / "sce_module";
+    if (std::filesystem::is_directory(sce_module_folder)) {
+        for (const auto& entry : std::filesystem::directory_iterator(sce_module_folder)) {
+            LOG_INFO(Loader, "Loading {}", entry.path().string().c_str());
+            linker->LoadModule(entry.path());
         }
-    }
-    if (!found) {
-        Libraries::LibC::libcSymbolsRegister(&linker->GetHLESymbols());
     }
 
     // start execution

@@ -193,6 +193,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/app_content/app_content.h
                 src/core/libraries/rtc/rtc.cpp
                 src/core/libraries/rtc/rtc.h
+                src/core/libraries/rtc/rtc_error.h
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
@@ -208,6 +209,11 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/avplayer/avplayer_state.h
                 src/core/libraries/avplayer/avplayer.cpp
                 src/core/libraries/avplayer/avplayer.h
+                src/core/libraries/ngs2/ngs2.cpp
+                src/core/libraries/ngs2/ngs2.h
+                src/core/libraries/ngs2/ngs2_error.h
+                src/core/libraries/ngs2/ngs2_impl.cpp
+                src/core/libraries/ngs2/ngs2_impl.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -217,21 +223,7 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/video_out.h
 )
 
-set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
-                 src/core/libraries/libc/libc.h
-                 src/core/libraries/libc/printf.h
-                 src/core/libraries/libc/va_ctx.h
-                 src/core/libraries/libc/libc_cxa.cpp
-                 src/core/libraries/libc/libc_cxa.h
-                 src/core/libraries/libc/libc_stdio.cpp
-                 src/core/libraries/libc/libc_stdio.h
-                 src/core/libraries/libc/libc_math.cpp
-                 src/core/libraries/libc/libc_math.h
-                 src/core/libraries/libc/libc_string.cpp
-                 src/core/libraries/libc/libc_string.h
-                 src/core/libraries/libc/libc_stdlib.cpp
-                 src/core/libraries/libc/libc_stdlib.h
-                 src/core/libraries/libc_internal/libc_internal.cpp
+set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
 )
 
@@ -270,6 +262,7 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_trophy/np_trophy.cpp
             src/core/libraries/np_trophy/np_trophy.h
 )
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
 )
@@ -419,7 +412,6 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/backend/spirv/spirv_emit_context.h
                       src/shader_recompiler/frontend/translate/data_share.cpp
                       src/shader_recompiler/frontend/translate/export.cpp
-                      src/shader_recompiler/frontend/translate/flat_memory.cpp
                       src/shader_recompiler/frontend/translate/scalar_alu.cpp
                       src/shader_recompiler/frontend/translate/scalar_memory.cpp
                       src/shader_recompiler/frontend/translate/translate.cpp
@@ -645,22 +637,39 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore winpthreads clang_rt.builtins-x86_64.lib)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+    target_link_libraries(shadps4 PRIVATE mincore winpthreads)
+
+    if (MSVC)
+        # MSVC likes putting opinions on what people can use, disable:
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+    endif()
+
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+
     if (MSVC)
         # Needed for conflicts with time.h of windows.h
         add_definitions(-D_TIMESPEC_DEFINED)
     endif()
+
     # Target Windows 10 RS5
     add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
-    # Increase stack commit area
-    target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+
+    if (MSVC)
+        target_link_libraries(shadps4 PRIVATE clang_rt.builtins-x86_64.lib)
+    endif()
+
     # Disable ASLR so we can reserve the user area
     if (MSVC)
         target_link_options(shadps4 PRIVATE /DYNAMICBASE:NO)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--disable-dynamicbase)
+    endif()
+
+    # Increase stack commit area (Needed, otherwise there are crashes)
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
     endif()
 endif()
 

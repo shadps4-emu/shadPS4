@@ -82,7 +82,7 @@ static s32 CodecTypeToStreamType(AVMediaType codec_type) {
     }
 }
 
-static f32 AVRationalToF32(const AVRational& rational) {
+static f32 AVRationalToF32(const AVRational rational) {
     return f32(rational.num) / rational.den;
 }
 
@@ -359,12 +359,16 @@ bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
     audio_info.pData = reinterpret_cast<u8*>(frame->info.pData);
+    audio_info.details.audio.sample_rate = frame->info.details.audio.sample_rate;
     audio_info.details.audio.size = frame->info.details.audio.size;
     audio_info.details.audio.channel_count = frame->info.details.audio.channel_count;
     return true;
 }
 
 u64 AvPlayerSource::CurrentTime() {
+    if (!IsActive()) {
+        return 0;
+    }
     using namespace std::chrono;
     return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
 }
@@ -655,6 +659,7 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
                         .audio =
                             {
                                 .channel_count = u16(frame.ch_layout.nb_channels),
+                                .sample_rate = u32(frame.sample_rate),
                                 .size = u32(size),
                             },
                     },

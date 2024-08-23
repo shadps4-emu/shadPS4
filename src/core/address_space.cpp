@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/icl/separate_interval_set.hpp>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "core/address_space.h"
@@ -129,9 +130,10 @@ struct AddressSpace::Impl {
     }
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot, uintptr_t fd = 0) {
+        const size_t aligned_size = Common::AlignUp(size, 16_KB);
         const auto it = placeholders.find(virtual_addr);
         ASSERT_MSG(it != placeholders.end(), "Cannot map already mapped region");
-        ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + size <= it->upper(),
+        ASSERT_MSG(virtual_addr >= it->lower() && virtual_addr + aligned_size <= it->upper(),
                    "Map range must be fully contained in a placeholder");
 
         // Windows only allows splitting a placeholder into two.
@@ -140,7 +142,7 @@ struct AddressSpace::Impl {
         // one at the start and at the end.
         const VAddr placeholder_start = it->lower();
         const VAddr placeholder_end = it->upper();
-        const VAddr virtual_end = virtual_addr + size;
+        const VAddr virtual_end = virtual_addr + aligned_size;
 
         // If the placeholder doesn't exactly start at virtual_addr, split it at the start.
         if (placeholder_start != virtual_addr) {
@@ -161,11 +163,23 @@ struct AddressSpace::Impl {
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd ? reinterpret_cast<HANDLE>(fd) : backing_handle;
-            ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr), phys_addr,
-                                 size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+            if (fd && prot == PAGE_READONLY) {
+                DWORD resultvar;
+                ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), aligned_size,
+                                    MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
+                                    PAGE_READWRITE, nullptr, 0);
+                bool ret = ReadFile(backing, ptr, size, &resultvar, NULL);
+                ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
+                ret = VirtualProtect(ptr, size, prot, &resultvar);
+                ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
+            } else {
+                ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                     phys_addr, aligned_size, MEM_REPLACE_PLACEHOLDER, prot,
+                                     nullptr, 0);
+            }
         } else {
             ptr =
-                VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
+                VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), aligned_size,
                               MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         }
         ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
@@ -455,12 +469,12 @@ void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 
 }
 
 void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
-                         PAddr phys_base, bool is_exec, bool has_backing) {
+                         PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file) {
 #ifdef _WIN32
     // There does not appear to be comparable support for partial unmapping on Windows.
     // Unfortunately, a least one title was found to require this. The workaround is to unmap
     // the entire allocation and remap the portions outside of the requested unmapping range.
-    impl->Unmap(virtual_addr, size, has_backing);
+    impl->Unmap(virtual_addr, size, has_backing && !readonly_file);
 
     // TODO: Determine if any titles require partial unmapping support for flexible allocations.
     ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
