@@ -26,9 +26,9 @@
 #include <QXmlStreamReader>
 #include <common/logging/log.h>
 #include "cheats_patches.h"
+#include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/module.h"
-#include "common/memory_patcher.h"
 
 using namespace Common::FS;
 

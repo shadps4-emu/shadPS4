@@ -13,16 +13,17 @@ void AddPatchToQueue(patchInfo patchToAdd) {
 
 void ApplyPendingPatches() {
 
-	for (size_t i = 0; i < pending_patches.size(); ++i) {
+for (size_t i = 0; i < pending_patches.size(); ++i) {
         patchInfo currentPatch = pending_patches[i];
         PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
-            currentPatch.isOffset);
+                    currentPatch.isOffset);
     }
 
     pending_patches.clear();
 }
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset) {
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
+                 bool isOffset) {
     // Send a request to modify the process memory.
     void* cheatAddress = nullptr;
 
@@ -44,7 +45,7 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
     std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
 
     LOG_INFO(Loader, "Applied patch:{}, Offset:{}, Value:{}", modNameStr, (uintptr_t)cheatAddress,
-        valueStr);
+             valueStr);
 }
 
 } // namespace MemoryPatcher
