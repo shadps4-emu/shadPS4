@@ -26,8 +26,10 @@
 #include <QXmlStreamReader>
 #include <common/logging/log.h>
 #include "cheats_patches.h"
+#include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/module.h"
+
 using namespace Common::FS;
 
 CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
@@ -578,6 +580,8 @@ void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
 
     // Hook checkbox hover events
     patchCheckBox->installEventFilter(this);
+
+    connect(patchCheckBox, &QCheckBox::toggled, [=](bool checked) { applyPatch(name, checked); });
 }
 
 void CheatsPatches::updateNoteTextEdit(const QString& patchName) {
@@ -625,16 +629,6 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
     if (!m_cheats.contains(modName))
         return;
 
-    if (Core::g_eboot_address == 0) {
-        if (showErrorMessage) {
-            QMessageBox::warning(this, "Game Not Started",
-                                 "Cheat cannot be applied until the game has started.");
-            showErrorMessage = false;
-        }
-        uncheckAllCheatCheckBoxes();
-        return;
-    }
-
     Cheat cheat = m_cheats[modName];
 
     for (const MemoryMod& memoryMod : cheat.memoryMods) {
@@ -644,21 +638,45 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         std::string offsetStr = memoryMod.offset.toStdString();
         std::string valueStr = value.toStdString();
 
-        LOG_INFO(Loader, "Cheat applied:{}, Offset:{}, Value:{}", modNameStr, offsetStr, valueStr);
+        if (MemoryPatcher::g_eboot_address == 0) {
+            MemoryPatcher::patchInfo addingPatch;
+            addingPatch.modNameStr = modNameStr;
+            addingPatch.offsetStr = offsetStr;
+            addingPatch.valueStr = valueStr;
+            addingPatch.isOffset = true;
 
-        // Send a request to modify the process memory.
-        void* cheatAddress =
-            reinterpret_cast<void*>(Core::g_eboot_address + std::stoi(offsetStr, 0, 16));
-
-        std::vector<unsigned char> bytePatch;
-
-        for (size_t i = 0; i < valueStr.length(); i += 2) {
-            unsigned char byte =
-                static_cast<unsigned char>(std::strtol(valueStr.substr(i, 2).c_str(), nullptr, 16));
-
-            bytePatch.push_back(byte);
+            MemoryPatcher::AddPatchToQueue(addingPatch);
+            continue;
         }
-        std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
+
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, true);
+    }
+}
+
+void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
+    if (m_patchInfos.contains(patchName)) {
+        const PatchInfo& patchInfo = m_patchInfos[patchName];
+
+        foreach (const QJsonValue& value, patchInfo.linesArray) {
+            QJsonObject lineObject = value.toObject();
+            QString type = lineObject["Type"].toString();
+            QString address = lineObject["Address"].toString();
+            QString patchValue = lineObject["Value"].toString();
+
+            if (MemoryPatcher::g_eboot_address == 0) {
+                MemoryPatcher::patchInfo addingPatch;
+                addingPatch.modNameStr = patchName.toStdString();
+                addingPatch.offsetStr = address.toStdString();
+                addingPatch.valueStr = patchValue.toStdString();
+                addingPatch.isOffset = false;
+
+                MemoryPatcher::AddPatchToQueue(addingPatch);
+                continue;
+            }
+
+            MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
+                                       patchValue.toStdString(), false);
+        }
     }
 }
 

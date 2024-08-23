@@ -1,0 +1,25 @@
+#pragma once
+#include <cstring>
+#include <string>
+#include <vector>
+
+namespace MemoryPatcher {
+
+extern uintptr_t g_eboot_address;
+
+struct patchInfo {
+    std::string modNameStr;
+    std::string offsetStr;
+    std::string valueStr;
+    bool isOffset;
+};
+
+extern std::vector<patchInfo> pending_patches;
+
+void AddPatchToQueue(patchInfo patchToAdd);
+void ApplyPendingPatches();
+
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
+                 bool isOffset);
+
+} // namespace MemoryPatcher
