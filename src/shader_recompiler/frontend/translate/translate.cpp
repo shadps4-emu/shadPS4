@@ -412,6 +412,8 @@ void Translator::EmitFetch(const GcnInst& inst) {
             .num_components = std::min<u16>(attrib.num_elements, num_components),
             .sgpr_base = attrib.sgpr_base,
             .dword_offset = attrib.dword_offset,
+            .index_sgpr = attrib.index_sgpr,
+            .offset_sgpr = attrib.offset_sgpr,
             .instance_step_rate = step_rate,
             .instance_data_buf = instance_buf_handle,
         });

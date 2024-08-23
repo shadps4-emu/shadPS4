@@ -135,6 +135,8 @@ struct Info {
         u16 num_components;
         u8 sgpr_base;
         u8 dword_offset;
+        u8 index_sgpr;
+        u8 offset_sgpr;
         InstanceIdType instance_step_rate;
         s32 instance_data_buf;
     };

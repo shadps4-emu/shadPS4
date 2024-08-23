@@ -15,6 +15,8 @@ struct VertexAttribute {
     u8 sgpr_base;     ///< SGPR that contains the pointer to the list of vertex V#
     u8 dword_offset;  ///< The dword offset of the V# that describes this attribute.
     u8 instance_data; ///< Indicates that the buffer will be accessed in instance rate
+    u8 index_sgpr;    ///< Read index from VADDR
+    u8 offset_sgpr;   ///< Offset from VADDR
 };
 
 std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size);

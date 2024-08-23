@@ -44,6 +44,7 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
         s32 dst_reg{-1};
     };
     boost::container::static_vector<VsharpLoad, 16> loads;
+    std::array<u32, 16> offsets{};
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
@@ -59,6 +60,10 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
             continue;
         }
 
+        if (inst.opcode == Opcode::V_ADD_I32) {
+            offsets[inst.dst[0].code] = inst.src[0].code;
+        }
+
         if (inst.inst_class == InstClass::VectorMemBufFmt) {
             // SRSRC is in units of 4 SPGRs while SBASE is in pairs of SGPRs
             const u32 base_sgpr = inst.src[2].code * 4;
@@ -68,12 +73,28 @@ std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size) {
             const auto it = std::ranges::find_if(
                 loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
 
+            auto mubuf = inst.control.mubuf;
+
             auto& attrib = attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
-            attrib.num_elements = inst.control.mubuf.count;
+            attrib.num_elements = mubuf.count;
             attrib.sgpr_base = it->base_sgpr;
             attrib.dword_offset = it->dword_offset;
+
+            u8 soofs = inst.src[0].code;
+
+            if (mubuf.idxen != 0) {
+                attrib.index_sgpr = offsets[soofs++];
+            } else {
+                attrib.index_sgpr = 0xFF;
+            }
+
+            if (mubuf.offen != 0) {
+                attrib.offset_sgpr = offsets[soofs];
+            } else {
+                attrib.offset_sgpr = 0xFF;
+            }
 
             // Store instance id rate
             attrib.instance_data = inst.src[0].code;
