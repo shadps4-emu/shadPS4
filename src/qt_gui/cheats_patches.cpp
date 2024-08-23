@@ -216,12 +216,14 @@ void CheatsPatches::downloadCheats(const QString& url) {
                 cheatFile.close();
                 loadCheats(m_cheatFilePath);
             }
-            QMessageBox::information(this, "Cheats downloaded successfully",
+            QMessageBox::information(this, "Cheats Downloaded Successfully",
                                      "You have successfully downloaded the cheats for this version "
-                                     "of the game. (serial+version)");
+                                     "of the gamegame from this repository.");
         } else {
-            QMessageBox::warning(this, "Cheats not found",
-                                 "No Cheats found for this game in this version. (serial+version)");
+            QMessageBox::warning(
+                this, "Cheats Not Found",
+                "No Cheats found in this repository for this game in this version. Try downloading "
+                "from another repository or updating your game.");
         }
         reply->deleteLater();
     });
@@ -603,15 +605,7 @@ void CheatsPatches::updateNoteTextEdit(const QString& patchName) {
             //                .arg(type)
             //                .arg(address)
             //                .arg(patchValue));
-
-            // implement
-            // modify the memory before starting using /\ "type,address,patchValue"
-            // before doing a value conversion depending on the 'type', as per the table
-            // https://github.com/GoldHEN/GoldHEN_Patch_Repository/tree/main?tab=readme-ov-file#patch-types
-            // Creates the applyPatches function ?
-            // start game button
         }
-
         text.replace("\\n", "\n");
         instructionsTextEdit->setText(text);
     }
@@ -663,6 +657,8 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString address = lineObject["Address"].toString();
             QString patchValue = lineObject["Value"].toString();
 
+            patchValue = convertValueToHex(type, patchValue);
+
             if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
                 addingPatch.modNameStr = patchName.toStdString();
@@ -678,6 +674,71 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
                                        patchValue.toStdString(), false);
         }
     }
+}
+QString toHex(unsigned long long value, size_t byteSize) {
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0') << std::setw(byteSize * 2) << value;
+    return QString::fromStdString(ss.str());
+}
+
+QString CheatsPatches::convertValueToHex(const QString& type, const QString& valueStr) {
+    QString result;
+    std::string typeStr = type.toStdString();
+    std::string valueStrStd = valueStr.toStdString();
+
+    if (typeStr == "byte") {
+        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
+        result = toHex(value, 1);
+    } else if (typeStr == "bytes16") {
+        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
+        result = toHex(value, 2);
+    } else if (typeStr == "bytes32") {
+        unsigned long value = std::stoul(valueStrStd, nullptr, 16);
+        result = toHex(value, 4);
+    } else if (typeStr == "bytes64") {
+        unsigned long long value = std::stoull(valueStrStd, nullptr, 16);
+        result = toHex(value, 8);
+    } else if (typeStr == "float32") {
+        union {
+            float f;
+            uint32_t i;
+        } floatUnion;
+        floatUnion.f = std::stof(valueStrStd);
+        result = toHex(floatUnion.i, sizeof(floatUnion.i));
+    } else if (typeStr == "float64") {
+        union {
+            double d;
+            uint64_t i;
+        } doubleUnion;
+        doubleUnion.d = std::stod(valueStrStd);
+        result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
+    } else if (typeStr == "utf8") {
+        QByteArray byteArray = QString::fromStdString(valueStrStd).toUtf8();
+        byteArray.append('\0');
+        std::stringstream ss;
+        for (unsigned char c : byteArray) {
+            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
+        }
+        result = QString::fromStdString(ss.str());
+    } else if (typeStr == "utf16") {
+        QByteArray byteArray(
+            reinterpret_cast<const char*>(QString::fromStdString(valueStrStd).utf16()),
+            QString::fromStdString(valueStrStd).size() * 2);
+        byteArray.append('\0');
+        byteArray.append('\0');
+        std::stringstream ss;
+        for (unsigned char c : byteArray) {
+            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
+        }
+        result = QString::fromStdString(ss.str());
+    } else if (typeStr == "bytes") {
+        result = valueStr;
+    } else if (typeStr == "mask" || typeStr == "mask_jump32") {
+        result = valueStr;
+    } else {
+        LOG_INFO(Loader, "Error applying Patch, unknown type: {}", typeStr);
+    }
+    return result;
 }
 
 bool CheatsPatches::eventFilter(QObject* obj, QEvent* event) {
