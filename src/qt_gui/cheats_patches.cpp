@@ -580,6 +580,8 @@ void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
 
     // Hook checkbox hover events
     patchCheckBox->installEventFilter(this);
+
+    connect(patchCheckBox, &QCheckBox::toggled, [=](bool checked) { applyPatch(name, checked); });
 }
 
 void CheatsPatches::updateNoteTextEdit(const QString& patchName) {
@@ -641,12 +643,40 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
             addingPatch.modNameStr = modNameStr;
             addingPatch.offsetStr = offsetStr;
             addingPatch.valueStr = valueStr;
+            addingPatch.isOffset = true;
 
             MemoryPatcher::AddPatchToQueue(addingPatch);
             continue;
         }
 
-        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr);
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, true);
+    }
+}
+
+void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
+    if (m_patchInfos.contains(patchName)) {
+        const PatchInfo& patchInfo = m_patchInfos[patchName];
+
+        foreach (const QJsonValue& value, patchInfo.linesArray) {
+            QJsonObject lineObject = value.toObject();
+            QString type = lineObject["Type"].toString();
+            QString address = lineObject["Address"].toString();
+            QString patchValue = lineObject["Value"].toString();
+
+             if (MemoryPatcher::g_eboot_address == 0) {
+                MemoryPatcher::patchInfo addingPatch;
+                addingPatch.modNameStr = patchName.toStdString();
+                addingPatch.offsetStr = address.toStdString();
+                addingPatch.valueStr = patchValue.toStdString();
+                addingPatch.isOffset = false;
+
+                MemoryPatcher::AddPatchToQueue(addingPatch);
+                continue;
+            }
+
+            MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
+                                       patchValue.toStdString(), false);
+        }
     }
 }
 

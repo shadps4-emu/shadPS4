@@ -15,16 +15,23 @@ void ApplyPendingPatches() {
 
 	for (size_t i = 0; i < pending_patches.size(); ++i) {
         patchInfo currentPatch = pending_patches[i];
-        LOG_INFO(Loader, "loading patch {}", i);
-        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr);
+        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
+            currentPatch.isOffset);
     }
 
     pending_patches.clear();
 }
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr) {
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset) {
     // Send a request to modify the process memory.
-    void* cheatAddress = reinterpret_cast<void*>(g_eboot_address + std::stoi(offsetStr, 0, 16));
+    void* cheatAddress = nullptr;
+
+    if (isOffset) {
+        cheatAddress = reinterpret_cast<void*>(g_eboot_address + std::stoi(offsetStr, 0, 16));
+    } else {
+        cheatAddress =
+            reinterpret_cast<void*>(g_eboot_address + (std::stoi(offsetStr, 0, 16) - 0x400000));
+    }
 
     std::vector<unsigned char> bytePatch;
 

@@ -11,6 +11,7 @@ struct patchInfo {
     std::string modNameStr;
     std::string offsetStr;
     std::string valueStr;
+    bool isOffset;
 };
 
 extern std::vector<patchInfo> pending_patches;
@@ -18,6 +19,6 @@ extern std::vector<patchInfo> pending_patches;
 void AddPatchToQueue(patchInfo patchToAdd);
 void ApplyPendingPatches();
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr);
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset);
 
 } // namespace MemoryPatcher
