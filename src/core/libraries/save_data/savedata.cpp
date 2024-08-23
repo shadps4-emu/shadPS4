@@ -516,6 +516,7 @@ s32 saveDataMount(u32 user_id, char* dir_name, u32 mount_mode,
             mount_result->mount_status = 1;
         }
     } break;
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
