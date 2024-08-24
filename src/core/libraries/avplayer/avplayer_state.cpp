@@ -222,8 +222,11 @@ bool AvPlayerState::Stop() {
     if (!SetState(AvState::Stop)) {
         return false;
     }
+    if (!m_up_source->Stop()) {
+        return false;
+    }
     OnPlaybackStateChanged(AvState::Stop);
-    return m_up_source->Stop();
+    return true;
 }
 
 bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfo& video_info) {
