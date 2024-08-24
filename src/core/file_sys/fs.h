@@ -14,9 +14,9 @@ namespace Core::FileSys {
 
 class MntPoints {
 #ifdef _WIN64
-    static constexpr bool NeedsCaseInsensiveSearch = false;
+    static constexpr bool NeedsCaseInsensitiveSearch = false;
 #else
-    static constexpr bool NeedsCaseInsensiveSearch = true;
+    static constexpr bool NeedsCaseInsensitiveSearch = true;
 #endif
 public:
     struct MntPair {
