@@ -50,7 +50,7 @@ private:
     void downloadCheats(const QString& url);
     void downloadPatches();
 
-    void addCheatsToLayout(const QJsonArray& modsArray);
+    void addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray);
     void addPatchToLayout(const QString& name, const QString& author, const QString& note,
                           const QJsonArray& linesArray, const QString& serial);
 
@@ -77,6 +77,7 @@ private:
     struct Cheat {
         QString name;
         QString type;
+        bool hasHint;
         QVector<MemoryMod> memoryMods;
     };
 

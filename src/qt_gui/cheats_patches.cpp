@@ -189,9 +189,7 @@ void CheatsPatches::setupUI() {
             QMessageBox::Yes | QMessageBox::No);
 
         if (ret == QMessageBox::Yes) {
-            QString cheatsDir = QString::fromStdString(
-                Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
-            QString filePath = cheatsDir + "/" + selectedFileName;
+            QString filePath = CHEATS_DIR_QString + "/" + selectedFileName;
             QFile::remove(filePath);
             populateFileListCheats();
         }
@@ -536,7 +534,7 @@ void CheatsPatches::createFilesJson() {
     jsonFile.close();
 }
 
-void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray) {
+void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray) {
     QLayoutItem* item;
     while ((item = rightLayout->takeAt(0)) != nullptr) {
         delete item->widget();
@@ -565,6 +563,9 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray) {
             memoryMod.off = memoryObject["off"].toString();
             cheat.memoryMods.append(memoryMod);
         }
+
+        // Check for the presence of 'hint' field
+        cheat.hasHint = modObject.contains("hint");
 
         m_cheats[modName] = cheat;
 
@@ -620,20 +621,12 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray) {
             }
         }
     }
+
+    // Set credits label
     QLabel* creditsLabel = new QLabel();
     QString creditsText = "Author: ";
-    QFile file(m_cheatFilePath);
-    if (file.open(QIODevice::ReadOnly)) {
-        QByteArray jsonData = file.readAll();
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-        QJsonObject jsonObject = jsonDoc.object();
-        QJsonArray creditsArray = jsonObject["credits"].toArray();
-        for (const QJsonValue& creditValue : creditsArray) {
-            creditsText += creditValue.toString() + ", ";
-        }
-        if (creditsText.endsWith(", ")) {
-            creditsText.chop(2);
-        }
+    if (!creditsArray.isEmpty()) {
+        creditsText += creditsArray[0].toString();
     }
     creditsLabel->setText(creditsText);
     creditsLabel->setAlignment(Qt::AlignLeft);
@@ -694,7 +687,8 @@ void CheatsPatches::loadCheats(const QString& filePath) {
         QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
         QJsonObject jsonObject = jsonDoc.object();
         QJsonArray modsArray = jsonObject["mods"].toArray();
-        addCheatsToLayout(modsArray);
+        QJsonArray creditsArray = jsonObject["credits"].toArray();
+        addCheatsToLayout(modsArray, creditsArray);
     }
 }
 void CheatsPatches::loadPatches(const QString& serial) {
@@ -856,6 +850,9 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         std::string offsetStr = memoryMod.offset.toStdString();
         std::string valueStr = value.toStdString();
 
+        // Determine if the hint field is present
+        bool isHintPresent = m_cheats[modName].hasHint;
+
         if (MemoryPatcher::g_eboot_address == 0) {
             MemoryPatcher::patchInfo addingPatch;
             addingPatch.modNameStr = modNameStr;
@@ -867,7 +864,8 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
             continue;
         }
 
-        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, true, false);
+        bool isOffset = !isHintPresent;
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, isOffset, false);
     }
 }
 
