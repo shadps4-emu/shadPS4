@@ -11,7 +11,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QListView>
 #include <QMap>
+#include <QNetworkAccessManager>
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
@@ -33,15 +35,20 @@ public:
 private:
     // UI Setup and Event Handlers
     void setupUI();
+    void downloadFilesGoldHEN();
+    void processJsonContent(const QByteArray& jsonData);
     void onTabChanged(int index);
     void updateNoteTextEdit(const QString& patchName);
 
     // Cheat and Patch Management
+    void populateFileListCheats();
+    void onFileSelected(const QModelIndex& index);
+
     void loadCheats(const QString& filePath);
     void loadPatches(const QString& serial);
 
     void downloadCheats(const QString& url);
-    void downloadPatches(const QString& url);
+    void downloadPatches();
 
     void addCheatsToLayout(const QJsonArray& modsArray);
     void addPatchToLayout(const QString& name, const QString& author, const QString& note,
@@ -56,6 +63,9 @@ private:
     // Event Filtering
     bool eventFilter(QObject* obj, QEvent* event);
     void onPatchCheckBoxHovered(QCheckBox* checkBox, bool hovered);
+
+    // Network Manager
+    QNetworkAccessManager* manager;
 
     // Patch Info Structures
     struct MemoryMod {
@@ -94,6 +104,8 @@ private:
     QGroupBox* patchesGroupBox;
     QVBoxLayout* patchesLayout;
     QTextEdit* instructionsTextEdit;
+    QListView* listView_selectFile;
+    QItemSelectionModel* selectionModel;
 };
 
 #endif // CHEATS_PATCHES_H
