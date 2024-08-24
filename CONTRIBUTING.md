@@ -69,7 +69,7 @@ enum class SomeEnum {
  * Note that the asterisks are indented by one space to align to the first line.
  */
 struct Position {
-    // Always intitialize member variables!
+    // Always initialize member variables!
     int x{};
     int y{};
 };
