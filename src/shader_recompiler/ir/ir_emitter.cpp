@@ -405,7 +405,7 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
 }
 
 Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
-                                      BufferInstInfo info) {
+                                  BufferInstInfo info) {
     return Inst(Opcode::BufferAtomicSwap, Flags{info}, handle, address, value);
 }
 
