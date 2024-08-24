@@ -53,6 +53,9 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     PAddr free_addr = dmem_area->second.base;
     free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
 
+    // Align size
+    size = alignment > 0 ? Common::AlignUp(size, alignment) : size;
+
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(free_addr, size)->second;
     area.memory_type = memory_type;
@@ -328,6 +331,11 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     PAddr paddr{};
     size_t max_size{};
     while (dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end) {
+        if (!dmem_area->second.is_free) {
+            dmem_area++;
+            continue;
+        }
+
         if (dmem_area->second.size > max_size) {
             paddr = dmem_area->second.base;
             max_size = dmem_area->second.size;
