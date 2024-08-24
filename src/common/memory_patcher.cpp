@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include <algorithm>
+#include <string>
 #include "memory_patcher.h"
 
 namespace MemoryPatcher {
@@ -19,14 +21,14 @@ void ApplyPendingPatches() {
     for (size_t i = 0; i < pending_patches.size(); ++i) {
         patchInfo currentPatch = pending_patches[i];
         PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
-                    currentPatch.isOffset);
+                    currentPatch.isOffset, currentPatch.littleEndian);
     }
 
     pending_patches.clear();
 }
 
 void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
-                 bool isOffset) {
+                 bool isOffset, bool littleEndian) {
     // Send a request to modify the process memory.
     void* cheatAddress = nullptr;
 
@@ -45,6 +47,11 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
 
         bytePatch.push_back(byte);
     }
+
+    if (littleEndian) {
+        std::reverse(bytePatch.begin(), bytePatch.end());
+    }
+
     std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
 
     LOG_INFO(Loader, "Applied patch:{}, Offset:{}, Value:{}", modNameStr, (uintptr_t)cheatAddress,

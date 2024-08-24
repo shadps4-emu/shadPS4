@@ -860,7 +860,7 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
             continue;
         }
 
-        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, true);
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, true, false);
     }
 }
 
@@ -876,19 +876,30 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
 
             patchValue = convertValueToHex(type, patchValue);
 
+            bool littleEndian = false;
+
+            if (type.toStdString() == "bytes16") {
+                littleEndian = true;
+            } else if (type.toStdString() == "bytes32") {
+                littleEndian = true;
+            } else if (type.toStdString() == "bytes64") {
+                littleEndian = true;
+            }
+
             if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
                 addingPatch.modNameStr = patchName.toStdString();
                 addingPatch.offsetStr = address.toStdString();
                 addingPatch.valueStr = patchValue.toStdString();
                 addingPatch.isOffset = false;
+                addingPatch.littleEndian = littleEndian;
 
                 MemoryPatcher::AddPatchToQueue(addingPatch);
                 continue;
             }
 
             MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
-                                       patchValue.toStdString(), false);
+                                       patchValue.toStdString(), false, littleEndian);
         }
     }
 }
