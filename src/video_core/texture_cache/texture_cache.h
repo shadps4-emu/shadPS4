@@ -28,7 +28,7 @@ class TextureCache {
         using Entry = boost::container::small_vector<ImageId, 16>;
         static constexpr size_t AddressSpaceBits = 39;
         static constexpr size_t FirstLevelBits = 9;
-        static constexpr size_t PageBits = 22;
+        static constexpr size_t PageBits = 20;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 

@@ -179,6 +179,10 @@ struct Image {
         return base_address << 8;
     }
 
+    operator bool() const noexcept {
+        return base_address != 0;
+    }
+
     u32 DstSelect() const {
         return dst_sel_x | (dst_sel_y << 3) | (dst_sel_z << 6) | (dst_sel_w << 9);
     }

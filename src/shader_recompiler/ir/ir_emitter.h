@@ -65,7 +65,6 @@ public:
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
-    [[nodiscard]] U32 GetSccLo();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     void SetScc(const U1& value);
@@ -122,6 +121,9 @@ public:
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ReadFirstLane(const U32& value);
+    [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
+    [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);

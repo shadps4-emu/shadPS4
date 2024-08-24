@@ -210,6 +210,8 @@ bool Instance::CreateDevice() {
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+    const bool topology_restart =
+        add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
@@ -330,6 +332,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
             .vertexInputDynamicState = true,
         },
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
+            .primitiveTopologyListRestart = true,
+        },
 #ifdef __APPLE__
         feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
 #endif
@@ -350,6 +355,9 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (!topology_restart) {
+        device_chain.unlink<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     }
     if (robustness) {
         device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =

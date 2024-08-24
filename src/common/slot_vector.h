@@ -28,9 +28,13 @@ struct SlotId {
 
 template <class T>
 class SlotVector {
-    constexpr static std::size_t InitialCapacity = 1024;
+    constexpr static std::size_t InitialCapacity = 2048;
 
 public:
+    SlotVector() {
+        Reserve(InitialCapacity);
+    }
+
     ~SlotVector() noexcept {
         std::size_t index = 0;
         for (u64 bits : stored_bitset) {
@@ -62,19 +66,6 @@ public:
     [[nodiscard]] SlotId insert(Args&&... args) noexcept {
         const u32 index = FreeValueIndex();
         new (&values[index].object) T(std::forward<Args>(args)...);
-        SetStorageBit(index);
-
-        return SlotId{index};
-    }
-
-    template <typename... Args>
-    [[nodiscard]] SlotId swap_and_insert(SlotId existing_id, Args&&... args) noexcept {
-        const u32 index = FreeValueIndex();
-        T& existing_value = values[existing_id.index].object;
-
-        new (&values[index].object) T(std::move(existing_value));
-        existing_value.~T();
-        new (&values[existing_id.index].object) T(std::forward<Args>(args)...);
         SetStorageBit(index);
 
         return SlotId{index};
@@ -151,7 +142,8 @@ private:
 
         const std::size_t old_free_size = free_list.size();
         free_list.resize(old_free_size + (new_capacity - values_capacity));
-        std::iota(free_list.begin() + old_free_size, free_list.end(),
+        const std::size_t new_free_size = free_list.size();
+        std::iota(free_list.rbegin(), free_list.rbegin() + new_free_size - old_free_size,
                   static_cast<u32>(values_capacity));
 
         delete[] values;
