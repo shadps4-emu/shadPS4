@@ -53,9 +53,6 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     PAddr free_addr = dmem_area->second.base;
     free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
 
-    // Align size
-    size = alignment > 0 ? Common::AlignUp(size, alignment) : size;
-
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(free_addr, size)->second;
     area.memory_type = memory_type;
