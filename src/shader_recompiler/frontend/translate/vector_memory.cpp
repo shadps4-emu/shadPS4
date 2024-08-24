@@ -109,6 +109,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         // Buffer atomic operations
     case Opcode::BUFFER_ATOMIC_ADD:
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
+    case Opcode::BUFFER_ATOMIC_SWAP:
+        return BUFFER_ATOMIC(AtomicOp::Swap, inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -474,7 +476,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::Value original_val = [&] {
         switch (op) {
         case AtomicOp::Swap:
-            return ir.BufferAtomicExchange(handle, address, vdata_val, info);
+            return ir.BufferAtomicSwap(handle, address, vdata_val, info);
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, info);
         case AtomicOp::Smin:

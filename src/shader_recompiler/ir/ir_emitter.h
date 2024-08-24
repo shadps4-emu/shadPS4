@@ -115,8 +115,8 @@ public:
                                        const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicXor(const Value& handle, const Value& address,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicExchange(const Value& handle, const Value& address,
-                                             const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
