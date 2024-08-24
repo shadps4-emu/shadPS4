@@ -138,8 +138,8 @@ void Rasterizer::BeginRendering() {
     using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
     if (regs.depth_buffer.Address() != 0 &&
         ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
-         regs.depth_control.stencil_enable &&
-             regs.depth_buffer.stencil_info.format != StencilFormat::Invalid)) {
+         (regs.depth_control.stencil_enable &&
+          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
