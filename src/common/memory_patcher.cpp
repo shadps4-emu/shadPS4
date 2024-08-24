@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/logging/log.h"
 #include <algorithm>
 #include <string>
+#include "common/logging/log.h"
 #include "memory_patcher.h"
 
 namespace MemoryPatcher {
@@ -27,8 +27,8 @@ void ApplyPendingPatches() {
     pending_patches.clear();
 }
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
-                 bool isOffset, bool littleEndian) {
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset,
+                 bool littleEndian) {
     // Send a request to modify the process memory.
     void* cheatAddress = nullptr;
 
