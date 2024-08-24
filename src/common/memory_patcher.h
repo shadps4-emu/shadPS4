@@ -23,7 +23,7 @@ extern std::vector<patchInfo> pending_patches;
 void AddPatchToQueue(patchInfo patchToAdd);
 void ApplyPendingPatches();
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
-                 bool isOffset, bool littleEndian);
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset,
+                 bool littleEndian);
 
 } // namespace MemoryPatcher
