@@ -45,7 +45,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
         return dmem_area->second.is_free && dmem_area->second.size >= size;
     };
     while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
-        dmem_area++;
+        ++dmem_area;
     }
     ASSERT_MSG(is_suitable(), "Unable to find free direct memory area");
 
@@ -275,7 +275,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
 
     auto it = FindVMA(addr);
     if (it->second.type == VMAType::Free && flags == 1) {
-        it++;
+        ++it;
     }
     if (it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
@@ -376,7 +376,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
         return remaining_size >= size;
     };
     while (!is_suitable()) {
-        it++;
+        ++it;
     }
     return virtual_addr;
 }
