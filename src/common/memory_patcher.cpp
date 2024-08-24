@@ -10,6 +10,7 @@ namespace MemoryPatcher {
 
 uintptr_t g_eboot_address;
 u64 g_eboot_image_size;
+std::string g_game_serial;
 
 std::vector<patchInfo> pending_patches;
 
@@ -19,11 +20,12 @@ void AddPatchToQueue(patchInfo patchToAdd) {
 
 void ApplyPendingPatches() {
 
-    //TODO: need to verify that the patch is actually for the game we open,
-    //if we enable patches but open a different game they will still attempt to load
-
     for (size_t i = 0; i < pending_patches.size(); ++i) {
         patchInfo currentPatch = pending_patches[i];
+
+        if (currentPatch.gameSerial != g_game_serial)
+            continue;
+
         PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
                     currentPatch.isOffset, currentPatch.littleEndian, currentPatch.patchMask,
                     currentPatch.maskOffset);
@@ -50,7 +52,7 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
         cheatAddress = reinterpret_cast<void*>(PatternScan(offsetStr) + maskOffset);
     }
 
-    //TODO: implement mask_jump32
+    // TODO: implement mask_jump32
 
     if (cheatAddress == nullptr) {
         LOG_ERROR(Loader, "Failed to get address for patch {}", modNameStr);

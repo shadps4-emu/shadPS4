@@ -13,6 +13,7 @@
 #include "common/scm_rev.h"
 #include "common/singleton.h"
 #include "common/version.h"
+#include "common/memory_patcher.h"
 #include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
@@ -93,6 +94,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+                MemoryPatcher::g_game_serial = id;
                 title = param_sfo->GetString("TITLE");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");

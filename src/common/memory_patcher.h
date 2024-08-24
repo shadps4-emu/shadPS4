@@ -10,6 +10,7 @@ namespace MemoryPatcher {
 
 extern uintptr_t g_eboot_address;
 extern u64 g_eboot_image_size;
+extern std::string g_game_serial;
 
 enum PatchMask : uint8_t {
     None,
@@ -18,6 +19,7 @@ enum PatchMask : uint8_t {
 };
 
 struct patchInfo {
+    std::string gameSerial;
     std::string modNameStr;
     std::string offsetStr;
     std::string valueStr;
