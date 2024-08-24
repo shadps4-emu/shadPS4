@@ -82,12 +82,23 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    if (physAddrOut == nullptr || sizeOut == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     auto* memory = Core::Memory::Instance();
 
     PAddr physAddr;
+    size_t size;
     s32 result =
-        memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
+        memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, &size);
+
+    if (size == 0) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+    
     *physAddrOut = static_cast<u64>(physAddr);
+    *sizeOut = size;
 
     return result;
 }
