@@ -17,6 +17,12 @@ struct VertexAttribute {
     u8 instance_data; ///< Indicates that the buffer will be accessed in instance rate
 };
 
-std::vector<VertexAttribute> ParseFetchShader(const u32* code, u32* out_size);
+struct FetchShaderData {
+    std::vector<VertexAttribute> attributes;
+    s8 vertex_offset_sgpr = -1;   ///< SGPR of vertex offset from VADDR
+    s8 instance_offset_sgpr = -1; ///< SGPR of instance offset from VADDR
+};
+
+FetchShaderData ParseFetchShader(const u32* code, u32* out_size);
 
 } // namespace Shader::Gcn

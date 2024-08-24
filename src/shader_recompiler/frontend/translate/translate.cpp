@@ -346,7 +346,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
     // Parse the assembly to generate a list of attributes.
     u32 fetch_size{};
-    const auto attribs = ParseFetchShader(code, &fetch_size);
+    const auto fetch_data = ParseFetchShader(code, &fetch_size);
 
     if (Config::dumpShaders()) {
         using namespace Common::FS;
@@ -359,7 +359,10 @@ void Translator::EmitFetch(const GcnInst& inst) {
         file.WriteRaw<u8>(code, fetch_size);
     }
 
-    for (const auto& attrib : attribs) {
+    info.vertex_offset_sgpr = fetch_data.vertex_offset_sgpr;
+    info.instance_offset_sgpr = fetch_data.instance_offset_sgpr;
+
+    for (const auto& attrib : fetch_data.attributes) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
