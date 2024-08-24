@@ -52,7 +52,7 @@ private:
 
     void addCheatsToLayout(const QJsonArray& modsArray);
     void addPatchToLayout(const QString& name, const QString& author, const QString& note,
-                          const QJsonArray& linesArray);
+                          const QJsonArray& linesArray, const QString& serial);
 
     void createFilesJson();
     void uncheckAllCheatCheckBoxes();
@@ -85,6 +85,7 @@ private:
         QString author;
         QString note;
         QJsonArray linesArray;
+        QString serial;
     };
 
     // Members

@@ -752,6 +752,11 @@ void CheatsPatches::loadPatches(const QString& serial) {
                             patchAuthor = attributes.value("Author").toString();
                             patchNote = attributes.value("Note").toString();
                         }
+                        if (appVer == "mask") {
+                            patchName = attributes.value("Name").toString();
+                            patchAuthor = attributes.value("Author").toString();
+                            patchNote = attributes.value("Note").toString();
+                        }
                     } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                         QJsonArray linesArray;
                         while (!xmlReader.atEnd() &&
@@ -773,7 +778,7 @@ void CheatsPatches::loadPatches(const QString& serial) {
                 }
 
                 if (!patchName.isEmpty() && !patchLines.isEmpty()) {
-                    addPatchToLayout(patchName, patchAuthor, patchNote, patchLines);
+                    addPatchToLayout(patchName, patchAuthor, patchNote, patchLines, serial);
                     patchName.clear();
                     patchAuthor.clear();
                     patchNote.clear();
@@ -786,7 +791,8 @@ void CheatsPatches::loadPatches(const QString& serial) {
 }
 
 void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
-                                     const QString& note, const QJsonArray& linesArray) {
+                                     const QString& note, const QJsonArray& linesArray,
+                                     const QString& serial) {
 
     QCheckBox* patchCheckBox = new QCheckBox(name);
     patchesGroupBoxLayout->addWidget(patchCheckBox);
@@ -795,6 +801,7 @@ void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
     patchInfo.author = author;
     patchInfo.note = note;
     patchInfo.linesArray = linesArray;
+    patchInfo.serial = serial;
     m_patchInfos[name] = patchInfo;
 
     // Hook checkbox hover events
@@ -873,33 +880,51 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString type = lineObject["Type"].toString();
             QString address = lineObject["Address"].toString();
             QString patchValue = lineObject["Value"].toString();
+            QString maskOffsetStr = lineObject["Offset"].toString();
 
             patchValue = convertValueToHex(type, patchValue);
 
             bool littleEndian = false;
 
-            if (type.toStdString() == "bytes16") {
+            if (type == "bytes16") {
                 littleEndian = true;
-            } else if (type.toStdString() == "bytes32") {
+            } else if (type == "bytes32") {
                 littleEndian = true;
-            } else if (type.toStdString() == "bytes64") {
+            } else if (type == "bytes64") {
                 littleEndian = true;
             }
 
+            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+            int maskOffsetValue = 0;
+
+            if (type == "mask") {
+                patchMask = MemoryPatcher::PatchMask::Mask;
+
+                // im not sure if this works, there is no games to test the mask offset on yet
+                if (!maskOffsetStr.toStdString().empty())
+                    maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+            }
+
+            if (type == "mask_jump32")
+                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
             if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
+                addingPatch.gameSerial = patchInfo.serial.toStdString();
                 addingPatch.modNameStr = patchName.toStdString();
                 addingPatch.offsetStr = address.toStdString();
                 addingPatch.valueStr = patchValue.toStdString();
                 addingPatch.isOffset = false;
                 addingPatch.littleEndian = littleEndian;
+                addingPatch.patchMask = patchMask;
+                addingPatch.maskOffset = maskOffsetValue;
 
                 MemoryPatcher::AddPatchToQueue(addingPatch);
                 continue;
             }
 
             MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
-                                       patchValue.toStdString(), false, littleEndian);
+                                       patchValue.toStdString(), false, littleEndian, patchMask);
         }
     }
 }
