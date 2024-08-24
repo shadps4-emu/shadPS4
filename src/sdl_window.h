@@ -25,9 +25,6 @@ enum class WindowSystemType : u8 {
 };
 
 struct WindowSystemInfo {
-    // Window system type. Determines which GL context or Vulkan WSI is used.
-    WindowSystemType type = WindowSystemType::Headless;
-
     // Connection to a display server. This is used on X11 and Wayland platforms.
     void* display_connection = nullptr;
 
@@ -38,6 +35,9 @@ struct WindowSystemInfo {
 
     // Scale of the render surface. For hidpi systems, this will be >1.
     float render_surface_scale = 1.0f;
+
+    // Window system type. Determines which GL context or Vulkan WSI is used.
+    WindowSystemType type = WindowSystemType::Headless;
 };
 
 class WindowSDL {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <pthread.h>
@@ -252,8 +252,8 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
     requests.push({
         .frame = frame,
         .port = port,
-        .index = index,
         .flip_arg = flip_arg,
+        .index = index,
         .eop = is_eop,
     });
 }

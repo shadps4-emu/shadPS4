@@ -22,15 +22,15 @@ public:
 
 private:
     struct PortOut {
-        bool isOpen = false;
-        int type = 0;
+        SDL_AudioStream* stream = nullptr;
         u32 samples_num = 0;
-        u8 sample_size = 0;
         u32 freq = 0;
         u32 format = -1;
+        int type = 0;
         int channels_num = 0;
         int volume[8] = {};
-        SDL_AudioStream* stream = nullptr;
+        u8 sample_size = 0;
+        bool isOpen = false;
     };
     std::shared_mutex m_mutex;
     std::array<PortOut, 22> portsOut; // main up to 8 ports , BGM 1 port , voice up to 4 ports ,
