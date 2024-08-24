@@ -748,9 +748,14 @@ void CheatsPatches::loadPatches(const QString& serial) {
                         QXmlStreamAttributes attributes = xmlReader.attributes();
                         QString appVer = attributes.value("AppVer").toString();
                         if (appVer == m_gameVersion) {
-                            patchName = attributes.value("Name").toString();
-                            patchAuthor = attributes.value("Author").toString();
-                            patchNote = attributes.value("Note").toString();
+                                patchName = attributes.value("Name").toString();
+                                patchAuthor = attributes.value("Author").toString();
+                                patchNote = attributes.value("Note").toString();
+                        }
+                        if (appVer == "mask") {
+                                patchName = attributes.value("Name").toString();
+                                patchAuthor = attributes.value("Author").toString();
+                                patchNote = attributes.value("Note").toString();
                         }
                     } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                         QJsonArray linesArray;
@@ -873,18 +878,33 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString type = lineObject["Type"].toString();
             QString address = lineObject["Address"].toString();
             QString patchValue = lineObject["Value"].toString();
+            QString maskOffsetStr = lineObject["Offset"].toString();
 
             patchValue = convertValueToHex(type, patchValue);
 
             bool littleEndian = false;
 
-            if (type.toStdString() == "bytes16") {
+            if (type == "bytes16") {
                 littleEndian = true;
-            } else if (type.toStdString() == "bytes32") {
+            } else if (type == "bytes32") {
                 littleEndian = true;
-            } else if (type.toStdString() == "bytes64") {
+            } else if (type == "bytes64") {
                 littleEndian = true;
             }
+
+            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+            int maskOffsetValue = 0;
+
+            if (type == "mask") {
+                patchMask = MemoryPatcher::PatchMask::Mask;
+
+                //im not sure if this works, there is no games to test the mask offset on yet
+                if (!maskOffsetStr.toStdString().empty())
+                    maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+            }
+
+            if (type == "mask_jump32")
+                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
             if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
@@ -893,13 +913,15 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
                 addingPatch.valueStr = patchValue.toStdString();
                 addingPatch.isOffset = false;
                 addingPatch.littleEndian = littleEndian;
+                addingPatch.patchMask = patchMask;
+                addingPatch.maskOffset = maskOffsetValue;
 
                 MemoryPatcher::AddPatchToQueue(addingPatch);
                 continue;
             }
 
             MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
-                                       patchValue.toStdString(), false, littleEndian);
+                                       patchValue.toStdString(), false, littleEndian, patchMask);
         }
     }
 }
