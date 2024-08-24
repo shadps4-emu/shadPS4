@@ -329,7 +329,6 @@ void TextureCache::UnregisterImage(ImageId image_id) {
         }
         image_ids.erase(vector_it);
     });
-    slot_images.erase(image_id);
 }
 
 void TextureCache::TrackImage(Image& image, ImageId image_id) {
