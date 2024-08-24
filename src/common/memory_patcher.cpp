@@ -47,7 +47,7 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
                 reinterpret_cast<void*>(g_eboot_address + (std::stoi(offsetStr, 0, 16) - 0x400000));
         }
     }
-   
+
     if (patchMask == PatchMask::Mask) {
         cheatAddress = reinterpret_cast<void*>(PatternScan(offsetStr) + maskOffset);
     }
