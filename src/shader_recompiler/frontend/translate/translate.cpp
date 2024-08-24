@@ -359,8 +359,8 @@ void Translator::EmitFetch(const GcnInst& inst) {
         file.WriteRaw<u8>(code, fetch_size);
     }
 
-    info.fetch_index_sgpr = fetch_data.fetch_index_sgpr;
-    info.fetch_offset_sgpr = fetch_data.fetch_offset_sgpr;
+    info.vertex_offset_sgpr = fetch_data.vertex_offset_sgpr;
+    info.instance_offset_sgpr = fetch_data.instance_offset_sgpr;
 
     for (const auto& attrib : fetch_data.attributes) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};

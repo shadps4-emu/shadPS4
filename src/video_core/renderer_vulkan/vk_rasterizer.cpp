@@ -51,24 +51,17 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering();
     UpdateDynamicState(*pipeline);
 
-    u32 instance_offset = 0;
-    if (vs_info.fetch_offset_sgpr != -1) {
-        instance_offset = vs_info.user_data[vs_info.fetch_offset_sgpr];
-    }
+    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
 
     if (is_indexed) {
-        u32 vertex_offset = 0;
-        if (vs_info.fetch_index_sgpr != -1) {
-            vertex_offset = vs_info.user_data[vs_info.fetch_index_sgpr];
-        }
-
         cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
                            instance_offset);
     } else {
         const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
                                      ? 4
                                      : regs.num_indices;
-        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, instance_offset);
+        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
+                    instance_offset);
     }
 }
 

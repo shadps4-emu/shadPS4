@@ -19,8 +19,8 @@ struct VertexAttribute {
 
 struct FetchShaderData {
     std::vector<VertexAttribute> attributes;
-    s8 fetch_index_sgpr;  ///< Read index from VADDR
-    s8 fetch_offset_sgpr; ///< Read offset from VADDR
+    s8 vertex_offset_sgpr = -1;   ///< SGPR of vertex offset from VADDR
+    s8 instance_offset_sgpr = -1; ///< SGPR of instance offset from VADDR
 };
 
 FetchShaderData ParseFetchShader(const u32* code, u32* out_size);

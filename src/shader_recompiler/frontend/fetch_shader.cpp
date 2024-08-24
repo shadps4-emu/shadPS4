@@ -35,7 +35,7 @@ namespace Shader::Gcn {
  **/
 
 FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
-    std::vector<VertexAttribute> attributes;
+    FetchShaderData data{};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
 
@@ -45,9 +45,6 @@ FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
         s32 dst_reg{-1};
     };
     boost::container::static_vector<VsharpLoad, 16> loads;
-
-    s8 fetch_index_sgpr = -1;
-    s8 fetch_offset_sgpr = -1;
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
@@ -67,11 +64,11 @@ FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
             const auto vgpr = inst.dst[0].code;
             const auto sgpr = s8(inst.src[0].code);
             switch (vgpr) {
-            case 0: // V0 is always the index
-                fetch_index_sgpr = sgpr;
+            case 0: // V0 is always the vertex offset
+                data.vertex_offset_sgpr = sgpr;
                 break;
-            case 3: // V3 is always the offset
-                fetch_offset_sgpr = sgpr;
+            case 3: // V3 is always the instance offset
+                data.instance_offset_sgpr = sgpr;
                 break;
             default:
                 UNREACHABLE();
@@ -87,7 +84,7 @@ FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
             const auto it = std::ranges::find_if(
                 loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
 
-            auto& attrib = attributes.emplace_back();
+            auto& attrib = data.attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
             attrib.num_elements = inst.control.mubuf.count;
@@ -102,11 +99,7 @@ FetchShaderData ParseFetchShader(const u32* code, u32* out_size) {
         }
     }
 
-    return FetchShaderData{
-        .attributes = std::move(attributes),
-        .fetch_index_sgpr = fetch_index_sgpr,
-        .fetch_offset_sgpr = fetch_offset_sgpr,
-    };
+    return data;
 }
 
 } // namespace Shader::Gcn

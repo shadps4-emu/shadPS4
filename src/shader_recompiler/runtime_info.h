@@ -175,8 +175,8 @@ struct Info {
     AttributeFlags stores{};
     boost::container::static_vector<VsOutputMap, 3> vs_outputs;
 
-    s8 fetch_index_sgpr = -1;
-    s8 fetch_offset_sgpr = -1;
+    s8 vertex_offset_sgpr = -1;
+    s8 instance_offset_sgpr = -1;
 
     BufferResourceList buffers;
     ImageResourceList images;
@@ -212,6 +212,18 @@ struct Info {
         }
         std::memcpy(&data, base + dword_offset, sizeof(T));
         return data;
+    }
+
+    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const noexcept {
+        u32 vertex_offset = 0;
+        u32 instance_offset = 0;
+        if (vertex_offset_sgpr != -1) {
+            vertex_offset = user_data[vertex_offset_sgpr];
+        }
+        if (instance_offset_sgpr != -1) {
+            instance_offset = user_data[instance_offset_sgpr];
+        }
+        return {vertex_offset, instance_offset};
     }
 };
 
