@@ -1786,8 +1786,7 @@ constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
 
 constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
     // 0 = V_NOP
-    {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Any, ScalarType::Any},
     // 1 = V_MOV_B32
     {InstClass::VectorRegMov, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
      ScalarType::Uint32},
