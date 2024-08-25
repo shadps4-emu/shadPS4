@@ -26,10 +26,24 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <p align="center">
   <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Bloodborne.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
+    <table>
+      <tr>
+        <td><img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400"></td>
+        <td><a href="https://en.wikipedia.org/wiki/Sonic_Mania">Sonic Mania</a> <br>
+          <code>Status: Working</code></td>
+        <td><img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Bloodborne.png" width="400"></td>
+        <td><a href="https://en.wikipedia.org/wiki/Bloodborne">Bloodborne</a><br>
+          <code>Status: Working</code></td>
+      </tr>
+      <tr>
+        <td><img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400"></td>
+         <td><a href="https://en.wikipedia.org/wiki/Undertale">Undertale</a><br>
+          <code>Status: Working</code></td>
+        <td><img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400"></td>
+        <td><a href="https://en.wikipedia.org/wiki/#">We are DOOMED</a><br>
+          <code>Status: Working</code></td>
+      </tr>
+    </table>
 </p>
 
 # General information
