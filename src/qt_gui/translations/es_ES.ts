@@ -395,7 +395,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Es una PS4 Pro</translation>
+            <translation>Modo PS4 Pro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
@@ -405,7 +405,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
             <source>Logger</source>
-            <translation>Registrador</translation>
+            <translation>Registro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
