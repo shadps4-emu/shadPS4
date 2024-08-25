@@ -185,14 +185,16 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    std::unique_lock lock{port->port_mutex};
-    *status = port->flip_status;
+    {
+        std::unique_lock lock{port->port_mutex};
+        *status = port->flip_status;
+    }
 
-    LOG_INFO(Lib_VideoOut,
-             "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
-             "{}, flipPendingNum = {}, currentBuffer = {}",
-             status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
-             status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
+    LOG_TRACE(Lib_VideoOut,
+              "count = {}, processTime = {}, tsc = {}, submitTsc = {}, flipArg = {}, gcQueueNum = "
+              "{}, flipPendingNum = {}, currentBuffer = {}",
+              status->count, status->processTime, status->tsc, status->submitTsc, status->flipArg,
+              status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
 
     return ORBIS_OK;
 }

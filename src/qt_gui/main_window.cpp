@@ -37,6 +37,7 @@ bool MainWindow::Init() {
     SetLastUsedTheme();
     SetLastIconSizeBullet();
     GetPhysicalDevices();
+    LoadTranslation();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -200,11 +201,19 @@ void MainWindow::CreateConnects() {
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+
+        connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
+                &MainWindow::OnLanguageChanged);
+
         settingsDialog->exec();
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
         auto settingsDialog = new SettingsDialog(m_physical_devices, this);
+
+        connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
+                &MainWindow::OnLanguageChanged);
+
         settingsDialog->exec();
     });
 
@@ -780,4 +789,36 @@ void MainWindow::CreateRecentGameActions() {
         Core::Emulator emulator;
         emulator.Run(gamePath.toUtf8().constData());
     });
+}
+
+void MainWindow::LoadTranslation() {
+    auto language = QString::fromStdString(Config::getEmulatorLanguage());
+
+    const QString base_dir = QStringLiteral(":/translations");
+    QString base_path = QStringLiteral("%1/%2.qm").arg(base_dir).arg(language);
+
+    if (QFile::exists(base_path)) {
+        if (translator != nullptr) {
+            qApp->removeTranslator(translator);
+        }
+
+        translator = new QTranslator(qApp);
+        if (!translator->load(base_path)) {
+            QMessageBox::warning(
+                nullptr, QStringLiteral("Translation Error"),
+                QStringLiteral("Failed to find load translation file for '%1':\n%2")
+                    .arg(language)
+                    .arg(base_path));
+            delete translator;
+        } else {
+            qApp->installTranslator(translator);
+            ui->retranslateUi(this);
+        }
+    }
+}
+
+void MainWindow::OnLanguageChanged(const std::string& locale) {
+    Config::setEmulatorLanguage(locale);
+
+    LoadTranslation();
 }

@@ -5,7 +5,7 @@
 #include "trophy_viewer.h"
 
 TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
-    this->setWindowTitle("Trophy Viewer");
+    this->setWindowTitle(tr("Trophy Viewer"));
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);
     gameTrpPath_ = gameTrpPath;

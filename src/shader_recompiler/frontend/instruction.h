@@ -203,6 +203,7 @@ struct GcnInst {
     bool IsUnconditionalBranch() const;
     bool IsConditionalBranch() const;
     bool IsFork() const;
+    bool IsCmpx() const;
 };
 
 } // namespace Shader::Gcn

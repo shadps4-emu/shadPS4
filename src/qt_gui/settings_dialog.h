@@ -22,8 +22,15 @@ public:
 
     int exec() override;
 
+signals:
+    void LanguageChanged(const std::string& locale);
+
 private:
     void LoadValuesFromConfig();
+    void InitializeEmulatorLanguages();
+    void OnLanguageChanged(int index);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
+
+    std::map<std::string, int> languages;
 };
