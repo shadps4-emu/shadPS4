@@ -390,7 +390,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Mostrar Tela Inicial</translation>
+            <translation>Mostrar Splash Inicial</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
