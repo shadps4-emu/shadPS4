@@ -250,7 +250,12 @@ void PipelineCache::RefreshGraphicsKey() {
             infos[i] = nullptr;
             continue;
         }
-
+        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
+        if (!bininfo->Valid()) {
+            key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
+            continue;
+        }
         const auto stage = Shader::Stage{i};
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(pgm, stage, binding);
     }

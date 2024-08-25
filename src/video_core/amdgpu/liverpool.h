@@ -167,7 +167,7 @@ struct Liverpool {
     static constexpr auto* GetBinaryInfo(const Shader& sh) {
         const auto* code = sh.template Address<u32*>();
         const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
+        // ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
         return bininfo;
     }
 
