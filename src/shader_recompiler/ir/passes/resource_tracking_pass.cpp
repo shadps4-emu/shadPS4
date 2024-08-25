@@ -594,7 +594,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage), body->Arg(3)};
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage),
+                    body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }

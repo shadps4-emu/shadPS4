@@ -18,25 +18,31 @@ void Translator::EmitDataShare(const GcnInst& inst) {
     case Opcode::DS_READ2_B64:
         return DS_READ(64, false, true, inst);
     case Opcode::DS_WRITE_B32:
-        return DS_WRITE(32, false, false, inst);
+        return DS_WRITE(32, false, false, false, inst);
+    case Opcode::DS_WRITE2ST64_B32:
+        return DS_WRITE(32, false, true, true, inst);
     case Opcode::DS_WRITE_B64:
-        return DS_WRITE(64, false, false, inst);
+        return DS_WRITE(64, false, false, false, inst);
     case Opcode::DS_WRITE2_B32:
-        return DS_WRITE(32, false, true, inst);
+        return DS_WRITE(32, false, true, false, inst);
     case Opcode::DS_WRITE2_B64:
-        return DS_WRITE(64, false, true, inst);
+        return DS_WRITE(64, false, true, false, inst);
     case Opcode::DS_ADD_U32:
         return DS_ADD_U32(inst, false);
     case Opcode::DS_MIN_U32:
-        return DS_MIN_U32(inst, false);
+        return DS_MIN_U32(inst, false, false);
+    case Opcode::DS_MIN_I32:
+        return DS_MIN_U32(inst, true, false);
     case Opcode::DS_MAX_U32:
-        return DS_MAX_U32(inst, false);
+        return DS_MAX_U32(inst, false, false);
+    case Opcode::DS_MAX_I32:
+        return DS_MAX_U32(inst, true, false);
     case Opcode::DS_ADD_RTN_U32:
         return DS_ADD_U32(inst, true);
     case Opcode::DS_MIN_RTN_U32:
-        return DS_MIN_U32(inst, true);
+        return DS_MIN_U32(inst, false, true);
     case Opcode::DS_MAX_RTN_U32:
-        return DS_MAX_U32(inst, true);
+        return DS_MAX_U32(inst, false, true);
     default:
         LogMissingOpcode(inst);
     }
@@ -89,12 +95,13 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnIn
     }
 }
 
-void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst) {
+void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64,
+                          const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     const IR::VectorReg data0{inst.src[1].code};
     const IR::VectorReg data1{inst.src[2].code};
     if (is_pair) {
-        const u32 adj = bit_size == 32 ? 4 : 8;
+        const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
         if (bit_size == 32) {
             ir.WriteShared(32, ir.GetVectorReg(data0), addr0);
@@ -133,23 +140,23 @@ void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
     }
 }
 
-void Translator::DS_MIN_U32(const GcnInst& inst, bool rtn) {
+void Translator::DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, false);
+    const IR::Value original_val = ir.SharedAtomicIMin(addr_offset, data, is_signed);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }
 }
 
-void Translator::DS_MAX_U32(const GcnInst& inst, bool rtn) {
+void Translator::DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn) {
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 data{GetSrc(inst.src[1])};
     const IR::U32 offset = ir.Imm32(u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, false);
+    const IR::Value original_val = ir.SharedAtomicIMax(addr_offset, data, is_signed);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }
