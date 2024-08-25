@@ -243,7 +243,7 @@ void Rasterizer::UpdateDepthStencilState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -254,7 +254,7 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
 }
 
 void Rasterizer::ScopeMarkerEnd() {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -263,7 +263,7 @@ void Rasterizer::ScopeMarkerEnd() {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -274,7 +274,7 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
 }
 
 void Rasterizer::Breadcrumb(u64 id) {
-    if (!instance.HasNvCheckpoints()) {
+    if (Config::nullGpu() || !instance.HasNvCheckpoints()) {
         return;
     }
     scheduler.CommandBuffer().setCheckpointNV(id);
