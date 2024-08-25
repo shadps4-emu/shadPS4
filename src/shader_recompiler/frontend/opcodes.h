@@ -2194,20 +2194,6 @@ enum class Opcode : u32 {
     EXP = 0 + (u32)OpcodeMap::OP_MAP_EXP,
 };
 
-static constexpr bool IsCmpxOpcode(Opcode op) {
-    if ((op >= Opcode::V_CMPX_F_F32 && op <= Opcode::V_CMPX_T_F32) ||
-        (op >= Opcode::V_CMPX_F_F64 && op <= Opcode::V_CMPX_T_F64) ||
-        (op >= Opcode::V_CMPSX_F_F32 && op <= Opcode::V_CMPSX_T_F32) ||
-        (op >= Opcode::V_CMPSX_F_F64 && op <= Opcode::V_CMPSX_T_F64) ||
-        (op >= Opcode::V_CMPX_F_I32 && op <= Opcode::V_CMPX_CLASS_F32) ||
-        (op >= Opcode::V_CMPX_F_I64 && op <= Opcode::V_CMPX_CLASS_F64) ||
-        (op >= Opcode::V_CMPX_F_U32 && op <= Opcode::V_CMPX_T_U32) ||
-        (op >= Opcode::V_CMPX_F_U64 && op <= Opcode::V_CMPX_T_U64)) {
-        return true;
-    }
-    return false;
-}
-
 enum class EncodingMask : u32 {
     MASK_9bit = 0x000001FFULL << 23,
     MASK_7bit = 0x0000007FULL << 25,

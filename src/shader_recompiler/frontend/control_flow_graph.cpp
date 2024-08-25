@@ -21,13 +21,13 @@ struct Compare {
     }
 };
 
-static IR::Condition MakeCondition(Opcode opcode) {
-    if (IsCmpxOpcode(opcode)) {
-        ASSERT(opcode == Opcode::V_CMPX_NE_U32);
+static IR::Condition MakeCondition(const GcnInst& inst) {
+    if (inst.IsCmpx()) {
+        ASSERT(inst.opcode == Opcode::V_CMPX_NE_U32);
         return IR::Condition::Execnz;
     }
 
-    switch (opcode) {
+    switch (inst.opcode) {
     case Opcode::S_CBRANCH_SCC0:
         return IR::Condition::Scc0;
     case Opcode::S_CBRANCH_SCC1:
@@ -98,7 +98,8 @@ void CFG::EmitDivergenceLabels() {
                // While this instruction does not save EXEC it is often used paired
                // with SAVEEXEC to mask the threads that didn't pass the condition
                // of initial branch.
-               inst.opcode == Opcode::S_ANDN2_B64 || inst.opcode == Opcode::V_CMPX_NE_U32;
+               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo) ||
+               inst.opcode == Opcode::V_CMPX_NE_U32;
     };
     const auto is_close_scope = [](const GcnInst& inst) {
         // Closing an EXEC scope can be either a branch instruction
@@ -108,7 +109,8 @@ void CFG::EmitDivergenceLabels() {
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
-               inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ANDN2_B64;
+               inst.opcode == Opcode::S_CBRANCH_EXECZ ||
+               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo);
     };
 
     // Since we will be adding new labels, avoid iterating those as well.
@@ -175,7 +177,7 @@ void CFG::EmitBlocks() {
         block->begin_index = GetIndex(start);
         block->end_index = end_index;
         block->end_inst = end_inst;
-        block->cond = MakeCondition(end_inst.opcode);
+        block->cond = MakeCondition(end_inst);
         blocks.insert(*block);
     }
 }
