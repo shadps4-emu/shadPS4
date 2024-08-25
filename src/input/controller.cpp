@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include "common/logging/log.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
-#include "common/logging/log.h"
 
 namespace Input {
 
@@ -105,7 +105,7 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
     // Rest point for L2/R2 is ideally 0 but may drift
     // Use some hysteresis to avoid glitches
 
-    const int ON_THRESHOLD = 31; // 255 / 8
+    const int ON_THRESHOLD = 31;  // 255 / 8
     const int OFF_THRESHOLD = 16; // 255 / 16 + 1
 
     if (axis == Input::Axis::TriggerLeft) {
