@@ -320,6 +320,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR8G8Uint,
         vk::Format::eR8G8Unorm,
         vk::Format::eR8Sint,
+        vk::Format::eR8Snorm,
         vk::Format::eR8Uint,
         vk::Format::eR8Unorm,
         vk::Format::eR8Srgb,

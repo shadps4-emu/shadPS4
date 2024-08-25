@@ -59,6 +59,9 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
     if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
         return vk::Format::eB8G8R8A8Unorm;
     }
+    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
+        return vk::Format::eB8G8R8A8Srgb;
+    }
     return format;
 }
 

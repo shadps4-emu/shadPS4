@@ -307,6 +307,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MBCNT_U32_B32(true, inst);
     case Opcode::V_MBCNT_HI_U32_B32:
         return V_MBCNT_U32_B32(false, inst);
+    case Opcode::V_NOP:
+        return;
     default:
         LogMissingOpcode(inst);
     }
