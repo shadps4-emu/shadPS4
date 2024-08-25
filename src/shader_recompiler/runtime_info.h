@@ -110,6 +110,7 @@ struct ImageResource {
     AmdGpu::NumberFormat nfmt;
     bool is_storage;
     bool is_depth;
+    bool is_atomic{};
 
     u64 GetKey(const Info& info) const {
         const auto sharp = GetTsharp(info);
