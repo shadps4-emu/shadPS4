@@ -354,7 +354,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         if (!std::filesystem::exists(dump_dir)) {
             std::filesystem::create_directories(dump_dir);
         }
-        const auto filename = fmt::format("vs_fetch_{:#018x}.bin", info.pgm_hash);
+        const auto filename = fmt::format("vs_{:#018x}_fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
         file.WriteRaw<u8>(code, fetch_size);
     }

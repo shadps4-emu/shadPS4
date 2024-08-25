@@ -487,7 +487,11 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z) {
+                         const IR::Value& z, bool is_storage) {
+    // When cubemap is written with imageStore it is treated like 2DArray.
+    if (is_storage) {
+        return ir.CompositeConstruct(s, t, z);
+    }
     // We need to fix x and y coordinate,
     // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
     // We already force the scale value to be 1.0 when handling v_cubema_f32,
@@ -525,12 +529,13 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         return;
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
+    const bool is_storage = IsImageStorageInstruction(inst);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
         .type = image.GetType(),
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
-        .is_storage = IsImageStorageInstruction(inst),
+        .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
     });
@@ -589,7 +594,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage), body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
