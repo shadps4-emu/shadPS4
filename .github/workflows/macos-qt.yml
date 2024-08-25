@@ -38,7 +38,7 @@ jobs:
         host: mac
         target: desktop
         arch: clang_64
-        archives: qtbase
+        archives: qtbase qttools
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=x86_64 -DENABLE_QT_GUI=ON
@@ -50,6 +50,7 @@ jobs:
       run: |
         mkdir upload
         mv ${{github.workspace}}/build/shadps4.app upload
+        mv ${{github.workspace}}/build/translations/* upload
         macdeployqt upload/shadps4.app
         tar cf shadps4-macos-qt.tar.gz -C upload .
 
