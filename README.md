@@ -101,7 +101,7 @@ For more information on how to test, debug and report issues with the emulator o
 # Keyboard mapping
 
 > [!NOTE]
-> Keyboard mappings can be changed from the Qt interface of shadPS4. Xbox and DualShock controllers work out of the box.
+> Xbox and DualShock controllers work out of the box.
 
 | Controller button | Keyboard equivelant |
 |-------------|-------------|
