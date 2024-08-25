@@ -3655,8 +3655,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {},
     {},
     // 104 = IMAGE_SAMPLE_CD
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
     // 105 = IMAGE_SAMPLE_CD_CL
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},

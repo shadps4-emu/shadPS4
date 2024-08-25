@@ -5,8 +5,6 @@
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 
-#define MAGIC_ENUM_RANGE_MIN 0
-#define MAGIC_ENUM_RANGE_MAX 1515
 #include "magic_enum.hpp"
 
 namespace Shader::Gcn {
