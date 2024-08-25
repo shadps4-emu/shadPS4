@@ -229,16 +229,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::SetConfigReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
                 const auto reg_addr = ConfigRegWordOffset + set_data->reg_offset;
-                const auto* payload = reinterpret_cast<const u32*>(header + 2);
-                std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
+                std::memcpy(&regs.reg_array[reg_addr], set_data->data, set_data->Size());
                 break;
             }
             case PM4ItOpcode::SetContextReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
                 const auto reg_addr = ContextRegWordOffset + set_data->reg_offset;
-                const auto* payload = reinterpret_cast<const u32*>(header + 2);
-
-                std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
+                const auto* payload = set_data->data;
+                std::memcpy(&regs.reg_array[reg_addr], payload, set_data->Size());
 
                 // In the case of HW, render target memory has alignment as color block operates on
                 // tiles. There is no information of actual resource extents stored in CB context
@@ -308,14 +306,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::SetShReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                            (count - 1) * sizeof(u32));
+                const auto reg_addr = ShRegWordOffset + set_data->reg_offset;
+                std::memcpy(&regs.reg_array[reg_addr], set_data->data, set_data->Size());
                 break;
             }
             case PM4ItOpcode::SetUconfigReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[UconfigRegWordOffset + set_data->reg_offset],
-                            header + 2, (count - 1) * sizeof(u32));
+                const auto reg_addr = UconfigRegWordOffset + set_data->reg_offset;
+                std::memcpy(&regs.reg_array[reg_addr], set_data->data, set_data->Size());
                 break;
             }
             case PM4ItOpcode::IndexType: {
@@ -522,8 +520,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::SetShReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-            std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                        (count - 1) * sizeof(u32));
+            const auto reg_addr = ShRegWordOffset + set_data->reg_offset;
+            std::memcpy(&regs.reg_array[reg_addr], set_data->data, set_data->Size());
             break;
         }
         case PM4ItOpcode::DispatchDirect: {

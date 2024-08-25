@@ -4,6 +4,9 @@
 #include "gnm_error.h"
 #include "gnmdriver.h"
 
+#define MAGIC_ENUM_RANGE_MIN 0
+#define MAGIC_ENUM_RANGE_MAX 0x88
+#include <magic_enum.hpp>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
@@ -106,7 +109,7 @@ static constexpr std::array InitSequence175{
     // A fake preamble to mimic context reset sent by FW
     0xc0001200u, 0u, // IT_CLEAR_STATE
 
-    // Actual init state sequence 
+    // Actual init state sequence
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -152,7 +155,7 @@ static constexpr std::array InitSequence200{
     // A fake preamble to mimic context reset sent by FW
     0xc0001200u, 0u, // IT_CLEAR_STATE
 
-    // Actual init state sequence    
+    // Actual init state sequence
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -199,7 +202,7 @@ static constexpr std::array InitSequence350{
     // A fake preamble to mimic context reset sent by FW
     0xc0001200u, 0u, // IT_CLEAR_STATE
 
-    // Actual init state sequence    
+    // Actual init state sequence
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -320,6 +323,296 @@ static void WaitGpuIdle() {
     cv_lock.wait(lock, [] { return submission_lock == 0; });
 }
 
+static std::string DisassemblePM4(std::span<const u32> cmds) {
+    std::string ret = "";
+
+    // TODO: replace with something better?, appending strings like this is not the most optimized
+    // thing one can do
+    auto append = [&ret](std::string_view sv) { ret += sv; };
+
+    auto hexdump = [&append](const u32* data, size_t size) {
+        for (size_t i = 0; i < size / 4;) {
+            append(fmt::format("  {:08X}: ", i * 4));
+            for (size_t j = 0; j < 4 && i < size / 4; j++, i++)
+                append(fmt::format("{:08X} ", data[i]));
+            append("\n");
+        }
+    };
+
+    while (!cmds.empty()) {
+        const auto* header = reinterpret_cast<const PM4Header*>(cmds.data());
+        const u32 type = header->type;
+        switch (type) {
+        case 0:
+            append(fmt::format("PM4Type0: base={}, count={}\n", header->type0.base.Value(),
+                               header->type0.count.Value()));
+            for (size_t i = 0; i < header->type0.count.Value(); i++)
+                append(fmt::format("- 0x{:08X}\n", cmds.data()[1 + i]));
+            break;
+            cmds = cmds.subspan(header->type0.NumWords() + 1);
+        case 1:
+            UNREACHABLE();
+        case 2:
+            append(fmt::format("PM4Type2:\n"));
+            cmds = cmds.subspan(1);
+            break;
+        case 3:
+            append(fmt::format(
+                "PM4Type3: predicate={}, shader_type={}, opcode={}(0x{:X}), count={}\n",
+                magic_enum::enum_name(header->type3.predicate.Value()),
+                magic_enum::enum_name(header->type3.shader_type.Value()),
+                magic_enum::enum_name(header->type3.opcode.Value()),
+                static_cast<u32>(header->type3.opcode.Value()), header->type3.count.Value()));
+
+            switch (header->type3.opcode.Value()) {
+            case PM4ItOpcode::SetContextReg:
+            case PM4ItOpcode::SetConfigReg:
+            case PM4ItOpcode::SetShReg:
+            case PM4ItOpcode::SetUconfigReg: {
+                const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
+                append(fmt::format("- reg_offset=0x{:08X}\n", set_data->reg_offset.Value()));
+                append(fmt::format("- index=0x{:08X}\n", set_data->index.Value()));
+                append("- data:\n");
+                hexdump(set_data->data, set_data->Size());
+                break;
+            }
+
+            case PM4ItOpcode::WriteConstRam: {
+                const auto* write_const = reinterpret_cast<const PM4WriteConstRam*>(header);
+                append(fmt::format("- offset=0x{:X}\n", write_const->Offset()));
+                append(fmt::format("- size=0x{:X}\n", write_const->Size()));
+                append("- data:\n");
+                hexdump(write_const->data, write_const->Size());
+
+                break;
+            }
+            case PM4ItOpcode::DmaData: {
+                const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
+
+                append(fmt::format("- engine=0x{:X}\n", dma_data->engine.Value()));
+                append(fmt::format("- command=0x{:X}\n", dma_data->command));
+                append(fmt::format("- cp_sync=0x{:X}\n", dma_data->cp_sync.Value()));
+                append(fmt::format("- src: atc=0x{:X}, cache_policy=0x{:X}, volatile=0x{:X}, "
+                                   "sel=0x{:X}, addr=0x{:016X}\n",
+                                   dma_data->src_atc.Value(), dma_data->src_cache_policy.Value(),
+                                   dma_data->src_volatile.Value(), dma_data->src_sel.Value(),
+                                   ((u64)dma_data->src_addr_hi << 32) | dma_data->src_addr_lo));
+                append(fmt::format("- dst: atc=0x{:X}, cache_policy=0x{:X}, volatile=0x{:X}, "
+                                   "sel=0x{:X}, addr=0x{:016X}\n",
+                                   dma_data->dst_atc.Value(), dma_data->dst_cache_policy.Value(),
+                                   dma_data->dst_volatile.Value(), dma_data->dst_sel.Value(),
+                                   ((u64)dma_data->dst_addr_hi << 32) | dma_data->dst_addr_lo));
+                break;
+            }
+            case PM4ItOpcode::ContextControl: {
+                const auto* ctx_ctl = reinterpret_cast<const PM4CmdContextControl*>(header);
+                append(fmt::format("- load_control:\n"));
+                append(fmt::format("  - enable_single_cntx_config_reg={}\n",
+                                   ctx_ctl->load_control.enable_single_cntx_config_reg.Value()));
+                append(fmt::format("  - enable_multi_cntx_render_reg={}\n",
+                                   ctx_ctl->load_control.enable_multi_cntx_render_reg.Value()));
+                append(fmt::format("  - enable_user_config_reg__CI={}\n",
+                                   ctx_ctl->load_control.enable_user_config_reg__CI.Value()));
+                append(fmt::format("  - enable_gfx_sh_reg={}\n",
+                                   ctx_ctl->load_control.enable_gfx_sh_reg.Value()));
+                append(fmt::format("  - enable_cs_sh_reg={}\n",
+                                   ctx_ctl->load_control.enable_cs_sh_reg.Value()));
+                append(fmt::format("  - enable_dw={}\n", ctx_ctl->load_control.enable_dw.Value()));
+                append(fmt::format("- shadow_enable:\n"));
+                append(fmt::format("  - enable_single_cntx_config_reg={}\n",
+                                   ctx_ctl->shadow_enable.enable_single_cntx_config_reg.Value()));
+                append(fmt::format("  - enable_multi_cntx_render_reg={}\n",
+                                   ctx_ctl->shadow_enable.enable_multi_cntx_render_reg.Value()));
+                append(fmt::format("  - enable_user_config_reg__CI={}\n",
+                                   ctx_ctl->shadow_enable.enable_user_config_reg__CI.Value()));
+                append(fmt::format("  - enable_gfx_sh_reg={}\n",
+                                   ctx_ctl->shadow_enable.enable_gfx_sh_reg.Value()));
+                append(fmt::format("  - enable_cs_sh_reg={}\n",
+                                   ctx_ctl->shadow_enable.enable_cs_sh_reg.Value()));
+                append(fmt::format("  - enable_dw={}\n", ctx_ctl->shadow_enable.enable_dw.Value()));
+                break;
+            }
+            case PM4ItOpcode::NumInstances: {
+                const auto* num_instances = reinterpret_cast<const PM4CmdDrawNumInstances*>(header);
+                append(fmt::format("- num_instances={}\n", num_instances->num_instances));
+                break;
+            }
+            case PM4ItOpcode::DrawIndexAuto: {
+                const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndexAuto*>(header);
+                append(fmt::format("- index_count={}\n", draw_index->index_count));
+                append(fmt::format("- draw_initiator={}\n", draw_index->draw_initiator));
+                break;
+            }
+            case PM4ItOpcode::EventWriteEop: {
+                const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
+                append(fmt::format("- event_type=0x{:X}\n", event_eop->event_type.Value()));
+                append(fmt::format("- event_index={}\n", event_eop->event_index.Value()));
+                append(fmt::format("- address=0x{:016X}\n",
+                                   reinterpret_cast<uintptr_t>(event_eop->Address<void>())));
+                append(fmt::format("- data=0x{:016X}\n", event_eop->DataQWord()));
+                append(fmt::format("- int_sel={}\n",
+                                   magic_enum::enum_name(event_eop->int_sel.Value())));
+                append(fmt::format("- data_sel={}\n",
+                                   magic_enum::enum_name(event_eop->data_sel.Value())));
+                break;
+            }
+            case PM4ItOpcode::AcquireMem: {
+                const auto* acquire_mem = reinterpret_cast<const PM4CmdAcquireMem*>(header);
+                append(fmt::format("- cp_coher_cntl=0x{:X}\n", acquire_mem->cp_coher_cntl));
+                append(fmt::format("- cp_coher_size=0x{:X}\n",
+                                   ((u64)acquire_mem->cp_coher_size_hi << 32) |
+                                       acquire_mem->cp_coher_size_lo));
+                append(fmt::format("- cp_coher_base=0x{:X}\n",
+                                   ((u64)acquire_mem->cp_coher_base_hi << 32) |
+                                       acquire_mem->cp_coher_base_lo));
+                append(fmt::format("- poll_interval=0x{:X}\n", acquire_mem->poll_interval));
+                break;
+            }
+            case PM4ItOpcode::WriteData: {
+                const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
+                append(fmt::format("- dst_sel=0x{:X}\n", write_data->dst_sel.Value()));
+                append(fmt::format("- wr_one_addr={}\n", write_data->wr_one_addr.Value()));
+                append(fmt::format("- wr_confirm={}\n", write_data->wr_confirm.Value()));
+                append(fmt::format("- engine_sel={}\n", write_data->engine_sel.Value()));
+                append(fmt::format("- dst_addr=0x{:016X}\n", write_data->addr64));
+                append("- data:\n");
+                hexdump(write_data->data, write_data->Size());
+                break;
+            }
+            case PM4ItOpcode::WaitRegMem: {
+                const auto* write_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
+                append(fmt::format("- function={}\n",
+                                   magic_enum::enum_name(write_reg_mem->function.Value())));
+                append(fmt::format("- mem_space={}\n",
+                                   magic_enum::enum_name(write_reg_mem->mem_space.Value())));
+                append(fmt::format("- engine={}\n",
+                                   magic_enum::enum_name(write_reg_mem->engine.Value())));
+                append(fmt::format("- poll_addr=0x{:X}\n", write_reg_mem->Address<uintptr_t>()));
+                append(fmt::format("- ref=0x{:X}\n", write_reg_mem->ref));
+                append(fmt::format("- mask=0x{:X}\n", write_reg_mem->mask));
+                append(fmt::format("- poll_interval=0x{:X}\n", write_reg_mem->poll_interval));
+                break;
+            }
+            case PM4ItOpcode::ReleaseMem: {
+                const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
+                append(fmt::format("- event_type=0x{:X}", release_mem->event_type.Value()));
+                append(fmt::format("- event_index=0x{:X}", release_mem->event_index.Value()));
+                append(fmt::format("- tcl1_vol_action_ena=0x{:X}",
+                                   release_mem->tcl1_vol_action_ena.Value()));
+                append(fmt::format("- tc_vol_action_ena=0x{:X}",
+                                   release_mem->tc_vol_action_ena.Value()));
+                append(fmt::format("- tc_wb_action_ena=0x{:X}",
+                                   release_mem->tc_wb_action_ena.Value()));
+                append(fmt::format("- tcl1__action_ena=0x{:X}",
+                                   release_mem->tcl1__action_ena.Value()));
+                append(fmt::format("- tc_action_ena=0x{:X}", release_mem->tc_action_ena.Value()));
+                append(fmt::format("- cache_policy=0x{:X}", release_mem->cache_policy.Value()));
+                append(fmt::format("- dst_sel=0x{:X}", release_mem->dst_sel.Value()));
+                append(fmt::format("- int_sel={}\n",
+                                   magic_enum::enum_name(release_mem->int_sel.Value())));
+                append(fmt::format("- data_sel={}\n",
+                                   magic_enum::enum_name(release_mem->data_sel.Value())));
+                append(fmt::format("- addr=0x{:X}\n",
+                                   reinterpret_cast<uintptr_t>(release_mem->Address<void>())));
+                append(fmt::format("- data=0x{:X}", release_mem->DataQWord()));
+                break;
+            }
+            case PM4ItOpcode::IndirectBuffer: {
+                const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+                append(fmt::format("- address=0x{:X}\n",
+                                   reinterpret_cast<uintptr_t>(indirect_buffer->Address<void>())));
+                append(fmt::format("- size=0x{:X}\n", indirect_buffer->ib_size.Value()));
+                append(fmt::format("- chain=0x{:X}\n", indirect_buffer->chain.Value()));
+                append(fmt::format("- vmid=0x{:X}\n", indirect_buffer->vmid.Value()));
+                break;
+            }
+            case PM4ItOpcode::IndexBufferSize: {
+                const auto* index_size = reinterpret_cast<const PM4CmdDrawIndexBufferSize*>(header);
+                append(fmt::format("- num_indices=0x{:X}\n", index_size->num_indices));
+                break;
+            }
+            case PM4ItOpcode::IndexBase: {
+                const auto* index_base = reinterpret_cast<const PM4CmdDrawIndexBase*>(header);
+                append(fmt::format("- address=0x{:X}\n",
+                                   ((u64)index_base->addr_hi << 32) | index_base->addr_lo));
+                break;
+            }
+            case PM4ItOpcode::DispatchDirect: {
+                const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
+                append(fmt::format("- dim_x=0x{:X}\n", dispatch_direct->dim_x));
+                append(fmt::format("- dim_y=0x{:X}\n", dispatch_direct->dim_y));
+                append(fmt::format("- dim_z=0x{:X}\n", dispatch_direct->dim_z));
+                append(fmt::format("- dispatch_initiator=0x{:X}\n",
+                                   dispatch_direct->dispatch_initiator));
+                break;
+            }
+            case PM4ItOpcode::DumpConstRam: {
+                const auto* dump_const = reinterpret_cast<const PM4DumpConstRam*>(header);
+                append(fmt::format("- address=0x{:X}\n", dump_const->Address<uintptr_t>()));
+                append(fmt::format("- offset=0x{:X}\n", dump_const->Offset()));
+                append(fmt::format("- size=0x{:X}\n", dump_const->Size()));
+                break;
+            }
+            case PM4ItOpcode::EventWriteEos: {
+                const auto* event_eos = reinterpret_cast<const PM4CmdEventWriteEos*>(header);
+                append(fmt::format("- event_type=0x{:X}\n", event_eos->event_type.Value()));
+                append(fmt::format("- event_index=0x{:X}\n", event_eos->event_index.Value()));
+                append(fmt::format("- address=0x{:X}\n", event_eos->Address<uintptr_t>()));
+                append(fmt::format("- command={}\n",
+                                   magic_enum::enum_name(event_eos->command.Value())));
+                append(fmt::format("- gds_index=0x{:X}\n", event_eos->gds_index.Value()));
+                append(fmt::format("- size=0x{:X}\n", event_eos->size.Value()));
+                break;
+            }
+            case PM4ItOpcode::DrawIndirect: {
+                const auto* draw_indirect = reinterpret_cast<const PM4CmdDrawIndirect*>(header);
+                append(fmt::format("- data_offset=0x{:X}\n", draw_indirect->data_offset));
+                append(fmt::format("- base_vtx_loc=0x{:X}\n", draw_indirect->base_vtx_loc.Value()));
+                append(fmt::format("- start_inst_loc=0x{:X}\n",
+                                   draw_indirect->start_inst_loc.Value()));
+                append(fmt::format("- draw_initiator=0x{:X}\n", draw_indirect->draw_initiator));
+                break;
+            }
+            case PM4ItOpcode::IndexType: {
+                const auto* draw_index_type = reinterpret_cast<const PM4CmdDrawIndexType*>(header);
+                append(fmt::format("- index_type=0x{:X}\n", draw_index_type->index_type.Value()));
+                append(fmt::format("- swap_mode=0x{:X}\n", draw_index_type->swap_mode.Value()));
+                break;
+            }
+            case PM4ItOpcode::DrawIndex2: {
+                const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndex2*>(header);
+                append(fmt::format("- max_size=0x{:X}\n", draw_index->max_size));
+                append(fmt::format("- index_base=0x{:X}\n", ((u64)draw_index->index_base_hi << 32) |
+                                                                draw_index->index_base_lo));
+                append(fmt::format("- index_count=0x{:X}\n", draw_index->index_count));
+                append(fmt::format("- draw_initiator=0x{:X}\n", draw_index->draw_initiator));
+                break;
+            }
+            case PM4ItOpcode::DrawIndexOffset2: {
+                const auto* draw_index_off =
+                    reinterpret_cast<const PM4CmdDrawIndexOffset2*>(header);
+                append(fmt::format("- max_size=0x{:X}\n", draw_index_off->max_size));
+                append(fmt::format("- index_offset=0x{:X}\n", draw_index_off->index_offset));
+                append(fmt::format("- index_count=0x{:X}\n", draw_index_off->index_count));
+                append(fmt::format("- draw_initiator=0x{:X}\n", draw_index_off->draw_initiator));
+                break;
+            }
+            default:
+                for (size_t i = 0; i < header->type0.count + 1; i++)
+                    append(fmt::format("- 0x{:08X}\n", cmds.data()[1 + i]));
+                break;
+            }
+
+            cmds = cmds.subspan(header->type3.NumWords() + 1);
+            break;
+        default:
+            UNREACHABLE();
+        }
+        append("\n");
+    }
+    return ret;
+}
+
 static void DumpCommandList(std::span<const u32> cmd_list, const std::string& postfix) {
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::PM4Dir);
@@ -332,6 +625,9 @@ static void DumpCommandList(std::span<const u32> cmd_list, const std::string& po
     const auto filename = fmt::format("{:08}_{}", frames_submitted, postfix);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(cmd_list);
+
+    IOFile txt{dump_dir / (filename + ".txt"), FileAccessMode::Write, FileType::TextFile};
+    txt.WriteString(DisassemblePM4(cmd_list));
 }
 
 // Write a special ending NOP packet with N DWs data block
@@ -1407,7 +1703,7 @@ s32 PS4_SYSV_ABI sceGnmSetEmbeddedPsShader(u32* cmdbuf, u32 size, u32 shader_id,
 
     constexpr static std::array ps1_code alignas(256) = {
         0xbeeb03ffu, 0x00000003u, // s_mov_b32     vcc_hi, $0x00000003
-        0x7e040280u,              // v_mov_b32     v2, 0 
+        0x7e040280u,              // v_mov_b32     v2, 0
         0xf8001803u, 0x02020202u, // exp           mrt0, v2, v2, off, off vm done
         0xbf810000u,              // s_endpgm
 
