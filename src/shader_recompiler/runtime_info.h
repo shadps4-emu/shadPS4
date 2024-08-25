@@ -83,18 +83,22 @@ struct BufferResource {
     AmdGpu::Buffer inline_cbuf;
     AmdGpu::DataFormat dfmt;
     AmdGpu::NumberFormat nfmt;
-    bool is_storage{};
     bool is_instance_data{};
     bool is_written{};
 
+    static constexpr size_t MaxUboSize = 65536;
+
+    bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
+        return buffer.GetSize() > MaxUboSize || is_written;
+    }
+
     u64 GetKey(const Info& info) const {
-        static constexpr size_t MaxUboSize = 65536;
         const auto sharp = GetVsharp(info);
         const u32 stride = sharp.GetStride();
         u64 key = stride | (sharp.data_format << 14) | (sharp.num_format << 18);
         if (!is_written) {
             key <<= 1;
-            key |= (stride * sharp.num_records) > MaxUboSize;
+            key |= IsStorage(sharp);
         }
         return key;
     }

@@ -329,11 +329,12 @@ void EmitContext::DefinePushDataBlock() {
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
     for (u32 i = 0; const auto& buffer : info.buffers) {
+        const auto sharp = buffer.GetVsharp(info);
+        const bool is_storage = buffer.IsStorage(sharp);
         const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
-        const Id record_array_type{buffer.is_storage
-                                       ? TypeRuntimeArray(data_type)
-                                       : TypeArray(data_type, ConstU32(buffer.length))};
+        const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
+                                              : TypeArray(data_type, ConstU32(buffer.length))};
         const Id struct_type{TypeStruct(record_array_type)};
         if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
             Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
@@ -350,13 +351,13 @@ void EmitContext::DefineBuffers() {
         }
 
         const auto storage_class =
-            buffer.is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+            is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
         const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
         const Id pointer_type = TypePointer(storage_class, data_type);
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", buffer.is_storage ? "ssbo" : "cbuf", buffer.sgpr_base));
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", buffer.sgpr_base));
 
         buffers.push_back({
             .id = id,

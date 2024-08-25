@@ -220,7 +220,6 @@ public:
         })};
         auto& buffer = buffer_resources[index];
         ASSERT(buffer.length == desc.length);
-        buffer.is_storage |= desc.is_storage;
         buffer.used_types |= desc.used_types;
         buffer.is_written |= desc.is_written;
         return index;
@@ -412,7 +411,6 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
         .length = BufferLength(cbuf),
         .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
         .inline_cbuf = cbuf,
-        .is_storage = IsBufferStore(inst) || cbuf.GetSize() > MaxUboSize,
     });
 }
 
@@ -424,15 +422,13 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         const auto sharp = TrackSharp(producer);
-        const bool is_store = IsBufferStore(inst);
         buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
         binding = descriptors.Add(BufferResource{
             .sgpr_base = sharp.sgpr_base,
             .dword_offset = sharp.dword_offset,
             .length = BufferLength(buffer),
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
-            .is_storage = is_store || buffer.GetSize() > MaxUboSize,
-            .is_written = is_store,
+            .is_written = IsBufferStore(inst),
         });
     }
 

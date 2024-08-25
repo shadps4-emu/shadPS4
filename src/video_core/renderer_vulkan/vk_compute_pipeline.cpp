@@ -24,10 +24,11 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto& buffer : info->buffers) {
+        const auto sharp = buffer.GetVsharp(*info);
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                : vk::DescriptorType::eUniformBuffer,
+            .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
+                                                      : vk::DescriptorType::eUniformBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
@@ -98,12 +99,13 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
 
     for (const auto& buffer : info->buffers) {
         const auto vsharp = buffer.GetVsharp(*info);
+        const bool is_storage = buffer.IsStorage(vsharp);
         const VAddr address = vsharp.base_address;
         // Most of the time when a metadata is updated with a shader it gets cleared. It means we
         // can skip the whole dispatch and update the tracked state instead. Also, it is not
         // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
         // need its full emulation anyways. For cases of metadata read a warning will be logged.
-        if (buffer.is_storage) {
+        if (is_storage) {
             if (texture_cache.TouchMeta(address, true)) {
                 LOG_WARNING(Render_Vulkan, "Metadata update skipped");
                 return false;
@@ -118,7 +120,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             texture_cache.InvalidateMemory(address, size, true);
         }
         const u32 alignment =
-            buffer.is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
+            is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
         const auto [vk_buffer, offset] =
             buffer_cache.ObtainBuffer(address, size, buffer.is_written);
         const u32 offset_aligned = Common::AlignDown(offset, alignment);
@@ -133,8 +135,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             .dstBinding = binding++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                : vk::DescriptorType::eUniformBuffer,
+            .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
+                                         : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
     }

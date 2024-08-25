@@ -307,10 +307,11 @@ void GraphicsPipeline::BuildDescSetLayout() {
             continue;
         }
         for (const auto& buffer : stage->buffers) {
+            const auto sharp = buffer.GetVsharp(*stage);
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                    : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
+                                                          : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
@@ -361,14 +362,15 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetVsharp(*stage);
+            const bool is_storage = buffer.IsStorage(vsharp);
             if (vsharp) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
                 }
                 const u32 size = vsharp.GetSize();
-                const u32 alignment = buffer.is_storage ? instance.StorageMinAlignment()
-                                                        : instance.UniformMinAlignment();
+                const u32 alignment =
+                    is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
                 const auto [vk_buffer, offset] =
                     buffer_cache.ObtainBuffer(address, size, buffer.is_written);
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
@@ -386,8 +388,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                    : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
+                                             : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
         }

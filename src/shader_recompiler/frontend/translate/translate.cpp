@@ -401,7 +401,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
                 .dword_offset = attrib.dword_offset,
                 .length = buffer.num_records,
                 .used_types = IR::Type::F32,
-                .is_storage = true, // we may not fit into UBO with large meshes
                 .is_instance_data = true,
             });
             instance_buf_handle = s32(info.buffers.size() - 1);
