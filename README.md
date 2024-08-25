@@ -32,25 +32,28 @@ SPDX-License-Identifier: GPL-2.0-or-later
   <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
 </p>
 
-# shadPS4
+# General information
 
-shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++
+shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
 
 If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
 
 To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-emu/shadps4-game-compatibility).
 
-To discuss shadPS4 development or suggest ideas, join the [**Discord server**](https://discord.gg/MyZRaBngxA).
+To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Discord server**](https://discord.gg/MyZRaBngxA).
 
-To get the latest news, go to our [**X (twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
+To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
 
 # Status
 
-In development, small games are working like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE) and others...
+> [!IMPORTANT]
+> shadPS4 is early in developement, don't expect a flawless experience.
+
+Currently, the emulator successfully runs small games like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4), [**Dysmantle**](https://youtu.be/b9xzhLBdESE), and a few others. Most importantly shadPS4 can *somewhat* run Bloodborne.
 
 # Why
 
-The project started as a fun project. Due to limited free time, it will probably take a while before shadPS4 is able to run anything decent, but we're trying to make small, regular commits.
+This project began as a fun project. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
 
 # Build
 
@@ -62,7 +65,7 @@ Check the build instructions for [**Windows**](https://github.com/shadps4-emu/sh
 
 Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
 
-## Build status
+## Building status
 
 <details>
 <summary><b>Windows</b></summary>
@@ -95,9 +98,12 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 
 For more information on how to test, debug and report issues with the emulator or games, read the [Debugging documentation](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
 
-# Keyboard Mapping
+# Keyboard mapping
 
-| Controller button | Keyboard |
+> [!NOTE]
+> Keyboard mappings can be changed from the Qt interface of shadPS4. Xbox and DualShock controllers work out of the box.
+
+| Controller button | Keyboard equivelant |
 |-------------|-------------|
 LEFT AXIS UP | W |
 LEFT AXIS DOWN | S |
