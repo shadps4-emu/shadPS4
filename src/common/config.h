@@ -69,6 +69,7 @@ void setMainWindowHeight(u32 height);
 void setPkgViewer(const std::vector<std::string>& pkgList);
 void setElfViewer(const std::vector<std::string>& elfList);
 void setRecentFiles(const std::vector<std::string>& recentFiles);
+void setEmulatorLanguage(std::string language);
 
 u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();
@@ -86,6 +87,7 @@ u32 getMainWindowHeight();
 std::vector<std::string> getPkgViewer();
 std::vector<std::string> getElfViewer();
 std::vector<std::string> getRecentFiles();
+std::string getEmulatorLanguage();
 
 void setDefaultValues();
 

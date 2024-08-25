@@ -113,11 +113,27 @@ add_subdirectory(externals)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
+
+    set(QT_TRANSLATIONS "${PROJECT_SOURCE_DIR}/src/qt_gui/translations")
+    file(GLOB_RECURSE TRANSLATIONS_TS ${QT_TRANSLATIONS}/*.ts)
+
+    set_source_files_properties(${TRANSLATIONS_TS} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/translations")
+    qt_add_translation(TRANSLATIONS_QM ${TRANSLATIONS_TS})
+
+    set(TRANSLATIONS_QRC ${CMAKE_CURRENT_BINARY_DIR}/translations/translations.qrc)
+    file(WRITE ${TRANSLATIONS_QRC} "<RCC><qresource prefix=\"translations\">\n")
+    foreach (QM ${TRANSLATIONS_QM})
+        get_filename_component(QM_FILE ${QM} NAME)
+        file(APPEND ${TRANSLATIONS_QRC} "<file>${QM_FILE}</file>\n")
+    endforeach (QM)
+    file(APPEND ${TRANSLATIONS_QRC} "</qresource></RCC>")
+
+    qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
 endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp
@@ -574,6 +590,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/main.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
+           ${TRANSLATIONS}
 )
 endif()
 

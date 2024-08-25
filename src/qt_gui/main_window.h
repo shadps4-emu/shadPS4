@@ -5,6 +5,7 @@
 
 #include <QActionGroup>
 #include <QDragEnterEvent>
+#include <QTranslator>
 
 #include "common/config.h"
 #include "common/path_util.h"
@@ -43,6 +44,7 @@ private Q_SLOTS:
     void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
+    void OnLanguageChanged(const std::string& locale);
 
 private:
     Ui_MainWindow* ui;
@@ -59,6 +61,7 @@ private:
     void InstallPkg();
     void BootGame();
     void AddRecentFiles(QString filePath);
+    void LoadTranslation();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;
     bool isTableList = true;
@@ -83,6 +86,8 @@ private:
     PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
+
+    QTranslator* translator;
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event1) override {

@@ -45,6 +45,7 @@ u32 m_window_size_H = 720;
 std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
+std::string emulator_language = "en";
 // Settings
 u32 m_language = 1; // english
 
@@ -242,6 +243,10 @@ void setRecentFiles(const std::vector<std::string>& recentFiles) {
     m_recent_files = recentFiles;
 }
 
+void setEmulatorLanguage(std::string language) {
+    emulator_language = language;
+}
+
 u32 getMainWindowGeometryX() {
     return main_window_geometry_x;
 }
@@ -289,6 +294,10 @@ std::vector<std::string> getElfViewer() {
 }
 std::vector<std::string> getRecentFiles() {
     return m_recent_files;
+}
+
+std::string getEmulatorLanguage() {
+    return emulator_language;
 }
 
 u32 GetLanguage() {
@@ -368,6 +377,7 @@ void load(const std::filesystem::path& path) {
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
+        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en");
     }
 
     if (data.contains("Settings")) {
@@ -430,6 +440,7 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
+    data["GUI"]["emulatorLanguage"] = emulator_language;
 
     data["Settings"]["consoleLanguage"] = m_language;
 
@@ -454,6 +465,7 @@ void setDefaultValues() {
     vblankDivider = 1;
     vkValidation = false;
     rdocEnable = false;
+    emulator_language = "en";
     m_language = 1;
     gpuId = -1;
 }
