@@ -237,7 +237,7 @@ void EmitContext::DefineInputs() {
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         for (const auto& input : info.ps_inputs) {
             const u32 semantic = input.param_index;
-            if (input.is_default) {
+            if (input.is_default && !input.is_flat) {
                 input_params[semantic] = {MakeDefaultValue(*this, input.default_value), F32[1],
                                           F32[1], 4, true};
                 continue;
