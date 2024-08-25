@@ -99,7 +99,7 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
     }
 }
 
-void Traverse(EmitContext& ctx, IR::Program& program) {
+void Traverse(EmitContext& ctx, const IR::Program& program) {
     IR::Block* current_block{};
     for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
         switch (node.type) {
@@ -162,7 +162,7 @@ void Traverse(EmitContext& ctx, IR::Program& program) {
     }
 }
 
-Id DefineMain(EmitContext& ctx, IR::Program& program) {
+Id DefineMain(EmitContext& ctx, const IR::Program& program) {
     const Id void_function{ctx.TypeFunction(ctx.void_id)};
     const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, void_function)};
     for (IR::Block* const block : program.blocks) {
@@ -229,7 +229,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     ctx.AddEntryPoint(execution_model, main, "main", interfaces);
 }
 
-void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
+void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     auto inst{program.blocks.front()->begin()};
     size_t block_index{0};
     ctx.PatchDeferredPhi([&](size_t phi_arg) {
@@ -248,8 +248,8 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
 }
 } // Anonymous namespace
 
-std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, u32& binding) {
-    EmitContext ctx{profile, program, binding};
+std::vector<u32> EmitSPIRV(const Profile& profile, const IR::Program& program, u32& binding) {
+    EmitContext ctx{profile, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
     if (program.info.stage == Stage::Vertex) {

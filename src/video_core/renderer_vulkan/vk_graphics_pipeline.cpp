@@ -19,15 +19,11 @@ namespace Vulkan {
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
-                                   std::span<const Program*, MaxShaderStages> programs)
+                                   std::span<const Shader::Info*, MaxShaderStages> infos,
+                                   std::span<const vk::ShaderModule> modules)
     : instance{instance_}, scheduler{scheduler_}, key{key_} {
     const vk::Device device = instance.GetDevice();
-    for (u32 i = 0; i < MaxShaderStages; i++) {
-        if (!programs[i]) {
-            continue;
-        }
-        stages[i] = &programs[i]->pgm.info;
-    }
+    std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
 
     const vk::PushConstantRange push_constants = {
@@ -194,16 +190,18 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     auto stage = u32(Shader::Stage::Vertex);
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
-    shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
-        .stage = vk::ShaderStageFlagBits::eVertex,
-        .module = programs[stage]->module,
-        .pName = "main",
-    });
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eVertex,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
     stage = u32(Shader::Stage::Fragment);
-    if (programs[stage]) {
+    if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = programs[stage]->module,
+            .module = modules[stage],
             .pName = "main",
         });
     }
@@ -396,8 +394,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
         for (const auto& image_desc : stage->images) {
-            const auto tsharp =
-                stage->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            const auto tsharp = image_desc.GetTsharp(*stage);
             if (tsharp) {
                 tsharps.emplace_back(tsharp);
                 VideoCore::ImageInfo image_info{tsharp};

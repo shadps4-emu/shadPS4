@@ -5,7 +5,6 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
@@ -19,10 +18,6 @@ extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 namespace Vulkan {
 
 using Shader::VsOutput;
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
 
 void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
@@ -68,10 +63,12 @@ void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl
                    : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
 }
 
-Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data,
-                            const AmdGpu::Liverpool::Regs& regs) {
+Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data, u64 pgm_base,
+                            u64 hash, const AmdGpu::Liverpool::Regs& regs) {
     Shader::Info info{};
     info.user_data = user_data;
+    info.pgm_base = pgm_base;
+    info.pgm_hash = hash;
     info.stage = stage;
     switch (stage) {
     case Shader::Stage::Vertex: {
@@ -121,27 +118,38 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 }
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    const auto& regs = liverpool->regs;
     // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+    if (regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+        return nullptr;
+    }
+    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
+    // actual draw hence can skip pipeline creation.
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
+        return nullptr;
+    }
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
+        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
+        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
     RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = CreateGraphicsPipeline();
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key,
+                                                        *pipeline_cache, infos, modules);
     }
     const GraphicsPipeline* pipeline = it->second.get();
     return pipeline;
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
-    const auto& cs_pgm = liverpool->regs.cs_program;
-    ASSERT(cs_pgm.Address() != nullptr);
-    const auto* bininfo = Liverpool::GetBinaryInfo(cs_pgm);
-    compute_key = bininfo->shader_hash;
+    RefreshComputeKey();
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = CreateComputePipeline();
+        it.value() = std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
+                                                       compute_key, *infos[0], modules[0]);
     }
     const ComputePipeline* pipeline = it->second.get();
     return pipeline;
@@ -229,162 +237,64 @@ void PipelineCache::RefreshGraphicsKey() {
         ++remapped_cb;
     }
 
+    u32 binding{};
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!regs.stage_enable.IsStageEnabled(i)) {
             key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
             continue;
         }
         auto* pgm = regs.ProgramForStage(i);
         if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
             continue;
         }
-        const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
-        if (!bininfo->Valid()) {
-            key.stage_hashes[i] = 0;
-            continue;
-        }
-        key.stage_hashes[i] = bininfo->shader_hash;
-    }
-}
 
-std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
-    const auto& regs = liverpool->regs;
-
-    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
-    // actual draw hence can skip pipeline creation.
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
-        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
-        return {};
-    }
-
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
-        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
-        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
-        return {};
-    }
-
-    u32 binding{};
-    for (u32 i = 0; i < MaxShaderStages; i++) {
-        if (!graphics_key.stage_hashes[i]) {
-            programs[i] = nullptr;
-            continue;
-        }
-        auto* pgm = regs.ProgramForStage(i);
-        const auto code = pgm->Code();
-
-        // Dump shader code if requested.
         const auto stage = Shader::Stage{i};
-        const u64 hash = graphics_key.stage_hashes[i];
-        if (Config::dumpShaders()) {
-            DumpShader(code, hash, stage, "bin");
-        }
-
-        if (stage != Shader::Stage::Fragment && stage != Shader::Stage::Vertex) {
-            LOG_ERROR(Render_Vulkan, "Unsupported shader stage {}. PL creation skipped.", stage);
-            return {};
-        }
-
-        const u64 lookup_hash = HashCombine(hash, binding);
-        auto it = program_cache.find(lookup_hash);
-        if (it != program_cache.end()) {
-            const Program* program = it.value().get();
-            ASSERT(program->pgm.info.stage == stage);
-            programs[i] = program;
-            binding = program->end_binding;
-            continue;
-        }
-
-        // Recompile shader to IR.
-        try {
-            auto program = std::make_unique<Program>();
-            block_pool.ReleaseContents();
-            inst_pool.ReleaseContents();
-
-            LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
-            Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
-            info.pgm_base = pgm->Address<uintptr_t>();
-            info.pgm_hash = hash;
-            program->pgm =
-                Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
-
-            // Compile IR to SPIR-V
-            program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
-            if (Config::dumpShaders()) {
-                DumpShader(program->spv, hash, stage, "spv");
-            }
-
-            // Compile module and set name to hash in renderdoc
-            program->end_binding = binding;
-            program->module = CompileSPV(program->spv, instance.GetDevice());
-            const auto name = fmt::format("{}_{:#x}", stage, hash);
-            Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
-
-            // Cache program
-            const auto [it, _] = program_cache.emplace(lookup_hash, std::move(program));
-            programs[i] = it.value().get();
-        } catch (const Shader::Exception& e) {
-            UNREACHABLE_MSG("{}", e.what());
-        }
+        std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(pgm, stage, binding);
     }
-
-    return std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key, *pipeline_cache,
-                                              programs);
 }
 
-std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
-    const auto& cs_pgm = liverpool->regs.cs_program;
-    const auto code = cs_pgm.Code();
+void PipelineCache::RefreshComputeKey() {
+    u32 binding{};
+    const auto* cs_pgm = &liverpool->regs.cs_program;
+    std::tie(infos[0], modules[0], compute_key) =
+        GetProgram(cs_pgm, Shader::Stage::Compute, binding);
+}
 
-    // Dump shader code if requested.
-    if (Config::dumpShaders()) {
-        DumpShader(code, compute_key, Shader::Stage::Compute, "bin");
-    }
+vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, std::span<const u32> code,
+                                              size_t perm_idx, u32& binding) {
+    LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
+             perm_idx != 0 ? "(permutation)" : "");
 
     block_pool.ReleaseContents();
     inst_pool.ReleaseContents();
+    const auto ir_program = Shader::TranslateProgram(inst_pool, block_pool, code, info, profile);
 
-    // Recompile shader to IR.
-    try {
-        auto program = std::make_unique<Program>();
-        LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
-        Shader::Info info =
-            MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
-        info.pgm_base = cs_pgm.Address<uintptr_t>();
-        info.pgm_hash = compute_key;
-        program->pgm =
-            Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
-
-        // Compile IR to SPIR-V
-        u32 binding{};
-        program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
-        if (Config::dumpShaders()) {
-            DumpShader(program->spv, compute_key, Shader::Stage::Compute, "spv");
-        }
-
-        // Compile module and set name to hash in renderdoc
-        program->module = CompileSPV(program->spv, instance.GetDevice());
-        const auto name = fmt::format("cs_{:#x}", compute_key);
-        Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
-
-        // Cache program
-        const auto [it, _] = program_cache.emplace(compute_key, std::move(program));
-        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, compute_key,
-                                                 it.value().get());
-    } catch (const Shader::Exception& e) {
-        UNREACHABLE_MSG("{}", e.what());
-        return nullptr;
+    // Compile IR to SPIR-V
+    const u64 key = info.GetStageSpecializedKey(binding);
+    const auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, ir_program, binding);
+    if (Config::dumpShaders()) {
+        DumpShader(spv, key, info.stage, perm_idx, "spv");
     }
+
+    // Create module and set name to hash in renderdoc
+    const auto module = CompileSPV(spv, instance.GetDevice());
+    ASSERT(module != VK_NULL_HANDLE);
+    const auto name = fmt::format("{}_{:#x}_{}", info.stage, key, perm_idx);
+    Vulkan::SetObjectName(instance.GetDevice(), module, name);
+    return module;
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
-                               std::string_view ext) {
+                               size_t perm_idx, std::string_view ext) {
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
+    const auto filename = fmt::format("{}_{:#018x}_{}.{}", stage, hash, perm_idx, ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
     file.WriteSpan(code);
 }

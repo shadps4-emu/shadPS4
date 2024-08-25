@@ -41,9 +41,9 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 
 } // Anonymous namespace
 
-EmitContext::EmitContext(const Profile& profile_, IR::Program& program, u32& binding_)
-    : Sirit::Module(profile_.supported_spirv), info{program.info}, profile{profile_},
-      stage{program.info.stage}, binding{binding_} {
+EmitContext::EmitContext(const Profile& profile_, const Shader::Info& info_, u32& binding_)
+    : Sirit::Module(profile_.supported_spirv), info{info_}, profile{profile_}, stage{info.stage},
+      binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -524,10 +524,11 @@ void EmitContext::DefineSharedMemory() {
     if (!info.uses_shared) {
         return;
     }
-    if (info.shared_memory_size == 0) {
-        info.shared_memory_size = DefaultSharedMemSize;
+    u32 shared_memory_size = info.shared_memory_size;
+    if (shared_memory_size == 0) {
+        shared_memory_size = DefaultSharedMemSize;
     }
-    const u32 num_elements{Common::DivCeil(info.shared_memory_size, 4U)};
+    const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);

@@ -13,12 +13,11 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  vk::PipelineCache pipeline_cache, u64 compute_key_,
-                                 const Program* program)
-    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_},
-      info{&program->pgm.info} {
+                                 const Shader::Info& info_, vk::ShaderModule module)
+    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_}, info{&info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
-        .module = program->module,
+        .module = module,
         .pName = "main",
     };
 
@@ -141,8 +140,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     }
 
     for (const auto& image_desc : info->images) {
-        const auto tsharp =
-            info->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+        const auto tsharp = image_desc.GetTsharp(*info);
         VideoCore::ImageInfo image_info{tsharp};
         VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
         const auto& image_view = texture_cache.FindTexture(image_info, view_info);

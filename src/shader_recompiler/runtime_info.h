@@ -12,6 +12,10 @@
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
 
+[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
+    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
 namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
@@ -83,6 +87,18 @@ struct BufferResource {
     bool is_instance_data{};
     bool is_written{};
 
+    u64 GetKey(const Info& info) const {
+        static constexpr size_t MaxUboSize = 65536;
+        const auto sharp = GetVsharp(info);
+        const u32 stride = sharp.GetStride();
+        u64 key = stride | (sharp.data_format << 14) | (sharp.num_format << 18);
+        if (!is_written) {
+            key <<= 1;
+            key |= (stride * sharp.num_records) > MaxUboSize;
+        }
+        return key;
+    }
+
     constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
 };
 using BufferResourceList = boost::container::static_vector<BufferResource, 16>;
@@ -94,6 +110,13 @@ struct ImageResource {
     AmdGpu::NumberFormat nfmt;
     bool is_storage;
     bool is_depth;
+
+    u64 GetKey(const Info& info) const {
+        const auto sharp = GetTsharp(info);
+        return sharp.type;
+    }
+
+    constexpr AmdGpu::Image GetTsharp(const Info& info) const noexcept;
 };
 using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
 
@@ -214,6 +237,21 @@ struct Info {
         return data;
     }
 
+    size_t NumBindings() const noexcept {
+        return buffers.size() + images.size() + samplers.size();
+    }
+
+    u64 GetStageSpecializedKey(u32 binding = 0) const noexcept {
+        u64 key = HashCombine(pgm_hash, binding);
+        for (const auto& buffer : buffers) {
+            key = HashCombine(key, buffer.GetKey(*this));
+        }
+        for (const auto& image : images) {
+            key = HashCombine(key, image.GetKey(*this));
+        }
+        return key;
+    }
+
     [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const noexcept {
         u32 vertex_offset = 0;
         u32 instance_offset = 0;
@@ -229,6 +267,10 @@ struct Info {
 
 constexpr AmdGpu::Buffer BufferResource::GetVsharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+}
+
+constexpr AmdGpu::Image ImageResource::GetTsharp(const Info& info) const noexcept {
+    return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
 }
 
 constexpr AmdGpu::Sampler SamplerResource::GetSsharp(const Info& info) const noexcept {
