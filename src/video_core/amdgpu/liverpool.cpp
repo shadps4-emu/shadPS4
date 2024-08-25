@@ -216,7 +216,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             break;
         }
         case PM4ItOpcode::ClearState: {
-            std::memcpy(regs.reg_array.data(), reg_array_default.data(), NumRegs * sizeof(u32));
+            regs.SetDefaults();
             break;
         }
         case PM4ItOpcode::SetConfigReg: {

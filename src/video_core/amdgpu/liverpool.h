@@ -1017,10 +1017,11 @@ struct Liverpool {
             }
             return nullptr;
         }
+
+        void SetDefaults();
     };
 
     Regs regs{};
-    static const std::array<u32, NumRegs> reg_array_default;
 
     // See for a comment in context reg parsing code
     union CbDbExtent {
