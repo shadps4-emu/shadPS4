@@ -55,7 +55,7 @@ Currently, the emulator successfully runs small games like [**Sonic Mania**](htt
 
 This project began as a fun project. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
 
-# Build
+# Building
 
 ## Windows
 
