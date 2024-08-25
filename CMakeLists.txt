@@ -488,6 +488,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp

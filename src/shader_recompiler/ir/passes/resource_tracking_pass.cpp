@@ -246,10 +246,7 @@ public:
                 return true;
             }
             // Samplers with different bindings might still be the same.
-            const auto old_sharp =
-                info.ReadUd<AmdGpu::Sampler>(existing.sgpr_base, existing.dword_offset);
-            const auto new_sharp = info.ReadUd<AmdGpu::Sampler>(desc.sgpr_base, desc.dword_offset);
-            return old_sharp == new_sharp;
+            return existing.GetSsharp(info) == desc.GetSsharp(info);
         })};
         return index;
     }

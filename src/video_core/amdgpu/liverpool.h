@@ -1017,6 +1017,8 @@ struct Liverpool {
             }
             return nullptr;
         }
+
+        void SetDefaults();
     };
 
     Regs regs{};
