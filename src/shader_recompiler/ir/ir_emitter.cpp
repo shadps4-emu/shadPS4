@@ -406,7 +406,7 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
 
 Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicSwap, Flags{info}, handle, address, value);
+    return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
 }
 
 void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,

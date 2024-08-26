@@ -105,7 +105,7 @@ OPCODE(BufferAtomicDec32,                                   U32,            Opaq
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicSwap,									U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicSwap32,									U32,            Opaque,			Opaque,			U32,											)
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
