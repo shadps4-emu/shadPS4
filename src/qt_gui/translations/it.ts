@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>Riguardo shadPS4</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+            <translation>shadPS4 è un emulatore sperimentale open source per Playstation 4.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>This software should not be used to play games you have not legally obtained.</translation>
+            <translation>Questo programma non dovrebbe essere utilizzato per riprodurre giochi che non vengono ottenuti legalmente.</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Apri Cartella</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Loading game list, please wait :3</translation>
+            <translation>Caricamento lista giochi, attendere :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancel</translation>
+            <translation>Annulla</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>Loading...</translation>
+            <translation>Caricamento...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - Choose directory</translation>
+            <translation>shadPS4 - Scegli cartella</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Directory to install games</translation>
+            <translation>Cartella di installazione dei giochi</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>Browse</translation>
+            <translation>Sfoglia</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Errore</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>The value for location to install games is not valid.</translation>
+            <translation>Il valore del percorso di installazione dei giochi non è valido.</translation>
         </message>
     </context>
     <context>
@@ -83,67 +83,67 @@
         <message>
             <location filename="../gui_context_menus.h" line="39"/>
             <source>Create Shortcut</source>
-            <translation>Create Shortcut</translation>
+            <translation>Crea scorciatoia</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="40"/>
             <source>Open Game Folder</source>
-            <translation>Open Game Folder</translation>
+            <translation>Apri cartella del gioco</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
-            <translation>SFO Viewer</translation>
+            <translation>Visualizzatore SFO</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="42"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Visualizzatore Trofei</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Copy info</source>
-            <translation>Copy info</translation>
+            <translation>Copia informazioni</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="51"/>
             <source>Copy Name</source>
-            <translation>Copy Name</translation>
+            <translation>Copia Nome</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="52"/>
             <source>Copy Serial</source>
-            <translation>Copy Serial</translation>
+            <translation>Copia Seriale</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="53"/>
             <source>Copy All</source>
-            <translation>Copy All</translation>
+            <translation>Copia Tutto</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="173"/>
             <source>Shortcut creation</source>
-            <translation>Shortcut creation</translation>
+            <translation>Creazione scorciatoia</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="174"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Shortcut created successfully!\n %1</translation>
+            <translation>Scorciatoia creata con successo!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="177"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Errore</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="178"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Error creating shortcut!\n %1</translation>
+            <translation>Errore nella creazione della scorciatoia!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="253"/>
             <source>Install PKG</source>
-            <translation>Install PKG</translation>
+            <translation>Installa PKG</translation>
         </message>
     </context>
     <context>
@@ -151,117 +151,117 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Open/Add Elf Folder</translation>
+            <translation>Apri/Aggiungi cartella Elf</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>Install Packages (PKG)</translation>
+            <translation>Installa Pacchetti (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>Boot Game</translation>
+            <translation>Avvia Gioco</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>Riguardo a shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Configure...</translation>
+            <translation>Configura...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Install application from a .pkg file</translation>
+            <translation>Installa applicaazione da un .pkg file</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Recent Games</translation>
+            <translation>Giochi Recenti</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>Exit</translation>
+            <translation>Uscita</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>Exit shadPS4</translation>
+            <translation>Esci da shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Exit the application.</translation>
+            <translation>Esci dall'applicazione.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>Show Game List</translation>
+            <translation>Mostra Lista Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>Game List Refresh</translation>
+            <translation>Aggiorna Lista Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>Tiny</translation>
+            <translation>Minuscolo</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>Small</translation>
+            <translation>Piccolo</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>Medium</translation>
+            <translation>Medio</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>Large</translation>
+            <translation>Grande</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>List View</translation>
+            <translation>Visualizzazione lista</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>Grid View</translation>
+            <translation>Visualizzazione Griglia</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elf Viewer</translation>
+            <translation>Visualizzatore Elf</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>Game Install Directory</translation>
+            <translation>Cartella Installazione Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Dump Game List</translation>
+            <translation>Scarica Lista Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKG Viewer</translation>
+            <translation>Visualizzatore PKG</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>Search...</translation>
+            <translation>Cerca...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
@@ -271,67 +271,67 @@
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>View</translation>
+            <translation>Visualizza</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>Game List Icons</translation>
+            <translation>Icone Lista Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Game List Mode</translation>
+            <translation>Modalità Lista Giochi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Impostazioni</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utils</translation>
+            <translation>Utilità</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>Themes</translation>
+            <translation>Temi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>About</translation>
+            <translation>Info su</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>Dark</translation>
+            <translation>Scuro</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>Light</translation>
+            <translation>Chiaro</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
             <source>Green</source>
-            <translation>Green</translation>
+            <translation>Verde</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="362"/>
             <source>Blue</source>
-            <translation>Blue</translation>
+            <translation>Blu</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="363"/>
             <source>Violet</source>
-            <translation>Violet</translation>
+            <translation>Viola</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>toolBar</translation>
+            <translation>barra strumenti</translation>
         </message>
     </context>
     <context>
@@ -339,14 +339,14 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Apri Cartella</translation>
         </message>
     </context>
     <context>
         <name>TrophyViewer</name>
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
-            <source>Trophy Viewer</source>
+            <source>Visualizzatore Trofei</source>
             <translation>Trophy Viewer</translation>
         </message>
     </context>
@@ -355,52 +355,52 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Impostazioni</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>General</translation>
+            <translation>Generale</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>System</translation>
+            <translation>Systema</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>Console Language</translation>
+            <translation>Lingua della console</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Emulator Language</translation>
+            <translation>Lingua dell'emulatore</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
             <source>Emulator</source>
-            <translation>Emulator</translation>
+            <translation>Emulatore</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>Enable Fullscreen</translation>
+            <translation>Abilita Schermo Intero</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Show Splash</translation>
+            <translation>Mostra Schermata Iniziale</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Is PS4 Pro</translation>
+            <translation>Modalità Ps4Pro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Username</translation>
+            <translation>Nome Utente</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
@@ -410,57 +410,57 @@
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>Log Type</translation>
+            <translation>Tipo di Log</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Log Filter</translation>
+            <translation>Filtro Log</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>Graphics</translation>
+            <translation>Grafica</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>Graphics Device</translation>
+            <translation>Adattatore grafico</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>Width</translation>
+            <translation>Larghezza</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>Height</translation>
+            <translation>Altezza</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
             <source>Vblank Divider</source>
-            <translation>Vblank Divider</translation>
+            <translation>Divisore Vblank</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>Advanced</translation>
+            <translation>Avanzato</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Enable Shaders Dumping</translation>
+            <translation>Abilita Scaricamento Shader</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>Enable NULL GPU</translation>
+            <translation>Abilita NULL GPU</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Enable PM4 Dumping</translation>
+            <translation>Abilita Scaricamento PM4</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
@@ -470,22 +470,22 @@
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Enable Debug Dumping</translation>
+            <translation>Abilita Scaricamento Debug</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Enable Vulkan Validation Layers</translation>
+            <translation>Abilita Vulkan Validation Layers</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Enable Vulkan Synchronization Validation</translation>
+            <translation>Abilita Vulkan Synchronization Validation</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>Enable RenderDoc Debugging</translation>
+            <translation>Abilita Debugging RenderDoc</translation>
         </message>
     </context>
 </TS>
