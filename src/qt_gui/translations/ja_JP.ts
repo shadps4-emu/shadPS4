@@ -1,4 +1,4 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="ja_JP">
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE TS><TS version="2.1" language="ja_JP">
     <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
     <context>
@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>shadPS4‚É‚Â‚¢‚Ä</translation>
+            <translation>shadPS4ã«ã¤ã„ã¦</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4‚ÍAPlayStation 4‚ÌŽÀŒ±“I‚ÈƒI[ƒvƒ“ƒ\[ƒXƒGƒ~ƒ…ƒŒ[ƒ^[‚Å‚·B</translation>
+            <translation>shadPS4ã¯ã€PlayStation 4ã®å®Ÿé¨“çš„ãªã‚ªãƒ¼ãƒ—ãƒ³ã‚½ãƒ¼ã‚¹ã‚¨ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚¿ãƒ¼ã§ã™ã€‚</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>‚±‚Ìƒ\ƒtƒgƒEƒFƒA‚ÍA‡–@“I‚É“üŽè‚µ‚Ä‚¢‚È‚¢ƒQ[ƒ€‚ðƒvƒŒƒC‚·‚é‚½‚ß‚ÉŽg—p‚·‚é‚à‚Ì‚Å‚Í‚ ‚è‚Ü‚¹‚ñB</translation>
+            <translation>ã“ã®ã‚½ãƒ•ãƒˆã‚¦ã‚§ã‚¢ã¯ã€åˆæ³•çš„ã«å…¥æ‰‹ã—ã¦ã„ãªã„ã‚²ãƒ¼ãƒ ã‚’ãƒ—ãƒ¬ã‚¤ã™ã‚‹ãŸã‚ã«ä½¿ç”¨ã™ã‚‹ã‚‚ã®ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>ƒtƒHƒ‹ƒ_‚ðŠJ‚­</translation>
+            <translation>ãƒ•ã‚©ãƒ«ãƒ€ã‚’é–‹ã</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒg‚ð“Ç‚Ýž‚Ý’†‚Å‚·B‚¨‘Ò‚¿‚­‚¾‚³‚¢ :3</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã‚’èª­ã¿è¾¼ã¿ä¸­ã§ã™ã€‚ãŠå¾…ã¡ãã ã•ã„ :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>ƒLƒƒƒ“ƒZƒ‹</translation>
+            <translation>ã‚­ãƒ£ãƒ³ã‚»ãƒ«</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>“Ç‚Ýž‚Ý’†...</translation>
+            <translation>èª­ã¿è¾¼ã¿ä¸­...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - ƒfƒBƒŒƒNƒgƒŠ‚ð‘I‘ð</translation>
+            <translation>shadPS4 - ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’é¸æŠž</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>ƒQ[ƒ€‚ðƒCƒ“ƒXƒg[ƒ‹‚·‚éƒfƒBƒŒƒNƒgƒŠ</translation>
+            <translation>ã‚²ãƒ¼ãƒ ã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã™ã‚‹ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>ŽQÆ</translation>
+            <translation>å‚ç…§</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>ƒGƒ‰[</translation>
+            <translation>ã‚¨ãƒ©ãƒ¼</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>ƒQ[ƒ€‚ðƒCƒ“ƒXƒg[ƒ‹‚·‚éêŠ‚ª–³Œø‚Å‚·B</translation>
+            <translation>ã‚²ãƒ¼ãƒ ã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã™ã‚‹å ´æ‰€ãŒç„¡åŠ¹ã§ã™ã€‚</translation>
         </message>
     </context>
     <context>
@@ -83,67 +83,67 @@
         <message>
             <location filename="../gui_context_menus.h" line="39"/>
             <source>Create Shortcut</source>
-            <translation>ƒVƒ‡[ƒgƒJƒbƒg‚ðì¬</translation>
+            <translation>ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã‚’ä½œæˆ</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="40"/>
             <source>Open Game Folder</source>
-            <translation>ƒQ[ƒ€ƒtƒHƒ‹ƒ_‚ðŠJ‚­</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒ•ã‚©ãƒ«ãƒ€ã‚’é–‹ã</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
-            <translation>SFOƒrƒ…[ƒ[</translation>
+            <translation>SFOãƒ“ãƒ¥ãƒ¼ãƒ¯ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="42"/>
             <source>Trophy Viewer</source>
-            <translation>ƒgƒƒtƒB[ƒrƒ…[ƒ[</translation>
+            <translation>ãƒˆãƒ­ãƒ•ã‚£ãƒ¼ãƒ“ãƒ¥ãƒ¼ãƒ¯ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Copy info</source>
-            <translation>î•ñ‚ðƒRƒs[</translation>
+            <translation>æƒ…å ±ã‚’ã‚³ãƒ”ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="51"/>
             <source>Copy Name</source>
-            <translation>–¼‘O‚ðƒRƒs[</translation>
+            <translation>åå‰ã‚’ã‚³ãƒ”ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="52"/>
             <source>Copy Serial</source>
-            <translation>ƒVƒŠƒAƒ‹‚ðƒRƒs[</translation>
+            <translation>ã‚·ãƒªã‚¢ãƒ«ã‚’ã‚³ãƒ”ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="53"/>
             <source>Copy All</source>
-            <translation>‚·‚×‚ÄƒRƒs[</translation>
+            <translation>ã™ã¹ã¦ã‚³ãƒ”ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="173"/>
             <source>Shortcut creation</source>
-            <translation>ƒVƒ‡[ƒgƒJƒbƒg‚Ìì¬</translation>
+            <translation>ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã®ä½œæˆ</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="174"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>ƒVƒ‡[ƒgƒJƒbƒg‚ª³í‚Éì¬‚³‚ê‚Ü‚µ‚½!\n %1</translation>
+            <translation>ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆãŒæ­£å¸¸ã«ä½œæˆã•ã‚Œã¾ã—ãŸ!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="177"/>
             <source>Error</source>
-            <translation>ƒGƒ‰[</translation>
+            <translation>ã‚¨ãƒ©ãƒ¼</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="178"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>ƒVƒ‡[ƒgƒJƒbƒg‚Ìì¬‚ÉŽ¸”s‚µ‚Ü‚µ‚½!\n %1</translation>
+            <translation>ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã®ä½œæˆã«å¤±æ•—ã—ã¾ã—ãŸ!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="253"/>
             <source>Install PKG</source>
-            <translation>PKG‚ðƒCƒ“ƒXƒg[ƒ‹</translation>
+            <translation>PKGã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«</translation>
         </message>
     </context>
     <context>
@@ -151,187 +151,187 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>ElfƒtƒHƒ‹ƒ_‚ðŠJ‚­/’Ç‰Á‚·‚é</translation>
+            <translation>Elfãƒ•ã‚©ãƒ«ãƒ€ã‚’é–‹ã/è¿½åŠ ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>ƒpƒbƒP[ƒW‚ðƒCƒ“ƒXƒg[ƒ‹ (PKG)</translation>
+            <translation>ãƒ‘ãƒƒã‚±ãƒ¼ã‚¸ã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ« (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>ƒQ[ƒ€‚ð‹N“®</translation>
+            <translation>ã‚²ãƒ¼ãƒ ã‚’èµ·å‹•</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>shadPS4‚É‚Â‚¢‚Ä</translation>
+            <translation>shadPS4ã«ã¤ã„ã¦</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Ý’è...</translation>
+            <translation>è¨­å®š...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>.pkgƒtƒ@ƒCƒ‹‚©‚çƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ðƒCƒ“ƒXƒg[ƒ‹‚·‚é</translation>
+            <translation>.pkgãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Å‹ß‚ÌƒQ[ƒ€</translation>
+            <translation>æœ€è¿‘ã®ã‚²ãƒ¼ãƒ </translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>I—¹</translation>
+            <translation>çµ‚äº†</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>shadPS4‚ðI—¹</translation>
+            <translation>shadPS4ã‚’çµ‚äº†</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>ƒAƒvƒŠƒP[ƒVƒ‡ƒ“‚ðI—¹‚µ‚Ü‚·B</translation>
+            <translation>ã‚¢ãƒ—ãƒªã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚’çµ‚äº†ã—ã¾ã™ã€‚</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒg‚ð•\Ž¦</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã‚’è¡¨ç¤º</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒg‚ÌXV</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã®æ›´æ–°</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>‹É¬</translation>
+            <translation>æ¥µå°</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>¬</translation>
+            <translation>å°</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>’†</translation>
+            <translation>ä¸­</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>‘å</translation>
+            <translation>å¤§</translation>
         </message>
-        <message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>ƒŠƒXƒgƒrƒ…[</translation>
+            <translation>ãƒªã‚¹ãƒˆãƒ“ãƒ¥ãƒ¼</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>ƒOƒŠƒbƒhƒrƒ…[</translation>
+            <translation>ã‚°ãƒªãƒƒãƒ‰ãƒ“ãƒ¥ãƒ¼</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elfƒrƒ…ƒ[</translation>
+            <translation>Elfãƒ“ãƒ¥ãƒ¯ãƒ¼</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>ƒQ[ƒ€ƒCƒ“ƒXƒg[ƒ‹ƒfƒBƒŒƒNƒgƒŠ</translation>
+            <translation>ã‚²ãƒ¼ãƒ ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒg‚ðƒ_ƒ“ƒv</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã‚’ãƒ€ãƒ³ãƒ—</translation>
         </message>
+        <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKGƒrƒ…[ƒA[</translation>
+            <translation>PKGãƒ“ãƒ¥ãƒ¼ã‚¢ãƒ¼</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>ŒŸõ...</translation>
+            <translation>æ¤œç´¢...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>ƒtƒ@ƒCƒ‹</translation>
+            <translation>ãƒ•ã‚¡ã‚¤ãƒ«</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>•\Ž¦</translation>
+            <translation>è¡¨ç¤º</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒgƒAƒCƒRƒ“</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆã‚¢ã‚¤ã‚³ãƒ³</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>ƒQ[ƒ€ƒŠƒXƒgƒ‚[ƒh</translation>
+            <translation>ã‚²ãƒ¼ãƒ ãƒªã‚¹ãƒˆãƒ¢ãƒ¼ãƒ‰</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Ý’è</translation>
+            <translation>è¨­å®š</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>ƒ†[ƒeƒBƒŠƒeƒB</translation>
+            <translation>ãƒ¦ãƒ¼ãƒ†ã‚£ãƒªãƒ†ã‚£</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>ƒe[ƒ}</translation>
+            <translation>ãƒ†ãƒ¼ãƒž</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>î•ñ</translation>
+            <translation>æƒ…å ±</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>ƒ_[ƒN</translation>
+            <translation>ãƒ€ãƒ¼ã‚¯</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>ƒ‰ƒCƒg</translation>
+            <translation>ãƒ©ã‚¤ãƒˆ</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
             <source>Green</source>
-            <translation>ƒOƒŠ[ƒ“</translation>
+            <translation>ã‚°ãƒªãƒ¼ãƒ³</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="362"/>
             <source>Blue</source>
-            <translation>ƒuƒ‹[</translation>
+            <translation>ãƒ–ãƒ«ãƒ¼</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="363"/>
             <source>Violet</source>
-            <translation>ƒoƒCƒIƒŒƒbƒg</translation>
+            <translation>ãƒã‚¤ã‚ªãƒ¬ãƒƒãƒˆ</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>ƒc[ƒ‹ƒo[</translation>
+            <translation>ãƒ„ãƒ¼ãƒ«ãƒãƒ¼</translation>
         </message>
     </context>
     <context>
@@ -339,7 +339,7 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>ƒtƒHƒ‹ƒ_[‚ðŠJ‚­</translation>
+            <translation>ãƒ•ã‚©ãƒ«ãƒ€ãƒ¼ã‚’é–‹ã</translation>
         </message>
     </context>
     <context>
@@ -347,7 +347,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>ƒgƒƒtƒB[ƒrƒ…[ƒA[</translation>
+            <translation>ãƒˆãƒ­ãƒ•ã‚£ãƒ¼ãƒ“ãƒ¥ãƒ¼ã‚¢ãƒ¼</translation>
         </message>
     </context>
     <context>
@@ -355,137 +355,137 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Ý’è</translation>
+            <translation>è¨­å®š</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>ˆê”Ê</translation>
+            <translation>ä¸€èˆ¬</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>ƒVƒXƒeƒ€</translation>
+            <translation>ã‚·ã‚¹ãƒ†ãƒ </translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>ƒRƒ“ƒ\[ƒ‹Œ¾Œê</translation>
+            <translation>ã‚³ãƒ³ã‚½ãƒ¼ãƒ«è¨€èªž</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>ƒGƒ~ƒ…ƒŒ[ƒ^[Œ¾Œê</translation>
+            <translation>ã‚¨ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚¿ãƒ¼è¨€èªž</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
             <source>Emulator</source>
-            <translation>ƒGƒ~ƒ…ƒŒ[ƒ^[</translation>
+            <translation>ã‚¨ãƒŸãƒ¥ãƒ¬ãƒ¼ã‚¿ãƒ¼</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>ƒtƒ‹ƒXƒNƒŠ[ƒ“‚ð—LŒø‚É‚·‚é</translation>
+            <translation>ãƒ•ãƒ«ã‚¹ã‚¯ãƒªãƒ¼ãƒ³ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>ƒXƒvƒ‰ƒbƒVƒ…‚ð•\Ž¦‚·‚é</translation>
+            <translation>ã‚¹ãƒ—ãƒ©ãƒƒã‚·ãƒ¥ã‚’è¡¨ç¤ºã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>PS4 Proƒ‚[ƒh</translation>
+            <translation>PS4 Proãƒ¢ãƒ¼ãƒ‰</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>ƒ†[ƒU[–¼</translation>
+            <translation>ãƒ¦ãƒ¼ã‚¶ãƒ¼å</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
             <source>Logger</source>
-            <translation>ƒƒK[</translation>
+            <translation>ãƒ­ã‚¬ãƒ¼</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>ƒƒOƒ^ƒCƒv</translation>
+            <translation>ãƒ­ã‚°ã‚¿ã‚¤ãƒ—</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>ƒƒOƒtƒBƒ‹ƒ^[</translation>
+            <translation>ãƒ­ã‚°ãƒ•ã‚£ãƒ«ã‚¿ãƒ¼</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>ƒOƒ‰ƒtƒBƒbƒNƒX</translation>
+            <translation>ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>ƒOƒ‰ƒtƒBƒbƒNƒXƒfƒoƒCƒX</translation>
+            <translation>ã‚°ãƒ©ãƒ•ã‚£ãƒƒã‚¯ã‚¹ãƒ‡ãƒã‚¤ã‚¹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>•</translation>
+            <translation>å¹…</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>‚‚³</translation>
+            <translation>é«˜ã•</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
             <source>Vblank Divider</source>
-            <translation>VblankƒfƒBƒoƒCƒ_[</translation>
+            <translation>Vblankãƒ‡ã‚£ãƒã‚¤ãƒ€ãƒ¼</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>‚“x‚ÈÝ’è</translation>
+            <translation>é«˜åº¦ãªè¨­å®š</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>ƒVƒF[ƒ_[‚Ìƒ_ƒ“ƒv‚ð—LŒø‚É‚·‚é</translation>
+            <translation>ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã®ãƒ€ãƒ³ãƒ—ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>NULL GPU‚ð—LŒø‚É‚·‚é</translation>
+            <translation>NULL GPUã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>PM4ƒ_ƒ“ƒv‚ð—LŒø‚É‚·‚é</translation>
+            <translation>PM4ãƒ€ãƒ³ãƒ—ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
             <source>Debug</source>
-            <translation>ƒfƒoƒbƒO</translation>
+            <translation>ãƒ‡ãƒãƒƒã‚°</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>ƒfƒoƒbƒOƒ_ƒ“ƒv‚ð—LŒø‚É‚·‚é</translation>
+            <translation>ãƒ‡ãƒãƒƒã‚°ãƒ€ãƒ³ãƒ—ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>VulkanŒŸØƒŒƒCƒ„[‚ð—LŒø‚É‚·‚é</translation>
+            <translation>Vulkanæ¤œè¨¼ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Vulkan“¯ŠúŒŸØ‚ð—LŒø‚É‚·‚é</translation>
+            <translation>VulkanåŒæœŸæ¤œè¨¼ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>RenderDocƒfƒoƒbƒO‚ð—LŒø‚É‚·‚é</translation>
+            <translation>RenderDocãƒ‡ãƒãƒƒã‚°ã‚’æœ‰åŠ¹ã«ã™ã‚‹</translation>
         </message>
     </context>
 </TS>
