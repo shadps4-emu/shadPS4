@@ -6,6 +6,7 @@
 #include "common/singleton.h"
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
+#include "imgui_renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -84,6 +85,9 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
         frame.present_done = device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
         free_queue.push(&frame);
     }
+
+    // Setup ImGui
+    ImGui::Emulator::Initialize(instance, window, num_images, swapchain.GetSurfaceFormat().format);
 }
 
 RendererVulkan::~RendererVulkan() {
@@ -94,6 +98,7 @@ RendererVulkan::~RendererVulkan() {
         device.destroyImageView(frame.image_view);
         device.destroyFence(frame.present_done);
     }
+    ImGui::Emulator::Shutdown(device);
 }
 
 void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
@@ -254,6 +259,8 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 }
 
 void RendererVulkan::Present(Frame* frame) {
+    ImGui::Emulator::NewFrame();
+
     swapchain.AcquireNextImage();
 
     const vk::Image swapchain_image = swapchain.Image();
@@ -286,7 +293,7 @@ void RendererVulkan::Present(Frame* frame) {
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
                 .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-                .oldLayout = vk::ImageLayout::eGeneral,
+                .oldLayout = vk::ImageLayout::eUndefined,
                 .newLayout = vk::ImageLayout::eTransferSrcOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -316,6 +323,8 @@ void RendererVulkan::Present(Frame* frame) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
+
+        ImGui::Emulator::Render(cmdbuf, frame);
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                vk::PipelineStageFlagBits::eTransfer,

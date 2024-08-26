@@ -117,6 +117,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
     SUB(Render, Recompiler)                                                                        \
+    CLS(ImGui)                                                                                     \
     CLS(Input)                                                                                     \
     CLS(Tty)                                                                                       \
     CLS(Loader)

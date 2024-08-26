@@ -561,6 +561,14 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderdoc.h
 )
 
+set(IMGUI src/imgui_renderer/imgui_core.cpp
+          src/imgui_renderer/imgui_core.h
+          src/imgui_renderer/imgui_impl_sdl3.cpp
+          src/imgui_renderer/imgui_impl_sdl3.h
+          src/imgui_renderer/imgui_impl_vulkan.cpp
+          src/imgui_renderer/imgui_impl_vulkan.h
+)
+
 set(INPUT src/input/controller.cpp
           src/input/controller.h
 )
@@ -617,6 +625,7 @@ endif()
 if (ENABLE_QT_GUI)
     qt_add_executable(shadps4
         ${AUDIO_CORE}
+        ${IMGUI}
         ${INPUT}
         ${QT_GUI}
         ${COMMON}
@@ -629,6 +638,7 @@ if (ENABLE_QT_GUI)
 else()
     add_executable(shadps4
         ${AUDIO_CORE}
+        ${IMGUI}
         ${INPUT}
         ${COMMON}
         ${CORE}
