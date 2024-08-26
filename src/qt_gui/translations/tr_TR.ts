@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>shadPS4 Hakkında</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+            <translation>shadPS4, PlayStation 4 için deneysel bir açık kaynak kodlu emülatördür.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>This software should not be used to play games you have not legally obtained.</translation>
+            <translation>Bu yazılım, yasal olarak edinmediğiniz oyunları oynamak için kullanılmamalıdır.</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Klasörü Aç</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Loading game list, please wait :3</translation>
+            <translation>Oyun listesi yükleniyor, lütfen bekleyin :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancel</translation>
+            <translation>İptal</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>Loading...</translation>
+            <translation>Yükleniyor...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - Choose directory</translation>
+            <translation>shadPS4 - Klasörü Seç</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Directory to install games</translation>
+            <translation>Oyunların yükleneceği klasör</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>Browse</translation>
+            <translation>Gözat</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Hata</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>The value for location to install games is not valid.</translation>
+            <translation>Oyunların yükleneceği konum için girilen klasör geçerli değil.</translation>
         </message>
     </context>
     <context>
@@ -83,67 +83,67 @@
         <message>
             <location filename="../gui_context_menus.h" line="39"/>
             <source>Create Shortcut</source>
-            <translation>Create Shortcut</translation>
+            <translation>Kısayol Oluştur</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="40"/>
             <source>Open Game Folder</source>
-            <translation>Open Game Folder</translation>
+            <translation>Oyun Klasörünü Aç</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
-            <translation>SFO Viewer</translation>
+            <translation>SFO Görüntüleyici</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="42"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Kupa Görüntüleyici</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Copy info</source>
-            <translation>Copy info</translation>
+            <translation>Bilgiyi Kopyala</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="51"/>
             <source>Copy Name</source>
-            <translation>Copy Name</translation>
+            <translation>Adı Kopyala</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="52"/>
             <source>Copy Serial</source>
-            <translation>Copy Serial</translation>
+            <translation>Seri Numarasını Kopyala</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="53"/>
             <source>Copy All</source>
-            <translation>Copy All</translation>
+            <translation>Tümünü Kopyala</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="173"/>
             <source>Shortcut creation</source>
-            <translation>Shortcut creation</translation>
+            <translation>Kısayol oluşturma</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="174"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Shortcut created successfully!\n %1</translation>
+            <translation>Kısayol başarıyla oluşturuldu!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="177"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Hata</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="178"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Error creating shortcut!\n %1</translation>
+            <translation>Kısayol oluşturulurken hata oluştu!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="253"/>
             <source>Install PKG</source>
-            <translation>Install PKG</translation>
+            <translation>PKG Yükle</translation>
         </message>
     </context>
     <context>
@@ -151,187 +151,187 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Open/Add Elf Folder</translation>
+            <translation>Elf Klasörünü Aç/Ekle</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>Install Packages (PKG)</translation>
+            <translation>Paketleri Kur (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>Boot Game</translation>
+            <translation>Oyunu Başlat</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>shadPS4 Hakkında</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Configure...</translation>
+            <translation>Yapılandır...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Install application from a .pkg file</translation>
+            <translation>.pkg dosyasından uygulama yükle</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Recent Games</translation>
+            <translation>Son Oyunlar</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>Exit</translation>
+            <translation>Çıkış</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>Exit shadPS4</translation>
+            <translation>shadPS4'ten Çık</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Exit the application.</translation>
+            <translation>Uygulamadan çık.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>Show Game List</translation>
+            <translation>Oyun Listesini Göster</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>Game List Refresh</translation>
+            <translation>Oyun Listesini Yenile</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>Tiny</translation>
+            <translation>Küçük</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>Small</translation>
+            <translation>Ufak</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>Medium</translation>
+            <translation>Orta</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>Large</translation>
+            <translation>Büyük</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>List View</translation>
+            <translation>Liste Görünümü</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>Grid View</translation>
+            <translation>Izgara Görünümü</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elf Viewer</translation>
+            <translation>Elf Görüntüleyici</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>Game Install Directory</translation>
+            <translation>Oyun Kurulum Klasörü</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Dump Game List</translation>
+            <translation>Oyun Listesini Kaydet</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKG Viewer</translation>
+            <translation>PKG Görüntüleyici</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>Search...</translation>
+            <translation>Ara...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>File</translation>
+            <translation>Dosya</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>View</translation>
+            <translation>Görünüm</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>Game List Icons</translation>
+            <translation>Oyun Listesi Simgeleri</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Game List Mode</translation>
+            <translation>Oyun Listesi Modu</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Ayarlar</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utils</translation>
+            <translation>Yardımcı Araçlar</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>Themes</translation>
+            <translation>Temalar</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>About</translation>
+            <translation>Hakkında</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>Dark</translation>
+            <translation>Koyu</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>Light</translation>
+            <translation>Açık</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
             <source>Green</source>
-            <translation>Green</translation>
+            <translation>Yeşil</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="362"/>
             <source>Blue</source>
-            <translation>Blue</translation>
+            <translation>Mavi</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="363"/>
             <source>Violet</source>
-            <translation>Violet</translation>
+            <translation>Mor</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>toolBar</translation>
+            <translation>Araç Çubuğu</translation>
         </message>
     </context>
     <context>
@@ -339,7 +339,7 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Klasörü Aç</translation>
         </message>
     </context>
     <context>
@@ -347,7 +347,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Kupa Görüntüleyici</translation>
         </message>
     </context>
     <context>
@@ -355,137 +355,137 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Ayarlar</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>General</translation>
+            <translation>Genel</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>System</translation>
+            <translation>Sistem</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>Console Language</translation>
+            <translation>Konsol Dili</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Emulator Language</translation>
+            <translation>Emülatör Dili</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
             <source>Emulator</source>
-            <translation>Emulator</translation>
+            <translation>Emülatör</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>Enable Fullscreen</translation>
+            <translation>Tam Ekranı Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Show Splash</translation>
+            <translation>Başlangıç Ekranını Göster</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Is PS4 Pro</translation>
+            <translation>PS4 Pro mu</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Username</translation>
+            <translation>Kullanıcı Adı</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
             <source>Logger</source>
-            <translation>Logger</translation>
+            <translation>Kayıt Tutucu</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>Log Type</translation>
+            <translation>Kayıt Türü</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Log Filter</translation>
+            <translation>Kayıt Filtresi</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>Graphics</translation>
+            <translation>Grafikler</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>Graphics Device</translation>
+            <translation>Grafik Cihazı</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>Width</translation>
+            <translation>Genişlik</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>Height</translation>
+            <translation>Yükseklik</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
             <source>Vblank Divider</source>
-            <translation>Vblank Divider</translation>
+            <translation>Vblank Bölücü</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>Advanced</translation>
+            <translation>Gelişmiş</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Enable Shaders Dumping</translation>
+            <translation>Shader Kaydını Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>Enable NULL GPU</translation>
+            <translation>NULL GPU'yu Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Enable PM4 Dumping</translation>
+            <translation>PM4 Kaydını Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
             <source>Debug</source>
-            <translation>Debug</translation>
+            <translation>Hata Ayıklama</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Enable Debug Dumping</translation>
+            <translation>Hata Ayıklama Dökümü Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Enable Vulkan Validation Layers</translation>
+            <translation>Vulkan Doğrulama Katmanlarını Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Enable Vulkan Synchronization Validation</translation>
+            <translation>Vulkan Senkronizasyon Doğrulamasını Etkinleştir</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>Enable RenderDoc Debugging</translation>
+            <translation>RenderDoc Hata Ayıklamayı Etkinleştir</translation>
         </message>
     </context>
 </TS>
