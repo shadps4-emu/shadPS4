@@ -291,8 +291,10 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
             // By now, ignore protection and log it instead
-            LOG_WARNING(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, type = {} "
-                                    "is UNSUPPORTED and skipped");
+            LOG_WARNING(Kernel_Vmm,
+                        "entry = {}, operation = {}, len = {:#x}, type = {} "
+                        "is UNSUPPORTED and skipped",
+                        i, entries[i].operation, entries[i].length, (u8)entries[i].type);
             break;
         }
         default: {
