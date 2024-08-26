@@ -32,7 +32,7 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicAnd32:
     case IR::Opcode::BufferAtomicOr32:
     case IR::Opcode::BufferAtomicXor32:
-    case IR::Opcode::BufferAtomicExchange32:
+    case IR::Opcode::BufferAtomicSwap32:
         return true;
     default:
         return false;
@@ -136,6 +136,7 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::ReadConstBufferU32:
     case IR::Opcode::StoreBufferU32:
     case IR::Opcode::BufferAtomicIAdd32:
+    case IR::Opcode::BufferAtomicSwap32:
         return IR::Type::U32;
     default:
         UNREACHABLE();
