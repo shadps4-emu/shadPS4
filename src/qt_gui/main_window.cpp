@@ -7,6 +7,7 @@
 #include "about_dialog.h"
 #include "cheats_patches.h"
 #include "common/io_file.h"
+#include "common/string_util.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
 #include "core/loader.h"
@@ -615,15 +616,24 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         pkg = PKG();
         pkg.Open(file);
         std::string failreason;
-        const auto extract_path =
-            std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
+        auto extract_path = std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         QDir game_dir(QString::fromStdString(extract_path.string()));
         if (game_dir.exists()) {
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
+
+            psf.open("", pkg.sfo);
+
+            std::string content_id = psf.GetString("CONTENT_ID");
+            std::string entitlement_label = Common::SplitString(content_id, '-')[2];
+
+            auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
+                                      pkg.GetTitleID() / entitlement_label;
+            QDir addon_dir(QString::fromStdString(addon_extract_path.string()));
+            auto category = psf.GetString("CATEGORY");
+
             if (pkgType.contains("PATCH")) {
-                psf.open("", pkg.sfo);
                 QString pkg_app_version = QString::fromStdString(psf.GetString("APP_VER"));
                 psf.open(extract_path.string() + "/sce_sys/param.sfo", {});
                 QString game_app_version = QString::fromStdString(psf.GetString("APP_VER"));
@@ -657,6 +667,34 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 } else {
                     return;
                 }
+            } else if (category == "ac") {
+                if (!addon_dir.exists()) {
+                    QMessageBox addonMsgBox;
+                    addonMsgBox.setWindowTitle(tr("DLC Installation"));
+                    addonMsgBox.setText(QString(tr("Would you like to install DLC: %1?"))
+                                            .arg(QString::fromStdString(entitlement_label)));
+
+                    addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    addonMsgBox.setDefaultButton(QMessageBox::No);
+                    int result = addonMsgBox.exec();
+                    if (result == QMessageBox::Yes) {
+                        extract_path = addon_extract_path;
+                    } else {
+                        return;
+                    }
+                } else {
+                    msgBox.setText(
+                        QString("DLC already installed\n%1\nWould you like to overwrite?")
+                            .arg(QString::fromStdString(addon_extract_path.string())));
+                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msgBox.setDefaultButton(QMessageBox::No);
+                    int result = msgBox.exec();
+                    if (result == QMessageBox::Yes) {
+                        extract_path = addon_extract_path;
+                    } else {
+                        return;
+                    }
+                }
             } else {
                 msgBox.setText(
                     QString(tr("Game already installed\n%1\nWould you like to overwrite?"))
@@ -685,45 +723,47 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         } else {
             int nfiles = pkg.GetNumberOfFiles();
 
-            QVector<int> indices;
-            for (int i = 0; i < nfiles; i++) {
-                indices.append(i);
-            }
-
-            QProgressDialog dialog;
-            dialog.setWindowTitle(tr("PKG Extraction"));
-            dialog.setWindowModality(Qt::WindowModal);
-            QString extractmsg = QString(tr("Extracting PKG %1/%2")).arg(pkgNum).arg(nPkg);
-            dialog.setLabelText(extractmsg);
-            dialog.setAutoClose(true);
-            dialog.setRange(0, nfiles);
-
-            QFutureWatcher<void> futureWatcher;
-            connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
-                if (pkgNum == nPkg) {
-                    QString path = QString::fromStdString(Config::getGameInstallDir());
-                    QMessageBox extractMsgBox(this);
-                    extractMsgBox.setWindowTitle(tr("Extraction Finished"));
-                    extractMsgBox.setText(
-                        QString(tr("Game successfully installed at %1")).arg(path));
-                    extractMsgBox.addButton(QMessageBox::Ok);
-                    extractMsgBox.setDefaultButton(QMessageBox::Ok);
-                    connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
-                            [&](QAbstractButton* button) {
-                                if (extractMsgBox.button(QMessageBox::Ok) == button) {
-                                    extractMsgBox.close();
-                                    emit ExtractionFinished();
-                                }
-                            });
-                    extractMsgBox.exec();
+            if (nfiles > 0) {
+                QVector<int> indices;
+                for (int i = 0; i < nfiles; i++) {
+                    indices.append(i);
                 }
-            });
-            connect(&dialog, &QProgressDialog::canceled, [&]() { futureWatcher.cancel(); });
-            connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
-                    &QProgressDialog::setValue);
-            futureWatcher.setFuture(
-                QtConcurrent::map(indices, [&](int index) { pkg.ExtractFiles(index); }));
-            dialog.exec();
+
+                QProgressDialog dialog;
+                dialog.setWindowTitle(tr("PKG Extraction"));
+                dialog.setWindowModality(Qt::WindowModal);
+                QString extractmsg = QString(tr("Extracting PKG %1/%2")).arg(pkgNum).arg(nPkg);
+                dialog.setLabelText(extractmsg);
+                dialog.setAutoClose(true);
+                dialog.setRange(0, nfiles);
+
+                QFutureWatcher<void> futureWatcher;
+                connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
+                    if (pkgNum == nPkg) {
+                        QString path = QString::fromStdString(Config::getGameInstallDir());
+                        QMessageBox extractMsgBox(this);
+                        extractMsgBox.setWindowTitle(tr("Extraction Finished"));
+                        extractMsgBox.setText(
+                            QString(tr("Game successfully installed at %1")).arg(path));
+                        extractMsgBox.addButton(QMessageBox::Ok);
+                        extractMsgBox.setDefaultButton(QMessageBox::Ok);
+                        connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
+                                [&](QAbstractButton* button) {
+                                    if (extractMsgBox.button(QMessageBox::Ok) == button) {
+                                        extractMsgBox.close();
+                                        emit ExtractionFinished();
+                                    }
+                                });
+                        extractMsgBox.exec();
+                    }
+                });
+                connect(&dialog, &QProgressDialog::canceled, [&]() { futureWatcher.cancel(); });
+                connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
+                        &QProgressDialog::setValue);
+                futureWatcher.setFuture(
+                    QtConcurrent::map(indices, [&](int index) { pkg.ExtractFiles(index); }));
+                dialog.exec();
+            }
         }
     } else {
         QMessageBox::critical(this, tr("PKG ERROR"),
