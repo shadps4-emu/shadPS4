@@ -155,6 +155,17 @@ if (APPLE)
     endif()
 endif()
 
+# Dear ImGui
+add_library(Dear_ImGui
+        dear_imgui/imgui.cpp
+        dear_imgui/imgui_demo.cpp
+        dear_imgui/imgui_draw.cpp
+        dear_imgui/imgui_internal.h
+        dear_imgui/imgui_tables.cpp
+        dear_imgui/imgui_widgets.cpp
+)
+target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
+
 # Tracy
 option(TRACY_ENABLE "" ON)
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
