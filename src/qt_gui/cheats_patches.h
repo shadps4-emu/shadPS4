@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
 #ifndef CHEATS_PATCHES_H
 #define CHEATS_PATCHES_H
 
@@ -31,31 +28,34 @@ public:
     CheatsPatches(const QString& gameName, const QString& gameSerial, const QString& gameVersion,
                   const QString& gameSize, const QPixmap& gameImage, QWidget* parent = nullptr);
     ~CheatsPatches();
+    void downloadCheats(const QString& source, const QString& m_gameSerial,
+                        const QString& m_gameVersion, const bool showMessageBox);
+    void downloadPatches();
+
+signals:
+    void downloadFinished();
 
 private:
     // UI Setup and Event Handlers
     void setupUI();
-    void downloadFilesGoldHEN();
-    void processJsonContent(const QByteArray& jsonData);
+    void onSaveButtonClicked();
+    QCheckBox* findCheckBoxByName(const QString& name);
     void onTabChanged(int index);
     void updateNoteTextEdit(const QString& patchName);
 
     // Cheat and Patch Management
     void populateFileListCheats();
     void onFileSelected(const QModelIndex& index);
+    void createFilesJson();
+    void uncheckAllCheatCheckBoxes();
 
     void loadCheats(const QString& filePath);
     void loadPatches(const QString& serial);
 
-    void downloadCheats(const QString& url);
-    void downloadPatches();
-
     void addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray);
     void addPatchToLayout(const QString& name, const QString& author, const QString& note,
-                          const QJsonArray& linesArray, const QString& serial);
+                          const QJsonArray& linesArray, const QString& serial, bool isEnabled);
 
-    void createFilesJson();
-    void uncheckAllCheatCheckBoxes();
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
     QString convertValueToHex(const QString& type, const QString& valueStr);

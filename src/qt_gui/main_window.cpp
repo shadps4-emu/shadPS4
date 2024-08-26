@@ -10,6 +10,7 @@
 #include <QtConcurrent>
 
 #include "about_dialog.h"
+#include "cheats_patches.h"
 #include "common/io_file.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
@@ -311,6 +312,21 @@ void MainWindow::CreateConnects() {
         isTableList = false;
         ui->sizeSlider->setDisabled(true);
         Config::setTableMode(2);
+    });
+
+    // Cheats Management.
+    connect(ui->cheatsManagementAct, &QAction::triggered, this, [this]() {
+        QList<QPair<QString, QString>> gameInfoPairs;
+
+        for (const GameInfo& game : m_game_info->m_games) {
+            QString gameSerial = QString::fromStdString(game.serial);
+            QString gameVersion = QString::fromStdString(game.version);
+            gameInfoPairs.append(qMakePair(gameSerial, gameVersion));
+        }
+
+        CheatsPatchesManagement* manager = new CheatsPatchesManagement(this);
+        manager->setGameInfo(gameInfoPairs);
+        manager->setupCheatsManagementWidget(this);
     });
 
     // Dump game list.

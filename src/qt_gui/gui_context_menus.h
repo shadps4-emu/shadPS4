@@ -44,6 +44,11 @@ public:
             itemID = widget->currentRow() * widget->columnCount() + widget->currentColumn();
         }
 
+        // Do not show the menu if an item is selected
+        if (itemID == -1) {
+            return;
+        }
+
         // Setup menu.
         QMenu menu(widget);
         QAction createShortcut("Create Shortcut", widget);

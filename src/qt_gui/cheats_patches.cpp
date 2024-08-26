@@ -40,18 +40,18 @@ CheatsPatches::CheatsPatches(const QString& gameName, const QString& gameSerial,
     : QWidget(parent), m_gameName(gameName), m_gameSerial(gameSerial), m_gameVersion(gameVersion),
       m_gameSize(gameSize), m_gameImage(gameImage), manager(new QNetworkAccessManager(this)) {
     setupUI();
-    resize(700, 400);
+    resize(700, 350);
     setWindowTitle("Cheats / Patches");
 }
 
 CheatsPatches::~CheatsPatches() {}
 
 QString defaultTextEdit =
-    ("Cheat/Patches are experimental. Use with caution.\n"
-     "Select the repository from which you want to download cheats for this game and version and "
-     "click the button. Since we do not develop Cheat/Patches, if you encounter issues or want to "
-     "suggest new ones, please send your feedback to:\n"
-     "link not available yet   :D");
+    ("Cheat/Patches are experimental. Use with caution.\n\n"
+     "Download the cheats individually by selecting the repository and clicking the download "
+     "button.\nIn the Patch tab you can download all Patches at once, choose which one you want "
+     "to use and save the option.\n\n"
+     "As we do not develop the Cheat/Patches,\nplease report issues related to the cheat author.");
 
 void CheatsPatches::setupUI() {
     QString CHEATS_DIR_QString =
@@ -68,7 +68,7 @@ void CheatsPatches::setupUI() {
 
     QLabel* gameImageLabel = new QLabel();
     if (!m_gameImage.isNull()) {
-        gameImageLabel->setPixmap(m_gameImage.scaled(300, 300, Qt::KeepAspectRatio));
+        gameImageLabel->setPixmap(m_gameImage.scaled(275, 275, Qt::KeepAspectRatio));
     } else {
         gameImageLabel->setText("No Image Available");
     }
@@ -96,7 +96,7 @@ void CheatsPatches::setupUI() {
     instructionsTextEdit = new QTextEdit();
     instructionsTextEdit->setText(defaultTextEdit);
     instructionsTextEdit->setReadOnly(true);
-    instructionsTextEdit->setFixedHeight(130);
+    instructionsTextEdit->setFixedHeight(170);
     gameInfoLayout->addWidget(instructionsTextEdit);
 
     // Create the tab widget
@@ -145,25 +145,20 @@ void CheatsPatches::setupUI() {
     controlLayout->setAlignment(Qt::AlignLeft);
     QComboBox* downloadComboBox = new QComboBox();
 
-    auto urlCheat_wolf2022 = "https://wolf2022.ir/trainer/" + NameCheatJson;
-
-    downloadComboBox->addItem("wolf2022", urlCheat_wolf2022);
+    downloadComboBox->addItem("wolf2022", "wolf2022");
     downloadComboBox->addItem("GoldHEN", "GoldHEN");
+    downloadComboBox->addItem("shadPS4", "shadPS4");
 
     controlLayout->addWidget(downloadComboBox);
 
     QPushButton* downloadButton = new QPushButton("Download Cheats");
     connect(downloadButton, &QPushButton::clicked, [=]() {
-        QString url = downloadComboBox->currentData().toString();
-        if (url == "GoldHEN") {
-            downloadFilesGoldHEN();
-        } else {
-            downloadCheats(url);
-        }
+        QString source = downloadComboBox->currentData().toString();
+        downloadCheats(source, m_gameSerial, m_gameVersion, true);
     });
 
-    QPushButton* removeCheatButton = new QPushButton("Delete File");
-    connect(removeCheatButton, &QPushButton::clicked, [=]() {
+    QPushButton* deleteCheatButton = new QPushButton("Delete File");
+    connect(deleteCheatButton, &QPushButton::clicked, [=]() {
         QStringListModel* model = qobject_cast<QStringListModel*>(listView_selectFile->model());
         if (!model) {
             return;
@@ -196,7 +191,7 @@ void CheatsPatches::setupUI() {
     });
 
     controlLayout->addWidget(downloadButton);
-    controlLayout->addWidget(removeCheatButton);
+    controlLayout->addWidget(deleteCheatButton);
 
     cheatsLayout->addLayout(controlLayout);
     cheatsTab->setLayout(cheatsLayout);
@@ -205,6 +200,7 @@ void CheatsPatches::setupUI() {
     QGroupBox* patchesGroupBox = new QGroupBox();
     patchesGroupBoxLayout = new QVBoxLayout(patchesGroupBox);
     patchesGroupBoxLayout->setAlignment(Qt::AlignTop);
+    patchesGroupBox->setLayout(patchesGroupBoxLayout);
 
     QScrollArea* patchesScrollArea = new QScrollArea();
     patchesScrollArea->setWidgetResizable(true);
@@ -216,8 +212,13 @@ void CheatsPatches::setupUI() {
 
     QPushButton* patchesButton = new QPushButton("Download All Available Patches");
     connect(patchesButton, &QPushButton::clicked, [=]() { downloadPatches(); });
-
     patchesControlLayout->addWidget(patchesButton);
+
+    QPushButton* saveButton = new QPushButton("Save");
+    connect(saveButton, &QPushButton::clicked, this, &CheatsPatches::onSaveButtonClicked);
+
+    patchesControlLayout->addWidget(saveButton);
+
     patchesLayout->addLayout(patchesControlLayout);
     patchesTab->setLayout(patchesLayout);
 
@@ -235,9 +236,167 @@ void CheatsPatches::setupUI() {
     setLayout(mainLayout);
 }
 
-void CheatsPatches::downloadFilesGoldHEN() {
-    QString url =
-        "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
+void CheatsPatches::onSaveButtonClicked() {
+    QString patchDir =
+        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
+
+    QString filesJsonPath = patchDir + "/files.json";
+    QFile jsonFile(filesJsonPath);
+    if (!jsonFile.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(this, "Error", "Unable to open files.json for reading.");
+        return;
+    }
+
+    QByteArray jsonData = jsonFile.readAll();
+    jsonFile.close();
+
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+    QJsonObject jsonObject = jsonDoc.object();
+
+    QString selectedFileName;
+    QString serial = m_gameSerial;
+
+    for (auto it = jsonObject.constBegin(); it != jsonObject.constEnd(); ++it) {
+        QString filePath = it.key();
+        QJsonArray idsArray = it.value().toArray();
+
+        if (idsArray.contains(QJsonValue(serial))) {
+            selectedFileName = filePath;
+            break;
+        }
+    }
+
+    if (selectedFileName.isEmpty()) {
+        QMessageBox::critical(this, "Error", "No patch file found for the current serial.");
+        return;
+    }
+
+    QString filePath = patchDir + "/" + selectedFileName;
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Unable to open the file for reading.");
+        return;
+    }
+
+    QByteArray xmlData = file.readAll();
+    file.close();
+
+    QString newXmlData;
+    QXmlStreamWriter xmlWriter(&newXmlData);
+    xmlWriter.setAutoFormatting(true);
+    xmlWriter.writeStartDocument();
+
+    QXmlStreamReader xmlReader(xmlData);
+    bool insideMetadata = false;
+
+    while (!xmlReader.atEnd()) {
+        xmlReader.readNext();
+
+        if (xmlReader.isStartElement()) {
+            if (xmlReader.name() == QStringLiteral("Metadata")) {
+                insideMetadata = true;
+                xmlWriter.writeStartElement(xmlReader.name().toString());
+
+                QString name = xmlReader.attributes().value("Name").toString();
+                bool isEnabled = false;
+                bool hasIsEnabled = false;
+
+                // Check and update the isEnabled attribute
+                for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
+                    if (attr.name() == QStringLiteral("isEnabled")) {
+                        hasIsEnabled = true;
+                        auto it = m_patchInfos.find(name);
+                        if (it != m_patchInfos.end()) {
+                            QCheckBox* checkBox = findCheckBoxByName(it->name);
+                            if (checkBox) {
+                                isEnabled = checkBox->isChecked();
+                                xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
+                            }
+                        }
+                    } else {
+                        xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
+                    }
+                }
+
+                if (!hasIsEnabled) {
+                    auto it = m_patchInfos.find(name);
+                    if (it != m_patchInfos.end()) {
+                        QCheckBox* checkBox = findCheckBoxByName(it->name);
+                        if (checkBox) {
+                            isEnabled = checkBox->isChecked();
+                        }
+                    }
+                    xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
+                }
+            } else {
+                xmlWriter.writeStartElement(xmlReader.name().toString());
+                for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
+                    xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
+                }
+            }
+        } else if (xmlReader.isEndElement()) {
+            if (xmlReader.name() == QStringLiteral("Metadata")) {
+                insideMetadata = false;
+            }
+            xmlWriter.writeEndElement();
+        } else if (xmlReader.isCharacters() && !xmlReader.isWhitespace()) {
+            xmlWriter.writeCharacters(xmlReader.text().toString());
+        }
+    }
+
+    xmlWriter.writeEndDocument();
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Unable to open the file for writing.");
+        return;
+    }
+
+    QTextStream textStream(&file);
+    textStream << newXmlData;
+    file.close();
+
+    if (xmlReader.hasError()) {
+        QMessageBox::critical(this, "Error", "Failed to parse XML: " + xmlReader.errorString());
+    } else {
+        QMessageBox::information(this, "Success", "Options saved successfully.");
+    }
+}
+
+QCheckBox* CheatsPatches::findCheckBoxByName(const QString& name) {
+    for (int i = 0; i < patchesGroupBoxLayout->count(); ++i) {
+        QLayoutItem* item = patchesGroupBoxLayout->itemAt(i);
+        if (item) {
+            QWidget* widget = item->widget();
+            QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget);
+            if (checkBox) {
+                if (checkBox->text() == name) {
+                    return checkBox;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+void CheatsPatches::downloadCheats(const QString& source, const QString& m_gameSerial,
+                                   const QString& m_gameVersion, const bool showMessageBox) {
+    QDir dir(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+
+    QString url;
+    if (source == "GoldHEN") {
+        url = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
+    } else if (source == "wolf2022") {
+        url = "https://wolf2022.ir/trainer/" + m_gameSerial + "_" + m_gameVersion + ".json";
+    } else if (source == "shadPS4") {
+        url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/"
+              "CHEATS_JSON.txt";
+    } else {
+        QMessageBox::warning(this, "Invalid Source", "The selected source is invalid.");
+        return;
+    }
 
     QNetworkRequest request(url);
     QNetworkReply* reply = manager->get(request);
@@ -245,154 +404,152 @@ void CheatsPatches::downloadFilesGoldHEN() {
     connect(reply, &QNetworkReply::finished, [=]() {
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray jsonData = reply->readAll();
-            processJsonContent(jsonData);
-        } else {
-            QMessageBox::warning(
-                this, "Download Error",
-                QString("Unable to query the json.txt file from the GoldHEN repository.\nError: %1")
-                    .arg(reply->errorString()));
-        }
-        reply->deleteLater();
-    });
+            bool foundFiles = false;
 
-    connect(reply, &QNetworkReply::errorOccurred, [=](QNetworkReply::NetworkError code) {
-        QMessageBox::warning(this, "Download Error",
-                             QString("Error in response: %1").arg(reply->errorString()));
-    });
-}
+            if (source == "GoldHEN" || source == "shadPS4") {
+                QString textContent(jsonData);
+                QRegularExpression regex(
+                    QString("%1_%2[^=]*\.json").arg(m_gameSerial).arg(m_gameVersion));
+                QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
+                QString baseUrl;
 
-void CheatsPatches::processJsonContent(const QByteArray& jsonData) {
-    bool foundFiles = false;
-    QString textContent(jsonData);
-    QRegularExpression regex(QString("%1_%2[^=]*\.json").arg(m_gameSerial).arg(m_gameVersion));
-    QRegularExpressionMatchIterator matches = regex.globalMatch(textContent);
-    QString baseUrl =
-        "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json/";
+                if (source == "GoldHEN") {
+                    baseUrl = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/"
+                              "main/json/";
+                } else {
+                    baseUrl = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/"
+                              "main/CHEATS/";
+                }
 
-    QDir dir(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
+                while (matches.hasNext()) {
+                    QRegularExpressionMatch match = matches.next();
+                    QString fileName = match.captured(0);
 
-    while (matches.hasNext()) {
-        QRegularExpressionMatch match = matches.next();
-        QString fileName = match.captured(0);
+                    if (!fileName.isEmpty()) {
+                        QString newFileName = fileName;
+                        int dotIndex = newFileName.lastIndexOf('.');
+                        if (dotIndex != -1) {
 
-        if (!fileName.isEmpty()) {
-            QString newFileName = fileName;
-            int dotIndex = newFileName.lastIndexOf('.');
-            if (dotIndex != -1) {
-                newFileName.insert(dotIndex, "_GoldHEN");
+                            if (source == "GoldHEN") {
+                                newFileName.insert(dotIndex, "_GoldHEN");
+                            } else {
+                                newFileName.insert(dotIndex, "_shadPS4");
+                            }
+                        }
+                        QString fileUrl = baseUrl + fileName;
+                        QString localFilePath = dir.filePath(newFileName);
+
+                        if (QFile::exists(localFilePath) && showMessageBox) {
+                            QMessageBox::StandardButton reply;
+                            reply = QMessageBox::question(
+                                this, "File Exists",
+                                "File already exists. Do you want to replace it?",
+                                QMessageBox::Yes | QMessageBox::No);
+                            if (reply == QMessageBox::No) {
+                                continue;
+                            }
+                        }
+                        QNetworkRequest fileRequest(fileUrl);
+                        QNetworkReply* fileReply = manager->get(fileRequest);
+
+                        connect(fileReply, &QNetworkReply::finished, [=]() {
+                            if (fileReply->error() == QNetworkReply::NoError) {
+                                QByteArray fileData = fileReply->readAll();
+                                QFile localFile(localFilePath);
+                                if (localFile.open(QIODevice::WriteOnly)) {
+                                    localFile.write(fileData);
+                                    localFile.close();
+                                } else {
+                                    QMessageBox::warning(
+                                        this, "Error Saving",
+                                        QString("Failed to save file: \n %1").arg(localFilePath));
+                                }
+                            } else {
+                                QMessageBox::warning(
+                                    this, "Failed to Download",
+                                    QString("Failed to download file: %1\n\nError: %2")
+                                        .arg(fileUrl)
+                                        .arg(fileReply->errorString()));
+                            }
+                            fileReply->deleteLater();
+                        });
+
+                        foundFiles = true;
+                    }
+                }
+                if (!foundFiles && showMessageBox) {
+                    QMessageBox::warning(
+                        this, "Cheats Not Found1",
+                        "No Cheats found for this game in this version of the selected "
+                        "repository,\n"
+                        "try another repository or a different version of the game.");
+                }
+            } else if (source == "wolf2022") {
+                QString fileName = QFileInfo(QUrl(url).path()).fileName();
+                QString baseFileName = fileName;
+                int dotIndex = baseFileName.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    baseFileName.insert(dotIndex, "_wolf2022");
+                }
+                QString filePath =
+                    QString::fromStdString(
+                        Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string()) +
+                    "/" + baseFileName;
+                if (QFile::exists(filePath) && showMessageBox) {
+                    QMessageBox::StandardButton reply2;
+                    reply2 = QMessageBox::question(
+                        this, "File Exists", "File already exists. Do you want to replace it?",
+                        QMessageBox::Yes | QMessageBox::No);
+                    if (reply2 == QMessageBox::No) {
+                        reply->deleteLater();
+                        return;
+                    }
+                }
+                QFile cheatFile(filePath);
+                if (cheatFile.open(QIODevice::WriteOnly)) {
+                    cheatFile.write(jsonData);
+                    cheatFile.close();
+                    foundFiles = true;
+                    populateFileListCheats();
+                } else {
+                    QMessageBox::warning(this, "Error Saving",
+                                         QString("Failed to save file:\n %1").arg(filePath));
+                }
+            }
+            if (foundFiles && showMessageBox) {
+                QMessageBox::information(
+                    this, "Cheats Downloaded Successfully",
+                    "You have successfully downloaded the cheats\n"
+                    "for this version of the game from the selected repository.\n\n"
+                    "You can try downloading from another repository, if it is available "
+                    "it will also be possible to use it by selecting the file from the list.");
+                populateFileListCheats();
             }
 
-            QString fileUrl = baseUrl + fileName;
-            QString localFilePath = dir.filePath(newFileName);
-            QNetworkRequest fileRequest(fileUrl);
-            QNetworkReply* fileReply = manager->get(fileRequest);
-
-            connect(fileReply, &QNetworkReply::finished, [=]() {
-                if (fileReply->error() == QNetworkReply::NoError) {
-                    QByteArray fileData = fileReply->readAll();
-                    QFile localFile(localFilePath);
-                    if (localFile.open(QIODevice::WriteOnly)) {
-                        localFile.write(fileData);
-                        localFile.close();
-                    } else {
-                        QMessageBox::warning(
-                            this, "Error Saving",
-                            QString("Failed to save file:\n %1").arg(localFilePath));
-                    }
-                } else {
-                    QMessageBox::warning(this, "Failed to Download",
-                                         QString("Failed to download file: %1\n\nError: %2")
-                                             .arg(fileUrl)
-                                             .arg(fileReply->errorString()));
-                }
-                fileReply->deleteLater();
-            });
-
-            // Marks that at least one file was found
-            foundFiles = true;
+        } else {
+            if (showMessageBox) {
+                QMessageBox::warning(
+                    this, "Cheats Not Found",
+                    "No Cheats found for this game in this version of the selected "
+                    "repository,\n"
+                    "try another repository or a different version of the game.");
+            }
         }
-    }
+        reply->deleteLater();
+        emit downloadFinished();
+    });
 
-    if (!foundFiles) {
-        QMessageBox::warning(
-            this, "Cheats Not Found",
-            "No Cheats found for this game in this version of the selected repository,\n"
-            "try another repository or a different version of the game.");
-    } else {
-
-        QMessageBox::information(
-            this, "Cheats Downloaded Successfully",
-            "You have successfully downloaded the cheats\n"
-            "for this version of the game from the 'GoldHEN' repository.\n\n"
-            "You can try downloading from another repository, if it is available it will also "
-            "be possible to use it by selecting the file from the list.");
-        ;
-        populateFileListCheats();
-    }
+    // connect(reply, &QNetworkReply::errorOccurred, [=](QNetworkReply::NetworkError code) {
+    //     if (showMessageBox)
+    //         QMessageBox::warning(this, "Download Error",
+    //                              QString("Error in response: %1").arg(reply->errorString()));
+    // });
 }
 
 void CheatsPatches::onTabChanged(int index) {
     if (index == 1) {
         loadPatches(m_gameSerial);
     }
-}
-
-void CheatsPatches::downloadCheats(const QString& url) {
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(url);
-    QNetworkReply* reply = manager->get(request);
-
-    connect(reply, &QNetworkReply::finished, [=]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            QByteArray jsonData = reply->readAll();
-            QString fileName = QFileInfo(QUrl(url).path()).fileName();
-            QString baseFileName = fileName;
-            int dotIndex = baseFileName.lastIndexOf('.');
-            if (dotIndex != -1) {
-                baseFileName.insert(dotIndex, "_wolf2022");
-            }
-
-            QString filePath =
-                QString::fromStdString(
-                    Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string()) +
-                "/" + baseFileName;
-
-            if (QFile::exists(filePath)) {
-                QMessageBox::StandardButton reply;
-                reply = QMessageBox::question(this, "File Exists",
-                                              "File already exists. Do you want to replace it?",
-                                              QMessageBox::Yes | QMessageBox::No);
-                if (reply == QMessageBox::No) {
-                    return;
-                }
-            }
-
-            QFile cheatFile(filePath);
-            if (cheatFile.open(QIODevice::WriteOnly)) {
-                cheatFile.write(jsonData);
-                cheatFile.close();
-                populateFileListCheats();
-            } else {
-                QMessageBox::warning(this, "Error saving",
-                                     QString("Failed to save file:\n %1").arg(filePath));
-            }
-            QMessageBox::information(
-                this, "Cheats Downloaded Successfully",
-                "You have successfully downloaded the cheats\n"
-                "for this version of the game from the 'wolf2022' repository.\n\n"
-                "You can try downloading from another repository, if it is available it will also "
-                "be possible to use it by selecting the file from the list.");
-        } else {
-            QMessageBox::warning(
-                this, "Cheats Not Found",
-                "No Cheats found for this game in this version of the selected repository,\n"
-                "try another repository or a different version of the game.");
-        }
-        reply->deleteLater();
-    });
 }
 
 void CheatsPatches::downloadPatches() {
@@ -482,7 +639,6 @@ void CheatsPatches::downloadPatches() {
 }
 
 void CheatsPatches::createFilesJson() {
-    // Directory where XML files are located
     QString patchesDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
     QDir dir(patchesDir);
@@ -680,7 +836,6 @@ void CheatsPatches::onFileSelected(const QModelIndex& index) {
 }
 
 void CheatsPatches::loadCheats(const QString& filePath) {
-
     QFile file(filePath);
     if (file.open(QIODevice::ReadOnly)) {
         QByteArray jsonData = file.readAll();
@@ -691,8 +846,8 @@ void CheatsPatches::loadCheats(const QString& filePath) {
         addCheatsToLayout(modsArray, creditsArray);
     }
 }
-void CheatsPatches::loadPatches(const QString& serial) {
 
+void CheatsPatches::loadPatches(const QString& serial) {
     QLayoutItem* item;
     while ((item = patchesGroupBoxLayout->takeAt(0)) != nullptr) {
         delete item->widget();
@@ -733,6 +888,7 @@ void CheatsPatches::loadPatches(const QString& serial) {
             QString patchAuthor;
             QString patchNote;
             QJsonArray patchLines;
+            bool isEnabled = false;
 
             while (!xmlReader.atEnd() && !xmlReader.hasError()) {
                 xmlReader.readNext();
@@ -745,11 +901,15 @@ void CheatsPatches::loadPatches(const QString& serial) {
                             patchName = attributes.value("Name").toString();
                             patchAuthor = attributes.value("Author").toString();
                             patchNote = attributes.value("Note").toString();
+                            isEnabled = isEnabled =
+                                attributes.value("isEnabled").toString() == QStringLiteral("true");
                         }
                         if (appVer == "mask") {
-                            patchName = attributes.value("Name").toString();
+                            patchName = attributes.value("Name").toString() + " (any version)";
                             patchAuthor = attributes.value("Author").toString();
                             patchNote = attributes.value("Note").toString();
+                            isEnabled = isEnabled =
+                                attributes.value("isEnabled").toString() == QStringLiteral("true");
                         }
                     } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                         QJsonArray linesArray;
@@ -772,7 +932,8 @@ void CheatsPatches::loadPatches(const QString& serial) {
                 }
 
                 if (!patchName.isEmpty() && !patchLines.isEmpty()) {
-                    addPatchToLayout(patchName, patchAuthor, patchNote, patchLines, serial);
+                    addPatchToLayout(patchName, patchAuthor, patchNote, patchLines, serial,
+                                     isEnabled);
                     patchName.clear();
                     patchAuthor.clear();
                     patchNote.clear();
@@ -786,10 +947,12 @@ void CheatsPatches::loadPatches(const QString& serial) {
 
 void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
                                      const QString& note, const QJsonArray& linesArray,
-                                     const QString& serial) {
-
+                                     const QString& serial, bool isEnabled) {
     QCheckBox* patchCheckBox = new QCheckBox(name);
+    patchCheckBox->setChecked(
+        isEnabled); // Configura o estado do checkbox com base no valor isEnabled
     patchesGroupBoxLayout->addWidget(patchCheckBox);
+
     PatchInfo patchInfo;
     patchInfo.name = name;
     patchInfo.author = author;
@@ -798,7 +961,6 @@ void CheatsPatches::addPatchToLayout(const QString& name, const QString& author,
     patchInfo.serial = serial;
     m_patchInfos[name] = patchInfo;
 
-    // Hook checkbox hover events
     patchCheckBox->installEventFilter(this);
 
     connect(patchCheckBox, &QCheckBox::toggled, [=](bool checked) { applyPatch(name, checked); });
@@ -850,9 +1012,6 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         std::string offsetStr = memoryMod.offset.toStdString();
         std::string valueStr = value.toStdString();
 
-        // Determine if the hint field is present
-        bool isHintPresent = m_cheats[modName].hasHint;
-
         if (MemoryPatcher::g_eboot_address == 0) {
             MemoryPatcher::patchInfo addingPatch;
             addingPatch.modNameStr = modNameStr;
@@ -864,8 +1023,9 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
             continue;
         }
 
-        bool isOffset = !isHintPresent;
-        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, isOffset, false);
+        // Determine if the hint field is present
+        bool isHintPresent = m_cheats[modName].hasHint;
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, !isHintPresent, false);
     }
 }
 

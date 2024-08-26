@@ -11,6 +11,7 @@
 #include <QScopedPointer>
 #include <fmt/core.h>
 
+#include "cheats_patches_management.h"
 #include "common/config.h"
 #include "common/path_util.h"
 #include "core/file_format/psf.h"
@@ -88,6 +89,8 @@ private:
     PSF psf;
 
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
+    // Cheats/Patches Management.
+    QVBoxLayout* patchesRightLayout;
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event1) override {

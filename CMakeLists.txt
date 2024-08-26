@@ -548,6 +548,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.ui
            src/qt_gui/cheats_patches.cpp
            src/qt_gui/cheats_patches.h
+           src/qt_gui/cheats_patches_management.cpp
+           src/qt_gui/cheats_patches_management.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
