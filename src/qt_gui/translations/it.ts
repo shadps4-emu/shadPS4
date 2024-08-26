@@ -42,7 +42,7 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancella</translation>
+            <translation>Annulla</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
