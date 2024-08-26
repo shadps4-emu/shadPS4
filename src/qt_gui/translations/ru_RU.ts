@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>О shadPS4</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+            <translation>shadPS4 это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>This software should not be used to play games you have not legally obtained.</translation>
+            <translation>Это програмное обеспечение не должно использоваться для запуска игр, которые вы получили нелегально.</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Открыть папку</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Loading game list, please wait :3</translation>
+            <translation>Загрузка списка игр, пожалуйста подождите :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancel</translation>
+            <translation>Отмена</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>Loading...</translation>
+            <translation>Загрузка...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - Choose directory</translation>
+            <translation>shadPS4 - Выберите папку</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Directory to install games</translation>
+            <translation>Папка для установки игр</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>Browse</translation>
+            <translation>Обзор</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Ошибка</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>The value for location to install games is not valid.</translation>
+            <translation>Недопустимое значение местоположения для установки игр.</translation>
         </message>
     </context>
     <context>
@@ -83,67 +83,67 @@
         <message>
             <location filename="../gui_context_menus.h" line="39"/>
             <source>Create Shortcut</source>
-            <translation>Create Shortcut</translation>
+            <translation>Создать ярлык</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="40"/>
             <source>Open Game Folder</source>
-            <translation>Open Game Folder</translation>
+            <translation>Открыть папку с игрой</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
-            <translation>SFO Viewer</translation>
+            <translation>Просмотр SFO</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="42"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Просмотр трофеев</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Copy info</source>
-            <translation>Copy info</translation>
+            <translation>Копировать информацию</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="51"/>
             <source>Copy Name</source>
-            <translation>Copy Name</translation>
+            <translation>Копировать имя</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="52"/>
             <source>Copy Serial</source>
-            <translation>Copy Serial</translation>
+            <translation>Копировать серийный номер</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="53"/>
             <source>Copy All</source>
-            <translation>Copy All</translation>
+            <translation>Копировать все</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="173"/>
             <source>Shortcut creation</source>
-            <translation>Shortcut creation</translation>
+            <translation>Создание ярлыка</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="174"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Shortcut created successfully!\n %1</translation>
+            <translation>Ярлык создан успешно!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="177"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Ошибка</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="178"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Error creating shortcut!\n %1</translation>
+            <translation>Ошибка создания ярлыка!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="253"/>
             <source>Install PKG</source>
-            <translation>Install PKG</translation>
+            <translation>Установить PKG</translation>
         </message>
     </context>
     <context>
@@ -151,187 +151,187 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Open/Add Elf Folder</translation>
+            <translation>Открыть/Добавить папку Elf</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>Install Packages (PKG)</translation>
+            <translation>Установить пакеты (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>Boot Game</translation>
+            <translation>Запустить игру</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>О shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Configure...</translation>
+            <translation>Настроить...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Install application from a .pkg file</translation>
+            <translation>Установить приложение из файла .pkg</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Recent Games</translation>
+            <translation>Недавние игры</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>Exit</translation>
+            <translation>Выход</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>Exit shadPS4</translation>
+            <translation>Выйти из shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Exit the application.</translation>
+            <translation>Выйти из приложения.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>Show Game List</translation>
+            <translation>Показать список игр</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>Game List Refresh</translation>
+            <translation>Обновить список игр</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>Tiny</translation>
+            <translation>Крошечный</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>Small</translation>
+            <translation>Маленький</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>Medium</translation>
+            <translation>Средний</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>Large</translation>
+            <translation>Большой</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>List View</translation>
+            <translation>Список</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>Grid View</translation>
+            <translation>Сетка</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elf Viewer</translation>
+            <translation>Elf</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>Game Install Directory</translation>
+            <translation>Каталог установки игры</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Dump Game List</translation>
+            <translation>Дамп списка игр</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKG Viewer</translation>
+            <translation>Просмотр PKG</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>Search...</translation>
+            <translation>Поиск...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>File</translation>
+            <translation>Файл</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>View</translation>
+            <translation>Вид</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>Game List Icons</translation>
+            <translation>Размер иконок списка игр</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Game List Mode</translation>
+            <translation>Вид списка игр</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Настройки</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utils</translation>
+            <translation>Утилиты</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>Themes</translation>
+            <translation>Темы</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>About</translation>
+            <translation>Справка</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>Dark</translation>
+            <translation>Темная</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>Light</translation>
+            <translation>Светлая</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
             <source>Green</source>
-            <translation>Green</translation>
+            <translation>Зеленая</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="362"/>
             <source>Blue</source>
-            <translation>Blue</translation>
+            <translation>Синяя</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="363"/>
             <source>Violet</source>
-            <translation>Violet</translation>
+            <translation>Фиолетовая</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>toolBar</translation>
+            <translation>Панель инструментов</translation>
         </message>
     </context>
     <context>
@@ -339,7 +339,7 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Открыть папку</translation>
         </message>
     </context>
     <context>
@@ -347,7 +347,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Трофеи</translation>
         </message>
     </context>
     <context>
@@ -355,137 +355,137 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Настройки</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>General</translation>
+            <translation>Общее</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>System</translation>
+            <translation>Система</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>Console Language</translation>
+            <translation>Язык консоли</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Emulator Language</translation>
+            <translation>Язык эмулятора</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
             <source>Emulator</source>
-            <translation>Emulator</translation>
+            <translation>Эмулятор</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>Enable Fullscreen</translation>
+            <translation>Включить полноэкранный режим</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Show Splash</translation>
+            <translation>Показать заставку</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Is PS4 Pro</translation>
+            <translation>Режим PS4 Pro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Username</translation>
+            <translation>Имя пользователя</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
             <source>Logger</source>
-            <translation>Logger</translation>
+            <translation>Логирование</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>Log Type</translation>
+            <translation>Тип логов</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Log Filter</translation>
+            <translation>Фильтр логов</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>Graphics</translation>
+            <translation>Графика</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>Graphics Device</translation>
+            <translation>Графическое устройство</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>Width</translation>
+            <translation>Ширина</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>Height</translation>
+            <translation>Высота</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
             <source>Vblank Divider</source>
-            <translation>Vblank Divider</translation>
+            <translation>Разделитель Vblank</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>Advanced</translation>
+            <translation>Продвинутые</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Enable Shaders Dumping</translation>
+            <translation>Включить дамп шейдеров</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>Enable NULL GPU</translation>
+            <translation>Включить NULL GPU</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Enable PM4 Dumping</translation>
+            <translation>Включить дамп PM4</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
             <source>Debug</source>
-            <translation>Debug</translation>
+            <translation>Отладка</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Enable Debug Dumping</translation>
+            <translation>Включить отладочные дампы</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Enable Vulkan Validation Layers</translation>
+            <translation>Включить слои валидации Vulkan</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Enable Vulkan Synchronization Validation</translation>
+            <translation>Включить валидацию синхронизации Vulkan</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>Enable RenderDoc Debugging</translation>
+            <translation>Включить отладку RenderDoc</translation>
         </message>
     </context>
 </TS>
