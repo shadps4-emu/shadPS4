@@ -273,6 +273,15 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     case SDLK_SPACE:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
         break;
+    case SDLK_F11:
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            {
+                SDL_WindowFlags flag = SDL_GetWindowFlags(window);
+                bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
+                SDL_SetWindowFullscreen(window, !is_fullscreen);
+            }
+        }
+        break;
     default:
         break;
     }
