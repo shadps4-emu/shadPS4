@@ -16,7 +16,7 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 est un émulateur expérimental de la PlayStation 4.</translation>
+            <translation>shadPS4 est un émulateur open-source expérimental de la PlayStation 4.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
@@ -37,7 +37,7 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Chargement de la liste de jeu, veuillez attendre...</translation>
+            <translation>Chargement de la liste de jeu, veuillez patienter...</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
@@ -60,7 +60,7 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Répertoire pour installer les jeux</translation>
+            <translation>Répertoire d&apos;installation des jeux</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
@@ -93,12 +93,12 @@
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
-            <translation>Visionneur SFO</translation>
+            <translation>Visionneuse SFO</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="42"/>
             <source>Trophy Viewer</source>
-            <translation>Visionneur de trophés</translation>
+            <translation>Visionneuse de trophées</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
@@ -151,7 +151,7 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Ouvrir/Ajouter un dossier Elf</translation>
+            <translation>Ouvrir/Ajouter un dossier ELF</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
@@ -241,7 +241,7 @@
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Visionneur Elf</translation>
+            <translation>Visionneuse ELF</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>Visionneur PKG</translation>
+            <translation>Visionneuse PKG</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
@@ -276,12 +276,12 @@
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>Icones des jeux</translation>
+            <translation>Icônes des jeux</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Mode liste</translation>
+            <translation>Mode d&apos;affichage</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
@@ -347,7 +347,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>Visionneur de trophés</translation>
+            <translation>Visionneuse de trophées</translation>
         </message>
     </context>
     <context>
