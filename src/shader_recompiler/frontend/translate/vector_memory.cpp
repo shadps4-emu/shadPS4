@@ -94,6 +94,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
     case Opcode::TBUFFER_STORE_FORMAT_X:
         return BUFFER_STORE_FORMAT(1, true, true, inst);
+    case Opcode::TBUFFER_STORE_FORMAT_XY:
+        return BUFFER_STORE_FORMAT(2, true, true, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZ:
         return BUFFER_STORE_FORMAT(3, true, true, inst);
 
