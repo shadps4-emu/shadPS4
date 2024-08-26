@@ -254,46 +254,54 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
 
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
                                     int* numEntriesOut, int flags) {
+    int result = ORBIS_OK;
     int processed = 0;
-    int result = 0;
-    for (int i = 0; i < numEntries; i++) {
+    for (int i = 0; i < numEntries; i++, processed++) {
         if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
             result = ORBIS_KERNEL_ERROR_EINVAL;
             break; // break and assign a value to numEntriesOut.
         }
 
-        if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT) {
+        switch (entries[i].operation) {
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT: {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
                                                    static_cast<s64>(entries[i].offset), 0, "");
-            LOG_INFO(
-                Kernel_Vmm,
-                "BatchMap: entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
-                "result = {}",
-                i, entries[i].operation, entries[i].length, entries[i].offset, (u8)entries[i].type,
-                result);
-
-            if (result == 0)
-                processed++;
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP) {
+            LOG_INFO(Kernel_Vmm,
+                     "entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
+                     "result = {}",
+                     i, entries[i].operation, entries[i].length, entries[i].offset,
+                     (u8)entries[i].type, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP: {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
-
-            if (result == 0)
-                processed++;
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
             LOG_INFO(Kernel_Vmm,
-                     "BatchMap: entry = {}, operation = {}, len = {:#x}, type = {}, "
+                     "entry = {}, operation = {}, len = {:#x}, type = {}, "
                      "result = {}",
                      i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
+            // By now, ignore protection and log it instead
+            LOG_WARNING(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, type = {} "
+                                    "is UNSUPPORTED and skipped");
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
 
-            if (result == 0)
-                processed++;
-        } else {
-            UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
+        if (result != ORBIS_OK) {
+            break;
         }
     }
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.
