@@ -328,6 +328,11 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     PAddr paddr{};
     size_t max_size{};
     while (dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end) {
+        if (!dmem_area->second.is_free) {
+            dmem_area++;
+            continue;
+        }
+
         if (dmem_area->second.size > max_size) {
             paddr = dmem_area->second.base;
             max_size = dmem_area->second.size;
