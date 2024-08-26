@@ -17,6 +17,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_SAMPLE_C_O:
     case Opcode::IMAGE_SAMPLE_B:
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
+    case Opcode::IMAGE_SAMPLE_D:
         return IMAGE_SAMPLE(inst);
     case Opcode::IMAGE_GATHER4_C:
     case Opcode::IMAGE_GATHER4_LZ:
@@ -93,6 +94,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
     case Opcode::TBUFFER_STORE_FORMAT_X:
         return BUFFER_STORE_FORMAT(1, true, true, inst);
+    case Opcode::TBUFFER_STORE_FORMAT_XY:
+        return BUFFER_STORE_FORMAT(2, true, true, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZ:
         return BUFFER_STORE_FORMAT(3, true, true, inst);
 
@@ -108,6 +111,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         // Buffer atomic operations
     case Opcode::BUFFER_ATOMIC_ADD:
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
+    case Opcode::BUFFER_ATOMIC_SWAP:
+        return BUFFER_ATOMIC(AtomicOp::Swap, inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -162,12 +167,15 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
         flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
     const IR::F32 dref =
         flags.test(MimgModifier::Pcf) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-
-    // Derivatives are tricky because their number depends on the texture type which is located in
-    // T#. We don't have access to T# though until resource tracking pass. For now assume no
-    // derivatives are present, otherwise we don't know where coordinates are placed in the address
-    // stream.
-    ASSERT_MSG(!flags.test(MimgModifier::Derivative), "Derivative image instruction");
+    const IR::Value derivatives = [&] -> IR::Value {
+        if (!flags.test(MimgModifier::Derivative)) {
+            return {};
+        }
+        addr_reg = addr_reg + 4;
+        return ir.CompositeConstruct(
+            ir.GetVectorReg<IR::F32>(addr_reg - 4), ir.GetVectorReg<IR::F32>(addr_reg - 3),
+            ir.GetVectorReg<IR::F32>(addr_reg - 2), ir.GetVectorReg<IR::F32>(addr_reg - 1));
+    }();
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     // Since these are at most 4 dwords, we load them into a single uvec4 and place them
@@ -177,6 +185,10 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
         ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
         ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
 
+    // Derivatives are tricky because their number depends on the texture type which is located in
+    // T#. We don't have access to T# though until resource tracking pass. For now assume if
+    // derivatives are present, that a 2D image is bound.
+    const bool has_derivatives = flags.test(MimgModifier::Derivative);
     const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
 
     IR::TextureInstInfo info{};
@@ -186,9 +198,13 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     info.force_level0.Assign(flags.test(MimgModifier::Level0));
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     info.explicit_lod.Assign(explicit_lod);
+    info.has_derivatives.Assign(has_derivatives);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
+        if (has_derivatives) {
+            return ir.ImageGradient(handle, body, derivatives, offset, {}, info);
+        }
         if (!flags.test(MimgModifier::Pcf)) {
             if (explicit_lod) {
                 return ir.ImageSampleExplicitLod(handle, body, offset, info);
@@ -462,7 +478,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::Value original_val = [&] {
         switch (op) {
         case AtomicOp::Swap:
-            return ir.BufferAtomicExchange(handle, address, vdata_val, info);
+            return ir.BufferAtomicSwap(handle, address, vdata_val, info);
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, info);
         case AtomicOp::Smin:

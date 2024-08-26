@@ -328,6 +328,11 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     PAddr paddr{};
     size_t max_size{};
     while (dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end) {
+        if (!dmem_area->second.is_free) {
+            dmem_area++;
+            continue;
+        }
+
         if (dmem_area->second.size > max_size) {
             paddr = dmem_area->second.base;
             max_size = dmem_area->second.size;
@@ -344,7 +349,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
     auto it = FindVMA(virtual_addr);
 
     ASSERT_MSG(it->second.Contains(virtual_addr, size),
-               "Range provided is not fully containted in vma");
+               "Range provided is not fully contained in vma");
     it->second.name = name;
 }
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {

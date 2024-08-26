@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include <QFuture>
-#include <QObject>
-#include <QPixmap>
-#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 #include "common/config.h"
 #include "core/file_format/psf.h"

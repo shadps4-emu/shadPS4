@@ -10,11 +10,9 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QMainWindow>
-#include <QStyleOptionViewItem>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
-#include <QWidget>
 #include <QXmlStreamReader>
 
 #include "common/types.h"

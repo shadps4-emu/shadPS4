@@ -52,13 +52,17 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering();
     UpdateDynamicState(*pipeline);
 
+    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
+
     if (is_indexed) {
-        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
+        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
+                           instance_offset);
     } else {
         const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
                                      ? 4
                                      : regs.num_indices;
-        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
+        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
+                    instance_offset);
     }
 }
 
@@ -134,8 +138,8 @@ void Rasterizer::BeginRendering() {
     using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
     if (regs.depth_buffer.Address() != 0 &&
         ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
-         regs.depth_control.stencil_enable &&
-             regs.depth_buffer.stencil_info.format != StencilFormat::Invalid)) {
+         (regs.depth_control.stencil_enable &&
+          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
@@ -239,7 +243,7 @@ void Rasterizer::UpdateDepthStencilState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -250,7 +254,7 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
 }
 
 void Rasterizer::ScopeMarkerEnd() {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -259,7 +263,7 @@ void Rasterizer::ScopeMarkerEnd() {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -270,7 +274,7 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
 }
 
 void Rasterizer::Breadcrumb(u64 id) {
-    if (!instance.HasNvCheckpoints()) {
+    if (Config::nullGpu() || !instance.HasNvCheckpoints()) {
         return;
     }
     scheduler.CommandBuffer().setCheckpointNV(id);

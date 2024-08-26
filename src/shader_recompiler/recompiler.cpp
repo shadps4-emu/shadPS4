@@ -56,11 +56,11 @@ IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
-    Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     if (program.info.stage != Stage::Compute) {
         Shader::Optimization::LowerSharedMemToRegisters(program);
     }
+    Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/image.h"
@@ -58,6 +59,9 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
     if (format == vk::Format::eR8G8B8A8Unorm && dst_sel == 0b111100101110) {
         return vk::Format::eB8G8R8A8Unorm;
     }
+    if (format == vk::Format::eR8G8B8A8Srgb && dst_sel == 0b111100101110) {
+        return vk::Format::eB8G8R8A8Srgb;
+    }
     return format;
 }
 
@@ -110,7 +114,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
                      ImageId image_id_, std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
-    : info{info_}, image_id{image_id_} {
+    : image_id{image_id_}, info{info_} {
     vk::ImageViewUsageCreateInfo usage_ci{};
     if (usage_override) {
         usage_ci.usage = usage_override.value();

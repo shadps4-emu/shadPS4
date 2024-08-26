@@ -45,6 +45,7 @@ u32 m_window_size_H = 720;
 std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
+std::string emulator_language = "en";
 // Settings
 u32 m_language = 1; // english
 
@@ -214,10 +215,10 @@ void setIconSize(u32 size) {
 void setIconSizeGrid(u32 size) {
     m_icon_size_grid = size;
 }
-void setSliderPositon(u32 pos) {
+void setSliderPosition(u32 pos) {
     m_slider_pos = pos;
 }
-void setSliderPositonGrid(u32 pos) {
+void setSliderPositionGrid(u32 pos) {
     m_slider_pos_grid = pos;
 }
 void setTableMode(u32 mode) {
@@ -240,6 +241,10 @@ void setElfViewer(const std::vector<std::string>& elfList) {
 void setRecentFiles(const std::vector<std::string>& recentFiles) {
     m_recent_files.resize(recentFiles.size());
     m_recent_files = recentFiles;
+}
+
+void setEmulatorLanguage(std::string language) {
+    emulator_language = language;
 }
 
 u32 getMainWindowGeometryX() {
@@ -266,10 +271,10 @@ u32 getIconSize() {
 u32 getIconSizeGrid() {
     return m_icon_size_grid;
 }
-u32 getSliderPositon() {
+u32 getSliderPosition() {
     return m_slider_pos;
 }
-u32 getSliderPositonGrid() {
+u32 getSliderPositionGrid() {
     return m_slider_pos_grid;
 }
 u32 getTableMode() {
@@ -289,6 +294,10 @@ std::vector<std::string> getElfViewer() {
 }
 std::vector<std::string> getRecentFiles() {
     return m_recent_files;
+}
+
+std::string getEmulatorLanguage() {
+    return emulator_language;
 }
 
 u32 GetLanguage() {
@@ -368,6 +377,7 @@ void load(const std::filesystem::path& path) {
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
+        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en");
     }
 
     if (data.contains("Settings")) {
@@ -430,6 +440,7 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
+    data["GUI"]["emulatorLanguage"] = emulator_language;
 
     data["Settings"]["consoleLanguage"] = m_language;
 
@@ -454,6 +465,7 @@ void setDefaultValues() {
     vblankDivider = 1;
     vkValidation = false;
     rdocEnable = false;
+    emulator_language = "en";
     m_language = 1;
     gpuId = -1;
 }

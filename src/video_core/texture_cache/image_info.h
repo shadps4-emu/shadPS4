@@ -29,6 +29,8 @@ struct ImageInfo {
     bool IsPacked() const;
     bool IsDepthStencil() const;
 
+    void UpdateSize();
+
     struct {
         VAddr cmask_addr;
         VAddr fmask_addr;
@@ -69,6 +71,7 @@ struct ImageInfo {
     boost::container::small_vector<MipInfo, 14> mips_layout;
     VAddr guest_address{0};
     u32 guest_size_bytes{0};
+    u32 tiling_idx{0}; // TODO: merge with existing!
 };
 
 } // namespace VideoCore

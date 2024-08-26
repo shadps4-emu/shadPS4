@@ -19,8 +19,12 @@ chmod a+x linuxdeploy-x86_64.AppImage
 chmod a+x linuxdeploy-plugin-qt-x86_64.AppImage
 chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 
+
 # Build AppImage
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
+
+cp -a "$GITHUB_WORKSPACE/build/translations" AppDir/usr/bin
+
 ./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/.github/shadps4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/.github/shadps4.png --plugin qt --output appimage
 mv Shadps4-x86_64.AppImage Shadps4-qt.AppImage

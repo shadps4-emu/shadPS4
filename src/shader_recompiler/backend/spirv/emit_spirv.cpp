@@ -179,6 +179,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     spv::ExecutionModel execution_model{};
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
+    ctx.AddCapability(spv::Capability::ImageQuery);
     if (info.uses_fp16) {
         ctx.AddCapability(spv::Capability::Float16);
         ctx.AddCapability(spv::Capability::Int16);

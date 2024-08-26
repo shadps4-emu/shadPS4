@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <pthread.h>
@@ -96,7 +96,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
     }
 
     if (attribute->reserved0 != 0 || attribute->reserved1 != 0) {
-        LOG_ERROR(Lib_VideoOut, "Invalid reserved memebers");
+        LOG_ERROR(Lib_VideoOut, "Invalid reserved members");
         return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
     if (attribute->aspect_ratio != 0) {
@@ -252,8 +252,8 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
     requests.push({
         .frame = frame,
         .port = port,
-        .index = index,
         .flip_arg = flip_arg,
+        .index = index,
         .eop = is_eop,
     });
 }

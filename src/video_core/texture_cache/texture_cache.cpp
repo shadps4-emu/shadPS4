@@ -18,11 +18,15 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
       tile_manager{instance, scheduler} {
-    ImageInfo info;
+    ImageInfo info{};
     info.pixel_format = vk::Format::eR8G8B8A8Unorm;
     info.type = vk::ImageType::e2D;
+    info.tiling_idx = u32(AmdGpu::TilingMode::Texture_MicroTiled);
+    info.num_bits = 32;
+    info.UpdateSize();
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
     ASSERT(null_id.index == 0);
+    slot_images[null_id].flags = ImageFlagBits{};
 
     ImageViewInfo view_info;
     void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
@@ -200,6 +204,7 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.flags &= ~ImageFlagBits::CpuModified;
+    image.aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
 
     const auto new_layout = view_info.is_storage ? vk::ImageLayout::eDepthStencilAttachmentOptimal
                                                  : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
@@ -328,7 +333,6 @@ void TextureCache::UnregisterImage(ImageId image_id) {
         }
         image_ids.erase(vector_it);
     });
-    slot_images.erase(image_id);
 }
 
 void TextureCache::TrackImage(Image& image, ImageId image_id) {

@@ -28,7 +28,7 @@ jobs:
         host: windows
         target: desktop
         arch: win64_msvc2019_64
-        archives: qtbase
+        archives: qtbase qttools
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
@@ -40,6 +40,7 @@ jobs:
       run: |
         mkdir upload
         move build/Release/shadPS4.exe upload
+        move build/translations upload
         windeployqt --dir upload upload/shadPS4.exe
 
     - name: Upload executable

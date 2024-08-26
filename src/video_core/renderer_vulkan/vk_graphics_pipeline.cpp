@@ -396,13 +396,18 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
         for (const auto& image_desc : stage->images) {
-            const auto& tsharp = tsharps.emplace_back(
-                stage->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset));
-            VideoCore::ImageInfo image_info{tsharp};
-            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-            const auto& image_view = texture_cache.FindTexture(image_info, view_info);
-            const auto& image = texture_cache.GetImage(image_view.image_id);
-            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+            const auto tsharp =
+                stage->ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset);
+            if (tsharp) {
+                tsharps.emplace_back(tsharp);
+                VideoCore::ImageInfo image_info{tsharp};
+                VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
+                const auto& image_view = texture_cache.FindTexture(image_info, view_info);
+                const auto& image = texture_cache.GetImage(image_view.image_id);
+                image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+            } else {
+                image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+            }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,

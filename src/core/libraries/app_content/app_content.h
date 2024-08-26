@@ -92,8 +92,8 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
 int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount();
 int PS4_SYSV_ABI sceAppContentGetPftFlag();
 int PS4_SYSV_ABI Func_C59A36FF8D7C59DA();
-int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadByEntitlemetId();
-int PS4_SYSV_ABI sceAppContentAddcontMountByEntitlemetId();
+int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadByEntitlementId();
+int PS4_SYSV_ABI sceAppContentAddcontMountByEntitlementId();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoByEntitlementId();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoListByIroTag();
 int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry();

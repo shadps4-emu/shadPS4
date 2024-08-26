@@ -405,6 +405,10 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
         image.GetNumberFmt() == AmdGpu::NumberFormat::Float) {
         return spv::ImageFormat::Rg16f;
     }
+    if (image.GetDataFmt() == AmdGpu::DataFormat::Format16_16 &&
+        image.GetNumberFmt() == AmdGpu::NumberFormat::Snorm) {
+        return spv::ImageFormat::Rg16Snorm;
+    }
     if (image.GetDataFmt() == AmdGpu::DataFormat::Format8_8 &&
         image.GetNumberFmt() == AmdGpu::NumberFormat::Unorm) {
         return spv::ImageFormat::Rg8;
@@ -485,8 +489,8 @@ void EmitContext::DefineImagesAndSamplers() {
         Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
                              image_desc.dword_offset));
         images.push_back({
-            .id = id,
             .data_types = data_types,
+            .id = id,
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,

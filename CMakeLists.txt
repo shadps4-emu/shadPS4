@@ -66,9 +66,8 @@ git_branch_name(GIT_BRANCH)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 find_package(Boost 1.84.0 CONFIG)
-find_package(cryptopp 8.9.0 MODULE)
 find_package(FFmpeg 5.1.2 MODULE)
-find_package(fmt 10.2.1 CONFIG)
+find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
@@ -79,8 +78,12 @@ find_package(VulkanHeaders 1.3.289 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
-find_package(zlib-ng 2.2.0 MODULE)
-find_package(Zydis 4.1.0 CONFIG)
+find_package(zlib-ng 2.1.7 MODULE)
+find_package(Zydis 5.0.0 CONFIG)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT MSVC)
+    find_package(cryptopp 8.9.0 MODULE)
+endif()
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -110,11 +113,27 @@ add_subdirectory(externals)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Network)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
+
+    set(QT_TRANSLATIONS "${PROJECT_SOURCE_DIR}/src/qt_gui/translations")
+    file(GLOB_RECURSE TRANSLATIONS_TS ${QT_TRANSLATIONS}/*.ts)
+
+    set_source_files_properties(${TRANSLATIONS_TS} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/translations")
+    qt_add_translation(TRANSLATIONS_QM ${TRANSLATIONS_TS})
+
+    set(TRANSLATIONS_QRC ${CMAKE_CURRENT_BINARY_DIR}/translations/translations.qrc)
+    file(WRITE ${TRANSLATIONS_QRC} "<RCC><qresource prefix=\"translations\">\n")
+    foreach (QM ${TRANSLATIONS_QM})
+        get_filename_component(QM_FILE ${QM} NAME)
+        file(APPEND ${TRANSLATIONS_QRC} "<file>${QM_FILE}</file>\n")
+    endforeach (QM)
+    file(APPEND ${TRANSLATIONS_QRC} "</qresource></RCC>")
+
+    qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
 endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp
@@ -433,7 +452,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/opcodes.h
                       src/shader_recompiler/frontend/structured_control_flow.cpp
                       src/shader_recompiler/frontend/structured_control_flow.h
-                      src/shader_recompiler/ir/passes/constant_propogation_pass.cpp
+                      src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
@@ -471,6 +490,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -577,6 +597,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/main.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
+           ${TRANSLATIONS}
 )
 endif()
 

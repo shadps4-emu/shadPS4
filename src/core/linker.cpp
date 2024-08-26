@@ -168,7 +168,7 @@ void Linker::Relocate(Module* module) {
             auto sym_bind = sym.GetBind();
             auto sym_type = sym.GetType();
             auto sym_visibility = sym.GetVisibility();
-            u64 symbol_vitrual_addr = 0;
+            u64 symbol_virtual_addr = 0;
             Loader::SymbolRecord symrec{};
             switch (sym_type) {
             case STT_FUN:
@@ -185,12 +185,12 @@ void Linker::Relocate(Module* module) {
             }
 
             if (sym_visibility != 0) {
-                LOG_INFO(Core_Linker, "symbol visilibity !=0");
+                LOG_INFO(Core_Linker, "symbol visibility !=0");
             }
 
             switch (sym_bind) {
             case STB_LOCAL:
-                symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                symbol_virtual_addr = rel_base_virtual_addr + sym.st_value;
                 module->SetRelaBit(bit_idx);
                 break;
             case STB_GLOBAL:
@@ -200,14 +200,14 @@ void Linker::Relocate(Module* module) {
                     // Only set the rela bit if the symbol was actually resolved and not stubbed.
                     module->SetRelaBit(bit_idx);
                 }
-                symbol_vitrual_addr = symrec.virtual_address;
+                symbol_virtual_addr = symrec.virtual_address;
                 break;
             }
             default:
                 ASSERT_MSG(0, "unknown bind type {}", sym_bind);
             }
-            rel_is_resolved = (symbol_vitrual_addr != 0);
-            rel_value = (rel_is_resolved ? symbol_vitrual_addr + addend : 0);
+            rel_is_resolved = (symbol_virtual_addr != 0);
+            rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
             rel_name = symrec.name;
             break;
         }

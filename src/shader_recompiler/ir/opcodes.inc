@@ -58,7 +58,6 @@ OPCODE(SetAttribute,                                        Void,           Attr
 OPCODE(GetScc,                                             U1,             Void,                                                                            )
 OPCODE(GetExec,                                            U1,             Void,                                                                            )
 OPCODE(GetVcc,                                             U1,             Void,                                                                            )
-OPCODE(GetSccLo,                                           U32,            Void,                                                                            )
 OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
 OPCODE(GetVccHi,                                           U32,            Void,                                                                            )
 OPCODE(SetScc,                                             Void,           U1,                                                                              )
@@ -96,7 +95,7 @@ OPCODE(StoreBufferFormatF32x4,                              Void,           Opaq
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32											)
+OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
@@ -106,7 +105,7 @@ OPCODE(BufferAtomicDec32,                                   U32,            Opaq
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicExchange32,                              U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicSwap32,									U32,            Opaque,			Opaque,			U32,											)
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -330,19 +329,22 @@ OPCODE(ImageRead,                                           U32x4,          Opaq
 OPCODE(ImageWrite,                                          Void,           Opaque,         Opaque,         U32x4,                                          )
 
 // Image atomic operations
-OPCODE(ImageAtomicIAdd32,                                   U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicSMin32,                                   U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicUMin32,                                   U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicSMax32,                                   U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicUMax32,                                   U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicInc32,                                    U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicDec32,                                    U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicAnd32,                                    U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicOr32,                                     U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicXor32,                                    U32,            Opaque,            Opaque,            U32,                                      )
-OPCODE(ImageAtomicExchange32,                               U32,            Opaque,            Opaque,            U32,                                      )
+OPCODE(ImageAtomicIAdd32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicSMin32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicUMin32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicSMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicUMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicInc32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicDec32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicAnd32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicOr32,                                     U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicXor32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicExchange32,                               U32,            Opaque,         Opaque,         U32,                                            )
 
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(WarpId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
+OPCODE(ReadFirstLane,                                       U32,            U32,            U32                                                             )
+OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
+OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )

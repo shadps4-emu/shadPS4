@@ -32,7 +32,6 @@ struct SccFlagTag : FlagTag {};
 struct ExecFlagTag : FlagTag {};
 struct VccFlagTag : FlagTag {};
 struct VccLoTag : FlagTag {};
-struct SccLoTag : FlagTag {};
 struct VccHiTag : FlagTag {};
 
 struct GotoVariable : FlagTag {
@@ -45,7 +44,7 @@ struct GotoVariable : FlagTag {
 };
 
 using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, SccFlagTag, ExecFlagTag,
-                             VccFlagTag, SccLoTag, VccLoTag, VccHiTag>;
+                             VccFlagTag, VccLoTag, VccHiTag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -82,13 +81,6 @@ struct DefTable {
     }
     void SetDef(IR::Block* block, ExecFlagTag, const IR::Value& value) {
         exec_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, SccLoTag) {
-        return scc_lo_flag[block];
-    }
-    void SetDef(IR::Block* block, SccLoTag, const IR::Value& value) {
-        scc_lo_flag.insert_or_assign(block, value);
     }
 
     const IR::Value& Def(IR::Block* block, VccLoTag) {
@@ -130,10 +122,6 @@ IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
 }
 
 IR::Opcode UndefOpcode(const VccLoTag) noexcept {
-    return IR::Opcode::UndefU32;
-}
-
-IR::Opcode UndefOpcode(const SccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
@@ -336,9 +324,6 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetVcc:
         pass.WriteVariable(VccFlagTag{}, block, inst.Arg(0));
         break;
-    case IR::Opcode::SetSccLo:
-        pass.WriteVariable(SccLoTag{}, block, inst.Arg(0));
-        break;
     case IR::Opcode::SetVccLo:
         pass.WriteVariable(VccLoTag{}, block, inst.Arg(0));
         break;
@@ -370,9 +355,6 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::GetVcc:
         inst.ReplaceUsesWith(pass.ReadVariable(VccFlagTag{}, block));
-        break;
-    case IR::Opcode::GetSccLo:
-        inst.ReplaceUsesWith(pass.ReadVariable(SccLoTag{}, block));
         break;
     case IR::Opcode::GetVccLo:
         inst.ReplaceUsesWith(pass.ReadVariable(VccLoTag{}, block));

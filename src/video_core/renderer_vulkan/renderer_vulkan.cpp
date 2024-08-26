@@ -258,7 +258,7 @@ void RendererVulkan::Present(Frame* frame) {
     {
         auto* profiler_ctx = instance.GetProfilerContext();
         TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
-                          MarkersPallete::GpuMarkerColor, profiler_ctx != nullptr);
+                          MarkersPalette::GpuMarkerColor, profiler_ctx != nullptr);
 
         const vk::Extent2D extent = swapchain.GetExtent();
         const std::array pre_barriers{
@@ -380,7 +380,7 @@ Frame* RendererVulkan::GetRenderFrame() {
     // Reset fence for next queue submission.
     device.resetFences(frame->present_done);
 
-    // If the window dimentions changed, recreate this frame
+    // If the window dimensions changed, recreate this frame
     if (frame->width != window.getWidth() || frame->height != window.getHeight()) {
         RecreateFrame(frame, window.getWidth(), window.getHeight());
     }

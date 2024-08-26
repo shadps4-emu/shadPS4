@@ -216,6 +216,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             break;
         }
         case PM4ItOpcode::ClearState: {
+            regs.SetDefaults();
             break;
         }
         case PM4ItOpcode::SetConfigReg: {
@@ -452,6 +453,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 ce_task.handle.resume();
                 TracyFiberEnter(dcb_task_name);
             }
+            break;
+        }
+        case PM4ItOpcode::PfpSyncMe: {
             break;
         }
         default:

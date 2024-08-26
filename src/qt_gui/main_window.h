@@ -3,13 +3,9 @@
 
 #pragma once
 
-#include <QAbstractButton>
 #include <QActionGroup>
 #include <QDragEnterEvent>
-#include <QMainWindow>
-#include <QMimeData>
-#include <QScopedPointer>
-#include <fmt/core.h>
+#include <QTranslator>
 
 #include "cheats_patches_management.h"
 #include "common/config.h"
@@ -49,6 +45,7 @@ private Q_SLOTS:
     void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
+    void OnLanguageChanged(const std::string& locale);
 
 private:
     Ui_MainWindow* ui;
@@ -65,6 +62,7 @@ private:
     void InstallPkg();
     void BootGame();
     void AddRecentFiles(QString filePath);
+    void LoadTranslation();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     bool isIconBlack = false;
     bool isTableList = true;
@@ -91,6 +89,8 @@ private:
     std::shared_ptr<GameInfoClass> m_game_info = std::make_shared<GameInfoClass>();
     // Cheats/Patches Management.
     QVBoxLayout* patchesRightLayout;
+
+    QTranslator* translator;
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event1) override {

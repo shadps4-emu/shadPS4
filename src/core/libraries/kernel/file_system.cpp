@@ -538,7 +538,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
 
     // openOrbis (to check if it is valid out of OpenOrbis
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1,
-                 posix_open); // _open shoudld be equal to open function
+                 posix_open); // _open should be equal to open function
 }
 
 } // namespace Libraries::Kernel

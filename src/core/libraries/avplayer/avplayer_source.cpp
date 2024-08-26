@@ -5,6 +5,7 @@
 
 #include "avplayer_file_streamer.h"
 
+#include "common/alignment.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/time_management.h"
@@ -111,8 +112,8 @@ s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info)
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
-        info.details.video.width = p_stream->codecpar->width;
-        info.details.video.height = p_stream->codecpar->height;
+        info.details.video.width = Common::AlignUp(u32(p_stream->codecpar->width), 16);
+        info.details.video.height = Common::AlignUp(u32(p_stream->codecpar->height), 16);
         if (p_lang_node != nullptr) {
             std::memcpy(info.details.video.language_code, p_lang_node->value,
                         std::min(strlen(p_lang_node->value), size_t(3)));
@@ -167,8 +168,9 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
             LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for video stream {}.", stream_index);
             return false;
         }
-        const auto width = m_video_codec_context->width;
-        const auto size = (width * m_video_codec_context->height * 3) / 2;
+        const auto width = Common::AlignUp(u32(m_video_codec_context->width), 16);
+        const auto height = Common::AlignUp(u32(m_video_codec_context->height), 16);
+        const auto size = (width * height * 3) / 2;
         for (u64 index = 0; index < m_num_output_video_framebuffers; ++index) {
             m_video_buffers.Push(FrameBuffer(m_memory_replacement, 0x100, size));
         }
@@ -282,11 +284,6 @@ bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfo& video_info) {
     video_info.details.video.width = info.details.video.width;
     video_info.details.video.height = info.details.video.height;
     return true;
-}
-
-static void CopyNV12Data(u8* dst, const AVFrame& src) {
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + src.width * src.height, src.data[1], (src.width * src.height) / 2);
 }
 
 bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
@@ -493,13 +490,17 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
     nv12_frame->width = frame.width;
     nv12_frame->height = frame.height;
     nv12_frame->sample_aspect_ratio = frame.sample_aspect_ratio;
+    nv12_frame->crop_top = frame.crop_top;
+    nv12_frame->crop_bottom = frame.crop_bottom;
+    nv12_frame->crop_left = frame.crop_left;
+    nv12_frame->crop_right = frame.crop_right;
 
     av_frame_get_buffer(nv12_frame.get(), 0);
 
     if (m_sws_context == nullptr) {
         m_sws_context =
             SWSContextPtr(sws_getContext(frame.width, frame.height, AVPixelFormat(frame.format),
-                                         frame.width, frame.height, AV_PIX_FMT_NV12,
+                                         nv12_frame->width, nv12_frame->height, AV_PIX_FMT_NV12,
                                          SWS_FAST_BILINEAR, nullptr, nullptr, nullptr),
                           &ReleaseSWSContext);
     }
@@ -510,6 +511,26 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
         return AVFramePtr{nullptr, &ReleaseAVFrame};
     }
     return nv12_frame;
+}
+
+static void CopyNV12Data(u8* dst, const AVFrame& src) {
+    const auto width = Common::AlignUp(u32(src.width), 16);
+    const auto height = Common::AlignUp(u32(src.height), 16);
+
+    if (src.width == width) {
+        std::memcpy(dst, src.data[0], src.width * src.height);
+        std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
+    } else {
+        const auto luma_dst = dst;
+        for (u32 y = 0; y < src.height; ++y) {
+            std::memcpy(luma_dst + y * width, src.data[0] + y * src.width, src.width);
+        }
+        const auto chroma_dst = dst + width * height;
+        for (u32 y = 0; y < src.height / 2; ++y) {
+            std::memcpy(chroma_dst + y * (width / 2), src.data[0] + y * (src.width / 2),
+                        src.width / 2);
+        }
+    }
 }
 
 Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame) {
@@ -525,6 +546,9 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
     const auto num = time_base.num;
     const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
 
+    const auto width = Common::AlignUp(u32(frame.width), 16);
+    const auto height = Common::AlignUp(u32(frame.height), 16);
+
     return Frame{
         .buffer = std::move(buffer),
         .info =
@@ -535,9 +559,14 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                     {
                         .video =
                             {
-                                .width = u32(frame.width),
-                                .height = u32(frame.height),
+                                .width = u32(width),
+                                .height = u32(height),
                                 .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
+                                .crop_left_offset = u32(frame.crop_left),
+                                .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
+                                .crop_top_offset = u32(frame.crop_top),
+                                .crop_bottom_offset =
+                                    u32(frame.crop_bottom + (height - frame.height)),
                                 .pitch = u32(frame.linesize[0]),
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,

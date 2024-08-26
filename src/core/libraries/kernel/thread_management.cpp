@@ -1123,7 +1123,6 @@ int PS4_SYSV_ABI posix_pthread_join(ScePthread thread, void** res) {
 }
 
 int PS4_SYSV_ABI scePthreadDetach(ScePthread thread) {
-    LOG_INFO(Kernel_Pthread, "thread create name = {}", thread->name);
     thread->is_detached = true;
     return ORBIS_OK;
 }
