@@ -1,4 +1,4 @@
-<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="ja_JP">
+<?xml version="1.0" encoding = "utf-8"?><!DOCTYPE TS><TS version="2.1" language="ja_JP">
     <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
     <context>
@@ -229,7 +229,6 @@
             <translation>大</translation>
         </message>
         <message>
-        <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
             <translation>リストビュー</translation>
@@ -254,6 +253,7 @@
             <source>Dump Game List</source>
             <translation>ゲームリストをダンプ</translation>
         </message>
+        <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
             <translation>PKGビューアー</translation>
