@@ -215,10 +215,10 @@ void setIconSize(u32 size) {
 void setIconSizeGrid(u32 size) {
     m_icon_size_grid = size;
 }
-void setSliderPositon(u32 pos) {
+void setSliderPosition(u32 pos) {
     m_slider_pos = pos;
 }
-void setSliderPositonGrid(u32 pos) {
+void setSliderPositionGrid(u32 pos) {
     m_slider_pos_grid = pos;
 }
 void setTableMode(u32 mode) {
@@ -271,10 +271,10 @@ u32 getIconSize() {
 u32 getIconSizeGrid() {
     return m_icon_size_grid;
 }
-u32 getSliderPositon() {
+u32 getSliderPosition() {
     return m_slider_pos;
 }
-u32 getSliderPositonGrid() {
+u32 getSliderPositionGrid() {
     return m_slider_pos_grid;
 }
 u32 getTableMode() {

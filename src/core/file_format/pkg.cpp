@@ -279,8 +279,8 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
             }
         }
 
-        // let's deal with the root/uroot enteries here.
-        // Sometimes it's more than 2 enteries (Tomb Raider Remastered)
+        // let's deal with the root/uroot entries here.
+        // Sometimes it's more than 2 entries (Tomb Raider Remastered)
         const std::string_view flat_path_table(&decompressedData[0x10], 15);
         if (flat_path_table == "flat_path_table") {
             uroot_reached = true;

@@ -3,7 +3,7 @@
 
 #version 450
 
-// NOTE: Current subgroup utilization is subotimal on most GPUs, so
+// NOTE: Current subgroup utilization is suboptimal on most GPUs, so
 // it will be nice to process two tiles at once here.
 layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 

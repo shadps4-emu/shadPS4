@@ -116,7 +116,7 @@ void MainWindow::CreateDockWindows() {
         m_elf_viewer->hide();
         m_game_list_frame->show();
         m_dock_widget->setWidget(m_game_list_frame.data());
-        slider_pos = Config::getSliderPositon();
+        slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = true;
     } else if (table_mode == 1) { // Grid
@@ -124,7 +124,7 @@ void MainWindow::CreateDockWindows() {
         m_elf_viewer->hide();
         m_game_grid_frame->show();
         m_dock_widget->setWidget(m_game_grid_frame.data());
-        slider_pos = Config::getSliderPositonGrid();
+        slider_pos = Config::getSliderPositionGrid();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = false;
     } else {
@@ -184,12 +184,12 @@ void MainWindow::CreateConnects() {
                 36 + value; // 36 is the minimum icon size to use due to text disappearing.
             m_game_list_frame->ResizeIcons(36 + value);
             Config::setIconSize(36 + value);
-            Config::setSliderPositon(value);
+            Config::setSliderPosition(value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
             Config::setIconSizeGrid(69 + value);
-            Config::setSliderPositonGrid(value);
+            Config::setSliderPositionGrid(value);
         }
     });
 
@@ -228,11 +228,11 @@ void MainWindow::CreateConnects() {
                 36; // 36 is the minimum icon size to use due to text disappearing.
             ui->sizeSlider->setValue(0); // icone_size - 36
             Config::setIconSize(36);
-            Config::setSliderPositon(0);
+            Config::setSliderPosition(0);
         } else {
             ui->sizeSlider->setValue(0); // icone_size - 36
             Config::setIconSizeGrid(69);
-            Config::setSliderPositonGrid(0);
+            Config::setSliderPositionGrid(0);
         }
     });
 
@@ -241,11 +241,11 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 64;
             ui->sizeSlider->setValue(28);
             Config::setIconSize(64);
-            Config::setSliderPositon(28);
+            Config::setSliderPosition(28);
         } else {
             ui->sizeSlider->setValue(28);
             Config::setIconSizeGrid(97);
-            Config::setSliderPositonGrid(28);
+            Config::setSliderPositionGrid(28);
         }
     });
 
@@ -254,11 +254,11 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 128;
             ui->sizeSlider->setValue(92);
             Config::setIconSize(128);
-            Config::setSliderPositon(92);
+            Config::setSliderPosition(92);
         } else {
             ui->sizeSlider->setValue(92);
             Config::setIconSizeGrid(160);
-            Config::setSliderPositonGrid(91);
+            Config::setSliderPositionGrid(91);
         }
     });
 
@@ -267,11 +267,11 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size = 256;
             ui->sizeSlider->setValue(220);
             Config::setIconSize(256);
-            Config::setSliderPositon(220);
+            Config::setSliderPosition(220);
         } else {
             ui->sizeSlider->setValue(220);
             Config::setIconSizeGrid(256);
-            Config::setSliderPositonGrid(220);
+            Config::setSliderPositionGrid(220);
         }
     });
     // List
@@ -286,7 +286,7 @@ void MainWindow::CreateConnects() {
         }
         isTableList = true;
         Config::setTableMode(0);
-        int slider_pos = Config::getSliderPositon();
+        int slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
     });
@@ -302,7 +302,7 @@ void MainWindow::CreateConnects() {
         }
         isTableList = false;
         Config::setTableMode(1);
-        int slider_pos_grid = Config::getSliderPositonGrid();
+        int slider_pos_grid = Config::getSliderPositionGrid();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
     });

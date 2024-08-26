@@ -305,7 +305,7 @@ static Id ConvertValue(EmitContext& ctx, Id value, AmdGpu::NumberFormat format, 
     case AmdGpu::NumberFormat::Float:
         return value;
     default:
-        UNREACHABLE_MSG("Unsupported number fromat for conversion: {}",
+        UNREACHABLE_MSG("Unsupported number format for conversion: {}",
                         magic_enum::enum_name(format));
     }
 }
@@ -478,7 +478,7 @@ static Id ConvertF32ToFormat(EmitContext& ctx, Id value, AmdGpu::NumberFormat fo
     case AmdGpu::NumberFormat::Float:
         return value;
     default:
-        UNREACHABLE_MSG("Unsupported number fromat for conversion: {}",
+        UNREACHABLE_MSG("Unsupported number format for conversion: {}",
                         magic_enum::enum_name(format));
     }
 }

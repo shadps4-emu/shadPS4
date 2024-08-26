@@ -556,7 +556,7 @@ struct Liverpool {
         union {
             BitField<0, 15, s32> top_left_x;
             BitField<15, 15, s32> top_left_y;
-            BitField<30, 1, s32> window_offset_disble;
+            BitField<30, 1, s32> window_offset_disable;
         };
         union {
             BitField<0, 15, s32> bottom_right_x;

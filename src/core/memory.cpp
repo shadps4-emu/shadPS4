@@ -349,7 +349,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::strin
     auto it = FindVMA(virtual_addr);
 
     ASSERT_MSG(it->second.Contains(virtual_addr, size),
-               "Range provided is not fully containted in vma");
+               "Range provided is not fully contained in vma");
     it->second.name = name;
 }
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) {
