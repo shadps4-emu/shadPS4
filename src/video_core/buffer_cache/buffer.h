@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 #include "common/types.h"
