@@ -510,23 +510,24 @@ int PS4_SYSV_ABI scePthreadMutexattrInit(ScePthreadMutexattr* attr) {
 int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type) {
     int ptype = PTHREAD_MUTEX_DEFAULT;
     switch (type) {
-    case 1:
+    case ORBIS_PTHREAD_MUTEX_ERRORCHECK:
         ptype = PTHREAD_MUTEX_ERRORCHECK;
         break;
-    case 2:
+    case ORBIS_PTHREAD_MUTEX_RECURSIVE:
         ptype = PTHREAD_MUTEX_RECURSIVE;
         break;
-    case 3:
-    case 4:
+    case ORBIS_PTHREAD_MUTEX_NORMAL:
+    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
         ptype = PTHREAD_MUTEX_NORMAL;
         break;
     default:
-        UNREACHABLE_MSG("Invalid type: {}", type);
+        return SCE_KERNEL_ERROR_EINVAL;
     }
 
     int result = pthread_mutexattr_settype(&(*attr)->pth_mutex_attr, ptype);
+    ASSERT(result == 0);
 
-    return result == 0 ? SCE_OK : SCE_KERNEL_ERROR_EINVAL;
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI scePthreadMutexattrSetprotocol(ScePthreadMutexattr* attr, int protocol) {

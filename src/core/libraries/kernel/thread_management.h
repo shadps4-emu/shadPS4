@@ -20,6 +20,11 @@ constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
 
+constexpr int ORBIS_PTHREAD_MUTEX_ERRORCHECK = 1;
+constexpr int ORBIS_PTHREAD_MUTEX_RECURSIVE = 2;
+constexpr int ORBIS_PTHREAD_MUTEX_NORMAL = 3;
+constexpr int ORBIS_PTHREAD_MUTEX_ADAPTIVE = 4;
+
 struct PthreadInternal;
 struct PthreadAttrInternal;
 struct PthreadMutexInternal;
