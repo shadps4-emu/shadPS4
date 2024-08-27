@@ -24,29 +24,37 @@ namespace Libraries::AvPlayer {
 
 using namespace Kernel;
 
-AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
-                               const SceAvPlayerInitData& init_data,
-                               SceAvPlayerSourceType source_type)
-    : m_state(state), m_memory_replacement(init_data.memory_replacement),
-      m_num_output_video_framebuffers(
-          std::min(std::max(2, init_data.num_output_video_framebuffers), 16)) {
-    AVFormatContext* context = avformat_alloc_context();
-    if (init_data.file_replacement.open != nullptr) {
-        m_up_data_streamer =
-            std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement, path);
-        context->pb = m_up_data_streamer->GetContext();
-        ASSERT(!AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr)));
-    } else {
-        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        ASSERT(!AVPLAYER_IS_ERROR(
-            avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr)));
-    }
-    m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);
-}
+AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state) : m_state(state) {}
 
 AvPlayerSource::~AvPlayerSource() {
     Stop();
+}
+
+bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view path) {
+    m_memory_replacement = init_data.memory_replacement,
+    m_num_output_video_framebuffers =
+        std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
+
+    AVFormatContext* context = avformat_alloc_context();
+    if (init_data.file_replacement.open != nullptr) {
+        m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
+        if (!m_up_data_streamer->Init(path)) {
+            return false;
+        }
+        context->pb = m_up_data_streamer->GetContext();
+        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+            return false;
+        }
+    } else {
+        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        const auto filepath = mnt->GetHostPath(path);
+        if (AVPLAYER_IS_ERROR(
+                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+            return false;
+        }
+    }
+    m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);
+    return true;
 }
 
 bool AvPlayerSource::FindStreamInfo() {
@@ -87,16 +95,16 @@ static f32 AVRationalToF32(const AVRational rational) {
     return f32(rational.num) / rational.den;
 }
 
-s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info.", stream_index);
-        return -1;
+        return false;
     }
     const auto p_stream = m_avformat_context->streams[stream_index];
     if (p_stream == nullptr || p_stream->codecpar == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info. NULL stream.", stream_index);
-        return -1;
+        return false;
     }
     info.type = CodecTypeToStreamType(p_stream->codecpar->codec_type);
     info.start_time = p_stream->start_time;
@@ -140,9 +148,9 @@ s32 AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info)
         break;
     default:
         LOG_ERROR(Lib_AvPlayer, "Stream {} type is unknown: {}.", stream_index, info.type);
-        return -1;
+        return false;
     }
-    return 0;
+    return true;
 }
 
 bool AvPlayerSource::EnableStream(u32 stream_index) {
@@ -215,12 +223,12 @@ std::optional<bool> AvPlayerSource::HasFrames(u32 num_frames) {
     return m_video_packets.Size() > num_frames || m_is_eof;
 }
 
-s32 AvPlayerSource::Start() {
+bool AvPlayerSource::Start() {
     std::unique_lock lock(m_state_mutex);
 
     if (m_audio_codec_context == nullptr && m_video_codec_context == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
-        return -1;
+        return false;
     }
     m_demuxer_thread = std::jthread([this](std::stop_token stop) { this->DemuxerThread(stop); });
     m_video_decoder_thread =
@@ -228,7 +236,7 @@ s32 AvPlayerSource::Start() {
     m_audio_decoder_thread =
         std::jthread([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
     m_start_time = std::chrono::high_resolution_clock::now();
-    return 0;
+    return true;
 }
 
 bool AvPlayerSource::Stop() {

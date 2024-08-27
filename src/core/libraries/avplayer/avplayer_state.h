@@ -24,11 +24,11 @@ public:
     AvPlayerState(const SceAvPlayerInitData& init_data);
     ~AvPlayerState();
 
-    s32 AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
+    bool AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
     s32 GetStreamCount();
-    s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    bool GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
-    s32 Start();
+    bool Start();
     bool Stop();
     bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
     bool GetVideoData(SceAvPlayerFrameInfo& video_info);

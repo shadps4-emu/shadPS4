@@ -24,6 +24,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, s32 event_i
         s32 timedtext_stream_index = -1;
         const s32 stream_count = self->GetStreamCount();
         if (AVPLAYER_IS_ERROR(stream_count)) {
+            self->Stop();
             return;
         }
         if (stream_count == 0) {
@@ -32,7 +33,10 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, s32 event_i
         }
         for (u32 stream_index = 0; stream_index < stream_count; ++stream_index) {
             SceAvPlayerStreamInfo info{};
-            self->GetStreamInfo(stream_index, info);
+            if (!self->GetStreamInfo(stream_index, info)) {
+                self->Stop();
+                return;
+            }
 
             const std::string_view default_language(
                 reinterpret_cast<char*>(self->m_default_language));
@@ -116,23 +120,28 @@ AvPlayerState::~AvPlayerState() {
 }
 
 // Called inside GAME thread
-s32 AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source_type) {
+bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source_type) {
     if (path.empty()) {
         LOG_ERROR(Lib_AvPlayer, "File path is empty.");
-        return -1;
+        return false;
     }
 
     {
         std::unique_lock lock(m_source_mutex);
         if (m_up_source != nullptr) {
             LOG_ERROR(Lib_AvPlayer, "Only one source is supported.");
-            return -1;
+            return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(*this, path, m_init_data, source_type);
+        m_up_source = std::make_unique<AvPlayerSource>(*this);
+        if (!m_up_source->Init(m_init_data, path)) {
+            SetState(AvState::Error);
+            m_up_source.reset();
+            return false;
+        }
     }
     AddSourceEvent();
-    return 0;
+    return true;
 }
 
 // Called inside GAME thread
@@ -146,25 +155,25 @@ s32 AvPlayerState::GetStreamCount() {
 }
 
 // Called inside GAME thread
-s32 AvPlayerState::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerState::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info. No source.", stream_index);
-        return -1;
+        return false;
     }
     return m_up_source->GetStreamInfo(stream_index, info);
 }
 
 // Called inside GAME thread
-s32 AvPlayerState::Start() {
+bool AvPlayerState::Start() {
     std::shared_lock lock(m_source_mutex);
-    if (m_up_source == nullptr || m_up_source->Start() < 0) {
+    if (m_up_source == nullptr || !m_up_source->Start()) {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback.");
-        return -1;
+        return false;
     }
     SetState(AvState::Play);
     OnPlaybackStateChanged(AvState::Play);
-    return 0;
+    return true;
 }
 
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
@@ -219,10 +228,10 @@ bool AvPlayerState::Stop() {
     if (m_up_source == nullptr || m_current_state == AvState::Stop) {
         return false;
     }
-    if (!SetState(AvState::Stop)) {
+    if (!m_up_source->Stop()) {
         return false;
     }
-    if (!m_up_source->Stop()) {
+    if (!SetState(AvState::Stop)) {
         return false;
     }
     OnPlaybackStateChanged(AvState::Stop);
