@@ -472,7 +472,7 @@ void Translator::S_MIN_U32(const GcnInst& inst) {
 
 void Translator::S_CMPK_EQ_U32(const GcnInst& inst) {
     const s32 simm16 = inst.control.sopk.simm;
-    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src0{GetSrc(inst.dst[0])};
     const IR::U32 src1{ir.Imm32(simm16)};
     ir.SetScc(ir.IEqual(src0, src1));
 }
