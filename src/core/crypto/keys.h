@@ -132,11 +132,22 @@ public:
             0x79, 0x9E, 0x7D, 0x8D, 0xCA, 0x18, 0x6D, 0xBD, 0x9E, 0xA1, 0x80, 0x28, 0x6B,
             0x2A, 0xFE, 0x51, 0x24, 0x9B, 0x6F, 0x4D, 0x84, 0x77, 0x80, 0x23};
     };
+
+    // Destructor
+    ~FakeKeyset() {
+        delete[] PrivateExponent;
+        delete[] Exponent1;
+        delete[] Exponent2;
+        delete[] PublicExponent;
+        delete[] Coefficient;
+        delete[] Modulus;
+        delete[] Prime1;
+        delete[] Prime2;
+    };
 };
 
 class DebugRifKeyset {
 public:
-    // Constructor
     // std::uint8_t* PrivateExponent;
     const CryptoPP::byte* Exponent1;
     // exponent2 = d mod (q - 1)
@@ -263,14 +274,22 @@ public:
             0x81, 0x1F, 0xDE, 0x5E, 0xA8, 0x6E, 0x3E, 0x87, 0xEC, 0x44, 0xD2, 0x69, 0xC6,
             0x54, 0x91, 0x6B, 0x5E, 0x13, 0x8A, 0x03, 0x87, 0x05, 0x31, 0x8D};
     };
+
+    // Destructor
+    ~DebugRifKeyset() {
+        delete[] PrivateExponent;
+        delete[] Exponent1;
+        delete[] Exponent2;
+        delete[] PublicExponent;
+        delete[] Coefficient;
+        delete[] Modulus;
+        delete[] Prime1;
+        delete[] Prime2;
+    };
 };
 
 class PkgDerivedKey3Keyset {
 public:
-    // PkgDerivedKey3Keyset();
-    //~PkgDerivedKey3Keyset();
-
-    // Constructor
     // std::uint8_t* PrivateExponent;
     const CryptoPP::byte* Exponent1;
     // exponent2 = d mod (q - 1)
@@ -287,8 +306,8 @@ public:
     const CryptoPP::byte* Prime2;
     const CryptoPP::byte* PrivateExponent;
 
+    // Constructor
     PkgDerivedKey3Keyset() {
-
         Prime1 = new CryptoPP::byte[0x80]{
             0xF9, 0x67, 0xAD, 0x99, 0x12, 0x31, 0x0C, 0x56, 0xA2, 0x2E, 0x16, 0x1C, 0x46,
             0xB3, 0x4D, 0x5B, 0x43, 0xBE, 0x42, 0xA2, 0xF6, 0x86, 0x96, 0x80, 0x42, 0xC3,
@@ -386,5 +405,17 @@ public:
             0x0b, 0x95, 0xb8, 0x85, 0x30, 0xfd, 0xdc, 0x39, 0x13, 0xd0, 0x7c, 0xdc, 0x8f, 0xed,
             0xf9, 0xc9, 0xa3, 0xc1};
         PublicExponent = new CryptoPP::byte[4]{0, 1, 0, 1};
+    };
+
+    // Destructor
+    ~PkgDerivedKey3Keyset() {
+        delete[] Prime1;
+        delete[] Prime2;
+        delete[] PrivateExponent;
+        delete[] Exponent1;
+        delete[] Exponent2;
+        delete[] Coefficient;
+        delete[] Modulus;
+        delete[] PublicExponent;
     };
 };
