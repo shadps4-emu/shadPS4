@@ -572,7 +572,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
 void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
-    // This is fine because resize doesn't reallocate the buffer on shrink
     queue.dcb_buffer.resize(
         std::max(queue.dcb_buffer.size(), queue.dcb_buffer_offset + dcb.size()));
     queue.ccb_buffer.resize(
@@ -584,20 +583,14 @@ void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& 
         std::memcpy(queue.dcb_buffer.data() + queue.dcb_buffer_offset, dcb.data(),
                     dcb.size_bytes());
         queue.dcb_buffer_offset += dcb.size();
+        dcb = std::span<const u32>{queue.dcb_buffer.begin() + prev_dcb_buffer_offset,
+                                   queue.dcb_buffer.begin() + queue.dcb_buffer_offset};
     }
 
     if (!ccb.empty()) {
         std::memcpy(queue.ccb_buffer.data() + queue.ccb_buffer_offset, ccb.data(),
                     ccb.size_bytes());
         queue.ccb_buffer_offset += dcb.size();
-    }
-
-    if (!queue.dcb_buffer.empty()) {
-        dcb = std::span<const u32>{queue.dcb_buffer.begin() + prev_dcb_buffer_offset,
-                                   queue.dcb_buffer.begin() + queue.dcb_buffer_offset};
-    }
-
-    if (!queue.ccb_buffer.empty()) {
         ccb = std::span<const u32>{queue.ccb_buffer.begin() + prev_ccb_buffer_offset,
                                    queue.ccb_buffer.begin() + queue.ccb_buffer_offset};
     }
