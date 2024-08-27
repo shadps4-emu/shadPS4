@@ -186,7 +186,6 @@ public:
     void V_FFBL_B32(const GcnInst& inst);
     void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
-    void L_LSHR_B64(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
