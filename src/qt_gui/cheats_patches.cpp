@@ -300,6 +300,7 @@ void CheatsPatches::onSaveButtonClicked() {
                 QString name = xmlReader.attributes().value("Name").toString();
                 bool isEnabled = false;
                 bool hasIsEnabled = false;
+                bool foundPatchInfo = false;
 
                 // Check and update the isEnabled attribute
                 for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
@@ -309,10 +310,24 @@ void CheatsPatches::onSaveButtonClicked() {
                         if (it != m_patchInfos.end()) {
                             QCheckBox* checkBox = findCheckBoxByName(it->name);
                             if (checkBox) {
+                                foundPatchInfo = true;
                                 isEnabled = checkBox->isChecked();
                                 xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
                             }
                         }
+                        if (!foundPatchInfo) {
+                            auto maskIt = m_patchInfos.find(name + " (any version)");
+                            if (maskIt != m_patchInfos.end()) {
+                                QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
+                                if (checkBox) {
+                                    foundPatchInfo = true;
+                                    isEnabled = checkBox->isChecked();
+                                    xmlWriter.writeAttribute("isEnabled",
+                                                             isEnabled ? "true" : "false");
+                                }
+                            }
+                        }
+
                     } else {
                         xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
                     }
@@ -323,7 +338,18 @@ void CheatsPatches::onSaveButtonClicked() {
                     if (it != m_patchInfos.end()) {
                         QCheckBox* checkBox = findCheckBoxByName(it->name);
                         if (checkBox) {
+                            foundPatchInfo = true;
                             isEnabled = checkBox->isChecked();
+                        }
+                    }
+                    if (!foundPatchInfo) {
+                        auto maskIt = m_patchInfos.find(name + " (any version)");
+                        if (maskIt != m_patchInfos.end()) {
+                            QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
+                            if (checkBox) {
+                                foundPatchInfo = true;
+                                isEnabled = checkBox->isChecked();
+                            }
                         }
                     }
                     xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
@@ -369,7 +395,7 @@ QCheckBox* CheatsPatches::findCheckBoxByName(const QString& name) {
             QWidget* widget = item->widget();
             QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget);
             if (checkBox) {
-                if (checkBox->text() == name) {
+                if (checkBox->text().toStdString().find(name.toStdString()) != std::string::npos) {
                     return checkBox;
                 }
             }
@@ -1088,7 +1114,6 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
         }
     }
 }
-
 
 bool CheatsPatches::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::HoverEnter || event->type() == QEvent::HoverLeave) {

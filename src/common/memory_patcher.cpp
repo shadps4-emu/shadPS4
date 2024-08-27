@@ -6,13 +6,13 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #ifdef ENABLE_QT_GUI
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QXmlStreamReader>
 #include <QListView>
 #include <QMessageBox>
-#include <QFile>
+#include <QXmlStreamReader>
 #endif
 #include "memory_patcher.h"
 
@@ -93,9 +93,8 @@ QString convertValueToHex(const QString& type, const QString& valueStr) {
 
 void OnGameLoaded() {
 
-    // We use the QT headers for the xml and json parsing, this define is only true on QT builds
-    #ifdef ENABLE_QT_GUI
-    printf("we good?\n");
+// We use the QT headers for the xml and json parsing, this define is only true on QT builds
+#ifdef ENABLE_QT_GUI
     QString patchDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
 
@@ -236,7 +235,7 @@ void OnGameLoaded() {
     } else {
         LOG_INFO(Loader, "Patches loaded successfully");
     }
-    #endif
+#endif
     
     ApplyPendingPatches();
 }

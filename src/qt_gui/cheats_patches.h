@@ -58,7 +58,6 @@ private:
 
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
-    
 
     // Event Filtering
     bool eventFilter(QObject* obj, QEvent* event);
