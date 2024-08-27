@@ -300,6 +300,7 @@ void CheatsPatches::onSaveButtonClicked() {
                 QString name = xmlReader.attributes().value("Name").toString();
                 bool isEnabled = false;
                 bool hasIsEnabled = false;
+                bool foundPatchInfo = false;
 
                 // Check and update the isEnabled attribute
                 for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
@@ -309,10 +310,24 @@ void CheatsPatches::onSaveButtonClicked() {
                         if (it != m_patchInfos.end()) {
                             QCheckBox* checkBox = findCheckBoxByName(it->name);
                             if (checkBox) {
+                                foundPatchInfo = true;
                                 isEnabled = checkBox->isChecked();
                                 xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
                             }
                         }
+                        if (!foundPatchInfo) {
+                            auto maskIt = m_patchInfos.find(name + " (any version)");
+                            if (maskIt != m_patchInfos.end()) {
+                                QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
+                                if (checkBox) {
+                                    foundPatchInfo = true;
+                                    isEnabled = checkBox->isChecked();
+                                    xmlWriter.writeAttribute("isEnabled",
+                                                             isEnabled ? "true" : "false");
+                                }
+                            }
+                        }
+
                     } else {
                         xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
                     }
@@ -323,7 +338,18 @@ void CheatsPatches::onSaveButtonClicked() {
                     if (it != m_patchInfos.end()) {
                         QCheckBox* checkBox = findCheckBoxByName(it->name);
                         if (checkBox) {
+                            foundPatchInfo = true;
                             isEnabled = checkBox->isChecked();
+                        }
+                    }
+                    if (!foundPatchInfo) {
+                        auto maskIt = m_patchInfos.find(name + " (any version)");
+                        if (maskIt != m_patchInfos.end()) {
+                            QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
+                            if (checkBox) {
+                                foundPatchInfo = true;
+                                isEnabled = checkBox->isChecked();
+                            }
                         }
                     }
                     xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
@@ -369,7 +395,7 @@ QCheckBox* CheatsPatches::findCheckBoxByName(const QString& name) {
             QWidget* widget = item->widget();
             QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget);
             if (checkBox) {
-                if (checkBox->text() == name) {
+                if (checkBox->text().toStdString().find(name.toStdString()) != std::string::npos) {
                     return checkBox;
                 }
             }
@@ -1030,6 +1056,8 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
 }
 
 void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
+    if (!enabled)
+        return;
     if (m_patchInfos.contains(patchName)) {
         const PatchInfo& patchInfo = m_patchInfos[patchName];
 
@@ -1040,7 +1068,7 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString patchValue = lineObject["Value"].toString();
             QString maskOffsetStr = lineObject["Offset"].toString();
 
-            patchValue = convertValueToHex(type, patchValue);
+            patchValue = MemoryPatcher::convertValueToHex(type, patchValue);
 
             bool littleEndian = false;
 
@@ -1085,71 +1113,6 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
                                        patchValue.toStdString(), false, littleEndian, patchMask);
         }
     }
-}
-QString toHex(unsigned long long value, size_t byteSize) {
-    std::stringstream ss;
-    ss << std::hex << std::setfill('0') << std::setw(byteSize * 2) << value;
-    return QString::fromStdString(ss.str());
-}
-
-QString CheatsPatches::convertValueToHex(const QString& type, const QString& valueStr) {
-    QString result;
-    std::string typeStr = type.toStdString();
-    std::string valueStrStd = valueStr.toStdString();
-
-    if (typeStr == "byte") {
-        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
-        result = toHex(value, 1);
-    } else if (typeStr == "bytes16") {
-        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
-        result = toHex(value, 2);
-    } else if (typeStr == "bytes32") {
-        unsigned long value = std::stoul(valueStrStd, nullptr, 16);
-        result = toHex(value, 4);
-    } else if (typeStr == "bytes64") {
-        unsigned long long value = std::stoull(valueStrStd, nullptr, 16);
-        result = toHex(value, 8);
-    } else if (typeStr == "float32") {
-        union {
-            float f;
-            uint32_t i;
-        } floatUnion;
-        floatUnion.f = std::stof(valueStrStd);
-        result = toHex(floatUnion.i, sizeof(floatUnion.i));
-    } else if (typeStr == "float64") {
-        union {
-            double d;
-            uint64_t i;
-        } doubleUnion;
-        doubleUnion.d = std::stod(valueStrStd);
-        result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
-    } else if (typeStr == "utf8") {
-        QByteArray byteArray = QString::fromStdString(valueStrStd).toUtf8();
-        byteArray.append('\0');
-        std::stringstream ss;
-        for (unsigned char c : byteArray) {
-            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
-        }
-        result = QString::fromStdString(ss.str());
-    } else if (typeStr == "utf16") {
-        QByteArray byteArray(
-            reinterpret_cast<const char*>(QString::fromStdString(valueStrStd).utf16()),
-            QString::fromStdString(valueStrStd).size() * 2);
-        byteArray.append('\0');
-        byteArray.append('\0');
-        std::stringstream ss;
-        for (unsigned char c : byteArray) {
-            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
-        }
-        result = QString::fromStdString(ss.str());
-    } else if (typeStr == "bytes") {
-        result = valueStr;
-    } else if (typeStr == "mask" || typeStr == "mask_jump32") {
-        result = valueStr;
-    } else {
-        LOG_INFO(Loader, "Error applying Patch, unknown type: {}", typeStr);
-    }
-    return result;
 }
 
 bool CheatsPatches::eventFilter(QObject* obj, QEvent* event) {

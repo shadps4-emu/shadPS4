@@ -659,6 +659,7 @@ endif()
 
 if (ENABLE_QT_GUI)
    target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network)
+   add_definitions(-DENABLE_QT_GUI)
 endif()
 
 if (WIN32)

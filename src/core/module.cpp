@@ -198,7 +198,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         if (name == "eboot") {
             MemoryPatcher::g_eboot_address = base_virtual_addr;
             MemoryPatcher::g_eboot_image_size = base_size;
-            MemoryPatcher::ApplyPendingPatches();
+            MemoryPatcher::OnGameLoaded();
         }
     }
 }
