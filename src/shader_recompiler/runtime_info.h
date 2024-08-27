@@ -92,8 +92,7 @@ struct BufferResource {
 
     u64 GetKey(const Info& info) const {
         const auto sharp = GetVsharp(info);
-        const u32 stride = sharp.GetStride();
-        u64 key = stride | (sharp.data_format << 14) | (sharp.num_format << 18);
+        u64 key = sharp.GetStride();
         if (!is_written) {
             key <<= 1;
             key |= IsStorage(sharp);

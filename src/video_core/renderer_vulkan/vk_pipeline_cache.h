@@ -73,6 +73,7 @@ private:
 
         Program* program = it_pgm->second;
         const auto& info = program->info;
+        vk::ShaderModule module{};
 
         // Compile specialized module with current runtime state.
         const auto it = std::ranges::find(program->modules, stage_key, &Program::Module::first);
@@ -80,14 +81,15 @@ private:
             auto new_info = MakeShaderInfo(stage, pgm->user_data, info.pgm_base, info.pgm_hash,
                                            liverpool->regs);
             const size_t perm_idx = program->modules.size();
-            const auto module = CompileModule(new_info, pgm->Code(), perm_idx, binding);
+            module = CompileModule(new_info, pgm->Code(), perm_idx, binding);
             program->modules.emplace_back(stage_key, module);
         } else {
             binding += info.NumBindings();
+            module = it->second;
         }
 
         const u64 full_hash = HashCombine(hash, stage_key);
-        return std::make_tuple(&info, it->second, full_hash);
+        return std::make_tuple(&info, module, full_hash);
     }
 
 private:
