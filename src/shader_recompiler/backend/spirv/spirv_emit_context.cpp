@@ -48,6 +48,7 @@ EmitContext::EmitContext(const Profile& profile_, const Shader::Info& info_, u32
     DefineArithmeticTypes();
     DefineInterfaces();
     DefineBuffers();
+    DefineTextureBuffers();
     DefineImagesAndSamplers();
     DefineSharedMemory();
 }
@@ -123,21 +124,19 @@ void EmitContext::DefineInterfaces() {
     DefineOutputs();
 }
 
-Id GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
+const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     switch (fmt) {
     case AmdGpu::NumberFormat::Float:
     case AmdGpu::NumberFormat::Unorm:
     case AmdGpu::NumberFormat::Snorm:
     case AmdGpu::NumberFormat::SnormNz:
-        return ctx.F32[4];
-    case AmdGpu::NumberFormat::Sint:
-        return ctx.S32[4];
-    case AmdGpu::NumberFormat::Uint:
-        return ctx.U32[4];
     case AmdGpu::NumberFormat::Sscaled:
-        return ctx.F32[4];
     case AmdGpu::NumberFormat::Uscaled:
-        return ctx.F32[4];
+        return ctx.F32;
+    case AmdGpu::NumberFormat::Sint:
+        return ctx.S32;
+    case AmdGpu::NumberFormat::Uint:
+        return ctx.U32;
     default:
         break;
     }
@@ -177,6 +176,16 @@ void EmitContext::DefineBufferOffsets() {
         buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
     }
+    for (auto& tex_buffer : texture_buffers) {
+        const u32 binding = tex_buffer.binding;
+        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
+        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+    }
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -202,7 +211,7 @@ void EmitContext::DefineInputs() {
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
 
         for (const auto& input : info.vs_inputs) {
-            const Id type{GetAttributeType(*this, input.fmt)};
+            const Id type{GetAttributeType(*this, input.fmt)[4]};
             if (input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate0 ||
                 input.instance_step_rate == Info::VsInput::InstanceIdType::OverStepRate1) {
 
@@ -328,27 +337,30 @@ void EmitContext::DefinePushDataBlock() {
 
 void EmitContext::DefineBuffers() {
     boost::container::small_vector<Id, 8> type_ids;
-    for (u32 i = 0; const auto& buffer : info.buffers) {
-        const auto sharp = buffer.GetVsharp(info);
-        const bool is_storage = buffer.IsStorage(sharp);
-        const auto* data_types = True(buffer.used_types & IR::Type::F32) ? &F32 : &U32;
+    const auto define_struct = [&](Id record_array_type, bool is_instance_data) {
+        const Id struct_type{TypeStruct(record_array_type)};
+        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
+            return struct_type;
+        }
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
+        const auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
+                                           : fmt::format("{}_cbuf_block_f32", stage);
+        Name(struct_type, name);
+        Decorate(struct_type, spv::Decoration::Block);
+        MemberName(struct_type, 0, "data");
+        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+        type_ids.push_back(record_array_type);
+        return struct_type;
+    };
+
+    for (const auto& desc : info.buffers) {
+        const auto sharp = desc.GetVsharp(info);
+        const bool is_storage = desc.IsStorage(sharp);
+        const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
         const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(buffer.length))};
-        const Id struct_type{TypeStruct(record_array_type)};
-        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) == type_ids.end()) {
-            Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-            const auto name =
-                buffer.is_instance_data
-                    ? fmt::format("{}_instance_data{}_{}{}", stage, i, 'f',
-                                  sizeof(float) * CHAR_BIT)
-                    : fmt::format("{}_cbuf_block_{}{}", stage, 'f', sizeof(float) * CHAR_BIT);
-            Name(struct_type, name);
-            Decorate(struct_type, spv::Decoration::Block);
-            MemberName(struct_type, 0, "data");
-            MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-            type_ids.push_back(record_array_type);
-        }
+                                              : TypeArray(data_type, ConstU32(desc.length))};
+        const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
 
         const auto storage_class =
             is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
@@ -357,19 +369,39 @@ void EmitContext::DefineBuffers() {
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", buffer.sgpr_base));
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sgpr_base));
 
         buffers.push_back({
             .id = id,
             .binding = binding++,
             .data_types = data_types,
             .pointer_type = pointer_type,
-            .dfmt = buffer.dfmt,
-            .nfmt = buffer.nfmt,
-            .stride = buffer.GetVsharp(info).GetStride(),
         });
         interfaces.push_back(id);
-        i++;
+    }
+}
+
+void EmitContext::DefineTextureBuffers() {
+    for (const auto& desc : info.texture_buffers) {
+        const bool is_integer =
+            desc.nfmt == AmdGpu::NumberFormat::Uint || desc.nfmt == AmdGpu::NumberFormat::Sint;
+        const VectorIds& sampled_type{GetAttributeType(*this, desc.nfmt)};
+        const u32 sampled = desc.is_written ? 2 : 1;
+        const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
+                                      sampled, spv::ImageFormat::Unknown)};
+        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
+        const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
+        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sgpr_base));
+        texture_buffers.push_back({
+            .id = id,
+            .binding = binding++,
+            .image_type = image_type,
+            .result_type = sampled_type[4],
+            .is_integer = is_integer,
+        });
+        interfaces.push_back(id);
     }
 }
 

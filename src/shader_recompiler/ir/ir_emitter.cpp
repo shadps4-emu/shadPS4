@@ -325,20 +325,8 @@ Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& ad
     }
 }
 
-Value IREmitter::LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                                  BufferInstInfo info) {
-    switch (num_dwords) {
-    case 1:
-        return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
-    case 2:
-        return Inst(Opcode::LoadBufferFormatF32x2, Flags{info}, handle, address);
-    case 3:
-        return Inst(Opcode::LoadBufferFormatF32x3, Flags{info}, handle, address);
-    case 4:
-        return Inst(Opcode::LoadBufferFormatF32x4, Flags{info}, handle, address);
-    default:
-        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
-    }
+Value IREmitter::LoadBufferFormat(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
 }
 
 void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& address,
@@ -409,24 +397,9 @@ Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, con
     return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
 }
 
-void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                                  const Value& data, BufferInstInfo info) {
-    switch (num_dwords) {
-    case 1:
-        Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
-        break;
-    case 2:
-        Inst(Opcode::StoreBufferFormatF32x2, Flags{info}, handle, address, data);
-        break;
-    case 3:
-        Inst(Opcode::StoreBufferFormatF32x3, Flags{info}, handle, address, data);
-        break;
-    case 4:
-        Inst(Opcode::StoreBufferFormatF32x4, Flags{info}, handle, address, data);
-        break;
-    default:
-        UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
-    }
+void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
+                                  BufferInstInfo info) {
+    Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
 }
 
 U32 IREmitter::LaneId() {

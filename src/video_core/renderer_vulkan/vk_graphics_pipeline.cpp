@@ -316,6 +316,15 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
         }
+        for (const auto& tex_buffer : stage->texture_buffers) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                                        : vk::DescriptorType::eUniformTexelBuffer,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eCompute,
+            });
+        }
         for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,
@@ -346,6 +355,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                      VideoCore::BufferCache& buffer_cache,
                                      VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
+    boost::container::static_vector<vk::BufferView, 8> buffer_views;
     boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
@@ -391,6 +401,38 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
                                              : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
+            });
+        }
+
+        for (const auto& tex_buffer : stage->texture_buffers) {
+            const auto vsharp = tex_buffer.GetVsharp(*stage);
+            vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+                const VAddr address = vsharp.base_address;
+                const u32 size = vsharp.GetSize();
+                const u32 alignment = instance.TexelBufferMinAlignment();
+                const auto [vk_buffer, offset] =
+                    buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written);
+                const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
+                ASSERT_MSG(fmt_stride == vsharp.GetStride(),
+                           "Texel buffer stride must match format stride");
+                const u32 offset_aligned = Common::AlignDown(offset, alignment);
+                const u32 adjust = offset - offset_aligned;
+                if (adjust != 0) {
+                    ASSERT(adjust % fmt_stride == 0);
+                    push_data.AddOffset(binding, adjust / fmt_stride);
+                }
+                buffer_view = vk_buffer->View(offset, size + adjust, vsharp.GetDataFmt(),
+                                              vsharp.GetNumberFmt());
+            }
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                                        : vk::DescriptorType::eUniformTexelBuffer,
+                .pTexelBufferView = &buffer_view,
             });
         }
 

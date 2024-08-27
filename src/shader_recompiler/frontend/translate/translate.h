@@ -191,8 +191,10 @@ public:
     void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
 
     // Vector Memory
-    void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
-    void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
+    void BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst);
+    void BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst);
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Vector interpolation

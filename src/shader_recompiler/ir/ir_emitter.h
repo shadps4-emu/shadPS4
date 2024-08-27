@@ -92,12 +92,12 @@ public:
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);
-    [[nodiscard]] Value LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
+    [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
-    void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                           const Value& data, BufferInstInfo info);
+    void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
+                           BufferInstInfo info);
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);

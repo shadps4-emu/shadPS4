@@ -189,6 +189,9 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
         ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
     }
+    if (info.has_texel_buffers) {
+        ctx.AddCapability(spv::Capability::SampledBuffer);
+    }
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
