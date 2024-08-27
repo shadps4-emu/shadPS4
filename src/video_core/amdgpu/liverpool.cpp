@@ -573,8 +573,10 @@ void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& 
     auto& queue = mapped_queues[GfxQueueId];
 
     // This is fine because resize doesn't reallocate the buffer on shrink
-    queue.dcb_buffer.resize(queue.dcb_buffer_offset + dcb.size());
-    queue.ccb_buffer.resize(queue.ccb_buffer_offset + dcb.size());
+    queue.dcb_buffer.resize(
+        std::max(queue.dcb_buffer.size(), queue.dcb_buffer_offset + dcb.size()));
+    queue.ccb_buffer.resize(
+        std::max(queue.ccb_buffer.size(), queue.ccb_buffer_offset + dcb.size()));
 
     u32 prev_dcb_buffer_offset = queue.dcb_buffer_offset;
     u32 prev_ccb_buffer_offset = queue.ccb_buffer_offset;
