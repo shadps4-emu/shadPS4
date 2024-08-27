@@ -58,7 +58,7 @@ private:
 
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
-    QString convertValueToHex(const QString& type, const QString& valueStr);
+    
 
     // Event Filtering
     bool eventFilter(QObject* obj, QEvent* event);
