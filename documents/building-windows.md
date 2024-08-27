@@ -43,10 +43,8 @@ Go through the Git for Windows installation as normal
 ### Cloning the source code
 
 1. Open Git for Windows, navigate to a place where you want to store the shadPS4 source code folder
-2. If you want to build the main branch, run  
+2. Clone the repository by running  
     `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
-3. If you instead want to build a specific branch, for example bb-hacks, instead run  
-    `git clone -b bb-hacks --single-branch --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 
 ### Compiling with Visual Studio GUI
 
