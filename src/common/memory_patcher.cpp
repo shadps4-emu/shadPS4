@@ -162,7 +162,6 @@ void OnGameLoaded() {
                 for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
                     if (attr.name() == QStringLiteral("isEnabled")) {
                         if (attr.value().toString() == "true") {
-                            LOG_INFO(Loader, "Got enabled patch");
                             isEnabled = true;
                         } else
                             isEnabled = false;
@@ -236,7 +235,7 @@ void OnGameLoaded() {
         LOG_INFO(Loader, "Patches loaded successfully");
     }
 #endif
-    
+
     ApplyPendingPatches();
 }
 
