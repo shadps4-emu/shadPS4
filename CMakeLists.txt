@@ -109,6 +109,14 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
     endif()
 endif()
 
+# Setup ccache if package installed
+find_program(CCACHE_ENABLED "ccache")
+if (CCACHE_ENABLED)
+    set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+    set(ENV{CCACHE_SLOPPINESS} pch_defines,time_macros)
+endif()
+
 add_subdirectory(externals)
 include_directories(src)
 
