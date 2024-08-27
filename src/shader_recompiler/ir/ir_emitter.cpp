@@ -1119,13 +1119,13 @@ U32U64 IREmitter::BitwiseAnd(const U32U64& a, const U32U64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
     }
-    switch(a.Type()) {
+    switch (a.Type()) {
     case Type::U32:
-	return Inst<U32>(Opcode::BitwiseAnd32, a, b);
+        return Inst<U32>(Opcode::BitwiseAnd32, a, b);
     case Type::U64:
-	return Inst<U64>(Opcode::BitwiseAnd64, a, b);
+        return Inst<U64>(Opcode::BitwiseAnd64, a, b);
     default:
-	ThrowInvalidType(a.Type());
+        ThrowInvalidType(a.Type());
     }
 }
 

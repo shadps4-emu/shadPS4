@@ -353,14 +353,14 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a & b; });
         return;
     case IR::Opcode::BitwiseAnd64:
-	FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a & b; });
-	return;
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a & b; });
+        return;
     case IR::Opcode::BitwiseOr32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a | b; });
         return;
     case IR::Opcode::BitwiseOr64:
-	FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a | b; });
-	return;
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a | b; });
+        return;
     case IR::Opcode::BitwiseXor32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a ^ b; });
         return;
