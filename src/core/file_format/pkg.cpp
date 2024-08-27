@@ -329,7 +329,15 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
                 } else {
                     // Set the the folder according to the current inode.
                     // Can be 2 or more (rarely)
-                    extractPaths[ndinode_counter] = extract_path.parent_path() / GetTitleID();
+                    auto parent_path = extract_path.parent_path();
+                    auto title_id = GetTitleID();
+
+                    if (parent_path.filename() != title_id) {
+                        extractPaths[ndinode_counter] = parent_path / title_id;
+                    } else {
+                        // DLCs path has different structure
+                        extractPaths[ndinode_counter] = extract_path;
+                    }
                     uroot_reached = false;
                     break;
                 }
@@ -368,10 +376,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
 
                 if (table.type == PFS_FILE || table.type == PFS_DIR) {
                     if (table.type == PFS_DIR) { // Create dirs.
-                        try {
-                            std::filesystem::create_directory(extractPaths[table.inode]);
-                        } catch (std::exception& e) {
-                        }
+                        std::filesystem::create_directory(extractPaths[table.inode]);
                     }
                     ndinode_counter++;
                     if ((ndinode_counter + 1) == ndinode) // 1 for the image itself (root).
