@@ -11,9 +11,11 @@
 
 namespace Core {
 
+constexpr u64 SCE_DEFAULT_FLEXIBLE_MEMORY_SIZE = 448_MB;
+
 MemoryManager::MemoryManager() {
-    // Insert an area that covers direct memory physical block.
-    dmem_map.emplace(0, DirectMemoryArea{0, SCE_KERNEL_MAIN_DMEM_SIZE});
+    // Set up the direct and flexible memory regions.
+    SetupMemoryRegions(SCE_DEFAULT_FLEXIBLE_MEMORY_SIZE);
 
     // Insert a virtual memory area that covers the entire area we manage.
     const VAddr system_managed_base = impl.SystemManagedVirtualBase();
@@ -34,6 +36,16 @@ MemoryManager::MemoryManager() {
 }
 
 MemoryManager::~MemoryManager() = default;
+
+void MemoryManager::SetupMemoryRegions(u64 flexible_size) {
+    total_flexible_size = flexible_size;
+    total_direct_size = SCE_KERNEL_MAIN_DMEM_SIZE - flexible_size;
+
+    // Insert an area that covers direct memory physical block.
+    // Note that this should never be called after direct memory allocations have been made.
+    dmem_map.clear();
+    dmem_map.emplace(0, DirectMemoryArea{0, total_direct_size});
+}
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                               int memory_type) {

@@ -15,7 +15,8 @@ namespace Libraries::Kernel {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_WARNING(Kernel_Vmm, "called");
-    return SCE_KERNEL_MAIN_DMEM_SIZE;
+    const auto* memory = Core::Memory::Instance();
+    return memory->GetTotalDirectSize();
 }
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
@@ -52,8 +53,8 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 
 s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
                                                    s64* physAddrOut) {
-    return sceKernelAllocateDirectMemory(0, SCE_KERNEL_MAIN_DMEM_SIZE, len, alignment, memoryType,
-                                         physAddrOut);
+    const auto searchEnd = static_cast<s64>(sceKernelGetDirectMemorySize());
+    return sceKernelAllocateDirectMemory(0, searchEnd, len, alignment, memoryType, physAddrOut);
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, size_t len) {
@@ -78,7 +79,7 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
     if (physAddrOut == nullptr || sizeOut == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (searchEnd > SCE_KERNEL_MAIN_DMEM_SIZE) {
+    if (searchEnd > sceKernelGetDirectMemorySize()) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (searchEnd <= searchStart) {
