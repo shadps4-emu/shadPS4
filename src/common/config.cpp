@@ -20,6 +20,7 @@ static std::string userName = "shadPS4";
 static bool isDebugDump = false;
 static bool isShowSplash = false;
 static bool isNullGpu = false;
+static bool shouldCopyGPUBuffers = false;
 static bool shouldDumpShaders = false;
 static bool shouldDumpPM4 = false;
 static u32 vblankDivider = 1;
@@ -93,6 +94,10 @@ bool nullGpu() {
     return isNullGpu;
 }
 
+bool copyGPUCmdBuffers() {
+    return shouldCopyGPUBuffers;
+}
+
 bool dumpShaders() {
     return shouldDumpShaders;
 }
@@ -147,6 +152,10 @@ void setShowSplash(bool enable) {
 
 void setNullGpu(bool enable) {
     isNullGpu = enable;
+}
+
+void setCopyGPUCmdBuffers(bool enable) {
+    shouldCopyGPUBuffers = enable;
 }
 
 void setDumpShaders(bool enable) {
@@ -336,6 +345,7 @@ void load(const std::filesystem::path& path) {
         screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
         screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
+        shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
         shouldDumpPM4 = toml::find_or<bool>(gpu, "dumpPM4", false);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
@@ -414,6 +424,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
+    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["dumpPM4"] = shouldDumpPM4;
     data["GPU"]["vblankDivider"] = vblankDivider;

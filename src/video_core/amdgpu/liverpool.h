@@ -11,6 +11,7 @@
 #include <span>
 #include <thread>
 #include <queue>
+#include <vector>
 
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -1047,6 +1048,8 @@ public:
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};
+        mapped_queues[GfxQueueId].ccb_buffer_offset = 0;
+        mapped_queues[GfxQueueId].dcb_buffer_offset = 0;
         submit_done = true;
         submit_cv.notify_one();
     }
@@ -1108,6 +1111,7 @@ private:
         Handle handle;
     };
 
+    void CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     Task ProcessCompute(std::span<const u32> acb, int vqid);
@@ -1116,6 +1120,10 @@ private:
 
     struct GpuQueue {
         std::mutex m_access{};
+        std::atomic_uint32_t dcb_buffer_offset;
+        std::atomic_uint32_t ccb_buffer_offset;
+        std::vector<u32> dcb_buffer;
+        std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
     };
