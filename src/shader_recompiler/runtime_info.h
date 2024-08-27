@@ -238,6 +238,7 @@ struct Info {
     u64 pgm_hash{};
     u32 shared_memory_size{};
     bool has_storage_images{};
+    bool has_image_buffers{};
     bool has_texel_buffers{};
     bool has_discard{};
     bool has_image_gather{};

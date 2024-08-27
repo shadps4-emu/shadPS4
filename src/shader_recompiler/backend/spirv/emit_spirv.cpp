@@ -185,12 +185,15 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         ctx.AddCapability(spv::Capability::Int16);
     }
     ctx.AddCapability(spv::Capability::Int64);
-    if (info.has_storage_images) {
+    if (info.has_storage_images || info.has_image_buffers) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
         ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
     }
     if (info.has_texel_buffers) {
         ctx.AddCapability(spv::Capability::SampledBuffer);
+    }
+    if (info.has_image_buffers) {
+        ctx.AddCapability(spv::Capability::ImageBuffer);
     }
     switch (program.info.stage) {
     case Stage::Compute: {
