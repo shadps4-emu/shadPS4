@@ -10,8 +10,8 @@
 #include <mutex>
 #include <span>
 #include <thread>
-#include <queue>
 #include <vector>
+#include <queue>
 
 #include "common/assert.h"
 #include "common/bit_field.h"

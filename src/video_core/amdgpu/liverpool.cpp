@@ -593,8 +593,8 @@ void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& 
     if (!queue.dcb_buffer.empty()) {
         dcb = std::span<const u32>{queue.dcb_buffer.begin() + prev_dcb_buffer_offset,
                                    queue.dcb_buffer.begin() + queue.dcb_buffer_offset};
-    }   
-    
+    }
+
     if (!queue.ccb_buffer.empty()) {
         ccb = std::span<const u32>{queue.ccb_buffer.begin() + prev_ccb_buffer_offset,
                                    queue.ccb_buffer.begin() + queue.ccb_buffer_offset};
