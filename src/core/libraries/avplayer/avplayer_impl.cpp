@@ -110,7 +110,7 @@ s32 AvPlayer::AddSource(std::string_view path) {
     if (path.empty()) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    if (AVPLAYER_IS_ERROR(m_state->AddSource(path, GetSourceType(path)))) {
+    if (!m_state->AddSource(path, GetSourceType(path))) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
     return ORBIS_OK;
@@ -128,7 +128,7 @@ s32 AvPlayer::GetStreamCount() {
 }
 
 s32 AvPlayer::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
-    if (AVPLAYER_IS_ERROR(m_state->GetStreamInfo(stream_index, info))) {
+    if (!m_state->GetStreamInfo(stream_index, info)) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
     return ORBIS_OK;
@@ -145,7 +145,10 @@ s32 AvPlayer::EnableStream(u32 stream_index) {
 }
 
 s32 AvPlayer::Start() {
-    return m_state->Start();
+    if (!m_state->Start()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
 }
 
 bool AvPlayer::GetVideoData(SceAvPlayerFrameInfo& video_info) {

@@ -18,19 +18,8 @@ extern "C" {
 
 namespace Libraries::AvPlayer {
 
-AvPlayerFileStreamer::AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement,
-                                           std::string_view path)
-    : m_file_replacement(file_replacement) {
-    const auto ptr = m_file_replacement.object_ptr;
-    m_fd = m_file_replacement.open(ptr, path.data());
-    ASSERT(m_fd >= 0);
-    m_file_size = m_file_replacement.size(ptr);
-    // avio_buffer is deallocated in `avio_context_free`
-    const auto avio_buffer = reinterpret_cast<u8*>(av_malloc(AVPLAYER_AVIO_BUFFER_SIZE));
-    m_avio_context =
-        avio_alloc_context(avio_buffer, AVPLAYER_AVIO_BUFFER_SIZE, 0, this,
-                           &AvPlayerFileStreamer::ReadPacket, nullptr, &AvPlayerFileStreamer::Seek);
-}
+AvPlayerFileStreamer::AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement)
+    : m_file_replacement(file_replacement) {}
 
 AvPlayerFileStreamer::~AvPlayerFileStreamer() {
     if (m_avio_context != nullptr) {
@@ -41,6 +30,21 @@ AvPlayerFileStreamer::~AvPlayerFileStreamer() {
         const auto ptr = m_file_replacement.object_ptr;
         close(ptr);
     }
+}
+
+bool AvPlayerFileStreamer::Init(std::string_view path) {
+    const auto ptr = m_file_replacement.object_ptr;
+    m_fd = m_file_replacement.open(ptr, path.data());
+    if (m_fd < 0) {
+        return false;
+    }
+    m_file_size = m_file_replacement.size(ptr);
+    // avio_buffer is deallocated in `avio_context_free`
+    const auto avio_buffer = reinterpret_cast<u8*>(av_malloc(AVPLAYER_AVIO_BUFFER_SIZE));
+    m_avio_context =
+        avio_alloc_context(avio_buffer, AVPLAYER_AVIO_BUFFER_SIZE, 0, this,
+                           &AvPlayerFileStreamer::ReadPacket, nullptr, &AvPlayerFileStreamer::Seek);
+    return true;
 }
 
 s32 AvPlayerFileStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
