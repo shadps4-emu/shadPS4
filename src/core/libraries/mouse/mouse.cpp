@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceMouseRead(s32 handle, OrbisMouseData* pData, s32 num) {
 
     for (int i = 0; i < ret_num; i++) {
         pData[i].buttons = states[i].buttonsState;
-        pData[i].connected = true;
+        pData[i].connected = connected;
         pData[i].timestamp = states[i].time;
         pData[i].xAxis = 0;
         pData[i].yAxis = 0;
