@@ -17,6 +17,9 @@ std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 
+bool getUseSpecialPad();
+int getSpecialPadClass();
+
 u32 getScreenWidth();
 u32 getScreenHeight();
 s32 getGpuId();
@@ -24,6 +27,7 @@ s32 getGpuId();
 bool debugDump();
 bool showSplash();
 bool nullGpu();
+bool copyGPUCmdBuffers();
 bool dumpShaders();
 bool dumpPM4();
 bool isRdocEnabled();
@@ -33,6 +37,7 @@ u32 vblankDiv();
 void setDebugDump(bool enable);
 void setShowSplash(bool enable);
 void setNullGpu(bool enable);
+void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);
 void setDumpPM4(bool enable);
 void setVblankDiv(u32 value);
@@ -43,6 +48,9 @@ void setFullscreenMode(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
+
+void setUseSpecialPad(bool use);
+void setSpecialPadClass(int type);
 
 void setLogType(const std::string& type);
 void setLogFilter(const std::string& type);

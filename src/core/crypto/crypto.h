@@ -17,10 +17,6 @@
 
 class Crypto {
 public:
-    PkgDerivedKey3Keyset pkg_derived_key3_keyset;
-    FakeKeyset FakeKeyset_keyset;
-    DebugRifKeyset DebugRifKeyset_keyset;
-
     CryptoPP::RSA::PrivateKey key_pkg_derived_key3_keyset_init();
     CryptoPP::RSA::PrivateKey FakeKeyset_keyset_init();
     CryptoPP::RSA::PrivateKey DebugRifKeyset_init();

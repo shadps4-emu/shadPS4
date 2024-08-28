@@ -68,11 +68,19 @@ void Linker::Execute() {
     }
 
     // Configure used flexible memory size.
-    // if (auto* mem_param = GetProcParam()->mem_param) {
-    //      if (u64* flexible_size = mem_param->flexible_memory_size) {
-    //          memory->SetTotalFlexibleSize(*flexible_size);
-    //      }
-    //  }
+    if (const auto* proc_param = GetProcParam()) {
+        if (proc_param->size >=
+            offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
+            if (const auto* mem_param = proc_param->mem_param) {
+                if (mem_param->size >=
+                    offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
+                    if (const auto* flexible_size = mem_param->flexible_memory_size) {
+                        memory->SetupMemoryRegions(*flexible_size);
+                    }
+                }
+            }
+        }
+    }
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");

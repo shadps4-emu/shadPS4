@@ -17,6 +17,7 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     case AmdGpu::ImageType::Color1DArray:
         return vk::ImageViewType::e1DArray;
     case AmdGpu::ImageType::Color2D:
+    case AmdGpu::ImageType::Color2DMsaa:
         return vk::ImageViewType::e2D;
     case AmdGpu::ImageType::Cube:
         return vk::ImageViewType::eCube;
