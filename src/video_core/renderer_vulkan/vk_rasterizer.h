@@ -34,6 +34,7 @@ public:
     void Draw(bool is_indexed, u32 index_offset = 0);
 
     void DispatchDirect();
+    void DispatchIndirect(VAddr address, u32 offset, u32 size);
 
     void ScopeMarkerBegin(const std::string_view& str);
     void ScopeMarkerEnd();
