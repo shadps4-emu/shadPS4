@@ -309,12 +309,13 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.x = 0.0f;
         pData[i].angularVelocity.y = 0.0f;
         pData[i].angularVelocity.z = 0.0f;
-        pData[i].touchData.touchNum = 0;
-        pData[i].touchData.touch[0].x = 0;
-        pData[i].touchData.touch[0].y = 0;
+        pData[i].touchData.touchNum =
+            (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
+        pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
+        pData[i].touchData.touch[0].y = states[i].touchpad[0].y;
         pData[i].touchData.touch[0].id = 1;
-        pData[i].touchData.touch[1].x = 0;
-        pData[i].touchData.touch[1].y = 0;
+        pData[i].touchData.touch[1].x = states[i].touchpad[1].x;
+        pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
         pData[i].touchData.touch[1].id = 2;
         pData[i].connected = connected;
         pData[i].timestamp = states[i].time;
