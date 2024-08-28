@@ -6,6 +6,11 @@ cmake_minimum_required(VERSION 3.16.3)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
+if (UNIX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+endif()
+
 if(APPLE)
     enable_language(OBJC)
     set(CMAKE_OSX_DEPLOYMENT_TARGET 11)
@@ -155,7 +160,7 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB 
+set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.cpp
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
@@ -351,7 +356,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/cpu_patches.cpp
          src/core/cpu_patches.h
          src/core/crypto/crypto.cpp
-         src/core/crypto/crypto.h 
+         src/core/crypto/crypto.h
          src/core/crypto/keys.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
@@ -376,7 +381,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/loader/elf.h
          src/core/loader/symbols_resolver.h
          src/core/loader/symbols_resolver.cpp
-         src/core/libraries/error_codes.h  
+         src/core/libraries/error_codes.h
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
          ${AUDIO_LIB}
@@ -628,6 +633,11 @@ else()
 endif()
 
 create_target_directory_groups(shadps4)
+
+# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
+if (UNIX)
+    target_link_options(shadps4 PRIVATE -pie)
+endif()
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
