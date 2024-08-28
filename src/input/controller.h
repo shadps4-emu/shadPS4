@@ -22,9 +22,9 @@ enum class Axis {
 };
 
 struct TouchpadEntry {
-    bool state;
-    u16 x;
-    u16 y;
+    bool state{};
+    u16 x{};
+    u16 y{};
 };
 
 struct State {
