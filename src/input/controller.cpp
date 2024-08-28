@@ -133,7 +133,7 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
 }
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
-    if (touchIndex < 2) {   // DS4 has 2-point multitouch
+    if (touchIndex < 2) {
         std::scoped_lock lock{m_mutex};
         auto state = GetLastState();
         state.time = Libraries::Kernel::sceKernelGetProcessTime();
