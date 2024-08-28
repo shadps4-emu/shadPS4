@@ -93,7 +93,7 @@
 		<message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Читы / Патчи</translation>
+            <translation>Csalások / Javítások</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
@@ -256,7 +256,7 @@
 		<message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Скачать Читы / Патчи</translation>
+            <translation>Csalások / Javítások letöltése</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>

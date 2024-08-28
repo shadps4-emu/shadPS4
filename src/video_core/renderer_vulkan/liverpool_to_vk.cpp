@@ -296,6 +296,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eB10G11R11UfloatPack32,
         vk::Format::eBc1RgbaSrgbBlock,
         vk::Format::eBc1RgbaUnormBlock,
+        vk::Format::eBc2SrgbBlock,
         vk::Format::eBc2UnormBlock,
         vk::Format::eBc3SrgbBlock,
         vk::Format::eBc3UnormBlock,
@@ -452,11 +453,17 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8G8Unorm;
     }
+    if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR8G8Uint;
+    }
     if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Snorm) {
         return vk::Format::eR8G8Snorm;
     }
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc7UnormBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc2 && num_format == AmdGpu::NumberFormat::Srgb) {
+        return vk::Format::eBc2SrgbBlock;
     }
     if (data_format == AmdGpu::DataFormat::FormatBc2 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc2UnormBlock;
