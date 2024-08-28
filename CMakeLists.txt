@@ -634,11 +634,6 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
-if (UNIX)
-    target_link_options(shadps4 PRIVATE -pie)
-endif()
-
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
