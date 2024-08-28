@@ -310,8 +310,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
-           src/qt_gui/memory_patcher.cpp
-           src/qt_gui/memory_patcher.h
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
@@ -567,6 +565,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.ui
            src/qt_gui/cheats_patches.cpp
            src/qt_gui/cheats_patches.h
+           src/qt_gui/memory_patcher.cpp
+           src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h

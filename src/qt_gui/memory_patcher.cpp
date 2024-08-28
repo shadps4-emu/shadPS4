@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#ifdef ENABLE_QT_GUI
 #include <algorithm>
 #include <string>
 #include <QFile>
@@ -144,12 +143,11 @@ void OnGameLoaded() {
         bool insideMetadata = false;
 
         bool isEnabled = false;
-
+        std::string currentPatchName;
         while (!xmlReader.atEnd()) {
             xmlReader.readNext();
 
             if (xmlReader.isStartElement()) {
-                std::string currentPatchName;
                 QJsonArray patchLines;
                 if (xmlReader.name() == QStringLiteral("Metadata")) {
                     insideMetadata = true;
@@ -297,8 +295,8 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
 
     std::memcpy(cheatAddress, bytePatch.data(), bytePatch.size());
 
-    LOG_INFO(Loader, "Applied patch:{}, Offset:{}, Value:{}", modNameStr, (uintptr_t)cheatAddress,
-             valueStr);
+    LOG_INFO(Loader, "Applied patch: {}, Offset: {}, Value: {}", modNameStr,
+             (uintptr_t)cheatAddress, valueStr);
 }
 
 static std::vector<int32_t> PatternToByte(const std::string& pattern) {
@@ -347,5 +345,3 @@ uintptr_t PatternScan(const std::string& signature) {
 }
 
 } // namespace MemoryPatcher
-
-#endif

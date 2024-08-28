@@ -5,9 +5,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
-#ifdef ENABLE_QT_GUI
 #include <QString>
-#endif
 
 namespace MemoryPatcher {
 
@@ -34,9 +32,7 @@ struct patchInfo {
 
 extern std::vector<patchInfo> pending_patches;
 
-#ifdef ENABLE_QT_GUI
 QString convertValueToHex(const QString& type, const QString& valueStr);
-#endif
 
 void OnGameLoaded();
 void AddPatchToQueue(patchInfo patchToAdd);
