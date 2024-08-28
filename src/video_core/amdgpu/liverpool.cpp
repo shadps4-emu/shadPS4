@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
@@ -579,8 +580,42 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
     TracyFiberLeave;
 }
 
+std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
+    std::span<const u32> dcb, std::span<const u32> ccb) {
+    auto& queue = mapped_queues[GfxQueueId];
+
+    queue.dcb_buffer.resize(
+        std::max(queue.dcb_buffer.size(), queue.dcb_buffer_offset + dcb.size()));
+    queue.ccb_buffer.resize(
+        std::max(queue.ccb_buffer.size(), queue.ccb_buffer_offset + ccb.size()));
+
+    u32 prev_dcb_buffer_offset = queue.dcb_buffer_offset;
+    u32 prev_ccb_buffer_offset = queue.ccb_buffer_offset;
+    if (!dcb.empty()) {
+        std::memcpy(queue.dcb_buffer.data() + queue.dcb_buffer_offset, dcb.data(),
+                    dcb.size_bytes());
+        queue.dcb_buffer_offset += dcb.size();
+        dcb = std::span<const u32>{queue.dcb_buffer.begin() + prev_dcb_buffer_offset,
+                                   queue.dcb_buffer.begin() + queue.dcb_buffer_offset};
+    }
+
+    if (!ccb.empty()) {
+        std::memcpy(queue.ccb_buffer.data() + queue.ccb_buffer_offset, ccb.data(),
+                    ccb.size_bytes());
+        queue.ccb_buffer_offset += ccb.size();
+        ccb = std::span<const u32>{queue.ccb_buffer.begin() + prev_ccb_buffer_offset,
+                                   queue.ccb_buffer.begin() + queue.ccb_buffer_offset};
+    }
+
+    return std::make_pair(dcb, ccb);
+}
+
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
+
+    if (Config::copyGPUCmdBuffers()) {
+        std::tie(dcb, ccb) = CopyCmdBuffers(dcb, ccb);
+    }
 
     auto task = ProcessGraphics(dcb, ccb);
     {
