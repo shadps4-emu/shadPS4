@@ -693,6 +693,8 @@ set(IMGUI src/imgui/imgui_config.h
 
 set(INPUT src/input/controller.cpp
           src/input/controller.h
+          src/input/mouse.cpp
+          src/input/mouse.h
 )
 
 set(EMULATOR src/emulator.cpp
