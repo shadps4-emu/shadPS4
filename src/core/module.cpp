@@ -6,7 +6,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
-#include "common/memory_patcher.h"
+#include "qt_gui/memory_patcher.h"
 #endif
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
