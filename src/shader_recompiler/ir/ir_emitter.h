@@ -195,7 +195,7 @@ public:
     [[nodiscard]] U32U64 ShiftLeftLogical(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 ShiftRightLogical(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
-    [[nodiscard]] U32 BitwiseAnd(const U32& a, const U32& b);
+    [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
     [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,

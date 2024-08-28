@@ -260,6 +260,7 @@ OPCODE(ShiftRightLogical64,                                 U64,            U64,
 OPCODE(ShiftRightArithmetic32,                              U32,            U32,            U32,                                                            )
 OPCODE(ShiftRightArithmetic64,                              U64,            U64,            U32,                                                            )
 OPCODE(BitwiseAnd32,                                        U32,            U32,            U32,                                                            )
+OPCODE(BitwiseAnd64,                                        U64,            U64,            U64,                                                            )
 OPCODE(BitwiseOr32,                                         U32,            U32,            U32,                                                            )
 OPCODE(BitwiseOr64,                                         U64,            U64,            U64,                                                            )
 OPCODE(BitwiseXor32,                                        U32,            U32,            U32,                                                            )
