@@ -95,10 +95,6 @@ check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMED
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
 endif()
-check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
-if(HAVE_SEM_TIMEDWAIT OR WIN32)
-    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
-endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
@@ -152,6 +148,7 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
+            src/core/libraries/gnmdriver/gnm_error.h
 )
 
 set(KERNEL_LIB 
@@ -233,6 +230,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_error.h
                 src/core/libraries/ngs2/ngs2_impl.cpp
                 src/core/libraries/ngs2/ngs2_impl.h
+                src/core/libraries/ajm/ajm_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -268,6 +266,7 @@ set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
 
 set(RANDOM_LIB src/core/libraries/random/random.cpp
                src/core/libraries/random/random.h
+               src/core/libraries/random/random_error.h
 )
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp

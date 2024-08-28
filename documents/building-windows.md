@@ -17,34 +17,53 @@ Note: **ARM64 is not supported!** As of writing, it will not build nor run. The 
 Once you are within the installer:
 1. Select `Desktop development with C++`
 2. Go to "Individual Components" tab
-3. Make sure `C++ Clang Compiler for Windows`, `MSBuild support for LLVM` and `C++ CMake Tools for Windows` are selected
+3. Search and select `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
 4. Continue the installation
 
 ### (Prerequisite) Download [**Qt**](https://doc.qt.io/qt-6/get-and-install-qt.html)
 
 Beware, this requires you to create a Qt account. If you do not want to do this, please follow the MSYS2/MinGW compilation method instead.
 
-1. Select Qt for Visual Studio plugin
-2. Select `msvc2019_64` option or similar. If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `msvc2019_arm64`
+1. Under the current, non beta version of Qt (at the time of writing 6.7.2), select the option `MSVC 2019 64-bit` or similar.  
+   If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `MSVC 2019 ARM64` instead.
 
-Go through the installation normally. If you do not know what components to select, just select the newest Qt version it gives you.
-If you know what you are doing, you may unselect individual components that eat up too much disk space.
+   Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
 
+2. Download and install [Qt Visual Studio Tools](https://marketplace.visualstudio.com/items?itemName=TheQtCompany.QtVisualStudioTools2022)
+   
 Once you are finished, you will have to configure Qt within Visual Studio:
 1. Tools -> Options -> Qt -> Versions
-2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.7.1\msvc2019_64` 
+2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.7.2\msvc2019_64` 
 3. Enable the default checkmark on the new version you just created. 
 
 ### (Prerequisite) Download [**Git for Windows**](https://git-scm.com/download/win)
 
 Go through the Git for Windows installation as normal
 
-### Compiling with Visual Studio GUI
+### Cloning the source code
 
 1. Open Git for Windows, navigate to a place where you want to store the shadPS4 source code folder
-2. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
-3. Open up Visual Studio, select `Open a local folder` and select the folder with the shadPS4 source code. The folder should contain `CMakeLists.txt`
-4. Build -> Build All
+2. Clone the repository by running  
+    `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
+
+### Compiling with Visual Studio GUI
+
+1. Open up Visual Studio, select `Open a local folder` and select the folder with the shadPS4 source code. The folder should contain `CMakeLists.txt`
+2. Change x64-Clang-Debug to x64-Clang-Release if you want a regular, non-debug build.
+3. If you want to build shadPS4 with the Qt Gui:
+   1. Click x64-Clang-Release and select "Manage Configurations"
+   2. Look for "CMake command arguments" and add to the text field  
+    `-DENABLE_QT_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.7.2\msvc2019_64`  
+    (Change Qt path if you've installed it to non-default path)
+   3. Press CTRL+S to save and wait a moment for CMake generation
+4. Change the project to build to shadps4.exe
+5. Build -> Build All
+
+Your shadps4.exe will be in `c:\path\to\source\Build\x64-Clang-Release\`
+
+To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
+`C:\Qt\6.7.2\msvc2019_64\bin\windeployqt.exe c:\path\to\shadps4.exe`  
+(Change Qt path if you've installed it to non-default path)
 
 ## Option 2: MSYS2/MinGW
 

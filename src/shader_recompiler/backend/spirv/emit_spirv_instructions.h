@@ -286,6 +286,7 @@ Id EmitShiftRightLogical64(EmitContext& ctx, Id base, Id shift);
 Id EmitShiftRightArithmetic32(EmitContext& ctx, Id base, Id shift);
 Id EmitShiftRightArithmetic64(EmitContext& ctx, Id base, Id shift);
 Id EmitBitwiseAnd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
+Id EmitBitwiseAnd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseOr32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseOr64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseXor32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);

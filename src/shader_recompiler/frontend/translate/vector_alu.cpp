@@ -11,6 +11,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LSHLREV_B32(inst);
     case Opcode::V_LSHL_B32:
         return V_LSHL_B32(inst);
+    case Opcode::V_LSHL_B64:
+        return V_LSHL_B64(inst);
     case Opcode::V_BFREV_B32:
         return V_BFREV_B32(inst);
     case Opcode::V_BFE_U32:
@@ -388,6 +390,16 @@ void Translator::V_LSHL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
+}
+
+void Translator::V_LSHL_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ASSERT_MSG(src0.IsImmediate() && src0.U64() == 0 && src1.IsImmediate() && src1.U64() == 0,
+               "V_LSHL_B64 with non-zero src0 or src1 is not supported");
+    ir.SetVectorReg(dst_reg, ir.Imm32(0));
+    ir.SetVectorReg(dst_reg + 1, ir.Imm32(0));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
