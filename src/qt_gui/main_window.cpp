@@ -388,7 +388,7 @@ void MainWindow::CreateConnects() {
             eventLoop.exec();
             QMessageBox::information(
                 nullptr, tr("Download Complete"),
-                QString(tr("Patches Downloaded Successfully!")+"\n"+
+                QString(tr("Patches Downloaded Successfully!") + "\n" +
                         tr("All Patches available for all games have been downloaded.")));
             panelDialog->accept();
         });
@@ -597,7 +597,8 @@ void MainWindow::BootGame() {
         int nFiles = fileNames.size();
 
         if (nFiles > 1) {
-            QMessageBox::critical(nullptr, tr("Game Boot"), QString(tr("Only one file can be selected!")));
+            QMessageBox::critical(nullptr, tr("Game Boot"),
+                                  QString(tr("Only one file can be selected!")));
         } else {
             std::filesystem::path path(fileNames[0].toStdString());
 #ifdef _WIN64
@@ -629,23 +630,24 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
-                    msgBox.setText(
-                        QString(tr("Patch detected!\nPKG and Game versions match!: %1\nWould you like ")+
-                                tr("to overwrite?"))
-                            .arg(pkg_app_version));
+                    msgBox.setText(QString(tr("Patch detected!\nPKG and Game versions match!: "
+                                              "%1\nWould you like ") +
+                                           tr("to overwrite?"))
+                                       .arg(pkg_app_version));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else if (pkgD < appD) {
-                    msgBox.setText(QString(tr("Patch detected!\nPKG Version %1 is older ")+
-                                           tr("than installed version!: %2\nWould you like ")+
+                    msgBox.setText(QString(tr("Patch detected!\nPKG Version %1 is older ") +
+                                           tr("than installed version!: %2\nWould you like ") +
                                            tr("to overwrite?"))
                                        .arg(pkg_app_version, game_app_version));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else {
-                    msgBox.setText(QString(tr("Patch detected!\nGame is installed: %1\nWould you like ")+
-                                           tr("to install Patch: %2?"))
-                                       .arg(game_app_version, pkg_app_version));
+                    msgBox.setText(
+                        QString(tr("Patch detected!\nGame is installed: %1\nWould you like ") +
+                                tr("to install Patch: %2?"))
+                            .arg(game_app_version, pkg_app_version));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 }
@@ -656,8 +658,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     return;
                 }
             } else {
-                msgBox.setText(QString(tr("Game already installed\n%1\nWould you like to overwrite?"))
-                                   .arg(QString::fromStdString(extract_path.string())));
+                msgBox.setText(
+                    QString(tr("Game already installed\n%1\nWould you like to overwrite?"))
+                        .arg(QString::fromStdString(extract_path.string())));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);
                 int result = msgBox.exec();
@@ -701,7 +704,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     QString path = QString::fromStdString(Config::getGameInstallDir());
                     QMessageBox extractMsgBox(this);
                     extractMsgBox.setWindowTitle(tr("Extraction Finished"));
-                    extractMsgBox.setText(QString(tr("Game successfully installed at %1")).arg(path));
+                    extractMsgBox.setText(
+                        QString(tr("Game successfully installed at %1")).arg(path));
                     extractMsgBox.addButton(QMessageBox::Ok);
                     extractMsgBox.setDefaultButton(QMessageBox::Ok);
                     connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
@@ -722,7 +726,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             dialog.exec();
         }
     } else {
-        QMessageBox::critical(this, tr("PKG ERROR"), tr("File doesn't appear to be a valid PKG file"));
+        QMessageBox::critical(this, tr("PKG ERROR"),
+                              tr("File doesn't appear to be a valid PKG file"));
     }
 }
 
