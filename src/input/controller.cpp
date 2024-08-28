@@ -140,7 +140,7 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
 
         state.touchpad[touchIndex].state = touchDown;
         state.touchpad[touchIndex].x = static_cast<u16>(x * 1920);
-        state.touchpad[touchIndex].y = static_cast<u16>(y * 1080);
+        state.touchpad[touchIndex].y = static_cast<u16>(y * 941);
 
         AddState(state);
     }
