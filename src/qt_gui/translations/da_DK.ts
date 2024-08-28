@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Snyd/Patches er eksperimentelle. Brug med forsigtighed.\n\nHent snydene individuelt ved at vælge repository og klikke på download-knappen.\nI Patch-fanen kan du hente alle patches på én gang, vælge hvilke du vil bruge, og gemme valget. I 'Indstillinger->utils' kan du hente alle/slette.\n\nDa vi ikke udvikler snyd/patches,\nvenligst rapporter problemer til snyd-udvikleren.\n\nHar du lavet et nyt snyd? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches er eksperimentelle.\nBrug med forsigtighed.\n\nDownload cheats individuelt ved at vælge lageret og klikke på download-knappen.\nUnder fanen Patches kan du downloade alle patches på én gang, vælge hvilke du vil bruge og gemme valget.\n\nDa vi ikke udvikler cheats/patches,\nvenligst rapporter problemer til cheat-udvikleren.\n\nHar du lavet en ny cheat? Besøg:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Cartella Installazione Giochi</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Scarica Trucchi / Patch</translation>
@@ -616,11 +616,11 @@
             <translation>ERROR PKG</translation>
         </message>
         <message>
-			<location filename="../main_window.cpp" line="693"/>
-			<source>Extracting PKG %1/%2</source>
-			<translation>Estrazione PKG %1/%2</translation>
-		</message>
-		<message>
+        	<location filename="../main_window.cpp" line="693"/>
+        	<source>Extracting PKG %1/%2</source>
+        	<translation>Estrazione PKG %1/%2</translation>
+        </message>
+        <message>
             <location filename="../main_window.cpp" line="703"/>
             <source>Extraction Finished</source>
             <translation>Ekstraksi Selesai</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheat/Patch bersifat eksperimen. Gunakan dengan hati-hati.\n\nUnduh cheat secara individu dengan memilih repositori dan mengklik tombol unduh.\nDi tab Patch, Anda dapat mengunduh semua Patch sekaligus, pilih yang ingin Anda gunakan dan simpan opsinya. Di 'Pengaturan->utils' Anda dapat mengunduh semua/menghapus.\n\nKarena kami tidak mengembangkan Cheat/Patch,\nharap laporkan masalah terkait kepada penulis cheat.\n\nApakah Anda membuat cheat baru? Kunjungi:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>I cheats/patches sono sperimentali.\nUtilizzali con cautela.\n\nScarica i cheats singolarmente selezionando il repository e cliccando sul pulsante di download.\nNella scheda Patches, puoi scaricare tutti i patch in una volta sola, scegliere quali vuoi utilizzare e salvare la tua selezione.\n\nPoiché non sviluppiamo i Cheats/Patches,\nper favore segnala i problemi all'autore del cheat.\n\nHai creato un nuovo cheat? Visita:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

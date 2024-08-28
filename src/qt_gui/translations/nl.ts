@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Download Cheats/Patches</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheats/Patches zijn experimenteel. Gebruik met voorzichtigheid.\n\nDownload cheats afzonderlijk door het depot te selecteren en op de download-knop te klikken.\nOp het tabblad Patch kun je alle patches tegelijk downloaden, kiezen welke je wilt gebruiken en je keuze opslaan. In 'Instellingen->hulpmiddelen' kun je alles downloaden/verwijderen.\n\nAangezien wij geen Cheats/Patches ontwikkelen,\nrapporteren eventuele problemen aan de maker van de cheats.\n\nHeb je een nieuwe cheat gemaakt? Bezoek:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches zijn experimenteel.\nGebruik met voorzichtigheid.\n\nDownload cheats afzonderlijk door het repository te selecteren en op de downloadknop te klikken.\nOp het tabblad Patches kun je alle patches tegelijk downloaden, kiezen welke je wilt gebruiken en je selectie opslaan.\n\nAangezien wij de Cheats/Patches niet ontwikkelen,\nmeld problemen bij de auteur van de cheat.\n\nHeb je een nieuwe cheat gemaakt? Bezoek:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

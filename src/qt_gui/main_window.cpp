@@ -319,7 +319,7 @@ void MainWindow::CreateConnects() {
     });
 
     // Cheats/Patches Download.
-    connect(ui->checkAllUpdatesCheatsAct, &QAction::triggered, this, [this]() {
+    connect(ui->downloadCheatsPatchesAct, &QAction::triggered, this, [this]() {
         QDialog* panelDialog = new QDialog(this);
         QVBoxLayout* layout = new QVBoxLayout(panelDialog);
         QPushButton* downloadAllCheatsButton =

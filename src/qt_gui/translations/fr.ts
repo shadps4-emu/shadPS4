@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Répertoire des jeux</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Télécharger Trucs / Patchs</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Les cheats/patches sont expérimentaux. Utilisez avec prudence.\n\nTéléchargez les cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patch, vous pouvez télécharger tous les patches en une fois, choisir celui que vous souhaitez utiliser et enregistrer l'option. Dans 'Paramètres->utils', vous pouvez télécharger tout/supprimer.\n\nComme nous ne développons pas les cheats/patches,\nmerci de signaler les problèmes au développeur des cheats.\n\nAvez-vous créé un nouveau cheat ? Visitez :\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Les cheats/patches sont expérimentaux.\nUtilisez-les avec précaution.\n\nTéléchargez les cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patches, vous pouvez télécharger tous les patches en une seule fois, choisir lesquels vous souhaitez utiliser et enregistrer votre sélection.\n\nComme nous ne développons pas les Cheats/Patches,\nmerci de signaler les problèmes à l'auteur du cheat.\n\nVous avez créé un nouveau cheat ? Visitez :\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

@@ -28,7 +28,6 @@ class CheatsPatches : public QWidget {
     Q_OBJECT
 
 public:
-    // Constructor and Destructor
     CheatsPatches(const QString& gameName, const QString& gameSerial, const QString& gameVersion,
                   const QString& gameSize, const QPixmap& gameImage, QWidget* parent = nullptr);
     ~CheatsPatches();
@@ -53,15 +52,15 @@ private:
     void populateFileListCheats();
     void populateFileListPatches();
 
-    void createFilesJson(const QString& repository);
-    void uncheckAllCheatCheckBoxes();
-    void updateNoteTextEdit(const QString& patchName);
-
     void addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray);
     void addPatchesToLayout(const QString& serial);
 
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
+
+    void createFilesJson(const QString& repository);
+    void uncheckAllCheatCheckBoxes();
+    void updateNoteTextEdit(const QString& patchName);
 
     // Network Manager
     QNetworkAccessManager* manager;

@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Κατεβάστε Κωδικούς / Ενημερώσεις</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Τα Cheats/Patches είναι πειραματικά. Χρησιμοποιήστε τα με προσοχή.\n\nΚατεβάστε Cheats ένα-ένα, επιλέγοντας το αποθετήριο και κάνοντας κλικ στο κουμπί λήψης.\nΣτο Tab Patch μπορείτε να κατεβάσετε όλα τα Patches ταυτόχρονα, να επιλέξετε ποια θέλετε να χρησιμοποιήσετε και να αποθηκεύσετε την επιλογή. Στην ενότητα 'Ρυθμίσεις->utils' μπορείτε να κατεβάσετε/διαγράψετε όλα.\n\nΔεδομένου ότι δεν αναπτύσσουμε Cheats/Patches,\nπαρακαλώ αναφέρετε προβλήματα στον προγραμματιστή του Cheat.\n\nΔημιουργήσατε νέο Cheat; Επισκεφθείτε:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Οι cheats/patches είναι πειραματικά.\nΧρησιμοποιήστε τα με προσοχή.\n\nΚατεβάστε τους cheats μεμονωμένα επιλέγοντας το αποθετήριο και κάνοντας κλικ στο κουμπί λήψης.\nΣτην καρτέλα Patches, μπορείτε να κατεβάσετε όλα τα patches ταυτόχρονα, να επιλέξετε ποια θέλετε να χρησιμοποιήσετε και να αποθηκεύσετε την επιλογή.\n\nΔεδομένου ότι δεν αναπτύσσουμε τους cheats/patches,\nπαρακαλώ αναφέρετε προβλήματα στον δημιουργό του cheat.\n\nΔημιουργήσατε ένα νέο cheat; Επισκεφθείτε:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

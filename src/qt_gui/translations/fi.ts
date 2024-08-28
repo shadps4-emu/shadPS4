@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Lataa Huijaukset / Korjaukset</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Huijaukset/Korjaukset ovat kokeellisia. Käytä varoen.\n\nLataa huijaukset yksittäin valitsemalla repositorio ja napsauttamalla latauspainiketta.\nKorjaus-välilehdellä voit ladata kaikki korjaukset kerralla, valita haluamasi ja tallentaa vaihtoehdon. 'Asetukset->työkalut'-välilehdellä voit ladata kaikki/poistaa.\n\nKoska emme kehitä huijauksia/korjauksia,\nilmoita ongelmista huijauksen tekijälle.\n\nOletko luonut uuden huijauksen? Vieraile:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches ovat kokeellisia.\nKäytä varoen.\n\nLataa cheats yksitellen valitsemalla repositorio ja napsauttamalla latauspainiketta.\nPatches-välilehdellä voit ladata kaikki patchit kerralla, valita, mitä haluat käyttää, ja tallentaa valinnan.\n\nKoska emme kehitä Cheats/Patches,\nilmoita ongelmista cheatin tekijälle.\n\nLuo uusi cheat? Käy osoitteessa:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

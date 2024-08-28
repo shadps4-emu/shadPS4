@@ -90,7 +90,7 @@
             <source>Open Game Folder</source>
             <translation>Open Game Folder</translation>
         </message>
-		<message>
+        <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
             <translation>Mẹo / Bản vá</translation>
@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Tải Mẹo / Bản vá</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheat/Bản vá là tính năng thử nghiệm. Sử dụng với sự cẩn trọng.\n\nTải xuống các cheat riêng lẻ bằng cách chọn kho lưu trữ và nhấp vào nút tải xuống.\nTrong tab Bản vá, bạn có thể tải xuống tất cả các bản vá cùng một lúc, chọn cái mà bạn muốn sử dụng và lưu tùy chọn. Trong 'Cài đặt->utils' bạn có thể tải xuống tất cả/xóa.\n\nVì chúng tôi không phát triển Cheat/Bản vá,\nhãy báo cáo vấn đề liên quan đến tác giả cheat.\n\nBạn đã tạo một cheat mới? Ghé thăm:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches là các tính năng thử nghiệm.\nHãy sử dụng cẩn thận.\n\nTải xuống các cheat riêng lẻ bằng cách chọn kho lưu trữ và nhấp vào nút tải xuống.\nTại tab Patches, bạn có thể tải xuống tất cả các patch cùng một lúc, chọn cái nào bạn muốn sử dụng và lưu lựa chọn của mình.\n\nVì chúng tôi không phát triển Cheats/Patches,\nxin vui lòng báo cáo các vấn đề cho tác giả cheat.\n\nBạn đã tạo ra một cheat mới? Truy cập:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

@@ -90,7 +90,7 @@
             <source>Open Game Folder</source>
             <translation>Open Game Folder</translation>
         </message>
-		<message>
+        <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Trapaças / Patches</source>
             <translation>Coduri / Patch-uri</translation>
@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Descarcă Coduri / Patch-uri</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheats/Patches sunt experimentale. Folosește-le cu prudență.\n\nDescarcă cheats individual selectând repository-ul și apăsând butonul de descărcare.\nÎn tab-ul Patch poți descărca toate Patches deodată, alege pe care dorești să o folosești și salvează opțiunea. În 'Settings->utils' poți descărca toate/șterge.\n\nÎntrucât nu dezvoltăm Cheat/Patches,\nte rugăm să raportezi problemele autorului de cheats.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

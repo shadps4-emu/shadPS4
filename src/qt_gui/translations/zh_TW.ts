@@ -90,7 +90,7 @@
             <source>Open Game Folder</source>
             <translation>Open Game Folder</translation>
         </message>
-		<message>
+        <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
             <translation>Zuòbì / Xiūbǔ chéngshì</translation>
@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Xiàzài Zuòbì / Xiūbǔ chéngshì</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>作弊碼/修補檔為實驗性質。請小心使用。\n\n透過選擇儲存庫並點擊下載按鈕來逐一下載作弊碼。\n在修補檔標籤頁中，您可以一次下載所有修補檔，選擇您要使用的修補檔並儲存選項。在 '設定->工具' 中，您可以下載所有/刪除。\n\n由於我們不開發作弊碼/修補檔，\n請向作弊碼作者報告問題。\n\n您創建了新的作弊碼？請訪問：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>作弊/補丁為實驗性功能。\n請小心使用。\n\n透過選擇儲存庫並點擊下載按鈕來單獨下載作弊程式。\n在“補丁”標籤頁中，您可以一次下載所有補丁，選擇要使用的補丁並保存您的選擇。\n\n由於我們不開發作弊/補丁，\n請將問題報告給作弊程式的作者。\n\n創建了新的作弊程式？請訪問：\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>

@@ -253,7 +253,7 @@
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
         </message>
-		<message>
+        <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
             <translation>Last ned Juks / Oppdateringer</translation>
@@ -646,7 +646,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Jukser/Oppdateringer er eksperimentelle. Bruk med forsiktighet.\n\nLast ned jukser individuelt ved å velge depotet og klikke på last ned-knappen.\nI Patch-fanen kan du laste ned alle oppdateringer samtidig, velge hvilken du vil bruke og lagre valget. I 'Innstillinger->verktøy' kan du laste ned alle/slette.\n\nSiden vi ikke utvikler Jukser/Oppdateringer,\nvennligst rapporter problemer relatert til juksforfatteren.\n\nHar du laget en ny juks? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned cheats individuelt ved å velge depotet og klikke på nedlastingsknappen.\nPå fanen Patches kan du laste ned alle patches samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Cheats/Patches,\nvær vennlig å rapportere problemer til cheat-utvikleren.\n\nHar du laget en ny cheat? Besøk:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
