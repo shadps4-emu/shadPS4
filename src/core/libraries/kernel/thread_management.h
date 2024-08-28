@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <semaphore>
 #include <string>
 #include <vector>
 #include <pthread.h>
@@ -19,6 +20,7 @@ namespace Libraries::Kernel {
 constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
+constexpr int ORBIS_KERNEL_SEM_VALUE_MAX = 0x7FFFFFFF;
 
 constexpr int ORBIS_PTHREAD_MUTEX_ERRORCHECK = 1;
 constexpr int ORBIS_PTHREAD_MUTEX_RECURSIVE = 2;
@@ -107,6 +109,11 @@ struct PthreadRwLockAttrInternal {
 struct PthreadRwInternal {
     pthread_rwlock_t pth_rwlock;
     std::string name;
+};
+
+struct PthreadSemInternal {
+    std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX> semaphore;
+    std::atomic<s32> value;
 };
 
 class PThreadPool {
