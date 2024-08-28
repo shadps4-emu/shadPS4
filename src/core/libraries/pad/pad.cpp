@@ -249,10 +249,10 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
     LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
     if (Config::getUseSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return -1;
+            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
         if (type != ORBIS_PAD_PORT_TYPE_STANDARD)
-            return -1;
+            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
     return 1; // dummy
 }
@@ -261,10 +261,10 @@ int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index, const OrbisPadOp
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     if (Config::getUseSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return -1;
+            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
         if (type != ORBIS_PAD_PORT_TYPE_STANDARD)
-            return -1;
+            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
     return 1; // dummy
 }
