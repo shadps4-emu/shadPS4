@@ -6,18 +6,18 @@
 
 CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
     CryptoPP::InvertibleRSAFunction params;
-    params.SetPrime1(CryptoPP::Integer(pkg_derived_key3_keyset.Prime1, 0x80));
-    params.SetPrime2(CryptoPP::Integer(pkg_derived_key3_keyset.Prime2, 0x80));
+    params.SetPrime1(CryptoPP::Integer(PkgDerivedKey3Keyset::Prime1, 0x80));
+    params.SetPrime2(CryptoPP::Integer(PkgDerivedKey3Keyset::Prime2, 0x80));
 
-    params.SetPublicExponent(CryptoPP::Integer(pkg_derived_key3_keyset.PublicExponent, 4));
-    params.SetPrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.PrivateExponent, 0x100));
+    params.SetPublicExponent(CryptoPP::Integer(PkgDerivedKey3Keyset::PublicExponent, 4));
+    params.SetPrivateExponent(CryptoPP::Integer(PkgDerivedKey3Keyset::PrivateExponent, 0x100));
 
-    params.SetModPrime1PrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.Exponent1, 0x80));
-    params.SetModPrime2PrivateExponent(CryptoPP::Integer(pkg_derived_key3_keyset.Exponent2, 0x80));
+    params.SetModPrime1PrivateExponent(CryptoPP::Integer(PkgDerivedKey3Keyset::Exponent1, 0x80));
+    params.SetModPrime2PrivateExponent(CryptoPP::Integer(PkgDerivedKey3Keyset::Exponent2, 0x80));
 
-    params.SetModulus(CryptoPP::Integer(pkg_derived_key3_keyset.Modulus, 0x100));
+    params.SetModulus(CryptoPP::Integer(PkgDerivedKey3Keyset::Modulus, 0x100));
     params.SetMultiplicativeInverseOfPrime2ModPrime1(
-        CryptoPP::Integer(pkg_derived_key3_keyset.Coefficient, 0x80));
+        CryptoPP::Integer(PkgDerivedKey3Keyset::Coefficient, 0x80));
 
     CryptoPP::RSA::PrivateKey privateKey(params);
 
@@ -26,18 +26,18 @@ CryptoPP::RSA::PrivateKey Crypto::key_pkg_derived_key3_keyset_init() {
 
 CryptoPP::RSA::PrivateKey Crypto::FakeKeyset_keyset_init() {
     CryptoPP::InvertibleRSAFunction params;
-    params.SetPrime1(CryptoPP::Integer(FakeKeyset_keyset.Prime1, 0x80));
-    params.SetPrime2(CryptoPP::Integer(FakeKeyset_keyset.Prime2, 0x80));
+    params.SetPrime1(CryptoPP::Integer(FakeKeyset::Prime1, 0x80));
+    params.SetPrime2(CryptoPP::Integer(FakeKeyset::Prime2, 0x80));
 
-    params.SetPublicExponent(CryptoPP::Integer(FakeKeyset_keyset.PublicExponent, 4));
-    params.SetPrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.PrivateExponent, 0x100));
+    params.SetPublicExponent(CryptoPP::Integer(FakeKeyset::PublicExponent, 4));
+    params.SetPrivateExponent(CryptoPP::Integer(FakeKeyset::PrivateExponent, 0x100));
 
-    params.SetModPrime1PrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.Exponent1, 0x80));
-    params.SetModPrime2PrivateExponent(CryptoPP::Integer(FakeKeyset_keyset.Exponent2, 0x80));
+    params.SetModPrime1PrivateExponent(CryptoPP::Integer(FakeKeyset::Exponent1, 0x80));
+    params.SetModPrime2PrivateExponent(CryptoPP::Integer(FakeKeyset::Exponent2, 0x80));
 
-    params.SetModulus(CryptoPP::Integer(FakeKeyset_keyset.Modulus, 0x100));
+    params.SetModulus(CryptoPP::Integer(FakeKeyset::Modulus, 0x100));
     params.SetMultiplicativeInverseOfPrime2ModPrime1(
-        CryptoPP::Integer(FakeKeyset_keyset.Coefficient, 0x80));
+        CryptoPP::Integer(FakeKeyset::Coefficient, 0x80));
 
     CryptoPP::RSA::PrivateKey privateKey(params);
 
@@ -46,25 +46,22 @@ CryptoPP::RSA::PrivateKey Crypto::FakeKeyset_keyset_init() {
 
 CryptoPP::RSA::PrivateKey Crypto::DebugRifKeyset_init() {
     CryptoPP::InvertibleRSAFunction params;
-    params.SetPrime1(
-        CryptoPP::Integer(DebugRifKeyset_keyset.Prime1, sizeof(DebugRifKeyset_keyset.Prime1)));
-    params.SetPrime2(
-        CryptoPP::Integer(DebugRifKeyset_keyset.Prime2, sizeof(DebugRifKeyset_keyset.Prime2)));
+    params.SetPrime1(CryptoPP::Integer(DebugRifKeyset::Prime1, sizeof(DebugRifKeyset::Prime1)));
+    params.SetPrime2(CryptoPP::Integer(DebugRifKeyset::Prime2, sizeof(DebugRifKeyset::Prime2)));
 
-    params.SetPublicExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PublicExponent,
-                                               sizeof(DebugRifKeyset_keyset.PublicExponent)));
-    params.SetPrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.PrivateExponent,
-                                                sizeof(DebugRifKeyset_keyset.PrivateExponent)));
+    params.SetPublicExponent(
+        CryptoPP::Integer(DebugRifKeyset::PublicExponent, sizeof(DebugRifKeyset::PublicExponent)));
+    params.SetPrivateExponent(CryptoPP::Integer(DebugRifKeyset::PrivateExponent,
+                                                sizeof(DebugRifKeyset::PrivateExponent)));
 
-    params.SetModPrime1PrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.Exponent1,
-                                                         sizeof(DebugRifKeyset_keyset.Exponent1)));
-    params.SetModPrime2PrivateExponent(CryptoPP::Integer(DebugRifKeyset_keyset.Exponent2,
-                                                         sizeof(DebugRifKeyset_keyset.Exponent2)));
+    params.SetModPrime1PrivateExponent(
+        CryptoPP::Integer(DebugRifKeyset::Exponent1, sizeof(DebugRifKeyset::Exponent1)));
+    params.SetModPrime2PrivateExponent(
+        CryptoPP::Integer(DebugRifKeyset::Exponent2, sizeof(DebugRifKeyset::Exponent2)));
 
-    params.SetModulus(
-        CryptoPP::Integer(DebugRifKeyset_keyset.Modulus, sizeof(DebugRifKeyset_keyset.Modulus)));
-    params.SetMultiplicativeInverseOfPrime2ModPrime1(CryptoPP::Integer(
-        DebugRifKeyset_keyset.Coefficient, sizeof(DebugRifKeyset_keyset.Coefficient)));
+    params.SetModulus(CryptoPP::Integer(DebugRifKeyset::Modulus, sizeof(DebugRifKeyset::Modulus)));
+    params.SetMultiplicativeInverseOfPrime2ModPrime1(
+        CryptoPP::Integer(DebugRifKeyset::Coefficient, sizeof(DebugRifKeyset::Coefficient)));
 
     CryptoPP::RSA::PrivateKey privateKey(params);
 
