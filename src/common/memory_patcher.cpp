@@ -97,146 +97,150 @@ void OnGameLoaded() {
 #ifdef ENABLE_QT_GUI
     QString patchDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
+    QString repositories[] = {"GoldHEN", "shadPS4"};
 
-    QString filesJsonPath = patchDir + "/files.json";
-    QFile jsonFile(filesJsonPath);
-    if (!jsonFile.open(QIODevice::ReadOnly)) {
-        LOG_ERROR(Loader, "Unable to open files.json for reading.");
-        return;
-    }
+    for (const QString& repository : repositories) {
+        QString filesJsonPath = patchDir + "/" + repository + "/files.json";
 
-    QByteArray jsonData = jsonFile.readAll();
-    jsonFile.close();
-
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-    QJsonObject jsonObject = jsonDoc.object();
-
-    QString selectedFileName;
-    QString serial = QString::fromStdString(g_game_serial);
-
-    for (auto it = jsonObject.constBegin(); it != jsonObject.constEnd(); ++it) {
-        QString filePath = it.key();
-        QJsonArray idsArray = it.value().toArray();
-
-        if (idsArray.contains(QJsonValue(serial))) {
-            selectedFileName = filePath;
-            break;
+        QFile jsonFile(filesJsonPath);
+        if (!jsonFile.open(QIODevice::ReadOnly)) {
+            LOG_ERROR(Loader, "Unable to open files.json for reading.");
+            continue;
         }
-    }
 
-    if (selectedFileName.isEmpty()) {
-        LOG_ERROR(Loader, "No patch file found for the current serial.");
-        return;
-    }
+        QByteArray jsonData = jsonFile.readAll();
+        jsonFile.close();
 
-    QString filePath = patchDir + "/" + selectedFileName;
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        LOG_ERROR(Loader, "Unable to open the file for reading.");
-        return;
-    }
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+        QJsonObject jsonObject = jsonDoc.object();
 
-    QByteArray xmlData = file.readAll();
-    file.close();
+        QString selectedFileName;
+        QString serial = QString::fromStdString(g_game_serial);
 
-    QString newXmlData;
+        for (auto it = jsonObject.constBegin(); it != jsonObject.constEnd(); ++it) {
+            QString filePath = it.key();
+            QJsonArray idsArray = it.value().toArray();
 
-    QXmlStreamReader xmlReader(xmlData);
-    bool insideMetadata = false;
+            if (idsArray.contains(QJsonValue(serial))) {
+                selectedFileName = filePath;
+                break;
+            }
+        }
 
-    bool isEnabled = false;
+        if (selectedFileName.isEmpty()) {
+            LOG_ERROR(Loader, "No patch file found for the current serial.");
+            continue;
+        }
 
-    while (!xmlReader.atEnd()) {
-        xmlReader.readNext();
+        QString filePath = patchDir + "/" + repository + "/" + selectedFileName;
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            LOG_ERROR(Loader, "Unable to open the file for reading.");
+            continue;
+        }
 
-        if (xmlReader.isStartElement()) {
-            std::string currentPatchName;
-            QJsonArray patchLines;
-            if (xmlReader.name() == QStringLiteral("Metadata")) {
-                insideMetadata = true;
+        QByteArray xmlData = file.readAll();
+        file.close();
 
-                QString name = xmlReader.attributes().value("Name").toString();
-                currentPatchName = name.toStdString();
+        QString newXmlData;
 
-                // Check and update the isEnabled attribute
-                for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
-                    if (attr.name() == QStringLiteral("isEnabled")) {
-                        if (attr.value().toString() == "true") {
-                            isEnabled = true;
-                        } else
-                            isEnabled = false;
-                    }
-                }
-            } else if (xmlReader.name() == QStringLiteral("PatchList")) {
-                QJsonArray linesArray;
-                while (!xmlReader.atEnd() &&
-                       !(xmlReader.tokenType() == QXmlStreamReader::EndElement &&
-                         xmlReader.name() == QStringLiteral("PatchList"))) {
-                    xmlReader.readNext();
-                    if (xmlReader.tokenType() == QXmlStreamReader::StartElement &&
-                        xmlReader.name() == QStringLiteral("Line")) {
-                        QXmlStreamAttributes attributes = xmlReader.attributes();
-                        QJsonObject lineObject;
-                        lineObject["Type"] = attributes.value("Type").toString();
-                        lineObject["Address"] = attributes.value("Address").toString();
-                        lineObject["Value"] = attributes.value("Value").toString();
-                        linesArray.append(lineObject);
-                    }
-                }
+        QXmlStreamReader xmlReader(xmlData);
+        bool insideMetadata = false;
 
-                patchLines = linesArray;
-                if (isEnabled) {
-                    foreach (const QJsonValue& value, patchLines) {
-                        QJsonObject lineObject = value.toObject();
-                        QString type = lineObject["Type"].toString();
-                        QString address = lineObject["Address"].toString();
-                        QString patchValue = lineObject["Value"].toString();
-                        QString maskOffsetStr = lineObject["Offset"].toString();
+        bool isEnabled = false;
 
-                        patchValue = convertValueToHex(type, patchValue);
+        while (!xmlReader.atEnd()) {
+            xmlReader.readNext();
 
-                        bool littleEndian = false;
+            if (xmlReader.isStartElement()) {
+                std::string currentPatchName;
+                QJsonArray patchLines;
+                if (xmlReader.name() == QStringLiteral("Metadata")) {
+                    insideMetadata = true;
 
-                        if (type == "bytes16") {
-                            littleEndian = true;
-                        } else if (type == "bytes32") {
-                            littleEndian = true;
-                        } else if (type == "bytes64") {
-                            littleEndian = true;
+                    QString name = xmlReader.attributes().value("Name").toString();
+                    currentPatchName = name.toStdString();
+
+                    // Check and update the isEnabled attribute
+                    for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
+                        if (attr.name() == QStringLiteral("isEnabled")) {
+                            if (attr.value().toString() == "true") {
+                                isEnabled = true;
+                            } else
+                                isEnabled = false;
                         }
-
-                        MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
-                        int maskOffsetValue = 0;
-
-                        if (type == "mask") {
-                            patchMask = MemoryPatcher::PatchMask::Mask;
-
-                            // im not sure if this works, there is no games to test the mask offset
-                            // on yet
-                            if (!maskOffsetStr.toStdString().empty())
-                                maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+                    }
+                } else if (xmlReader.name() == QStringLiteral("PatchList")) {
+                    QJsonArray linesArray;
+                    while (!xmlReader.atEnd() &&
+                           !(xmlReader.tokenType() == QXmlStreamReader::EndElement &&
+                             xmlReader.name() == QStringLiteral("PatchList"))) {
+                        xmlReader.readNext();
+                        if (xmlReader.tokenType() == QXmlStreamReader::StartElement &&
+                            xmlReader.name() == QStringLiteral("Line")) {
+                            QXmlStreamAttributes attributes = xmlReader.attributes();
+                            QJsonObject lineObject;
+                            lineObject["Type"] = attributes.value("Type").toString();
+                            lineObject["Address"] = attributes.value("Address").toString();
+                            lineObject["Value"] = attributes.value("Value").toString();
+                            linesArray.append(lineObject);
                         }
+                    }
 
-                        if (type == "mask_jump32")
-                            patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+                    patchLines = linesArray;
+                    if (isEnabled) {
+                        foreach (const QJsonValue& value, patchLines) {
+                            QJsonObject lineObject = value.toObject();
+                            QString type = lineObject["Type"].toString();
+                            QString address = lineObject["Address"].toString();
+                            QString patchValue = lineObject["Value"].toString();
+                            QString maskOffsetStr = lineObject["Offset"].toString();
 
-                        MemoryPatcher::PatchMemory(currentPatchName, address.toStdString(),
-                                                   patchValue.toStdString(), false, littleEndian,
-                                                   patchMask);
+                            patchValue = convertValueToHex(type, patchValue);
+
+                            bool littleEndian = false;
+
+                            if (type == "bytes16") {
+                                littleEndian = true;
+                            } else if (type == "bytes32") {
+                                littleEndian = true;
+                            } else if (type == "bytes64") {
+                                littleEndian = true;
+                            }
+
+                            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+                            int maskOffsetValue = 0;
+
+                            if (type == "mask") {
+                                patchMask = MemoryPatcher::PatchMask::Mask;
+
+                                // im not sure if this works, there is no games to test the mask
+                                // offset on yet
+                                if (!maskOffsetStr.toStdString().empty())
+                                    maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+                            }
+
+                            if (type == "mask_jump32")
+                                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
+                            MemoryPatcher::PatchMemory(currentPatchName, address.toStdString(),
+                                                       patchValue.toStdString(), false,
+                                                       littleEndian, patchMask);
+                        }
                     }
                 }
             }
         }
-    }
 
-    if (xmlReader.hasError()) {
-        LOG_ERROR(Loader, "Failed to parse XML for {}", g_game_serial);
-    } else {
-        LOG_INFO(Loader, "Patches loaded successfully");
-    }
+        if (xmlReader.hasError()) {
+            LOG_ERROR(Loader, "Failed to parse XML for {}", g_game_serial);
+        } else {
+            LOG_INFO(Loader, "Patches loaded successfully");
+        }
 #endif
 
-    ApplyPendingPatches();
+        ApplyPendingPatches();
+    }
 }
 
 void AddPatchToQueue(patchInfo patchToAdd) {

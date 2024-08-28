@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #ifndef CHEATS_PATCHES_H
 #define CHEATS_PATCHES_H
 
@@ -25,12 +28,15 @@ class CheatsPatches : public QWidget {
     Q_OBJECT
 
 public:
+    // Constructor and Destructor
     CheatsPatches(const QString& gameName, const QString& gameSerial, const QString& gameVersion,
                   const QString& gameSize, const QPixmap& gameImage, QWidget* parent = nullptr);
     ~CheatsPatches();
+
+    // Public Methods
     void downloadCheats(const QString& source, const QString& m_gameSerial,
-                        const QString& m_gameVersion, const bool showMessageBox);
-    void downloadPatches();
+                        const QString& m_gameVersion, bool showMessageBox);
+    void downloadPatches(const QString repository, const bool showMessageBox);
 
 signals:
     void downloadFinished();
@@ -40,28 +46,22 @@ private:
     void setupUI();
     void onSaveButtonClicked();
     QCheckBox* findCheckBoxByName(const QString& name);
-    void onTabChanged(int index);
-    void updateNoteTextEdit(const QString& patchName);
+    bool eventFilter(QObject* obj, QEvent* event);
+    void onPatchCheckBoxHovered(QCheckBox* checkBox, bool hovered);
 
     // Cheat and Patch Management
     void populateFileListCheats();
-    void onFileSelected(const QModelIndex& index);
-    void createFilesJson();
-    void uncheckAllCheatCheckBoxes();
+    void populateFileListPatches();
 
-    void loadCheats(const QString& filePath);
-    void loadPatches(const QString& serial);
+    void createFilesJson(const QString& repository);
+    void uncheckAllCheatCheckBoxes();
+    void updateNoteTextEdit(const QString& patchName);
 
     void addCheatsToLayout(const QJsonArray& modsArray, const QJsonArray& creditsArray);
-    void addPatchToLayout(const QString& name, const QString& author, const QString& note,
-                          const QJsonArray& linesArray, const QString& serial, bool isEnabled);
+    void addPatchesToLayout(const QString& serial);
 
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
-
-    // Event Filtering
-    bool eventFilter(QObject* obj, QEvent* event);
-    void onPatchCheckBoxHovered(QCheckBox* checkBox, bool hovered);
 
     // Network Manager
     QNetworkAccessManager* manager;
@@ -107,6 +107,10 @@ private:
     QTextEdit* instructionsTextEdit;
     QListView* listView_selectFile;
     QItemSelectionModel* selectionModel;
+    QComboBox* patchesComboBox;
+    QListView* patchesListView;
+
+    QString defaultTextEdit;
 };
 
 #endif // CHEATS_PATCHES_H

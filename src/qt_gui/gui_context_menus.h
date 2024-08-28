@@ -45,7 +45,7 @@ public:
         QMenu menu(widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openFolder(tr("Open Game Folder"), widget);
-        QAction openCheats(tr("Cheats/Patches"), widget);
+        QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
