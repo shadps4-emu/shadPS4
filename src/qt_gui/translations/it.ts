@@ -16,7 +16,7 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 è un emulatore sperimentale open source per Playstation 4.</translation>
+            <translation>shadPS4 è un emulatore sperimentale open source per PlayStation 4.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
@@ -176,7 +176,7 @@
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Installa applicaazione da un .pkg file</translation>
+            <translation>Installa applicazione da un file .pkg file</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
@@ -365,7 +365,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>Systema</translation>
+            <translation>Sistema</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
@@ -450,7 +450,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Abilita Scaricamento Shader</translation>
+            <translation>Abilita Dump Shader</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
@@ -460,7 +460,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Abilita Scaricamento PM4</translation>
+            <translation>Abilita Dump PM4</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
@@ -470,7 +470,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Abilita Scaricamento Debug</translation>
+            <translation>Abilita Dump Debug</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
