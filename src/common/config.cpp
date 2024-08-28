@@ -17,6 +17,8 @@ static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto
 static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
+static bool useSpecialPad = false;
+static int specialPadClass = 1;
 static bool isDebugDump = false;
 static bool isShowSplash = false;
 static bool isNullGpu = false;
@@ -79,6 +81,14 @@ std::string getLogType() {
 
 std::string getUserName() {
     return userName;
+}
+
+bool getUseSpecialPad() {
+    return useSpecialPad;
+}
+
+int getSpecialPadClass() {
+    return specialPadClass;
 }
 
 bool debugDump() {
@@ -195,6 +205,14 @@ void setLogFilter(const std::string& type) {
 
 void setUserName(const std::string& type) {
     userName = type;
+}
+
+void setUseSpecialPad(bool use) {
+    useSpecialPad = use;
+}
+
+void setSpecialPadClass(int type) {
+    specialPadClass = type;
 }
 
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
@@ -330,6 +348,13 @@ void load(const std::filesystem::path& path) {
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
     }
 
+    if (data.contains("Input")) {
+        const toml::value& input = data.at("Input");
+
+        useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
+        specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
+    }
+
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
@@ -411,6 +436,8 @@ void save(const std::filesystem::path& path) {
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
     data["General"]["showSplash"] = isShowSplash;
+    data["Input"]["useSpecialPad"] = useSpecialPad;
+    data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
@@ -457,6 +484,8 @@ void setDefaultValues() {
     logFilter = "";
     logType = "async";
     userName = "shadPS4";
+    useSpecialPad = false;
+    specialPadClass = 1;
     isDebugDump = false;
     isShowSplash = false;
     isNullGpu = false;

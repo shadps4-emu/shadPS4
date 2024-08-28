@@ -17,6 +17,9 @@ std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
 
+bool getUseSpecialPad();
+int getSpecialPadClass();
+
 u32 getScreenWidth();
 u32 getScreenHeight();
 s32 getGpuId();
@@ -43,6 +46,9 @@ void setFullscreenMode(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
+
+void setUseSpecialPad(bool use);
+void setSpecialPadClass(int type);
 
 void setLogType(const std::string& type);
 void setLogFilter(const std::string& type);
