@@ -1111,7 +1111,8 @@ private:
         Handle handle;
     };
 
-    void CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& ccb);
+    std::pair<std::span<const u32>, std::span<const u32>> CopyCmdBuffers(std::span<const u32> dcb,
+                                                                         std::span<const u32> ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     Task ProcessCompute(std::span<const u32> acb, int vqid);
@@ -1120,8 +1121,8 @@ private:
 
     struct GpuQueue {
         std::mutex m_access{};
-        std::atomic_uint32_t dcb_buffer_offset;
-        std::atomic_uint32_t ccb_buffer_offset;
+        std::atomic<u32> dcb_buffer_offset;
+        std::atomic<u32> ccb_buffer_offset;
         std::vector<u32> dcb_buffer;
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};

@@ -569,7 +569,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
     TracyFiberLeave;
 }
 
-void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& ccb) {
+std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
+    std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
     queue.dcb_buffer.resize(
@@ -594,13 +595,15 @@ void Liverpool::CopyCmdBuffers(std::span<const u32>& dcb, std::span<const u32>& 
         ccb = std::span<const u32>{queue.ccb_buffer.begin() + prev_ccb_buffer_offset,
                                    queue.ccb_buffer.begin() + queue.ccb_buffer_offset};
     }
+
+    return std::make_pair(dcb, ccb);
 }
 
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
     if (Config::copyGPUCmdBuffers()) {
-        CopyCmdBuffers(dcb, ccb);
+        std::tie(dcb, ccb) = CopyCmdBuffers(dcb, ccb);
     }
 
     auto task = ProcessGraphics(dcb, ccb);
