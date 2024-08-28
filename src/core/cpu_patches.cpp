@@ -565,6 +565,11 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
+static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
+    Cpu cpu;
+    return !cpu.has(Cpu::tSSE4a);
+}
+
 static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
@@ -708,6 +713,166 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     }
 }
 
+static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    // INSERTQ Instruction Reference
+    // Inserts bits from the lower 64 bits of the source operand into the lower 64 bits of the
+    // destination operand No other bits in the lower 64 bits of the destination are modified. The
+    // upper 64 bits of the destination are undefined.
+
+    // There's two forms of the instruction:
+    // INSERTQ xmm1, xmm2, imm8, imm8
+    // INSERTQ xmm1, xmm2
+
+    // For the immediate form:
+    // Insert field starting at bit 0 of xmm2 with the length
+    // specified by [5:0] of the first immediate byte. This
+    // field is inserted into xmm1 starting at the bit position
+    // specified by [5:0] of the second immediate byte.
+
+    // For the register form:
+    // Insert field starting at bit 0 of xmm2 with the length
+    // specified by xmm2[69:64]. This field is inserted into
+    // xmm1 starting at the bit position specified by
+    // xmm2[77:72].
+
+    // A value of zero in the field length is defined as a length of 64. If the length field is 0
+    // and the bit index is 0, bits 63:0 of the source operand are inserted. For any other value of
+    // the bit index, the results are undefined.
+
+    bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
+                         operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
+
+    if (operands[0].type != ZYDIS_OPERAND_TYPE_REGISTER ||
+        operands[1].type != ZYDIS_OPERAND_TYPE_REGISTER) {
+        ASSERT_MSG("operands 0 and 1 must be registers.");
+    }
+
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    const auto src = ZydisToXbyakRegisterOperand(operands[1]);
+    Xbyak::Xmm xmm_dst = *reinterpret_cast<const Xbyak::Xmm*>(&dst);
+    Xbyak::Xmm xmm_src = *reinterpret_cast<const Xbyak::Xmm*>(&src);
+
+    if (immediateForm) {
+        u8 length = operands[2].imm.value.u & 0x3F;
+        u8 index = operands[3].imm.value.u & 0x3F;
+        if (length == 0) {
+            length = 64;
+        }
+
+        if (length + index > 64) {
+            ASSERT_MSG("length + index must be less than or equal to 64.");
+        }
+
+        const Xbyak::Reg64 scratch1 = rax;
+        const Xbyak::Reg64 scratch2 = rcx;
+        const Xbyak::Reg64 mask = rdx;
+
+        // Set rsp to before red zone and save scratch registers
+        c.sub(rsp, 128);
+        c.push(scratch1);
+        c.push(scratch2);
+        c.push(mask);
+
+        u64 maskValue = (1ULL << length) - 1;
+
+        MAYBE_AVX(movq, scratch1, xmm_src);
+        MAYBE_AVX(movq, scratch2, xmm_dst);
+        c.mov(mask, maskValue);
+
+        // src &= mask
+        c.and_(scratch1, mask);
+
+        // src <<= index
+        c.shl(scratch1, index);
+
+        // dst &= ~(mask << index)
+        maskValue = ~(maskValue << index);
+        c.mov(mask, maskValue);
+        c.and_(scratch2, mask);
+
+        // dst |= src
+        c.or_(scratch2, scratch1);
+
+        // Insert scratch2 into low 64 bits of dst, upper 64 bits are unaffected
+        Cpu cpu;
+        if (cpu.has(Cpu::tAVX)) {
+            c.vpinsrq(xmm_dst, xmm_dst, scratch2, 0);
+        } else {
+            c.pinsrq(xmm_dst, scratch2, 0);
+        }
+
+        c.pop(mask);
+        c.pop(scratch2);
+        c.pop(scratch1);
+        c.add(rsp, 128);
+    } else {
+        if (operands[2].type != ZYDIS_OPERAND_TYPE_UNUSED ||
+            operands[3].type != ZYDIS_OPERAND_TYPE_UNUSED) {
+            ASSERT_MSG("operands 2 and 3 must be unused for register form.");
+        }
+
+        const Xbyak::Reg64 scratch1 = rax;
+        const Xbyak::Reg64 scratch2 = rcx;
+        const Xbyak::Reg64 index = rdx;
+        const Xbyak::Reg64 mask = rbx;
+
+        c.sub(rsp, 128);
+        c.push(scratch1);
+        c.push(scratch2);
+        c.push(index);
+        c.push(mask);
+
+        // Get upper 64 bits of src and copy it to mask and index
+        MAYBE_AVX(pextrq, index, xmm_src, 1);
+        c.mov(mask, index);
+
+        // When length is 0, set it to 64
+        c.mov(scratch1, 64);     // for the cmovz below
+        c.and_(mask, 0x3F);      // mask now holds the length
+        c.cmovz(mask, scratch1); // Check if length is 0, if so, set to 64
+
+        // Get index to insert at
+        c.shr(index, 8);
+        c.and_(index, 0x3F);
+
+        // Create a mask out of the length
+        c.mov(cl, mask.cvt8());
+        c.mov(mask, 1);
+        c.shl(mask, cl);
+        c.dec(mask);
+
+        // src &= mask
+        MAYBE_AVX(movq, scratch1, xmm_src);
+        c.and_(scratch1, mask);
+
+        // dst &= ~(mask << index)
+        c.mov(cl, index.cvt8());
+        c.shl(mask, cl);
+        c.not_(mask);
+
+        // src <<= index
+        c.shl(scratch1, cl);
+
+        MAYBE_AVX(movq, scratch2, xmm_dst);
+        c.and_(scratch2, mask);
+        c.or_(scratch2, scratch1);
+
+        // Insert scratch2 into low 64 bits of dst, upper 64 bits are unaffected
+        Cpu cpu;
+        if (cpu.has(Cpu::tAVX)) {
+            c.vpinsrq(xmm_dst, xmm_dst, scratch2, 0);
+        } else {
+            c.pinsrq(xmm_dst, scratch2, 0);
+        }
+
+        c.pop(mask);
+        c.pop(index);
+        c.pop(scratch2);
+        c.pop(scratch1);
+        c.add(rsp, 128);
+    }
+}
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
 using InstructionGenerator = void (*)(const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
@@ -730,6 +895,7 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
 #endif
 
     {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
+    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
 
 #ifdef __APPLE__
     // Patches for instruction sets not supported by Rosetta 2.
