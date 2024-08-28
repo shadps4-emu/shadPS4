@@ -118,6 +118,12 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, GameLiveStreaming)                                                                    \
     SUB(Lib, Remoteplay)                                                                           \
     SUB(Lib, SharePlay)                                                                            \
+    SUB(LibSUB(Lib, Fiber)                                                                         \
+    SUB(Lib, Mouse)                                                                                \
+    SUB(Lib, Ime)                                                                                  \
+    SUB(Lib, GameLiveStreaming)                                                                    \
+    SUB(Lib, Remoteplay)                                                                           \
+    SUB(Lib, SharePlay)                                                                            \
     SUB(Lib, Fiber)                                                                                \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
