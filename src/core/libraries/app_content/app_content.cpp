@@ -57,7 +57,7 @@ int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadSp() {
 int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            const OrbisNpUnifiedEntitlementLabel* entitlement_label,
                                            OrbisAppContentMountPoint* mount_point) {
-    LOG_ERROR(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called");
 
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) / title_id /
                             entitlement_label->data;
@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
         }
 
-        snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/app0/dlc%02d", i);
+        snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", i);
         mnt->Mount(mount_dir, mount_point->data);
         return ORBIS_OK;
     }
