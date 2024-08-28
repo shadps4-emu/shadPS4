@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#ifdef ENABLE_QT_GUI
 #include <algorithm>
 #include <string>
-#include "common/logging/log.h"
-#include "common/path_util.h"
-#ifdef ENABLE_QT_GUI
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -13,7 +11,8 @@
 #include <QListView>
 #include <QMessageBox>
 #include <QXmlStreamReader>
-#endif
+#include "common/logging/log.h"
+#include "common/path_util.h"
 #include "memory_patcher.h"
 
 namespace MemoryPatcher {
@@ -23,7 +22,6 @@ u64 g_eboot_image_size;
 std::string g_game_serial;
 std::vector<patchInfo> pending_patches;
 
-#ifdef ENABLE_QT_GUI
 QString toHex(unsigned long long value, size_t byteSize) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0') << std::setw(byteSize * 2) << value;
@@ -89,12 +87,10 @@ QString convertValueToHex(const QString& type, const QString& valueStr) {
     }
     return result;
 }
-#endif
 
 void OnGameLoaded() {
 
-// We use the QT headers for the xml and json parsing, this define is only true on QT builds
-#ifdef ENABLE_QT_GUI
+    // We use the QT headers for the xml and json parsing, this define is only true on QT builds
     QString patchDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
     QString repositories[] = {"GoldHEN", "shadPS4"};
@@ -237,8 +233,6 @@ void OnGameLoaded() {
         } else {
             LOG_INFO(Loader, "Patches loaded successfully");
         }
-#endif
-
         ApplyPendingPatches();
     }
 }
@@ -353,3 +347,5 @@ uintptr_t PatternScan(const std::string& signature) {
 }
 
 } // namespace MemoryPatcher
+
+#endif
