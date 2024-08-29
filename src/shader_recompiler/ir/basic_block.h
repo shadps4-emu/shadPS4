@@ -109,13 +109,13 @@ public:
         return instructions.begin();
     }
     [[nodiscard]] const_iterator begin() const {
-        return instructions.begin();
+        return instructions.cbegin();
     }
     [[nodiscard]] iterator end() {
         return instructions.end();
     }
     [[nodiscard]] const_iterator end() const {
-        return instructions.end();
+        return instructions.cend();
     }
 
     [[nodiscard]] reverse_iterator rbegin() {
