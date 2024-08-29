@@ -322,7 +322,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                                         : vk::DescriptorType::eUniformTexelBuffer,
                 .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eCompute,
+                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
         }
         for (const auto& image : stage->images) {
