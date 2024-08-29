@@ -29,7 +29,7 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 
 IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
                              Common::ObjectPool<IR::Block>& block_pool, std::span<const u32> token,
-                             const Info&& info, const Profile& profile) {
+                             Info& info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
@@ -38,7 +38,7 @@ IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
     Gcn::GcnDecodeContext decoder;
 
     // Decode and save instructions
-    IR::Program program;
+    IR::Program program{info};
     program.ins_list.reserve(token.size());
     while (!slice.atEnd()) {
         program.ins_list.emplace_back(decoder.decodeInstruction(slice));
@@ -49,7 +49,6 @@ IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
-    program.info = std::move(info);
     program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, program.info, profile);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());

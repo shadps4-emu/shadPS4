@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
@@ -74,18 +75,29 @@ struct Info;
 struct BufferResource {
     u32 sgpr_base;
     u32 dword_offset;
-    u32 length;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
-    AmdGpu::DataFormat dfmt;
-    AmdGpu::NumberFormat nfmt;
-    bool is_storage{};
     bool is_instance_data{};
     bool is_written{};
 
-    constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
+    bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
+        static constexpr size_t MaxUboSize = 65536;
+        return buffer.GetSize() > MaxUboSize || is_written;
+    }
+
+    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
-using BufferResourceList = boost::container::static_vector<BufferResource, 16>;
+using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
+
+struct TextureBufferResource {
+    u32 sgpr_base;
+    u32 dword_offset;
+    AmdGpu::NumberFormat nfmt;
+    bool is_written{};
+
+    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
+};
+using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
     u32 sgpr_base;
@@ -94,8 +106,11 @@ struct ImageResource {
     AmdGpu::NumberFormat nfmt;
     bool is_storage;
     bool is_depth;
+    bool is_atomic{};
+
+    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
-using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
+using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 
 struct SamplerResource {
     u32 sgpr_base;
@@ -104,9 +119,9 @@ struct SamplerResource {
     u32 associated_image : 4;
     u32 disable_aniso : 1;
 
-    constexpr AmdGpu::Sampler GetSsharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
 };
-using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
+using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
 struct PushData {
     static constexpr size_t BufOffsetIndex = 2;
@@ -179,6 +194,7 @@ struct Info {
     s8 instance_offset_sgpr = -1;
 
     BufferResourceList buffers;
+    TextureBufferResourceList texture_buffers;
     ImageResourceList images;
     SamplerResourceList samplers;
 
@@ -194,9 +210,12 @@ struct Info {
     u64 pgm_hash{};
     u32 shared_memory_size{};
     bool has_storage_images{};
+    bool has_image_buffers{};
+    bool has_texel_buffers{};
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_shared{};
     bool uses_fp16{};
@@ -214,6 +233,10 @@ struct Info {
         return data;
     }
 
+    size_t NumBindings() const noexcept {
+        return buffers.size() + texture_buffers.size() + images.size() + samplers.size();
+    }
+
     [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const noexcept {
         u32 vertex_offset = 0;
         u32 instance_offset = 0;
@@ -227,11 +250,19 @@ struct Info {
     }
 };
 
-constexpr AmdGpu::Buffer BufferResource::GetVsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
 }
 
-constexpr AmdGpu::Sampler SamplerResource::GetSsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
+    return info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+}
+
+constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
+    return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
+}
+
+constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
     return inline_sampler ? inline_sampler : info.ReadUd<AmdGpu::Sampler>(sgpr_base, dword_offset);
 }
 

@@ -1,147 +1,59 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
-#include "common/io_file.h"
-#include "common/path_util.h"
-#include "shader_recompiler/backend/spirv/emit_spirv.h"
-#include "shader_recompiler/exception.h"
-#include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/renderer_vulkan/vk_shader_cache.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 
 namespace Vulkan {
 
-using Shader::VsOutput;
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
-
-void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
-    const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
-        if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
-            w != VsOutput::None) {
-            info.vs_outputs.emplace_back(Shader::VsOutputMap{x, y, z, w});
-        }
-    };
-    // VS_OUT_MISC_VEC
-    add_output(ctl.use_vtx_point_size ? VsOutput::PointSprite : VsOutput::None,
-               ctl.use_vtx_edge_flag
-                   ? VsOutput::EdgeFlag
-                   : (ctl.use_vtx_gs_cut_flag ? VsOutput::GsCutFlag : VsOutput::None),
-               ctl.use_vtx_kill_flag
-                   ? VsOutput::KillFlag
-                   : (ctl.use_vtx_render_target_idx ? VsOutput::GsMrtIndex : VsOutput::None),
-               ctl.use_vtx_viewport_idx ? VsOutput::GsVpIndex : VsOutput::None);
-    // VS_OUT_CCDIST0
-    add_output(ctl.IsClipDistEnabled(0)
-                   ? VsOutput::ClipDist0
-                   : (ctl.IsCullDistEnabled(0) ? VsOutput::CullDist0 : VsOutput::None),
-               ctl.IsClipDistEnabled(1)
-                   ? VsOutput::ClipDist1
-                   : (ctl.IsCullDistEnabled(1) ? VsOutput::CullDist1 : VsOutput::None),
-               ctl.IsClipDistEnabled(2)
-                   ? VsOutput::ClipDist2
-                   : (ctl.IsCullDistEnabled(2) ? VsOutput::CullDist2 : VsOutput::None),
-               ctl.IsClipDistEnabled(3)
-                   ? VsOutput::ClipDist3
-                   : (ctl.IsCullDistEnabled(3) ? VsOutput::CullDist3 : VsOutput::None));
-    // VS_OUT_CCDIST1
-    add_output(ctl.IsClipDistEnabled(4)
-                   ? VsOutput::ClipDist4
-                   : (ctl.IsCullDistEnabled(4) ? VsOutput::CullDist4 : VsOutput::None),
-               ctl.IsClipDistEnabled(5)
-                   ? VsOutput::ClipDist5
-                   : (ctl.IsCullDistEnabled(5) ? VsOutput::CullDist5 : VsOutput::None),
-               ctl.IsClipDistEnabled(6)
-                   ? VsOutput::ClipDist6
-                   : (ctl.IsCullDistEnabled(6) ? VsOutput::CullDist6 : VsOutput::None),
-               ctl.IsClipDistEnabled(7)
-                   ? VsOutput::ClipDist7
-                   : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
-}
-
-Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data,
-                            const AmdGpu::Liverpool::Regs& regs) {
-    Shader::Info info{};
-    info.user_data = user_data;
-    info.stage = stage;
-    switch (stage) {
-    case Shader::Stage::Vertex: {
-        info.num_user_data = regs.vs_program.settings.num_user_regs;
-        info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
-        BuildVsOutputs(info, regs.vs_output_control);
-        break;
-    }
-    case Shader::Stage::Fragment: {
-        info.num_user_data = regs.ps_program.settings.num_user_regs;
-        for (u32 i = 0; i < regs.num_interp; i++) {
-            info.ps_inputs.push_back({
-                .param_index = regs.ps_inputs[i].input_offset.Value(),
-                .is_default = bool(regs.ps_inputs[i].use_default),
-                .is_flat = bool(regs.ps_inputs[i].flat_shade),
-                .default_value = regs.ps_inputs[i].default_value,
-            });
-        }
-        break;
-    }
-    case Shader::Stage::Compute: {
-        const auto& cs_pgm = regs.cs_program;
-        info.num_user_data = cs_pgm.settings.num_user_regs;
-        info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
-                               cs_pgm.num_thread_z.full};
-        info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
-                            cs_pgm.IsTgidEnabled(2)};
-        info.shared_memory_size = cs_pgm.SharedMemSize();
-        break;
-    }
-    default:
-        break;
-    }
-    return info;
-}
-
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                              AmdGpu::Liverpool* liverpool_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_}, inst_pool{8192},
-      block_pool{512} {
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      shader_cache{std::make_unique<ShaderCache>(instance, liverpool)} {
     pipeline_cache = instance.GetDevice().createPipelineCacheUnique({});
-    profile = Shader::Profile{
-        .supported_spirv = 0x00010600U,
-        .subgroup_size = instance.SubgroupSize(),
-        .support_explicit_workgroup_layout = true,
-    };
 }
 
+PipelineCache::~PipelineCache() = default;
+
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    const auto& regs = liverpool->regs;
     // Tessellation is unsupported so skip the draw to avoid locking up the driver.
-    if (liverpool->regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+    if (regs.primitive_type == Liverpool::PrimitiveType::PatchPrimitive) {
+        return nullptr;
+    }
+    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
+    // actual draw hence can skip pipeline creation.
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
+        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
+        return nullptr;
+    }
+    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
+        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
+        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
     RefreshGraphicsKey();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = CreateGraphicsPipeline();
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key,
+                                                        *pipeline_cache, infos, modules);
     }
     const GraphicsPipeline* pipeline = it->second.get();
     return pipeline;
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
-    const auto& cs_pgm = liverpool->regs.cs_program;
-    ASSERT(cs_pgm.Address() != nullptr);
-    const auto* bininfo = Liverpool::GetBinaryInfo(cs_pgm);
-    compute_key = bininfo->shader_hash;
+    RefreshComputeKey();
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = CreateComputePipeline();
+        it.value() = std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
+                                                       compute_key, *infos[0], modules[0]);
     }
     const ComputePipeline* pipeline = it->second.get();
     return pipeline;
@@ -229,164 +141,37 @@ void PipelineCache::RefreshGraphicsKey() {
         ++remapped_cb;
     }
 
+    u32 binding{};
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!regs.stage_enable.IsStageEnabled(i)) {
             key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
             continue;
         }
         auto* pgm = regs.ProgramForStage(i);
         if (!pgm || !pgm->Address<u32*>()) {
             key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
             continue;
         }
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
         if (!bininfo->Valid()) {
             key.stage_hashes[i] = 0;
+            infos[i] = nullptr;
             continue;
         }
-        key.stage_hashes[i] = bininfo->shader_hash;
-    }
-}
-
-std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
-    const auto& regs = liverpool->regs;
-
-    // There are several cases (e.g. FCE, FMask/HTile decompression) where we don't need to do an
-    // actual draw hence can skip pipeline creation.
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::EliminateFastClear) {
-        LOG_TRACE(Render_Vulkan, "FCE pass skipped");
-        return {};
-    }
-
-    if (regs.color_control.mode == Liverpool::ColorControl::OperationMode::FmaskDecompress) {
-        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
-        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
-        return {};
-    }
-
-    u32 binding{};
-    for (u32 i = 0; i < MaxShaderStages; i++) {
-        if (!graphics_key.stage_hashes[i]) {
-            programs[i] = nullptr;
-            continue;
-        }
-        auto* pgm = regs.ProgramForStage(i);
-        const auto code = pgm->Code();
-
-        // Dump shader code if requested.
         const auto stage = Shader::Stage{i};
-        const u64 hash = graphics_key.stage_hashes[i];
-        if (Config::dumpShaders()) {
-            DumpShader(code, hash, stage, "bin");
-        }
-
-        if (stage != Shader::Stage::Fragment && stage != Shader::Stage::Vertex) {
-            LOG_ERROR(Render_Vulkan, "Unsupported shader stage {}. PL creation skipped.", stage);
-            return {};
-        }
-
-        const u64 lookup_hash = HashCombine(hash, binding);
-        auto it = program_cache.find(lookup_hash);
-        if (it != program_cache.end()) {
-            const Program* program = it.value().get();
-            ASSERT(program->pgm.info.stage == stage);
-            programs[i] = program;
-            binding = program->end_binding;
-            continue;
-        }
-
-        // Recompile shader to IR.
-        try {
-            auto program = std::make_unique<Program>();
-            block_pool.ReleaseContents();
-            inst_pool.ReleaseContents();
-
-            LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x}", stage, hash);
-            Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
-            info.pgm_base = pgm->Address<uintptr_t>();
-            info.pgm_hash = hash;
-            program->pgm =
-                Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
-
-            // Compile IR to SPIR-V
-            program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
-            if (Config::dumpShaders()) {
-                DumpShader(program->spv, hash, stage, "spv");
-            }
-
-            // Compile module and set name to hash in renderdoc
-            program->end_binding = binding;
-            program->module = CompileSPV(program->spv, instance.GetDevice());
-            const auto name = fmt::format("{}_{:#x}", stage, hash);
-            Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
-
-            // Cache program
-            const auto [it, _] = program_cache.emplace(lookup_hash, std::move(program));
-            programs[i] = it.value().get();
-        } catch (const Shader::Exception& e) {
-            UNREACHABLE_MSG("{}", e.what());
-        }
-    }
-
-    return std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key, *pipeline_cache,
-                                              programs);
-}
-
-std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline() {
-    const auto& cs_pgm = liverpool->regs.cs_program;
-    const auto code = cs_pgm.Code();
-
-    // Dump shader code if requested.
-    if (Config::dumpShaders()) {
-        DumpShader(code, compute_key, Shader::Stage::Compute, "bin");
-    }
-
-    block_pool.ReleaseContents();
-    inst_pool.ReleaseContents();
-
-    // Recompile shader to IR.
-    try {
-        auto program = std::make_unique<Program>();
-        LOG_INFO(Render_Vulkan, "Compiling cs shader {:#x}", compute_key);
-        Shader::Info info =
-            MakeShaderInfo(Shader::Stage::Compute, cs_pgm.user_data, liverpool->regs);
-        info.pgm_base = cs_pgm.Address<uintptr_t>();
-        info.pgm_hash = compute_key;
-        program->pgm =
-            Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
-
-        // Compile IR to SPIR-V
-        u32 binding{};
-        program->spv = Shader::Backend::SPIRV::EmitSPIRV(profile, program->pgm, binding);
-        if (Config::dumpShaders()) {
-            DumpShader(program->spv, compute_key, Shader::Stage::Compute, "spv");
-        }
-
-        // Compile module and set name to hash in renderdoc
-        program->module = CompileSPV(program->spv, instance.GetDevice());
-        const auto name = fmt::format("cs_{:#x}", compute_key);
-        Vulkan::SetObjectName(instance.GetDevice(), program->module, name);
-
-        // Cache program
-        const auto [it, _] = program_cache.emplace(compute_key, std::move(program));
-        return std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache, compute_key,
-                                                 it.value().get());
-    } catch (const Shader::Exception& e) {
-        UNREACHABLE_MSG("{}", e.what());
-        return nullptr;
+        const GuestProgram guest_pgm{pgm, stage};
+        std::tie(infos[i], modules[i], key.stage_hashes[i]) =
+            shader_cache->GetProgram(guest_pgm, binding);
     }
 }
 
-void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
-                               std::string_view ext) {
-    using namespace Common::FS;
-    const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-    if (!std::filesystem::exists(dump_dir)) {
-        std::filesystem::create_directories(dump_dir);
-    }
-    const auto filename = fmt::format("{}_{:#018x}.{}", stage, hash, ext);
-    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
-    file.WriteSpan(code);
+void PipelineCache::RefreshComputeKey() {
+    u32 binding{};
+    const auto* cs_pgm = &liverpool->regs.cs_program;
+    const GuestProgram guest_pgm{cs_pgm, Shader::Stage::Compute};
+    std::tie(infos[0], modules[0], compute_key) = shader_cache->GetProgram(guest_pgm, binding);
 }
 
 } // namespace Vulkan

@@ -23,7 +23,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
       memory_tracker{&tracker} {
     // Ensure the first slot is used for the null buffer
-    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, 1));
+    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
 }
 
 BufferCache::~BufferCache() = default;
@@ -421,7 +421,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
     const BufferId new_buffer_id =
-        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, size);
+        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, AllFlags, size);
     auto& new_buffer = slot_buffers[new_buffer_id];
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -495,7 +495,8 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     } else {
         // For large one time transfers use a temporary host buffer.
         // RenderDoc can lag quite a bit if the stream buffer is too large.
-        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, total_size_bytes};
+        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, vk::BufferUsageFlagBits::eTransferSrc,
+                           total_size_bytes};
         src_buffer = temp_buffer.Handle();
         u8* const staging = temp_buffer.mapped_data.data();
         for (auto& copy : copies) {

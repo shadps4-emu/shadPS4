@@ -415,14 +415,20 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
 
-    IR::U32 scarry;
+    IR::U1 carry;
     if (inst.src_count == 3) { // VOP3
-        IR::U1 thread_bit{ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code))};
-        scarry = IR::U32{ir.Select(thread_bit, ir.Imm32(1), ir.Imm32(0))};
+        if (inst.src[2].field == OperandField::VccLo) {
+            carry = ir.GetVcc();
+        } else if (inst.src[2].field == OperandField::ScalarGPR) {
+            carry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
+        } else {
+            UNREACHABLE();
+        }
     } else { // VOP2
-        scarry = ir.GetVccLo();
+        carry = ir.GetVcc();
     }
 
+    const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
     const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
     const IR::VectorReg dst_reg{inst.dst[0].code};

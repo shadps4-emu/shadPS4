@@ -99,7 +99,7 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
     }
 }
 
-void Traverse(EmitContext& ctx, IR::Program& program) {
+void Traverse(EmitContext& ctx, const IR::Program& program) {
     IR::Block* current_block{};
     for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
         switch (node.type) {
@@ -162,7 +162,7 @@ void Traverse(EmitContext& ctx, IR::Program& program) {
     }
 }
 
-Id DefineMain(EmitContext& ctx, IR::Program& program) {
+Id DefineMain(EmitContext& ctx, const IR::Program& program) {
     const Id void_function{ctx.TypeFunction(ctx.void_id)};
     const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, void_function)};
     for (IR::Block* const block : program.blocks) {
@@ -185,8 +185,27 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         ctx.AddCapability(spv::Capability::Int16);
     }
     ctx.AddCapability(spv::Capability::Int64);
-    if (info.has_storage_images) {
+    if (info.has_storage_images || info.has_image_buffers) {
         ctx.AddCapability(spv::Capability::StorageImageExtendedFormats);
+        ctx.AddCapability(spv::Capability::StorageImageWriteWithoutFormat);
+    }
+    if (info.has_texel_buffers) {
+        ctx.AddCapability(spv::Capability::SampledBuffer);
+    }
+    if (info.has_image_buffers) {
+        ctx.AddCapability(spv::Capability::ImageBuffer);
+    }
+    if (info.has_image_gather) {
+        ctx.AddCapability(spv::Capability::ImageGatherExtended);
+    }
+    if (info.has_image_query) {
+        ctx.AddCapability(spv::Capability::ImageQuery);
+    }
+    if (info.uses_lane_id) {
+        ctx.AddCapability(spv::Capability::GroupNonUniform);
+    }
+    if (info.uses_group_quad) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
     }
     switch (program.info.stage) {
     case Stage::Compute: {
@@ -206,18 +225,8 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
-        ctx.AddCapability(spv::Capability::GroupNonUniform);
-        if (info.uses_group_quad) {
-            ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
-        }
         if (info.has_discard) {
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
-        }
-        if (info.has_image_gather) {
-            ctx.AddCapability(spv::Capability::ImageGatherExtended);
-        }
-        if (info.has_image_query) {
-            ctx.AddCapability(spv::Capability::ImageQuery);
         }
         if (info.stores.Get(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
@@ -229,7 +238,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     ctx.AddEntryPoint(execution_model, main, "main", interfaces);
 }
 
-void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
+void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     auto inst{program.blocks.front()->begin()};
     size_t block_index{0};
     ctx.PatchDeferredPhi([&](size_t phi_arg) {
@@ -248,8 +257,8 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
 }
 } // Anonymous namespace
 
-std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, u32& binding) {
-    EmitContext ctx{profile, program, binding};
+std::vector<u32> EmitSPIRV(const Profile& profile, const IR::Program& program, u32& binding) {
+    EmitContext ctx{profile, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
     if (program.info.stage == Stage::Vertex) {

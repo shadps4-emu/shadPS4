@@ -178,7 +178,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 20> enabled_extensions;
+    boost::container::static_vector<const char*, 25> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -217,6 +217,7 @@ bool Instance::CreateDevice() {
     // with extensions.
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
@@ -277,6 +278,7 @@ bool Instance::CreateDevice() {
                 .depthBiasClamp = features.depthBiasClamp,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
+                .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
                 .shaderImageGatherExtended = features.shaderImageGatherExtended,
                 .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,
@@ -298,6 +300,9 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceMaintenance4FeaturesKHR{
             .maintenance4 = true,
+        },
+        vk::PhysicalDeviceMaintenance5FeaturesKHR{
+            .maintenance5 = true,
         },
         vk::PhysicalDeviceDynamicRenderingFeaturesKHR{
             .dynamicRendering = true,
@@ -343,6 +348,9 @@ bool Instance::CreateDevice() {
 
     if (!maintenance4) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
+    }
+    if (!maintenance5) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance5FeaturesKHR>();
     }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();

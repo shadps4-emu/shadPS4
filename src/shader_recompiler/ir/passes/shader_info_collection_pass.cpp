@@ -29,6 +29,12 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
+    case IR::Opcode::LoadBufferFormatF32:
+        info.has_texel_buffers = true;
+        break;
+    case IR::Opcode::StoreBufferFormatF32:
+        info.has_image_buffers = true;
+        break;
     case IR::Opcode::QuadShuffle:
         info.uses_group_quad = true;
         break;
@@ -43,6 +49,9 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::ImageQueryDimensions:
     case IR::Opcode::ImageQueryLod:
         info.has_image_query = true;
+        break;
+    case IR::Opcode::LaneId:
+        info.uses_lane_id = true;
         break;
     default:
         break;
