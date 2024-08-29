@@ -81,67 +81,72 @@
     <context>
         <name>GuiContextMenus</name>
         <message>
-            <location filename="../gui_context_menus.h" line="39"/>
+            <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
             <translation>Kısayol Oluştur</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="40"/>
+            <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
             <translation>Oyun Klasörünü Aç</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="41"/>
+            <location filename="../gui_context_menus.h" line="48"/>
+            <source>Cheats / Patches</source>
+            <translation>Hileler / Yamanlar</translation>
+        </message>
+        <message>
+            <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
             <translation>SFO Görüntüleyici</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="42"/>
+            <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
             <translation>Kupa Görüntüleyici</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="50"/>
+            <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
             <translation>Bilgiyi Kopyala</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="51"/>
+            <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
             <translation>Adı Kopyala</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="52"/>
+            <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
             <translation>Seri Numarasını Kopyala</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="53"/>
+            <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
             <translation>Tümünü Kopyala</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="173"/>
+            <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
             <translation>Kısayol oluşturma</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="174"/>
+            <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
             <translation>Kısayol başarıyla oluşturuldu!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="177"/>
+            <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
             <translation>Hata</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="178"/>
+            <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
             <translation>Kısayol oluşturulurken hata oluştu!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="253"/>
+            <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
             <translation>PKG Yükle</translation>
         </message>
@@ -247,6 +252,11 @@
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
             <translation>Oyun Kurulum Klasörü</translation>
+        </message>
+        <message>
+            <location filename="../main_window_ui.h" line="343"/>
+            <source>Download Cheats/Patches</source>
+            <translation>Hileler / Yamanlar İndir</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -488,4 +498,466 @@
             <translation>RenderDoc Hata Ayıklamayı Etkinleştir</translation>
         </message>
     </context>
+	<context>
+        <name>MainWindow</name>
+        <message>
+        	<location filename="../main_window.cpp" line="168"/>
+        	<source> * Unsupported Vulkan Version</source>
+        	<translation> * Desteklenmeyen Vulkan Sürümü</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="326"/>
+        	<source>Download Cheats For All Installed Games</source>
+        	<translation>Tüm Yüklenmiş Oyunlar İçin Hileleri İndir</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="328"/>
+        	<source>Download Patches For All Games</source>
+        	<translation>Tüm Oyunlar İçin Yamanları İndir</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="363"/>
+        	<source>Download Complete</source>
+        	<translation>İndirme Tamamlandı</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="364"/>
+        	<source>You have downloaded cheats for all the games you have installed.</source>
+        	<translation>Yüklediğiniz tüm oyunlar için hileleri indirdiniz.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="391"/>
+        	<source>Patches Downloaded Successfully!</source>
+        	<translation>Yamalar Başarıyla İndirildi!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="392"/>
+        	<source>All Patches available for all games have been downloaded.</source>
+        	<translation>Tüm oyunlar için mevcut tüm yamalar indirildi.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="549"/>
+        	<source>Games: </source>
+        	<translation>Oyunlar: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="575"/>
+        	<source>PKG File (*.PKG)</source>
+        	<translation>PKG Dosyası (*.PKG)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="594"/>
+        	<source>ELF files (*.bin *.elf *.oelf)</source>
+        	<translation>ELF Dosyaları (*.bin *.elf *.oelf)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Game Boot</source>
+        	<translation>Oyun Başlatma</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Only one file can be selected!</source>
+        	<translation>Sadece bir dosya seçilebilir!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="623"/>
+        	<source>PKG Extraction</source>
+        	<translation>PKG Çıkartma</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="633"/>
+        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
+        	<translation>Yama tespit edildi!\nPKG ve Oyun sürümleri uyuyor!: %1\nÜzerine yazmak ister misiniz?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="634"/>
+        	<source>to overwrite?</source>
+        	<translation>üzerine yazmak?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>Patch detected!\nPKG Version %1 is older </source>
+        	<translation>Yama tespit edildi!\nPKG Sürümü %1 daha eski </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="640"/>
+        	<source>than installed version!: %2\nWould you like </source>
+        	<translation>yüklü sürümden!: %2\nÜzerine yazmak ister misiniz?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="641"/>
+        	<source>to overwrite?</source>
+        	<translation>üzerine yazmak?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
+        	<translation>Yama tespit edildi!\nOyun yüklü: %1\nÜzerine yazmak ister misiniz?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>to install Patch: %2?</source>
+        	<translation>Yamayı kurmak ister misiniz: %2?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="659"/>
+        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
+        	<translation>Oyun zaten yüklü\n%1\nÜzerine yazmak ister misiniz?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="674"/>
+        	<source>PKG is a patch, please install the game first!</source>
+        	<translation>PKG bir yama, lütfen önce oyunu yükleyin!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="681"/>
+        	<source>PKG ERROR</source>
+        	<translation>PKG HATASI</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="693"/>
+        	<source>Extracting PKG %1/%2</source>
+        	<translation>PKG Çıkarılıyor %1/%2</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="703"/>
+        	<source>Extraction Finished</source>
+        	<translation>Çıkarma Tamamlandı</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="704"/>
+        	<source>Game successfully installed at %1</source>
+        	<translation>Oyun başarıyla %1 konumuna yüklendi</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="725"/>
+        	<source>File doesn't appear to be a valid PKG file</source>
+        	<translation>Dosya geçerli bir PKG dosyası gibi görünmüyor</translation>
+        </message>
+	</context>
+	<context>
+        <name>CheatsPatches</name>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="44"/>
+        	<source>Cheats / Patches</source>
+        	<translation>Hileler / Yamalar</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="50"/>
+            <source>defaultTextEdit_MSG</source>
+            <translation>Cheats/Patches deneysel niteliktedir.\nDikkatli kullanın.\n\nCheat'leri ayrı ayrı indirerek, depo seçerek ve indirme düğmesine tıklayarak indirin.\nPatches sekmesinde tüm patch'leri bir kerede indirebilir, hangi patch'leri kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nCheats/Patches'i geliştirmediğimiz için,\nproblemleri cheat yazarına bildirin.\n\nYeni bir cheat mi oluşturduğunuz? Şu adresi ziyaret edin:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="69"/>
+        	<source>No Image Available</source>
+        	<translation>Görüntü Mevcut Değil</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="79"/>
+        	<source>Serial: </source>
+        	<translation>Seri Numarası: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="83"/>
+        	<source>Version: </source>
+        	<translation>Sürüm: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="87"/>
+        	<source>Size: </source>
+        	<translation>Boyut: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="126"/>
+        	<source>Select Cheat File:</source>
+        	<translation>Hile Dosyasını Seçin:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="133"/>
+        	<source>Repository:</source>
+        	<translation>Depo:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="149"/>
+        	<source>Download Cheats</source>
+        	<translation>Hileleri İndir</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="155"/>
+        	<source>Confirm Delete</source>
+        	<translation>Silme Onayı</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="156"/>
+        	<source>Are you sure you want to delete the selected cheat?\n%1</source>
+        	<translation>Seçilen hileyi silmek istediğinizden emin misiniz?\n%1</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="170"/>
+        	<source>You can delete the cheats you don't want after downloading them.</source>
+        	<translation>İndirdikten sonra istemediğiniz hileleri silebilirsiniz.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="178"/>
+        	<source>Do you want to delete the selected file?\n%1</source>
+        	<translation>Seçilen dosyayı silmek istiyor musunuz?\n%1</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="213"/>
+        	<source>Select Patch File:</source>
+        	<translation>Yama Dosyasını Seçin:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="241"/>
+        	<source>Download Patches</source>
+        	<translation>Yamaları İndir</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="248"/>
+        	<source>Save</source>
+        	<translation>Kaydet</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="256"/>
+        	<source>Cheats</source>
+        	<translation>Hileler</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="257"/>
+        	<source>Patches</source>
+        	<translation>Yamalar</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>Error</source>
+        	<translation>Hata</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>No patch selected.</source>
+        	<translation>Hiç yama seçilmedi.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="292"/>
+        	<source>Unable to open files.json for reading.</source>
+        	<translation>files.json dosyasını okumak için açılamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="316"/>
+        	<source>No patch file found for the current serial.</source>
+        	<translation>Mevcut seri numarası için hiç yama dosyası bulunamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="323"/>
+        	<source>Unable to open the file for reading.</source>
+        	<translation>Dosya okumak için açılamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="422"/>
+        	<source>Unable to open the file for writing.</source>
+        	<translation>Dosya yazmak için açılamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="432"/>
+        	<source>Failed to parse XML: </source>
+        	<translation>XML ayrıştırılamadı: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Success</source>
+        	<translation>Başarı</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Options saved successfully.</source>
+        	<translation>Ayarlar başarıyla kaydedildi.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="470"/>
+        	<source>Invalid Source</source>
+        	<translation>Geçersiz Kaynak</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="471"/>
+        	<source>The selected source is invalid.</source>
+        	<translation>Seçilen kaynak geçersiz.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="519"/>
+        	<source>File Exists</source>
+        	<translation>Dosya Var</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="520"/>
+        	<source>File already exists. Do you want to replace it?</source>
+        	<translation>Dosya zaten var. Üzerine yazmak ister misiniz?</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="539"/>
+        	<source>Failed to save file:</source>
+        	<translation>Dosya kaydedilemedi:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="545"/>
+        	<source>Failed to download file:</source>
+        	<translation>Dosya indirilemedi:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>Cheats Not Found</source>
+        	<translation>Hileler Bulunamadı</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>CheatsNotFound_MSG</source>
+        	<translation>Bu oyun için seçilen depoda hile bulunamadı.Başka bir depo veya oyun sürümü deneyin.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="593"/>
+        	<source>Cheats Downloaded Successfully</source>
+        	<translation>Hileler Başarıyla İndirildi</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="594"/>
+        	<source>CheatsDownloadedSuccessfully_MSG</source>
+        	<translation>Bu oyun sürümü için hileleri başarıyla indirdiniz. Başka bir depodan indirmeyi deneyebilirsiniz. Eğer mevcutsa, listeden dosyayı seçerek de kullanılabilir.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="747"/>
+        	<source>Failed to save:</source>
+        	<translation>Kaydedilemedi:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="754"/>
+        	<source>Failed to download:</source>
+        	<translation>İndirilemedi:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="762"/>
+        	<source>Download Complete</source>
+        	<translation>İndirme Tamamlandı</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="763"/>
+        	<source>DownloadComplete_MSG</source>
+        	<translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="773"/>
+        	<source>Failed to parse JSON data from HTML.</source>
+        	<translation>HTML'den JSON verileri ayrıştırılamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="778"/>
+        	<source>Failed to retrieve HTML page.</source>
+        	<translation>HTML sayfası alınamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="801"/>
+        	<source>Failed to open file:</source>
+        	<translation>Dosya açılamadı:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="819"/>
+        	<source>XML ERROR:</source>
+        	<translation>XML HATASI:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="826"/>
+        	<source>Failed to open files.json for writing</source>
+        	<translation>files.json dosyası yazmak için açılamadı</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="925"/>
+        	<source>Author: </source>
+        	<translation>Yazar: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="997"/>
+        	<source>Directory does not exist:</source>
+        	<translation>Klasör mevcut değil:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Failed to open files.json for reading.</source>
+        	<translation>files.json dosyası okumak için açılamadı.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Name:</source>
+        	<translation>İsim:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1007"/>
+        	<source>Version:</source>
+        	<translation>Sürüm:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1008"/>
+        	<source>Size:</source>
+        	<translation>Boyut:</translation>
+        </message>
+	</context>
+	<context>
+        <name>LangDialog</name>
+        <message>
+        	<location filename="../lang_dialog.cpp" line="23"/>
+        	<source>Language Settings</source>
+        	<translation>Dil Ayarları</translation>
+        </message>
+        <message>
+        	<location filename="../lang_dialog.cpp" line="30"/>
+        	<source>Select Language:</source>
+        	<translation>Dil Seçin:</translation>
+        </message>
+        <message>
+        	<location filename="../lang_dialog.cpp" line="50"/>
+        	<source>Restart Required</source>
+        	<translation>Yeniden Başlatma Gerekiyor</translation>
+        </message>
+        <message>
+        	<location filename="../lang_dialog.cpp" line="51"/>
+        	<source>Changes will take effect after restarting the application.</source>
+        	<translation>Değişiklikler uygulama yeniden başlatıldığında geçerli olacaktır.</translation>
+        </message>
+	</context>
+	<context>
+        <name>SettingsDialog</name>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="40"/>
+        	<source>Settings</source>
+        	<translation>Ayarlar</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="45"/>
+        	<source>General</source>
+        	<translation>Genel</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="49"/>
+        	<source>Cheats</source>
+        	<translation>Hileler</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="52"/>
+        	<source>Update</source>
+        	<translation>Güncelleme</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="55"/>
+        	<source>Save</source>
+        	<translation>Kaydet</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="66"/>
+        	<source>Reset to Default</source>
+        	<translation>Varsayılana Sıfırla</translation>
+        </message>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="73"/>
+        	<source>Apply Changes</source>
+        	<translation>Değişiklikleri Uygula</translation>
+        </message>
+	</context>	
 </TS>

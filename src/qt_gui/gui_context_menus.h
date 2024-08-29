@@ -10,6 +10,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
+#include "cheats_patches.h"
 #include "game_info.h"
 #include "trophy_viewer.h"
 
@@ -20,6 +21,7 @@
 #include <shlguid.h>
 #include <shobjidl.h>
 #endif
+#include "common/path_util.h"
 
 class GuiContextMenus : public QObject {
     Q_OBJECT
@@ -34,15 +36,22 @@ public:
             itemID = widget->currentRow() * widget->columnCount() + widget->currentColumn();
         }
 
+        // Do not show the menu if an item is selected
+        if (itemID == -1) {
+            return;
+        }
+
         // Setup menu.
         QMenu menu(widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openFolder(tr("Open Game Folder"), widget);
+        QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
         menu.addAction(&openFolder);
         menu.addAction(&createShortcut);
+        menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
         menu.addAction(&openTrophyViewer);
 
@@ -119,6 +128,19 @@ public:
                 tableWidget->setWindowTitle(tr("SFO Viewer"));
                 tableWidget->show();
             }
+        }
+
+        if (selected == &openCheats) {
+            QString gameName = QString::fromStdString(m_games[itemID].name);
+            QString gameSerial = QString::fromStdString(m_games[itemID].serial);
+            QString gameVersion = QString::fromStdString(m_games[itemID].version);
+            QString gameSize = QString::fromStdString(m_games[itemID].size);
+            QPixmap gameImage(QString::fromStdString(m_games[itemID].icon_path));
+            CheatsPatches* cheatsPatches =
+                new CheatsPatches(gameName, gameSerial, gameVersion, gameSize, gameImage);
+            cheatsPatches->show();
+            connect(widget->parent(), &QWidget::destroyed, cheatsPatches,
+                    [widget, cheatsPatches]() { cheatsPatches->deleteLater(); });
         }
 
         if (selected == &openTrophyViewer) {

@@ -81,67 +81,72 @@
     <context>
         <name>GuiContextMenus</name>
         <message>
-            <location filename="../gui_context_menus.h" line="39"/>
+            <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
             <translation>Create Shortcut</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="40"/>
+            <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
             <translation>Open Game Folder</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="41"/>
+            <location filename="../gui_context_menus.h" line="48"/>
+            <source>Trapaças / Patches</source>
+            <translation>Coduri / Patch-uri</translation>
+        </message>
+        <message>
+            <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
             <translation>SFO Viewer</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="42"/>
+            <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
             <translation>Trophy Viewer</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="50"/>
+            <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
             <translation>Copy info</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="51"/>
+            <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
             <translation>Copy Name</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="52"/>
+            <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
             <translation>Copy Serial</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="53"/>
+            <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
             <translation>Copy All</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="173"/>
+            <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
             <translation>Shortcut creation</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="174"/>
+            <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
             <translation>Shortcut created successfully!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="177"/>
+            <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
             <translation>Error</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="178"/>
+            <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
             <translation>Error creating shortcut!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="253"/>
+            <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
             <translation>Install PKG</translation>
         </message>
@@ -247,6 +252,11 @@
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
             <translation>Game Install Directory</translation>
+        </message>
+        <message>
+            <location filename="../main_window_ui.h" line="343"/>
+            <source>Download Cheats/Patches</source>
+            <translation>Descarcă Coduri / Patch-uri</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -486,6 +496,397 @@
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
             <translation>Enable RenderDoc Debugging</translation>
+        </message>
+	</context>
+    <context>
+        <name>MainWindow</name>
+        <message>
+            <location filename="../main_window.cpp" line="168"/>
+            <source> * Unsupported Vulkan Version</source>
+            <translation> * Versiune Vulkan nesuportată</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="326"/>
+            <source>Download Cheats For All Installed Games</source>
+            <translation>Descarcă Cheats pentru toate jocurile instalate</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="328"/>
+            <source>Download Patches For All Games</source>
+            <translation>Descarcă Patches pentru toate jocurile</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="363"/>
+            <source>Download Complete</source>
+            <translation>Descărcare completă</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="364"/>
+            <source>You have downloaded cheats for all the games you have installed.</source>
+            <translation>Ai descărcat cheats pentru toate jocurile instalate.</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="391"/>
+            <source>Patches Downloaded Successfully!</source>
+            <translation>Patches descărcate cu succes!</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="392"/>
+            <source>All Patches available for all games have been downloaded.</source>
+            <translation>Toate Patches disponibile pentru toate jocurile au fost descărcate.</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="549"/>
+            <source>Games: </source>
+            <translation>Jocuri: </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="575"/>
+            <source>PKG File (*.PKG)</source>
+            <translation>Fișier PKG (*.PKG)</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="594"/>
+            <source>ELF files (*.bin *.elf *.oelf)</source>
+            <translation>Fișiere ELF (*.bin *.elf *.oelf)</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="600"/>
+            <source>Game Boot</source>
+            <translation>Boot Joc</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="600"/>
+            <source>Only one file can be selected!</source>
+            <translation>Numai un fișier poate fi selectat!</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="623"/>
+            <source>PKG Extraction</source>
+            <translation>Extracție PKG</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="633"/>
+            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
+            <translation>Patch detectat!\nVersiunile PKG și Joc se potrivesc!: %1\nAi dori să </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="634"/>
+            <source>to overwrite?</source>
+            <translation>să suprascrii?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="639"/>
+            <source>Patch detected!\nPKG Version %1 is older </source>
+            <translation>Patch detectat!\nVersiunea PKG %1 este mai veche </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="640"/>
+            <source>than installed version!: %2\nWould you like </source>
+            <translation>decât versiunea instalată!: %2\nAi dori să </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="641"/>
+            <source>to overwrite?</source>
+            <translation>să suprascrii?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="646"/>
+            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
+            <translation>Patch detectat!\nJocul este instalat: %1\nAi dori să </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="647"/>
+            <source>to install Patch: %2?</source>
+            <translation>să instalezi Patch-ul: %2?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="659"/>
+            <source>Game already installed\n%1\nWould you like to overwrite?</source>
+            <translation>Jocul este deja instalat\n%1\nAi dori să suprascrii?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>PKG is a patch, please install the game first!</source>
+            <translation>PKG este un patch, te rugăm să instalezi mai întâi jocul!</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="681"/>
+            <source>PKG ERROR</source>
+            <translation>EROARE PKG</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="693"/>
+            <source>Extracting PKG %1/%2</source>
+            <translation>Extracție PKG %1/%2</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="703"/>
+            <source>Extraction Finished</source>
+            <translation>Extracție terminată</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="704"/>
+            <source>Game successfully installed at %1</source>
+            <translation>Jocul a fost instalat cu succes la %1</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="725"/>
+            <source>File doesn't appear to be a valid PKG file</source>
+            <translation>Fișierul nu pare să fie un fișier PKG valid</translation>
+        </message>
+    </context>
+    <context>
+        <name>CheatsPatches</name>
+        <message>
+            <location filename="../cheats_patches.cpp" line="44"/>
+            <source>Cheats / Patches</source>
+            <translation>Cheats / Patches</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="50"/>
+            <source>defaultTextEdit_MSG</source>
+            <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="69"/>
+            <source>No Image Available</source>
+            <translation>Nu este disponibilă imaginea</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="79"/>
+            <source>Serial: </source>
+            <translation>Serial: </translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="83"/>
+            <source>Version: </source>
+            <translation>Versiune: </translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="87"/>
+            <source>Size: </source>
+            <translation>Dimensiune: </translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="126"/>
+            <source>Select Cheat File:</source>
+            <translation>Selectează fișierul Cheat:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="133"/>
+            <source>Repository:</source>
+            <translation>Repository:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="149"/>
+            <source>Download Cheats</source>
+            <translation>Descarcă Cheats</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="155"/>
+            <source>Delete File</source>
+            <translation>Șterge Fișierul</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="169"/>
+            <source>No files selected.</source>
+            <translation>Nu sunt fișiere selectate.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="170"/>
+            <source>You can delete the cheats you don't want after downloading them.</source>
+            <translation>Poti șterge cheats-urile pe care nu le dorești după ce le-ai descărcat.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="178"/>
+            <source>Do you want to delete the selected file?\n%1</source>
+            <translation>Vrei să ștergi fișierul selectat?\n%1</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="213"/>
+            <source>Select Patch File:</source>
+            <translation>Selectează fișierul Patch:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="241"/>
+            <source>Download Patches</source>
+            <translation>Descarcă Patches</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="248"/>
+            <source>Save</source>
+            <translation>Salvează</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="256"/>
+            <source>Cheats</source>
+            <translation>Cheats</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="257"/>
+            <source>Patches</source>
+            <translation>Patches</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="278"/>
+            <source>Error</source>
+            <translation>Eroare</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="278"/>
+            <source>No patch selected.</source>
+            <translation>Nu este selectat niciun patch.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="292"/>
+            <source>Unable to open files.json for reading.</source>
+            <translation>Imposibil de deschis files.json pentru citire.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="316"/>
+            <source>No patch file found for the current serial.</source>
+            <translation>Nu s-a găsit niciun fișier patch pentru serialul curent.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="323"/>
+            <source>Unable to open the file for reading.</source>
+            <translation>Imposibil de deschis fișierul pentru citire.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="422"/>
+            <source>Unable to open the file for writing.</source>
+            <translation>Imposibil de deschis fișierul pentru scriere.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="432"/>
+            <source>Failed to parse XML: </source>
+            <translation>Nu s-a reușit pararea XML: </translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="434"/>
+            <source>Success</source>
+            <translation>Succes</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="434"/>
+            <source>Options saved successfully.</source>
+            <translation>Opțiunile au fost salvate cu succes.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="470"/>
+            <source>Invalid Source</source>
+            <translation>Sursă invalidă</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="471"/>
+            <source>The selected source is invalid.</source>
+            <translation>Sursa selectată este invalidă.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="519"/>
+            <source>File Exists</source>
+            <translation>Fișier existent</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="520"/>
+            <source>File already exists. Do you want to replace it?</source>
+            <translation>Fișierul există deja. Vrei să-l înlocuiești?</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="539"/>
+            <source>Failed to save file:</source>
+            <translation>Nu s-a reușit salvarea fișierului:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="545"/>
+            <source>Failed to download file:</source>
+            <translation>Nu s-a reușit descărcarea fișierului:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="556"/>
+            <source>Cheats Not Found</source>
+            <translation>Cheats Nu au fost găsite</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="556"/>
+            <source>CheatsNotFound_MSG</source>
+            <translation>Nu au fost găsite cheats pentru acest joc în această versiune a repository-ului selectat, încearcă un alt repository sau o versiune diferită a jocului.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="593"/>
+            <source>Cheats Downloaded Successfully</source>
+            <translation>Cheats descărcate cu succes</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="594"/>
+            <source>CheatsDownloadedSuccessfully_MSG</source>
+            <translation>Ai descărcat cu succes cheats-urile pentru această versiune a jocului din repository-ul selectat. Poți încerca descărcarea din alt repository; dacă este disponibil, va fi posibil să-l folosești selectând fișierul din listă.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="747"/>
+            <source>Failed to save:</source>
+            <translation>Nu s-a reușit salvarea:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="754"/>
+            <source>Failed to download:</source>
+            <translation>Nu s-a reușit descărcarea:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="762"/>
+            <source>Download Complete</source>
+            <translation>Descărcare completă</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="763"/>
+            <source>DownloadComplete_MSG</source>
+            <translation>Patches descărcate cu succes! Toate Patches disponibile pentru toate jocurile au fost descărcate; nu este nevoie să le descarci individual pentru fiecare joc, așa cum se întâmplă cu Cheats.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="773"/>
+            <source>Failed to parse JSON data from HTML.</source>
+            <translation>Nu s-a reușit pararea datelor JSON din HTML.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="778"/>
+            <source>Failed to retrieve HTML page.</source>
+            <translation>Nu s-a reușit obținerea paginii HTML.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="801"/>
+            <source>Failed to open file:</source>
+            <translation>Nu s-a reușit deschiderea fișierului:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="819"/>
+            <source>XML ERROR:</source>
+            <translation>EROARE XML:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="826"/>
+            <source>Failed to open files.json for writing</source>
+            <translation>Nu s-a reușit deschiderea files.json pentru scriere</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="925"/>
+            <source>Author: </source>
+            <translation>Autor: </translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="997"/>
+            <source>Directory does not exist:</source>
+            <translation>Directorul nu există:</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="1006"/>
+            <source>Failed to open files.json for reading.</source>
+            <translation>Nu s-a reușit deschiderea files.json pentru citire.</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="1006"/>
+            <source>Name:</source>
+            <translation>Nume:</translation>
         </message>
     </context>
 </TS>

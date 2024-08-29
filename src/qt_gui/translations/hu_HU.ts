@@ -90,6 +90,11 @@
             <source>Open Game Folder</source>
             <translation>Játék Mappa Megnyitása</translation>
         </message>
+		<message>
+            <location filename="../gui_context_menus.h" line="48"/>
+            <source>Cheats / Patches</source>
+            <translation>Csalások / Javítások</translation>
+        </message>
         <message>
             <location filename="../gui_context_menus.h" line="41"/>
             <source>SFO Viewer</source>
@@ -247,6 +252,11 @@
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
             <translation>Játék Telepítési Mappa</translation>
+        </message>
+		<message>
+            <location filename="../main_window_ui.h" line="343"/>
+            <source>Download Cheats/Patches</source>
+            <translation>Csalások / Javítások letöltése</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -488,4 +498,395 @@
             <translation>RenderDoc Debugolás Engedélyezése</translation>
         </message>
     </context>
+    <context>
+        <name>MainWindow</name>
+        <message>
+        	<location filename="../main_window.cpp" line="168"/>
+        	<source> * Unsupported Vulkan Version</source>
+        	<translation> * Támogatott Vulkan verzió hiányzik</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="326"/>
+        	<source>Download Cheats For All Installed Games</source>
+        	<translation>Letöltés csalások minden telepített játékhoz</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="328"/>
+        	<source>Download Patches For All Games</source>
+        	<translation>Frissítések letöltése minden játékhoz</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="363"/>
+        	<source>Download Complete</source>
+        	<translation>Letöltés befejezve</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="364"/>
+        	<source>You have downloaded cheats for all the games you have installed.</source>
+        	<translation>Csalásokat töltöttél le az összes telepített játékhoz.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="391"/>
+        	<source>Patches Downloaded Successfully!</source>
+        	<translation>Frissítések sikeresen letöltve!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="392"/>
+        	<source>All Patches available for all games have been downloaded.</source>
+        	<translation>Az összes játékhoz elérhető frissítés letöltésre került.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="549"/>
+        	<source>Games: </source>
+        	<translation>Játékok: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="575"/>
+        	<source>PKG File (*.PKG)</source>
+        	<translation>PKG fájl (*.PKG)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="594"/>
+        	<source>ELF files (*.bin *.elf *.oelf)</source>
+        	<translation>ELF fájlok (*.bin *.elf *.oelf)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Game Boot</source>
+        	<translation>Játék indító</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Only one file can be selected!</source>
+        	<translation>Csak egy fájl választható ki!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="623"/>
+        	<source>PKG Extraction</source>
+        	<translation>PKG kicsomagolás</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="633"/>
+        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
+        	<translation>Javítás észlelve!\nA PKG és a játék verziók egyeznek: %1\nSzeretnéd </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="634"/>
+        	<source>to overwrite?</source>
+        	<translation>felülírni?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>Patch detected!\nPKG Version %1 is older </source>
+        	<translation>Javítás észlelve!\nA PKG verzió %1 régebbi </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="640"/>
+        	<source>than installed version!: %2\nWould you like </source>
+        	<translation>mint a telepített verzió: %2\nSzeretnéd </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="641"/>
+        	<source>to overwrite?</source>
+        	<translation>felülírni?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
+        	<translation>Javítás észlelve!\nA játék telepítve van: %1\nSzeretnéd </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>to install Patch: %2?</source>
+        	<translation>a javítást telepíteni: %2?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="659"/>
+        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
+        	<translation>A játék már telepítve van\n%1\nSzeretnéd felülírni?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="674"/>
+        	<source>PKG is a patch, please install the game first!</source>
+        	<translation>A PKG egy javítás, először telepítsd a játékot!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="681"/>
+        	<source>PKG ERROR</source>
+        	<translation>PKG HIBA</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="693"/>
+        	<source>Extracting PKG %1/%2</source>
+        	<translation>PKG kicsomagolása %1/%2</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="703"/>
+        	<source>Extraction Finished</source>
+        	<translation>Kicsomagolás befejezve</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="704"/>
+        	<source>Game successfully installed at %1</source>
+        	<translation>A játék sikeresen telepítve itt: %1</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="725"/>
+        	<source>File doesn't appear to be a valid PKG file</source>
+        	<translation>A fájl nem tűnik érvényes PKG fájlnak</translation>
+        </message>
+	</context>
+	<context>
+        <name>CheatsPatches</name>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="44"/>
+        	<source>Cheats / Patches</source>
+        	<translation>Csalások / Javítások</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="50"/>
+            <source>defaultTextEdit_MSG</source>
+            <translation>A csalások/patchek kísérleti jellegűek.\nHasználja őket óvatosan.\n\nTöltse le a csalásokat egyesével a repository kiválasztásával és a letöltés gombra kattintással.\nA Patches fül alatt egyszerre letöltheti az összes patchet, választhat, melyeket szeretné használni, és elmentheti a választását.\n\nMivel nem fejlesztjük a csalásokat/patch-eket,\nkérjük, jelentse a problémákat a csalás szerzőjének.\n\nKészített egy új csalást? Látogasson el ide:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="69"/>
+        	<source>No Image Available</source>
+        	<translation>Nincs elérhető kép</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="79"/>
+        	<source>Serial: </source>
+        	<translation>Sorozatszám: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="83"/>
+        	<source>Version: </source>
+        	<translation>Verzió: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="87"/>
+        	<source>Size: </source>
+        	<translation>Méret: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="126"/>
+        	<source>Select Cheat File:</source>
+        	<translation>Válaszd ki a csalás fájlt:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="133"/>
+        	<source>Repository:</source>
+        	<translation>Tároló:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="149"/>
+        	<source>Download Cheats</source>
+        	<translation>Csalások letöltése</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="155"/>
+        	<source>Delete File</source>
+        	<translation>Fájl törlése</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="169"/>
+        	<source>No files selected.</source>
+        	<translation>Nincsenek kiválasztott fájlok.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="170"/>
+        	<source>You can delete the cheats you don't want after downloading them.</source>
+        	<translation>Törölheted a nem kívánt csalásokat a letöltés után.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="178"/>
+        	<source>Do you want to delete the selected file?\n%1</source>
+        	<translation>Szeretnéd törölni a kiválasztott fájlt?\n%1</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="213"/>
+        	<source>Select Patch File:</source>
+        	<translation>Válaszd ki a javítás fájlt:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="241"/>
+        	<source>Download Patches</source>
+        	<translation>Javítások letöltése</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="248"/>
+        	<source>Save</source>
+        	<translation>Mentés</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="256"/>
+        	<source>Cheats</source>
+        	<translation>Csalások</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="257"/>
+        	<source>Patches</source>
+        	<translation>Javítások</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>Error</source>
+        	<translation>Hiba</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>No patch selected.</source>
+        	<translation>Nincs kiválasztva javítás.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="292"/>
+        	<source>Unable to open files.json for reading.</source>
+        	<translation>Nem sikerült megnyitni a files.json fájlt olvasásra.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="316"/>
+        	<source>No patch file found for the current serial.</source>
+        	<translation>Nincs található javítási fájl a jelenlegi sorozatszámhoz.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="323"/>
+        	<source>Unable to open the file for reading.</source>
+        	<translation>Nem sikerült megnyitni a fájlt olvasásra.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="422"/>
+        	<source>Unable to open the file for writing.</source>
+        	<translation>Nem sikerült megnyitni a fájlt írásra.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="432"/>
+        	<source>Failed to parse XML: </source>
+        	<translation>XML elemzési hiba: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Success</source>
+        	<translation>Siker</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Options saved successfully.</source>
+        	<translation>A beállítások sikeresen elmentve.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="470"/>
+        	<source>Invalid Source</source>
+        	<translation>Érvénytelen forrás</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="471"/>
+        	<source>The selected source is invalid.</source>
+        	<translation>A kiválasztott forrás érvénytelen.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="519"/>
+        	<source>File Exists</source>
+        	<translation>A fájl létezik</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="520"/>
+        	<source>File already exists. Do you want to replace it?</source>
+        	<translation>A fájl már létezik. Szeretnéd helyettesíteni?</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="539"/>
+        	<source>Failed to save file:</source>
+        	<translation>Nem sikerült elmenteni a fájlt:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="545"/>
+        	<source>Failed to download file:</source>
+        	<translation>Nem sikerült letölteni a fájlt:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>Cheats Not Found</source>
+        	<translation>Csalások nem találhatóak</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>CheatsNotFound_MSG</source>
+        	<translation>Nincs található csalás ezen a játékverzión ebben a kiválasztott tárolóban,próbálj meg egy másik tárolót vagy a játék egy másik verzióját.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="593"/>
+        	<source>Cheats Downloaded Successfully</source>
+        	<translation>Csalások sikeresen letöltve</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="594"/>
+        	<source>CheatsDownloadedSuccessfully_MSG</source>
+        	<translation>Sikeresen letöltötted a csalásokat ennek a játéknak a verziójához a kiválasztott tárolóból. Próbálhatsz letölteni egy másik tárolóból is, ha az elérhető, akkor a fájl kiválasztásával az is használható lesz.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="747"/>
+        	<source>Failed to save:</source>
+        	<translation>Nem sikerült menteni:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="754"/>
+        	<source>Failed to download:</source>
+        	<translation>Nem sikerült letölteni:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="762"/>
+        	<source>Download Complete</source>
+        	<translation>Letöltés befejezve</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="763"/>
+        	<source>DownloadComplete_MSG</source>
+        	<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="773"/>
+        	<source>Failed to parse JSON data from HTML.</source>
+        	<translation>Nem sikerült az JSON adatok elemzése HTML-ből.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="778"/>
+        	<source>Failed to retrieve HTML page.</source>
+        	<translation>Nem sikerült HTML oldal lekérése.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="801"/>
+        	<source>Failed to open file:</source>
+        	<translation>Nem sikerült megnyitni a fájlt:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="819"/>
+        	<source>XML ERROR:</source>
+        	<translation>XML HIBA:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="826"/>
+        	<source>Failed to open files.json for writing</source>
+        	<translation>Nem sikerült megnyitni a files.json fájlt írásra</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="925"/>
+        	<source>Author: </source>
+        	<translation>Szerző: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="997"/>
+        	<source>Directory does not exist:</source>
+        	<translation>A könyvtár nem létezik:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Failed to open files.json for reading.</source>
+        	<translation>Nem sikerült megnyitni a files.json fájlt olvasásra.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Name:</source>
+        	<translation>Név:</translation>
+        </message>
+	</context>
 </TS>

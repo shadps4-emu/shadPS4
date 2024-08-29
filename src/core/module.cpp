@@ -5,6 +5,9 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
+#ifdef ENABLE_QT_GUI
+#include "qt_gui/memory_patcher.h"
+#endif
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
@@ -192,6 +195,16 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
+
+#ifdef ENABLE_QT_GUI
+    if (MemoryPatcher::g_eboot_address == 0) {
+        if (name == "eboot") {
+            MemoryPatcher::g_eboot_address = base_virtual_addr;
+            MemoryPatcher::g_eboot_image_size = base_size;
+            MemoryPatcher::OnGameLoaded();
+        }
+    }
+#endif
 }
 
 void Module::LoadDynamicInfo() {

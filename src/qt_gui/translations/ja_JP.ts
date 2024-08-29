@@ -81,67 +81,72 @@
     <context>
         <name>GuiContextMenus</name>
         <message>
-            <location filename="../gui_context_menus.h" line="39"/>
+            <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
             <translation>ショートカットを作成</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="40"/>
+            <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
             <translation>ゲームフォルダを開く</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="41"/>
+            <location filename="../gui_context_menus.h" line="48"/>
+            <source>Cheats / Patches</source>
+            <translation>チート / パッチ</translation>
+        </message>
+        <message>
+            <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
             <translation>SFOビューワー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="42"/>
+            <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
             <translation>トロフィービューワー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="50"/>
+            <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
             <translation>情報をコピー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="51"/>
+            <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
             <translation>名前をコピー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="52"/>
+            <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
             <translation>シリアルをコピー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="53"/>
+            <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
             <translation>すべてコピー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="173"/>
+            <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
             <translation>ショートカットの作成</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="174"/>
+            <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
             <translation>ショートカットが正常に作成されました!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="177"/>
+            <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
             <translation>エラー</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="178"/>
+            <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
             <translation>ショートカットの作成に失敗しました!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="253"/>
+            <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
             <translation>PKGをインストール</translation>
         </message>
@@ -247,6 +252,11 @@
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
             <translation>ゲームインストールディレクトリ</translation>
+        </message>
+        <message>
+            <location filename="../main_window_ui.h" line="343"/>
+            <source>Download Cheats/Patches</source>
+            <translation>チート / パッチをダウンロード</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -488,4 +498,395 @@
             <translation>RenderDocデバッグを有効にする</translation>
         </message>
     </context>
+	<context>
+        <name>MainWindow</name>
+        <message>
+        	<location filename="../main_window.cpp" line="168"/>
+        	<source> * Unsupported Vulkan Version</source>
+        	<translation> * サポートされていないVulkanバージョン</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="326"/>
+        	<source>Download Cheats For All Installed Games</source>
+        	<translation>すべてのインストール済みゲームのチートをダウンロード</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="328"/>
+        	<source>Download Patches For All Games</source>
+        	<translation>すべてのゲームのパッチをダウンロード</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="363"/>
+        	<source>Download Complete</source>
+        	<translation>ダウンロード完了</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="364"/>
+        	<source>You have downloaded cheats for all the games you have installed.</source>
+        	<translation>インストールしたすべてのゲームのチートをダウンロードしました。</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="391"/>
+        	<source>Patches Downloaded Successfully!</source>
+        	<translation>パッチが正常にダウンロードされました！</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="392"/>
+        	<source>All Patches available for all games have been downloaded.</source>
+        	<translation>すべてのゲームに利用可能なパッチがダウンロードされました。</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="549"/>
+        	<source>Games: </source>
+        	<translation>ゲーム: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="575"/>
+        	<source>PKG File (*.PKG)</source>
+        	<translation>PKGファイル (*.PKG)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="594"/>
+        	<source>ELF files (*.bin *.elf *.oelf)</source>
+        	<translation>ELFファイル (*.bin *.elf *.oelf)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Game Boot</source>
+        	<translation>ゲームブート</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Only one file can be selected!</source>
+        	<translation>1つのファイルしか選択できません！</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="623"/>
+        	<source>PKG Extraction</source>
+        	<translation>PKG抽出</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="633"/>
+        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
+        	<translation>パッチが検出されました！\nPKGとゲームバージョンが一致しています！: %1\n上書きしますか</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="634"/>
+        	<source>to overwrite?</source>
+        	<translation>上書きしますか？</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>Patch detected!\nPKG Version %1 is older </source>
+        	<translation>パッチが検出されました！\nPKGバージョン %1 は古い </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="640"/>
+        	<source>than installed version!: %2\nWould you like </source>
+        	<translation>インストールされているバージョンよりも古いです！: %2\n上書きしますか</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="641"/>
+        	<source>to overwrite?</source>
+        	<translation>上書きしますか？</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
+        	<translation>パッチが検出されました！\nゲームがインストールされています: %1\nインストールしますか</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>to install Patch: %2?</source>
+        	<translation>パッチをインストールしますか: %2?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="659"/>
+        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
+        	<translation>ゲームはすでにインストールされています\n%1\n上書きしますか？</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="674"/>
+        	<source>PKG is a patch, please install the game first!</source>
+        	<translation>PKGはパッチです。ゲームを先にインストールしてください！</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="681"/>
+        	<source>PKG ERROR</source>
+        	<translation>PKGエラー</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="693"/>
+        	<source>Extracting PKG %1/%2</source>
+        	<translation>PKGを抽出中 %1/%2</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="703"/>
+        	<source>Extraction Finished</source>
+        	<translation>抽出完了</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="704"/>
+        	<source>Game successfully installed at %1</source>
+        	<translation>ゲームが %1 に正常にインストールされました</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="725"/>
+        	<source>File doesn't appear to be a valid PKG file</source>
+        	<translation>ファイルが有効なPKGファイルでないようです</translation>
+        </message>
+	</context>
+	<context>
+        <name>CheatsPatches</name>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="44"/>
+        	<source>Cheats / Patches</source>
+        	<translation>チート / パッチ</translation>
+        </message>
+        <message>
+            <location filename="../cheats_patches.cpp" line="50"/>
+            <source>defaultTextEdit_MSG</source>
+            <translation>チート/パッチは実験的です。\n使用には注意してください。\n\nリポジトリを選択し、ダウンロードボタンをクリックしてチートを個別にダウンロードします。\n「Patches」タブでは、すべてのパッチを一度にダウンロードし、使用したいものを選択して選択を保存できます。\n\nチート/パッチを開発していないため、\n問題があればチートの作者に報告してください。\n\n新しいチートを作成しましたか？\nhttps://github.com/shadps4-emu/ps4_cheats を訪問してください。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="69"/>
+        	<source>No Image Available</source>
+        	<translation>画像は利用できません</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="79"/>
+        	<source>Serial: </source>
+        	<translation>シリアル: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="83"/>
+        	<source>Version: </source>
+        	<translation>バージョン: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="87"/>
+        	<source>Size: </source>
+        	<translation>サイズ: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="126"/>
+        	<source>Select Cheat File:</source>
+        	<translation>チートファイルを選択:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="133"/>
+        	<source>Repository:</source>
+        	<translation>リポジトリ:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="149"/>
+        	<source>Download Cheats</source>
+        	<translation>チートをダウンロード</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="155"/>
+        	<source>Delete File</source>
+        	<translation>ファイルを削除</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="169"/>
+        	<source>No files selected.</source>
+        	<translation>ファイルが選択されていません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="170"/>
+        	<source>You can delete the cheats you don't want after downloading them.</source>
+        	<translation>ダウンロード後に不要なチートを削除できます。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="178"/>
+        	<source>Do you want to delete the selected file?\n%1</source>
+        	<translation>選択したファイルを削除しますか？\n%1</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="213"/>
+        	<source>Select Patch File:</source>
+        	<translation>パッチファイルを選択:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="241"/>
+        	<source>Download Patches</source>
+        	<translation>パッチをダウンロード</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="248"/>
+        	<source>Save</source>
+        	<translation>保存</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="256"/>
+        	<source>Cheats</source>
+        	<translation>チート</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="257"/>
+        	<source>Patches</source>
+        	<translation>パッチ</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>Error</source>
+        	<translation>エラー</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>No patch selected.</source>
+        	<translation>パッチが選択されていません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="292"/>
+        	<source>Unable to open files.json for reading.</source>
+        	<translation>files.jsonを読み込み用に開けません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="316"/>
+        	<source>No patch file found for the current serial.</source>
+        	<translation>現在のシリアルに対するパッチファイルが見つかりません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="323"/>
+        	<source>Unable to open the file for reading.</source>
+        	<translation>ファイルを読み込み用に開けません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="422"/>
+        	<source>Unable to open the file for writing.</source>
+        	<translation>ファイルを記録用に開けません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="432"/>
+        	<source>Failed to parse XML: </source>
+        	<translation>XMLの解析に失敗しました: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Success</source>
+        	<translation>成功</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Options saved successfully.</source>
+        	<translation>オプションが正常に保存されました。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="470"/>
+        	<source>Invalid Source</source>
+        	<translation>無効なソース</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="471"/>
+        	<source>The selected source is invalid.</source>
+        	<translation>選択したソースは無効です。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="519"/>
+        	<source>File Exists</source>
+        	<translation>ファイルが存在します</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="520"/>
+        	<source>File already exists. Do you want to replace it?</source>
+        	<translation>ファイルはすでに存在します。置き換えますか？</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="539"/>
+        	<source>Failed to save file:</source>
+        	<translation>ファイルの保存に失敗しました:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="545"/>
+        	<source>Failed to download file:</source>
+        	<translation>ファイルのダウンロードに失敗しました:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>Cheats Not Found</source>
+        	<translation>チートが見つかりません</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>CheatsNotFound_MSG</source>
+        	<translation>このゲームのこのバージョンのチートが選択されたリポジトリに見つかりませんでした。別のリポジトリまたはゲームの別のバージョンを試してください。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="593"/>
+        	<source>Cheats Downloaded Successfully</source>
+        	<translation>チートが正常にダウンロードされました</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="594"/>
+        	<source>CheatsDownloadedSuccessfully_MSG</source>
+        	<translation>このゲームのこのバージョンのチートをリポジトリから正常にダウンロードしました。 別のリポジトリからのダウンロードも試せます。利用可能であれば、リストからファイルを選択して使用することも可能です。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="747"/>
+        	<source>Failed to save:</source>
+        	<translation>保存に失敗しました:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="754"/>
+        	<source>Failed to download:</source>
+        	<translation>ダウンロードに失敗しました:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="762"/>
+        	<source>Download Complete</source>
+        	<translation>ダウンロード完了</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="763"/>
+        	<source>DownloadComplete_MSG</source>
+        	<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="773"/>
+        	<source>Failed to parse JSON data from HTML.</source>
+        	<translation>HTMLからJSONデータの解析に失敗しました。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="778"/>
+        	<source>Failed to retrieve HTML page.</source>
+        	<translation>HTMLページの取得に失敗しました。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="801"/>
+        	<source>Failed to open file:</source>
+        	<translation>ファイルを開くのに失敗しました:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="819"/>
+        	<source>XML ERROR:</source>
+        	<translation>XMLエラー:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="826"/>
+        	<source>Failed to open files.json for writing</source>
+        	<translation>files.jsonを記録用に開けません</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="925"/>
+        	<source>Author: </source>
+        	<translation>著者: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="997"/>
+        	<source>Directory does not exist:</source>
+        	<translation>ディレクトリが存在しません:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Failed to open files.json for reading.</source>
+        	<translation>files.jsonを読み込み用に開けません。</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Name:</source>
+        	<translation>名前:</translation>
+        </message>
+	</context>	
 </TS>

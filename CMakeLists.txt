@@ -109,7 +109,7 @@ add_subdirectory(externals)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOMOC ON)
@@ -563,6 +563,10 @@ qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.h
            src/qt_gui/about_dialog.ui
+           src/qt_gui/cheats_patches.cpp
+           src/qt_gui/cheats_patches.h
+           src/qt_gui/memory_patcher.cpp
+           src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -651,7 +655,8 @@ else()
 endif()
 
 if (ENABLE_QT_GUI)
-   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent)
+   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network)
+   add_definitions(-DENABLE_QT_GUI)
 endif()
 
 if (WIN32)
