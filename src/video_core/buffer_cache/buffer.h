@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 #include "common/types.h"
@@ -38,9 +39,9 @@ struct UniqueBuffer {
     UniqueBuffer& operator=(const UniqueBuffer&) = delete;
 
     UniqueBuffer(UniqueBuffer&& other)
-        : buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
-          allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
-          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)} {}
+        : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
+          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
+          buffer{std::exchange(other.buffer, VK_NULL_HANDLE)} {}
     UniqueBuffer& operator=(UniqueBuffer&& other) {
         buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);

@@ -404,9 +404,9 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
     return Inst(Opcode::BufferAtomicXor32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicExchange(const Value& handle, const Value& address, const Value& value,
-                                      BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicExchange32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
 }
 
 void IREmitter::StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
@@ -1115,8 +1115,18 @@ U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
     }
 }
 
-U32 IREmitter::BitwiseAnd(const U32& a, const U32& b) {
-    return Inst<U32>(Opcode::BitwiseAnd32, a, b);
+U32U64 IREmitter::BitwiseAnd(const U32U64& a, const U32U64& b) {
+    if (a.Type() != b.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
+    }
+    switch (a.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::BitwiseAnd32, a, b);
+    case Type::U64:
+        return Inst<U64>(Opcode::BitwiseAnd64, a, b);
+    default:
+        ThrowInvalidType(a.Type());
+    }
 }
 
 U32U64 IREmitter::BitwiseOr(const U32U64& a, const U32U64& b) {

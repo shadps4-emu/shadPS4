@@ -98,6 +98,11 @@ void WindowSDL::waitEvent() {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+    case SDL_EVENT_GAMEPAD_ADDED:
+    case SDL_EVENT_GAMEPAD_REMOVED:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         onGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
@@ -273,6 +278,15 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
     case SDLK_SPACE:
         button = OrbisPadButtonDataOffset::ORBIS_PAD_BUTTON_TOUCH_PAD;
         break;
+    case SDLK_F11:
+        if (event->type == SDL_EVENT_KEY_DOWN) {
+            {
+                SDL_WindowFlags flag = SDL_GetWindowFlags(window);
+                bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
+                SDL_SetWindowFullscreen(window, !is_fullscreen);
+            }
+        }
+        break;
     default:
         break;
     }
@@ -290,6 +304,17 @@ void WindowSDL::onGamepadEvent(const SDL_Event* event) {
     u32 button = 0;
     Input::Axis axis = Input::Axis::AxisMax;
     switch (event->type) {
+    case SDL_EVENT_GAMEPAD_ADDED:
+    case SDL_EVENT_GAMEPAD_REMOVED:
+        controller->TryOpenSDLController();
+        break;
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+        controller->SetTouchpadState(event->gtouchpad.finger,
+                                     event->type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP,
+                                     event->gtouchpad.x, event->gtouchpad.y);
+        break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
         button = sdlGamepadToOrbisButton(event->gbutton.button);

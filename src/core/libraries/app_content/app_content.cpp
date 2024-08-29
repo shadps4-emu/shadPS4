@@ -221,12 +221,12 @@ int PS4_SYSV_ABI Func_C59A36FF8D7C59DA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadByEntitlemetId() {
+int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadByEntitlementId() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAddcontMountByEntitlemetId() {
+int PS4_SYSV_ABI sceAppContentAddcontMountByEntitlementId() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -313,9 +313,9 @@ void RegisterlibSceAppContent(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xZo2-418Wdo", "libSceAppContentBundle", 1, "libSceAppContent", 1, 1,
                  Func_C59A36FF8D7C59DA);
     LIB_FUNCTION("kJmjt81mXKQ", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
-                 sceAppContentAddcontEnqueueDownloadByEntitlemetId);
+                 sceAppContentAddcontEnqueueDownloadByEntitlementId);
     LIB_FUNCTION("efX3lrPwdKA", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
-                 sceAppContentAddcontMountByEntitlemetId);
+                 sceAppContentAddcontMountByEntitlementId);
     LIB_FUNCTION("z9hgjLd1SGA", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
                  sceAppContentGetAddcontInfoByEntitlementId);
     LIB_FUNCTION("3wUaDTGmjcQ", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,

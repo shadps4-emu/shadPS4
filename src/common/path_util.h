@@ -20,6 +20,8 @@ enum class PathType {
     SysModuleDir,   // Where system modules are stored.
     DownloadDir,    // Where downloads/temp files are stored.
     CapturesDir,    // Where rdoc captures are stored.
+    CheatsDir,      // Where cheats are stored.
+    PatchesDir,     // Where patches are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -35,6 +37,8 @@ constexpr auto TEMPDATA_DIR = "temp";
 constexpr auto SYSMODULES_DIR = "sys_modules";
 constexpr auto DOWNLOAD_DIR = "download";
 constexpr auto CAPTURES_DIR = "captures";
+constexpr auto CHEATS_DIR = "cheats";
+constexpr auto PATCHES_DIR = "patches";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

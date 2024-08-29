@@ -3,6 +3,7 @@
 
 #include <thread>
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/native_clock.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
@@ -30,7 +31,8 @@ u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    return clock->GetProcessTimeUS();
+    // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
+    return clock->GetTimeUS(initial_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {

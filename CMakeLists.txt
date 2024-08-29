@@ -95,10 +95,6 @@ check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMED
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
 endif()
-check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
-if(HAVE_SEM_TIMEDWAIT OR WIN32)
-    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
-endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
@@ -113,11 +109,27 @@ add_subdirectory(externals)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
+
+    set(QT_TRANSLATIONS "${PROJECT_SOURCE_DIR}/src/qt_gui/translations")
+    file(GLOB_RECURSE TRANSLATIONS_TS ${QT_TRANSLATIONS}/*.ts)
+
+    set_source_files_properties(${TRANSLATIONS_TS} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/translations")
+    qt_add_translation(TRANSLATIONS_QM ${TRANSLATIONS_TS})
+
+    set(TRANSLATIONS_QRC ${CMAKE_CURRENT_BINARY_DIR}/translations/translations.qrc)
+    file(WRITE ${TRANSLATIONS_QRC} "<RCC><qresource prefix=\"translations\">\n")
+    foreach (QM ${TRANSLATIONS_QM})
+        get_filename_component(QM_FILE ${QM} NAME)
+        file(APPEND ${TRANSLATIONS_QRC} "<file>${QM_FILE}</file>\n")
+    endforeach (QM)
+    file(APPEND ${TRANSLATIONS_QRC} "</qresource></RCC>")
+
+    qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
 endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp
@@ -136,6 +148,7 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
+            src/core/libraries/gnmdriver/gnm_error.h
 )
 
 set(KERNEL_LIB 
@@ -217,6 +230,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_error.h
                 src/core/libraries/ngs2/ngs2_impl.cpp
                 src/core/libraries/ngs2/ngs2_impl.h
+                src/core/libraries/ajm/ajm_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -252,6 +266,7 @@ set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
 
 set(RANDOM_LIB src/core/libraries/random/random.cpp
                src/core/libraries/random/random.h
+               src/core/libraries/random/random_error.h
 )
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
@@ -434,7 +449,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/opcodes.h
                       src/shader_recompiler/frontend/structured_control_flow.cpp
                       src/shader_recompiler/frontend/structured_control_flow.h
-                      src/shader_recompiler/ir/passes/constant_propogation_pass.cpp
+                      src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
@@ -472,6 +487,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -547,6 +563,10 @@ qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.h
            src/qt_gui/about_dialog.ui
+           src/qt_gui/cheats_patches.cpp
+           src/qt_gui/cheats_patches.h
+           src/qt_gui/memory_patcher.cpp
+           src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -574,6 +594,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/main.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
+           ${TRANSLATIONS}
 )
 endif()
 
@@ -634,7 +655,8 @@ else()
 endif()
 
 if (ENABLE_QT_GUI)
-   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent)
+   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network)
+   add_definitions(-DENABLE_QT_GUI)
 endif()
 
 if (WIN32)

@@ -138,8 +138,8 @@ void Rasterizer::BeginRendering() {
     using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
     if (regs.depth_buffer.Address() != 0 &&
         ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
-         regs.depth_control.stencil_enable &&
-             regs.depth_buffer.stencil_info.format != StencilFormat::Invalid)) {
+         (regs.depth_control.stencil_enable &&
+          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
@@ -243,7 +243,7 @@ void Rasterizer::UpdateDepthStencilState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -254,7 +254,7 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
 }
 
 void Rasterizer::ScopeMarkerEnd() {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -263,7 +263,7 @@ void Rasterizer::ScopeMarkerEnd() {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -274,7 +274,7 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
 }
 
 void Rasterizer::Breadcrumb(u64 id) {
-    if (!instance.HasNvCheckpoints()) {
+    if (Config::nullGpu() || !instance.HasNvCheckpoints()) {
         return;
     }
     scheduler.CommandBuffer().setCheckpointNV(id);

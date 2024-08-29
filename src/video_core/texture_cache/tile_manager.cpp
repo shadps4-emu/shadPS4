@@ -342,12 +342,6 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .usage = usage,
     };
 
-#ifdef __APPLE__
-    // Fix for detiler artifacts on macOS
-    const bool is_large_buffer = true;
-#else
-    const bool is_large_buffer = size > 128_MB;
-#endif
     VmaAllocationCreateInfo alloc_info{
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -462,7 +456,6 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
                           (m > 0 ? params.sizes[m - 1] : 0);
     }
 
-    auto pitch = image.info.pitch;
     cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
                          &params);
 

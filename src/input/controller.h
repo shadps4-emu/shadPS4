@@ -21,10 +21,17 @@ enum class Axis {
     AxisMax
 };
 
+struct TouchpadEntry {
+    bool state{};
+    u16 x{};
+    u16 y{};
+};
+
 struct State {
     u32 buttonsState = 0;
     u64 time = 0;
     int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
+    TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
 };
 
 inline int GetAxis(int min, int max, int value) {
@@ -47,6 +54,7 @@ public:
     void Axis(int id, Input::Axis axis, int value);
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     bool SetVibration(u8 smallMotor, u8 largeMotor);
+    void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
     void TryOpenSDLController();
 
 private:

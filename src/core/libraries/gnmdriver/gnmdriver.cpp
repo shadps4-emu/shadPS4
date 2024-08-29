@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "gnm_error.h"
+#include "gnmdriver.h"
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
@@ -9,7 +12,6 @@
 #include "common/slot_vector.h"
 #include "core/address_space.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
@@ -55,6 +57,10 @@ static constexpr auto HwInitPacketSize = 0x100u;
 
 // clang-format off
 static constexpr std::array InitSequence{
+    // A fake preamble to mimic context reset sent by FW
+    0xc0001200u, 0u, // IT_CLEAR_STATE
+
+    // Actual init state sequence
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -94,9 +100,13 @@ static constexpr std::array InitSequence{
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0017900u, 0x200u, 0xe0000000u,
 };
-static_assert(InitSequence.size() == 0x73);
+static_assert(InitSequence.size() == 0x73 + 2);
 
 static constexpr std::array InitSequence175{
+    // A fake preamble to mimic context reset sent by FW
+    0xc0001200u, 0u, // IT_CLEAR_STATE
+
+    // Actual init state sequence 
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -136,9 +146,13 @@ static constexpr std::array InitSequence175{
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0017900u, 0x200u, 0xe0000000u,
 };
-static_assert(InitSequence175.size() == 0x73);
+static_assert(InitSequence175.size() == 0x73 + 2);
 
 static constexpr std::array InitSequence200{
+    // A fake preamble to mimic context reset sent by FW
+    0xc0001200u, 0u, // IT_CLEAR_STATE
+
+    // Actual init state sequence    
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -179,9 +193,13 @@ static constexpr std::array InitSequence200{
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0017900u, 0x200u, 0xe0000000u,
 };
-static_assert(InitSequence200.size() == 0x76);
+static_assert(InitSequence200.size() == 0x76 + 2);
 
 static constexpr std::array InitSequence350{
+    // A fake preamble to mimic context reset sent by FW
+    0xc0001200u, 0u, // IT_CLEAR_STATE
+
+    // Actual init state sequence    
     0xc0017600u, 0x216u, 0xffffffffu,
     0xc0017600u, 0x217u, 0xffffffffu,
     0xc0017600u, 0x215u, 0u,
@@ -224,7 +242,7 @@ static constexpr std::array InitSequence350{
     0xc0017900u, 0x200u, 0xe0000000u,
     0xc0016900u, 0x2aau, 0xffu,
 };
-static_assert(InitSequence350.size() == 0x7c);
+static_assert(InitSequence350.size() == 0x7c + 2);
 
 static constexpr std::array CtxInitSequence{
     0xc0012800u, 0x80000000u, 0x80000000u,
@@ -735,11 +753,11 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size) {
             cmdbuf = ClearContextState(cmdbuf);
         }
 
-        std::memcpy(cmdbuf, InitSequence.data(), InitSequence.size() * 4);
-        cmdbuf += InitSequence.size();
+        std::memcpy(cmdbuf, &InitSequence[2], (InitSequence.size() - 2) * 4);
+        cmdbuf += InitSequence.size() - 2;
 
         const auto cmdbuf_left =
-            HwInitPacketSize - InitSequence.size() - (clear_state ? 0xc : 0) - 1;
+            HwInitPacketSize - (InitSequence.size() - 2) - (clear_state ? 0xc : 0) - 1;
         cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
         cmdbuf = WriteBody(cmdbuf, 0u);
 
@@ -757,10 +775,10 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size) {
     }
 
     cmdbuf = ClearContextState(cmdbuf);
-    std::memcpy(cmdbuf, InitSequence175.data(), InitSequence175.size() * 4);
-    cmdbuf += InitSequence175.size();
+    std::memcpy(cmdbuf, &InitSequence175[2], (InitSequence175.size() - 2) * 4);
+    cmdbuf += InitSequence175.size() - 2;
 
-    constexpr auto cmdbuf_left = HwInitPacketSize - InitSequence175.size() - 0xc - 1;
+    constexpr auto cmdbuf_left = HwInitPacketSize - (InitSequence175.size() - 2) - 0xc - 1;
     WriteTrailingNop<cmdbuf_left>(cmdbuf);
 
     return HwInitPacketSize;
@@ -778,11 +796,11 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size) {
             cmdbuf = ClearContextState(cmdbuf);
         }
 
-        std::memcpy(cmdbuf, InitSequence200.data(), InitSequence200.size() * 4);
-        cmdbuf += InitSequence200.size();
+        std::memcpy(cmdbuf, &InitSequence200[2], (InitSequence200.size() - 2) * 4);
+        cmdbuf += InitSequence200.size() - 2;
 
         const auto cmdbuf_left =
-            HwInitPacketSize - InitSequence200.size() - (clear_state ? 0xc : 0) - 1;
+            HwInitPacketSize - (InitSequence200.size() - 2) - (clear_state ? 0xc : 0) - 1;
         cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
         cmdbuf = WriteBody(cmdbuf, 0u);
 
@@ -804,11 +822,11 @@ u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState350(u32* cmdbuf, u32 size) {
             cmdbuf = ClearContextState(cmdbuf);
         }
 
-        std::memcpy(cmdbuf, InitSequence350.data(), InitSequence350.size() * 4);
-        cmdbuf += InitSequence350.size();
+        std::memcpy(cmdbuf, &InitSequence350[2], (InitSequence350.size() - 2) * 4);
+        cmdbuf += InitSequence350.size() - 2;
 
         const auto cmdbuf_left =
-            HwInitPacketSize - InitSequence350.size() - (clear_state ? 0xc : 0) - 1;
+            HwInitPacketSize - (InitSequence350.size() - 2) - (clear_state ? 0xc : 0) - 1;
         cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, cmdbuf_left);
         cmdbuf = WriteBody(cmdbuf, 0u);
 
@@ -1743,7 +1761,7 @@ s32 PS4_SYSV_ABI sceGnmSetVsShader(u32* cmdbuf, u32 size, const u32* vs_regs, u3
         return -1;
     }
 
-    const u32 var = shader_modifier == 0 ? vs_regs[2] : (vs_regs[2] & 0xfcfffc3f | shader_modifier);
+    const u32 var = shader_modifier == 0 ? vs_regs[2] : (vs_regs[2] & 0xfcfffc3f) | shader_modifier;
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x48u, vs_regs[0], 0u);   // SPI_SHADER_PGM_LO_VS
     cmdbuf = PM4CmdSetData::SetShReg(cmdbuf, 0x4au, var, vs_regs[3]);  // SPI_SHADER_PGM_RSRC1_VS
     cmdbuf = PM4CmdSetData::SetContextReg(cmdbuf, 0x207u, vs_regs[6]); // PA_CL_VS_OUT_CNTL

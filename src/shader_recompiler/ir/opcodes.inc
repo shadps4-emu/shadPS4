@@ -95,7 +95,7 @@ OPCODE(StoreBufferFormatF32x4,                              Void,           Opaq
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32											)
+OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
@@ -105,7 +105,7 @@ OPCODE(BufferAtomicDec32,                                   U32,            Opaq
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicExchange32,                              U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicSwap32,									U32,            Opaque,			Opaque,			U32,											)
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -260,6 +260,7 @@ OPCODE(ShiftRightLogical64,                                 U64,            U64,
 OPCODE(ShiftRightArithmetic32,                              U32,            U32,            U32,                                                            )
 OPCODE(ShiftRightArithmetic64,                              U64,            U64,            U32,                                                            )
 OPCODE(BitwiseAnd32,                                        U32,            U32,            U32,                                                            )
+OPCODE(BitwiseAnd64,                                        U64,            U64,            U64,                                                            )
 OPCODE(BitwiseOr32,                                         U32,            U32,            U32,                                                            )
 OPCODE(BitwiseOr64,                                         U64,            U64,            U64,                                                            )
 OPCODE(BitwiseXor32,                                        U32,            U32,            U32,                                                            )

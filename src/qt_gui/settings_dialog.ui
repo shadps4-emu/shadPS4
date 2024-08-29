@@ -80,32 +80,6 @@
               </property>
               <layout class="QVBoxLayout" name="emuSettingsLayout">
                <item>
-                <layout class="QVBoxLayout" name="vLayoutUserName">
-                 <property name="spacing">
-                  <number>6</number>
-                 </property>
-                 <property name="leftMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <layout class="QHBoxLayout" name="hLayoutUserName">
-                   <item>
-                    <widget class="QGroupBox" name="userName">
-                     <property name="title">
-                      <string>Username</string>
-                     </property>
-                     <layout class="QVBoxLayout" name="userNameLayout">
-                      <item>
-                       <widget class="QLineEdit" name="userNameLineEdit"/>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </item>
-               <item>
                 <widget class="QGroupBox" name="consoleLanguageGroupBox">
                  <property name="title">
                   <string>Console Language</string>
@@ -113,6 +87,18 @@
                  <layout class="QVBoxLayout" name="settingsLayout">
                   <item>
                    <widget class="QComboBox" name="consoleLanguageComboBox"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="emulatorLanguageGroupBox">
+                 <property name="title">
+                  <string>Emulator Language</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="langSettingsLayout">
+                  <item>
+                   <widget class="QComboBox" name="emulatorLanguageComboBox"/>
                   </item>
                  </layout>
                 </widget>
@@ -156,17 +142,30 @@
                 </layout>
                </item>
                <item>
-                <spacer name="emulatorSpacer">
-                 <property name="orientation">
-                  <enum>Qt::Orientation::Horizontal</enum>
+                <layout class="QVBoxLayout" name="vLayoutUserName">
+                 <property name="spacing">
+                  <number>6</number>
                  </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
+                 <property name="leftMargin">
+                  <number>0</number>
                  </property>
-                </spacer>
+                 <item>
+                  <layout class="QHBoxLayout" name="hLayoutUserName">
+                   <item>
+                    <widget class="QGroupBox" name="userName">
+                     <property name="title">
+                      <string>Username</string>
+                     </property>
+                     <layout class="QVBoxLayout" name="userNameLayout">
+                      <item>
+                       <widget class="QLineEdit" name="userNameLineEdit"/>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
                </item>
               </layout>
              </widget>

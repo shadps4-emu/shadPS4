@@ -96,7 +96,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
     }
 
     if (attribute->reserved0 != 0 || attribute->reserved1 != 0) {
-        LOG_ERROR(Lib_VideoOut, "Invalid reserved memebers");
+        LOG_ERROR(Lib_VideoOut, "Invalid reserved members");
         return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
     if (attribute->aspect_ratio != 0) {

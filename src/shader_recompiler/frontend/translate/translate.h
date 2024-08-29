@@ -69,6 +69,10 @@ public:
     void EmitScalarAlu(const GcnInst& inst);
     void EmitVectorAlu(const GcnInst& inst);
 
+    // Instruction encodings
+    void EmitSOPC(const GcnInst& inst);
+    void EmitSOPK(const GcnInst& inst);
+
     // Scalar ALU
     void S_MOVK(const GcnInst& inst);
     void S_MOV(const GcnInst& inst);
@@ -98,6 +102,7 @@ public:
     void S_ADDK_I32(const GcnInst& inst);
     void S_MAX_U32(const GcnInst& inst);
     void S_MIN_U32(const GcnInst& inst);
+    void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -116,6 +121,7 @@ public:
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_LSHL_B32(const GcnInst& inst);
+    void V_LSHL_B64(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);

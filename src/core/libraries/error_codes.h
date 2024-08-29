@@ -233,9 +233,6 @@ constexpr int SCE_KERNEL_ERROR_ESDKVERSION = 0x80020063;
 constexpr int SCE_KERNEL_ERROR_ESTART = 0x80020064;
 constexpr int SCE_KERNEL_ERROR_ESTOP = 0x80020065;
 
-// libSceRandom error codes
-constexpr int SCE_RANDOM_ERROR_INVALID = 0x817C0016;
-
 // videoOut
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_VALUE = 0x80290001;        // invalid argument
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_ADDRESS = 0x80290002;      // invalid addresses
@@ -248,14 +245,6 @@ constexpr int SCE_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE = 0x8029000C;  // Invalid 
 constexpr int SCE_VIDEO_OUT_ERROR_SLOT_OCCUPIED = 0x80290010;        // slot already used
 constexpr int SCE_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL = 0x80290012;      // flip queue is full
 constexpr int SCE_VIDEO_OUT_ERROR_INVALID_OPTION = 0x8029001A; // Invalid buffer attribute option
-
-// GnmDriver
-constexpr int ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_PIPE_ID = 0x80D17000;
-constexpr int ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_QUEUE_ID = 0x80D17001;
-constexpr int ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_RING_BASE_ADDR = 0x80D17003;
-constexpr int ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_RING_SIZE = 0x80D17002;
-constexpr int ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_READ_PTR_ADDR = 0x80D17004;
-constexpr int ORBIS_GNM_ERROR_FAILURE = 0x8EEE00FF;
 
 // Generic
 constexpr int ORBIS_OK = 0x00000000;

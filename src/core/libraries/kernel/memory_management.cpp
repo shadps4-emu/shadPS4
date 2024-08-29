@@ -15,7 +15,8 @@ namespace Libraries::Kernel {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_WARNING(Kernel_Vmm, "called");
-    return SCE_KERNEL_MAIN_DMEM_SIZE;
+    const auto* memory = Core::Memory::Instance();
+    return memory->GetTotalDirectSize();
 }
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
@@ -52,8 +53,8 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 
 s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
                                                    s64* physAddrOut) {
-    return sceKernelAllocateDirectMemory(0, SCE_KERNEL_MAIN_DMEM_SIZE, len, alignment, memoryType,
-                                         physAddrOut);
+    const auto searchEnd = static_cast<s64>(sceKernelGetDirectMemorySize());
+    return sceKernelAllocateDirectMemory(0, searchEnd, len, alignment, memoryType, physAddrOut);
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, size_t len) {
@@ -75,19 +76,28 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
     LOG_WARNING(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
                 searchStart, searchEnd, alignment);
 
-    if (searchEnd <= searchStart) {
+    if (physAddrOut == nullptr || sizeOut == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (searchEnd > SCE_KERNEL_MAIN_DMEM_SIZE) {
+    if (searchEnd > sceKernelGetDirectMemorySize()) {
         return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (searchEnd <= searchStart) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
     auto* memory = Core::Memory::Instance();
 
-    PAddr physAddr;
-    s32 result =
-        memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, sizeOut);
+    PAddr physAddr{};
+    size_t size{};
+    s32 result = memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, &size);
+
+    if (size == 0) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
     *physAddrOut = static_cast<u64>(physAddr);
+    *sizeOut = size;
 
     return result;
 }
@@ -245,46 +255,56 @@ int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
 
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
                                     int* numEntriesOut, int flags) {
+    int result = ORBIS_OK;
     int processed = 0;
-    int result = 0;
-    for (int i = 0; i < numEntries; i++) {
+    for (int i = 0; i < numEntries; i++, processed++) {
         if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
             result = ORBIS_KERNEL_ERROR_EINVAL;
             break; // break and assign a value to numEntriesOut.
         }
 
-        if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT) {
+        switch (entries[i].operation) {
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT: {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
                                                    static_cast<s64>(entries[i].offset), 0, "");
-            LOG_INFO(
-                Kernel_Vmm,
-                "BatchMap: entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
-                "result = {}",
-                i, entries[i].operation, entries[i].length, entries[i].offset, (u8)entries[i].type,
-                result);
-
-            if (result == 0)
-                processed++;
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP) {
+            LOG_INFO(Kernel_Vmm,
+                     "entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
+                     "result = {}",
+                     i, entries[i].operation, entries[i].length, entries[i].offset,
+                     (u8)entries[i].type, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP: {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
-
-            if (result == 0)
-                processed++;
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
             LOG_INFO(Kernel_Vmm,
-                     "BatchMap: entry = {}, operation = {}, len = {:#x}, type = {}, "
+                     "entry = {}, operation = {}, len = {:#x}, type = {}, "
                      "result = {}",
                      i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
+            break;
+        }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
+            // By now, ignore protection and log it instead
+            LOG_WARNING(Kernel_Vmm,
+                        "entry = {}, operation = {}, len = {:#x}, type = {} "
+                        "is UNSUPPORTED and skipped",
+                        i, entries[i].operation, entries[i].length, (u8)entries[i].type);
+            break;
+        }
+        default: {
+            UNREACHABLE();
+        }
+        }
 
-            if (result == 0)
-                processed++;
-        } else {
-            UNREACHABLE_MSG("called: Unimplemented Operation = {}", entries[i].operation);
+        if (result != ORBIS_OK) {
+            break;
         }
     }
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.

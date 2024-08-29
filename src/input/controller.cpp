@@ -132,15 +132,29 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
     return true;
 }
 
+void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
+    if (touchIndex < 2) {
+        std::scoped_lock lock{m_mutex};
+        auto state = GetLastState();
+        state.time = Libraries::Kernel::sceKernelGetProcessTime();
+
+        state.touchpad[touchIndex].state = touchDown;
+        state.touchpad[touchIndex].x = static_cast<u16>(x * 1920);
+        state.touchpad[touchIndex].y = static_cast<u16>(y * 941);
+
+        AddState(state);
+    }
+}
+
 void GameController::TryOpenSDLController() {
     if (m_sdl_gamepad == nullptr || !SDL_GamepadConnected(m_sdl_gamepad)) {
         int gamepad_count;
         SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
         m_sdl_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
         SDL_free(gamepads);
-    }
 
-    SetLightBarRGB(0, 0, 255);
+        SetLightBarRGB(0, 0, 255);
+    }
 }
 
 } // namespace Input

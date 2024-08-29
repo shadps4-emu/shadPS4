@@ -274,6 +274,7 @@ bool Instance::CreateDevice() {
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
+                .depthBiasClamp = features.depthBiasClamp,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,

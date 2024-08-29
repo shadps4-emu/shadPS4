@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QCompleter>
+#include <QDirIterator>
 
+#include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
@@ -60,6 +62,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     ui->consoleLanguageComboBox->setCompleter(completer);
 
+    InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
@@ -158,6 +161,7 @@ void SettingsDialog::LoadValuesFromConfig() {
             languageIndexes.begin(),
             std::find(languageIndexes.begin(), languageIndexes.end(), Config::GetLanguage())) %
         languageIndexes.size());
+    ui->emulatorLanguageComboBox->setCurrentIndex(languages[Config::getEmulatorLanguage()]);
     ui->graphicsAdapterBox->setCurrentIndex(Config::getGpuId() + 1);
     ui->widthSpinBox->setValue(Config::getScreenWidth());
     ui->heightSpinBox->setValue(Config::getScreenHeight());
@@ -177,6 +181,35 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());
     ui->vkSyncValidationCheckBox->setChecked(Config::vkValidationSyncEnabled());
     ui->rdocCheckBox->setChecked(Config::isRdocEnabled());
+}
+
+void SettingsDialog::InitializeEmulatorLanguages() {
+    QDirIterator it(QStringLiteral(":/translations"), QDirIterator::NoIteratorFlags);
+
+    int idx = 0;
+    while (it.hasNext()) {
+        QString locale = it.next();
+        locale.truncate(locale.lastIndexOf(QLatin1Char{'.'}));
+        locale.remove(0, locale.lastIndexOf(QLatin1Char{'/'}) + 1);
+        const QString lang = QLocale::languageToString(QLocale(locale).language());
+        const QString country = QLocale::territoryToString(QLocale(locale).territory());
+        ui->emulatorLanguageComboBox->addItem(QStringLiteral("%1 (%2)").arg(lang, country), locale);
+
+        languages[locale.toStdString()] = idx;
+        idx++;
+    }
+
+    connect(ui->emulatorLanguageComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            &SettingsDialog::OnLanguageChanged);
+}
+
+void SettingsDialog::OnLanguageChanged(int index) {
+    if (index == -1)
+        return;
+
+    ui->retranslateUi(this);
+
+    emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString().toStdString());
 }
 
 int SettingsDialog::exec() {

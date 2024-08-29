@@ -32,7 +32,7 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicAnd32:
     case IR::Opcode::BufferAtomicOr32:
     case IR::Opcode::BufferAtomicXor32:
-    case IR::Opcode::BufferAtomicExchange32:
+    case IR::Opcode::BufferAtomicSwap32:
         return true;
     default:
         return false;
@@ -136,6 +136,7 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::ReadConstBufferU32:
     case IR::Opcode::StoreBufferU32:
     case IR::Opcode::BufferAtomicIAdd32:
+    case IR::Opcode::BufferAtomicSwap32:
         return IR::Type::U32;
     default:
         UNREACHABLE();
@@ -246,10 +247,7 @@ public:
                 return true;
             }
             // Samplers with different bindings might still be the same.
-            const auto old_sharp =
-                info.ReadUd<AmdGpu::Sampler>(existing.sgpr_base, existing.dword_offset);
-            const auto new_sharp = info.ReadUd<AmdGpu::Sampler>(desc.sgpr_base, desc.dword_offset);
-            return old_sharp == new_sharp;
+            return existing.GetSsharp(info) == desc.GetSsharp(info);
         })};
         return index;
     }
@@ -295,10 +293,11 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
         return not_found;
     }
 
-    // The bits range is for lods
+    // The bits range is for lods (note that constants are changed after constant propagation pass)
     const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        prod0_arg0->Arg(1).InstRecursive()->Arg(0).U32() != 0x0008000cu) {
+        !(prod0_arg0->Arg(1).IsIdentity() && prod0_arg0->Arg(1).U32() == 12) ||
+        !(prod0_arg0->Arg(2).IsIdentity() && prod0_arg0->Arg(2).U32() == 8)) {
         return not_found;
     }
 
