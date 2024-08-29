@@ -84,6 +84,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(file.parent_path(), "/app0");
+    // Certain games may use /hostapp as well such as CUSA001100
+    mnt->Mount(file.parent_path(), "/hostapp");
 
     // Loading param.sfo file if exists
     std::string id;
