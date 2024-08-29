@@ -356,8 +356,8 @@
         <name>TrophyViewer</name>
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
-            <source>Visualizzatore Trofei</source>
-            <translation>Trophy Viewer</translation>
+            <source>Trophy Viewer</source>
+            <translation>Visualizzatore Trofei</translation>
         </message>
     </context>
     <context>
@@ -608,12 +608,12 @@
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>DLC Installation</translation>
+            <translation>Installazione DLC</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Vuoi installare il DLC: %1?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
