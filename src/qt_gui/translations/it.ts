@@ -608,7 +608,7 @@
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>PKG is a patch, please install the game first!</source>
-            <translation>Questo PKG è una patch, per favore, installa prima il gioco!</translation>
+            <translation>Questo file PKG contiene una patch. Per favore, installa prima il gioco!</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="681"/>
@@ -671,12 +671,12 @@
         <message>
             <location filename="../cheats_patches.cpp" line="126"/>
             <source>Select Cheat File:</source>
-            <translation>Sleziona File Trucchi:</translation>
+            <translation>Seleziona File Trucchi:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="133"/>
             <source>Repository:</source>
-            <translation>Cartella:</translation>
+            <translation>Archivio:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="149"/>
@@ -771,7 +771,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="434"/>
             <source>Options saved successfully.</source>
-            <translation>Opzioni salvate con successo </translation>
+            <translation>Opzioni salvate con successo.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="470"/>
@@ -811,7 +811,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>CheatsNotFound_MSG</source>
-            <translation>Non sono stati trovati trucchi per questa versione del gioco nell'archivio selezionato, prova un alro archivio o una versione diversa del gioco.</translation>
+            <translation>Non sono stati trovati trucchi per questa versione del gioco nell'archivio selezionato, prova un altro archivio o una versione diversa del gioco.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="593"/>
