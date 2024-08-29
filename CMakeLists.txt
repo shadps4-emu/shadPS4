@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
-if (UNIX)
+if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
