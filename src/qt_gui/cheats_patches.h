@@ -36,6 +36,7 @@ public:
     void downloadCheats(const QString& source, const QString& m_gameSerial,
                         const QString& m_gameVersion, bool showMessageBox);
     void downloadPatches(const QString repository, const bool showMessageBox);
+    void createFilesJson(const QString& repository);
 
 signals:
     void downloadFinished();
@@ -58,7 +59,6 @@ private:
     void applyCheat(const QString& modName, bool enabled);
     void applyPatch(const QString& patchName, bool enabled);
 
-    void createFilesJson(const QString& repository);
     void uncheckAllCheatCheckBoxes();
     void updateNoteTextEdit(const QString& patchName);
 
