@@ -307,7 +307,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
             continue;
         }
         for (const auto& buffer : stage->buffers) {
-            const auto sharp = buffer.GetVsharp(*stage);
+            const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
                 .binding = binding++,
                 .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
@@ -356,7 +356,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                      VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::BufferView, 8> buffer_views;
-    boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     Shader::PushData push_data{};
@@ -371,7 +371,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
         for (const auto& buffer : stage->buffers) {
-            const auto vsharp = buffer.GetVsharp(*stage);
+            const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
             if (vsharp) {
                 const VAddr address = vsharp.base_address;
@@ -405,7 +405,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
 
         for (const auto& tex_buffer : stage->texture_buffers) {
-            const auto vsharp = tex_buffer.GetVsharp(*stage);
+            const auto vsharp = tex_buffer.GetSharp(*stage);
             vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
             if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
                 const VAddr address = vsharp.base_address;
@@ -438,7 +438,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
         for (const auto& image_desc : stage->images) {
-            const auto tsharp = image_desc.GetTsharp(*stage);
+            const auto tsharp = image_desc.GetSharp(*stage);
             if (tsharp) {
                 tsharps.emplace_back(tsharp);
                 VideoCore::ImageInfo image_info{tsharp};
@@ -464,7 +464,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             }
         }
         for (const auto& sampler : stage->samplers) {
-            auto ssharp = sampler.GetSsharp(*stage);
+            auto ssharp = sampler.GetSharp(*stage);
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {

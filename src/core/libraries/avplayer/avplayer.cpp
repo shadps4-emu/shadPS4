@@ -120,7 +120,6 @@ bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle,
 }
 
 SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
-    return nullptr;
     LOG_TRACE(Lib_AvPlayer, "called");
     if (data == nullptr) {
         return nullptr;

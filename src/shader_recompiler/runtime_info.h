@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
@@ -11,10 +12,6 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
 
 namespace Shader {
 
@@ -78,31 +75,19 @@ struct Info;
 struct BufferResource {
     u32 sgpr_base;
     u32 dword_offset;
-    u32 length;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
     bool is_instance_data{};
     bool is_written{};
 
-    static constexpr size_t MaxUboSize = 65536;
-
     bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
+        static constexpr size_t MaxUboSize = 65536;
         return buffer.GetSize() > MaxUboSize || is_written;
     }
 
-    u64 GetKey(const Info& info) const {
-        const auto sharp = GetVsharp(info);
-        u64 key = sharp.GetStride();
-        if (!is_written) {
-            key <<= 1;
-            key |= IsStorage(sharp);
-        }
-        return key;
-    }
-
-    constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
-using BufferResourceList = boost::container::static_vector<BufferResource, 16>;
+using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
 struct TextureBufferResource {
     u32 sgpr_base;
@@ -110,16 +95,9 @@ struct TextureBufferResource {
     AmdGpu::NumberFormat nfmt;
     bool is_written{};
 
-    u64 GetKey(const Info& info) const {
-        const auto sharp = GetVsharp(info);
-        const bool is_integer = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Uint ||
-                                sharp.GetNumberFmt() == AmdGpu::NumberFormat::Sint;
-        return is_integer;
-    }
-
-    constexpr AmdGpu::Buffer GetVsharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
-using TextureBufferResourceList = boost::container::static_vector<TextureBufferResource, 16>;
+using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
     u32 sgpr_base;
@@ -130,14 +108,9 @@ struct ImageResource {
     bool is_depth;
     bool is_atomic{};
 
-    u64 GetKey(const Info& info) const {
-        const auto sharp = GetTsharp(info);
-        return sharp.type;
-    }
-
-    constexpr AmdGpu::Image GetTsharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
-using ImageResourceList = boost::container::static_vector<ImageResource, 16>;
+using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 
 struct SamplerResource {
     u32 sgpr_base;
@@ -146,9 +119,9 @@ struct SamplerResource {
     u32 associated_image : 4;
     u32 disable_aniso : 1;
 
-    constexpr AmdGpu::Sampler GetSsharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
 };
-using SamplerResourceList = boost::container::static_vector<SamplerResource, 16>;
+using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
 struct PushData {
     static constexpr size_t BufOffsetIndex = 2;
@@ -242,9 +215,10 @@ struct Info {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_shared{};
-    bool uses_fp16{true};
+    bool uses_fp16{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
 
@@ -263,20 +237,6 @@ struct Info {
         return buffers.size() + texture_buffers.size() + images.size() + samplers.size();
     }
 
-    u64 GetStageSpecializedKey(u32 binding = 0) const noexcept {
-        u64 key = HashCombine(pgm_hash, binding);
-        for (const auto& buffer : buffers) {
-            key = HashCombine(key, buffer.GetKey(*this));
-        }
-        for (const auto& buffer : texture_buffers) {
-            key = HashCombine(key, buffer.GetKey(*this));
-        }
-        for (const auto& image : images) {
-            key = HashCombine(key, image.GetKey(*this));
-        }
-        return key;
-    }
-
     [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const noexcept {
         u32 vertex_offset = 0;
         u32 instance_offset = 0;
@@ -290,19 +250,19 @@ struct Info {
     }
 };
 
-constexpr AmdGpu::Buffer BufferResource::GetVsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
 }
 
-constexpr AmdGpu::Buffer TextureBufferResource::GetVsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
     return info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
 }
 
-constexpr AmdGpu::Image ImageResource::GetTsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
     return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
 }
 
-constexpr AmdGpu::Sampler SamplerResource::GetSsharp(const Info& info) const noexcept {
+constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
     return inline_sampler ? inline_sampler : info.ReadUd<AmdGpu::Sampler>(sgpr_base, dword_offset);
 }
 

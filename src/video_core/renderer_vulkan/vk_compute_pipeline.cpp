@@ -24,7 +24,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto& buffer : info->buffers) {
-        const auto sharp = buffer.GetVsharp(*info);
+        const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
@@ -107,17 +107,17 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     Shader::PushData push_data{};
     u32 binding{};
 
-    for (const auto& buffer : info->buffers) {
-        const auto vsharp = buffer.GetVsharp(*info);
-        const bool is_storage = buffer.IsStorage(vsharp);
+    for (const auto& desc : info->buffers) {
+        const auto vsharp = desc.GetSharp(*info);
+        const bool is_storage = desc.IsStorage(vsharp);
         const VAddr address = vsharp.base_address;
         // Most of the time when a metadata is updated with a shader it gets cleared. It means we
         // can skip the whole dispatch and update the tracked state instead. Also, it is not
         // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
         // need its full emulation anyways. For cases of metadata read a warning will be logged.
-        if (is_storage) {
+        if (desc.is_written) {
             if (texture_cache.TouchMeta(address, true)) {
-                LOG_WARNING(Render_Vulkan, "Metadata update skipped");
+                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
                 return false;
             }
         } else {
@@ -126,13 +126,12 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
         }
         const u32 size = vsharp.GetSize();
-        if (buffer.is_written) {
+        if (desc.is_written) {
             texture_cache.InvalidateMemory(address, size, true);
         }
         const u32 alignment =
             is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-        const auto [vk_buffer, offset] =
-            buffer_cache.ObtainBuffer(address, size, buffer.is_written);
+        const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(address, size, desc.is_written);
         const u32 offset_aligned = Common::AlignDown(offset, alignment);
         const u32 adjust = offset - offset_aligned;
         if (adjust != 0) {
@@ -151,18 +150,28 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         });
     }
 
-    for (const auto& tex_buffer : info->texture_buffers) {
-        const auto vsharp = tex_buffer.GetVsharp(*info);
+    for (const auto& desc : info->texture_buffers) {
+        const auto vsharp = desc.GetSharp(*info);
         vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
         if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
             const VAddr address = vsharp.base_address;
             const u32 size = vsharp.GetSize();
-            if (tex_buffer.is_written) {
+            if (desc.is_written) {
+                if (texture_cache.TouchMeta(address, true)) {
+                    LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                    return false;
+                }
+            } else {
+                if (texture_cache.IsMeta(address)) {
+                    LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
+                }
+            }
+            if (desc.is_written) {
                 texture_cache.InvalidateMemory(address, size, true);
             }
             const u32 alignment = instance.TexelBufferMinAlignment();
             const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written);
+                buffer_cache.ObtainBuffer(address, size, desc.is_written);
             const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
             ASSERT_MSG(fmt_stride == vsharp.GetStride(),
                        "Texel buffer stride must match format stride");
@@ -172,7 +181,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 ASSERT(adjust % fmt_stride == 0);
                 push_data.AddOffset(binding, adjust / fmt_stride);
             }
-            buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
+            buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                           vsharp.GetDataFmt(), vsharp.GetNumberFmt());
         }
         set_writes.push_back({
@@ -180,19 +189,23 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             .dstBinding = binding++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                    : vk::DescriptorType::eUniformTexelBuffer,
+            .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                              : vk::DescriptorType::eUniformTexelBuffer,
             .pTexelBufferView = &buffer_view,
         });
     }
 
     for (const auto& image_desc : info->images) {
-        const auto tsharp = image_desc.GetTsharp(*info);
-        VideoCore::ImageInfo image_info{tsharp};
-        VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-        const auto& image_view = texture_cache.FindTexture(image_info, view_info);
-        const auto& image = texture_cache.GetImage(image_view.image_id);
-        image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+        const auto tsharp = image_desc.GetSharp(*info);
+        if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+            VideoCore::ImageInfo image_info{tsharp};
+            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
+            const auto& image_view = texture_cache.FindTexture(image_info, view_info);
+            const auto& image = texture_cache.GetImage(image_view.image_id);
+            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+        } else {
+            image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+        }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = binding++,
@@ -208,7 +221,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         }
     }
     for (const auto& sampler : info->samplers) {
-        const auto ssharp = sampler.GetSsharp(*info);
+        const auto ssharp = sampler.GetSharp(*info);
         const auto vk_sampler = texture_cache.GetSampler(ssharp);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({

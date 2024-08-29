@@ -61,6 +61,10 @@ enum class NumberFormat : u32 {
     Ubscaled = 13,
 };
 
+[[nodiscard]] constexpr bool IsInteger(NumberFormat nfmt) {
+    return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+}
+
 [[nodiscard]] std::string_view NameOf(DataFormat fmt);
 [[nodiscard]] std::string_view NameOf(NumberFormat fmt);
 

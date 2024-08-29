@@ -50,6 +50,9 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::ImageQueryLod:
         info.has_image_query = true;
         break;
+    case IR::Opcode::LaneId:
+        info.uses_lane_id = true;
+        break;
     default:
         break;
     }

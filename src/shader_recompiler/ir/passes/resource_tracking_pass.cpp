@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
+#include "common/alignment.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -195,7 +196,6 @@ public:
                    desc.inline_cbuf == existing.inline_cbuf;
         })};
         auto& buffer = buffer_resources[index];
-        ASSERT(buffer.length == desc.length);
         buffer.used_types |= desc.used_types;
         buffer.is_written |= desc.is_written;
         return index;
@@ -227,7 +227,7 @@ public:
                 return true;
             }
             // Samplers with different bindings might still be the same.
-            return existing.GetSsharp(info) == desc.GetSsharp(info);
+            return existing.GetSharp(info) == desc.GetSharp(info);
         })};
         return index;
     }
@@ -342,19 +342,6 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     };
 }
 
-static u32 BufferLength(const AmdGpu::Buffer& buffer) {
-    const auto stride = buffer.GetStride();
-    if (stride < sizeof(f32)) {
-        ASSERT(sizeof(f32) % stride == 0);
-        return (((buffer.num_records - 1) / sizeof(f32)) + 1) * stride;
-    } else if (stride == sizeof(f32)) {
-        return buffer.num_records;
-    } else {
-        ASSERT(stride % sizeof(f32) == 0);
-        return buffer.num_records * (stride / sizeof(f32));
-    }
-}
-
 s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
                         AmdGpu::Buffer& cbuf) {
 
@@ -381,7 +368,6 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
     return descriptors.Add(BufferResource{
         .sgpr_base = std::numeric_limits<u32>::max(),
         .dword_offset = 0,
-        .length = BufferLength(cbuf),
         .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
         .inline_cbuf = cbuf,
     });
@@ -399,7 +385,6 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         binding = descriptors.Add(BufferResource{
             .sgpr_base = sharp.sgpr_base,
             .dword_offset = sharp.dword_offset,
-            .length = BufferLength(buffer),
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
             .is_written = IsBufferStore(inst),
         });

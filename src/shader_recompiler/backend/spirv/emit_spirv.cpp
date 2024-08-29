@@ -201,6 +201,12 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     if (info.has_image_query) {
         ctx.AddCapability(spv::Capability::ImageQuery);
     }
+    if (info.uses_lane_id) {
+        ctx.AddCapability(spv::Capability::GroupNonUniform);
+    }
+    if (info.uses_group_quad) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
+    }
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
@@ -218,10 +224,6 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginLowerLeft);
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
-        }
-        if (info.uses_group_quad) {
-            ctx.AddCapability(spv::Capability::GroupNonUniform);
-            ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
         }
         if (info.has_discard) {
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);

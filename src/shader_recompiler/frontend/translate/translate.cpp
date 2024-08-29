@@ -399,7 +399,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sgpr_base = attrib.sgpr_base,
                 .dword_offset = attrib.dword_offset,
-                .length = buffer.num_records,
                 .used_types = IR::Type::F32,
                 .is_instance_data = true,
             });

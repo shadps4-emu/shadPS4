@@ -278,6 +278,7 @@ bool Instance::CreateDevice() {
                 .depthBiasClamp = features.depthBiasClamp,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
+                .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
                 .shaderImageGatherExtended = features.shaderImageGatherExtended,
                 .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,

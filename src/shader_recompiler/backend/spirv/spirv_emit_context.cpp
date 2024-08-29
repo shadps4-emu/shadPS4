@@ -132,6 +132,7 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     case AmdGpu::NumberFormat::SnormNz:
     case AmdGpu::NumberFormat::Sscaled:
     case AmdGpu::NumberFormat::Uscaled:
+    case AmdGpu::NumberFormat::Srgb:
         return ctx.F32;
     case AmdGpu::NumberFormat::Sint:
         return ctx.S32;
@@ -140,7 +141,7 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
     default:
         break;
     }
-    throw InvalidArgument("Invalid attribute type {}", fmt);
+    UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id) {
@@ -161,7 +162,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     default:
         break;
     }
-    throw InvalidArgument("Invalid attribute type {}", fmt);
+    UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
 void EmitContext::DefineBufferOffsets() {
@@ -204,6 +205,11 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
 }
 
 void EmitContext::DefineInputs() {
+    if (info.uses_lane_id) {
+        subgroup_local_invocation_id = DefineVariable(
+            U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
+        Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
+    }
     switch (stage) {
     case Stage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
@@ -238,9 +244,6 @@ void EmitContext::DefineInputs() {
         break;
     }
     case Stage::Fragment:
-        subgroup_local_invocation_id = DefineVariable(
-            U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
-        Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
@@ -354,12 +357,12 @@ void EmitContext::DefineBuffers() {
     };
 
     for (const auto& desc : info.buffers) {
-        const auto sharp = desc.GetVsharp(info);
+        const auto sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(sharp);
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
         const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(desc.length))};
+                                              : TypeArray(data_type, ConstU32(sharp.NumDwords()))};
         const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
 
         const auto storage_class =
@@ -369,6 +372,9 @@ void EmitContext::DefineBuffers() {
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
         Decorate(id, spv::Decoration::Binding, binding);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        if (is_storage && !desc.is_written) {
+            Decorate(id, spv::Decoration::NonWritable);
+        }
         Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sgpr_base));
 
         buffers.push_back({
@@ -503,17 +509,8 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 
 void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
-        const VectorIds* data_types = [&] {
-            switch (image_desc.nfmt) {
-            case AmdGpu::NumberFormat::Uint:
-                return &U32;
-            case AmdGpu::NumberFormat::Sint:
-                return &S32;
-            default:
-                return &F32;
-            }
-        }();
-        const Id sampled_type = data_types->Get(1);
+        const VectorIds& data_types = GetAttributeType(*this, image_desc.nfmt);
+        const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
@@ -522,7 +519,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
                              image_desc.dword_offset));
         images.push_back({
-            .data_types = data_types,
+            .data_types = &data_types,
             .id = id,
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
@@ -531,13 +528,12 @@ void EmitContext::DefineImagesAndSamplers() {
         interfaces.push_back(id);
         ++binding;
     }
-
-    image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
-
+    if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
+        image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
+    }
     if (info.samplers.empty()) {
         return;
     }
-
     sampler_type = TypeSampler();
     sampler_pointer_type = TypePointer(spv::StorageClass::UniformConstant, sampler_type);
     for (const auto& samp_desc : info.samplers) {
@@ -553,7 +549,7 @@ void EmitContext::DefineImagesAndSamplers() {
 }
 
 void EmitContext::DefineSharedMemory() {
-    static constexpr size_t DefaultSharedMemSize = 16_KB;
+    static constexpr size_t DefaultSharedMemSize = 2_KB;
     if (!info.uses_shared) {
         return;
     }
