@@ -215,6 +215,7 @@ public:
         Id image_type;
         Id result_type;
         bool is_integer;
+        bool is_storage;
     };
 
     u32& binding;

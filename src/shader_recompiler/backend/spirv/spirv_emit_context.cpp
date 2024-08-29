@@ -406,6 +406,7 @@ void EmitContext::DefineTextureBuffers() {
             .image_type = image_type,
             .result_type = sampled_type[4],
             .is_integer = is_integer,
+            .is_storage = desc.is_written,
         });
         interfaces.push_back(id);
     }

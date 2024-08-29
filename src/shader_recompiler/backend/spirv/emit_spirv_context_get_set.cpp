@@ -266,7 +266,8 @@ Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addr
     const auto& buffer = ctx.texture_buffers[handle];
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
     const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
-    Id texel = ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
+    Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
+                                 : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
     if (buffer.is_integer) {
         texel = ctx.OpBitcast(ctx.F32[4], texel);
     }
