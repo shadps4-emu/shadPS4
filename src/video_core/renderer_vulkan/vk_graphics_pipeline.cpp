@@ -422,7 +422,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     ASSERT(adjust % fmt_stride == 0);
                     push_data.AddOffset(binding, adjust / fmt_stride);
                 }
-                buffer_view = vk_buffer->View(offset, size + adjust, tex_buffer.is_written,
+                buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
             }
             set_writes.push_back({
