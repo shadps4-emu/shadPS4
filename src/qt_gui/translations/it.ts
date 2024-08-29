@@ -503,42 +503,42 @@
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
-            <translation> * Versi Vulkan Tidak Didukung</translation>
+            <translation> * Versione Vulkan non supportata</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="326"/>
             <source>Download Cheats For All Installed Games</source>
-            <translation>Unduh Cheat Untuk Semua Game yang Terinstal</translation>
+            <translation>Scarica Trucchi per tutti i giochi installati</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="328"/>
             <source>Download Patches For All Games</source>
-            <translation>Unduh Patch Untuk Semua Game</translation>
+            <translation>Scarica Patch per tutti i giochi</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="363"/>
             <source>Download Complete</source>
-            <translation>Unduhan Selesai</translation>
+            <translation>Scaricamento completato</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="364"/>
             <source>You have downloaded cheats for all the games you have installed.</source>
-            <translation>Anda telah mengunduh cheat untuk semua game yang telah Anda instal.</translation>
+            <translation>Hai scaricato trucchi per tutti i giochi installati.</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="391"/>
             <source>Patches Downloaded Successfully!</source>
-            <translation>Patch Berhasil Diunduh!</translation>
+            <translation>Patch scaricate con successo!</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="392"/>
             <source>All Patches available for all games have been downloaded.</source>
-            <translation>Semua patch yang tersedia untuk semua game telah diunduh.</translation>
+            <translation>Tutte le patch disponibili per tutti i giochi sono state scaricate.</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="549"/>
             <source>Games: </source>
-            <translation>Game: </translation>
+            <translation>Giochi: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="575"/>
@@ -553,57 +553,57 @@
         <message>
             <location filename="../main_window.cpp" line="600"/>
             <source>Game Boot</source>
-            <translation>Boot Game</translation>
+            <translation>Avvia Gioco</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="600"/>
             <source>Only one file can be selected!</source>
-            <translation>Hanya satu file yang dapat dipilih!</translation>
+            <translation>Si può selezionare solo un file!</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="623"/>
             <source>PKG Extraction</source>
-            <translation>Ekstraksi PKG</translation>
+            <translation>Estrazione file PKG</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="633"/>
             <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Patch terdeteksi!\nVersi PKG dan Game cocok!: %1\nApakah Anda ingin </translation>
+            <translation>Patch rilevata! Il\nPKG e la versione del gioco coincidono!: %1\nVuoi </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="634"/>
             <source>to overwrite?</source>
-            <translation>menimpa?</translation>
+            <translation>sovrascrivere?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="639"/>
             <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Patch terdeteksi!\nVersi PKG %1 lebih lama </translation>
+            <translation>Patch rilevata! La \nPKG Versione %1 è più vecchia </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="640"/>
             <source>than installed version!: %2\nWould you like </source>
-            <translation>daripada versi yang terinstal!: %2\nApakah Anda ingin </translation>
+            <translation>della versione installata!: %2\nVuoi </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="641"/>
             <source>to overwrite?</source>
-            <translation>menimpa?</translation>
+            <translation>sovrascrivere?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="646"/>
             <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Patch terdeteksi!\nGame terinstal: %1\nApakah Anda ingin </translation>
+            <translation>Patch rilevata!\nGioco installato: %1\Vuoi </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="647"/>
             <source>to install Patch: %2?</source>
-            <translation>menginstal Patch: %2?</translation>
+            <translation>installare la Patch: %2?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="659"/>
             <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Game sudah terinstal\n%1\nApakah Anda ingin menimpa?</translation>
+            <translation>Gioco già installato\n%1\nVuoi sovrascrivere??</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
@@ -618,32 +618,32 @@
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>PKG is a patch, please install the game first!</source>
-            <translation>PKG adalah patch, silakan instal game terlebih dahulu!</translation>
+            <translation>Questo file PKG contiene una patch. Per favore, installa prima il gioco!</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="681"/>
             <source>PKG ERROR</source>
-            <translation>ERROR PKG</translation>
+            <translation>ERRORE PKG</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="693"/>
         	<source>Extracting PKG %1/%2</source>
-        	<translation>Estrazione PKG %1/%2</translation>
+        	<translation>Estrazione file PKG %1/%2</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="703"/>
             <source>Extraction Finished</source>
-            <translation>Ekstraksi Selesai</translation>
+            <translation>Estrazione Completata</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="704"/>
             <source>Game successfully installed at %1</source>
-            <translation>Game berhasil diinstal di %1</translation>
+            <translation>Gioco installato correttamente in %1</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="725"/>
             <source>File doesn't appear to be a valid PKG file</source>
-            <translation>File tidak tampak sebagai file PKG yang valid</translation>
+            <translation>Il file sembra non essere un file PKG valido</translation>
         </message>
     </context>
     <context>
@@ -661,77 +661,77 @@
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
             <source>No Image Available</source>
-            <translation>Tidak Ada Gambar</translation>
+            <translation>Nessuna immagine disponibile</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="79"/>
             <source>Serial: </source>
-            <translation>Serial: </translation>
+            <translation>Seriale: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="83"/>
             <source>Version: </source>
-            <translation>Versi: </translation>
+            <translation>Versione: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="87"/>
             <source>Size: </source>
-            <translation>Ukuran: </translation>
+            <translation>Dimensione: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="126"/>
             <source>Select Cheat File:</source>
-            <translation>Pilih File Cheat:</translation>
+            <translation>Seleziona File Trucchi:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="133"/>
             <source>Repository:</source>
-            <translation>Repositori:</translation>
+            <translation>Archivio:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="149"/>
             <source>Download Cheats</source>
-            <translation>Unduh Cheat</translation>
+            <translation>Scarica trucchi</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="155"/>
             <source>Delete File</source>
-            <translation>Hapus File</translation>
+            <translation>Cancella File</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="169"/>
             <source>No files selected.</source>
-            <translation>Tidak ada file yang dipilih.</translation>
+            <translation>Nessun file selezionato.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="170"/>
             <source>You can delete the cheats you don't want after downloading them.</source>
-            <translation>Anda dapat menghapus cheat yang tidak diinginkan setelah mengunduhnya.</translation>
+            <translation>Puoi cancellare i trucchi che non vuoi utilizzare dopo averli scaricati.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="178"/>
             <source>Do you want to delete the selected file?\n%1</source>
-            <translation>Apakah Anda ingin menghapus file yang dipilih?\n%1</translation>
+            <translation>Vuoi cancellare il file selezionato?\n%1</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="213"/>
             <source>Select Patch File:</source>
-            <translation>Pilih File Patch:</translation>
+            <translation>Seleziona File Patch:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="241"/>
             <source>Download Patches</source>
-            <translation>Unduh Patch</translation>
+            <translation>Scarica Patch</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="248"/>
             <source>Save</source>
-            <translation>Simpan</translation>
+            <translation>Salva</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="256"/>
             <source>Cheats</source>
-            <translation>Cheat</translation>
+            <translation>Trucchi</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="257"/>
@@ -741,162 +741,162 @@
         <message>
             <location filename="../cheats_patches.cpp" line="278"/>
             <source>Error</source>
-            <translation>Kesalahan</translation>
+            <translation>Errore</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="278"/>
             <source>No patch selected.</source>
-            <translation>Tidak ada patch yang dipilih.</translation>
+            <translation>Nessuna patch selezionata.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="292"/>
             <source>Unable to open files.json for reading.</source>
-            <translation>Gagal membuka files.json untuk dibaca.</translation>
+            <translation>Impossibile aprire il file .json per la lettura.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="316"/>
             <source>No patch file found for the current serial.</source>
-            <translation>Tidak ada file patch ditemukan untuk serial saat ini.</translation>
+            <translation>Nessun file patch trovato per il seriale selezionato.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="323"/>
             <source>Unable to open the file for reading.</source>
-            <translation>Gagal membuka file untuk dibaca.</translation>
+            <translation>Impossibile aprire il file per la lettura.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="422"/>
             <source>Unable to open the file for writing.</source>
-            <translation>Gagal membuka file untuk ditulis.</translation>
+            <translation>Impossibile aprire il file per la scrittura.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="432"/>
             <source>Failed to parse XML: </source>
-            <translation>Gagal mengurai XML: </translation>
+            <translation>Analisi XML fallita: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="434"/>
             <source>Success</source>
-            <translation>Berhasil</translation>
+            <translation>Successo</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="434"/>
             <source>Options saved successfully.</source>
-            <translation>Opsi berhasil disimpan.</translation>
+            <translation>Opzioni salvate con successo.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="470"/>
             <source>Invalid Source</source>
-            <translation>Sumber Tidak Valid</translation>
+            <translation>Fonte non valida</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="471"/>
             <source>The selected source is invalid.</source>
-            <translation>Sumber yang dipilih tidak valid.</translation>
+            <translation>La fonte selezionata non è valida.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="519"/>
             <source>File Exists</source>
-            <translation>File Ada</translation>
+            <translation>Il file è presente</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="520"/>
             <source>File already exists. Do you want to replace it?</source>
-            <translation>File sudah ada. Apakah Anda ingin menggantinya?</translation>
+            <translation>Il file è già presente. Vuoi sostituirlo?</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="539"/>
             <source>Failed to save file:</source>
-            <translation>Gagal menyimpan file:</translation>
+            <translation>Salvataggio file fallito:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="545"/>
             <source>Failed to download file:</source>
-            <translation>Gagal mengunduh file:</translation>
+            <translation>Scaricamento file fallito:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>Cheats Not Found</source>
-            <translation>Cheat Tidak Ditemukan</translation>
+            <translation>Trucchi non trovati</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>CheatsNotFound_MSG</source>
-            <translation>Cheat tidak ditemukan untuk game ini dalam versi repositori yang dipilih, coba repositori lain atau versi game yang berbeda.</translation>
+            <translation>Non sono stati trovati trucchi per questa versione del gioco nell'archivio selezionato, prova un altro archivio o una versione diversa del gioco.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="593"/>
             <source>Cheats Downloaded Successfully</source>
-            <translation>Cheat Berhasil Diunduh</translation>
+            <translation>Trucchi scaricati con successo!</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="594"/>
             <source>CheatsDownloadedSuccessfully_MSG</source>
-            <translation>Anda telah berhasil mengunduh cheat untuk versi game ini dari repositori yang dipilih. Anda dapat mencoba mengunduh dari repositori lain, jika tersedia, Anda juga dapat menggunakannya dengan memilih file dari daftar.</translation>
+            <translation>Hai scaricato con successo i trucchi per questa versione del gioco dall'archivio selezionato. Puoi provare a scaricare da un altro archivio, se disponibile, puoi anche utilizzarlo selezionando il file dall'elenco.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="747"/>
             <source>Failed to save:</source>
-            <translation>Gagal menyimpan:</translation>
+            <translation>Salvataggio fallito:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="754"/>
             <source>Failed to download:</source>
-            <translation>Gagal mengunduh:</translation>
+            <translation>Impossibile scaricare:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="762"/>
             <source>Download Complete</source>
-            <translation>Unduhan Selesai</translation>
+            <translation>Scaricamento completo</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patch Berhasil Diunduh! Semua patch yang tersedia untuk semua game telah diunduh, tidak perlu mengunduhnya secara individu untuk setiap game seperti yang terjadi pada Cheat.</translation>
+            <translation>Patch scaricata con successo! Vengono scaricate tutte le patch disponibili per tutti i giochi, non è necessario scaricarle singolarmente per ogni gioco come nel caso dei trucchi.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
             <source>Failed to parse JSON data from HTML.</source>
-            <translation>Gagal mengurai data JSON dari HTML.</translation>
+            <translation>Impossibile analizzare i dati JSON dall'HTML.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="778"/>
             <source>Failed to retrieve HTML page.</source>
-            <translation>Gagal mengambil halaman HTML.</translation>
+            <translation>Impossibile recuperare la pagina HTML.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="801"/>
             <source>Failed to open file:</source>
-            <translation>Gagal membuka file:</translation>
+            <translation>Impossibile aprire file:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="819"/>
             <source>XML ERROR:</source>
-            <translation>KESALAHAN XML:</translation>
+            <translation>ERRORE XML:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="826"/>
             <source>Failed to open files.json for writing</source>
-            <translation>Gagal membuka files.json untuk menulis</translation>
+            <translation>Impossibile aprire i file .json per la scrittura</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="925"/>
             <source>Author: </source>
-            <translation>Penulis: </translation>
+            <translation>Autore: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="997"/>
             <source>Directory does not exist:</source>
-            <translation>Direktori tidak ada:</translation>
+            <translation>La cartella non esiste:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="1006"/>
             <source>Failed to open files.json for reading.</source>
-            <translation>Gagal membuka files.json untuk dibaca.</translation>
+            <translation>Impossibile aprire i file .json per la lettura.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="1006"/>
             <source>Name:</source>
-            <translation>Nama:</translation>
+            <translation>Nome:</translation>
         </message>
     </context>
 </TS>
