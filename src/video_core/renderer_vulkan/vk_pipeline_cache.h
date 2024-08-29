@@ -31,7 +31,7 @@ public:
 
 private:
     void RefreshGraphicsKey();
-    void RefreshComputeKey();
+    bool RefreshComputeKey();
 
 private:
     const Instance& instance;

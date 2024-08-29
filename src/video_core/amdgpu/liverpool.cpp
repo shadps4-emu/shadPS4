@@ -226,6 +226,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.SetDefaults();
                 break;
             }
+            case PM4ItOpcode::DrawIndirect: {
+                break;
+            }
             case PM4ItOpcode::SetConfigReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
                 const auto reg_addr = ConfigRegWordOffset + set_data->reg_offset;

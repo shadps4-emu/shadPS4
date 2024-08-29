@@ -49,7 +49,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
-    RefreshComputeKey();
+    if (!RefreshComputeKey()) {
+        return nullptr;
+    }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
         it.value() = std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
@@ -167,11 +169,16 @@ void PipelineCache::RefreshGraphicsKey() {
     }
 }
 
-void PipelineCache::RefreshComputeKey() {
+bool PipelineCache::RefreshComputeKey() {
     u32 binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const GuestProgram guest_pgm{cs_pgm, Shader::Stage::Compute};
+    if (guest_pgm.hash == 0xa509af23 || guest_pgm.hash == 0x4ca76892 || guest_pgm.hash == 0xa954e79d ||
+        guest_pgm.hash == 0x42f2a521 || guest_pgm.hash == 0x2da7fe60) {
+        return false;
+    }
     std::tie(infos[0], modules[0], compute_key) = shader_cache->GetProgram(guest_pgm, binding);
+    return true;
 }
 
 } // namespace Vulkan
