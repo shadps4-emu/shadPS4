@@ -608,12 +608,12 @@
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>DLC Installation</translation>
+            <translation>Instalacja dodadkowej zawartości (DLC)</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Czy na pewno chcesz zainstalować dodatkową zawartość (DLC): %1?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
