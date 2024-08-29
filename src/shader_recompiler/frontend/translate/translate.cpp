@@ -436,6 +436,7 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
     case Opcode::S_CBRANCH_SCC1:
     case Opcode::S_CBRANCH_VCCNZ:
     case Opcode::S_CBRANCH_VCCZ:
+    case Opcode::S_CBRANCH_EXECNZ:
     case Opcode::S_BRANCH:
         return;
     default:
