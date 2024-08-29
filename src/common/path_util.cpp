@@ -106,6 +106,7 @@ static auto UserPaths = [] {
     create_path(PathType::CapturesDir, user_dir / CAPTURES_DIR);
     create_path(PathType::CheatsDir, user_dir / CHEATS_DIR);
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
+    create_path(PathType::AddonsDir, user_dir / ADDONS_DIR);
 
     return paths;
 }();

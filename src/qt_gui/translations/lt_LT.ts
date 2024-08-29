@@ -606,6 +606,16 @@
         	<translation>Žaidimas jau įdiegtas\n%1\nAr norėtumėte perrašyti?</translation>
         </message>
         <message>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>DLC Installation</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Would you like to install DLC: %1?</translation>
+        </message>
+        <message>
         	<location filename="../main_window.cpp" line="674"/>
         	<source>PKG is a patch, please install the game first!</source>
         	<translation>PKG yra pataisa, prašome pirmiausia įdiegti žaidimą!</translation>
