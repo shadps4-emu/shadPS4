@@ -107,6 +107,10 @@ check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMED
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
 endif()
+check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
+if(HAVE_SEM_TIMEDWAIT OR WIN32)
+    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
@@ -184,10 +188,12 @@ set(KERNEL_LIB
                src/core/libraries/kernel/libkernel.h
                src/core/libraries/kernel/memory_management.cpp
                src/core/libraries/kernel/memory_management.h
+               src/core/libraries/kernel/orbis_signals.h
                src/core/libraries/kernel/thread_management.cpp
                src/core/libraries/kernel/thread_management.h
                src/core/libraries/kernel/time_management.cpp
                src/core/libraries/kernel/time_management.h
+               src/core/libraries/kernel/win32_signals.cpp
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp

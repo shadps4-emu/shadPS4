@@ -1,10 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <mutex>
-#include <semaphore>
-#include <thread>
-
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
@@ -19,6 +15,12 @@
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/tls.h"
+
+#include <semaphore.h>
+
+#include <mutex>
+#include <thread>
+
 #ifdef _WIN64
 #include <windows.h>
 #else
@@ -1373,97 +1375,90 @@ int PS4_SYSV_ABI posix_pthread_detach(ScePthread thread) {
     return pthread_detach(thread->pth);
 }
 
-int PS4_SYSV_ABI posix_sem_init(PthreadSemInternal** sem, int pshared, unsigned int value) {
-    if (value > ORBIS_KERNEL_SEM_VALUE_MAX) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_init(sem_t* sem, int pshared, unsigned int value) {
+    int result = sem_init(sem, pshared, value);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    if (sem != nullptr) {
-        *sem = new PthreadSemInternal{
-            .semaphore = std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX>{value},
-            .value = {static_cast<int>(value)},
-        };
-    }
-    return 0;
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_wait(PthreadSemInternal** sem) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_wait(sem_t* sem) {
+    int result = sem_wait(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    (*sem)->semaphore.acquire();
-    --(*sem)->value;
-    return 0;
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_trywait(PthreadSemInternal** sem) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_trywait(sem_t* sem) {
+    int result = sem_trywait(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    if (!(*sem)->semaphore.try_acquire()) {
-        SetPosixErrno(EAGAIN);
-        return -1;
-    }
-    --(*sem)->value;
-    return 0;
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_timedwait(PthreadSemInternal** sem, const timespec* t) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
-    }
+#ifndef HAVE_SEM_TIMEDWAIT
+int sem_timedwait(sem_t* sem, const struct timespec* abstime) {
+    int rc;
+    while ((rc = sem_trywait(sem)) == EAGAIN) {
+        struct timespec curr_time;
+        clock_gettime(CLOCK_REALTIME, &curr_time);
 
-    using std::chrono::duration_cast;
-    using std::chrono::nanoseconds;
-    using std::chrono::seconds;
-    using std::chrono::system_clock;
+        s64 remaining_ns = 0;
+        remaining_ns +=
+            (static_cast<s64>(abstime->tv_sec) - static_cast<s64>(curr_time.tv_sec)) * 1000000000L;
+        remaining_ns += static_cast<s64>(abstime->tv_nsec) - static_cast<s64>(curr_time.tv_nsec);
 
-    const system_clock::time_point time{
-        duration_cast<system_clock::duration>(seconds{t->tv_sec} + nanoseconds{t->tv_nsec})};
-    if (!(*sem)->semaphore.try_acquire_until(time)) {
-        SetPosixErrno(ETIMEDOUT);
-        return -1;
+        if (remaining_ns <= 0) {
+            return ETIMEDOUT;
+        }
+
+        struct timespec sleep_time;
+        sleep_time.tv_sec = 0;
+        if (remaining_ns < 5000000L) {
+            sleep_time.tv_nsec = remaining_ns;
+        } else {
+            sleep_time.tv_nsec = 5000000;
+        }
+
+        nanosleep(&sleep_time, nullptr);
     }
-    --(*sem)->value;
-    return 0;
+    return rc;
+}
+#endif
+
+int PS4_SYSV_ABI posix_sem_timedwait(sem_t* sem, const timespec* t) {
+    int result = sem_timedwait(sem, t);
+    if (result == -1) {
+        SetPosixErrno(errno);
+    }
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_post(PthreadSemInternal** sem) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_post(sem_t* sem) {
+    int result = sem_post(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    if ((*sem)->value == ORBIS_KERNEL_SEM_VALUE_MAX) {
-        SetPosixErrno(EOVERFLOW);
-        return -1;
-    }
-    ++(*sem)->value;
-    (*sem)->semaphore.release();
-    return 0;
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_destroy(PthreadSemInternal** sem) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_destroy(sem_t* sem) {
+    int result = sem_destroy(sem);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    delete *sem;
-    *sem = nullptr;
-    return 0;
+    return result;
 }
 
-int PS4_SYSV_ABI posix_sem_getvalue(PthreadSemInternal** sem, int* sval) {
-    if (sem == nullptr || *sem == nullptr) {
-        SetPosixErrno(EINVAL);
-        return -1;
+int PS4_SYSV_ABI posix_sem_getvalue(sem_t* sem, int* sval) {
+    int result = sem_getvalue(sem, sval);
+    if (result == -1) {
+        SetPosixErrno(errno);
     }
-    if (sval) {
-        *sval = (*sem)->value;
-    }
-    return 0;
+    return result;
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const pthread_attr_t* attr, size_t* size) {

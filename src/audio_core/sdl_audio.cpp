@@ -13,6 +13,9 @@
 #include <mutex> // std::unique_lock
 
 namespace Audio {
+SDLAudio::~SDLAudio() {
+    std::unique_lock lock{m_mutex};
+}
 
 int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
                            Libraries::AudioOut::OrbisAudioOutParamFormat format) {

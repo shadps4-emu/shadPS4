@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <chrono>
-#include <thread>
-
-#include <boost/asio/io_context.hpp>
+#include "core/libraries/kernel/libkernel.h"
 
 #include "common/assert.h"
 #include "common/debug.h"
@@ -19,13 +16,19 @@
 #include "core/libraries/kernel/event_flag/event_flag.h"
 #include "core/libraries/kernel/event_queues.h"
 #include "core/libraries/kernel/file_system.h"
-#include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/memory_management.h"
+#include "core/libraries/kernel/orbis_signals.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
+
+#include <boost/asio/io_context.hpp>
+
+#include <atomic>
+#include <chrono>
+#include <thread>
 
 #ifdef _WIN64
 #include <io.h>
@@ -86,11 +89,11 @@ static PS4_SYSV_ABI void stack_chk_fail() {
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
     if (len == 0) {
-        return ORBIS_OK;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     auto* memory = Core::Memory::Instance();
     memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
-    return SCE_OK;
+    return ORBIS_OK;
 }
 
 struct iovec {
@@ -398,6 +401,70 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 4096;
 }
 
+int sceKernelError(int err) {
+    if (err == 0) {
+        return 0;
+    }
+    return err + -SCE_KERNEL_ERROR_UNKNOWN;
+}
+
+int PS4_SYSV_ABI sceKernelRaiseException(ScePthread thread, s32 sig) {
+    LOG_INFO(Lib_Kernel, "called. thread = {} sig = {}", uintptr_t(thread), sig);
+    if (sig != ORBIS_SIGUSR1) {
+        return sceKernelError(POSIX_EINVAL);
+    }
+    Orbis::pthread_kill(thread->pth, sig);
+    return ORBIS_OK;
+}
+
+using ExceptionHandler = void (*PS4_SYSV_ABI)(s32, void*);
+
+static std::atomic<ExceptionHandler> g_exception_handlers[32];
+
+void ExceptionSignalHandler(s32 sig, Orbis::siginfo_t*, void* context) {
+    LOG_INFO(Lib_Kernel, "called. sig = {}", sig);
+    if (sig > ORBIS_SIG_MAXSIG32) {
+        return;
+    }
+    const auto handler = g_exception_handlers[ORBIS_SIG_IDX(sig)].load();
+    if (intptr_t(handler) > 0) {
+        handler(sig, context);
+    }
+}
+
+int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 sig, ExceptionHandler handler) {
+    LOG_INFO(Lib_Kernel, "called. sig = {}", sig);
+    if (sig > ORBIS_SIG_MAXSIG32) {
+        return sceKernelError(POSIX_EINVAL);
+    }
+
+    auto expected = ExceptionHandler(nullptr);
+    if (!g_exception_handlers[ORBIS_SIG_IDX(sig)].compare_exchange_strong(expected, handler)) {
+        return sceKernelError(POSIX_EAGAIN);
+    }
+
+    struct Orbis::sigaction sact = {
+        .sa_sigaction = &ExceptionSignalHandler,
+        .sa_flags = ORBIS_SA_RESTART,
+    };
+    return sceKernelError(Orbis::sigaction(sig, &sact, nullptr));
+}
+
+int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 sig) {
+    LOG_INFO(Lib_Kernel, "called. sig = {}", sig);
+    if (sig > ORBIS_SIG_MAXSIG32) {
+        return sceKernelError(POSIX_EINVAL);
+    }
+    auto expected = g_exception_handlers[sig - 1].load();
+    if (!g_exception_handlers[ORBIS_SIG_IDX(sig)].compare_exchange_strong(expected, nullptr)) {
+        return sceKernelError(POSIX_EAGAIN);
+    }
+    struct Orbis::sigaction sact = {
+        .sa_flags = ORBIS_SA_RESETHAND,
+    };
+    return sceKernelError(Orbis::sigaction(sig, &sact, nullptr));
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -470,6 +537,10 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
+
+    LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel", 1, 1,
+                 sceKernelInstallExceptionHandler);
+    LIB_FUNCTION("il03nluKfMk", "libkernel_unity", 1, "libkernel", 1, 1, sceKernelRaiseException);
 
     Libraries::Kernel::fileSystemSymbolsRegister(sym);
     Libraries::Kernel::timeSymbolsRegister(sym);

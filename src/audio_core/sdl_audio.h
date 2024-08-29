@@ -12,7 +12,7 @@ namespace Audio {
 class SDLAudio {
 public:
     SDLAudio() = default;
-    virtual ~SDLAudio() = default;
+    ~SDLAudio();
 
     int AudioOutOpen(int type, u32 samples_num, u32 freq,
                      Libraries::AudioOut::OrbisAudioOutParamFormat format);

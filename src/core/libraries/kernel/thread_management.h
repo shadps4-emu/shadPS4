@@ -112,11 +112,6 @@ struct PthreadRwInternal {
     std::string name;
 };
 
-struct PthreadSemInternal {
-    std::counting_semaphore<ORBIS_KERNEL_SEM_VALUE_MAX> semaphore;
-    std::atomic<s32> value;
-};
-
 class PThreadPool {
 public:
     ScePthread Create();
