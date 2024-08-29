@@ -412,7 +412,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 const u32 size = vsharp.GetSize();
                 const u32 alignment = instance.TexelBufferMinAlignment();
                 const auto [vk_buffer, offset] =
-                    buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written);
+                    buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written, true);
                 const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
                 ASSERT_MSG(fmt_stride == vsharp.GetStride(),
                            "Texel buffer stride must match format stride");
