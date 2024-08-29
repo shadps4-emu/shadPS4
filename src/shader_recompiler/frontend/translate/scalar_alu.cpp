@@ -31,6 +31,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_OR_B64(NegateMode::Result, false, inst);
         case Opcode::S_XOR_B64:
             return S_OR_B64(NegateMode::None, true, inst);
+        case Opcode::S_XNOR_B64:
+            return S_OR_B64(NegateMode::Result, true, inst);
         case Opcode::S_ORN2_B64:
             return S_OR_B64(NegateMode::Src1, false, inst);
         case Opcode::S_AND_B64:
