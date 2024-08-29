@@ -161,16 +161,17 @@ void PipelineCache::RefreshGraphicsKey() {
             continue;
         }
         const auto stage = Shader::Stage{i};
+        const GuestProgram guest_pgm{pgm, stage};
         std::tie(infos[i], modules[i], key.stage_hashes[i]) =
-            shader_cache->GetProgram(pgm, stage, binding);
+            shader_cache->GetProgram(guest_pgm, binding);
     }
 }
 
 void PipelineCache::RefreshComputeKey() {
     u32 binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
-    std::tie(infos[0], modules[0], compute_key) =
-        shader_cache->GetProgram(cs_pgm, Shader::Stage::Compute, binding);
+    const GuestProgram guest_pgm{cs_pgm, Shader::Stage::Compute};
+    std::tie(infos[0], modules[0], compute_key) = shader_cache->GetProgram(guest_pgm, binding);
 }
 
 } // namespace Vulkan

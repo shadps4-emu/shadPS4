@@ -111,65 +111,37 @@ struct Program {
 
     Shader::Info info;
     boost::container::small_vector<Module, 8> modules;
+
+    explicit Program(const Shader::Info& info_) : info{info_} {}
 };
 
-Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_data, u64 pgm_base,
-                            u64 hash, const AmdGpu::Liverpool::Regs& regs);
+struct GuestProgram {
+    Shader::Stage stage;
+    std::span<const u32, AmdGpu::Liverpool::NumShaderUserData> user_data;
+    std::span<const u32> code;
+    u64 hash;
 
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
+    explicit GuestProgram(const auto* pgm, Shader::Stage stage_)
+        : stage{stage_}, user_data{pgm->user_data}, code{pgm->Code()} {
+        const auto* bininfo = AmdGpu::Liverpool::GetBinaryInfo(*pgm);
+        hash = bininfo->shader_hash;
+    }
+};
 
 class ShaderCache {
 public:
     explicit ShaderCache(const Instance& instance, AmdGpu::Liverpool* liverpool);
     ~ShaderCache() = default;
 
+    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(const GuestProgram& pgm,
+                                                                      u32& binding);
+
+private:
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
                     std::string_view ext);
-
     vk::ShaderModule CompileModule(Shader::Info& info, std::span<const u32> code, size_t perm_idx,
                                    u32& binding);
-
-    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(const auto* pgm,
-                                                                      Shader::Stage stage,
-                                                                      u32& binding) {
-        // Fetch program for binaryinfo hash.
-        const auto* bininfo = AmdGpu::Liverpool::GetBinaryInfo(*pgm);
-        const u64 hash = bininfo->shader_hash;
-        auto [it_pgm, new_program] = program_cache.try_emplace(hash);
-        u64 stage_key{};
-        if (new_program) {
-            const VAddr pgm_base = pgm->template Address<VAddr>();
-            auto program = program_pool.Create();
-            program->info = MakeShaderInfo(stage, pgm->user_data, pgm_base, hash, liverpool->regs);
-            u32 start_binding = binding;
-            const auto module = CompileModule(program->info, pgm->Code(), 0, binding);
-            program->modules.emplace_back(module,
-                                          StageSpecialization{program->info, start_binding});
-            it_pgm.value() = program;
-            return std::make_tuple(&program->info, module, HashCombine(hash, 0));
-        }
-
-        Program* program = it_pgm->second;
-        const auto& info = program->info;
-        size_t perm_idx = program->modules.size();
-        StageSpecialization spec{info, binding};
-        vk::ShaderModule module{};
-
-        const auto it = std::ranges::find(program->modules, spec, &Program::Module::spec);
-        if (it == program->modules.end()) {
-            auto new_info = MakeShaderInfo(stage, pgm->user_data, info.pgm_base, info.pgm_hash,
-                                           liverpool->regs);
-            module = CompileModule(new_info, pgm->Code(), perm_idx, binding);
-            program->modules.emplace_back(module, std::move(spec));
-        } else {
-            binding += info.NumBindings();
-            module = it->module;
-            perm_idx = std::distance(program->modules.begin(), it);
-        }
-        return std::make_tuple(&info, module, HashCombine(hash, perm_idx));
-    }
+    Program* CreateProgram(const GuestProgram& pgm, u32& binding);
 
 private:
     const Instance& instance;
