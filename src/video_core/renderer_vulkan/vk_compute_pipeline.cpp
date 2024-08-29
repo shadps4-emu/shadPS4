@@ -107,6 +107,74 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     Shader::PushData push_data{};
     u32 binding{};
 
+    if (info->pgm_hash == 0x3d5ebf4e) {
+        const auto& src = info->texture_buffers[0];
+        const auto src_sharp = src.GetSharp(*info);
+        const auto& dst = info->texture_buffers[1];
+        const auto dst_sharp = dst.GetSharp(*info);
+        if (dst_sharp.base_address == 0x510e0000 || dst_sharp.base_address == 0x1926e0000 ||
+            dst_sharp.base_address == 0x1d42e0000) {
+            VideoCore::ImageViewInfo view_info;
+            view_info.format = vk::Format::eR8G8B8A8Unorm;
+            view_info.type = vk::ImageViewType::e2D;
+            view_info.range.extent.layers = 1;
+            view_info.range.extent.levels = 1;
+            AmdGpu::Image src_image;
+            src_image.base_address = src_sharp.base_address >> 8;
+            src_image.base_level = 0;
+            src_image.width = 1920 - 1;
+            src_image.height = 1080 - 1;
+            src_image.depth = 1;
+            src_image.data_format = u64(AmdGpu::DataFormat::Format8_8_8_8);
+            src_image.num_format = u64(AmdGpu::NumberFormat::Unorm);
+            src_image.dst_sel_x = 4;
+            src_image.dst_sel_y = 5;
+            src_image.dst_sel_z = 6;
+            src_image.dst_sel_w = 7;
+            src_image.pitch = 1920 - 1;
+            src_image.type = u64(AmdGpu::ImageType::Color2D);
+            src_image.tiling_index = u64(AmdGpu::TilingMode::Display_MacroTiled);
+
+            VideoCore::ImageInfo src_info{src_image};
+            const auto src_id = texture_cache.FindImage(src_info);
+            auto& src_img = texture_cache.GetImage(src_id);
+            src_img.Transit(vk::ImageLayout::eTransferSrcOptimal,
+                            vk::AccessFlagBits::eTransferRead);
+
+            src_image.base_address = dst_sharp.base_address >> 8;
+            VideoCore::ImageInfo dst_info{src_image};
+            const auto dst_id = texture_cache.FindImage(dst_info);
+            auto& dst_img = texture_cache.GetImage(dst_id);
+            dst_img.Transit(vk::ImageLayout::eTransferDstOptimal,
+                            vk::AccessFlagBits::eTransferWrite);
+
+            const auto cmdbuf = scheduler.CommandBuffer();
+            scheduler.EndRendering();
+            const vk::ImageCopy copy = {
+                                        .srcSubresource =
+                                        {
+                                            .aspectMask = vk::ImageAspectFlagBits::eColor,
+                                            .mipLevel = 0,
+                                            .baseArrayLayer = 0,
+                                            .layerCount = 1,
+                                        },
+                                        .srcOffset = {0, 0, 0},
+                                        .dstSubresource =
+                                        {
+                                            .aspectMask = vk::ImageAspectFlagBits::eColor,
+                                            .mipLevel = 0,
+                                            .baseArrayLayer = 0,
+                                            .layerCount = 1,
+                                        },
+                                        .dstOffset = {0, 0, 0},
+                                        .extent = {1920, 1080, 1},
+                                        };
+            cmdbuf.copyImage(src_img.image, vk::ImageLayout::eTransferSrcOptimal, dst_img.image,
+                             vk::ImageLayout::eTransferDstOptimal, copy);
+            return false;
+        }
+    }
+
     for (const auto& desc : info->buffers) {
         const auto vsharp = desc.GetSharp(*info);
         const bool is_storage = desc.IsStorage(vsharp);
@@ -166,7 +234,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
                 }
             }
-            if (desc.is_written) {
+            if (desc.is_written && info->pgm_hash != 0xfefebf9f && info->pgm_hash != 0x3d5ebf4e) {
                 texture_cache.InvalidateMemory(address, size);
             }
             const u32 alignment = instance.TexelBufferMinAlignment();
