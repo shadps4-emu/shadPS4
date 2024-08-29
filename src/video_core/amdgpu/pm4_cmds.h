@@ -704,4 +704,40 @@ struct PM4CmdReleaseMem {
     }
 };
 
+struct PM4CmdSetBase {
+    enum class BaseIndex : u32 {
+        DisplayListPatchTable = 0b0000,
+        DrawIndexIndirPatchTable = 0b0001,
+        GdsPartition = 0b0010,
+        CePartition = 0b0011,
+    };
+
+    PM4Type3Header header;
+    union {
+        BitField<0, 4, BaseIndex> base_index;
+        u32 dw1;
+    };
+    u32 address0;
+    u32 address1;
+
+    template <typename T>
+    T Address() const {
+        ASSERT(base_index == BaseIndex::DisplayListPatchTable ||
+               base_index == BaseIndex::DrawIndexIndirPatchTable);
+        return reinterpret_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+    }
+};
+
+struct PM4CmdDispatchIndirect {
+    struct GroupDimensions {
+        u32 dim_x;
+        u32 dim_y;
+        u32 dim_z;
+    };
+
+    PM4Type3Header header;
+    u32 data_offset;        ///< Byte aligned offset where the required data structure starts
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+};
+
 } // namespace AmdGpu
