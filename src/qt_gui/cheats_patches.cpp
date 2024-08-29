@@ -130,7 +130,7 @@ void CheatsPatches::setupUI() {
     // Call the method to fill the list of cheat files
     populateFileListCheats();
 
-    QLabel* repositoryLabel = new QLabel("Repository:");
+    QLabel* repositoryLabel = new QLabel(tr("Repository:"));
     repositoryLabel->setAlignment(Qt::AlignLeft);
     repositoryLabel->setAlignment(Qt::AlignVCenter);
 
@@ -1123,7 +1123,7 @@ void CheatsPatches::addPatchesToLayout(const QString& filePath) {
 void CheatsPatches::updateNoteTextEdit(const QString& patchName) {
     if (m_patchInfos.contains(patchName)) {
         const PatchInfo& patchInfo = m_patchInfos[patchName];
-        QString text = QString(tr("Name:") + " %1\n" + tr("Author:") + " %2\n\n%3")
+        QString text = QString(tr("Name:") + " %1\n" + tr("Author: ") + "%2\n\n%3")
                            .arg(patchInfo.name)
                            .arg(patchInfo.author)
                            .arg(patchInfo.note);
