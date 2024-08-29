@@ -203,27 +203,19 @@ void CheatsPatches::setupUI() {
     patchesScrollArea->setMinimumHeight(490);
     patchesLayout->addWidget(patchesScrollArea);
 
-    // Lista de arquivos em patchesListView
+    // List of files in patchesListView
     patchesListView = new QListView();
     patchesListView->setSelectionMode(QAbstractItemView::SingleSelection);
     patchesListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    // Adicionar o novo rótulo "Select Patch File:" acima da QListView
+    // Add new label "Select Patch File:" above the QListView
     QVBoxLayout* patchFileListLayout = new QVBoxLayout();
     patchFileListLayout->addWidget(new QLabel(tr("Select Patch File:")));
     patchFileListLayout->addWidget(patchesListView);
     patchesLayout->addLayout(patchFileListLayout, 2);
 
-    // Lista de arquivos em patchesListView
     QStringListModel* patchesModel = new QStringListModel();
     patchesListView->setModel(patchesModel);
-
-    // Conectar o clique duplo na lista com o carregamento de patches
-    connect(patchesListView, &QListView::doubleClicked, this, [=](const QModelIndex& index) {
-        QString selectedText = patchesModel->data(index).toString();
-        QString patchName = selectedText.section(" | ", 0, 0); // Pega o texto antes de " | "
-        addPatchesToLayout(patchName);
-    });
 
     QHBoxLayout* patchesControlLayout = new QHBoxLayout();
 
@@ -271,7 +263,7 @@ void CheatsPatches::setupUI() {
 }
 
 void CheatsPatches::onSaveButtonClicked() {
-    // Obter o nome da pasta selecionada na patchesListView
+    // Get the name of the selected folder in the patchesListView
     QString selectedPatchName;
     QModelIndexList selectedIndexes = patchesListView->selectionModel()->selectedIndexes();
     if (selectedIndexes.isEmpty()) {
@@ -661,8 +653,7 @@ void CheatsPatches::populateFileListPatches() {
             QModelIndexList selectedIndexes = patchesListView->selectionModel()->selectedIndexes();
             if (!selectedIndexes.isEmpty()) {
                 QString selectedText = selectedIndexes.first().data().toString();
-                QString filePath = selectedText.section(" | ", 1, 1);
-                addPatchesToLayout(filePath);
+                addPatchesToLayout(selectedText);
             }
         });
 
@@ -981,7 +972,13 @@ void CheatsPatches::populateFileListCheats() {
     }
 }
 
-void CheatsPatches::addPatchesToLayout(const QString& folderPath) {
+void CheatsPatches::addPatchesToLayout(const QString& filePath) {
+    if (filePath == "") {
+        return;
+    }
+    QString folderPath = filePath.section(" | ", 1, 1);
+
+    // Clear existing layout items
     QLayoutItem* item;
     while ((item = patchesGroupBoxLayout->takeAt(0)) != nullptr) {
         delete item->widget();
@@ -1012,6 +1009,8 @@ void CheatsPatches::addPatchesToLayout(const QString& folderPath) {
 
     QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
     QJsonObject jsonObject = jsonDoc.object();
+
+    bool patchAdded = false;
 
     // Iterate over each entry in the JSON file
     for (auto it = jsonObject.constBegin(); it != jsonObject.constEnd(); ++it) {
@@ -1099,9 +1098,24 @@ void CheatsPatches::addPatchesToLayout(const QString& folderPath) {
                     patchAuthor.clear();
                     patchNote.clear();
                     patchLines = QJsonArray();
+                    patchAdded = true;
                 }
             }
             xmlFile.close();
+        }
+    }
+
+    // Remove the item from the list view if no patches were added (the game has patches, but not
+    // for the current version)
+    if (!patchAdded) {
+        QStringListModel* model = qobject_cast<QStringListModel*>(patchesListView->model());
+        if (model) {
+            QStringList items = model->stringList();
+            int index = items.indexOf(filePath);
+            if (index != -1) {
+                items.removeAt(index);
+                model->setStringList(items);
+            }
         }
     }
 }
