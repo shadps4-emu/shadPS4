@@ -93,7 +93,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Читы / Патчи</translation>
+            <translation>Читы и патчи</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="49"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Скачать Читы / Патчи</translation>
+            <translation>Скачать читы или патчи</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -608,12 +608,12 @@
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>DLC Installation</translation>
+            <translation>Установка DLC</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Вы хотите установить DLC: %1?</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="674"/>
@@ -638,7 +638,7 @@
         <message>
         	<location filename="../main_window.cpp" line="704"/>
         	<source>Game successfully installed at %1</source>
-        	<translation>Игра успешно установлена по адресу %1</translation>
+        	<translation>Игра успешно установлена в %1</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="725"/>
@@ -651,13 +651,13 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="44"/>
         	<source>Cheats / Patches</source>
-        	<translation>Читы / Патчи</translation>
+        	<translation>Читы и патчи</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
-        </message>
+            <translation>Читы и патчи экспериментальны.\nИспользуйте с осторожностью.\n\nСкачивайте читы, выбрав репозиторий и нажав на кнопку загрузки.\nВо вкладке "Патчи" вы можете скачать все патчи сразу, выбирать какие вы хотите использовать, и сохранять выбор.\n\nПоскольку мы не разрабатываем читы/патчи,\nпожалуйста сообщайте о проблемах автору чита/патча.\n\nСоздали новый чит? Посетите:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="69"/>
         	<source>No Image Available</source>
