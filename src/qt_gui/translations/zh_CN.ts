@@ -606,6 +606,16 @@
             <translation>游戏已安装\n%1\n您想要覆盖吗？</translation>
         </message>
         <message>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>DLC Installation</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Would you like to install DLC: %1?</translation>
+        </message>
+        <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>PKG is a patch, please install the game first!</source>
             <translation>PKG 是一个补丁，请先安装游戏！</translation>
