@@ -391,6 +391,8 @@ void MainWindow::CreateConnects() {
                 nullptr, tr("Download Complete"),
                 QString(tr("Patches Downloaded Successfully!") + "\n" +
                         tr("All Patches available for all games have been downloaded.")));
+            cheatsPatches->createFilesJson("GoldHEN");
+            cheatsPatches->createFilesJson("shadPS4");
             panelDialog->accept();
         });
         panelDialog->exec();
