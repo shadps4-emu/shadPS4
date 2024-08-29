@@ -37,7 +37,7 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Carregando lista de jogos, por favor aguarde :3</translation>
+            <translation>Carregando a lista de jogos, por favor aguarde :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Baixar Trapaças / Patches</translation>
+            <translation>Baixar Cheats/Patches</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -291,7 +291,7 @@
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Modo de Lista de Jogos</translation>
+            <translation>Modo da Lista de Jogos</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
@@ -425,7 +425,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Filtro</translation>
+            <translation>Filtro do Registro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
@@ -508,12 +508,12 @@
         <message>
         	<location filename="../main_window.cpp" line="326"/>
         	<source>Download Cheats For All Installed Games</source>
-        	<translation>Baixar Trapaças para todos os jogos instalados</translation>
+        	<translation>Baixar Cheats para Todos os Jogos Instalados</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="328"/>
         	<source>Download Patches For All Games</source>
-        	<translation>Baixar Patches para todos os jogos</translation>
+        	<translation>Baixar Patches para Todos os Jogos</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="363"/>
@@ -523,7 +523,7 @@
         <message>
         	<location filename="../main_window.cpp" line="364"/>
         	<source>You have downloaded cheats for all the games you have installed.</source>
-        	<translation>Você baixou trapaças para todos os jogos que instalou.</translation>
+        	<translation>Você baixou cheats para todos os jogos que instalou.</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="391"/>
@@ -578,7 +578,7 @@
         <message>
         	<location filename="../main_window.cpp" line="639"/>
         	<source>Patch detected!\nPKG Version %1 is older </source>
-        	<translation>Patch detectado!\nVersão PKG %1 é mais antiga </translation>
+        	<translation>Patch detectado!\nVersão do PKG %1 é mais antiga </translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="640"/>
@@ -593,7 +593,7 @@
         <message>
         	<location filename="../main_window.cpp" line="646"/>
         	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
-        	<translation>Patch detectado!\nJogo está instalado: %1\nGostaria de </translation>
+        	<translation>Patch detectado!\nO Jogo está instalado: %1\nGostaria de </translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="647"/>
@@ -608,22 +608,22 @@
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>DLC Installation</translation>
+            <translation>Instalação de DLC</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Gostaria de instalar a DLC: %1?</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="674"/>
         	<source>PKG is a patch, please install the game first!</source>
-        	<translation>PKG é um patch, por favor, instale o jogo primeiro!</translation>
+        	<translation>O PKG é um patch, por favor, instale o jogo primeiro!</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="681"/>
         	<source>PKG ERROR</source>
-        	<translation>ERRO PKG</translation>
+        	<translation>ERRO de PKG</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="693"/>
@@ -651,12 +651,12 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="44"/>
         	<source>Cheats / Patches</source>
-        	<translation>Trapaças / Patches</translation>
+        	<translation>Cheats / Patches</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="50"/>
         	<source>defaultTextEdit_MSG</source>
-        	<translation>Trapaças/Patches são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolher qual deseja usar e salvar a opção.\n\nComo não desenvolvemos as Trapaças/Patches,\npor favor, reporte problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        	<translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="69"/>
@@ -666,7 +666,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="79"/>
         	<source>Serial: </source>
-        	<translation>Série: </translation>
+        	<translation>Serial: </translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="83"/>
@@ -681,7 +681,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="126"/>
         	<source>Select Cheat File:</source>
-        	<translation>Selecione o Arquivo de Trapaça:</translation>
+        	<translation>Selecione o Arquivo de Cheat:</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="133"/>
@@ -691,7 +691,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="149"/>
         	<source>Download Cheats</source>
-        	<translation>Baixar Trapaças</translation>
+        	<translation>Baixar Cheats</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="155"/>
@@ -706,7 +706,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="170"/>
         	<source>You can delete the cheats you don't want after downloading them.</source>
-        	<translation>Você pode excluir as trapaças que não deseja após baixá-las.</translation>
+        	<translation>Você pode excluir os cheats que não deseja após baixá-las.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="178"/>
@@ -731,7 +731,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="256"/>
         	<source>Cheats</source>
-        	<translation>Trapaças</translation>
+        	<translation>Cheats</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="257"/>
@@ -756,7 +756,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="316"/>
         	<source>No patch file found for the current serial.</source>
-        	<translation>Nenhum arquivo de patch encontrado para a série atual.</translation>
+        	<translation>Nenhum arquivo de patch encontrado para o serial atual.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="323"/>
@@ -816,22 +816,22 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="556"/>
         	<source>Cheats Not Found</source>
-        	<translation>Trapaças Não Encontradas</translation>
+        	<translation>Cheats Não Encontrados</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="556"/>
         	<source>CheatsNotFound_MSG</source>
-        	<translation>Nenhuma trapaça encontrada para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
+        	<translation>Nenhum cheat encontrado para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="593"/>
         	<source>Cheats Downloaded Successfully</source>
-        	<translation>Trapaças Baixadas com Sucesso</translation>
+        	<translation>Cheats Baixados com Sucesso</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="594"/>
         	<source>CheatsDownloadedSuccessfully_MSG</source>
-        	<translation>Você baixou as trapaças com sucesso. Para esta versão do jogo a partir do repositório selecionado.Você pode tentar baixar de outro repositório, se estiver disponível, também será possível usá-lo selecionando o arquivo da lista.</translation>
+        	<translation>Você baixou os cheats com sucesso. Para esta versão do jogo a partir do repositório selecionado. Você pode tentar baixar de outro repositório, se estiver disponível, também será possível usá-lo selecionando o arquivo da lista.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="747"/>
@@ -851,7 +851,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com as Trapaças.</translation>
+        	<translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com os Cheats.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>
@@ -871,7 +871,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="819"/>
         	<source>XML ERROR:</source>
-        	<translation>ERRO XML:</translation>
+        	<translation>ERRO de XML:</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="826"/>
@@ -886,7 +886,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="997"/>
         	<source>Directory does not exist:</source>
-        	<translation>Diretório não existe:</translation>
+        	<translation>O Diretório não existe:</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="1006"/>
