@@ -119,7 +119,7 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
                dfmt == view.dfmt && nfmt == view.nfmt;
     })};
     if (it != views.end()) {
-        return it->handle;
+        return *it->handle;
     }
     const vk::BufferUsageFlags2CreateInfoKHR usage_flags = {
         .usage = is_written ? vk::BufferUsageFlagBits2KHR::eStorageTexelBuffer
@@ -138,9 +138,9 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
         .is_written = is_written,
         .dfmt = dfmt,
         .nfmt = nfmt,
-        .handle = instance->GetDevice().createBufferView(view_ci),
+        .handle = instance->GetDevice().createBufferViewUnique(view_ci),
     });
-    return views.back().handle;
+    return *views.back().handle;
 }
 
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;

@@ -171,7 +171,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
             const u32 alignment = instance.TexelBufferMinAlignment();
             const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(address, size, desc.is_written);
+                buffer_cache.ObtainBuffer(address, size, desc.is_written, true);
             const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
             ASSERT_MSG(fmt_stride == vsharp.GetStride(),
                        "Texel buffer stride must match format stride");

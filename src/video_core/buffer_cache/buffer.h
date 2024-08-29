@@ -134,7 +134,7 @@ public:
         bool is_written;
         AmdGpu::DataFormat dfmt;
         AmdGpu::NumberFormat nfmt;
-        vk::BufferView handle;
+        vk::UniqueBufferView handle;
     };
     std::vector<BufferView> views;
 };
