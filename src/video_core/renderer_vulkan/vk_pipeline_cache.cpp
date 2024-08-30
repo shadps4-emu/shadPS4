@@ -52,7 +52,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
     if (!RefreshComputeKey()) {
-      return nullptr;
+        return nullptr;
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
@@ -175,7 +175,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
         if (ShouldSkipShader(bininfo->shader_hash, "graphics")) {
-           return false;
+            return false;
         }
         const auto stage = Shader::Stage{i};
         const GuestProgram guest_pgm{pgm, stage};
@@ -190,7 +190,7 @@ bool PipelineCache::RefreshComputeKey() {
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const GuestProgram guest_pgm{cs_pgm, Shader::Stage::Compute};
     if (ShouldSkipShader(guest_pgm.hash, "compute")) {
-       return false;
+        return false;
     }
     std::tie(infos[0], modules[0], compute_key) = shader_cache->GetProgram(guest_pgm, binding);
     return true;
