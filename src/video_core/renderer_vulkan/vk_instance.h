@@ -192,6 +192,11 @@ public:
         return properties.limits.minStorageBufferOffsetAlignment;
     }
 
+    /// Returns the minimum required alignment for texel buffers
+    vk::DeviceSize TexelBufferMinAlignment() const {
+        return properties.limits.minTexelBufferOffsetAlignment;
+    }
+
     /// Returns the minimum alignemt required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;

@@ -50,9 +50,9 @@ vk::ComponentSwizzle ConvertComponentSwizzle(u32 dst_sel) {
 }
 
 bool IsIdentityMapping(u32 dst_sel, u32 num_components) {
-    return (num_components == 1 && dst_sel == 0b100) ||
-           (num_components == 2 && dst_sel == 0b101'100) ||
-           (num_components == 3 && dst_sel == 0b110'101'100) ||
+    return (num_components == 1 && dst_sel == 0b001'000'000'100) ||
+           (num_components == 2 && dst_sel == 0b001'000'101'100) ||
+           (num_components == 3 && dst_sel == 0b001'110'101'100) ||
            (num_components == 4 && dst_sel == 0b111'110'101'100);
 }
 

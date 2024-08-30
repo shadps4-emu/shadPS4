@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
+#include "common/alignment.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -45,10 +46,6 @@ bool IsBufferStore(const IR::Inst& inst) {
     case IR::Opcode::StoreBufferF32x2:
     case IR::Opcode::StoreBufferF32x3:
     case IR::Opcode::StoreBufferF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-    case IR::Opcode::StoreBufferFormatF32x2:
-    case IR::Opcode::StoreBufferFormatF32x3:
-    case IR::Opcode::StoreBufferFormatF32x4:
     case IR::Opcode::StoreBufferU32:
         return true;
     default:
@@ -62,10 +59,6 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
     case IR::Opcode::LoadBufferF32x4:
-    case IR::Opcode::LoadBufferFormatF32:
-    case IR::Opcode::LoadBufferFormatF32x2:
-    case IR::Opcode::LoadBufferFormatF32x3:
-    case IR::Opcode::LoadBufferFormatF32x4:
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::ReadConstBufferU32:
@@ -73,6 +66,11 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     default:
         return IsBufferStore(inst);
     }
+}
+
+bool IsTextureBufferInstruction(const IR::Inst& inst) {
+    return inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
+           inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32;
 }
 
 static bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
@@ -100,28 +98,6 @@ static bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_for
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferFormatF32:
-    case IR::Opcode::LoadBufferFormatF32x2:
-    case IR::Opcode::LoadBufferFormatF32x3:
-    case IR::Opcode::LoadBufferFormatF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-    case IR::Opcode::StoreBufferFormatF32x2:
-    case IR::Opcode::StoreBufferFormatF32x3:
-    case IR::Opcode::StoreBufferFormatF32x4:
-        switch (num_format) {
-        case AmdGpu::NumberFormat::Unorm:
-        case AmdGpu::NumberFormat::Snorm:
-        case AmdGpu::NumberFormat::Uscaled:
-        case AmdGpu::NumberFormat::Sscaled:
-        case AmdGpu::NumberFormat::Uint:
-        case AmdGpu::NumberFormat::Sint:
-        case AmdGpu::NumberFormat::SnormNz:
-            return IR::Type::U32;
-        case AmdGpu::NumberFormat::Float:
-            return IR::Type::F32;
-        default:
-            UNREACHABLE();
-        }
     case IR::Opcode::LoadBufferF32:
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
@@ -143,20 +119,8 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     }
 }
 
-bool IsImageInstruction(const IR::Inst& inst) {
+bool IsImageAtomicInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageSampleExplicitLod:
-    case IR::Opcode::ImageSampleImplicitLod:
-    case IR::Opcode::ImageSampleDrefExplicitLod:
-    case IR::Opcode::ImageSampleDrefImplicitLod:
-    case IR::Opcode::ImageFetch:
-    case IR::Opcode::ImageGather:
-    case IR::Opcode::ImageGatherDref:
-    case IR::Opcode::ImageQueryDimensions:
-    case IR::Opcode::ImageQueryLod:
-    case IR::Opcode::ImageGradient:
-    case IR::Opcode::ImageRead:
-    case IR::Opcode::ImageWrite:
     case IR::Opcode::ImageAtomicIAdd32:
     case IR::Opcode::ImageAtomicSMin32:
     case IR::Opcode::ImageAtomicUMin32:
@@ -178,20 +142,27 @@ bool IsImageStorageInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::ImageWrite:
     case IR::Opcode::ImageRead:
-    case IR::Opcode::ImageAtomicIAdd32:
-    case IR::Opcode::ImageAtomicSMin32:
-    case IR::Opcode::ImageAtomicUMin32:
-    case IR::Opcode::ImageAtomicSMax32:
-    case IR::Opcode::ImageAtomicUMax32:
-    case IR::Opcode::ImageAtomicInc32:
-    case IR::Opcode::ImageAtomicDec32:
-    case IR::Opcode::ImageAtomicAnd32:
-    case IR::Opcode::ImageAtomicOr32:
-    case IR::Opcode::ImageAtomicXor32:
-    case IR::Opcode::ImageAtomicExchange32:
         return true;
     default:
-        return false;
+        return IsImageAtomicInstruction(inst);
+    }
+}
+
+bool IsImageInstruction(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::ImageSampleExplicitLod:
+    case IR::Opcode::ImageSampleImplicitLod:
+    case IR::Opcode::ImageSampleDrefExplicitLod:
+    case IR::Opcode::ImageSampleDrefImplicitLod:
+    case IR::Opcode::ImageFetch:
+    case IR::Opcode::ImageGather:
+    case IR::Opcode::ImageGatherDref:
+    case IR::Opcode::ImageQueryDimensions:
+    case IR::Opcode::ImageQueryLod:
+    case IR::Opcode::ImageGradient:
+        return true;
+    default:
+        return IsImageStorageInstruction(inst);
     }
 }
 
@@ -214,7 +185,8 @@ u32 ImageOffsetArgumentPosition(const IR::Inst& inst) {
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
-        : info{info_}, buffer_resources{info_.buffers}, image_resources{info_.images},
+        : info{info_}, buffer_resources{info_.buffers},
+          texture_buffer_resources{info_.texture_buffers}, image_resources{info_.images},
           sampler_resources{info_.samplers} {}
 
     u32 Add(const BufferResource& desc) {
@@ -224,9 +196,17 @@ public:
                    desc.inline_cbuf == existing.inline_cbuf;
         })};
         auto& buffer = buffer_resources[index];
-        ASSERT(buffer.length == desc.length);
-        buffer.is_storage |= desc.is_storage;
         buffer.used_types |= desc.used_types;
+        buffer.is_written |= desc.is_written;
+        return index;
+    }
+
+    u32 Add(const TextureBufferResource& desc) {
+        const u32 index{Add(texture_buffer_resources, desc, [&desc](const auto& existing) {
+            return desc.sgpr_base == existing.sgpr_base &&
+                   desc.dword_offset == existing.dword_offset;
+        })};
+        auto& buffer = texture_buffer_resources[index];
         buffer.is_written |= desc.is_written;
         return index;
     }
@@ -247,7 +227,7 @@ public:
                 return true;
             }
             // Samplers with different bindings might still be the same.
-            return existing.GetSsharp(info) == desc.GetSsharp(info);
+            return existing.GetSharp(info) == desc.GetSharp(info);
         })};
         return index;
     }
@@ -265,6 +245,7 @@ private:
 
     const Info& info;
     BufferResourceList& buffer_resources;
+    TextureBufferResourceList& texture_buffer_resources;
     ImageResourceList& image_resources;
     SamplerResourceList& sampler_resources;
 };
@@ -361,33 +342,6 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     };
 }
 
-static constexpr size_t MaxUboSize = 65536;
-
-static bool IsLoadBufferFormat(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferFormatF32:
-    case IR::Opcode::LoadBufferFormatF32x2:
-    case IR::Opcode::LoadBufferFormatF32x3:
-    case IR::Opcode::LoadBufferFormatF32x4:
-        return true;
-    default:
-        return false;
-    }
-}
-
-static u32 BufferLength(const AmdGpu::Buffer& buffer) {
-    const auto stride = buffer.GetStride();
-    if (stride < sizeof(f32)) {
-        ASSERT(sizeof(f32) % stride == 0);
-        return (((buffer.num_records - 1) / sizeof(f32)) + 1) * stride;
-    } else if (stride == sizeof(f32)) {
-        return buffer.num_records;
-    } else {
-        ASSERT(stride % sizeof(f32) == 0);
-        return buffer.num_records * (stride / sizeof(f32));
-    }
-}
-
 s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
                         AmdGpu::Buffer& cbuf) {
 
@@ -414,10 +368,8 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
     return descriptors.Add(BufferResource{
         .sgpr_base = std::numeric_limits<u32>::max(),
         .dword_offset = 0,
-        .length = BufferLength(cbuf),
         .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
         .inline_cbuf = cbuf,
-        .is_storage = IsBufferStore(inst) || cbuf.GetSize() > MaxUboSize,
     });
 }
 
@@ -429,28 +381,17 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         const auto sharp = TrackSharp(producer);
-        const bool is_store = IsBufferStore(inst);
         buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
         binding = descriptors.Add(BufferResource{
             .sgpr_base = sharp.sgpr_base,
             .dword_offset = sharp.dword_offset,
-            .length = BufferLength(buffer),
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
-            .is_storage = is_store || buffer.GetSize() > MaxUboSize,
-            .is_written = is_store,
+            .is_written = IsBufferStore(inst),
         });
     }
 
     // Update buffer descriptor format.
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-    auto& buffer_desc = info.buffers[binding];
-    if (inst_info.is_typed) {
-        buffer_desc.dfmt = inst_info.dmft;
-        buffer_desc.nfmt = inst_info.nfmt;
-    } else {
-        buffer_desc.dfmt = buffer.GetDataFmt();
-        buffer_desc.nfmt = buffer.GetNumberFmt();
-    }
 
     // Replace handle with binding index in buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -463,20 +404,7 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         return;
     }
 
-    if (IsLoadBufferFormat(inst)) {
-        if (UseFP16(buffer.GetDataFmt(), buffer.GetNumberFmt())) {
-            info.uses_fp16 = true;
-        }
-    } else {
-        const u32 stride = buffer.GetStride();
-        if (stride < 4) {
-            LOG_WARNING(Render_Vulkan,
-                        "non-formatting load_buffer_* is not implemented for stride {}", stride);
-        }
-    }
-
     // Compute address of the buffer using the stride.
-    // Todo: What if buffer is rebound with different stride?
     IR::U32 address = ir.Imm32(inst_info.inst_offset.Value());
     if (inst_info.index_enable) {
         const IR::U32 index = inst_info.offset_enable ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
@@ -491,8 +419,31 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     inst.SetArg(1, address);
 }
 
+void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+                                   Descriptors& descriptors) {
+    const IR::Inst* handle = inst.Arg(0).InstRecursive();
+    const IR::Inst* producer = handle->Arg(0).InstRecursive();
+    const auto sharp = TrackSharp(producer);
+    const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+    const s32 binding = descriptors.Add(TextureBufferResource{
+        .sgpr_base = sharp.sgpr_base,
+        .dword_offset = sharp.dword_offset,
+        .nfmt = buffer.GetNumberFmt(),
+        .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
+    });
+
+    // Replace handle with binding index in texture buffer resource list.
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    inst.SetArg(0, ir.Imm32(binding));
+    ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
+}
+
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z) {
+                         const IR::Value& z, bool is_storage) {
+    // When cubemap is written with imageStore it is treated like 2DArray.
+    if (is_storage) {
+        return ir.CompositeConstruct(s, t, z);
+    }
     // We need to fix x and y coordinate,
     // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
     // We already force the scale value to be 1.0 when handling v_cubema_f32,
@@ -530,13 +481,15 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         return;
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
+    const bool is_storage = IsImageStorageInstruction(inst);
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
         .type = image.GetType(),
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
-        .is_storage = IsImageStorageInstruction(inst),
+        .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
+        .is_atomic = IsImageAtomicInstruction(inst),
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
@@ -593,7 +546,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage),
+                    body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
         }
@@ -666,6 +620,10 @@ void ResourceTrackingPass(IR::Program& program) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferInstruction(*block, inst, info, descriptors);
+                continue;
+            }
+            if (IsTextureBufferInstruction(inst)) {
+                PatchTextureBufferInstruction(*block, inst, info, descriptors);
                 continue;
             }
             if (IsImageInstruction(inst)) {

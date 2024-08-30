@@ -66,7 +66,8 @@ public:
     u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
 
     /// Obtains a buffer for the specified region.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
+                                                       bool is_texel_buffer = false);
 
     /// Obtains a temporary buffer for usage in texture cache.
     [[nodiscard]] std::pair<const Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);

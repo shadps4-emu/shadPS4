@@ -36,7 +36,7 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, IR::Program& program, u32& binding);
+    explicit EmitContext(const Profile& profile, const Shader::Info& info, u32& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
@@ -124,7 +124,7 @@ public:
         return ConstantComposite(type, constituents);
     }
 
-    Info& info;
+    const Info& info;
     const Profile& profile;
     Stage stage{};
 
@@ -207,13 +207,20 @@ public:
         u32 binding;
         const VectorIds* data_types;
         Id pointer_type;
-        AmdGpu::DataFormat dfmt;
-        AmdGpu::NumberFormat nfmt;
-        u32 stride;
+    };
+    struct TextureBufferDefinition {
+        Id id;
+        Id coord_offset;
+        u32 binding;
+        Id image_type;
+        Id result_type;
+        bool is_integer;
+        bool is_storage;
     };
 
     u32& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
+    boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 
@@ -238,6 +245,7 @@ private:
     void DefineOutputs();
     void DefinePushDataBlock();
     void DefineBuffers();
+    void DefineTextureBuffers();
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
 

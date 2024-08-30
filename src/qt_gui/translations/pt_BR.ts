@@ -37,7 +37,7 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Carregando lista de jogos, por favor aguarde :3</translation>
+            <translation>Carregando a lista de jogos, por favor aguarde :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
@@ -81,67 +81,72 @@
     <context>
         <name>GuiContextMenus</name>
         <message>
-            <location filename="../gui_context_menus.h" line="39"/>
+            <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
             <translation>Criar Atalho</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="40"/>
+            <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
             <translation>Abrir Pasta do Jogo</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="41"/>
+            <location filename="../gui_context_menus.h" line="48"/>
+            <source>Cheats / Patches</source>
+            <translation>Cheats / Patches</translation>
+        </message>
+        <message>
+            <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
             <translation>Visualizador de SFO</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="42"/>
+            <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
             <translation>Visualizador de Troféu</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="50"/>
+            <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
             <translation>Copiar informação</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="51"/>
+            <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
             <translation>Copiar Nome</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="52"/>
+            <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
             <translation>Copiar Serial</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="53"/>
+            <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
             <translation>Copiar Tudo</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="173"/>
+            <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
             <translation>Criação de atalho</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="174"/>
+            <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
             <translation>Atalho criado com sucesso!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="177"/>
+            <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
             <translation>Erro</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="178"/>
+            <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
             <translation>Erro ao criar atalho!\n %1</translation>
         </message>
         <message>
-            <location filename="../gui_context_menus.h" line="253"/>
+            <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
             <translation>Instalar PKG</translation>
         </message>
@@ -249,6 +254,11 @@
             <translation>Diretório de Instalação de Jogos</translation>
         </message>
         <message>
+            <location filename="../main_window_ui.h" line="343"/>
+            <source>Download Cheats/Patches</source>
+            <translation>Baixar Cheats/Patches</translation>
+        </message>
+        <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
             <translation>Dumpar Lista de Jogos</translation>
@@ -281,7 +291,7 @@
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Modo de Lista de Jogos</translation>
+            <translation>Modo da Lista de Jogos</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
@@ -415,7 +425,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Filtro</translation>
+            <translation>Filtro do Registro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
@@ -488,4 +498,405 @@
             <translation>Ativar Depuração por RenderDoc</translation>
         </message>
     </context>
+	<context>
+        <name>MainWindow</name>
+        <message>
+        	<location filename="../main_window.cpp" line="168"/>
+        	<source> * Unsupported Vulkan Version</source>
+        	<translation> * Versão Vulkan não suportada</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="326"/>
+        	<source>Download Cheats For All Installed Games</source>
+        	<translation>Baixar Cheats para Todos os Jogos Instalados</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="328"/>
+        	<source>Download Patches For All Games</source>
+        	<translation>Baixar Patches para Todos os Jogos</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="363"/>
+        	<source>Download Complete</source>
+        	<translation>Download Completo</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="364"/>
+        	<source>You have downloaded cheats for all the games you have installed.</source>
+        	<translation>Você baixou cheats para todos os jogos que instalou.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="391"/>
+        	<source>Patches Downloaded Successfully!</source>
+        	<translation>Patches Baixados com Sucesso!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="392"/>
+        	<source>All Patches available for all games have been downloaded.</source>
+        	<translation>Todos os patches disponíveis para todos os jogos foram baixados.</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="549"/>
+        	<source>Games: </source>
+        	<translation>Jogos: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="575"/>
+        	<source>PKG File (*.PKG)</source>
+        	<translation>Arquivo PKG (*.PKG)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="594"/>
+        	<source>ELF files (*.bin *.elf *.oelf)</source>
+        	<translation>Arquivos ELF (*.bin *.elf *.oelf)</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Game Boot</source>
+        	<translation>Inicialização do Jogo</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="600"/>
+        	<source>Only one file can be selected!</source>
+        	<translation>Apenas um arquivo pode ser selecionado!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="623"/>
+        	<source>PKG Extraction</source>
+        	<translation>Extração de PKG</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Atualização detectada!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>As versões do PKG e do Jogo são igual: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Gostaria de substituir?</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Jogo instalado: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Você gostaria de instalar a atualização: </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>Instalação de DLC</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Você gostaria de instalar o DLC: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC já instalada:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>O jogo já está instalado:</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="674"/>
+        	<source>PKG is a patch, please install the game first!</source>
+        	<translation>O PKG é um patch, por favor, instale o jogo primeiro!</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="681"/>
+        	<source>PKG ERROR</source>
+        	<translation>ERRO de PKG</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="693"/>
+        	<source>Extracting PKG %1/%2</source>
+        	<translation>Extraindo PKG %1/%2</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="703"/>
+        	<source>Extraction Finished</source>
+        	<translation>Extração Concluída</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="704"/>
+        	<source>Game successfully installed at %1</source>
+        	<translation>Jogo instalado com sucesso em %1</translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="725"/>
+        	<source>File doesn't appear to be a valid PKG file</source>
+        	<translation>O arquivo não parece ser um arquivo PKG válido</translation>
+        </message>
+	</context>
+	<context>
+        <name>CheatsPatches</name>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="44"/>
+        	<source>Cheats / Patches</source>
+        	<translation>Cheats / Patches</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="50"/>
+        	<source>defaultTextEdit_MSG</source>
+        	<translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="69"/>
+        	<source>No Image Available</source>
+        	<translation>Imagem Não Disponível</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="79"/>
+        	<source>Serial: </source>
+        	<translation>Serial: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="83"/>
+        	<source>Version: </source>
+        	<translation>Versão: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="87"/>
+        	<source>Size: </source>
+        	<translation>Tamanho: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="126"/>
+        	<source>Select Cheat File:</source>
+        	<translation>Selecione o Arquivo de Cheat:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="133"/>
+        	<source>Repository:</source>
+        	<translation>Repositório:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="149"/>
+        	<source>Download Cheats</source>
+        	<translation>Baixar Cheats</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="155"/>
+        	<source>Delete File</source>
+        	<translation>Excluir Arquivo</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="169"/>
+        	<source>No files selected.</source>
+        	<translation>Nenhum arquivo selecionado.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="170"/>
+        	<source>You can delete the cheats you don't want after downloading them.</source>
+        	<translation>Você pode excluir os cheats que não deseja após baixá-las.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="178"/>
+        	<source>Do you want to delete the selected file?\n%1</source>
+        	<translation>Deseja excluir o arquivo selecionado?\n%1</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="213"/>
+        	<source>Select Patch File:</source>
+        	<translation>Selecione o Arquivo de Patch:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="241"/>
+        	<source>Download Patches</source>
+        	<translation>Baixar Patches</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="248"/>
+        	<source>Save</source>
+        	<translation>Salvar</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="256"/>
+        	<source>Cheats</source>
+        	<translation>Cheats</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="257"/>
+        	<source>Patches</source>
+        	<translation>Patches</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>Error</source>
+        	<translation>Erro</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="278"/>
+        	<source>No patch selected.</source>
+        	<translation>Nenhum patch selecionado.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="292"/>
+        	<source>Unable to open files.json for reading.</source>
+        	<translation>Não foi possível abrir files.json para leitura.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="316"/>
+        	<source>No patch file found for the current serial.</source>
+        	<translation>Nenhum arquivo de patch encontrado para o serial atual.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="323"/>
+        	<source>Unable to open the file for reading.</source>
+        	<translation>Não foi possível abrir o arquivo para leitura.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="422"/>
+        	<source>Unable to open the file for writing.</source>
+        	<translation>Não foi possível abrir o arquivo para gravação.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="432"/>
+        	<source>Failed to parse XML: </source>
+        	<translation>Falha ao analisar XML: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Success</source>
+        	<translation>Sucesso</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="434"/>
+        	<source>Options saved successfully.</source>
+        	<translation>Opções salvas com sucesso.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="470"/>
+        	<source>Invalid Source</source>
+        	<translation>Fonte Inválida</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="471"/>
+        	<source>The selected source is invalid.</source>
+        	<translation>A fonte selecionada é inválida.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="519"/>
+        	<source>File Exists</source>
+        	<translation>Arquivo Existe</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="520"/>
+        	<source>File already exists. Do you want to replace it?</source>
+        	<translation>O arquivo já existe. Deseja substituí-lo?</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="539"/>
+        	<source>Failed to save file:</source>
+        	<translation>Falha ao salvar o arquivo:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="545"/>
+        	<source>Failed to download file:</source>
+        	<translation>Falha ao baixar o arquivo:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>Cheats Not Found</source>
+        	<translation>Cheats Não Encontrados</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="556"/>
+        	<source>CheatsNotFound_MSG</source>
+        	<translation>Nenhum cheat encontrado para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="593"/>
+        	<source>Cheats Downloaded Successfully</source>
+        	<translation>Cheats Baixados com Sucesso</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="594"/>
+        	<source>CheatsDownloadedSuccessfully_MSG</source>
+        	<translation>Você baixou os cheats com sucesso. Para esta versão do jogo a partir do repositório selecionado. Você pode tentar baixar de outro repositório, se estiver disponível, também será possível usá-lo selecionando o arquivo da lista.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="747"/>
+        	<source>Failed to save:</source>
+        	<translation>Falha ao salvar:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="754"/>
+        	<source>Failed to download:</source>
+        	<translation>Falha ao baixar:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="762"/>
+        	<source>Download Complete</source>
+        	<translation>Download Completo</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="763"/>
+        	<source>DownloadComplete_MSG</source>
+        	<translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece com os Cheats.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="773"/>
+        	<source>Failed to parse JSON data from HTML.</source>
+        	<translation>Falha ao analisar dados JSON do HTML.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="778"/>
+        	<source>Failed to retrieve HTML page.</source>
+        	<translation>Falha ao recuperar a página HTML.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="801"/>
+        	<source>Failed to open file:</source>
+        	<translation>Falha ao abrir o arquivo:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="819"/>
+        	<source>XML ERROR:</source>
+        	<translation>ERRO de XML:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="826"/>
+        	<source>Failed to open files.json for writing</source>
+        	<translation>Falha ao abrir files.json para gravação</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="925"/>
+        	<source>Author: </source>
+        	<translation>Autor: </translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="997"/>
+        	<source>Directory does not exist:</source>
+        	<translation>O Diretório não existe:</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Failed to open files.json for reading.</source>
+        	<translation>Falha ao abrir files.json para leitura.</translation>
+        </message>
+        <message>
+        	<location filename="../cheats_patches.cpp" line="1006"/>
+        	<source>Name:</source>
+        	<translation>Nome:</translation>
+        </message>
+	</context>
 </TS>

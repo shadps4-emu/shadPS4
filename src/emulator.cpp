@@ -7,6 +7,9 @@
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
+#ifdef ENABLE_QT_GUI
+#include "qt_gui/memory_patcher.h"
+#endif
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -81,6 +84,8 @@ void Emulator::Run(const std::filesystem::path& file) {
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(file.parent_path(), "/app0");
+    // Certain games may use /hostapp as well such as CUSA001100
+    mnt->Mount(file.parent_path(), "/hostapp");
 
     // Loading param.sfo file if exists
     std::string id;
@@ -93,6 +98,9 @@ void Emulator::Run(const std::filesystem::path& file) {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+#ifdef ENABLE_QT_GUI
+                MemoryPatcher::g_game_serial = id;
+#endif
                 title = param_sfo->GetString("TITLE");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
                 u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");

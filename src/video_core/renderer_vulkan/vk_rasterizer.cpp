@@ -90,6 +90,45 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 }
 
+void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
+    RENDERER_TRACE;
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto& cs_program = liverpool->regs.cs_program;
+    const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
+    if (!pipeline) {
+        return;
+    }
+
+    try {
+        const auto has_resources = pipeline->BindResources(buffer_cache, texture_cache);
+        if (!has_resources) {
+            return;
+        }
+    } catch (...) {
+        UNREACHABLE();
+    }
+
+    scheduler.EndRendering();
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
+    const auto total_offset = base + offset;
+
+    // Emulate PFP-to-ME sync packet
+    const vk::BufferMemoryBarrier ib_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
+        .buffer = buffer->Handle(),
+        .offset = total_offset,
+        .size = size,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eDrawIndirect,
+                           vk::DependencyFlagBits::eByRegion, {}, ib_barrier, {});
+
+    cmdbuf.dispatchIndirect(buffer->Handle(), total_offset);
+}
+
 u64 Rasterizer::Flush() {
     const u64 current_tick = scheduler.CurrentTick();
     SubmitInfo info{};

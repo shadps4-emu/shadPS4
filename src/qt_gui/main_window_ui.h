@@ -25,6 +25,7 @@ public:
     QAction* setlistModeGridAct;
     QAction* setlistElfAct;
     QAction* gameInstallPathAct;
+    QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
     QAction* aboutAct;
@@ -120,10 +121,11 @@ public:
         gameInstallPathAct = new QAction(MainWindow);
         gameInstallPathAct->setObjectName("gameInstallPathAct");
         gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
+        downloadCheatsPatchesAct = new QAction(MainWindow);
+        downloadCheatsPatchesAct->setObjectName("downloadCheatsPatchesAct");
         dumpGameListAct = new QAction(MainWindow);
         dumpGameListAct->setObjectName("dumpGameList");
         pkgViewerAct = new QAction(MainWindow);
-        pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         aboutAct = new QAction(MainWindow);
@@ -277,6 +279,7 @@ public:
         menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
+        menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
         menuAbout->addAction(aboutAct);
@@ -323,6 +326,8 @@ public:
         setlistElfAct->setText(QCoreApplication::translate("MainWindow", "Elf Viewer", nullptr));
         gameInstallPathAct->setText(
             QCoreApplication::translate("MainWindow", "Game Install Directory", nullptr));
+        downloadCheatsPatchesAct->setText(
+            QCoreApplication::translate("MainWindow", "Download Cheats/Patches", nullptr));
         dumpGameListAct->setText(
             QCoreApplication::translate("MainWindow", "Dump Game List", nullptr));
         pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
