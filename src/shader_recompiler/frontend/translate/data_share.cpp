@@ -167,8 +167,16 @@ void Translator::S_BARRIER() {
 }
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
-    ASSERT(info.stage != Stage::Compute);
-    SetDst(inst.dst[0], GetSrc(inst.src[0]));
+    const IR::ScalarReg dst{inst.dst[0].code};
+    const IR::U32 value{GetSrc(inst.src[0])};
+
+    if (ir.GetExec() == ir.Imm1(false)) {
+        ir.SetScalarReg(dst, value);
+    } else {
+        const IR::U32 first_active_value = ir.ReadFirstLane(value);
+
+        ir.SetScalarReg(dst, first_active_value);
+    }
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {

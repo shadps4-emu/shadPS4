@@ -23,7 +23,7 @@ Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index) {
 }
 
 Id EmitReadFirstLane(EmitContext& ctx, Id value) {
-    UNREACHABLE();
+    return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
 }
 
 Id EmitReadLane(EmitContext& ctx, Id value, u32 lane) {
