@@ -66,6 +66,57 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 }
 
+void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size) {
+    RENDERER_TRACE;
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto& regs = liverpool->regs;
+    const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
+    if (!pipeline) {
+        return;
+    }
+
+    ASSERT_MSG(regs.primitive_type != AmdGpu::Liverpool::PrimitiveType::RectList,
+               "Unsupported primitive type for indirect draw");
+
+    try {
+        pipeline->BindResources(regs, buffer_cache, texture_cache);
+    } catch (...) {
+        UNREACHABLE();
+    }
+
+    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    buffer_cache.BindVertexBuffers(vs_info);
+    const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
+
+    BeginRendering();
+    UpdateDynamicState(*pipeline);
+
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
+    const auto total_offset = base + offset;
+
+    // Emulate PFP-to-ME sync packet
+    const vk::BufferMemoryBarrier ib_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
+        .buffer = buffer->Handle(),
+        .offset = total_offset,
+        .size = size,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eDrawIndirect,
+                           vk::DependencyFlagBits::eByRegion, {}, ib_barrier, {});
+
+    // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
+    // instance offsets will be automatically applied by Vulkan from indirect args buffer.
+
+    if (is_indexed) {
+        cmdbuf.drawIndexedIndirect(buffer->Handle(), total_offset, 1, 0);
+    } else {
+        cmdbuf.drawIndirect(buffer->Handle(), total_offset, 1, 0);
+    }
+}
+
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
