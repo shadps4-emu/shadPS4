@@ -311,6 +311,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MBCNT_U32_B32(false, inst);
     case Opcode::V_NOP:
         return;
+
+    case Opcode::V_BFM_B32:
+        return V_BFM_B32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -962,6 +965,15 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     }
     ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
     SetDst(inst.dst[0], ir.LaneId());
+}
+
+void Translator::V_BFM_B32(const GcnInst& inst) {
+    // bitmask width
+    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(4))};
+    // bitmask offset
+    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(4))};
+    const IR::U32 ones = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), src0), ir.Imm32(1));
+    SetDst(inst.dst[0], ir.ShiftLeftLogical(ones, src1));
 }
 
 } // namespace Shader::Gcn
