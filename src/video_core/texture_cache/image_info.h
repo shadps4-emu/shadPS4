@@ -29,6 +29,15 @@ struct ImageInfo {
     bool IsPacked() const;
     bool IsDepthStencil() const;
 
+    bool IsMipOf(const ImageInfo& info) const;
+    bool IsSliceOf(const ImageInfo& info) const;
+
+    /// Verifies if images are compatible for subresource merging.
+    bool IsCompatible(const ImageInfo& info) const {
+        return (pixel_format == info.pixel_format && tiling_idx == info.tiling_idx &&
+                num_samples == info.num_samples && num_bits == info.num_bits);
+    }
+
     void UpdateSize();
 
     struct {

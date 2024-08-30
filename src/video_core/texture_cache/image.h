@@ -32,6 +32,7 @@ enum ImageFlagBits : u32 {
     Registered = 1 << 6,     ///< True when the image is registered
     Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
     MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
+    Deleted = 1 << 9,        ///< Indicates that images was marked for deletion once frame is done
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
@@ -95,6 +96,9 @@ struct Image {
                  vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
+    void CopyImage(const Image& image);
+    void CopyMip(const Image& image, u32 mip);
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
@@ -112,6 +116,7 @@ struct Image {
     vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;
     boost::container::small_vector<u64, 14> mip_hashes;
+    u64 tick_accessed_last{0};
 };
 
 } // namespace VideoCore
