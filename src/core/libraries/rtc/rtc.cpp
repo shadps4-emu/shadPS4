@@ -29,7 +29,7 @@ int PS4_SYSV_ABI sceRtcCheckValid(OrbisRtcDateTime* pTime) {
     using namespace std::chrono;
     year chronoYear = year(pTime->year);
     month chronoMonth = month(pTime->month);
-    int lastDay = 
+    int lastDay =
         static_cast<int>(unsigned(year_month_day_last{chronoYear / chronoMonth / last}.day()));
 
     if (pTime->day > lastDay)
@@ -190,7 +190,7 @@ int PS4_SYSV_ABI sceRtcGetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick) {
     days *= 86400000000;
 
     msec = pTime->hour * 3600000000 + pTime->minute * 60000000 + pTime->second * 1000000 +
-            pTime->microsecond;
+           pTime->microsecond;
 
     pTick->tick = days + msec;
 
@@ -273,7 +273,7 @@ int PS4_SYSV_ABI sceRtcSetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr || pTick == nullptr)
-        return ORBIS_RTC_ERROR_INVALID_POINTER; 
+        return ORBIS_RTC_ERROR_INVALID_POINTER;
 
     u32 ly, ld, lm, j;
     u64 days, msec;
@@ -423,7 +423,6 @@ int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
     } else {
         return timeIsValid;
     }
-        
 
     return 0;
 }
@@ -485,7 +484,6 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     } else {
         return timeIsValid;
     }
-        
 
     return 0;
 }
