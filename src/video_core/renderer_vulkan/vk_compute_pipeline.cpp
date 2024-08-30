@@ -127,7 +127,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         }
         const u32 size = vsharp.GetSize();
         if (desc.is_written) {
-            texture_cache.InvalidateMemory(address, size, true);
+            texture_cache.InvalidateMemory(address, size);
         }
         const u32 alignment =
             is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
@@ -167,7 +167,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 }
             }
             if (desc.is_written) {
-                texture_cache.InvalidateMemory(address, size, true);
+                texture_cache.InvalidateMemory(address, size);
             }
             const u32 alignment = instance.TexelBufferMinAlignment();
             const auto [vk_buffer, offset] =
