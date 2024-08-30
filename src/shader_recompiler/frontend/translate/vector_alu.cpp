@@ -314,6 +314,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 
     case Opcode::V_BFM_B32:
         return V_BFM_B32(inst);
+    case Opcode::V_FFBH_U32:
+        return V_FFBH_U32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -974,6 +976,16 @@ void Translator::V_BFM_B32(const GcnInst& inst) {
     const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(4))};
     const IR::U32 ones = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), src0), ir.Imm32(1));
     SetDst(inst.dst[0], ir.ShiftLeftLogical(ones, src1));
+}
+
+void Translator::V_FFBH_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB) position
+    const IR::U32 msb_pos = ir.FindUMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 
 } // namespace Shader::Gcn
