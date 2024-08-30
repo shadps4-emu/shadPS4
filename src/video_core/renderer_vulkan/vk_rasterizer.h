@@ -32,6 +32,7 @@ public:
     }
 
     void Draw(bool is_indexed, u32 index_offset = 0);
+    void DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size);
 
     void DispatchDirect();
     void DispatchIndirect(VAddr address, u32 offset, u32 size);
@@ -45,6 +46,7 @@ public:
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
+    void CpSync();
     u64 Flush();
 
 private:
