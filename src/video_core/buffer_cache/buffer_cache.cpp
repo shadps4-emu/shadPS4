@@ -23,7 +23,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
       memory_tracker{&tracker} {
     // Ensure the first slot is used for the null buffer
-    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, 1));
+    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
 }
 
 BufferCache::~BufferCache() = default;
@@ -228,11 +228,12 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     return regs.num_indices;
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written) {
+std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
+                                                  bool is_texel_buffer) {
     std::scoped_lock lk{mutex};
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
     const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
-    if (!is_written && size < StreamThreshold && !is_gpu_dirty) {
+    if (!is_written && !is_texel_buffer && size <= StreamThreshold && !is_gpu_dirty) {
         // For small uniform buffers that have not been modified by gpu
         // use device local stream buffer to reduce renderpass breaks.
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
@@ -421,7 +422,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
     const BufferId new_buffer_id =
-        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, size);
+        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, AllFlags, size);
     auto& new_buffer = slot_buffers[new_buffer_id];
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -495,7 +496,8 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     } else {
         // For large one time transfers use a temporary host buffer.
         // RenderDoc can lag quite a bit if the stream buffer is too large.
-        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, total_size_bytes};
+        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, vk::BufferUsageFlagBits::eTransferSrc,
+                           total_size_bytes};
         src_buffer = temp_buffer.Handle();
         u8* const staging = temp_buffer.mapped_data.data();
         for (auto& copy : copies) {

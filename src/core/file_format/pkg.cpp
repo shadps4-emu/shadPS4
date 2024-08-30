@@ -67,15 +67,19 @@ bool PKG::Open(const std::filesystem::path& filepath) {
     file.Seek(0x47); // skip first 7 characters of content_id
     file.Read(pkgTitleID);
 
-    file.Seek(0);
-    pkg.resize(pkgheader.pkg_promote_size);
-    file.Read(pkg);
-
     u32 offset = pkgheader.pkg_table_entry_offset;
     u32 n_files = pkgheader.pkg_table_entry_count;
+
+    file.Seek(offset);
     for (int i = 0; i < n_files; i++) {
-        PKGEntry entry;
-        std::memcpy(&entry, &pkg[offset + i * 0x20], sizeof(entry));
+        PKGEntry entry{};
+        file.Read(entry.id);
+        file.Read(entry.filename_offset);
+        file.Read(entry.flags1);
+        file.Read(entry.flags2);
+        file.Read(entry.offset);
+        file.Read(entry.size);
+        file.Seek(8, Common::FS::SeekOrigin::CurrentPosition);
 
         // Try to figure out the name
         const auto name = GetEntryNameByType(entry.id);
@@ -113,9 +117,6 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         failreason = "Content size is bigger than pkg size";
         return false;
     }
-    file.Seek(0);
-    pkg.resize(pkgheader.pkg_promote_size);
-    file.Read(pkg);
 
     u32 offset = pkgheader.pkg_table_entry_offset;
     u32 n_files = pkgheader.pkg_table_entry_count;
@@ -126,9 +127,18 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
     std::array<std::array<u8, 256>, 7> key1;
     std::array<u8, 256> imgkeydata;
 
+    file.Seek(offset);
     for (int i = 0; i < n_files; i++) {
-        PKGEntry entry;
-        std::memcpy(&entry, &pkg[offset + i * 0x20], sizeof(entry));
+        PKGEntry entry{};
+        file.Read(entry.id);
+        file.Read(entry.filename_offset);
+        file.Read(entry.flags1);
+        file.Read(entry.flags2);
+        file.Read(entry.offset);
+        file.Read(entry.size);
+        file.Seek(8, Common::FS::SeekOrigin::CurrentPosition);
+
+        auto currentPos = file.Tell();
 
         // Try to figure out the name
         const auto name = GetEntryNameByType(entry.id);
@@ -139,8 +149,15 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
             // Just print with id
             Common::FS::IOFile out(extract_path / "sce_sys" / std::to_string(entry.id),
                                    Common::FS::FileAccessMode::Write);
-            out.WriteRaw<u8>(pkg.data() + entry.offset, entry.size);
+            file.Seek(entry.offset);
+
+            std::vector<u8> data;
+            data.resize(entry.size);
+            file.ReadRaw<u8>(data.data(), entry.size);
+            out.WriteRaw<u8>(data.data(), entry.size);
             out.Close();
+
+            file.Seek(currentPos);
             continue;
         }
 
@@ -178,14 +195,25 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
         }
 
         Common::FS::IOFile out(extract_path / "sce_sys" / name, Common::FS::FileAccessMode::Write);
-        out.WriteRaw<u8>(pkg.data() + entry.offset, entry.size);
+        file.Seek(entry.offset);
+
+        std::vector<u8> data;
+        data.resize(entry.size);
+        file.ReadRaw<u8>(data.data(), entry.size);
+        out.WriteRaw<u8>(data.data(), entry.size);
         out.Close();
 
         // Decrypt Np stuff and overwrite.
         if (entry.id == 0x400 || entry.id == 0x401 || entry.id == 0x402 ||
             entry.id == 0x403) { // somehow 0x401 is not decrypting
             decNp.resize(entry.size);
-            std::span<u8> cipherNp(pkg.data() + entry.offset, entry.size);
+            file.Seek(entry.offset);
+
+            std::vector<u8> data;
+            data.resize(entry.size);
+            file.ReadRaw<u8>(data.data(), entry.size);
+
+            std::span<u8> cipherNp(data.data(), entry.size);
             std::array<u8, 64> concatenated_ivkey_dk3_;
             std::memcpy(concatenated_ivkey_dk3_.data(), &entry, sizeof(entry));
             std::memcpy(concatenated_ivkey_dk3_.data() + sizeof(entry), dk3_.data(), sizeof(dk3_));
@@ -197,6 +225,8 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
             out.Write(decNp);
             out.Close();
         }
+
+        file.Seek(currentPos);
     }
 
     // Extract trophy files
@@ -214,28 +244,31 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
     PKG::crypto.PfsGenCryptoKey(ekpfsKey, seed, dataKey, tweakKey);
     const u32 length = pkgheader.pfs_cache_size * 0x2; // Seems to be ok.
 
-    // Read encrypted pfs_image
-    std::vector<u8> pfs_encrypted(length);
-    file.Seek(pkgheader.pfs_image_offset);
-    file.Read(pfs_encrypted);
-    file.Close();
-    // Decrypt the pfs_image.
-    std::vector<u8> pfs_decrypted(length);
-    PKG::crypto.decryptPFS(dataKey, tweakKey, pfs_encrypted, pfs_decrypted, 0);
-
-    // Retrieve PFSC from decrypted pfs_image.
-    pfsc_offset = GetPFSCOffset(pfs_decrypted);
+    int num_blocks = 0;
     std::vector<u8> pfsc(length);
-    std::memcpy(pfsc.data(), pfs_decrypted.data() + pfsc_offset, length - pfsc_offset);
+    if (length != 0) {
+        // Read encrypted pfs_image
+        std::vector<u8> pfs_encrypted(length);
+        file.Seek(pkgheader.pfs_image_offset);
+        file.Read(pfs_encrypted);
+        file.Close();
+        // Decrypt the pfs_image.
+        std::vector<u8> pfs_decrypted(length);
+        PKG::crypto.decryptPFS(dataKey, tweakKey, pfs_encrypted, pfs_decrypted, 0);
 
-    PFSCHdr pfsChdr;
-    std::memcpy(&pfsChdr, pfsc.data(), sizeof(pfsChdr));
+        // Retrieve PFSC from decrypted pfs_image.
+        pfsc_offset = GetPFSCOffset(pfs_decrypted);
+        std::memcpy(pfsc.data(), pfs_decrypted.data() + pfsc_offset, length - pfsc_offset);
 
-    const int num_blocks = (int)(pfsChdr.data_length / pfsChdr.block_sz2);
-    sectorMap.resize(num_blocks + 1); // 8 bytes, need extra 1 to get the last offset.
+        PFSCHdr pfsChdr;
+        std::memcpy(&pfsChdr, pfsc.data(), sizeof(pfsChdr));
 
-    for (int i = 0; i < num_blocks + 1; i++) {
-        std::memcpy(&sectorMap[i], pfsc.data() + pfsChdr.block_offsets + i * 8, 8);
+        num_blocks = (int)(pfsChdr.data_length / pfsChdr.block_sz2);
+        sectorMap.resize(num_blocks + 1); // 8 bytes, need extra 1 to get the last offset.
+
+        for (int i = 0; i < num_blocks + 1; i++) {
+            std::memcpy(&sectorMap[i], pfsc.data() + pfsChdr.block_offsets + i * 8, 8);
+        }
     }
 
     u32 ent_size = 0;
@@ -296,7 +329,15 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
                 } else {
                     // Set the the folder according to the current inode.
                     // Can be 2 or more (rarely)
-                    extractPaths[ndinode_counter] = extract_path.parent_path() / GetTitleID();
+                    auto parent_path = extract_path.parent_path();
+                    auto title_id = GetTitleID();
+
+                    if (parent_path.filename() != title_id) {
+                        extractPaths[ndinode_counter] = parent_path / title_id;
+                    } else {
+                        // DLCs path has different structure
+                        extractPaths[ndinode_counter] = extract_path;
+                    }
                     uroot_reached = false;
                     break;
                 }

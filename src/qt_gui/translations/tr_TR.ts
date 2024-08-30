@@ -566,44 +566,54 @@
         	<translation>PKG Çıkartma</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="633"/>
-        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-        	<translation>Yama tespit edildi!\nPKG ve Oyun sürümleri uyuyor!: %1\nÜzerine yazmak ister misiniz?</translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="634"/>
-        	<source>to overwrite?</source>
-        	<translation>üzerine yazmak?</translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="639"/>
-        	<source>Patch detected!\nPKG Version %1 is older </source>
-        	<translation>Yama tespit edildi!\nPKG Sürümü %1 daha eski </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="640"/>
-        	<source>than installed version!: %2\nWould you like </source>
-        	<translation>yüklü sürümden!: %2\nÜzerine yazmak ister misiniz?</translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="641"/>
-        	<source>to overwrite?</source>
-        	<translation>üzerine yazmak?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Yamanın tespit edildi!</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="646"/>
-        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
-        	<translation>Yama tespit edildi!\nOyun yüklü: %1\nÜzerine yazmak ister misiniz?</translation>
+        	<source>PKG and Game versions match: </source>
+        	<translation>PKG ve oyun sürümleri uyumlu: </translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="647"/>
-        	<source>to install Patch: %2?</source>
-        	<translation>Yamayı kurmak ister misiniz: %2?</translation>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Üzerine yazmak ister misiniz?</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="659"/>
-        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
-        	<translation>Oyun zaten yüklü\n%1\nÜzerine yazmak ister misiniz?</translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>PKG Sürümü %1, kurulu sürümden daha eski: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Oyun yüklendi: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Yamanın yüklenmesini ister misiniz: </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>DLC Yükleme</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>DLC'yi yüklemek ister misiniz: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC zaten yüklü:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Oyun zaten yüklü</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="674"/>

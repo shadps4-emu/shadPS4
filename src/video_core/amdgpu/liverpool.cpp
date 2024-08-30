@@ -383,6 +383,22 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 break;
             }
+            case PM4ItOpcode::DispatchIndirect: {
+                const auto* dispatch_indirect =
+                    reinterpret_cast<const PM4CmdDispatchIndirect*>(header);
+                const auto offset = dispatch_indirect->data_offset;
+                const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
+                const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
+                if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    rasterizer->ScopeMarkerBegin(
+                        fmt::format("dcb:{}:DispatchIndirect", cmd_address));
+                    rasterizer->Breadcrumb(u64(cmd_address));
+                    rasterizer->DispatchIndirect(ib_address, offset, size);
+                    rasterizer->ScopeMarkerEnd();
+                }
+                break;
+            }
             case PM4ItOpcode::NumInstances: {
                 const auto* num_instances = reinterpret_cast<const PM4CmdDrawNumInstances*>(header);
                 regs.num_instances.num_instances = num_instances->num_instances;
@@ -397,6 +413,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::IndexBufferSize: {
                 const auto* index_size = reinterpret_cast<const PM4CmdDrawIndexBufferSize*>(header);
                 regs.num_indices = index_size->num_indices;
+                break;
+            }
+            case PM4ItOpcode::SetBase: {
+                const auto* set_base = reinterpret_cast<const PM4CmdSetBase*>(header);
+                ASSERT(set_base->base_index == PM4CmdSetBase::BaseIndex::DrawIndexIndirPatchTable);
+                mapped_queues[GfxQueueId].indirect_args_addr = set_base->Address<u64>();
                 break;
             }
             case PM4ItOpcode::EventWrite: {

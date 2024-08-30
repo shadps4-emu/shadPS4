@@ -9,7 +9,7 @@
 
 namespace Shader::Backend::SPIRV {
 
-[[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program,
+[[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, const IR::Program& program,
                                          u32& binding);
 
 } // namespace Shader::Backend::SPIRV

@@ -22,6 +22,7 @@ enum class PathType {
     CapturesDir,    // Where rdoc captures are stored.
     CheatsDir,      // Where cheats are stored.
     PatchesDir,     // Where patches are stored.
+    AddonsDir,      // Where additional content is stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -39,6 +40,7 @@ constexpr auto DOWNLOAD_DIR = "download";
 constexpr auto CAPTURES_DIR = "captures";
 constexpr auto CHEATS_DIR = "cheats";
 constexpr auto PATCHES_DIR = "patches";
+constexpr auto ADDONS_DIR = "addcont";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

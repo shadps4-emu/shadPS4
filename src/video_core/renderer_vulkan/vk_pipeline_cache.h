@@ -4,9 +4,6 @@
 #pragma once
 
 #include <tsl/robin_map.h>
-#include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/ir/program.h"
-#include "shader_recompiler/profile.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 
@@ -18,6 +15,7 @@ namespace Vulkan {
 
 class Instance;
 class Scheduler;
+class ShaderCache;
 
 class PipelineCache {
     static constexpr size_t MaxShaderStages = 5;
@@ -25,7 +23,7 @@ class PipelineCache {
 public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
                            AmdGpu::Liverpool* liverpool);
-    ~PipelineCache() = default;
+    ~PipelineCache();
 
     const GraphicsPipeline* GetGraphicsPipeline();
 
@@ -33,10 +31,7 @@ public:
 
 private:
     void RefreshGraphicsKey();
-    void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, std::string_view ext);
-
-    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline();
-    std::unique_ptr<ComputePipeline> CreateComputePipeline();
+    void RefreshComputeKey();
 
 private:
     const Instance& instance;
@@ -44,15 +39,13 @@ private:
     AmdGpu::Liverpool* liverpool;
     vk::UniquePipelineCache pipeline_cache;
     vk::UniquePipelineLayout pipeline_layout;
-    tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
+    std::unique_ptr<ShaderCache> shader_cache;
     tsl::robin_map<size_t, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
-    std::array<const Program*, MaxShaderStages> programs{};
-    Shader::Profile profile{};
+    std::array<const Shader::Info*, MaxShaderStages> infos{};
+    std::array<vk::ShaderModule, MaxShaderStages> modules{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};
-    Common::ObjectPool<Shader::IR::Inst> inst_pool;
-    Common::ObjectPool<Shader::IR::Block> block_pool;
 };
 
 } // namespace Vulkan
