@@ -566,44 +566,34 @@
             <translation>PKG-udtrækning</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Patch opdaget!\nPKG- og spilversioner stemmer overens!: %1\nVil du </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Opdatering detekteret!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>overskrive?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>PKG og spilversioner matcher: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Patch opdaget!\nPKG-version %1 er ældre </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Vil du overskrive?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>end installeret version!: %2\nVil du </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>PKG Version %1 er ældre end den installerede version: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>overskrive?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Spillet er installeret: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Patch opdaget!\nSpillet er installeret: %1\nVil du </translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>installere patch: %2?</translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Spil allerede installeret\n%1\nVil du overskrive?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Vil du installere opdateringen: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
@@ -613,7 +603,17 @@
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Vil du installere DLC: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC allerede installeret:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Spillet er allerede installeret</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>

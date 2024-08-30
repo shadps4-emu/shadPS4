@@ -566,54 +566,54 @@
             <translation>Extracție PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Patch detectat!\nVersiunile PKG și Joc se potrivesc!: %1\nAi dori să </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Patch detectat!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>să suprascrii?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Versiunile PKG și ale jocului sunt compatibile: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Patch detectat!\nVersiunea PKG %1 este mai veche </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Doriți să suprascrieți?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>decât versiunea instalată!: %2\nAi dori să </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Versiunea PKG %1 este mai veche decât versiunea instalată: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>să suprascrii?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Jocul este instalat: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Patch detectat!\nJocul este instalat: %1\nAi dori să </translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>să instalezi Patch-ul: %2?</translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Jocul este deja instalat\n%1\nAi dori să suprascrii?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Doriți să instalați patch-ul: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>DLC Installation</translation>
+            <translation>Instalare DLC</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Would you like to install DLC: %1?</translation>
+            <translation>Doriți să instalați DLC-ul: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC deja instalat:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Jocul deja instalat</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>

@@ -175,7 +175,8 @@ void CheatsPatches::setupUI() {
 
         int ret = QMessageBox::warning(
             this, tr("Delete File"),
-            QString(tr("Do you want to delete the selected file?\n%1")).arg(selectedFileName),
+            QString(tr("Do you want to delete the selected file?\\n%1").replace("\\n", "\n"))
+                .arg(selectedFileName),
             QMessageBox::Yes | QMessageBox::No);
 
         if (ret == QMessageBox::Yes) {

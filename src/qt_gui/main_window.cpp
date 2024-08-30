@@ -642,24 +642,24 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
-                    msgBox.setText(QString(tr("Patch detected!\nPKG and Game versions match!: "
-                                              "%1\nWould you like ") +
-                                           tr("to overwrite?"))
-                                       .arg(pkg_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("PKG and Game versions match: ") + pkg_app_version +
+                                           "\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else if (pkgD < appD) {
-                    msgBox.setText(QString(tr("Patch detected!\nPKG Version %1 is older ") +
-                                           tr("than installed version!: %2\nWould you like ") +
-                                           tr("to overwrite?"))
-                                       .arg(pkg_app_version, game_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("PKG Version %1 is older than installed version: ")
+                                               .arg(pkg_app_version) +
+                                           game_app_version + "\n" +
+                                           tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 } else {
-                    msgBox.setText(
-                        QString(tr("Patch detected!\nGame is installed: %1\nWould you like ") +
-                                tr("to install Patch: %2?"))
-                            .arg(game_app_version, pkg_app_version));
+                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
+                                           tr("Game is installed: ") + game_app_version + "\n" +
+                                           tr("Would you like to install Patch: ") +
+                                           pkg_app_version + " ?"));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                 }
@@ -685,9 +685,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                         return;
                     }
                 } else {
-                    msgBox.setText(
-                        QString("DLC already installed\n%1\nWould you like to overwrite?")
-                            .arg(QString::fromStdString(addon_extract_path.string())));
+                    msgBox.setText(QString(tr("DLC already installed:") + "\n" +
+                                           QString::fromStdString(addon_extract_path.string()) +
+                                           "\n\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
                     int result = msgBox.exec();
@@ -698,9 +698,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                msgBox.setText(
-                    QString(tr("Game already installed\n%1\nWould you like to overwrite?"))
-                        .arg(QString::fromStdString(extract_path.string())));
+                msgBox.setText(QString(tr("Game already installed") + "\n" +
+                                       QString::fromStdString(extract_path.string()) + "\n" +
+                                       tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);
                 int result = msgBox.exec();

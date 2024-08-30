@@ -566,44 +566,34 @@
             <translation>Estrazione file PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Patch rilevata! Il\nPKG e la versione del gioco coincidono!: %1\nVuoi </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Patch rilevato!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>sovrascrivere?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Le versioni di PKG e del gioco corrispondono: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Patch rilevata! La \nPKG Versione %1 è più vecchia </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Vuoi sovrascrivere?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>della versione installata!: %2\nVuoi </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>La versione PKG %1 è più vecchia rispetto alla versione installata: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>sovrascrivere?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Gioco installato: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Patch rilevata!\nGioco installato: %1\Vuoi </translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>installare la Patch: %2?</translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Gioco già installato\n%1\nVuoi sovrascrivere??</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Vuoi installare il patch: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
@@ -614,6 +604,16 @@
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
             <translation>Vuoi installare il DLC: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC già installato:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Gioco già installato</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>

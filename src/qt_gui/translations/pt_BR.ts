@@ -566,44 +566,34 @@
         	<translation>Extração de PKG</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="633"/>
-        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-        	<translation>Patch detectado!\nVersões PKG e do Jogo correspondem!: %1\nGostaria de </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="634"/>
-        	<source>to overwrite?</source>
-        	<translation>substituir?</translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="639"/>
-        	<source>Patch detected!\nPKG Version %1 is older </source>
-        	<translation>Patch detectado!\nVersão do PKG %1 é mais antiga </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="640"/>
-        	<source>than installed version!: %2\nWould you like </source>
-        	<translation>do que a versão instalada!: %2\nGostaria de </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="641"/>
-        	<source>to overwrite?</source>
-        	<translation>substituir?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Atualização detectada!</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="646"/>
-        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
-        	<translation>Patch detectado!\nO Jogo está instalado: %1\nGostaria de </translation>
+        	<source>PKG and Game versions match: </source>
+        	<translation>As versões do PKG e do Jogo são igual: </translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="647"/>
-        	<source>to install Patch: %2?</source>
-        	<translation>instalar o Patch: %2?</translation>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Gostaria de substituir?</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="659"/>
-        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
-        	<translation>Jogo já instalado\n%1\nGostaria de substituir?</translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Jogo instalado: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Você gostaria de instalar a atualização: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
@@ -613,7 +603,17 @@
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Gostaria de instalar a DLC: %1?</translation>
+            <translation>Você gostaria de instalar o DLC: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC já instalada:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>O jogo já está instalado:</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="674"/>
