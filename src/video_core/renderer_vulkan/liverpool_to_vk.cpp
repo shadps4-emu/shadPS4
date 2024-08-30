@@ -287,8 +287,8 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
 
 std::span<const vk::Format> GetAllFormats() {
     static constexpr std::array formats{
+        vk::Format::eA2B10G10R10SnormPack32,
         vk::Format::eA2B10G10R10UnormPack32,
-        vk::Format::eA2R10G10B10SnormPack32,
         vk::Format::eA2R10G10B10UnormPack32,
         vk::Format::eB5G6R5UnormPack16,
         vk::Format::eB8G8R8A8Srgb,
@@ -424,6 +424,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eA2B10G10R10UnormPack32;
     }
+    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
+        num_format == AmdGpu::NumberFormat::Snorm) {
+        return vk::Format::eA2B10G10R10SnormPack32;
+    }
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc7SrgbBlock;
     }
@@ -471,14 +475,6 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format16_16 &&
         num_format == AmdGpu::NumberFormat::Snorm) {
         return vk::Format::eR16G16Snorm;
-    }
-    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
-        num_format == AmdGpu::NumberFormat::Unorm) {
-        return vk::Format::eA2R10G10B10UnormPack32;
-    }
-    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
-        num_format == AmdGpu::NumberFormat::Snorm) {
-        return vk::Format::eA2R10G10B10SnormPack32;
     }
     if (data_format == AmdGpu::DataFormat::Format10_11_11 &&
         num_format == AmdGpu::NumberFormat::Float) {
