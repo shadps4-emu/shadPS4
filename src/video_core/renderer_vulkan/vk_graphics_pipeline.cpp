@@ -359,6 +359,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
+    boost::container::small_vector<vk::BufferMemoryBarrier, 16> buffer_barriers;
     Shader::PushData push_data{};
     u32 binding{};
 
@@ -424,6 +425,16 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 }
                 buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
+
+                if (buffer_cache.IsRegionGpuModified(address, size)) {
+                    buffer_barriers.push_back(vk::BufferMemoryBarrier{
+                        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+                        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                        .buffer = vk_buffer->Handle(),
+                        .offset = offset,
+                        .size = size,
+                    });
+                }
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -467,7 +478,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             auto ssharp = sampler.GetSharp(*stage);
             if (ssharp.force_degamma) {
                 LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
-            }            
+            }
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {
@@ -488,6 +499,14 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    if (!buffer_barriers.empty()) {
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader |
+                                   vk::PipelineStageFlagBits::eComputeShader,
+                               vk::PipelineStageFlagBits::eFragmentShader,
+                               vk::DependencyFlagBits::eByRegion, {}, buffer_barriers, {});
+    }
+
     if (!set_writes.empty()) {
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
                                     set_writes);

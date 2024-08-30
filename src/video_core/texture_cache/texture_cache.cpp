@@ -286,10 +286,18 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.flags &= ~ImageFlagBits::CpuModified;
-    image.aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+    image.aspect_mask = vk::ImageAspectFlagBits::eDepth;
 
-    const auto new_layout = view_info.is_storage ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-                                                 : vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    const bool has_stencil = image_info.usage.stencil;
+    if (has_stencil) {
+        image.aspect_mask |= vk::ImageAspectFlagBits::eStencil;
+    }
+
+    const auto new_layout = view_info.is_storage
+                                ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                              : vk::ImageLayout::eDepthAttachmentOptimal
+                            : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                          : vk::ImageLayout::eDepthReadOnlyOptimal;
     image.Transit(new_layout, vk::AccessFlagBits::eDepthStencilAttachmentWrite |
                                   vk::AccessFlagBits::eDepthStencilAttachmentRead);
 
@@ -372,6 +380,22 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         const auto [vk_buffer, buf_offset] = buffer_cache.ObtainTempBuffer(image_addr, image_size);
         buffer = vk_buffer->Handle();
         offset = buf_offset;
+
+        // The obtained buffer may be written by a shader so we need to emit a barrier to prevent
+        // RAW hazard
+        if (buffer_cache.IsRegionGpuModified(image_addr, image_size)) {
+            const vk::BufferMemoryBarrier post_barrier{
+                .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+                .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                .buffer = buffer,
+                .offset = offset,
+                .size = image_size,
+            };
+            cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader |
+                                       vk::PipelineStageFlagBits::eComputeShader,
+                                   vk::PipelineStageFlagBits::eTransfer,
+                                   vk::DependencyFlagBits::eByRegion, {}, post_barrier, {});
+        }
     }
 
     for (auto& copy : image_copy) {
@@ -418,7 +442,7 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 }
 
 void TextureCache::TrackImage(ImageId image_id) {
-    auto& image = slot_images[image_id];    
+    auto& image = slot_images[image_id];
     if (True(image.flags & ImageFlagBits::Tracked)) {
         return;
     }
@@ -427,7 +451,7 @@ void TextureCache::TrackImage(ImageId image_id) {
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
-    auto& image = slot_images[image_id];    
+    auto& image = slot_images[image_id];
     if (False(image.flags & ImageFlagBits::Tracked)) {
         return;
     }
