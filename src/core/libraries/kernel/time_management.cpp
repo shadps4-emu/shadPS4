@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/native_clock.h"
