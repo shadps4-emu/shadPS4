@@ -170,12 +170,10 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     const IR::ScalarReg dst{inst.dst[0].code};
     const IR::U32 value{GetSrc(inst.src[0])};
 
-    if (ir.GetExec() == ir.Imm1(false)) {
+    if (info.stage != Stage::Compute) {
         ir.SetScalarReg(dst, value);
     } else {
-        const IR::U32 first_active_value = ir.ReadFirstLane(value);
-
-        ir.SetScalarReg(dst, first_active_value);
+        ir.SetScalarReg(dst, ir.ReadFirstLane(value));
     }
 }
 
