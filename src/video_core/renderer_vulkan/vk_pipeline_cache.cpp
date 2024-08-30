@@ -63,11 +63,10 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     return pipeline;
 }
 
-bool ShouldSkipShader(u32 shader_hash, const char* shader_type) {
-    static constexpr u32 skip_hashes[] = {
-        0xdeadbeefULL
-    };
-    if (std::ranges::find(std::begin(skip_hashes), std::end(skip_hashes), shader_hash) != std::end(skip_hashes)) {
+bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
+    static constexpr u64 skip_hashes[] = {0xdeadbeefULL};
+    if (std::ranges::find(std::begin(skip_hashes), std::end(skip_hashes), shader_hash) !=
+        std::end(skip_hashes)) {
         LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
         return true;
     }
@@ -176,7 +175,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
         if (ShouldSkipShader(bininfo->shader_hash, "graphics")) {
-            return false;
+           return false;
         }
         const auto stage = Shader::Stage{i};
         const GuestProgram guest_pgm{pgm, stage};
@@ -191,7 +190,7 @@ bool PipelineCache::RefreshComputeKey() {
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const GuestProgram guest_pgm{cs_pgm, Shader::Stage::Compute};
     if (ShouldSkipShader(guest_pgm.hash, "compute")) {
-        return false;
+       return false;
     }
     std::tie(infos[0], modules[0], compute_key) = shader_cache->GetProgram(guest_pgm, binding);
     return true;
