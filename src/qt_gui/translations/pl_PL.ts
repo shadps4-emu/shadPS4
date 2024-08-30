@@ -566,54 +566,54 @@
             <translation>Ekstrakcja PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Wykryto poprawkę!\nWersje PKG i gry pasują do siebie!: %1\nCzy chcesz </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Wykryto łatkę!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>nadpisać?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Wersje PKG i gry są zgodne: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Wykryto poprawkę!\nWersja PKG %1 jest starsza </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Czy chcesz nadpisać?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>niż zainstalowana wersja!: %2\nCzy chcesz </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Wersja PKG %1 jest starsza niż zainstalowana wersja: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>nadpisać?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Gra jest zainstalowana: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Wykryto poprawkę!\nGra jest zainstalowana: %1\nCzy chcesz </translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>zainstalować poprawkę: %2?</translation>
-        </message>
-        <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Gra już zainstalowana\n%1\nCzy chcesz ją nadpisać?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Czy chcesz zainstalować łatkę: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
             <source>DLC Installation</source>
-            <translation>Instalacja dodadkowej zawartości (DLC)</translation>
+            <translation>Instalacja DLC</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Czy na pewno chcesz zainstalować dodatkową zawartość (DLC): %1?</translation>
+            <translation>Czy chcesz zainstalować DLC: %1?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC już zainstalowane:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Gra już zainstalowana</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
