@@ -34,7 +34,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
-void TextureCache::InvalidateMemory(VAddr address, size_t size, bool from_compute) {
+void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     std::unique_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         if (!image.Overlaps(address, size)) {
