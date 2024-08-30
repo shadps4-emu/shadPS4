@@ -29,6 +29,19 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 
 Rasterizer::~Rasterizer() = default;
 
+void Rasterizer::CpSync() {
+    scheduler.EndRendering();
+    auto cmdbuf = scheduler.CommandBuffer();
+
+    const vk::MemoryBarrier ib_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eDrawIndirect,
+                           vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
@@ -95,18 +108,6 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
     const auto total_offset = base + offset;
 
-    // Emulate PFP-to-ME sync packet
-    const vk::BufferMemoryBarrier ib_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
-        .buffer = buffer->Handle(),
-        .offset = total_offset,
-        .size = size,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eDrawIndirect,
-                           vk::DependencyFlagBits::eByRegion, {}, ib_barrier, {});
-
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
 
@@ -164,19 +165,6 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
     const auto total_offset = base + offset;
-
-    // Emulate PFP-to-ME sync packet
-    const vk::BufferMemoryBarrier ib_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
-        .buffer = buffer->Handle(),
-        .offset = total_offset,
-        .size = size,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eDrawIndirect,
-                           vk::DependencyFlagBits::eByRegion, {}, ib_barrier, {});
-
     cmdbuf.dispatchIndirect(buffer->Handle(), total_offset);
 }
 

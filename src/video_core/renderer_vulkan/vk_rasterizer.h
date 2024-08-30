@@ -46,6 +46,7 @@ public:
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
+    void CpSync();
     u64 Flush();
 
 private:
