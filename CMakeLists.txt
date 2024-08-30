@@ -231,6 +231,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_impl.cpp
                 src/core/libraries/ngs2/ngs2_impl.h
                 src/core/libraries/ajm/ajm_error.h
+                src/core/libraries/mouse/mouse.cpp
+                src/core/libraries/mouse/mouse.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -549,6 +551,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
 
 set(INPUT src/input/controller.cpp
           src/input/controller.h
+          src/input/mouse.cpp
+          src/input/mouse.h
 )
 
 set(EMULATOR src/emulator.cpp
