@@ -15,8 +15,18 @@ struct OrbisRtcTick {
     u64 tick;
 };
 
-int PS4_SYSV_ABI sceRtcCheckValid();
-int PS4_SYSV_ABI sceRtcCompareTick();
+struct OrbisRtcDateTime {
+    int16_t year;
+    int16_t month;
+    int16_t day;
+    int16_t hour;
+    int16_t minute;
+    int16_t second;
+    int32_t microsecond;
+};
+
+int PS4_SYSV_ABI sceRtcCheckValid(OrbisRtcDateTime* pTime);
+int PS4_SYSV_ABI sceRtcCompareTick(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2);
 int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc();
 int PS4_SYSV_ABI sceRtcConvertUtcToLocalTime();
 int PS4_SYSV_ABI sceRtcEnd();
@@ -36,12 +46,12 @@ int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetDayOfWeek();
 int PS4_SYSV_ABI sceRtcGetDaysInMonth();
 int PS4_SYSV_ABI sceRtcGetDosTime();
-int PS4_SYSV_ABI sceRtcGetTick();
+int PS4_SYSV_ABI sceRtcGetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetTickResolution();
 int PS4_SYSV_ABI sceRtcGetTime_t();
 int PS4_SYSV_ABI sceRtcGetWin32FileTime();
 int PS4_SYSV_ABI sceRtcInit();
-int PS4_SYSV_ABI sceRtcIsLeapYear();
+int PS4_SYSV_ABI sceRtcIsLeapYear(int yearInt);
 int PS4_SYSV_ABI sceRtcParseDateTime();
 int PS4_SYSV_ABI sceRtcParseRFC3339();
 int PS4_SYSV_ABI sceRtcSetConf();
@@ -50,18 +60,21 @@ int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick();
 int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick();
 int PS4_SYSV_ABI sceRtcSetCurrentTick();
 int PS4_SYSV_ABI sceRtcSetDosTime();
-int PS4_SYSV_ABI sceRtcSetTick();
+int PS4_SYSV_ABI sceRtcSetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetTime_t();
 int PS4_SYSV_ABI sceRtcSetWin32FileTime();
-int PS4_SYSV_ABI sceRtcTickAddDays();
-int PS4_SYSV_ABI sceRtcTickAddHours();
-int PS4_SYSV_ABI sceRtcTickAddMicroseconds();
-int PS4_SYSV_ABI sceRtcTickAddMinutes();
-int PS4_SYSV_ABI sceRtcTickAddMonths();
-int PS4_SYSV_ABI sceRtcTickAddSeconds();
-int PS4_SYSV_ABI sceRtcTickAddTicks();
-int PS4_SYSV_ABI sceRtcTickAddWeeks();
-int PS4_SYSV_ABI sceRtcTickAddYears();
+int PS4_SYSV_ABI sceRtcTickAddDays(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingDays);
+int PS4_SYSV_ABI sceRtcTickAddHours(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingHours);
+int PS4_SYSV_ABI sceRtcTickAddMicroseconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
+                                           s64 addingMicroseconds);
+int PS4_SYSV_ABI sceRtcTickAddMinutes(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
+                                      s64 addingMinutes);
+int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingMonths);
+int PS4_SYSV_ABI sceRtcTickAddSeconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
+                                      s64 addingSeconds);
+int PS4_SYSV_ABI sceRtcTickAddTicks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 addingTicks);
+int PS4_SYSV_ABI sceRtcTickAddWeeks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingWeeks);
+int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s16 addingYears);
 
 void RegisterlibSceRtc(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Rtc
