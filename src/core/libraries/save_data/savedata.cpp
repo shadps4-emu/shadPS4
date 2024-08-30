@@ -3,12 +3,13 @@
 
 #include <span>
 #include <vector>
-#include <common/path_util.h>
-#include <common/singleton.h>
-#include <core/file_format/psf.h>
-#include <core/file_sys/fs.h>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
+#include "common/singleton.h"
+#include "core/file_format/psf.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/savedata.h"
