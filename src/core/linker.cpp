@@ -86,8 +86,8 @@ void Linker::Execute() {
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
     Libraries::Kernel::pthreadInitSelfMainThread();
-    InitTlsForThread(true);
     InitializeThreadPatchStack();
+    InitTlsForThread(true);
 
     // Start shared library modules
     for (auto& m : m_modules) {
