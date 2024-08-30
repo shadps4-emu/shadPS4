@@ -82,11 +82,20 @@ static std::filesystem::path GetBundleParentDirectory() {
 
 static auto UserPaths = [] {
 #ifdef __APPLE__
-    std::filesystem::current_path(GetBundleParentDirectory());
+    // Start by assuming the base directory is the bundle's parent directory.
+    std::filesystem::path base_dir = GetBundleParentDirectory();
+    std::filesystem::path user_dir = base_dir / PORTABLE_DIR;
+    // Check if the "user" directory exists in the current path:
+    if (!std::filesystem::exists(user_dir)) {
+        // If it doesn't exist, use the new hardcoded path:
+        user_dir =
+            std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadPS4";
+    }
+#else
+    const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 #endif
 
     std::unordered_map<PathType, fs::path> paths;
-    const auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
 
     const auto create_path = [&](PathType shad_path, const fs::path& new_path) {
         std::filesystem::create_directory(new_path);

@@ -409,3 +409,6 @@ FodyWeavers.xsd
 /out/*
 /third-party/out/*
 /src/common/scm_rev.cpp
+
+# for macOS
+**/.DS_Store
