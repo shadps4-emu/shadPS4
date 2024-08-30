@@ -980,7 +980,8 @@ void Translator::V_BFM_B32(const GcnInst& inst) {
 
 void Translator::V_FFBH_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB) position
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
     const IR::U32 msb_pos = ir.FindUMsb(src0);
     const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
     // Select 0xFFFFFFFF if src0 was 0
