@@ -10,6 +10,7 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "core/cpu_patches.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
@@ -985,6 +986,7 @@ static void cleanup_thread(void* arg) {
             destructor(value);
         }
     }
+    Core::CleanupThreadPatchStack();
     thread->is_almost_done = true;
 }
 
@@ -993,6 +995,7 @@ static void* run_thread(void* arg) {
     Common::SetCurrentThreadName(thread->name.c_str());
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     linker->InitTlsForThread(false);
+    Core::InitializeThreadPatchStack();
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);

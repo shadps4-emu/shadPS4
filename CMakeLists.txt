@@ -644,6 +644,9 @@ if (APPLE)
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
+
+  # Half float conversions for F16C patches
+  target_link_libraries(shadps4 PRIVATE half)
 endif()
 
 if (NOT ENABLE_QT_GUI)
