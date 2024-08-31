@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>关于 shadPS4</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+            <translation>shadPS4 是一款实验性质的开源 PlayStation 4模拟器软件。</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>This software should not be used to play games you have not legally obtained.</translation>
+            <translation>本软件不得用于运行未经合法授权而获得的游戏。</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>打开文件夹</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Loading game list, please wait :3</translation>
+            <translation>加载游戏列表中, 请稍等 :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancel</translation>
+            <translation>取消</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>Loading...</translation>
+            <translation>加载中...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - Choose directory</translation>
+            <translation>shadPS4 - 选择文件目录</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Directory to install games</translation>
+            <translation>要安装游戏的目录</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>Browse</translation>
+            <translation>浏览</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>错误</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>The value for location to install games is not valid.</translation>
+            <translation>游戏安装位置无效。</translation>
         </message>
     </context>
     <context>
@@ -83,72 +83,72 @@
         <message>
             <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
-            <translation>Create Shortcut</translation>
+            <translation>创建快捷方式</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
-            <translation>Open Game Folder</translation>
+            <translation>打开游戏文件夹</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Zuòbì / Bǔdīng</translation>
+            <translation>作弊码 / 补丁</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
-            <translation>SFO Viewer</translation>
+            <translation>SFO 查看器</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Trophy 查看器</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
-            <translation>Copy info</translation>
+            <translation>复制信息</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
-            <translation>Copy Name</translation>
+            <translation>复制名称</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
-            <translation>Copy Serial</translation>
+            <translation>复制序列号</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
-            <translation>Copy All</translation>
+            <translation>复制全部</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
-            <translation>Shortcut creation</translation>
+            <translation>创建快捷方式</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Shortcut created successfully!\n %1</translation>
+            <translation>创建快捷方式成功!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>错误</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Error creating shortcut!\n %1</translation>
+            <translation>创建快捷方式出错!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
-            <translation>Install PKG</translation>
+            <translation>安装 PKG</translation>
         </message>
     </context>
     <context>
@@ -156,162 +156,162 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Open/Add Elf Folder</translation>
+            <translation>打开/添加Elf文件夹</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>Install Packages (PKG)</translation>
+            <translation>安装 Packages (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>Boot Game</translation>
+            <translation>启动游戏</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>关于 shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Configure...</translation>
+            <translation>设置...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Install application from a .pkg file</translation>
+            <translation>从 .pkg 文件安装应用程序</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Recent Games</translation>
+            <translation>最近启动的游戏</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>Exit</translation>
+            <translation>退出</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>Exit shadPS4</translation>
+            <translation>退出 shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Exit the application.</translation>
+            <translation>退出应用程序.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>Show Game List</translation>
+            <translation>显示游戏列表</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>Game List Refresh</translation>
+            <translation>刷新游戏列表</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>Tiny</translation>
+            <translation>微小</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>Small</translation>
+            <translation>小</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>Medium</translation>
+            <translation>中等</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>Large</translation>
+            <translation>巨大</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>List View</translation>
+            <translation>列表视图</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>Grid View</translation>
+            <translation>表格视图</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elf Viewer</translation>
+            <translation>Elf 查看器</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>Game Install Directory</translation>
+            <translation>游戏安装目录</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Xiàzài Zuòbì / Bǔdīng</translation>
+            <translation>下载作弊码/补丁</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Dump Game List</translation>
+            <translation>转储游戏列表</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKG Viewer</translation>
+            <translation>PKG 查看器</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>Search...</translation>
+            <translation>搜索...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>File</translation>
+            <translation>文件</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>View</translation>
+            <translation>显示</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
             <source>Game List Icons</source>
-            <translation>Game List Icons</translation>
+            <translation>游戏列表图标</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Game List Mode</translation>
+            <translation>游戏列表模式</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>设置</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utils</translation>
+            <translation>工具</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>Themes</translation>
+            <translation>主题</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>About</translation>
+            <translation>关于</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
@@ -341,7 +341,7 @@
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>toolBar</translation>
+            <translation>工具栏</translation>
         </message>
     </context>
     <context>
@@ -349,7 +349,7 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>打开文件夹</translation>
         </message>
     </context>
     <context>
@@ -357,7 +357,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Trophy 查看器</translation>
         </message>
     </context>
     <context>
@@ -365,87 +365,87 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>设置</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>General</translation>
+            <translation>通用</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
             <source>System</source>
-            <translation>System</translation>
+            <translation>系统</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>Console Language</translation>
+            <translation>主机语言</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Emulator Language</translation>
+            <translation>模拟器语言</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
             <source>Emulator</source>
-            <translation>Emulator</translation>
+            <translation>模拟器</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>Enable Fullscreen</translation>
+            <translation>启用全屏</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Show Splash</translation>
+            <translation>显示Splash</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Is PS4 Pro</translation>
+            <translation>是否是 PS4 Pro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Username</translation>
+            <translation>用户名</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
             <source>Logger</source>
-            <translation>Logger</translation>
+            <translation>日志</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>Log Type</translation>
+            <translation>日志类型</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Log Filter</translation>
+            <translation>日志过滤</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>Graphics</translation>
+            <translation>图像</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>Graphics Device</translation>
+            <translation>图像设备</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>Width</translation>
+            <translation>宽带</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>Height</translation>
+            <translation>高度</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
@@ -455,47 +455,47 @@
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>Advanced</translation>
+            <translation>高级</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Enable Shaders Dumping</translation>
+            <translation>启用着色器转储</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>Enable NULL GPU</translation>
+            <translation>启用 NULL GPU</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Enable PM4 Dumping</translation>
+            <translation>启用 PM4 转储</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
             <source>Debug</source>
-            <translation>Debug</translation>
+            <translation>调试</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Enable Debug Dumping</translation>
+            <translation>启用调试转储</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Enable Vulkan Validation Layers</translation>
+            <translation>启用 Vulkan 验证层</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Enable Vulkan Synchronization Validation</translation>
+            <translation>启用 Vulkan 同步验证</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>Enable RenderDoc Debugging</translation>
+            <translation>启用 RenderDoc 调试</translation>
         </message>
     </context>
     <context>
