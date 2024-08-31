@@ -248,11 +248,11 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<const Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
+std::pair<Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) {
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
-        const Buffer& buffer = slot_buffers[buffer_id];
+        Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
             return {&buffer, buffer.Offset(gpu_addr)};
         }

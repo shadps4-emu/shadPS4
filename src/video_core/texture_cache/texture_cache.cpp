@@ -314,6 +314,7 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
 
     // Update tracked image usage
     image.info.usage.depth_target = true;
+    image.info.usage.stencil = has_stencil;
 
     return RegisterImageView(image_id, view_info);
 }
@@ -383,18 +384,13 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
         // The obtained buffer may be written by a shader so we need to emit a barrier to prevent
         // RAW hazard
-        if (buffer_cache.IsRegionGpuModified(image_addr, image_size)) {
-            const vk::BufferMemoryBarrier post_barrier{
-                .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-                .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-                .buffer = buffer,
-                .offset = offset,
-                .size = image_size,
+        if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
+                                                 vk::PipelineStageFlagBits2::eTransfer)) {
+            auto dependencies = vk::DependencyInfo{
+                .bufferMemoryBarrierCount = 1,
+                .pBufferMemoryBarriers = &barrier.value(),
             };
-            cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader |
-                                       vk::PipelineStageFlagBits::eComputeShader,
-                                   vk::PipelineStageFlagBits::eTransfer,
-                                   vk::DependencyFlagBits::eByRegion, {}, post_barrier, {});
+            cmdbuf.pipelineBarrier2(dependencies);
         }
     }
 

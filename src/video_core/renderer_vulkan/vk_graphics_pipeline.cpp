@@ -359,7 +359,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
-    boost::container::small_vector<vk::BufferMemoryBarrier, 16> buffer_barriers;
+    boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
     u32 binding{};
 
@@ -425,15 +425,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 }
                 buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
-
-                if (buffer_cache.IsRegionGpuModified(address, size)) {
-                    buffer_barriers.push_back(vk::BufferMemoryBarrier{
-                        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-                        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                        .buffer = vk_buffer->Handle(),
-                        .offset = offset,
-                        .size = size,
-                    });
+                const auto dst_access = tex_buffer.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                              : vk::AccessFlagBits2::eShaderRead;
+                if (auto barrier = vk_buffer->GetBarrier(
+                        dst_access, vk::PipelineStageFlagBits2::eVertexShader)) {
+                    buffer_barriers.emplace_back(*barrier);
                 }
             }
             set_writes.push_back({
@@ -501,10 +497,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     const auto cmdbuf = scheduler.CommandBuffer();
 
     if (!buffer_barriers.empty()) {
-        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader |
-                                   vk::PipelineStageFlagBits::eComputeShader,
-                               vk::PipelineStageFlagBits::eFragmentShader,
-                               vk::DependencyFlagBits::eByRegion, {}, buffer_barriers, {});
+        auto dependencies = vk::DependencyInfo{
+            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
+            .pBufferMemoryBarriers = buffer_barriers.data(),
+        };
+        cmdbuf.pipelineBarrier2(dependencies);
     }
 
     if (!set_writes.empty()) {

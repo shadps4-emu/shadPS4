@@ -70,7 +70,7 @@ public:
                                                        bool is_texel_buffer = false);
 
     /// Obtains a temporary buffer for usage in texture cache.
-    [[nodiscard]] std::pair<const Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainTempBuffer(VAddr gpu_addr, u32 size);
 
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
