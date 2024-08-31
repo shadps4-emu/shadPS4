@@ -262,171 +262,16 @@ Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
     return EmitLoadBufferF32xN<4>(ctx, handle, address);
 }
 
-static bool IsSignedInteger(AmdGpu::NumberFormat format) {
-    switch (format) {
-    case AmdGpu::NumberFormat::Unorm:
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Uint:
-        return false;
-    case AmdGpu::NumberFormat::Snorm:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Sint:
-    case AmdGpu::NumberFormat::SnormNz:
-        return true;
-    case AmdGpu::NumberFormat::Float:
-    default:
-        UNREACHABLE();
-    }
-}
-
-static u32 UXBitsMax(u32 bit_width) {
-    return (1u << bit_width) - 1u;
-}
-
-static u32 SXBitsMax(u32 bit_width) {
-    return (1u << (bit_width - 1u)) - 1u;
-}
-
-static Id ConvertValue(EmitContext& ctx, Id value, AmdGpu::NumberFormat format, u32 bit_width) {
-    switch (format) {
-    case AmdGpu::NumberFormat::Unorm:
-        return ctx.OpFDiv(ctx.F32[1], value, ctx.ConstF32(float(UXBitsMax(bit_width))));
-    case AmdGpu::NumberFormat::Snorm:
-        return ctx.OpFDiv(ctx.F32[1], value, ctx.ConstF32(float(SXBitsMax(bit_width))));
-    case AmdGpu::NumberFormat::SnormNz:
-        // (x * 2 + 1) / (Format::SMAX * 2)
-        value = ctx.OpFMul(ctx.F32[1], value, ctx.ConstF32(2.f));
-        value = ctx.OpFAdd(ctx.F32[1], value, ctx.ConstF32(1.f));
-        return ctx.OpFDiv(ctx.F32[1], value, ctx.ConstF32(float(SXBitsMax(bit_width) * 2)));
-    case AmdGpu::NumberFormat::Uscaled:
-    case AmdGpu::NumberFormat::Sscaled:
-    case AmdGpu::NumberFormat::Uint:
-    case AmdGpu::NumberFormat::Sint:
-    case AmdGpu::NumberFormat::Float:
-        return value;
-    default:
-        UNREACHABLE_MSG("Unsupported number format for conversion: {}",
-                        magic_enum::enum_name(format));
-    }
-}
-
-static Id ComponentOffset(EmitContext& ctx, Id address, u32 stride, u32 bit_offset) {
-    Id comp_offset = ctx.ConstU32(bit_offset);
-    if (stride < 4) {
-        // comp_offset += (address % 4) * 8;
-        const Id byte_offset = ctx.OpUMod(ctx.U32[1], address, ctx.ConstU32(4u));
-        const Id bit_offset = ctx.OpShiftLeftLogical(ctx.U32[1], byte_offset, ctx.ConstU32(3u));
-        comp_offset = ctx.OpIAdd(ctx.U32[1], comp_offset, bit_offset);
-    }
-    return comp_offset;
-}
-
-static Id GetBufferFormatValue(EmitContext& ctx, u32 handle, Id address, u32 comp) {
-    auto& buffer = ctx.buffers[handle];
-    const auto format = buffer.dfmt;
-    switch (format) {
-    case AmdGpu::DataFormat::FormatInvalid:
-        return ctx.f32_zero_value;
-    case AmdGpu::DataFormat::Format8:
-    case AmdGpu::DataFormat::Format16:
-    case AmdGpu::DataFormat::Format32:
-    case AmdGpu::DataFormat::Format8_8:
-    case AmdGpu::DataFormat::Format16_16:
-    case AmdGpu::DataFormat::Format10_11_11:
-    case AmdGpu::DataFormat::Format11_11_10:
-    case AmdGpu::DataFormat::Format10_10_10_2:
-    case AmdGpu::DataFormat::Format2_10_10_10:
-    case AmdGpu::DataFormat::Format8_8_8_8:
-    case AmdGpu::DataFormat::Format32_32:
-    case AmdGpu::DataFormat::Format16_16_16_16:
-    case AmdGpu::DataFormat::Format32_32_32:
-    case AmdGpu::DataFormat::Format32_32_32_32: {
-        const u32 num_components = AmdGpu::NumComponents(format);
-        if (comp >= num_components) {
-            return ctx.f32_zero_value;
-        }
-
-        // uint index = address / 4;
-        Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-        const u32 stride = buffer.stride;
-        if (stride > 4) {
-            const u32 index_offset = u32(AmdGpu::ComponentOffset(format, comp) / 32);
-            if (index_offset > 0) {
-                // index += index_offset;
-                index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(index_offset));
-            }
-        }
-        const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
-
-        const u32 bit_offset = AmdGpu::ComponentOffset(format, comp) % 32;
-        const u32 bit_width = AmdGpu::ComponentBits(format, comp);
-        const auto num_format = buffer.nfmt;
-        if (num_format == AmdGpu::NumberFormat::Float) {
-            if (bit_width == 32) {
-                return ctx.OpLoad(ctx.F32[1], ptr);
-            } else if (bit_width == 16) {
-                const Id comp_offset = ComponentOffset(ctx, address, stride, bit_offset);
-                Id value = ctx.OpLoad(ctx.U32[1], ptr);
-                value =
-                    ctx.OpBitFieldSExtract(ctx.S32[1], value, comp_offset, ctx.ConstU32(bit_width));
-                value = ctx.OpSConvert(ctx.U16, value);
-                value = ctx.OpBitcast(ctx.F16[1], value);
-                return ctx.OpFConvert(ctx.F32[1], value);
-            } else {
-                UNREACHABLE_MSG("Invalid float bit width {}", bit_width);
-            }
-        } else {
-            Id value = ctx.OpLoad(ctx.U32[1], ptr);
-            const bool is_signed = IsSignedInteger(num_format);
-            if (bit_width < 32) {
-                const Id comp_offset = ComponentOffset(ctx, address, stride, bit_offset);
-                if (is_signed) {
-                    value = ctx.OpBitFieldSExtract(ctx.S32[1], value, comp_offset,
-                                                   ctx.ConstU32(bit_width));
-                } else {
-                    value = ctx.OpBitFieldUExtract(ctx.U32[1], value, comp_offset,
-                                                   ctx.ConstU32(bit_width));
-                }
-            }
-            value = ctx.OpBitcast(ctx.F32[1], value);
-            return ConvertValue(ctx, value, num_format, bit_width);
-        }
-        break;
-    }
-    default:
-        UNREACHABLE_MSG("Invalid format for conversion: {}", magic_enum::enum_name(format));
-    }
-}
-
-template <u32 N>
-static Id EmitLoadBufferFormatF32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-    if constexpr (N == 1) {
-        return GetBufferFormatValue(ctx, handle, address, 0);
-    } else {
-        boost::container::static_vector<Id, N> ids;
-        for (u32 i = 0; i < N; i++) {
-            ids.push_back(GetBufferFormatValue(ctx, handle, address, i));
-        }
-        return ctx.OpCompositeConstruct(ctx.F32[N], ids);
-    }
-}
-
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return EmitLoadBufferFormatF32xN<1>(ctx, inst, handle, address);
-}
-
-Id EmitLoadBufferFormatF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return EmitLoadBufferFormatF32xN<2>(ctx, inst, handle, address);
-}
-
-Id EmitLoadBufferFormatF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return EmitLoadBufferFormatF32xN<3>(ctx, inst, handle, address);
-}
-
-Id EmitLoadBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return EmitLoadBufferFormatF32xN<4>(ctx, inst, handle, address);
+    const auto& buffer = ctx.texture_buffers[handle];
+    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
+    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
+                                 : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
+    if (buffer.is_integer) {
+        texel = ctx.OpBitcast(ctx.F32[4], texel);
+    }
+    return texel;
 }
 
 template <u32 N>
@@ -467,97 +312,14 @@ void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address
     EmitStoreBufferF32xN<1>(ctx, handle, address, value);
 }
 
-static Id ConvertF32ToFormat(EmitContext& ctx, Id value, AmdGpu::NumberFormat format,
-                             u32 bit_width) {
-    switch (format) {
-    case AmdGpu::NumberFormat::Unorm:
-        return ctx.OpConvertFToU(
-            ctx.U32[1], ctx.OpFMul(ctx.F32[1], value, ctx.ConstF32(float(UXBitsMax(bit_width)))));
-    case AmdGpu::NumberFormat::Uint:
-        return ctx.OpBitcast(ctx.U32[1], value);
-    case AmdGpu::NumberFormat::Float:
-        return value;
-    default:
-        UNREACHABLE_MSG("Unsupported number format for conversion: {}",
-                        magic_enum::enum_name(format));
-    }
-}
-
-template <u32 N>
-static void EmitStoreBufferFormatF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
-    auto& buffer = ctx.buffers[handle];
-    const auto format = buffer.dfmt;
-    const auto num_format = buffer.nfmt;
-
-    switch (format) {
-    case AmdGpu::DataFormat::FormatInvalid:
-        return;
-    case AmdGpu::DataFormat::Format8_8_8_8:
-    case AmdGpu::DataFormat::Format16:
-    case AmdGpu::DataFormat::Format32:
-    case AmdGpu::DataFormat::Format32_32:
-    case AmdGpu::DataFormat::Format32_32_32_32: {
-        ASSERT(N == AmdGpu::NumComponents(format));
-
-        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-        const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-        const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
-
-        Id packed_value{};
-        for (u32 i = 0; i < N; i++) {
-            const u32 bit_width = AmdGpu::ComponentBits(format, i);
-            const u32 bit_offset = AmdGpu::ComponentOffset(format, i) % 32;
-
-            const Id comp{ConvertF32ToFormat(
-                ctx, N == 1 ? value : ctx.OpCompositeExtract(ctx.F32[1], value, i), num_format,
-                bit_width)};
-
-            if (bit_width == 32) {
-                if constexpr (N == 1) {
-                    ctx.OpStore(ptr, comp);
-                } else {
-                    const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-                    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id,
-                                                     ctx.u32_zero_value, index_i);
-                    ctx.OpStore(ptr, comp);
-                }
-            } else {
-                if (i == 0) {
-                    packed_value = comp;
-                } else {
-                    packed_value =
-                        ctx.OpBitFieldInsert(ctx.U32[1], packed_value, comp,
-                                             ctx.ConstU32(bit_offset), ctx.ConstU32(bit_width));
-                }
-
-                if (i == N - 1) {
-                    ctx.OpStore(ptr, packed_value);
-                }
-            }
-        }
-    } break;
-    default:
-        UNREACHABLE_MSG("Invalid format for conversion: {}", magic_enum::enum_name(format));
-    }
-}
-
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferFormatF32xN<1>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferFormatF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
-                                Id value) {
-    EmitStoreBufferFormatF32xN<2>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferFormatF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
-                                Id value) {
-    EmitStoreBufferFormatF32xN<3>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferFormatF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
-                                Id value) {
-    EmitStoreBufferFormatF32xN<4>(ctx, handle, address, value);
+    const auto& buffer = ctx.texture_buffers[handle];
+    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
+    const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
+    if (buffer.is_integer) {
+        value = ctx.OpBitcast(ctx.U32[4], value);
+    }
+    ctx.OpImageWrite(tex_buffer, coord, value);
 }
 
 } // namespace Shader::Backend::SPIRV

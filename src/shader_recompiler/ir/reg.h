@@ -66,9 +66,6 @@ union BufferInstInfo {
     BitField<0, 1, u32> index_enable;
     BitField<1, 1, u32> offset_enable;
     BitField<2, 12, u32> inst_offset;
-    BitField<14, 4, AmdGpu::DataFormat> dmft;
-    BitField<18, 3, AmdGpu::NumberFormat> nfmt;
-    BitField<21, 1, u32> is_typed;
 };
 
 enum class ScalarReg : u32 {

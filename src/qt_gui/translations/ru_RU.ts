@@ -93,7 +93,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Читы / Патчи</translation>
+            <translation>Читы и патчи</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="49"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Скачать Читы / Патчи</translation>
+            <translation>Скачать читы или патчи</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -566,45 +566,55 @@
         	<translation>Извлечение PKG</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="633"/>
-        	<source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-        	<translation>Обнаружен патч!\nВерсии PKG и игры совпадают!: %1\nХотите </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="634"/>
-        	<source>to overwrite?</source>
-        	<translation>перезаписать?</translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="639"/>
-        	<source>Patch detected!\nPKG Version %1 is older </source>
-        	<translation>Обнаружен патч!\nВерсия PKG %1 устарела </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="640"/>
-        	<source>than installed version!: %2\nWould you like </source>
-        	<translation>по сравнению с установленной версией!: %2\nХотите </translation>
-        </message>
-        <message>
-        	<location filename="../main_window.cpp" line="641"/>
-        	<source>to overwrite?</source>
-        	<translation>перезаписать?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Обнаружен патч!</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="646"/>
-        	<source>Patch detected!\nGame is installed: %1\nWould you like </source>
-        	<translation>Обнаружен патч!\nИгра установлена: %1\nХотите </translation>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Версии PKG и игры совпадают: </translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="647"/>
-        	<source>to install Patch: %2?</source>
-        	<translation>установить патч: %2?</translation>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Хотите перезаписать?</translation>
         </message>
         <message>
-        	<location filename="../main_window.cpp" line="659"/>
-        	<source>Game already installed\n%1\nWould you like to overwrite?</source>
-        	<translation>Игра уже установлена\n%1\nХотите перезаписать?</translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Версия PKG %1 старее установленной версии: </translation>
         </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Игра установлена: </translation>
+        </message>
+        <message>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Хотите установить патч: </translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>Установка DLC</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Вы хотите установить DLC: %1??</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC уже установлен:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Игра уже установлена</translation>
+        </message>	
         <message>
         	<location filename="../main_window.cpp" line="674"/>
         	<source>PKG is a patch, please install the game first!</source>
@@ -628,7 +638,7 @@
         <message>
         	<location filename="../main_window.cpp" line="704"/>
         	<source>Game successfully installed at %1</source>
-        	<translation>Игра успешно установлена по адресу %1</translation>
+        	<translation>Игра успешно установлена в %1</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="725"/>
@@ -641,13 +651,13 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="44"/>
         	<source>Cheats / Patches</source>
-        	<translation>Читы / Патчи</translation>
+        	<translation>Читы и патчи</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
-        </message>
+            <translation>Читы и патчи экспериментальны.\nИспользуйте с осторожностью.\n\nСкачивайте читы, выбрав репозиторий и нажав на кнопку загрузки.\nВо вкладке "Патчи" вы можете скачать все патчи сразу, выбирать какие вы хотите использовать, и сохранять выбор.\n\nПоскольку мы не разрабатываем читы/патчи,\nпожалуйста сообщайте о проблемах автору чита/патча.\n\nСоздали новый чит? Посетите:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="69"/>
         	<source>No Image Available</source>

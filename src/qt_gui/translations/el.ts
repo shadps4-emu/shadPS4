@@ -566,44 +566,54 @@
             <translation>Εξαγωγή PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Ανίχνευση Patch!\nΟι εκδόσεις PKG και παιχνιδιού ταιριάζουν!: %1\nΘέλετε </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Αναγνώριση ενημέρωσης!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>να αντικαταστήσετε;</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Οι εκδόσεις PKG και παιχνιδιού ταιριάζουν: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Ανίχνευση Patch!\nΗ έκδοση PKG %1 είναι παλαιότερη </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Θέλετε να αντικαταστήσετε;</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>από την εγκατεστημένη έκδοση!: %2\nΘέλετε </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Η έκδοση PKG %1 είναι παλαιότερη από την εγκατεστημένη έκδοση: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>να αντικαταστήσετε;</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Το παιχνίδι είναι εγκατεστημένο: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Ανίχνευση Patch!\nΤο παιχνίδι είναι εγκατεστημένο: %1\nΘέλετε </translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Θέλετε να εγκαταστήσετε την ενημέρωση: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>να εγκαταστήσετε το Patch: %2;</translation>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>Εγκατάσταση DLC</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Το παιχνίδι είναι ήδη εγκατεστημένο\n%1\nΘέλετε να αντικαταστήσετε;</translation>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Θέλετε να εγκαταστήσετε το DLC: %1;</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC ήδη εγκατεστημένο:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Παιχνίδι ήδη εγκατεστημένο</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>

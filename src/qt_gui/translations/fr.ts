@@ -93,7 +93,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Trucs / Patchs</translation>
+            <translation>Cheats/Patchs</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="49"/>
@@ -108,7 +108,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
-            <translation>Copier les informations</translation>
+            <translation>Copier infos</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="60"/>
@@ -133,7 +133,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Raccourci créé avec succès!\n %1</translation>
+            <translation>Raccourci créé avec succès !\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="199"/>
@@ -143,7 +143,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Erreur lors de la création du raccourci!\n %1</translation>
+            <translation>Erreur lors de la création du raccourci !\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="275"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Télécharger Trucs / Patchs</translation>
+            <translation>Télécharger Cheats/Patchs</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
@@ -485,12 +485,12 @@
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Couche de validation Vulkan</translation>
+            <translation>Activer la couche de validation Vulkan</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Synchroniser la validation Vulkan</translation>
+            <translation>Activer la synchronisation de la validation Vulkan</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
@@ -503,17 +503,17 @@
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
-            <translation> * Version Vulkan non prise en charge</translation>
+            <translation> * Version de Vulkan non prise en charge</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="326"/>
             <source>Download Cheats For All Installed Games</source>
-            <translation>Télécharger les cheats pour tous les jeux installés</translation>
+            <translation>Télécharger les Cheats pour tous les jeux installés</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="328"/>
             <source>Download Patches For All Games</source>
-            <translation>Télécharger les patches pour tous les jeux</translation>
+            <translation>Télécharger les patchs pour tous les jeux</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="363"/>
@@ -523,17 +523,17 @@
         <message>
             <location filename="../main_window.cpp" line="364"/>
             <source>You have downloaded cheats for all the games you have installed.</source>
-            <translation>Vous avez téléchargé des cheats pour tous les jeux que vous avez installés.</translation>
+            <translation>Vous avez téléchargé des Cheats pour tous les jeux installés.</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="391"/>
             <source>Patches Downloaded Successfully!</source>
-            <translation>Patches téléchargés avec succès !</translation>
+            <translation>Patchs téléchargés avec succès !</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="392"/>
             <source>All Patches available for all games have been downloaded.</source>
-            <translation>Tous les patches disponibles pour tous les jeux ont été téléchargés.</translation>
+            <translation>Tous les patchs disponibles pour les jeux ont été téléchargés.</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="549"/>
@@ -543,7 +543,7 @@
         <message>
             <location filename="../main_window.cpp" line="575"/>
             <source>PKG File (*.PKG)</source>
-            <translation>Fichier PKG (*.PKG)</translation>
+            <translation>Fichiers PKG (*.PKG)</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="594"/>
@@ -553,7 +553,7 @@
         <message>
             <location filename="../main_window.cpp" line="600"/>
             <source>Game Boot</source>
-            <translation>Boot du jeu</translation>
+            <translation>Démarrer un jeu</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="600"/>
@@ -563,57 +563,67 @@
         <message>
             <location filename="../main_window.cpp" line="623"/>
             <source>PKG Extraction</source>
-            <translation>Extraction PKG</translation>
+            <translation>Extraction du PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Patch détecté !\nLes versions PKG et Jeu correspondent : %1\nSouhaitez-vous </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Patch détecté !</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>écraser ?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Les versions PKG et jeu correspondent : </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Patch détecté !\nVersion PKG %1 est plus ancienne </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Souhaitez-vous remplacer ?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>que la version installée ! : %2\nSouhaitez-vous </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>La version PKG %1 est plus ancienne que la version installée : </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>écraser ?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Jeu installé : </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Patch détecté !\nJeu est installé : %1\nSouhaitez-vous </translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Souhaitez-vous installer le patch : </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>installer le patch : %2 ?</translation>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>Installation du DLC</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Jeu déjà installé\n%1\nSouhaitez-vous écraser ?</translation>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Souhaitez-vous installer le DLC : %1 ?</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC déjà installé :</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Jeu déjà installé</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>PKG is a patch, please install the game first!</source>
-            <translation>PKG est un patch, veuillez d'abord installer le jeu !</translation>
+            <translation>Le PKG est un patch, veuillez d'abord installer le jeu !</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="681"/>
             <source>PKG ERROR</source>
-            <translation>ERREUR PKG</translation>
+            <translation>Erreur PKG</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="693"/>
@@ -633,7 +643,7 @@
         <message>
             <location filename="../main_window.cpp" line="725"/>
             <source>File doesn't appear to be a valid PKG file</source>
-            <translation>Le fichier ne semble pas être un fichier PKG valide</translation>
+            <translation>Le fichier ne semble pas être un PKG valide</translation>
         </message>
     </context>
     <context>
@@ -641,12 +651,12 @@
         <message>
             <location filename="../cheats_patches.cpp" line="44"/>
             <source>Cheats / Patches</source>
-            <translation>Cheats / Patches</translation>
+            <translation>Cheats/Patches</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Les cheats/patches sont expérimentaux.\nUtilisez-les avec précaution.\n\nTéléchargez les cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patches, vous pouvez télécharger tous les patches en une seule fois, choisir lesquels vous souhaitez utiliser et enregistrer votre sélection.\n\nComme nous ne développons pas les Cheats/Patches,\nmerci de signaler les problèmes à l'auteur du cheat.\n\nVous avez créé un nouveau cheat ? Visitez :\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Les Cheats/Patchs sont expérimentaux.\nUtilisez-les avec précaution.\n\nTéléchargez les Cheats individuellement en sélectionnant le dépôt et en cliquant sur le bouton de téléchargement.\nDans l'onglet Patchs, vous pouvez télécharger tous les patchs en une seule fois, choisir lesquels vous souhaitez utiliser et enregistrer votre sélection.\n\nComme nous ne développons pas les Cheats/Patches,\nmerci de signaler les problèmes à l'auteur du Cheat.\n\nVous avez créé un nouveau cheat ? Visitez :\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
@@ -671,7 +681,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="126"/>
             <source>Select Cheat File:</source>
-            <translation>Sélectionner le fichier de cheat :</translation>
+            <translation>Sélectionner le fichier de Cheat :</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="133"/>
@@ -681,7 +691,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="149"/>
             <source>Download Cheats</source>
-            <translation>Télécharger les cheats</translation>
+            <translation>Télécharger les Cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="155"/>
@@ -696,7 +706,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="170"/>
             <source>You can delete the cheats you don't want after downloading them.</source>
-            <translation>Vous pouvez supprimer les cheats que vous ne souhaitez pas après les avoir téléchargés.</translation>
+            <translation>Vous pouvez supprimer les Cheats que vous ne souhaitez pas après les avoir téléchargés.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="178"/>
@@ -711,7 +721,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="241"/>
             <source>Download Patches</source>
-            <translation>Télécharger les patches</translation>
+            <translation>Télécharger les patchs</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="248"/>
@@ -811,7 +821,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>CheatsNotFound_MSG</source>
-            <translation>Aucun cheat trouvé pour ce jeu dans cette version du dépôt sélectionné,essayez un autre dépôt ou une version différente du jeu.</translation>
+            <translation>Aucun Cheat trouvé pour ce jeu dans cette version du dépôt sélectionné, essayez un autre dépôt ou une version différente du jeu.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="593"/>
@@ -841,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les cheats.</translation>
+            <translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -861,7 +871,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="819"/>
             <source>XML ERROR:</source>
-            <translation>ERREUR XML :</translation>
+            <translation>Erreur XML :</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="826"/>

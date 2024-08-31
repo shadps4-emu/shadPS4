@@ -566,45 +566,55 @@
             <translation>Giải nén PKG</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="633"/>
-            <source>Patch detected!\nPKG and Game versions match!: %1\nWould you like </source>
-            <translation>Đã phát hiện bản vá!\nPhiên bản PKG và trò chơi khớp!: %1\nBạn có muốn </translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>Patch detected!</source>
+        	<translation>Đã phát hiện bản vá!</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="634"/>
-            <source>to overwrite?</source>
-            <translation>ghi đè không?</translation>
+        	<location filename="../main_window.cpp" line="646"/>
+        	<source>PKG and Game versions match: </source>
+        	<translation>Các phiên bản PKG và trò chơi khớp nhau: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="639"/>
-            <source>Patch detected!\nPKG Version %1 is older </source>
-            <translation>Đã phát hiện bản vá!\nPhiên bản PKG %1 cũ hơn </translation>
+        	<location filename="../main_window.cpp" line="647"/>
+        	<source>Would you like to overwrite?</source>
+        	<translation>Bạn có muốn ghi đè không?</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="640"/>
-            <source>than installed version!: %2\nWould you like </source>
-            <translation>so với phiên bản đã cài đặt!: %2\nBạn có muốn </translation>
+        	<location filename="../main_window.cpp" line="639"/>
+        	<source>PKG Version %1 is older than installed version: </source>
+        	<translation>Phiên bản PKG %1 cũ hơn phiên bản đã cài đặt: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="641"/>
-            <source>to overwrite?</source>
-            <translation>ghi đè không?</translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Game is installed: </source>
+        	<translation>Trò chơi đã được cài đặt: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="646"/>
-            <source>Patch detected!\nGame is installed: %1\nWould you like </source>
-            <translation>Đã phát hiện bản vá!\nTrò chơi đã được cài đặt: %1\nBạn có muốn </translation>
+        	<location filename="../main_window.cpp" line="660"/>
+        	<source>Would you like to install Patch: </source>
+        	<translation>Bạn có muốn cài đặt bản vá: </translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="647"/>
-            <source>to install Patch: %2?</source>
-            <translation>cài đặt bản vá: %2?</translation>
+            <location filename="../main_window.cpp" line="673"/>
+            <source>DLC Installation</source>
+            <translation>Cài đặt DLC</translation>
         </message>
         <message>
-            <location filename="../main_window.cpp" line="659"/>
-            <source>Game already installed\n%1\nWould you like to overwrite?</source>
-            <translation>Trò chơi đã được cài đặt\n%1\nBạn có muốn ghi đè không?</translation>
+            <location filename="../main_window.cpp" line="674"/>
+            <source>Would you like to install DLC: %1?</source>
+            <translation>Bạn có muốn cài đặt DLC: %1?</translation>
         </message>
+        <message>
+            <location filename="../main_window.cpp" line="688"/>
+            <source>DLC already installed:</source>
+            <translation>DLC đã được cài đặt:</translation>
+        </message>
+        <message>
+            <location filename="../main_window.cpp" line="701"/>
+            <source>Game already installed</source>
+            <translation>Trò chơi đã được cài đặt</translation>
+        </message>	
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>PKG is a patch, please install the game first!</source>

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <functional>
+
 #include "common/logging/log.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"

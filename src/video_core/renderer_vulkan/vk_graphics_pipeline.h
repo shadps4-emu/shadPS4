@@ -59,7 +59,8 @@ class GraphicsPipeline {
 public:
     explicit GraphicsPipeline(const Instance& instance, Scheduler& scheduler,
                               const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
-                              std::span<const Program*, MaxShaderStages> programs);
+                              std::span<const Shader::Info*, MaxShaderStages> stages,
+                              std::span<const vk::ShaderModule> modules);
     ~GraphicsPipeline();
 
     void BindResources(const Liverpool::Regs& regs, VideoCore::BufferCache& buffer_cache,

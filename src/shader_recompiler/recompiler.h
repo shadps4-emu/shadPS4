@@ -13,7 +13,7 @@ struct Profile;
 
 [[nodiscard]] IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
                                            Common::ObjectPool<IR::Block>& block_pool,
-                                           std::span<const u32> code, const Info&& info,
+                                           std::span<const u32> code, Info& info,
                                            const Profile& profile);
 
 } // namespace Shader
