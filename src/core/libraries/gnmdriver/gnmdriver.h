@@ -223,7 +223,7 @@ s32 PS4_SYSV_ABI sceGnmUpdatePsShader(u32* cmdbuf, u32 size, const u32* ps_regs)
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader350(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
                                       u32 shader_modifier);
-int PS4_SYSV_ABI sceGnmValidateCommandBuffers();
+s32 PS4_SYSV_ABI sceGnmValidateCommandBuffers();
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics();
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics2();
 int PS4_SYSV_ABI sceGnmValidateDispatchCommandBuffers();
