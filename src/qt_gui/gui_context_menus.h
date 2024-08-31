@@ -140,7 +140,7 @@ public:
                 new CheatsPatches(gameName, gameSerial, gameVersion, gameSize, gameImage);
             cheatsPatches->show();
             connect(widget->parent(), &QWidget::destroyed, cheatsPatches,
-                    [widget, cheatsPatches]() { cheatsPatches->deleteLater(); });
+                    [cheatsPatches]() { cheatsPatches->deleteLater(); });
         }
 
         if (selected == &openTrophyViewer) {

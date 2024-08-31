@@ -30,8 +30,8 @@ public:
     const ComputePipeline* GetComputePipeline();
 
 private:
-    void RefreshGraphicsKey();
-    void RefreshComputeKey();
+    bool RefreshGraphicsKey();
+    bool RefreshComputeKey();
 
 private:
     const Instance& instance;

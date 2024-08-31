@@ -85,9 +85,9 @@ void Linker::Execute() {
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+    InitializeThreadPatchStack();
     Libraries::Kernel::pthreadInitSelfMainThread();
     InitTlsForThread(true);
-    InitializeThreadPatchStack();
 
     // Start shared library modules
     for (auto& m : m_modules) {
@@ -106,8 +106,6 @@ void Linker::Execute() {
             RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
         }
     }
-
-    CleanupThreadPatchStack();
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {

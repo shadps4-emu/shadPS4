@@ -253,20 +253,6 @@ struct PM4CmdDrawIndexAuto {
     u32 draw_initiator;
 };
 
-struct PM4CmdDrawIndirect {
-    PM4Type3Header header; ///< header
-    u32 data_offset;       ///< DWORD aligned offset
-    union {
-        u32 dw2;
-        BitField<0, 16, u32> base_vtx_loc; ///< base vertex location
-    };
-    union {
-        u32 dw3;
-        BitField<0, 16, u32> start_inst_loc; ///< start instance location
-    };
-    u32 draw_initiator; ///< Draw Initiator Register
-};
-
 enum class DataSelect : u32 {
     None = 0,
     Data32Low = 1,
@@ -738,6 +724,53 @@ struct PM4CmdDispatchIndirect {
     PM4Type3Header header;
     u32 data_offset;        ///< Byte aligned offset where the required data structure starts
     u32 dispatch_initiator; ///< Dispatch Initiator Register
+};
+
+struct PM4CmdDrawIndirect {
+    struct DrawInstancedArgs {
+        u32 vertex_count_per_instance;
+        u32 instance_count;
+        u32 start_vertex_location;
+        u32 start_instance_location;
+    };
+
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union {
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
+    u32 draw_initiator; ///< Draw Initiator Register
+};
+
+struct PM4CmdDrawIndexIndirect {
+    struct DrawIndexInstancedArgs {
+        u32 index_count_per_instance;
+        u32 instance_count;
+        u32 start_index_location;
+        u32 base_vertex_location;
+        u32 start_instance_location;
+    };
+
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union { // NOTE: this one is undocumented in AMD spec, but Gnm driver writes this field
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
+    u32 draw_initiator; ///< Draw Initiator Register
 };
 
 } // namespace AmdGpu

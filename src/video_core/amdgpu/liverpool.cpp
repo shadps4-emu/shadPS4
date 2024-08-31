@@ -368,6 +368,36 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 break;
             }
+            case PM4ItOpcode::DrawIndirect: {
+                const auto* draw_indirect = reinterpret_cast<const PM4CmdDrawIndirect*>(header);
+                const auto offset = draw_indirect->data_offset;
+                const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
+                const auto size = sizeof(PM4CmdDrawIndirect::DrawInstancedArgs);
+                if (rasterizer) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndirect", cmd_address));
+                    rasterizer->Breadcrumb(u64(cmd_address));
+                    rasterizer->DrawIndirect(false, ib_address, offset, size);
+                    rasterizer->ScopeMarkerEnd();
+                }
+                break;
+            }
+            case PM4ItOpcode::DrawIndexIndirect: {
+                const auto* draw_index_indirect =
+                    reinterpret_cast<const PM4CmdDrawIndexIndirect*>(header);
+                const auto offset = draw_index_indirect->data_offset;
+                const auto ib_address = mapped_queues[GfxQueueId].indirect_args_addr;
+                const auto size = sizeof(PM4CmdDrawIndexIndirect::DrawIndexInstancedArgs);
+                if (rasterizer) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    rasterizer->ScopeMarkerBegin(
+                        fmt::format("dcb:{}:DrawIndexIndirect", cmd_address));
+                    rasterizer->Breadcrumb(u64(cmd_address));
+                    rasterizer->DrawIndirect(true, ib_address, offset, size);
+                    rasterizer->ScopeMarkerEnd();
+                }
+                break;
+            }
             case PM4ItOpcode::DispatchDirect: {
                 const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
                 regs.cs_program.dim_x = dispatch_direct->dim_x;
@@ -488,6 +518,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::PfpSyncMe: {
+                rasterizer->CpSync();
                 break;
             }
             default:

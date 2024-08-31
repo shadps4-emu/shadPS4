@@ -366,7 +366,7 @@ void MainWindow::CreateConnects() {
 
             panelDialog->accept();
         });
-        connect(downloadAllPatchesButton, &QPushButton::clicked, this, [this, panelDialog]() {
+        connect(downloadAllPatchesButton, &QPushButton::clicked, [panelDialog]() {
             QEventLoop eventLoop;
             int pendingDownloads = 0;
 

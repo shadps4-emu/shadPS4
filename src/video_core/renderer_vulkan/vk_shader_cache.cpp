@@ -107,7 +107,7 @@ Shader::Info MakeShaderInfo(const GuestProgram& pgm, const AmdGpu::Liverpool::Re
 ShaderCache::ShaderCache(const Instance& instance_, AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, liverpool{liverpool_}, inst_pool{8192}, block_pool{512} {
     profile = Shader::Profile{
-        .supported_spirv = 0x00010600U,
+        .supported_spirv = instance.ApiVersion() >= VK_API_VERSION_1_3 ? 0x00010600U : 0x00010500U,
         .subgroup_size = instance.SubgroupSize(),
         .support_explicit_workgroup_layout = true,
     };
