@@ -2346,9 +2346,9 @@ s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmValidateCommandBuffers() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmValidateCommandBuffers() {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    return ORBIS_GNM_ERROR_VALIDATION_NOT_ENABLED; // not available in retail FW;
 }
 
 int PS4_SYSV_ABI sceGnmValidateDisableDiagnostics() {
