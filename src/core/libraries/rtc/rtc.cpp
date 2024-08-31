@@ -6,8 +6,8 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/kernel/time_management.h"
+#include "core/libraries/libs.h"
 #include "rtc.h"
 #include "rtc_error.h"
 
@@ -213,8 +213,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
         if (returnValue >= 0) {
             OrbisRtcTick newTick;
             newTick.tick = clockTick;
-            sceRtcTickAddMinutes(&newTick, &newTick,
-                                 (timezone.dst_sec + timezone.west_sec) / 0x3c);
+            sceRtcTickAddMinutes(&newTick, &newTick, (timezone.dst_sec + timezone.west_sec) / 0x3c);
             sceRtcSetTick(pTime, &newTick);
         }
     }
