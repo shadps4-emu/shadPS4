@@ -258,8 +258,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
 
         // Retrieve PFSC from decrypted pfs_image.
         pfsc_offset = GetPFSCOffset(pfs_decrypted);
-        if (pfsc_offset == (u32)-1)
-        {
+        if (pfsc_offset == (u32)-1) {
             failreason = "Could not retrieve PFSC from decrypted pfs_image";
             return false;
         }
