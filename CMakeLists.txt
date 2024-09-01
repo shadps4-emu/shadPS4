@@ -6,11 +6,6 @@ cmake_minimum_required(VERSION 3.16.3)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
-if(UNIX AND NOT APPLE)
-    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-endif()
-
 if(APPLE)
     enable_language(OBJC)
     set(CMAKE_OSX_DEPLOYMENT_TARGET 11)
@@ -21,6 +16,18 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 project(shadPS4)
+
+# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
+if(UNIX AND NOT APPLE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+    # check PIE support at link time
+    include(CheckPIESupported)
+    check_pie_supported(OUTPUT_VARIABLE pie_check LANGUAGES C CXX)
+    if(NOT CMAKE_C_LINK_PIE_SUPPORTED OR NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
+        message(WARNING "PIE is not supported at link time: ${pie_check}")
+    endif()
+endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
