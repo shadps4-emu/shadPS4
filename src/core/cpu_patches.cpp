@@ -743,7 +743,7 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
     ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
-                operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER,
+                   operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER,
                "operands 0 and 1 must be registers.");
 
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
@@ -809,7 +809,7 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.lea(rsp, ptr[rsp + 128]);
     } else {
         ASSERT_MSG(operands[2].type == ZYDIS_OPERAND_TYPE_UNUSED &&
-                    operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
+                       operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
                    "operands 2 and 3 must be unused for register form.");
 
         const Xbyak::Reg64 scratch1 = rax;
