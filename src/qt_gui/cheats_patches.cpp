@@ -1158,6 +1158,13 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
     if (!m_cheats.contains(modName))
         return;
 
+    if (MemoryPatcher::g_eboot_address == 0 && enabled) {
+        QMessageBox::critical(this, tr("Error"),
+                              tr("Can't apply cheats before the game is started"));
+        uncheckAllCheatCheckBoxes();
+        return;
+    }
+
     Cheat cheat = m_cheats[modName];
 
     for (const MemoryMod& memoryMod : cheat.memoryMods) {
@@ -1167,16 +1174,9 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
         std::string offsetStr = memoryMod.offset.toStdString();
         std::string valueStr = value.toStdString();
 
-        if (MemoryPatcher::g_eboot_address == 0) {
-            MemoryPatcher::patchInfo addingPatch;
-            addingPatch.modNameStr = modNameStr;
-            addingPatch.offsetStr = offsetStr;
-            addingPatch.valueStr = valueStr;
-            addingPatch.isOffset = true;
+        if (MemoryPatcher::g_eboot_address == 0)
+            return;
 
-            MemoryPatcher::AddPatchToQueue(addingPatch);
-            continue;
-        }
         // Determine if the hint field is present
         bool isHintPresent = m_cheats[modName].hasHint;
         MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, !isHintPresent, false);
