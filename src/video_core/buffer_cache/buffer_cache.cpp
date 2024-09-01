@@ -164,7 +164,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
     // Map buffers
     for (auto& range : ranges_merged) {
-        const auto [buffer, offset] = ObtainBufferImpl(range.base_address, range.GetSize(), false);
+        const auto [buffer, offset] = ObtainBuffer(range.base_address, range.GetSize(), false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
     }
@@ -222,7 +222,7 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
 
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
-    const auto [vk_buffer, offset] = ObtainBufferImpl(index_address, index_buffer_size, false);
+    const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size, false);
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
     return regs.num_indices;
@@ -230,12 +230,6 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
                                                   bool is_texel_buffer) {
-    std::scoped_lock lk{mutex};
-    return ObtainBufferImpl(device_addr, size, is_written, is_texel_buffer);
-}
-
-std::pair<Buffer*, u32> BufferCache::ObtainBufferImpl(VAddr device_addr, u32 size, bool is_written,
-                                                      bool is_texel_buffer) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
     const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
     if (!is_written && !is_texel_buffer && size <= StreamThreshold && !is_gpu_dirty) {
@@ -466,6 +460,7 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
 }
 
 bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size) {
+    std::scoped_lock lk{mutex};
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;

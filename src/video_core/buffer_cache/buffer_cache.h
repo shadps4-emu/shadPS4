@@ -120,10 +120,6 @@ private:
 
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferImpl(VAddr gpu_addr, u32 size,
-                                                           bool is_written,
-                                                           bool is_texel_buffer = false);
-
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     const AmdGpu::Liverpool* liverpool;
