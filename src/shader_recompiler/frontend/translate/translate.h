@@ -189,6 +189,8 @@ public:
     void V_CMP_CLASS_F32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
     void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
+    void V_BFM_B32(const GcnInst& inst);
+    void V_FFBH_U32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst);
