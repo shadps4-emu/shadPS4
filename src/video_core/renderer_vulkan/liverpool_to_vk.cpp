@@ -312,6 +312,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eD32SfloatS8Uint,
         vk::Format::eR4G4B4A4UnormPack16,
         vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eR5G5B5A1UnormPack16,
         vk::Format::eR8G8B8A8Srgb,
         vk::Format::eR8G8B8A8Uint,
         vk::Format::eR8G8B8A8Unorm,
@@ -385,6 +386,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format5_6_5 &&
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eB5G6R5UnormPack16;
+    }
+    if (data_format == AmdGpu::DataFormat::Format1_5_5_5 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eR5G5B5A1UnormPack16;
     }
     if (data_format == AmdGpu::DataFormat::Format8 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8Unorm;

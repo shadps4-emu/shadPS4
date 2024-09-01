@@ -30,7 +30,7 @@ int PS4_SYSV_ABI sceSaveDataDialogInitialize() {
 
 int PS4_SYSV_ABI sceSaveDataDialogIsReadyToDisplay() {
     LOG_ERROR(Lib_SaveDataDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return 1;
 }
 
 int PS4_SYSV_ABI sceSaveDataDialogOpen() {
