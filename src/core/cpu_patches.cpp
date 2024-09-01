@@ -212,7 +212,7 @@ static void RestoreRegisters(Xbyak::CodeGenerator& c,
 }
 
 /// Switches to the patch stack and stores all registers.
-static void SaveContext(Xbyak::CodeGenerator& c) {
+static void SaveContext(Xbyak::CodeGenerator& c, bool save_flags = false) {
     SaveStack(c);
     for (int reg = Xbyak::Operand::RAX; reg <= Xbyak::Operand::R15; reg++) {
         c.push(Xbyak::Reg64(reg));
@@ -221,11 +221,18 @@ static void SaveContext(Xbyak::CodeGenerator& c) {
         c.lea(rsp, ptr[rsp - 32]);
         c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
     }
+    if (save_flags) {
+        c.pushfq();
+    }
 }
 
 /// Restores all registers and restores the original stack.
 /// If the destination is a register, it is not restored to preserve the output.
-static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst) {
+static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
+                           bool restore_flags = false) {
+    if (restore_flags) {
+        c.popfq();
+    }
     for (int reg = 7; reg >= 0; reg--) {
         if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
             c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
@@ -361,9 +368,7 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto float_count = dst.getBit() / 32;
     const auto byte_count = float_count * 4;
 
-    SaveContext(c);
-
-    c.pushfq(); // VCVTPH2PS shouldn't modify flags
+    SaveContext(c, true);
 
     // Allocate stack space for outputs and load into first parameter.
     c.sub(rsp, byte_count);
@@ -399,9 +404,7 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     }
     c.add(rsp, byte_count);
 
-    c.popfq();
-
-    RestoreContext(c, dst);
+    RestoreContext(c, dst, true);
 }
 
 using SingleToHalfFloatConverter = half_float::half (*)(float);
@@ -429,9 +432,7 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto float_count = src.getBit() / 32;
     const auto byte_count = float_count * 4;
 
-    SaveContext(c);
-
-    c.pushfq(); // VCVTPS2PH shouldn't modify flags
+    SaveContext(c, true);
 
     if (dst->isXMM()) {
         // Allocate stack space for outputs and load into first parameter.
@@ -478,9 +479,7 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
         c.add(rsp, byte_count);
     }
 
-    c.popfq();
-
-    RestoreContext(c, *dst);
+    RestoreContext(c, *dst, true);
 }
 
 static bool FilterRosetta2Only(const ZydisDecodedOperand*) {
