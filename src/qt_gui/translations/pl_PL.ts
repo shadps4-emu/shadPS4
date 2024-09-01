@@ -93,7 +93,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Kody / Patche</translation>
+            <translation>Kody / Łatki</translation>
         </message>
         <message>
         	<location filename="../gui_context_menus.h" line="49"/>
@@ -256,7 +256,7 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Pobierz Kody / Patche</translation>
+            <translation>Pobierz Kody / Łatki</translation>
         </message>
         <message>
         	<location filename="../main_window_ui.h" line="345"/>
@@ -821,7 +821,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>CheatsNotFound_MSG</source>
-            <translation>Nie znaleziono kodów do tej gry w tej wersji wybranego repozytorium.Spróbuj innego repozytorium lub innej wersji gry.</translation>
+            <translation>Nie znaleziono kodów do tej gry w tej wersji wybranego repozytorium. Spróbuj innego repozytorium lub innej wersji gry.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="593"/>
