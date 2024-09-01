@@ -6,7 +6,7 @@
         <message>
             <location filename="../about_dialog.ui" line="16"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>Über shadPS4</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="60"/>
@@ -16,12 +16,12 @@
         <message>
             <location filename="../about_dialog.ui" line="78"/>
             <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-            <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+            <translation>shadPS4 ist ein experimenteller Open-Source-Emulator für die Playstation 4.</translation>
         </message>
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>This software should not be used to play games you have not legally obtained.</translation>
+            <translation>Diese Software soll nicht dazu benutzt werden illegal kopierte Spiele zu spielen.</translation>
         </message>
     </context>
     <context>
@@ -29,7 +29,7 @@
         <message>
             <location filename="../elf_viewer.cpp" line="45"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Ordner öffnen</translation>
         </message>
     </context>
     <context>
@@ -37,17 +37,17 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Loading game list, please wait :3</translation>
+            <translation>Lade Spielliste, bitte warten :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Cancel</source>
-            <translation>Cancel</translation>
+            <translation>Abbrechen</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="27"/>
             <source>Loading...</source>
-            <translation>Loading...</translation>
+            <translation>Lade...</translation>
         </message>
     </context>
     <context>
@@ -55,27 +55,27 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="24"/>
             <source>shadPS4 - Choose directory</source>
-            <translation>shadPS4 - Choose directory</translation>
+            <translation>shadPS4 - Wähle Ordner</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Directory to install games</translation>
+            <translation>Installationsverzeichnis für Spiele</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
             <source>Browse</source>
-            <translation>Browse</translation>
+            <translation>Durchsuchen</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="74"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Fehler</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>The value for location to install games is not valid.</translation>
+            <translation>Der ausgewählte Ordner ist nicht gültig.</translation>
         </message>
     </context>
     <context>
@@ -83,12 +83,12 @@
         <message>
             <location filename="../gui_context_menus.h" line="46"/>
             <source>Create Shortcut</source>
-            <translation>Create Shortcut</translation>
+            <translation>Verknüpfung erstellen</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="47"/>
             <source>Open Game Folder</source>
-            <translation>Open Game Folder</translation>
+            <translation>Spieleordner öffnen</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
@@ -98,57 +98,57 @@
         <message>
             <location filename="../gui_context_menus.h" line="49"/>
             <source>SFO Viewer</source>
-            <translation>SFO Viewer</translation>
+            <translation>SFO anzeigen</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="50"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Trophäen anzeigen</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="59"/>
             <source>Copy info</source>
-            <translation>Copy info</translation>
+            <translation>Infos kopieren</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="60"/>
             <source>Copy Name</source>
-            <translation>Copy Name</translation>
+            <translation>Namen kopieren</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
-            <translation>Copy Serial</translation>
+            <translation>Seriennummer kopieren</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="62"/>
             <source>Copy All</source>
-            <translation>Copy All</translation>
+            <translation>Alles kopieren</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="195"/>
             <source>Shortcut creation</source>
-            <translation>Shortcut creation</translation>
+            <translation>Verknüpfungserstellung</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="196"/>
             <source>Shortcut created successfully!\n %1</source>
-            <translation>Shortcut created successfully!\n %1</translation>
+            <translation>Verknüpfung erfolgreich erstellt!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="199"/>
             <source>Error</source>
-            <translation>Error</translation>
+            <translation>Fehler</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="200"/>
             <source>Error creating shortcut!\n %1</source>
-            <translation>Error creating shortcut!\n %1</translation>
+            <translation>Fehler beim Erstellen der Verknüpfung!\n %1</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="275"/>
             <source>Install PKG</source>
-            <translation>Install PKG</translation>
+            <translation>PKG installieren</translation>
         </message>
     </context>
     <context>
@@ -156,102 +156,102 @@
         <message>
             <location filename="../main_window_ui.h" line="310"/>
             <source>Open/Add Elf Folder</source>
-            <translation>Open/Add Elf Folder</translation>
+            <translation>Elf-Ordner öffnen/hinzufügen</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="312"/>
             <source>Install Packages (PKG)</source>
-            <translation>Install Packages (PKG)</translation>
+            <translation>Pakete installieren (PKG)</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="313"/>
             <source>Boot Game</source>
-            <translation>Boot Game</translation>
+            <translation>Spiel starten</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
-            <translation>About shadPS4</translation>
+            <translation>Über shadPS4</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="315"/>
             <source>Configure...</source>
-            <translation>Configure...</translation>
+            <translation>Konfigurieren...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Install application from a .pkg file</translation>
+            <translation>Installiere Anwendung aus .pkg-Datei</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
             <source>Recent Games</source>
-            <translation>Recent Games</translation>
+            <translation>Zuletzt gespielt</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="321"/>
             <source>Exit</source>
-            <translation>Exit</translation>
+            <translation>Beenden</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="323"/>
             <source>Exit shadPS4</source>
-            <translation>Exit shadPS4</translation>
+            <translation>shadPS4 beenden</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Exit the application.</translation>
+            <translation>Die Anwendung beenden.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
             <source>Show Game List</source>
-            <translation>Show Game List</translation>
+            <translation>Spielliste anzeigen</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="332"/>
             <source>Game List Refresh</source>
-            <translation>Game List Refresh</translation>
+            <translation>Spielliste aktualisieren</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="333"/>
             <source>Tiny</source>
-            <translation>Tiny</translation>
+            <translation>Winzig</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="334"/>
             <source>Small</source>
-            <translation>Small</translation>
+            <translation>Klein</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="335"/>
             <source>Medium</source>
-            <translation>Medium</translation>
+            <translation>Mittel</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="336"/>
             <source>Large</source>
-            <translation>Large</translation>
+            <translation>Groß</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="338"/>
             <source>List View</source>
-            <translation>List View</translation>
+            <translation>Listenansicht</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="340"/>
             <source>Grid View</source>
-            <translation>Grid View</translation>
+            <translation>Gitteransicht</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="341"/>
             <source>Elf Viewer</source>
-            <translation>Elf Viewer</translation>
+            <translation>Elf-Ansicht</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Game Install Directory</source>
-            <translation>Game Install Directory</translation>
+            <translation>Installationsverzeichnis für Spiele</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
@@ -261,27 +261,27 @@
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Dump Game List</translation>
+            <translation>Spielliste ausgeben</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
             <source>PKG Viewer</source>
-            <translation>PKG Viewer</translation>
+            <translation>PKG-Ansicht</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="348"/>
             <source>Search...</source>
-            <translation>Search...</translation>
+            <translation>Suchen...</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>File</translation>
+            <translation>Datei</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>View</translation>
+            <translation>Ansicht</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
@@ -291,52 +291,52 @@
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Game List Mode</translation>
+            <translation>Spiellisten-Symoble</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Einstellungen</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utils</translation>
+            <translation>Werkzeuge</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
             <source>Themes</source>
-            <translation>Themes</translation>
+            <translation>Stile</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
             <source>About</source>
-            <translation>About</translation>
+            <translation>Über</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>Dark</translation>
+            <translation>Dunkel</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>Light</translation>
+            <translation>Hell</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
             <source>Green</source>
-            <translation>Green</translation>
+            <translation>Grün</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="362"/>
             <source>Blue</source>
-            <translation>Blue</translation>
+            <translation>Blau</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="363"/>
             <source>Violet</source>
-            <translation>Violet</translation>
+            <translation>Violett</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="364"/>
@@ -349,7 +349,7 @@
         <message>
             <location filename="../pkg_viewer.cpp" line="32"/>
             <source>Open Folder</source>
-            <translation>Open Folder</translation>
+            <translation>Ordner öffnen</translation>
         </message>
     </context>
     <context>
@@ -357,7 +357,7 @@
         <message>
             <location filename="../trophy_viewer.cpp" line="8"/>
             <source>Trophy Viewer</source>
-            <translation>Trophy Viewer</translation>
+            <translation>Trophäenansicht</translation>
         </message>
     </context>
     <context>
@@ -365,12 +365,12 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Settings</translation>
+            <translation>Einstellungen</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
             <source>General</source>
-            <translation>General</translation>
+            <translation>Allgemein</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="77"/>
@@ -380,12 +380,12 @@
         <message>
             <location filename="../settings_dialog.ui" line="83"/>
             <source>Console Language</source>
-            <translation>Console Language</translation>
+            <translation>Konsolensprache</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Emulator Language</translation>
+            <translation>Emulatorsprache</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
@@ -395,22 +395,22 @@
         <message>
             <location filename="../settings_dialog.ui" line="122"/>
             <source>Enable Fullscreen</source>
-            <translation>Enable Fullscreen</translation>
+            <translation>Vollbild aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Show Splash</translation>
+            <translation>Startbildschirm anzeigen</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
             <source>Is PS4 Pro</source>
-            <translation>Is PS4 Pro</translation>
+            <translation>Ist PS4 Pro</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Username</translation>
+            <translation>Benutzername</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
@@ -420,57 +420,57 @@
         <message>
             <location filename="../settings_dialog.ui" line="199"/>
             <source>Log Type</source>
-            <translation>Log Type</translation>
+            <translation>Logtyp</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="235"/>
             <source>Log Filter</source>
-            <translation>Log Filter</translation>
+            <translation>Log-Filter</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="272"/>
             <source>Graphics</source>
-            <translation>Graphics</translation>
+            <translation>Grafik</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="282"/>
             <source>Graphics Device</source>
-            <translation>Graphics Device</translation>
+            <translation>Grafikgerät</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="326"/>
             <source>Width</source>
-            <translation>Width</translation>
+            <translation>Breite</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="357"/>
             <source>Height</source>
-            <translation>Height</translation>
+            <translation>Höhe</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="405"/>
             <source>Vblank Divider</source>
-            <translation>Vblank Divider</translation>
+            <translation>Vblank-Teiler</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="453"/>
             <source>Advanced</source>
-            <translation>Advanced</translation>
+            <translation>Erweitert</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="462"/>
             <source>Enable Shaders Dumping</source>
-            <translation>Enable Shaders Dumping</translation>
+            <translation>Shader-Dumping aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="469"/>
             <source>Enable NULL GPU</source>
-            <translation>Enable NULL GPU</translation>
+            <translation>NULL GPU aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="476"/>
             <source>Enable PM4 Dumping</source>
-            <translation>Enable PM4 Dumping</translation>
+            <translation>PM4-Dumping aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="517"/>
@@ -480,22 +480,22 @@
         <message>
             <location filename="../settings_dialog.ui" line="537"/>
             <source>Enable Debug Dumping</source>
-            <translation>Enable Debug Dumping</translation>
+            <translation>Debug-Dumping aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="560"/>
             <source>Enable Vulkan Validation Layers</source>
-            <translation>Enable Vulkan Validation Layers</translation>
+            <translation>Vulkan Validations-Ebenen aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="567"/>
             <source>Enable Vulkan Synchronization Validation</source>
-            <translation>Enable Vulkan Synchronization Validation</translation>
+            <translation>Vulkan Synchronisations-Validierung aktivieren</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
-            <translation>Enable RenderDoc Debugging</translation>
+            <translation>RenderDoc-Debugging aktivieren</translation>
         </message>
 	</context>
     <context>
@@ -578,7 +578,7 @@
         <message>
         	<location filename="../main_window.cpp" line="647"/>
         	<source>Would you like to overwrite?</source>
-        	<translation>Würden Sie gerne überschreiben?</translation>
+        	<translation>Willst du überschreiben?</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="639"/>
@@ -593,7 +593,7 @@
         <message>
         	<location filename="../main_window.cpp" line="660"/>
         	<source>Would you like to install Patch: </source>
-        	<translation>Möchten Sie den Patch installieren: </translation>
+        	<translation>Willst du den Patch installieren: </translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="673"/>
@@ -603,7 +603,7 @@
         <message>
             <location filename="../main_window.cpp" line="674"/>
             <source>Would you like to install DLC: %1?</source>
-            <translation>Würden Sie gerne DLC installieren: %1?</translation>
+            <translation>Willst du den DLC installieren: %1?</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="688"/>
@@ -623,7 +623,7 @@
         <message>
             <location filename="../main_window.cpp" line="681"/>
             <source>PKG ERROR</source>
-            <translation>PKG-ERROR</translation>
+            <translation>PKG-FEHLER</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="693"/>
@@ -656,7 +656,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Cheats/Patches sind experimentell.\nVerwenden Sie sie mit Vorsicht.\n\nLaden Sie Cheats einzeln herunter, indem Sie das Repository auswählen und auf die Download-Schaltfläche klicken.\nAuf der Registerkarte Patches können Sie alle Patches auf einmal herunterladen, auswählen, welche Sie verwenden möchten, und die Auswahl speichern.\n\nDa wir die Cheats/Patches nicht entwickeln,\nbitte melden Sie Probleme an den Cheat-Autor.\n\nHaben Sie einen neuen Cheat erstellt? Besuchen Sie:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Cheats/Patches sind experimentell.\nVerwende sie mit Vorsicht.\n\nLade Cheats einzeln herunter, indem du das Repository auswählst und auf die Download-Schaltfläche klickst.\nAuf der Registerkarte Patches kannst du alle Patches auf einmal herunterladen, auswählen, welche du verwenden möchtest, und die Auswahl speichern.\n\nDa wir die Cheats/Patches nicht entwickeln,\nbitte melde Probleme an den Cheat-Autor.\n\nHast du einen neuen Cheat erstellt? Besuche:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
@@ -706,12 +706,12 @@
         <message>
             <location filename="../cheats_patches.cpp" line="170"/>
             <source>You can delete the cheats you don't want after downloading them.</source>
-            <translation>Sie können die Cheats, die Sie nicht möchten, nach dem Herunterladen löschen.</translation>
+            <translation>Du kannst die Cheats, die du nicht möchtest, nach dem Herunterladen löschen.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="178"/>
             <source>Do you want to delete the selected file?\n%1</source>
-            <translation>Wollen Sie die ausgewählte Datei löschen?\n%1</translation>
+            <translation>Willst du die ausgewählte Datei löschen?\n%1</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="213"/>
@@ -801,7 +801,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="520"/>
             <source>File already exists. Do you want to replace it?</source>
-            <translation>Datei existiert bereits. Möchten Sie sie ersetzen?</translation>
+            <translation>Datei existiert bereits. Möchtest du sie ersetzen?</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="539"/>
@@ -821,7 +821,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="556"/>
             <source>CheatsNotFound_MSG</source>
-            <translation>Keine Cheats für dieses Spiel in dieser Version des gewählten Repositories gefunden. Versuchen Sie es mit einem anderen Repository oder einer anderen Version des Spiels.</translation>
+            <translation>Keine Cheats für dieses Spiel in dieser Version des gewählten Repositories gefunden. Versuche es mit einem anderen Repository oder einer anderen Version des Spiels.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="593"/>
@@ -831,7 +831,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="594"/>
             <source>CheatsDownloadedSuccessfully_MSG</source>
-            <translation>Sie haben erfolgreich Cheats für diese Version des Spiels aus dem gewählten Repository heruntergeladen. Sie können versuchen, von einem anderen Repository herunterzuladen. Wenn verfügbar, können Sie es auswählen, indem Sie die Datei aus der Liste auswählen.</translation>
+            <translation>Du hast erfolgreich Cheats für diese Version des Spiels aus dem gewählten Repository heruntergeladen. Du kannst auch versuchen, Cheats von einem anderen Repository herunterzuladen. Wenn verfügbar, kannst du sie auswählen, indem du die Datei aus der Liste auswählst.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="747"/>
