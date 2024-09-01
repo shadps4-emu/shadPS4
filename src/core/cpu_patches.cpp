@@ -323,9 +323,26 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
 
     SaveRegisters(c, {scratch});
 
+    Xbyak::Label set_carry, clear_carry, end;
+
+    // BLSMSK sets CF to zero if source is NOT zero, otherwise it sets CF to one.
     c.mov(scratch, *src);
+    c.test(scratch, scratch);
+    c.jz(set_carry);
+    c.jmp(clear_carry);
+
+    c.L(set_carry);
     c.dec(scratch);
     c.xor_(scratch, *src);
+    c.stc();
+    c.jmp(end);
+
+    c.L(clear_carry);
+    c.dec(scratch);
+    c.xor_(scratch, *src);
+    // We don't need to clear carry here since XOR does that for us
+
+    c.L(end);
     c.mov(dst, scratch);
 
     RestoreRegisters(c, {scratch});
