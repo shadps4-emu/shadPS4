@@ -448,7 +448,6 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             const auto tsharp = image_desc.GetSharp(*stage);
             if (tsharp) {
                 tsharps.emplace_back(tsharp);
-                VideoCore::ImageInfo image_info{tsharp};
                 VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
                 VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
                 const auto& image_view = texture_cache.FindTexture(image_info, view_info);

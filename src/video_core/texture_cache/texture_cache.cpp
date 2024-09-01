@@ -209,7 +209,6 @@ ImageId TextureCache::FindImage(const ImageInfo& info) {
             cache_image.info.size == info.size) {
 
             ASSERT(cache_image.info.type == info.type);
-            ASSERT(cache_image.info.num_bits == info.num_bits);
             if (IsVulkanFormatCompatible((VkFormat)info.pixel_format,
                                          (VkFormat)cache_image.info.pixel_format)) {
                 image_id = cache_id;
