@@ -93,7 +93,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="48"/>
             <source>Cheats / Patches</source>
-            <translation>Kody / Łatki</translation>
+            <translation>Kody / poprawki</translation>
         </message>
         <message>
         	<location filename="../gui_context_menus.h" line="49"/>
@@ -251,12 +251,12 @@
         <message>
         	<location filename="../main_window_ui.h" line="343"/>
         	<source>Game Install Directory</source>
-        	<translation>Katalog zainstalowanej gry</translation>
+        	<translation>Katalog zainstalowanych gry</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Pobierz Kody / Łatki</translation>
+            <translation>Pobierz kody / poprawki</translation>
         </message>
         <message>
         	<location filename="../main_window_ui.h" line="345"/>
@@ -349,7 +349,7 @@
         <message>
         	<location filename="../pkg_viewer.cpp" line="32"/>
         	<source>Open Folder</source>
-        	<translation>Open Folder</translation>
+        	<translation>Otwórz folder</translation>
         </message>
 	</context>
 	<context>
@@ -450,7 +450,7 @@
         <message>
         	<location filename="../settings_dialog.ui" line="405"/>
         	<source>Vblank Divider</source>
-        	<translation>Dzielnik pionowego blankingu (Vblank)</translation>
+        	<translation>Dzielnik przerwy pionowej (Vblank)</translation>
         </message>
         <message>
         	<location filename="../settings_dialog.ui" line="453"/>
@@ -563,7 +563,7 @@
         <message>
             <location filename="../main_window.cpp" line="623"/>
             <source>PKG Extraction</source>
-            <translation>Ekstrakcja PKG</translation>
+            <translation>Wypakowywanie PKG</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="646"/>
@@ -628,12 +628,12 @@
         <message>
             <location filename="../main_window.cpp" line="693"/>
             <source>Extracting PKG %1/%2</source>
-            <translation>Ekstrakcja PKG %1/%2</translation>
+            <translation>Wypakowywanie PKG %1/%2</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="703"/>
             <source>Extraction Finished</source>
-            <translation>Ekstrakcja zakończona</translation>
+            <translation>Wypakowywanie zakończone</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="704"/>
@@ -651,7 +651,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="44"/>
             <source>Cheats / Patches</source>
-            <translation>Kody / Poprawki</translation>
+            <translation>Kody / poprawki</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
@@ -771,7 +771,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="432"/>
             <source>Failed to parse XML: </source>
-            <translation>Nie udało się sparsować XML: </translation>
+            <translation>Nie udało się przeanalizować XML: </translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="434"/>
@@ -856,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
             <source>Failed to parse JSON data from HTML.</source>
-            <translation>Nie udało się sparsować danych JSON z HTML.</translation>
+            <translation>Nie udało się przeanalizować danych JSON z HTML.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="778"/>
@@ -896,7 +896,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="1052"/>
             <source>Failed to parse JSON:</source>
-            <translation>Nie udało się sparsować JSON:</translation>
+            <translation>Nie udało się przeanlizować JSON:</translation>
         </message>
     </context>
 </TS>
