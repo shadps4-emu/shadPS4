@@ -742,13 +742,15 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
     bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
-    if (operands[0].type != ZYDIS_OPERAND_TYPE_REGISTER ||
-        operands[1].type != ZYDIS_OPERAND_TYPE_REGISTER) {
-        ASSERT_MSG("operands 0 and 1 must be registers.");
-    }
+    ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+                operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER,
+               "operands 0 and 1 must be registers.");
 
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakRegisterOperand(operands[1]);
+
+    ASSERT_MSG(dst.isXMM() && src.isXMM(), "operands 0 and 1 must be xmm registers.");
+
     Xbyak::Xmm xmm_dst = *reinterpret_cast<const Xbyak::Xmm*>(&dst);
     Xbyak::Xmm xmm_src = *reinterpret_cast<const Xbyak::Xmm*>(&src);
 
@@ -759,16 +761,15 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
             length = 64;
         }
 
-        if (length + index > 64) {
-            ASSERT_MSG("length + index must be less than or equal to 64.");
-        }
+        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
 
         const Xbyak::Reg64 scratch1 = rax;
         const Xbyak::Reg64 scratch2 = rcx;
         const Xbyak::Reg64 mask = rdx;
 
         // Set rsp to before red zone and save scratch registers
-        c.sub(rsp, 128);
+        c.lea(rsp, ptr[rsp - 128]);
+        c.pushfq();
         c.push(scratch1);
         c.push(scratch2);
         c.push(mask);
@@ -804,19 +805,20 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.pop(mask);
         c.pop(scratch2);
         c.pop(scratch1);
-        c.add(rsp, 128);
+        c.popfq();
+        c.lea(rsp, ptr[rsp + 128]);
     } else {
-        if (operands[2].type != ZYDIS_OPERAND_TYPE_UNUSED ||
-            operands[3].type != ZYDIS_OPERAND_TYPE_UNUSED) {
-            ASSERT_MSG("operands 2 and 3 must be unused for register form.");
-        }
+        ASSERT_MSG(operands[2].type == ZYDIS_OPERAND_TYPE_UNUSED &&
+                    operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
+                   "operands 2 and 3 must be unused for register form.");
 
         const Xbyak::Reg64 scratch1 = rax;
         const Xbyak::Reg64 scratch2 = rcx;
         const Xbyak::Reg64 index = rdx;
         const Xbyak::Reg64 mask = rbx;
 
-        c.sub(rsp, 128);
+        c.lea(rsp, ptr[rsp - 128]);
+        c.pushfq();
         c.push(scratch1);
         c.push(scratch2);
         c.push(index);
@@ -869,7 +871,8 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.pop(index);
         c.pop(scratch2);
         c.pop(scratch1);
-        c.add(rsp, 128);
+        c.popfq();
+        c.lea(rsp, ptr[rsp + 128]);
     }
 }
 
