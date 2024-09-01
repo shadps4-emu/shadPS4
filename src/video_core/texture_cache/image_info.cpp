@@ -200,9 +200,19 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Image& image, bool force_depth /*= false*/) noexcept {
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    // Override format if image is forced to be a depth target
+    if (force_depth) {
+        if (pixel_format == vk::Format::eR32Sfloat) {
+            pixel_format = vk::Format::eD32SfloatS8Uint;
+        } else if (pixel_format == vk::Format::eR16Sfloat) {
+            pixel_format = vk::Format::eD16UnormS8Uint;
+        } else {
+            UNREACHABLE();
+        }
+    }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
     props.is_cube = image.GetType() == AmdGpu::ImageType::Cube;

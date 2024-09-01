@@ -386,7 +386,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             .bufferRowLength = static_cast<u32>(mip_pitch),
             .bufferImageHeight = static_cast<u32>(mip_height),
             .imageSubresource{
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
                 .layerCount = num_layers,
