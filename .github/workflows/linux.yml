@@ -31,10 +31,16 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
 
+    - name: Get date and git hash
+      id: vars
+      run: |
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-ubuntu64
+        name: shadps4-ubuntu64-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: |
           ${{github.workspace}}/build/shadps4
 
@@ -44,5 +50,5 @@ jobs:
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-sdl-appimage
+        name: shadps4-sdl-appimage-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: Shadps4-sdl.AppImage

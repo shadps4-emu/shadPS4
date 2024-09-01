@@ -53,8 +53,15 @@ jobs:
         macdeployqt upload/shadps4.app
         tar cf shadps4-macos-qt.tar.gz -C upload .
 
+    - name: Get date and git hash
+      id: vars
+      run: |
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-macos-qt
+        name: shadps4-macos-qt-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: shadps4-macos-qt.tar.gz

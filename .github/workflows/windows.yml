@@ -26,9 +26,16 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
 
+    - name: Get date and git hash
+      id: vars
+      shell: pwsh
+      run: |
+        echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-win64-sdl
+        name: shadps4-win64-sdl-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: |
           ${{github.workspace}}/build/Release/shadPS4.exe
