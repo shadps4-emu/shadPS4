@@ -120,13 +120,17 @@ private:
 
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferImpl(VAddr gpu_addr, u32 size,
+                                                           bool is_written,
+                                                           bool is_texel_buffer = false);
+
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     const AmdGpu::Liverpool* liverpool;
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
-    std::recursive_mutex mutex;
+    std::mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     MemoryTracker memory_tracker;
     PageTable page_table;

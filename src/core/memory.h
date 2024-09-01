@@ -214,11 +214,13 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
+    void UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+
 private:
     AddressSpace impl;
     DMemMap dmem_map;
     VMAMap vma_map;
-    std::recursive_mutex mutex;
+    std::mutex mutex;
     size_t total_direct_size{};
     size_t total_flexible_size{};
     size_t flexible_usage{};
