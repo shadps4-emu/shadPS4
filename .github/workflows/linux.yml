@@ -31,10 +31,14 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
 
+    - name: Retrieve Git Hash
+      id: git-hash
+      run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-ubuntu64
+        name: shadps4-ubuntu64-${{ steps.git-hash.outputs.hash }}
         path: |
           ${{github.workspace}}/build/shadps4
 
@@ -44,5 +48,5 @@ jobs:
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-sdl-appimage
+        name: shadps4-sdl-appimage-${{ steps.git-hash.outputs.hash }}
         path: Shadps4-sdl.AppImage

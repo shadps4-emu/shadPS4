@@ -45,8 +45,12 @@ jobs:
         install_name_tool -add_rpath "@loader_path" upload/shadps4
         tar cf shadps4-macos-sdl.tar.gz -C upload .
 
+    - name: Retrieve Git Hash
+      id: git-hash
+      run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-macos-sdl
+        name: shadps4-macos-sdl-${{ steps.git-hash.outputs.hash }}
         path: shadps4-macos-sdl.tar.gz
