@@ -636,7 +636,7 @@ target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAlloca
 
 if (APPLE)
   # Reserve system-managed memory space.
-  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x400000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
+  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
 
   # Link MoltenVK for Vulkan support
   find_library(MOLTENVK MoltenVK REQUIRED)

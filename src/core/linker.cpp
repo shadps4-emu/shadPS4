@@ -106,6 +106,8 @@ void Linker::Execute() {
             RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
         }
     }
+
+    SetTcbBase(nullptr);
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
