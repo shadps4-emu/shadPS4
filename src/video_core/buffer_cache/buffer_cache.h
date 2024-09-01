@@ -126,7 +126,7 @@ private:
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
-    std::recursive_mutex mutex;
+    std::mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     MemoryTracker memory_tracker;
     PageTable page_table;
