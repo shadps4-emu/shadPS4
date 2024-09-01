@@ -7,8 +7,6 @@
 #include <QPushButton>
 #include <QToolBar>
 
-QT_BEGIN_NAMESPACE
-
 class Ui_MainWindow {
 public:
     QAction* bootInstallPkgAct;
@@ -355,5 +353,3 @@ public:
 namespace Ui {
 class MainWindow : public Ui_MainWindow {};
 } // namespace Ui
-
-QT_END_NAMESPACE

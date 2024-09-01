@@ -14,7 +14,6 @@ struct GameInfo {
     std::string serial = "Unknown";
     std::string version = "Unknown";
     std::string region = "Unknown";
-    std::string category = "Unknown";
     std::string fw = "Unknown";
 };
 
