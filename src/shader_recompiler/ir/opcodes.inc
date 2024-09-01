@@ -340,6 +340,6 @@ OPCODE(ImageAtomicExchange32,                               U32,            Opaq
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(WarpId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
-OPCODE(ReadFirstLane,                                       U32,            U32,            U32                                                             )
+OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
 OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
