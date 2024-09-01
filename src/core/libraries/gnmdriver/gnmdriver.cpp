@@ -348,8 +348,8 @@ static std::string DisassemblePM4(std::span<const u32> cmds) {
                                header->type0.count.Value()));
             for (size_t i = 0; i < header->type0.count.Value(); i++)
                 append(fmt::format("- 0x{:08X}\n", cmds.data()[1 + i]));
-            break;
             cmds = cmds.subspan(header->type0.NumWords() + 1);
+            break;
         case 1:
             UNREACHABLE();
         case 2:
