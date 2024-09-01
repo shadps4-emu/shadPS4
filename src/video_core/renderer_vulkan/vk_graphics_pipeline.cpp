@@ -408,9 +408,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& tex_buffer : stage->texture_buffers) {
             const auto vsharp = tex_buffer.GetSharp(*stage);
             vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
-            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+            const u32 size = vsharp.GetSize();
+            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
                 const VAddr address = vsharp.base_address;
-                const u32 size = vsharp.GetSize();
                 const u32 alignment = instance.TexelBufferMinAlignment();
                 const auto [vk_buffer, offset] =
                     buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written, true);

@@ -154,9 +154,9 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     for (const auto& desc : info->texture_buffers) {
         const auto vsharp = desc.GetSharp(*info);
         vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
-        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+        const u32 size = vsharp.GetSize();
+        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
             const VAddr address = vsharp.base_address;
-            const u32 size = vsharp.GetSize();
             if (desc.is_written) {
                 if (texture_cache.TouchMeta(address, true)) {
                     LOG_TRACE(Render_Vulkan, "Metadata update skipped");
