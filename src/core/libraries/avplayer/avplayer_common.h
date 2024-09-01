@@ -58,12 +58,13 @@ template <class T>
 class AvPlayerQueue {
 public:
     size_t Size() {
-        return m_queue.size();
+        return m_size;
     }
 
     void Push(T&& value) {
         std::lock_guard guard(m_mutex);
         m_queue.emplace(std::forward<T>(value));
+        ++m_size;
     }
 
     std::optional<T> Pop() {
@@ -71,18 +72,24 @@ public:
             return std::nullopt;
         }
         std::lock_guard guard(m_mutex);
+        if (Size() == 0) { // in case size changes while the mutex is being locked
+            return std::nullopt;
+        }
         auto result = std::move(m_queue.front());
         m_queue.pop();
+        --m_size;
         return result;
     }
 
     void Clear() {
         std::lock_guard guard(m_mutex);
         m_queue = {};
+        m_size = 0;
     }
 
 private:
     std::mutex m_mutex{};
+    std::atomic_size_t m_size{0};
     std::queue<T> m_queue{};
 };
 
