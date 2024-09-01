@@ -67,9 +67,13 @@ public:
         RefreshImage(image, custom_scheduler);
         TrackImage(image_id);
     }
-    
+
     [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
                                          ImageId merged_image_id);
+
+    /// Resolves depth overlap and either re-creates the image or returns existing one
+    [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info,
+                                              ImageId cache_img_id);
 
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 

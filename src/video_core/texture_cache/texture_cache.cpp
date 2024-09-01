@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <optional>
 #include <xxhash.h>
 #include "common/assert.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
 
@@ -59,6 +61,32 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     }
 }
 
+ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, ImageId cache_image_id) {
+    const auto& cache_info = slot_images[cache_image_id].info;
+
+    const bool was_bound_as_texture =
+        !cache_info.usage.depth_target && (cache_info.usage.texture || cache_info.usage.storage);
+    if (requested_info.usage.depth_target && was_bound_as_texture) {
+        auto new_image_id = slot_images.insert(instance, scheduler, requested_info);
+        RegisterImage(new_image_id);
+
+        // auto& new_image = slot_images[new_image_id];
+        // TODO: need to run a helper for depth copy here
+
+        FreeImage(cache_image_id);
+        return new_image_id;
+    }
+
+    const bool should_bind_as_texture =
+        !requested_info.usage.depth_target &&
+        (requested_info.usage.texture || requested_info.usage.storage);
+    if (cache_info.usage.depth_target && should_bind_as_texture) {
+        return cache_image_id;
+    }
+
+    return {};
+}
+
 ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_image_id,
                                      ImageId merged_image_id) {
     auto& tex_cache_image = slot_images[cache_image_id];
@@ -73,6 +101,10 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
                 FreeImage(cache_image_id);
             }
             return merged_image_id;
+        }
+
+        if (auto depth_image_id = ResolveDepthOverlap(image_info, cache_image_id)) {
+            return depth_image_id;
         }
 
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
@@ -178,7 +210,10 @@ ImageId TextureCache::FindImage(const ImageInfo& info) {
 
             ASSERT(cache_image.info.type == info.type);
             ASSERT(cache_image.info.num_bits == info.num_bits);
-            image_id = cache_id;
+            if (IsVulkanFormatCompatible((VkFormat)info.pixel_format,
+                                         (VkFormat)cache_image.info.pixel_format)) {
+                image_id = cache_id;
+            }
             break;
         }
     }
