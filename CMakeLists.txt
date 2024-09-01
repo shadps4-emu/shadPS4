@@ -855,6 +855,7 @@ if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
         MACOSX_BUNDLE ON
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in"
         MACOSX_BUNDLE_ICON_FILE shadPS4.icns)
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
