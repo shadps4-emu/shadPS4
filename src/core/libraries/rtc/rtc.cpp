@@ -66,54 +66,54 @@ int PS4_SYSV_ABI sceRtcCompareTick(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2) {
     return ORBIS_FAIL;
 }
 
-int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2) {
+int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc(OrbisRtcTick* pTickLocal, OrbisRtcTick* pTickUtc) {
     LOG_TRACE(Lib_Rtc, "called");
 
-    if (pTick1 == nullptr)
+    if (pTickLocal == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
     time_t seconds;
     Kernel::OrbisKernelTimezone timezone;
 
     int convertValue = Kernel::sceKernelConvertLocaltimeToUtc(
-        (pTick1->tick + 0xff23400100d44000U) / 1000000, 0xffffffff, &seconds, &timezone, 0);
+        (pTickLocal->tick + 0xff23400100d44000U) / 1000000, 0xffffffff, &seconds, &timezone, 0);
 
     if (convertValue >= 0) {
         convertValue = sceRtcTickAddMinutes(
-            pTick2, pTick1, -((timezone.tz_dsttime + timezone.tz_minuteswest) / 0x3c));
+            pTickUtc, pTickLocal, -((timezone.tz_dsttime + timezone.tz_minuteswest) / 0x3c));
     }
 
     return convertValue;
 }
 
-int PS4_SYSV_ABI sceRtcConvertUtcToLocalTime(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2) {
+int PS4_SYSV_ABI sceRtcConvertUtcToLocalTime(OrbisRtcTick* pTickUtc, OrbisRtcTick* pTickLocal) {
     LOG_TRACE(Lib_Rtc, "called");
 
-    if (pTick1 == nullptr)
+    if (pTickUtc == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
     time_t seconds;
     Kernel::OrbisTimesec timezone;
 
     int convertValue = Kernel::sceKernelConvertUtcToLocaltime(
-        (pTick1->tick + 0xff23400100d44000U) / 1000000, &seconds, &timezone, 0);
+        (pTickUtc->tick + 0xff23400100d44000U) / 1000000, &seconds, &timezone, 0);
 
     if (convertValue >= 0) {
         auto newTime = ((timezone.dst_sec + timezone.west_sec) / 0x3c) * 60000000;
 
-        if (pTick2 == nullptr)
+        if (pTickLocal == nullptr)
             return ORBIS_RTC_ERROR_INVALID_POINTER;
 
         if (newTime < 0) {
-            if (pTick1->tick < -newTime) {
+            if (pTickUtc->tick < -newTime) {
                 return ORBIS_RTC_ERROR_INVALID_VALUE;
             }
         } else {
-            if ((pTick1->tick + newTime) < pTick1->tick) {
+            if ((pTickUtc->tick + newTime) < pTickUtc->tick) {
                 return ORBIS_RTC_ERROR_INVALID_VALUE;
             }
         }
-        pTick2->tick = pTick1->tick + newTime;
+        pTickLocal->tick = pTickUtc->tick + newTime;
         convertValue = 0;
     }
 
@@ -124,32 +124,34 @@ int PS4_SYSV_ABI sceRtcEnd() {
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC2822() {
+int PS4_SYSV_ABI sceRtcFormatRFC2822(char* pszDateTime, const OrbisRtcTick* pTickUtc, int minutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC2822LocalTime() {
+int PS4_SYSV_ABI sceRtcFormatRFC2822LocalTime(char* pszDateTime, const OrbisRtcTick* pTickUtc) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC3339() {
+int PS4_SYSV_ABI sceRtcFormatRFC3339(char* pszDateTime, const OrbisRtcTick* pTickUtc, int minutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC3339LocalTime() {
+int PS4_SYSV_ABI sceRtcFormatRFC3339LocalTime(char* pszDateTime, const OrbisRtcTick* pTickUtc) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC3339Precise() {
+int PS4_SYSV_ABI sceRtcFormatRFC3339Precise(char* pszDateTime, const OrbisRtcTick* pTickUtc,
+                                            int minutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC3339PreciseLocalTime() {
+int PS4_SYSV_ABI sceRtcFormatRFC3339PreciseLocalTime(char* pszDateTime,
+                                                     const OrbisRtcTick* pTickUtc) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -172,7 +174,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentAdNetworkTick(OrbisRtcTick* pTick) {
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int minutesToAdd) {
+int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
@@ -185,7 +187,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int minutesToAdd
         OrbisRtcTick clockTick;
         clockTick.tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
 
-        sceRtcTickAddMinutes(&clockTick, &clockTick, minutesToAdd);
+        sceRtcTickAddMinutes(&clockTick, &clockTick, timeZone);
         sceRtcSetTick(pTime, &clockTick);
     }
 
@@ -292,7 +294,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick) {
     return returnValue;
 }
 
-int PS4_SYSV_ABI sceRtcGetDayOfWeek() {
+int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -316,7 +318,7 @@ int PS4_SYSV_ABI sceRtcGetDaysInMonth(int iYear, int iMonth) {
     return lastDay;
 }
 
-int PS4_SYSV_ABI sceRtcGetDosTime() {
+int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, unsigned int* dosTime) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -356,18 +358,18 @@ int PS4_SYSV_ABI sceRtcGetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick) {
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcGetTickResolution() {
+unsigned int PS4_SYSV_ABI sceRtcGetTickResolution() {
     LOG_TRACE(Lib_Rtc, "called");
 
     return 1000000;
 }
 
-int PS4_SYSV_ABI sceRtcGetTime_t() {
+int PS4_SYSV_ABI sceRtcGetTime_t(OrbisRtcDateTime* pTime, time_t* llTime) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcGetWin32FileTime() {
+int PS4_SYSV_ABI sceRtcGetWin32FileTime(OrbisRtcDateTime* pTime, uint64_t* ulWin32Time) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -388,12 +390,12 @@ int PS4_SYSV_ABI sceRtcIsLeapYear(int yearInt) {
     return (ymdl.day() == 29d);
 }
 
-int PS4_SYSV_ABI sceRtcParseDateTime() {
+int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDateTime) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcParseRFC3339() {
+int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateTime) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -492,7 +494,7 @@ int PS4_SYSV_ABI sceRtcSetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick) {
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, u64 iTime) {
+int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, time_t llTime) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
@@ -506,12 +508,12 @@ int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, u64 iTime) {
 
     OrbisRtcTick newTick;
     if (sdk_version < 0x3000000) {
-        newTick.tick = (iTime & 0xffffffff) * 1000000;
+        newTick.tick = (llTime & 0xffffffff) * 1000000;
     } else {
-        if (iTime < 0) {
+        if (llTime < 0) {
             return ORBIS_RTC_ERROR_INVALID_VALUE;
         }
-        newTick.tick = iTime * 1000000;
+        newTick.tick = llTime * 1000000;
     }
 
     newTick.tick += 0xdcbffeff2bc000;
@@ -520,13 +522,13 @@ int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, u64 iTime) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, u64 win32Time) {
+int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, uint64_t ulWin32Time) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    u64 convertedTime = (win32Time / 10) + 0xb36168b6a58000;
+    u64 convertedTime = (ulWin32Time / 10) + 0xb36168b6a58000;
 
     OrbisRtcTick convertedTick;
     convertedTick.tick = convertedTime;
@@ -536,59 +538,57 @@ int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, u64 win32Time) 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddDays(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingDays) {
+int PS4_SYSV_ABI sceRtcTickAddDays(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (addingDays * 86400000000) + pTick2->tick;
+    pTick1->tick = (lAdd * 86400000000) + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddHours(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingHours) {
+int PS4_SYSV_ABI sceRtcTickAddHours(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (addingHours * 3600000000) + pTick2->tick;
+    pTick1->tick = (lAdd * 3600000000) + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddMicroseconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
-                                           s64 addingMicroseconds) {
+int PS4_SYSV_ABI sceRtcTickAddMicroseconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = addingMicroseconds + pTick2->tick;
+    pTick1->tick = lAdd + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddMinutes(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
-                                      s64 addingMinutes) {
+int PS4_SYSV_ABI sceRtcTickAddMinutes(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (addingMinutes * 60000000) + pTick2->tick;
+    pTick1->tick = (lAdd * 60000000) + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingMonths) {
+int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    if (addingMonths == 0) {
+    if (lAdd == 0) {
         pTick1->tick = pTick2->tick;
         return 0;
     }
@@ -599,14 +599,14 @@ int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
 
     sceRtcSetTick(&time, pTick1);
 
-    if (addingMonths >= 0) {
+    if (lAdd >= 0) {
         s = 1;
     } else {
         s = -1;
     }
 
-    time.year += (addingMonths / 12);
-    tempMonth = time.month + (addingMonths % 12) - 1;
+    time.year += (lAdd / 12);
+    tempMonth = time.month + (lAdd % 12) - 1;
 
     if (tempMonth > 11 || tempMonth < 0) {
         tempMonth -= s * 12;
@@ -635,41 +635,40 @@ int PS4_SYSV_ABI sceRtcTickAddMonths(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddSeconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
-                                      s64 addingSeconds) {
+int PS4_SYSV_ABI sceRtcTickAddSeconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (addingSeconds * 1000000) + pTick2->tick;
+    pTick1->tick = (lAdd * 1000000) + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddTicks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 addingTicks) {
+int PS4_SYSV_ABI sceRtcTickAddTicks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s64 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = addingTicks + pTick2->tick;
+    pTick1->tick = lAdd + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddWeeks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 addingWeeks) {
+int PS4_SYSV_ABI sceRtcTickAddWeeks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s32 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (addingWeeks * 0x8cd0e3a000) + pTick2->tick;
+    pTick1->tick = (lAdd * 0x8cd0e3a000) + pTick2->tick;
 
     return 0;
 }
 
-int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s16 addingYears) {
+int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, s16 lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick1 == nullptr || pTick2 == nullptr)
@@ -677,14 +676,14 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
 
     OrbisRtcDateTime time;
 
-    if (addingYears == 0) {
+    if (lAdd == 0) {
         pTick1->tick = pTick2->tick;
         return 0;
     }
 
     sceRtcSetTick(&time, pTick1);
 
-    time.year += addingYears;
+    time.year += lAdd;
 
     u64 timeIsValid = sceRtcCheckValid(&time);
     if (timeIsValid == 0) {
