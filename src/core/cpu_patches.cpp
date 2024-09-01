@@ -218,7 +218,7 @@ static void SaveContext(Xbyak::CodeGenerator& c) {
         c.push(Xbyak::Reg64(reg));
     }
     for (int reg = 0; reg <= 7; reg++) {
-        c.sub(rsp, 32);
+        c.lea(rsp, ptr[rsp - 32]);
         c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
     }
 }
@@ -230,13 +230,13 @@ static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst) {
         if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
             c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
         }
-        c.add(rsp, 32);
+        c.lea(rsp, ptr[rsp + 32]);
     }
     for (int reg = Xbyak::Operand::R15; reg >= Xbyak::Operand::RAX; reg--) {
         if (!dst.isREG() || dst.getIdx() != reg) {
             c.pop(Xbyak::Reg64(reg));
         } else {
-            c.add(rsp, 8);
+            c.lea(rsp, ptr[rsp + 8]);
         }
     }
     RestoreStack(c);
@@ -363,6 +363,8 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 
     SaveContext(c);
 
+    c.pushfq(); // VCVTPH2PS shouldn't modify flags
+
     // Allocate stack space for outputs and load into first parameter.
     c.sub(rsp, byte_count);
     c.mov(rdi, rsp);
@@ -397,6 +399,8 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     }
     c.add(rsp, byte_count);
 
+    c.popfq();
+
     RestoreContext(c, dst);
 }
 
@@ -426,6 +430,8 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto byte_count = float_count * 4;
 
     SaveContext(c);
+
+    c.pushfq(); // VCVTPS2PH shouldn't modify flags
 
     if (dst->isXMM()) {
         // Allocate stack space for outputs and load into first parameter.
@@ -471,6 +477,8 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
         c.movdqu(*reinterpret_cast<Xbyak::Xmm*>(dst.get()), ptr[rsp]);
         c.add(rsp, byte_count);
     }
+
+    c.popfq();
 
     RestoreContext(c, *dst);
 }
