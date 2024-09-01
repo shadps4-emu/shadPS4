@@ -22,8 +22,10 @@ struct Tcb {
     void* tcb_thread;
 };
 
+#ifdef _WIN32
 /// Gets the thread local storage key for the TCB block.
 u32 GetTcbKey();
+#endif
 
 /// Sets the data pointer to the TCB block.
 void SetTcbBase(void* image_address);

@@ -499,13 +499,14 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
 
 static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto slot = GetTcbKey();
 
 #if defined(_WIN32)
     // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
     static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
     static constexpr u32 TlsMinimumAvailable = 64;
+
+    const auto slot = GetTcbKey();
 
     // Load the pointer to the table of TLS slots.
     c.putSeg(gs);
@@ -520,11 +521,6 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
         // Load the pointer to our buffer.
         c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
     }
-#elif defined(__APPLE__)
-    // The following logic is based on the Darwin implementation of _os_tsd_get_direct, used by
-    // pthread_getspecific https://github.com/apple/darwin-xnu/blob/main/libsyscall/os/tsd.h#L89-L96
-    c.putSeg(gs);
-    c.mov(dst, qword[reinterpret_cast<void*>(slot * sizeof(void*))]);
 #else
     const auto src = ZydisToXbyakMemoryOperand(operands[1]);
 
@@ -548,10 +544,10 @@ struct PatchInfo {
 };
 
 static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
-#if defined(_WIN32) || defined(__APPLE__)
-    // Windows and Apple need a trampoline.
+#if defined(_WIN32)
+    // Windows needs a trampoline.
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, true}},
-#else
+#elif !defined(__APPLE__)
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, false}},
 #endif
 

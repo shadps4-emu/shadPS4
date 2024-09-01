@@ -18,6 +18,7 @@
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
+#include "core/tls.h"
 #ifdef _WIN64
 #include <windows.h>
 #else
@@ -987,6 +988,7 @@ static void cleanup_thread(void* arg) {
             destructor(value);
         }
     }
+    Core::SetTcbBase(nullptr);
     thread->is_almost_done = true;
 }
 
