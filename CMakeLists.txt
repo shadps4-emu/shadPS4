@@ -17,6 +17,18 @@ endif()
 
 project(shadPS4)
 
+# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
+if(UNIX AND NOT APPLE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+    # check PIE support at link time
+    include(CheckPIESupported)
+    check_pie_supported(OUTPUT_VARIABLE pie_check LANGUAGES C CXX)
+    if(NOT CMAKE_C_LINK_PIE_SUPPORTED OR NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
+        message(WARNING "PIE is not supported at link time: ${pie_check}")
+    endif()
+endif()
+
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
 # This function should be passed a list of all files in a target. It will automatically generate file groups
@@ -151,7 +163,7 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB 
+set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.cpp
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
@@ -347,7 +359,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/cpu_patches.cpp
          src/core/cpu_patches.h
          src/core/crypto/crypto.cpp
-         src/core/crypto/crypto.h 
+         src/core/crypto/crypto.h
          src/core/crypto/keys.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
@@ -372,7 +384,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/loader/elf.h
          src/core/loader/symbols_resolver.h
          src/core/loader/symbols_resolver.cpp
-         src/core/libraries/error_codes.h  
+         src/core/libraries/error_codes.h
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
          ${AUDIO_LIB}
