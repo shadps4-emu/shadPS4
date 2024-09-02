@@ -25,14 +25,14 @@ struct BufferSpecialization {
 };
 
 struct TextureBufferSpecialization {
-    bool is_integer;
+    bool is_integer = false;
 
     auto operator<=>(const TextureBufferSpecialization&) const = default;
 };
 
 struct ImageSpecialization {
-    AmdGpu::ImageType type;
-    bool is_integer;
+    AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
+    bool is_integer = false;
 
     auto operator<=>(const ImageSpecialization&) const = default;
 };
