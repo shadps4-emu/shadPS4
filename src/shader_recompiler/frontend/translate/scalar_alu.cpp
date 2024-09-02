@@ -511,9 +511,9 @@ void Translator::S_BREV_B32(const GcnInst& inst) {
 void Translator::S_ADD_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IAdd(src0, src1));
-    // TODO: Carry out
-    ir.SetScc(ir.Imm1(false));
+    const IR::U32 result = ir.IAdd(src0, src1);
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.ILessThan(result, src0, false));
 }
 
 void Translator::S_SUB_U32(const GcnInst& inst) {
