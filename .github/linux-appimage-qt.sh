@@ -24,11 +24,6 @@ chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
 
-# Copy SSL libraries
-mkdir -p AppDir/usr/lib
-cp /usr/lib/x86_64-linux-gnu/libssl.so* AppDir/usr/lib/
-cp /usr/lib/x86_64-linux-gnu/libcrypto.so* AppDir/usr/lib/
-
 cp -a "$GITHUB_WORKSPACE/build/translations" AppDir/usr/bin
 
 ./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/.github/shadps4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/.github/shadps4.png --plugin qt --output appimage
