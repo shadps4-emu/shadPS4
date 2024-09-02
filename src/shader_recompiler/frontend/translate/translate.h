@@ -95,6 +95,7 @@ public:
     void S_NOT_B64(const GcnInst& inst);
     void S_BREV_B32(const GcnInst& inst);
     void S_ADD_U32(const GcnInst& inst);
+    void S_SUB_I32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
