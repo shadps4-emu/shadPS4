@@ -165,7 +165,7 @@ public:
 
     int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 
-    int DirectMemoryQuery(PAddr addr, bool find_next, 
+    int DirectMemoryQuery(PAddr addr, bool find_next,
                           ::Libraries::Kernel::OrbisQueryInfo* out_info);
 
     int DirectQueryAvailable(PAddr search_start, PAddr search_end, size_t alignment,
