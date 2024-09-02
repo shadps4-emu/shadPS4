@@ -308,6 +308,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     const auto& vma = it->second;
     info->start = vma.base;
     info->end = vma.base + vma.size;
+    info->offset = vma.phys_base;
     info->protection = static_cast<s32>(vma.prot);
     info->is_flexible.Assign(vma.type == VMAType::Flexible);
     info->is_direct.Assign(vma.type == VMAType::Direct);
@@ -318,8 +319,9 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
         ASSERT(dmem_it != dmem_map.end());
-        info->offset = vma.phys_base;
         info->memory_type = dmem_it->second.memory_type;
+    } else {
+        info->memory_type = ::Libraries::Kernel::SCE_KERNEL_WB_ONION;
     }
 
     return ORBIS_OK;
