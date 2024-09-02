@@ -9,7 +9,7 @@
 #include "common/config.h"
 #include "common/version.h"
 #include "core/libraries/pad/pad.h"
-#include "imgui_renderer/imgui_core.h"
+#include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
@@ -81,7 +81,7 @@ void WindowSDL::waitEvent() {
         return;
     }
 
-    if (ImGui::Emulator::ProcessEvent(&event)) {
+    if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
 
@@ -120,7 +120,7 @@ void WindowSDL::waitEvent() {
 
 void WindowSDL::onResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
-    ImGui::Emulator::OnResize();
+    ImGui::Core::OnResize();
 }
 
 void WindowSDL::onKeyPress(const SDL_Event* event) {

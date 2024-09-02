@@ -4,6 +4,7 @@
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
 #include "common/config.h"
+#include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
@@ -14,22 +15,32 @@ static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
 }
 
-namespace ImGui::Emulator {
+static std::vector<ImGui::Layer*> layers;
+
+// Update layers before rendering to allow layer changes to be applied during rendering.
+// Using deque to keep the order of changes in case a Layer is removed then added again between
+// frames.
+static std::deque<std::pair<bool, ImGui::Layer*>> change_layers;
+static std::mutex change_layers_mutex{};
+
+namespace ImGui {
+
+namespace Core {
 
 void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& window,
                 const u32 image_count, vk::Format surface_format,
                 const vk::AllocationCallbacks* allocator) {
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    CreateContext();
+    ImGuiIO& io = GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
-    ImGui::StyleColorsDark();
+    StyleColorsDark();
 
     Sdl::Init(window.GetSdlWindow());
 
-    Vulkan::InitInfo vk_info{
+    const Vulkan::InitInfo vk_info{
         .instance = instance.GetInstance(),
         .physical_device = instance.GetPhysicalDevice(),
         .device = instance.GetDevice(),
@@ -48,7 +59,6 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
 }
 
 void OnResize() {
-    ImGuiIO& io = ImGui::GetIO();
     Sdl::OnResize();
 }
 
@@ -57,11 +67,11 @@ void Shutdown(const vk::Device& device) {
 
     Vulkan::Shutdown();
     Sdl::Shutdown();
-    ImGui::DestroyContext();
+    DestroyContext();
 }
 
 bool ProcessEvent(SDL_Event* event) {
-    bool used = Sdl::ProcessEvent(event);
+    const bool used = Sdl::ProcessEvent(event);
     if (!used) {
         return false;
     }
@@ -70,34 +80,43 @@ bool ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        return ImGui::GetIO().WantCaptureMouse;
+        return GetIO().WantCaptureMouse;
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP:
-        return ImGui::GetIO().WantCaptureKeyboard;
+        return GetIO().WantCaptureKeyboard;
     default:
         return false;
     }
 }
 
 void NewFrame() {
+    {
+        std::scoped_lock lock{change_layers_mutex};
+        while (!change_layers.empty()) {
+            const auto [to_be_added, layer] = change_layers.front();
+            if (to_be_added) {
+                layers.push_back(layer);
+            } else {
+                const auto [begin, end] = std::ranges::remove(layers, layer);
+                layers.erase(begin, end);
+            }
+            change_layers.pop_front();
+        }
+    }
+
     Vulkan::NewFrame();
     Sdl::NewFrame();
-    const auto& io = ImGui::GetIO();
-
     ImGui::NewFrame();
 
-    ImGui::ShowDemoWindow();
-    if (ImGui::Begin("Frame timings")) {
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate,
-                    io.Framerate);
-        ImGui::End();
+    for (auto* layer : layers) {
+        layer->Draw();
     }
 }
 
 void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
     ImGui::Render();
-    ImDrawData* draw_data = ImGui::GetDrawData();
+    ImDrawData* draw_data = GetDrawData();
     if (draw_data->CmdListsCount == 0) {
         return;
     }
@@ -150,4 +169,16 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
     }
 }
 
-} // namespace ImGui::Emulator
+} // namespace Core
+
+void Layer::AddLayer(Layer* layer) {
+    std::scoped_lock lock{change_layers_mutex};
+    change_layers.emplace_back(true, layer);
+}
+
+void Layer::RemoveLayer(Layer* layer) {
+    std::scoped_lock lock{change_layers_mutex};
+    change_layers.emplace_back(false, layer);
+}
+
+} // namespace ImGui

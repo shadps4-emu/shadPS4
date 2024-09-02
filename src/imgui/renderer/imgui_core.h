@@ -12,7 +12,7 @@ namespace Vulkan {
 struct Frame;
 }
 
-namespace ImGui::Emulator {
+namespace ImGui::Core {
 
 void Initialize(const Vulkan::Instance& instance, const Frontend::WindowSDL& window,
                 u32 image_count, vk::Format surface_format,
@@ -28,4 +28,4 @@ void NewFrame();
 
 void Render(const vk::CommandBuffer& cmdbuf, Vulkan::Frame* frame);
 
-} // namespace ImGui::Emulator
+} // namespace ImGui::Core

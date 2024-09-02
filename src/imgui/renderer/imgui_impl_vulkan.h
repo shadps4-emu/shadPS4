@@ -6,7 +6,7 @@
 #pragma once
 
 #define VULKAN_HPP_NO_EXCEPTIONS
-#include <video_core/renderer_vulkan/vk_common.h>
+#include "video_core/renderer_vulkan/vk_common.h"
 
 struct ImDrawData;
 
