@@ -272,7 +272,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                                     int* numEntriesOut, int flags) {
     int result = ORBIS_OK;
     int processed = 0;
-    int result = 0;
     for (int i = 0; i < numEntries; i++) {
         if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
             result = ORBIS_KERNEL_ERROR_EINVAL;
@@ -298,7 +297,8 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 
             if (result == 0)
                 processed++;
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT) {
+        } 
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
             result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
             LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
                      i, entries[i].operation, entries[i].length, result);
@@ -309,7 +309,9 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             if (result == 0) {
                 processed++;
             }
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT) {
+        } 
+        
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
             result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
                                            entries[i].protection);
             LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
@@ -321,7 +323,9 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             if (result == 0) {
                 processed++;
             }
-        } else if (entries[i].operation == MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE) {
+        } 
+        
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
             LOG_INFO(Kernel_Vmm,
@@ -330,14 +334,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                      i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
             break;
         }
-        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
-            // By now, ignore protection and log it instead
-            LOG_WARNING(Kernel_Vmm,
-                        "entry = {}, operation = {}, len = {:#x}, type = {} "
-                        "is UNSUPPORTED and skipped",
-                        i, entries[i].operation, entries[i].length, (u8)entries[i].type);
-            break;
-        }
+
         default: {
             UNREACHABLE();
         }
