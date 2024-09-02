@@ -309,6 +309,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             if (result == 0) {
                 processed++;
             }
+            break;
         } 
         
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
@@ -323,6 +324,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             if (result == 0) {
                 processed++;
             }
+            break;
         } 
         
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
