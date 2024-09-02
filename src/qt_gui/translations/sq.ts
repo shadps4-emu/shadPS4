@@ -716,7 +716,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="213"/>
             <source>Select Patch File:</source>
-            <translation>Përzgjidhni Skedarin e Arnës:</translation>
+            <translation>Përzgjidh Skedarin e Arnës:</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="241"/>
