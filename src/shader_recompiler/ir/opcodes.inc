@@ -60,12 +60,14 @@ OPCODE(GetExec,                                            U1,             Void,
 OPCODE(GetVcc,                                             U1,             Void,                                                                            )
 OPCODE(GetVccLo,                                           U32,            Void,                                                                            )
 OPCODE(GetVccHi,                                           U32,            Void,                                                                            )
+OPCODE(GetM0,                                              U32,            Void,                                                                            )
 OPCODE(SetScc,                                             Void,           U1,                                                                              )
 OPCODE(SetExec,                                            Void,           U1,                                                                              )
 OPCODE(SetVcc,                                             Void,           U1,                                                                              )
 OPCODE(SetSccLo,                                           Void,           U32,                                                                             )
 OPCODE(SetVccLo,                                           Void,           U32,                                                                             )
 OPCODE(SetVccHi,                                           Void,           U32,                                                                             )
+OPCODE(SetM0,                                              Void,           U32,                                                                             )
 
 // Undefined
 OPCODE(UndefU1,                                             U1,                                                                                             )

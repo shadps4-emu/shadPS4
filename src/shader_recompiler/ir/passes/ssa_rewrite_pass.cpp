@@ -33,6 +33,7 @@ struct ExecFlagTag : FlagTag {};
 struct VccFlagTag : FlagTag {};
 struct VccLoTag : FlagTag {};
 struct VccHiTag : FlagTag {};
+struct M0Tag : FlagTag {};
 
 struct GotoVariable : FlagTag {
     GotoVariable() = default;
@@ -44,7 +45,7 @@ struct GotoVariable : FlagTag {
 };
 
 using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, SccFlagTag, ExecFlagTag,
-                             VccFlagTag, VccLoTag, VccHiTag>;
+                             VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -103,6 +104,12 @@ struct DefTable {
     void SetDef(IR::Block* block, VccFlagTag, const IR::Value& value) {
         vcc_flag.insert_or_assign(block, value);
     }
+    const IR::Value& Def(IR::Block* block, M0Tag) {
+        return m0_flag[block];
+    }
+    void SetDef(IR::Block* block, M0Tag, const IR::Value& value) {
+        m0_flag.insert_or_assign(block, value);
+    }
 
     std::unordered_map<u32, ValueMap> goto_vars;
     ValueMap scc_flag;
@@ -111,6 +118,7 @@ struct DefTable {
     ValueMap scc_lo_flag;
     ValueMap vcc_lo_flag;
     ValueMap vcc_hi_flag;
+    ValueMap m0_flag;
 };
 
 IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
@@ -126,6 +134,10 @@ IR::Opcode UndefOpcode(const VccLoTag) noexcept {
 }
 
 IR::Opcode UndefOpcode(const VccHiTag) noexcept {
+    return IR::Opcode::UndefU32;
+}
+
+IR::Opcode UndefOpcode(const M0Tag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
@@ -330,6 +342,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetVccHi:
         pass.WriteVariable(VccHiTag{}, block, inst.Arg(0));
         break;
+    case IR::Opcode::SetM0:
+        pass.WriteVariable(M0Tag{}, block, inst.Arg(0));
+        break;
     case IR::Opcode::GetThreadBitScalarReg:
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
@@ -361,6 +376,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::GetVccHi:
         inst.ReplaceUsesWith(pass.ReadVariable(VccHiTag{}, block));
+        break;
+    case IR::Opcode::GetM0:
+        inst.ReplaceUsesWith(pass.ReadVariable(M0Tag{}, block));
         break;
     default:
         break;
