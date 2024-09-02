@@ -411,8 +411,13 @@ void Translator::V_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
     const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.IAdd(src0, src1));
-    // TODO: Carry
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    ir.SetVectorReg(dst_reg, result);
+    const IR::U32 sign_mask{ir.Imm32(1 << 31)};
+    const IR::U32 sign0{ir.BitwiseAnd(src0, sign_mask)};
+    const IR::U32 sign1{ir.BitwiseAnd(src1, sign_mask)};
+    const IR::U32 signr{ir.BitwiseAnd(result, sign_mask)};
+    ir.SetVcc(ir.LogicalAnd(ir.IEqual(sign0, sign1), ir.INotEqual(sign0, signr)));
 }
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
