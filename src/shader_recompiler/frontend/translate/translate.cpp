@@ -445,7 +445,6 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
 }
 
 void Translator::LogMissingOpcode(const GcnInst& inst) {
-    const u32 opcode = u32(inst.opcode);
     LOG_ERROR(Render_Recompiler, "Unknown opcode {} ({}, category = {})",
               magic_enum::enum_name(inst.opcode), u32(inst.opcode),
               magic_enum::enum_name(inst.category));

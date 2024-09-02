@@ -16,6 +16,14 @@
 namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
+static constexpr size_t MaxColorBuffers = 8;
+
+enum class MrtSwizzle : u32 {
+    Identity = 0,
+    Alt = 1,
+    Reverse = 2,
+    ReverseAlt = 3,
+};
 
 enum class Stage : u32 {
     Fragment,
@@ -162,6 +170,7 @@ struct Info {
         u32 default_value;
     };
     boost::container::static_vector<PsInput, 32> ps_inputs{};
+    std::array<MrtSwizzle, MaxColorBuffers> mrt_swizzles;
 
     struct AttributeFlags {
         bool Get(IR::Attribute attrib, u32 comp = 0) const {
