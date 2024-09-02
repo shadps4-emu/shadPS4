@@ -69,6 +69,10 @@ public:
     void EmitScalarAlu(const GcnInst& inst);
     void EmitVectorAlu(const GcnInst& inst);
 
+    // Instruction encodings
+    void EmitSOPC(const GcnInst& inst);
+    void EmitSOPK(const GcnInst& inst);
+
     // Scalar ALU
     void S_MOVK(const GcnInst& inst);
     void S_MOV(const GcnInst& inst);
@@ -98,6 +102,7 @@ public:
     void S_ADDK_I32(const GcnInst& inst);
     void S_MAX_U32(const GcnInst& inst);
     void S_MIN_U32(const GcnInst& inst);
+    void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
@@ -116,6 +121,7 @@ public:
     void V_AND_B32(const GcnInst& inst);
     void V_LSHLREV_B32(const GcnInst& inst);
     void V_LSHL_B32(const GcnInst& inst);
+    void V_LSHL_B64(const GcnInst& inst);
     void V_ADD_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
@@ -183,10 +189,14 @@ public:
     void V_CMP_CLASS_F32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
     void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
+    void V_BFM_B32(const GcnInst& inst);
+    void V_FFBH_U32(const GcnInst& inst);
 
     // Vector Memory
-    void BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
-    void BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format, const GcnInst& inst);
+    void BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst);
+    void BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst);
+    void BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst);
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Vector interpolation
@@ -196,10 +206,10 @@ public:
     // Data share
     void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
-    void DS_WRITE(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
+    void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_ADD_U32(const GcnInst& inst, bool rtn);
-    void DS_MIN_U32(const GcnInst& inst, bool rtn);
-    void DS_MAX_U32(const GcnInst& inst, bool rtn);
+    void DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn);
+    void DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn);
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);

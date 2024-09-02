@@ -7,7 +7,7 @@
 namespace Shader::Gcn {
 
 u32 GcnInst::BranchTarget(u32 pc) const {
-    const s16 simm = static_cast<s16>(control.sopp.simm * 4);
+    const s32 simm = static_cast<s32>(control.sopp.simm) * 4;
     const u32 target = pc + simm + 4;
     return target;
 }
@@ -43,6 +43,20 @@ bool GcnInst::IsConditionalBranch() const {
         return true;
     default:
         break;
+    }
+    return false;
+}
+
+bool GcnInst::IsCmpx() const {
+    if ((opcode >= Opcode::V_CMPX_F_F32 && opcode <= Opcode::V_CMPX_T_F32) ||
+        (opcode >= Opcode::V_CMPX_F_F64 && opcode <= Opcode::V_CMPX_T_F64) ||
+        (opcode >= Opcode::V_CMPSX_F_F32 && opcode <= Opcode::V_CMPSX_T_F32) ||
+        (opcode >= Opcode::V_CMPSX_F_F64 && opcode <= Opcode::V_CMPSX_T_F64) ||
+        (opcode >= Opcode::V_CMPX_F_I32 && opcode <= Opcode::V_CMPX_CLASS_F32) ||
+        (opcode >= Opcode::V_CMPX_F_I64 && opcode <= Opcode::V_CMPX_CLASS_F64) ||
+        (opcode >= Opcode::V_CMPX_F_U32 && opcode <= Opcode::V_CMPX_T_U32) ||
+        (opcode >= Opcode::V_CMPX_F_U64 && opcode <= Opcode::V_CMPX_T_U64)) {
+        return true;
     }
     return false;
 }

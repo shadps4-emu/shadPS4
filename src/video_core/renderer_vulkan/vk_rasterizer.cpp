@@ -10,6 +10,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
+#include "vk_rasterizer.h"
 
 namespace Vulkan {
 
@@ -27,6 +28,19 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 }
 
 Rasterizer::~Rasterizer() = default;
+
+void Rasterizer::CpSync() {
+    scheduler.EndRendering();
+    auto cmdbuf = scheduler.CommandBuffer();
+
+    const vk::MemoryBarrier ib_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eDrawIndirect,
+                           vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
+}
 
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
@@ -51,13 +65,56 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     BeginRendering();
     UpdateDynamicState(*pipeline);
 
+    const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
+
     if (is_indexed) {
-        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, 0, 0);
+        cmdbuf.drawIndexed(num_indices, regs.num_instances.NumInstances(), 0, s32(vertex_offset),
+                           instance_offset);
     } else {
         const u32 num_vertices = regs.primitive_type == AmdGpu::Liverpool::PrimitiveType::RectList
                                      ? 4
                                      : regs.num_indices;
-        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), 0, 0);
+        cmdbuf.draw(num_vertices, regs.num_instances.NumInstances(), vertex_offset,
+                    instance_offset);
+    }
+}
+
+void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 size) {
+    RENDERER_TRACE;
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto& regs = liverpool->regs;
+    const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
+    if (!pipeline) {
+        return;
+    }
+
+    ASSERT_MSG(regs.primitive_type != AmdGpu::Liverpool::PrimitiveType::RectList,
+               "Unsupported primitive type for indirect draw");
+
+    try {
+        pipeline->BindResources(regs, buffer_cache, texture_cache);
+    } catch (...) {
+        UNREACHABLE();
+    }
+
+    const auto& vs_info = pipeline->GetStage(Shader::Stage::Vertex);
+    buffer_cache.BindVertexBuffers(vs_info);
+    const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
+
+    BeginRendering();
+    UpdateDynamicState(*pipeline);
+
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
+    const auto total_offset = base + offset;
+
+    // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
+    // instance offsets will be automatically applied by Vulkan from indirect args buffer.
+
+    if (is_indexed) {
+        cmdbuf.drawIndexedIndirect(buffer->Handle(), total_offset, 1, 0);
+    } else {
+        cmdbuf.drawIndirect(buffer->Handle(), total_offset, 1, 0);
     }
 }
 
@@ -83,6 +140,32 @@ void Rasterizer::DispatchDirect() {
     scheduler.EndRendering();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+}
+
+void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
+    RENDERER_TRACE;
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto& cs_program = liverpool->regs.cs_program;
+    const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
+    if (!pipeline) {
+        return;
+    }
+
+    try {
+        const auto has_resources = pipeline->BindResources(buffer_cache, texture_cache);
+        if (!has_resources) {
+            return;
+        }
+    } catch (...) {
+        UNREACHABLE();
+    }
+
+    scheduler.EndRendering();
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
+    const auto total_offset = base + offset;
+    cmdbuf.dispatchIndirect(buffer->Handle(), total_offset);
 }
 
 u64 Rasterizer::Flush() {
@@ -129,8 +212,12 @@ void Rasterizer::BeginRendering() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), false);
     }
 
-    if (regs.depth_buffer.z_info.format != Liverpool::DepthBuffer::ZFormat::Invalid &&
-        regs.depth_buffer.Address() != 0) {
+    using ZFormat = AmdGpu::Liverpool::DepthBuffer::ZFormat;
+    using StencilFormat = AmdGpu::Liverpool::DepthBuffer::StencilFormat;
+    if (regs.depth_buffer.Address() != 0 &&
+        ((regs.depth_control.depth_enable && regs.depth_buffer.z_info.format != ZFormat::Invalid) ||
+         (regs.depth_control.stencil_enable &&
+          regs.depth_buffer.stencil_info.format != StencilFormat::Invalid))) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const bool is_clear = regs.depth_render_control.depth_clear_enable ||
                               texture_cache.IsMetaCleared(htile_address);
@@ -152,8 +239,10 @@ void Rasterizer::BeginRendering() {
                                                           .stencil = regs.stencil_clear}},
         };
         texture_cache.TouchMeta(htile_address, false);
-        state.has_depth = true;
-        state.has_stencil = image.info.usage.stencil;
+        state.has_depth =
+            regs.depth_buffer.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid;
+        state.has_stencil = regs.depth_buffer.stencil_info.format !=
+                            AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
     scheduler.BeginRendering(state);
 }
@@ -232,7 +321,7 @@ void Rasterizer::UpdateDepthStencilState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -243,7 +332,7 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
 }
 
 void Rasterizer::ScopeMarkerEnd() {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -252,7 +341,7 @@ void Rasterizer::ScopeMarkerEnd() {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (!Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
         return;
     }
 
@@ -263,7 +352,7 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
 }
 
 void Rasterizer::Breadcrumb(u64 id) {
-    if (!instance.HasNvCheckpoints()) {
+    if (Config::nullGpu() || !instance.HasNvCheckpoints()) {
         return;
     }
     scheduler.CommandBuffer().setCheckpointNV(id);

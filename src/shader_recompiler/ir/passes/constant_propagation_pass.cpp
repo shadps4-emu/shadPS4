@@ -250,6 +250,18 @@ void FoldCmpClass(IR::Inst& inst) {
     }
 }
 
+void FoldReadLane(IR::Inst& inst) {
+    const u32 lane = inst.Arg(1).U32();
+    IR::Inst* prod = inst.Arg(0).InstRecursive();
+    while (prod->GetOpcode() == IR::Opcode::WriteLane) {
+        if (prod->Arg(2).U32() == lane) {
+            inst.ReplaceUsesWith(prod->Arg(1));
+            return;
+        }
+        prod = prod->Arg(0).InstRecursive();
+    }
+}
+
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::IAdd32:
@@ -289,6 +301,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::SelectF32:
     case IR::Opcode::SelectF64:
         return FoldSelect(inst);
+    case IR::Opcode::ReadLane:
+        return FoldReadLane(inst);
     case IR::Opcode::FPNeg32:
         FoldWhenAllImmediates(inst, [](f32 a) { return -a; });
         return;
@@ -338,8 +352,14 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::BitwiseAnd32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a & b; });
         return;
+    case IR::Opcode::BitwiseAnd64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a & b; });
+        return;
     case IR::Opcode::BitwiseOr32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a | b; });
+        return;
+    case IR::Opcode::BitwiseOr64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a | b; });
         return;
     case IR::Opcode::BitwiseXor32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a ^ b; });

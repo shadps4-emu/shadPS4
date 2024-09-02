@@ -13,7 +13,7 @@ namespace Core::AeroLib {
 // on lookup, setting up the nid_entry they are matched with
 //
 // If it runs out of stubs with name information, it will return
-// a default implemetnation without function name details
+// a default implementation without function name details
 
 // Up to 512, larger values lead to more resolve stub slots
 // and to longer compile / CI times

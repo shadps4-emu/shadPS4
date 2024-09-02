@@ -28,7 +28,7 @@ jobs:
         host: windows
         target: desktop
         arch: win64_msvc2019_64
-        archives: qtbase
+        archives: qtbase qttools
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
@@ -41,9 +41,16 @@ jobs:
         mkdir upload
         move build/Release/shadPS4.exe upload
         windeployqt --dir upload upload/shadPS4.exe
+        
+    - name: Get date and git hash
+      id: vars
+      shell: pwsh
+      run: |
+        echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
 
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
-        name: shadps4-win64-qt
+        name: shadps4-win64-qt-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: upload

@@ -56,9 +56,6 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferF32x3:
     case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferFormatF32:
-    case Opcode::StoreBufferFormatF32x2:
-    case Opcode::StoreBufferFormatF32x3:
-    case Opcode::StoreBufferFormatF32x4:
     case Opcode::StoreBufferU32:
     case Opcode::BufferAtomicIAdd32:
     case Opcode::BufferAtomicSMin32:
@@ -70,7 +67,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicAnd32:
     case Opcode::BufferAtomicOr32:
     case Opcode::BufferAtomicXor32:
-    case Opcode::BufferAtomicExchange32:
+    case Opcode::BufferAtomicSwap32:
     case Opcode::WriteSharedU128:
     case Opcode::WriteSharedU64:
     case Opcode::WriteSharedU32:

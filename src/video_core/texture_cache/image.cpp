@@ -73,14 +73,15 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
         if (!info.IsBlockCoded() && !info.IsPacked()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
+
+        // In cases where an image is created as a render/depth target and cleared with compute,
+        // we cannot predict whether it will be used as a storage image. A proper solution would
+        // involve re-creating the resource with a new configuration and copying previous content
+        // into it. However, for now, we will set storage usage for all images (if the format
+        // allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set by default.
+        usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
-    // In cases where an image is created as a render/depth target and cleared with compute,
-    // we cannot predict whether it will be used as a storage image. A proper solution would
-    // involve re-creating the resource with a new configuration and copying previous content into
-    // it. However, for now, we will set storage usage for all images (if the format allows),
-    // sacrificing a bit of performance. Note use of ExtendedUsage flag set by default.
-    usage |= vk::ImageUsageFlagBits::eStorage;
     return usage;
 }
 
@@ -131,11 +132,19 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     usage = ImageUsageFlags(info);
 
-    if (info.pixel_format == vk::Format::eD32Sfloat) {
+    switch (info.pixel_format) {
+    case vk::Format::eD16Unorm:
+    case vk::Format::eD32Sfloat:
+    case vk::Format::eX8D24UnormPack32:
         aspect_mask = vk::ImageAspectFlagBits::eDepth;
-    }
-    if (info.pixel_format == vk::Format::eD32SfloatS8Uint) {
+        break;
+    case vk::Format::eD16UnormS8Uint:
+    case vk::Format::eD24UnormS8Uint:
+    case vk::Format::eD32SfloatS8Uint:
         aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        break;
+    default:
+        break;
     }
 
     const vk::ImageCreateInfo image_ci = {

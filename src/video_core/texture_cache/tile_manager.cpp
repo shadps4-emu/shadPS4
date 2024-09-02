@@ -187,6 +187,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eR32Uint:
     case vk::Format::eR16G16Sfloat:
     case vk::Format::eR16G16Unorm:
+    case vk::Format::eB10G11R11UfloatPack32:
         return vk::Format::eR32Uint;
     case vk::Format::eBc1RgbaSrgbBlock:
     case vk::Format::eBc1RgbaUnormBlock:
@@ -202,6 +203,7 @@ vk::Format DemoteImageFormatForDetiling(vk::Format format) {
     case vk::Format::eBc3SrgbBlock:
     case vk::Format::eBc3UnormBlock:
     case vk::Format::eBc5UnormBlock:
+    case vk::Format::eBc5SnormBlock:
     case vk::Format::eBc7SrgbBlock:
     case vk::Format::eBc7UnormBlock:
     case vk::Format::eBc6HUfloatBlock:
@@ -249,11 +251,11 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
-static constexpr size_t StreamBufferSize = 128_MB;
+static constexpr size_t StreamBufferSize = 1_GB;
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler},
-      stream_buffer{instance, scheduler, MemoryUsage::Stream, StreamBufferSize} {
+      stream_buffer{instance, scheduler, MemoryUsage::Upload, StreamBufferSize} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
@@ -342,12 +344,6 @@ TileManager::ScratchBuffer TileManager::AllocBuffer(u32 size, bool is_storage /*
         .usage = usage,
     };
 
-#ifdef __APPLE__
-    // Fix for detiler artifacts on macOS
-    const bool is_large_buffer = true;
-#else
-    const bool is_large_buffer = size > 128_MB;
-#endif
     VmaAllocationCreateInfo alloc_info{
         .flags = !is_storage ? VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
                                    VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
@@ -462,7 +458,6 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
                           (m > 0 ? params.sizes[m - 1] : 0);
     }
 
-    auto pitch = image.info.pitch;
     cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
                          &params);
 

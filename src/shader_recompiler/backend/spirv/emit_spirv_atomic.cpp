@@ -102,7 +102,7 @@ Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicXor);
 }
 
-Id EmitBufferAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicExchange);
 }
 

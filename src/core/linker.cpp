@@ -10,6 +10,7 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/cpu_patches.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/linker.h"
@@ -68,14 +69,23 @@ void Linker::Execute() {
     }
 
     // Configure used flexible memory size.
-    // if (auto* mem_param = GetProcParam()->mem_param) {
-    //      if (u64* flexible_size = mem_param->flexible_memory_size) {
-    //          memory->SetTotalFlexibleSize(*flexible_size);
-    //      }
-    //  }
+    if (const auto* proc_param = GetProcParam()) {
+        if (proc_param->size >=
+            offsetof(OrbisProcParam, mem_param) + sizeof(OrbisKernelMemParam*)) {
+            if (const auto* mem_param = proc_param->mem_param) {
+                if (mem_param->size >=
+                    offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
+                    if (const auto* flexible_size = mem_param->flexible_memory_size) {
+                        memory->SetupMemoryRegions(*flexible_size);
+                    }
+                }
+            }
+        }
+    }
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+    InitializeThreadPatchStack();
     Libraries::Kernel::pthreadInitSelfMainThread();
     InitTlsForThread(true);
 
@@ -96,6 +106,8 @@ void Linker::Execute() {
             RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
         }
     }
+
+    SetTcbBase(nullptr);
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -168,7 +180,7 @@ void Linker::Relocate(Module* module) {
             auto sym_bind = sym.GetBind();
             auto sym_type = sym.GetType();
             auto sym_visibility = sym.GetVisibility();
-            u64 symbol_vitrual_addr = 0;
+            u64 symbol_virtual_addr = 0;
             Loader::SymbolRecord symrec{};
             switch (sym_type) {
             case STT_FUN:
@@ -185,12 +197,12 @@ void Linker::Relocate(Module* module) {
             }
 
             if (sym_visibility != 0) {
-                LOG_INFO(Core_Linker, "symbol visilibity !=0");
+                LOG_INFO(Core_Linker, "symbol visibility !=0");
             }
 
             switch (sym_bind) {
             case STB_LOCAL:
-                symbol_vitrual_addr = rel_base_virtual_addr + sym.st_value;
+                symbol_virtual_addr = rel_base_virtual_addr + sym.st_value;
                 module->SetRelaBit(bit_idx);
                 break;
             case STB_GLOBAL:
@@ -200,14 +212,14 @@ void Linker::Relocate(Module* module) {
                     // Only set the rela bit if the symbol was actually resolved and not stubbed.
                     module->SetRelaBit(bit_idx);
                 }
-                symbol_vitrual_addr = symrec.virtual_address;
+                symbol_virtual_addr = symrec.virtual_address;
                 break;
             }
             default:
                 ASSERT_MSG(0, "unknown bind type {}", sym_bind);
             }
-            rel_is_resolved = (symbol_vitrual_addr != 0);
-            rel_value = (rel_is_resolved ? symbol_vitrual_addr + addend : 0);
+            rel_is_resolved = (symbol_virtual_addr != 0);
+            rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
             rel_name = symrec.name;
             break;
         }

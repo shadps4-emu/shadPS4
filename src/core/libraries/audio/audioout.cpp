@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
-#include <common/assert.h>
 #include <magic_enum.hpp>
+
 #include "audio_core/sdl_audio.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/error_codes.h"

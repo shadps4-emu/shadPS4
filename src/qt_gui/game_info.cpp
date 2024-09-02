@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <future>
-#include <thread>
 #include <QProgressDialog>
-#include <QtConcurrent/QtConcurrent>
 
 #include "game_info.h"
 
@@ -26,8 +23,8 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
               }).results();
 
     // Progress bar, please be patient :)
-    QProgressDialog dialog("Loading game list, please wait :3", "Cancel", 0, 0, parent);
-    dialog.setWindowTitle("Loading...");
+    QProgressDialog dialog(tr("Loading game list, please wait :3"), tr("Cancel"), 0, 0, parent);
+    dialog.setWindowTitle(tr("Loading..."));
 
     QFutureWatcher<void> futureWatcher;
     GameListUtils game_util;

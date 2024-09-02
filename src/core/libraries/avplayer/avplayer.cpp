@@ -40,9 +40,11 @@ int PS4_SYSV_ABI sceAvPlayerChangeStream() {
 s32 PS4_SYSV_ABI sceAvPlayerClose(SceAvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     delete handle;
+    LOG_TRACE(Lib_AvPlayer, "returning ORBIS_OK");
     return ORBIS_OK;
 }
 
@@ -257,6 +259,7 @@ s32 PS4_SYSV_ABI sceAvPlayerStart(SceAvPlayerHandle handle) {
 s32 PS4_SYSV_ABI sceAvPlayerStop(SceAvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     const auto res = handle->Stop();

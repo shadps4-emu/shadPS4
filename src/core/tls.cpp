@@ -9,7 +9,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__APPLE__)
-#include <pthread.h>
+#include <architecture/i386/table.h>
+#include <boost/icl/interval_set.hpp>
+#include <i386/user_ldt.h>
+#include <sys/mman.h>
 #endif
 
 namespace Core {
@@ -17,9 +20,15 @@ namespace Core {
 #ifdef _WIN32
 
 static DWORD slot = 0;
+static std::once_flag slot_alloc_flag;
 
 static void AllocTcbKey() {
     slot = TlsAlloc();
+}
+
+u32 GetTcbKey() {
+    std::call_once(slot_alloc_flag, &AllocTcbKey);
+    return slot;
 }
 
 void SetTcbBase(void* image_address) {
@@ -33,26 +42,97 @@ Tcb* GetTcbBase() {
 
 #elif defined(__APPLE__)
 
-static pthread_key_t slot = 0;
+// Reserve space in the 32-bit address range for allocating TCB pages.
+asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
 
-static void AllocTcbKey() {
-    ASSERT(pthread_key_create(&slot, nullptr) == 0);
+static constexpr u64 ldt_region_base = 0x4000;
+static constexpr u64 ldt_region_size = 0x3FC000;
+static constexpr u16 ldt_block_size = 0x1000;
+static constexpr u16 ldt_index_base = 8;
+static constexpr u16 ldt_index_total = (ldt_region_size - ldt_region_base) / ldt_block_size;
+
+static boost::icl::interval_set<u16> free_ldts{};
+static std::mutex free_ldts_lock;
+static std::once_flag ldt_region_init_flag;
+
+static u16 GetLdtIndex() {
+    sel_t selector;
+    asm volatile("mov %%fs, %0" : "=r"(selector));
+    return selector.index;
+}
+
+static void InitLdtRegion() {
+    const void* result =
+        mmap(reinterpret_cast<void*>(ldt_region_base), ldt_region_size, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    ASSERT_MSG(result != MAP_FAILED, "Failed to map memory region for LDT entries.");
+
+    free_ldts +=
+        boost::icl::interval<u16>::right_open(ldt_index_base, ldt_index_base + ldt_index_total);
+}
+
+static void** SetupThreadLdt() {
+    std::call_once(ldt_region_init_flag, InitLdtRegion);
+
+    // Allocate a new LDT index for the current thread.
+    u16 ldt_index;
+    {
+        std::unique_lock lock{free_ldts_lock};
+        ASSERT_MSG(!free_ldts.empty(), "Out of LDT space.");
+        ldt_index = first(*free_ldts.begin());
+        free_ldts -= ldt_index;
+    }
+    const u64 addr = ldt_region_base + (ldt_index - ldt_index_base) * ldt_block_size;
+
+    // Create an LDT entry for the TCB.
+    const ldt_entry ldt{.data{
+        .base00 = static_cast<u16>(addr),
+        .base16 = static_cast<u8>(addr >> 16),
+        .base24 = static_cast<u8>(addr >> 24),
+        .limit00 = static_cast<u16>(ldt_block_size - 1),
+        .limit16 = 0,
+        .type = DESC_DATA_WRITE,
+        .dpl = 3,     // User accessible
+        .present = 1, // Segment present
+        .stksz = DESC_DATA_32B,
+        .granular = DESC_GRAN_BYTE,
+    }};
+    int ret = i386_set_ldt(ldt_index, &ldt, 1);
+    ASSERT_MSG(ret == ldt_index,
+               "Failed to set LDT for TLS area: expected {}, but syscall returned {}", ldt_index,
+               ret);
+
+    // Set the FS segment to the created LDT.
+    const sel_t sel{
+        .rpl = USER_PRIV,
+        .ti = SEL_LDT,
+        .index = ldt_index,
+    };
+    asm volatile("mov %0, %%fs" ::"r"(sel));
+
+    return reinterpret_cast<void**>(addr);
+}
+
+static void FreeThreadLdt() {
+    std::unique_lock lock{free_ldts_lock};
+    free_ldts += GetLdtIndex();
 }
 
 void SetTcbBase(void* image_address) {
-    ASSERT(pthread_setspecific(GetTcbKey(), image_address) == 0);
+    if (image_address != nullptr) {
+        *SetupThreadLdt() = image_address;
+    } else {
+        FreeThreadLdt();
+    }
 }
 
 Tcb* GetTcbBase() {
-    return reinterpret_cast<Tcb*>(pthread_getspecific(GetTcbKey()));
+    Tcb* tcb;
+    asm volatile("mov %%fs:0x0, %0" : "=r"(tcb));
+    return tcb;
 }
 
 #else
-
-// Placeholder for code compatibility.
-static constexpr u32 slot = 0;
-
-static void AllocTcbKey() {}
 
 void SetTcbBase(void* image_address) {
     asm volatile("wrgsbase %0" ::"r"(image_address) : "memory");
@@ -65,12 +145,5 @@ Tcb* GetTcbBase() {
 }
 
 #endif
-
-static std::once_flag slot_alloc_flag;
-
-u32 GetTcbKey() {
-    std::call_once(slot_alloc_flag, &AllocTcbKey);
-    return slot;
-}
 
 } // namespace Core

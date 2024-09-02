@@ -10,6 +10,7 @@
 #include <mutex>
 #include <span>
 #include <thread>
+#include <vector>
 #include <queue>
 
 #include "common/assert.h"
@@ -166,7 +167,7 @@ struct Liverpool {
     static constexpr auto* GetBinaryInfo(const Shader& sh) {
         const auto* code = sh.template Address<u32*>();
         const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
+        // ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
         return bininfo;
     }
 
@@ -556,7 +557,7 @@ struct Liverpool {
         union {
             BitField<0, 15, s32> top_left_x;
             BitField<15, 15, s32> top_left_y;
-            BitField<30, 1, s32> window_offset_disble;
+            BitField<30, 1, s32> window_offset_disable;
         };
         union {
             BitField<0, 15, s32> bottom_right_x;
@@ -848,6 +849,7 @@ struct Liverpool {
         u32 raw;
         BitField<0, 1, u32> depth_clear_enable;
         BitField<1, 1, u32> stencil_clear_enable;
+        BitField<5, 1, u32> stencil_compress_disable;
         BitField<6, 1, u32> depth_compress_disable;
     };
 
@@ -1016,6 +1018,8 @@ struct Liverpool {
             }
             return nullptr;
         }
+
+        void SetDefaults();
     };
 
     Regs regs{};
@@ -1044,6 +1048,8 @@ public:
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};
+        mapped_queues[GfxQueueId].ccb_buffer_offset = 0;
+        mapped_queues[GfxQueueId].dcb_buffer_offset = 0;
         submit_done = true;
         submit_cv.notify_one();
     }
@@ -1105,6 +1111,8 @@ private:
         Handle handle;
     };
 
+    std::pair<std::span<const u32>, std::span<const u32>> CopyCmdBuffers(std::span<const u32> dcb,
+                                                                         std::span<const u32> ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     Task ProcessCompute(std::span<const u32> acb, int vqid);
@@ -1113,8 +1121,13 @@ private:
 
     struct GpuQueue {
         std::mutex m_access{};
+        std::atomic<u32> dcb_buffer_offset;
+        std::atomic<u32> ccb_buffer_offset;
+        std::vector<u32> dcb_buffer;
+        std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
+        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
 

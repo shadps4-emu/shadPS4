@@ -91,7 +91,7 @@ Id EmitBufferAtomicDec32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
-Id EmitBufferAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
@@ -286,6 +286,7 @@ Id EmitShiftRightLogical64(EmitContext& ctx, Id base, Id shift);
 Id EmitShiftRightArithmetic32(EmitContext& ctx, Id base, Id shift);
 Id EmitShiftRightArithmetic64(EmitContext& ctx, Id base, Id shift);
 Id EmitBitwiseAnd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
+Id EmitBitwiseAnd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseOr32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseOr64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseXor32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
@@ -387,8 +388,8 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const
                   Id lod, Id ms);
 Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips);
 Id EmitImageQueryLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords);
-Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords,
-                     Id derivatives, const IR::Value& offset, Id lod_clamp);
+Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id derivatives,
+                     const IR::Value& offset, Id lod_clamp);
 Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, const IR::Value& index, Id coords);
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id color);
 
@@ -407,5 +408,8 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
+Id EmitReadFirstLane(EmitContext& ctx, Id value);
+Id EmitReadLane(EmitContext& ctx, Id value, u32 lane);
+Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane);
 
 } // namespace Shader::Backend::SPIRV

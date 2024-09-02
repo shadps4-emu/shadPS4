@@ -3,12 +3,13 @@
 
 #include <span>
 #include <vector>
-#include <common/path_util.h>
-#include <common/singleton.h>
-#include <core/file_format/psf.h>
-#include <core/file_sys/fs.h>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
+#include "common/singleton.h"
+#include "core/file_format/psf.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/savedata.h"
@@ -505,8 +506,11 @@ s32 saveDataMount(u32 user_id, char* dir_name, u32 mount_mode,
         ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
         ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF |
-        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
+        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
+        ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF | ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
         if (std::filesystem::exists(mount_dir)) {
             return ORBIS_SAVE_DATA_ERROR_EXISTS;
         }
@@ -516,9 +520,13 @@ s32 saveDataMount(u32 user_id, char* dir_name, u32 mount_mode,
             mount_result->mount_status = 1;
         }
     } break;
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
     case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
-        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
+        ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON:
+    case ORBIS_SAVE_DATA_MOUNT_MODE_CREATE2 | ORBIS_SAVE_DATA_MOUNT_MODE_RDWR |
+        ORBIS_SAVE_DATA_MOUNT_MODE_DESTRUCT_OFF | ORBIS_SAVE_DATA_MOUNT_MODE_COPY_ICON: {
         if (!std::filesystem::exists(mount_dir)) {
             std::filesystem::create_directories(mount_dir);
         }

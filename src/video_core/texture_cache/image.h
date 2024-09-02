@@ -43,9 +43,9 @@ struct UniqueImage {
     UniqueImage& operator=(const UniqueImage&) = delete;
 
     UniqueImage(UniqueImage&& other)
-        : image{std::exchange(other.image, VK_NULL_HANDLE)},
-          allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
-          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)} {}
+        : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
+          allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
+          image{std::exchange(other.image, VK_NULL_HANDLE)} {}
     UniqueImage& operator=(UniqueImage&& other) {
         image = std::exchange(other.image, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);

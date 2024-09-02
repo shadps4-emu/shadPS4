@@ -178,7 +178,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 20> enabled_extensions;
+    boost::container::static_vector<const char*, 25> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -210,19 +210,22 @@ bool Instance::CreateDevice() {
     color_write_en &= add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     const bool calibrated_timestamps = add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+    const bool topology_restart =
+        add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-    const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
-    if (has_sync2) {
-        has_nv_checkpoints = Config::isMarkersEnabled()
-                                 ? add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME)
-                                 : false;
+    if (Config::isMarkersEnabled()) {
+        const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+        if (has_sync2) {
+            has_nv_checkpoints = add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME);
+        }
     }
 
 #ifdef __APPLE__
@@ -272,8 +275,10 @@ bool Instance::CreateDevice() {
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,
+                .depthBiasClamp = features.depthBiasClamp,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
+                .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
                 .fragmentStoresAndAtomics = features.fragmentStoresAndAtomics,
                 .shaderImageGatherExtended = features.shaderImageGatherExtended,
                 .shaderStorageImageExtendedFormats = features.shaderStorageImageExtendedFormats,
@@ -295,6 +300,9 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceMaintenance4FeaturesKHR{
             .maintenance4 = true,
+        },
+        vk::PhysicalDeviceMaintenance5FeaturesKHR{
+            .maintenance5 = true,
         },
         vk::PhysicalDeviceDynamicRenderingFeaturesKHR{
             .dynamicRendering = true,
@@ -330,6 +338,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
             .vertexInputDynamicState = true,
         },
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
+            .primitiveTopologyListRestart = true,
+        },
 #ifdef __APPLE__
         feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>(),
 #endif
@@ -337,6 +348,9 @@ bool Instance::CreateDevice() {
 
     if (!maintenance4) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
+    }
+    if (!maintenance5) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance5FeaturesKHR>();
     }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
@@ -350,6 +364,9 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (!topology_restart) {
+        device_chain.unlink<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     }
     if (robustness) {
         device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =
@@ -481,6 +498,8 @@ bool Instance::IsFormatSupported(const vk::Format format) const {
 vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
     if (format == vk::Format::eB5G6R5UnormPack16) {
         return vk::Format::eR5G6B5UnormPack16;
+    } else if (format == vk::Format::eD16UnormS8Uint) {
+        return vk::Format::eD24UnormS8Uint;
     }
     return format;
 }

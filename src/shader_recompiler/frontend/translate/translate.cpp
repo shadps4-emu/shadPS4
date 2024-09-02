@@ -346,7 +346,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
     // Parse the assembly to generate a list of attributes.
     u32 fetch_size{};
-    const auto attribs = ParseFetchShader(code, &fetch_size);
+    const auto fetch_data = ParseFetchShader(code, &fetch_size);
 
     if (Config::dumpShaders()) {
         using namespace Common::FS;
@@ -354,12 +354,15 @@ void Translator::EmitFetch(const GcnInst& inst) {
         if (!std::filesystem::exists(dump_dir)) {
             std::filesystem::create_directories(dump_dir);
         }
-        const auto filename = fmt::format("vs_fetch_{:#018x}.bin", info.pgm_hash);
+        const auto filename = fmt::format("vs_{:#018x}_fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
         file.WriteRaw<u8>(code, fetch_size);
     }
 
-    for (const auto& attrib : attribs) {
+    info.vertex_offset_sgpr = fetch_data.vertex_offset_sgpr;
+    info.instance_offset_sgpr = fetch_data.instance_offset_sgpr;
+
+    for (const auto& attrib : fetch_data.attributes) {
         const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
@@ -396,9 +399,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sgpr_base = attrib.sgpr_base,
                 .dword_offset = attrib.dword_offset,
-                .length = buffer.num_records,
                 .used_types = IR::Type::F32,
-                .is_storage = true, // we may not fit into UBO with large meshes
                 .is_instance_data = true,
             });
             instance_buf_handle = s32(info.buffers.size() - 1);
@@ -435,6 +436,7 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
     case Opcode::S_CBRANCH_SCC1:
     case Opcode::S_CBRANCH_VCCNZ:
     case Opcode::S_CBRANCH_VCCZ:
+    case Opcode::S_CBRANCH_EXECNZ:
     case Opcode::S_BRANCH:
         return;
     default:

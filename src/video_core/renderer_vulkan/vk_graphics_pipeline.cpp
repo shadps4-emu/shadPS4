@@ -20,15 +20,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                                    const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
-                                   std::array<vk::ShaderModule, MaxShaderStages> modules)
+                                   std::span<const vk::ShaderModule> modules)
     : instance{instance_}, scheduler{scheduler_}, key{key_} {
     const vk::Device device = instance.GetDevice();
-    for (u32 i = 0; i < MaxShaderStages; i++) {
-        if (!infos[i]) {
-            continue;
-        }
-        stages[i] = *infos[i];
-    }
+    std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
 
     const vk::PushConstantRange push_constants = {
@@ -49,14 +44,14 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> attributes;
     const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
-    for (const auto& input : vs_info.vs_inputs) {
+    for (const auto& input : vs_info->vs_inputs) {
         if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
             input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
             // Skip attribute binding as the data will be pulled by shader
             continue;
         }
 
-        const auto buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+        const auto buffer = vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
         attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
@@ -95,7 +90,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = vk::CullModeFlagBits::eNone /*LiverpoolToVK::CullMode(key.cull_mode)*/,
+        .cullMode = LiverpoolToVK::CullMode(key.cull_mode),
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
@@ -192,21 +187,23 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .maxDepthBounds = key.depth_bounds_max,
     };
 
-    u32 shader_count{};
     auto stage = u32(Shader::Stage::Vertex);
-    std::array<vk::PipelineShaderStageCreateInfo, MaxShaderStages> shader_stages;
-    shader_stages[shader_count++] = vk::PipelineShaderStageCreateInfo{
-        .stage = vk::ShaderStageFlagBits::eVertex,
-        .module = modules[stage],
-        .pName = "main",
-    };
+    boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
+        shader_stages;
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eVertex,
+            .module = modules[stage],
+            .pName = "main",
+        });
+    }
     stage = u32(Shader::Stage::Fragment);
-    if (modules[stage]) {
-        shader_stages[shader_count++] = vk::PipelineShaderStageCreateInfo{
+    if (infos[stage]) {
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,
             .module = modules[stage],
             .pName = "main",
-        };
+        });
     }
 
     const auto it = std::ranges::find(key.color_formats, vk::Format::eUndefined);
@@ -215,8 +212,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .colorAttachmentCount = num_color_formats,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
-        .stencilAttachmentFormat =
-            key.depth.stencil_enable ? key.depth_format : vk::Format::eUndefined,
+        .stencilAttachmentFormat = key.stencil_format,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
@@ -280,7 +276,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 
     const vk::GraphicsPipelineCreateInfo pipeline_info = {
         .pNext = &pipeline_rendering_ci,
-        .stageCount = shader_count,
+        .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
         .pVertexInputState = &vertex_input_info,
         .pInputAssemblyState = &input_assembly,
@@ -306,17 +302,30 @@ GraphicsPipeline::~GraphicsPipeline() = default;
 void GraphicsPipeline::BuildDescSetLayout() {
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
-    for (const auto& stage : stages) {
-        for (const auto& buffer : stage.buffers) {
+    for (const auto* stage : stages) {
+        if (!stage) {
+            continue;
+        }
+        for (const auto& buffer : stage->buffers) {
+            const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                    : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
+                                                          : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
         }
-        for (const auto& image : stage.images) {
+        for (const auto& tex_buffer : stage->texture_buffers) {
+            bindings.push_back({
+                .binding = binding++,
+                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                                        : vk::DescriptorType::eUniformTexelBuffer,
+                .descriptorCount = 1,
+                .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+            });
+        }
+        for (const auto& image : stage->images) {
             bindings.push_back({
                 .binding = binding++,
                 .descriptorType = image.is_storage ? vk::DescriptorType::eStorageImage
@@ -325,7 +334,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             });
         }
-        for (const auto& sampler : stage.samplers) {
+        for (const auto& sampler : stage->samplers) {
             bindings.push_back({
                 .binding = binding++,
                 .descriptorType = vk::DescriptorType::eSampler,
@@ -346,27 +355,32 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                                      VideoCore::BufferCache& buffer_cache,
                                      VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
-    boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
+    boost::container::static_vector<vk::BufferView, 8> buffer_views;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     Shader::PushData push_data{};
     u32 binding{};
 
-    for (const auto& stage : stages) {
-        if (stage.uses_step_rates) {
+    for (const auto* stage : stages) {
+        if (!stage) {
+            continue;
+        }
+        if (stage->uses_step_rates) {
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
-        for (const auto& buffer : stage.buffers) {
-            const auto vsharp = buffer.GetVsharp(stage);
+        for (const auto& buffer : stage->buffers) {
+            const auto vsharp = buffer.GetSharp(*stage);
+            const bool is_storage = buffer.IsStorage(vsharp);
             if (vsharp) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
                 }
                 const u32 size = vsharp.GetSize();
-                const u32 alignment = buffer.is_storage ? instance.StorageMinAlignment()
-                                                        : instance.UniformMinAlignment();
+                const u32 alignment =
+                    is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
                 const auto [vk_buffer, offset] =
                     buffer_cache.ObtainBuffer(address, size, buffer.is_written);
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
@@ -384,21 +398,57 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = buffer.is_storage ? vk::DescriptorType::eStorageBuffer
-                                                    : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
+                                             : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
         }
 
+        for (const auto& tex_buffer : stage->texture_buffers) {
+            const auto vsharp = tex_buffer.GetSharp(*stage);
+            vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
+            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+                const VAddr address = vsharp.base_address;
+                const u32 size = vsharp.GetSize();
+                const u32 alignment = instance.TexelBufferMinAlignment();
+                const auto [vk_buffer, offset] =
+                    buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written, true);
+                const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
+                ASSERT_MSG(fmt_stride == vsharp.GetStride(),
+                           "Texel buffer stride must match format stride");
+                const u32 offset_aligned = Common::AlignDown(offset, alignment);
+                const u32 adjust = offset - offset_aligned;
+                if (adjust != 0) {
+                    ASSERT(adjust % fmt_stride == 0);
+                    push_data.AddOffset(binding, adjust / fmt_stride);
+                }
+                buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
+                                              vsharp.GetDataFmt(), vsharp.GetNumberFmt());
+            }
+            set_writes.push_back({
+                .dstSet = VK_NULL_HANDLE,
+                .dstBinding = binding++,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                                        : vk::DescriptorType::eUniformTexelBuffer,
+                .pTexelBufferView = &buffer_view,
+            });
+        }
+
         boost::container::static_vector<AmdGpu::Image, 16> tsharps;
-        for (const auto& image_desc : stage.images) {
-            const auto& tsharp = tsharps.emplace_back(
-                stage.ReadUd<AmdGpu::Image>(image_desc.sgpr_base, image_desc.dword_offset));
-            VideoCore::ImageInfo image_info{tsharp};
-            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-            const auto& image_view = texture_cache.FindTexture(image_info, view_info);
-            const auto& image = texture_cache.GetImage(image_view.image_id);
-            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+        for (const auto& image_desc : stage->images) {
+            const auto tsharp = image_desc.GetSharp(*stage);
+            if (tsharp) {
+                tsharps.emplace_back(tsharp);
+                VideoCore::ImageInfo image_info{tsharp};
+                VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
+                const auto& image_view = texture_cache.FindTexture(image_info, view_info);
+                const auto& image = texture_cache.GetImage(image_view.image_id);
+                image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
+            } else {
+                image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+            }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
                 .dstBinding = binding++,
@@ -413,8 +463,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (texture)");
             }
         }
-        for (const auto& sampler : stage.samplers) {
-            auto ssharp = sampler.GetSsharp(stage);
+        for (const auto& sampler : stage->samplers) {
+            auto ssharp = sampler.GetSharp(*stage);
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {

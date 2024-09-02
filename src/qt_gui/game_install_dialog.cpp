@@ -21,14 +21,14 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     layout->addStretch();
     layout->addWidget(SetupDialogActions());
 
-    setWindowTitle("shadPS4 - Choose directory");
+    setWindowTitle(tr("shadPS4 - Choose directory"));
     setWindowIcon(QIcon(":images/shadps4.ico"));
 }
 
 GameInstallDialog::~GameInstallDialog() {}
 
 void GameInstallDialog::Browse() {
-    auto path = QFileDialog::getExistingDirectory(this, "Directory to install games");
+    auto path = QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
 
     if (!path.isEmpty()) {
         m_gamesDirectory->setText(QDir::toNativeSeparators(path));
@@ -36,7 +36,7 @@ void GameInstallDialog::Browse() {
 }
 
 QWidget* GameInstallDialog::SetupGamesDirectory() {
-    auto group = new QGroupBox("Directory to install games");
+    auto group = new QGroupBox(tr("Directory to install games"));
     auto layout = new QHBoxLayout(group);
 
     // Input.
@@ -47,7 +47,7 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     layout->addWidget(m_gamesDirectory);
 
     // Browse button.
-    auto browse = new QPushButton("Browse");
+    auto browse = new QPushButton(tr("Browse"));
 
     connect(browse, &QPushButton::clicked, this, &GameInstallDialog::Browse);
 
@@ -71,7 +71,7 @@ void GameInstallDialog::Save() {
 
     if (gamesDirectory.isEmpty() || !QDir(gamesDirectory).exists() ||
         !QDir::isAbsolutePath(gamesDirectory)) {
-        QMessageBox::critical(this, "Error",
+        QMessageBox::critical(this, tr("Error"),
                               "The value for location to install games is not valid.");
         return;
     }

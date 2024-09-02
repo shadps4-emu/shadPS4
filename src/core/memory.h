@@ -131,8 +131,8 @@ public:
         rasterizer = rasterizer_;
     }
 
-    void SetTotalFlexibleSize(u64 size) {
-        total_flexible_size = size;
+    u64 GetTotalDirectSize() const {
+        return total_direct_size;
     }
 
     u64 GetAvailableFlexibleSize() const {
@@ -142,6 +142,8 @@ public:
     VAddr SystemReservedVirtualBase() noexcept {
         return impl.SystemReservedVirtualBase();
     }
+
+    void SetupMemoryRegions(u64 flexible_size);
 
     PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
                    int memory_type);
@@ -218,12 +220,15 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
+    void UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+
 private:
     AddressSpace impl;
     DMemMap dmem_map;
     VMAMap vma_map;
-    std::recursive_mutex mutex;
-    size_t total_flexible_size = 448_MB;
+    std::mutex mutex;
+    size_t total_direct_size{};
+    size_t total_flexible_size{};
     size_t flexible_usage{};
     Vulkan::Rasterizer* rasterizer{};
 };

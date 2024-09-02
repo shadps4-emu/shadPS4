@@ -23,14 +23,13 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
-    this->setColumnCount(9);
-    this->setColumnWidth(1, 250);
-    this->setColumnWidth(2, 110);
-    this->setColumnWidth(3, 80);
-    this->setColumnWidth(4, 90);
-    this->setColumnWidth(5, 80);
-    this->setColumnWidth(6, 80);
-    this->setColumnWidth(7, 80);
+    this->setColumnCount(8);
+    this->setColumnWidth(1, 300); // Name
+    this->setColumnWidth(2, 120); // Serial
+    this->setColumnWidth(3, 90);  // Region
+    this->setColumnWidth(4, 90);  // Firmware
+    this->setColumnWidth(5, 90);  // Size
+    this->setColumnWidth(6, 90);  // Version
     QStringList headers;
     headers << "Icon"
             << "Name"
@@ -39,7 +38,6 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
             << "Firmware"
             << "Size"
             << "Version"
-            << "Category"
             << "Path";
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
@@ -87,8 +85,7 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
-        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].category));
-        SetTableItem(i, 8, QString::fromStdString(m_game_info->m_games[i].path));
+        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].path));
     }
 }
 
@@ -168,7 +165,7 @@ void GameListFrame::SetTableItem(int row, int column, QString itemStr) {
     QVBoxLayout* layout = new QVBoxLayout(widget);
     QLabel* label = new QLabel(itemStr, widget);
 
-    label->setStyleSheet("color: white; font-size: 15px; font-weight: bold;");
+    label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
     // Create shadow effect
     QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();

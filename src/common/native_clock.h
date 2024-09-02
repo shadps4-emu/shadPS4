@@ -16,9 +16,9 @@ public:
         return rdtsc_frequency;
     }
 
-    u64 GetTimeNS() const;
-    u64 GetTimeUS() const;
-    u64 GetTimeMS() const;
+    u64 GetTimeNS(u64 base_ptc = 0) const;
+    u64 GetTimeUS(u64 base_ptc = 0) const;
+    u64 GetTimeMS(u64 base_ptc = 0) const;
     u64 GetUptime() const;
     u64 GetProcessTimeUS() const;
 

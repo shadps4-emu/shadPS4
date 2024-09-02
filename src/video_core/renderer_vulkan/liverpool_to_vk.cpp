@@ -5,6 +5,8 @@
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
+#include <magic_enum.hpp>
+
 namespace Vulkan::LiverpoolToVK {
 
 using DepthBuffer = Liverpool::DepthBuffer;
@@ -285,8 +287,8 @@ vk::BorderColor BorderColor(AmdGpu::BorderColor color) {
 
 std::span<const vk::Format> GetAllFormats() {
     static constexpr std::array formats{
+        vk::Format::eA2B10G10R10SnormPack32,
         vk::Format::eA2B10G10R10UnormPack32,
-        vk::Format::eA2R10G10B10SnormPack32,
         vk::Format::eA2R10G10B10UnormPack32,
         vk::Format::eB5G6R5UnormPack16,
         vk::Format::eB8G8R8A8Srgb,
@@ -294,6 +296,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eB10G11R11UfloatPack32,
         vk::Format::eBc1RgbaSrgbBlock,
         vk::Format::eBc1RgbaUnormBlock,
+        vk::Format::eBc2SrgbBlock,
         vk::Format::eBc2UnormBlock,
         vk::Format::eBc3SrgbBlock,
         vk::Format::eBc3UnormBlock,
@@ -304,10 +307,12 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eBc7UnormBlock,
         vk::Format::eD16Unorm,
         vk::Format::eD16UnormS8Uint,
+        vk::Format::eD24UnormS8Uint,
         vk::Format::eD32Sfloat,
         vk::Format::eD32SfloatS8Uint,
         vk::Format::eR4G4B4A4UnormPack16,
         vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eR5G5B5A1UnormPack16,
         vk::Format::eR8G8B8A8Srgb,
         vk::Format::eR8G8B8A8Uint,
         vk::Format::eR8G8B8A8Unorm,
@@ -317,6 +322,7 @@ std::span<const vk::Format> GetAllFormats() {
         vk::Format::eR8G8Uint,
         vk::Format::eR8G8Unorm,
         vk::Format::eR8Sint,
+        vk::Format::eR8Snorm,
         vk::Format::eR8Uint,
         vk::Format::eR8Unorm,
         vk::Format::eR8Srgb,
@@ -381,6 +387,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eB5G6R5UnormPack16;
     }
+    if (data_format == AmdGpu::DataFormat::Format1_5_5_5 &&
+        num_format == AmdGpu::NumberFormat::Unorm) {
+        return vk::Format::eR5G5B5A1UnormPack16;
+    }
     if (data_format == AmdGpu::DataFormat::Format8 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8Unorm;
     }
@@ -419,6 +429,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eA2B10G10R10UnormPack32;
     }
+    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
+        num_format == AmdGpu::NumberFormat::Snorm) {
+        return vk::Format::eA2B10G10R10SnormPack32;
+    }
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Srgb) {
         return vk::Format::eBc7SrgbBlock;
     }
@@ -448,11 +462,17 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eR8G8Unorm;
     }
+    if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Uint) {
+        return vk::Format::eR8G8Uint;
+    }
     if (data_format == AmdGpu::DataFormat::Format8_8 && num_format == AmdGpu::NumberFormat::Snorm) {
         return vk::Format::eR8G8Snorm;
     }
     if (data_format == AmdGpu::DataFormat::FormatBc7 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc7UnormBlock;
+    }
+    if (data_format == AmdGpu::DataFormat::FormatBc2 && num_format == AmdGpu::NumberFormat::Srgb) {
+        return vk::Format::eBc2SrgbBlock;
     }
     if (data_format == AmdGpu::DataFormat::FormatBc2 && num_format == AmdGpu::NumberFormat::Unorm) {
         return vk::Format::eBc2UnormBlock;
@@ -460,14 +480,6 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
     if (data_format == AmdGpu::DataFormat::Format16_16 &&
         num_format == AmdGpu::NumberFormat::Snorm) {
         return vk::Format::eR16G16Snorm;
-    }
-    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
-        num_format == AmdGpu::NumberFormat::Unorm) {
-        return vk::Format::eA2R10G10B10UnormPack32;
-    }
-    if (data_format == AmdGpu::DataFormat::Format2_10_10_10 &&
-        num_format == AmdGpu::NumberFormat::Snorm) {
-        return vk::Format::eA2R10G10B10SnormPack32;
     }
     if (data_format == AmdGpu::DataFormat::Format10_11_11 &&
         num_format == AmdGpu::NumberFormat::Float) {
@@ -588,6 +600,8 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
             return is_vo_surface ? vk::Format::eB8G8R8A8Unorm : vk::Format::eB8G8R8A8Srgb;
         case vk::Format::eB8G8R8A8Srgb:
             return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
+        default:
+            break;
         }
     } else {
         if (is_vo_surface && base_format == vk::Format::eR8G8B8A8Srgb) {
@@ -601,27 +615,29 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
 }
 
 vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat stencil_format) {
-    if (z_format == DepthBuffer::ZFormat::Z32Float &&
-        stencil_format == DepthBuffer::StencilFormat::Stencil8) {
+    using ZFormat = DepthBuffer::ZFormat;
+    using StencilFormat = DepthBuffer::StencilFormat;
+
+    if (z_format == ZFormat::Z32Float && stencil_format == StencilFormat::Stencil8) {
         return vk::Format::eD32SfloatS8Uint;
     }
-    if (z_format == DepthBuffer::ZFormat::Z32Float &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Z32Float && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eD32Sfloat;
     }
-    if (z_format == DepthBuffer::ZFormat::Z16 &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Z16 && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eD16Unorm;
     }
-    if (z_format == DepthBuffer::ZFormat::Z16 &&
-        stencil_format == DepthBuffer::StencilFormat::Stencil8) {
+    if (z_format == ZFormat::Z16 && stencil_format == StencilFormat::Stencil8) {
         return vk::Format::eD16UnormS8Uint;
     }
-    if (z_format == DepthBuffer::ZFormat::Invalid &&
-        stencil_format == DepthBuffer::StencilFormat::Invalid) {
+    if (z_format == ZFormat::Invalid && stencil_format == StencilFormat::Stencil8) {
+        return vk::Format::eD32SfloatS8Uint;
+    }
+    if (z_format == ZFormat::Invalid && stencil_format == StencilFormat::Invalid) {
         return vk::Format::eUndefined;
     }
-    UNREACHABLE();
+    UNREACHABLE_MSG("Unsupported depth/stencil format. depth = {} stencil = {}",
+                    magic_enum::enum_name(z_format), magic_enum::enum_name(stencil_format));
 }
 
 void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {

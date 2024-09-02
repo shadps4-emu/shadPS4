@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
@@ -66,6 +67,10 @@ struct Buffer {
 
     u32 GetStride() const noexcept {
         return stride == 0 ? 1U : stride;
+    }
+
+    u32 NumDwords() const noexcept {
+        return Common::AlignUp(GetSize(), sizeof(u32)) >> 2;
     }
 
     u32 GetSize() const noexcept {
@@ -177,6 +182,10 @@ struct Image {
 
     VAddr Address() const {
         return base_address << 8;
+    }
+
+    operator bool() const noexcept {
+        return base_address != 0;
     }
 
     u32 DstSelect() const {

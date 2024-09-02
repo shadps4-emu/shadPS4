@@ -17,6 +17,18 @@ endif()
 
 project(shadPS4)
 
+# Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
+if(UNIX AND NOT APPLE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+    # check PIE support at link time
+    include(CheckPIESupported)
+    check_pie_supported(OUTPUT_VARIABLE pie_check LANGUAGES C CXX)
+    if(NOT CMAKE_C_LINK_PIE_SUPPORTED OR NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
+        message(WARNING "PIE is not supported at link time: ${pie_check}")
+    endif()
+endif()
+
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
 # This function should be passed a list of all files in a target. It will automatically generate file groups
@@ -66,9 +78,8 @@ git_branch_name(GIT_BRANCH)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 find_package(Boost 1.84.0 CONFIG)
-find_package(cryptopp 8.9.0 MODULE)
 find_package(FFmpeg 5.1.2 MODULE)
-find_package(fmt 10.2.1 CONFIG)
+find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
@@ -79,8 +90,12 @@ find_package(VulkanHeaders 1.3.289 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
-find_package(zlib-ng 2.2.0 MODULE)
-find_package(Zydis 4.1.0 CONFIG)
+find_package(zlib-ng 2.1.7 MODULE)
+find_package(Zydis 5.0.0 CONFIG)
+
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT MSVC)
+    find_package(cryptopp 8.9.0 MODULE)
+endif()
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -91,10 +106,6 @@ include(CheckSymbolExists)
 check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
 if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
     add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
-endif()
-check_symbol_exists(sem_timedwait "semaphore.h" HAVE_SEM_TIMEDWAIT)
-if(HAVE_SEM_TIMEDWAIT OR WIN32)
-    add_compile_options(-DHAVE_SEM_TIMEDWAIT)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -110,11 +121,27 @@ add_subdirectory(externals)
 include_directories(src)
 
 if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network)
     qt_standard_project_setup()
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
+
+    set(QT_TRANSLATIONS "${PROJECT_SOURCE_DIR}/src/qt_gui/translations")
+    file(GLOB_RECURSE TRANSLATIONS_TS ${QT_TRANSLATIONS}/*.ts)
+
+    set_source_files_properties(${TRANSLATIONS_TS} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/translations")
+    qt_add_translation(TRANSLATIONS_QM ${TRANSLATIONS_TS})
+
+    set(TRANSLATIONS_QRC ${CMAKE_CURRENT_BINARY_DIR}/translations/translations.qrc)
+    file(WRITE ${TRANSLATIONS_QRC} "<RCC><qresource prefix=\"translations\">\n")
+    foreach (QM ${TRANSLATIONS_QM})
+        get_filename_component(QM_FILE ${QM} NAME)
+        file(APPEND ${TRANSLATIONS_QRC} "<file>${QM_FILE}</file>\n")
+    endforeach (QM)
+    file(APPEND ${TRANSLATIONS_QRC} "</qresource></RCC>")
+
+    qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
 endif()
 
 set(AUDIO_CORE src/audio_core/sdl_audio.cpp
@@ -133,9 +160,10 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnmdriver.h
+            src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB 
+set(KERNEL_LIB
                src/core/libraries/kernel/event_flag/event_flag.cpp
                src/core/libraries/kernel/event_flag/event_flag.h
                src/core/libraries/kernel/event_flag/event_flag_obj.cpp
@@ -193,6 +221,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/app_content/app_content.h
                 src/core/libraries/rtc/rtc.cpp
                 src/core/libraries/rtc/rtc.h
+                src/core/libraries/rtc/rtc_error.h
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
@@ -208,6 +237,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/avplayer/avplayer_state.h
                 src/core/libraries/avplayer/avplayer.cpp
                 src/core/libraries/avplayer/avplayer.h
+                src/core/libraries/ngs2/ngs2.cpp
+                src/core/libraries/ngs2/ngs2.h
+                src/core/libraries/ngs2/ngs2_error.h
+                src/core/libraries/ngs2/ngs2_impl.cpp
+                src/core/libraries/ngs2/ngs2_impl.h
+                src/core/libraries/ajm/ajm_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -217,21 +252,7 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/video_out.h
 )
 
-set(LIBC_SOURCES src/core/libraries/libc/libc.cpp
-                 src/core/libraries/libc/libc.h
-                 src/core/libraries/libc/printf.h
-                 src/core/libraries/libc/va_ctx.h
-                 src/core/libraries/libc/libc_cxa.cpp
-                 src/core/libraries/libc/libc_cxa.h
-                 src/core/libraries/libc/libc_stdio.cpp
-                 src/core/libraries/libc/libc_stdio.h
-                 src/core/libraries/libc/libc_math.cpp
-                 src/core/libraries/libc/libc_math.h
-                 src/core/libraries/libc/libc_string.cpp
-                 src/core/libraries/libc/libc_string.h
-                 src/core/libraries/libc/libc_stdlib.cpp
-                 src/core/libraries/libc/libc_stdlib.h
-                 src/core/libraries/libc_internal/libc_internal.cpp
+set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
 )
 
@@ -257,6 +278,7 @@ set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
 
 set(RANDOM_LIB src/core/libraries/random/random.cpp
                src/core/libraries/random/random.h
+               src/core/libraries/random/random_error.h
 )
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
@@ -270,6 +292,7 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_trophy/np_trophy.cpp
             src/core/libraries/np_trophy/np_trophy.h
 )
+
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
 )
@@ -336,7 +359,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/cpu_patches.cpp
          src/core/cpu_patches.h
          src/core/crypto/crypto.cpp
-         src/core/crypto/crypto.h 
+         src/core/crypto/crypto.h
          src/core/crypto/keys.h
          src/core/file_format/pfs.h
          src/core/file_format/pkg.cpp
@@ -361,7 +384,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/loader/elf.h
          src/core/loader/symbols_resolver.h
          src/core/loader/symbols_resolver.cpp
-         src/core/libraries/error_codes.h  
+         src/core/libraries/error_codes.h
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
          ${AUDIO_LIB}
@@ -419,7 +442,6 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/backend/spirv/spirv_emit_context.h
                       src/shader_recompiler/frontend/translate/data_share.cpp
                       src/shader_recompiler/frontend/translate/export.cpp
-                      src/shader_recompiler/frontend/translate/flat_memory.cpp
                       src/shader_recompiler/frontend/translate/scalar_alu.cpp
                       src/shader_recompiler/frontend/translate/scalar_memory.cpp
                       src/shader_recompiler/frontend/translate/translate.cpp
@@ -439,7 +461,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/frontend/opcodes.h
                       src/shader_recompiler/frontend/structured_control_flow.cpp
                       src/shader_recompiler/frontend/structured_control_flow.h
-                      src/shader_recompiler/ir/passes/constant_propogation_pass.cpp
+                      src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
@@ -477,6 +499,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -510,6 +533,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_shader_cache.cpp
+               src/video_core/renderer_vulkan/vk_shader_cache.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
@@ -552,6 +577,10 @@ qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.h
            src/qt_gui/about_dialog.ui
+           src/qt_gui/cheats_patches.cpp
+           src/qt_gui/cheats_patches.h
+           src/qt_gui/memory_patcher.cpp
+           src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
@@ -579,6 +608,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/main.cpp
            ${EMULATOR}
            ${RESOURCE_FILES}
+           ${TRANSLATIONS}
 )
 endif()
 
@@ -618,7 +648,7 @@ target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAlloca
 
 if (APPLE)
   # Reserve system-managed memory space.
-  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x400000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x10000000000)
+  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
 
   # Link MoltenVK for Vulkan support
   find_library(MOLTENVK MoltenVK REQUIRED)
@@ -626,6 +656,9 @@ if (APPLE)
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
+
+  # Half float conversions for F16C patches
+  target_link_libraries(shadps4 PRIVATE half)
 endif()
 
 if (NOT ENABLE_QT_GUI)
@@ -639,26 +672,44 @@ else()
 endif()
 
 if (ENABLE_QT_GUI)
-   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent)
+   target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network)
+   add_definitions(-DENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore winpthreads clang_rt.builtins-x86_64.lib)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+    target_link_libraries(shadps4 PRIVATE mincore winpthreads)
+
+    if (MSVC)
+        # MSVC likes putting opinions on what people can use, disable:
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+    endif()
+
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+
     if (MSVC)
         # Needed for conflicts with time.h of windows.h
         add_definitions(-D_TIMESPEC_DEFINED)
     endif()
+
     # Target Windows 10 RS5
     add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
-    # Increase stack commit area
-    target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+
+    if (MSVC)
+        target_link_libraries(shadps4 PRIVATE clang_rt.builtins-x86_64.lib)
+    endif()
+
     # Disable ASLR so we can reserve the user area
     if (MSVC)
         target_link_options(shadps4 PRIVATE /DYNAMICBASE:NO)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--disable-dynamicbase)
+    endif()
+
+    # Increase stack commit area (Needed, otherwise there are crashes)
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
     endif()
 endif()
 

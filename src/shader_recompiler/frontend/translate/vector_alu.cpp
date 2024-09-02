@@ -11,6 +11,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LSHLREV_B32(inst);
     case Opcode::V_LSHL_B32:
         return V_LSHL_B32(inst);
+    case Opcode::V_LSHL_B64:
+        return V_LSHL_B64(inst);
     case Opcode::V_BFREV_B32:
         return V_BFREV_B32(inst);
     case Opcode::V_BFE_U32:
@@ -280,6 +282,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::GT, true, false, inst);
     case Opcode::V_CMP_LT_I32:
         return V_CMP_U32(ConditionOp::LT, true, false, inst);
+    case Opcode::V_CMPX_GT_I32:
+        return V_CMP_U32(ConditionOp::GT, true, true, inst);
     case Opcode::V_CMPX_LT_I32:
         return V_CMP_U32(ConditionOp::LT, true, true, inst);
     case Opcode::V_CMPX_F_U32:
@@ -305,6 +309,13 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MBCNT_U32_B32(true, inst);
     case Opcode::V_MBCNT_HI_U32_B32:
         return V_MBCNT_U32_B32(false, inst);
+    case Opcode::V_NOP:
+        return;
+
+    case Opcode::V_BFM_B32:
+        return V_BFM_B32(inst);
+    case Opcode::V_FFBH_U32:
+        return V_FFBH_U32(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -386,6 +397,16 @@ void Translator::V_LSHL_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm32(0x1F))));
 }
 
+void Translator::V_LSHL_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ASSERT_MSG(src0.IsImmediate() && src0.U64() == 0 && src1.IsImmediate() && src1.U64() == 0,
+               "V_LSHL_B64 with non-zero src0 or src1 is not supported");
+    ir.SetVectorReg(dst_reg, ir.Imm32(0));
+    ir.SetVectorReg(dst_reg + 1, ir.Imm32(0));
+}
+
 void Translator::V_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
@@ -399,14 +420,20 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
 
-    IR::U32 scarry;
+    IR::U1 carry;
     if (inst.src_count == 3) { // VOP3
-        IR::U1 thread_bit{ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code))};
-        scarry = IR::U32{ir.Select(thread_bit, ir.Imm32(1), ir.Imm32(0))};
+        if (inst.src[2].field == OperandField::VccLo) {
+            carry = ir.GetVcc();
+        } else if (inst.src[2].field == OperandField::ScalarGPR) {
+            carry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
+        } else {
+            UNREACHABLE();
+        }
     } else { // VOP2
-        scarry = ir.GetVccLo();
+        carry = ir.GetVcc();
     }
 
+    const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
     const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
     const IR::VectorReg dst_reg{inst.dst[0].code};
@@ -940,6 +967,26 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     }
     ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
     SetDst(inst.dst[0], ir.LaneId());
+}
+
+void Translator::V_BFM_B32(const GcnInst& inst) {
+    // bitmask width
+    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(4))};
+    // bitmask offset
+    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(4))};
+    const IR::U32 ones = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), src0), ir.Imm32(1));
+    SetDst(inst.dst[0], ir.ShiftLeftLogical(ones, src1));
+}
+
+void Translator::V_FFBH_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
+    const IR::U32 msb_pos = ir.FindUMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 
 } // namespace Shader::Gcn

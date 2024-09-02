@@ -120,17 +120,17 @@ private:
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state, std::string_view path,
-                   const SceAvPlayerInitData& init_data, SceAvPlayerSourceType source_type);
+    AvPlayerSource(AvPlayerStateCallback& state);
     ~AvPlayerSource();
 
+    bool Init(const SceAvPlayerInitData& init_data, std::string_view path);
     bool FindStreamInfo();
     s32 GetStreamCount();
-    s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    bool GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
     void SetLooping(bool is_looping);
     std::optional<bool> HasFrames(u32 num_frames);
-    s32 Start();
+    bool Start();
     bool Stop();
     bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
     bool GetVideoData(SceAvPlayerFrameInfo& video_info);

@@ -65,7 +65,6 @@ public:
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();
-    [[nodiscard]] U32 GetSccLo();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     void SetScc(const U1& value);
@@ -93,12 +92,12 @@ public:
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);
-    [[nodiscard]] Value LoadBufferFormat(int num_dwords, const Value& handle, const Value& address,
+    [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
     void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
                      BufferInstInfo info);
-    void StoreBufferFormat(int num_dwords, const Value& handle, const Value& address,
-                           const Value& data, BufferInstInfo info);
+    void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
+                           BufferInstInfo info);
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
@@ -116,12 +115,15 @@ public:
                                        const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicXor(const Value& handle, const Value& address,
                                         const Value& value, BufferInstInfo info);
-    [[nodiscard]] Value BufferAtomicExchange(const Value& handle, const Value& address,
-                                             const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
 
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ReadFirstLane(const U32& value);
+    [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
+    [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
@@ -193,7 +195,7 @@ public:
     [[nodiscard]] U32U64 ShiftLeftLogical(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 ShiftRightLogical(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
-    [[nodiscard]] U32 BitwiseAnd(const U32& a, const U32& b);
+    [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
     [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,

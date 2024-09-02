@@ -1,14 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QtWidgets/QApplication>
-#include <fmt/core.h>
-
 #include "common/config.h"
 #include "core/file_sys/fs.h"
 #include "emulator.h"
-#include "qt_gui/game_install_dialog.h"
-#include "qt_gui/main_window.h"
+#include "game_install_dialog.h"
+#include "main_window.h"
 
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}

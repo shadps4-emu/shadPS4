@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/native_clock.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
@@ -30,7 +32,8 @@ u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    return clock->GetProcessTimeUS();
+    // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
+    return clock->GetTimeUS(initial_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
@@ -143,6 +146,7 @@ int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
+#ifdef _WIN64
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
@@ -150,6 +154,12 @@ int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
 
     tp->tv_sec = seconds.count();
     tp->tv_usec = microsecs.count();
+#else
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    tp->tv_sec = tv.tv_sec;
+    tp->tv_usec = tv.tv_usec;
+#endif
     return ORBIS_OK;
 }
 

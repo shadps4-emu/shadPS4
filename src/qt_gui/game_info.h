@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include <QFuture>
-#include <QObject>
-#include <QPixmap>
-#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 #include "common/config.h"
 #include "core/file_format/psf.h"
@@ -43,7 +41,6 @@ public:
                                           : fw.left(3).insert(1, '.');
             game.fw = (fw_int == 0) ? "0.00" : fw_.toStdString();
             game.version = psf.GetString("APP_VER");
-            game.category = psf.GetString("CATEGORY");
         }
         return game;
     }

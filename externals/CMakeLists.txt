@@ -25,11 +25,6 @@ if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
 endif()
 
-# Discord-RPC
-set(BUILD_EXAMPLES OFF CACHE BOOL "")
-add_subdirectory(discord-rpc)
-target_include_directories(discord-rpc INTERFACE ./discord-rpc/include)
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
     # If it is clang and MSVC we will add a static lib
     # CryptoPP
@@ -147,11 +142,17 @@ if (WIN32)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
-# date
-if (APPLE AND NOT TARGET date::date-tz)
-    option(BUILD_TZ_LIB "" ON)
-    option(USE_SYSTEM_TZ_DB "" ON)
-    add_subdirectory(date)
+if (APPLE)
+    # half
+    add_library(half INTERFACE)
+    target_include_directories(half INTERFACE half/include)
+
+    # date
+    if (NOT TARGET date::date-tz)
+        option(BUILD_TZ_LIB "" ON)
+        option(USE_SYSTEM_TZ_DB "" ON)
+        add_subdirectory(date)
+    endif()
 endif()
 
 # Tracy

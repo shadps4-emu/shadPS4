@@ -17,6 +17,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_SAMPLE_C_O:
     case Opcode::IMAGE_SAMPLE_B:
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
+    case Opcode::IMAGE_SAMPLE_D:
         return IMAGE_SAMPLE(inst);
     case Opcode::IMAGE_GATHER4_C:
     case Opcode::IMAGE_GATHER4_LZ:
@@ -55,59 +56,63 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
         // Buffer load operations
     case Opcode::TBUFFER_LOAD_FORMAT_X:
-        return BUFFER_LOAD_FORMAT(1, true, true, inst);
+        return BUFFER_LOAD(1, true, inst);
     case Opcode::TBUFFER_LOAD_FORMAT_XY:
-        return BUFFER_LOAD_FORMAT(2, true, true, inst);
+        return BUFFER_LOAD(2, true, inst);
     case Opcode::TBUFFER_LOAD_FORMAT_XYZ:
-        return BUFFER_LOAD_FORMAT(3, true, true, inst);
+        return BUFFER_LOAD(3, true, inst);
     case Opcode::TBUFFER_LOAD_FORMAT_XYZW:
-        return BUFFER_LOAD_FORMAT(4, true, true, inst);
+        return BUFFER_LOAD(4, true, inst);
 
     case Opcode::BUFFER_LOAD_FORMAT_X:
-        return BUFFER_LOAD_FORMAT(1, false, true, inst);
+        return BUFFER_LOAD_FORMAT(1, inst);
     case Opcode::BUFFER_LOAD_FORMAT_XY:
-        return BUFFER_LOAD_FORMAT(2, false, true, inst);
+        return BUFFER_LOAD_FORMAT(2, inst);
     case Opcode::BUFFER_LOAD_FORMAT_XYZ:
-        return BUFFER_LOAD_FORMAT(3, false, true, inst);
+        return BUFFER_LOAD_FORMAT(3, inst);
     case Opcode::BUFFER_LOAD_FORMAT_XYZW:
-        return BUFFER_LOAD_FORMAT(4, false, true, inst);
+        return BUFFER_LOAD_FORMAT(4, inst);
 
     case Opcode::BUFFER_LOAD_DWORD:
-        return BUFFER_LOAD_FORMAT(1, false, false, inst);
+        return BUFFER_LOAD(1, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX2:
-        return BUFFER_LOAD_FORMAT(2, false, false, inst);
+        return BUFFER_LOAD(2, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX3:
-        return BUFFER_LOAD_FORMAT(3, false, false, inst);
+        return BUFFER_LOAD(3, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX4:
-        return BUFFER_LOAD_FORMAT(4, false, false, inst);
+        return BUFFER_LOAD(4, false, inst);
 
         // Buffer store operations
     case Opcode::BUFFER_STORE_FORMAT_X:
-        return BUFFER_STORE_FORMAT(1, false, true, inst);
+        return BUFFER_STORE_FORMAT(1, inst);
     case Opcode::BUFFER_STORE_FORMAT_XY:
-        return BUFFER_STORE_FORMAT(2, false, true, inst);
+        return BUFFER_STORE_FORMAT(2, inst);
     case Opcode::BUFFER_STORE_FORMAT_XYZ:
-        return BUFFER_STORE_FORMAT(3, false, true, inst);
+        return BUFFER_STORE_FORMAT(3, inst);
     case Opcode::BUFFER_STORE_FORMAT_XYZW:
-        return BUFFER_STORE_FORMAT(4, false, true, inst);
+        return BUFFER_STORE_FORMAT(4, inst);
 
     case Opcode::TBUFFER_STORE_FORMAT_X:
-        return BUFFER_STORE_FORMAT(1, true, true, inst);
+        return BUFFER_STORE(1, true, inst);
+    case Opcode::TBUFFER_STORE_FORMAT_XY:
+        return BUFFER_STORE(2, true, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZ:
-        return BUFFER_STORE_FORMAT(3, true, true, inst);
+        return BUFFER_STORE(3, true, inst);
 
     case Opcode::BUFFER_STORE_DWORD:
-        return BUFFER_STORE_FORMAT(1, false, false, inst);
+        return BUFFER_STORE(1, false, inst);
     case Opcode::BUFFER_STORE_DWORDX2:
-        return BUFFER_STORE_FORMAT(2, false, false, inst);
+        return BUFFER_STORE(2, false, inst);
     case Opcode::BUFFER_STORE_DWORDX3:
-        return BUFFER_STORE_FORMAT(3, false, false, inst);
+        return BUFFER_STORE(3, false, inst);
     case Opcode::BUFFER_STORE_DWORDX4:
-        return BUFFER_STORE_FORMAT(4, false, false, inst);
+        return BUFFER_STORE(4, false, inst);
 
         // Buffer atomic operations
     case Opcode::BUFFER_ATOMIC_ADD:
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
+    case Opcode::BUFFER_ATOMIC_SWAP:
+        return BUFFER_ATOMIC(AtomicOp::Swap, inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -162,12 +167,15 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
         flags.test(MimgModifier::LodBias) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
     const IR::F32 dref =
         flags.test(MimgModifier::Pcf) ? ir.GetVectorReg<IR::F32>(addr_reg++) : IR::F32{};
-
-    // Derivatives are tricky because their number depends on the texture type which is located in
-    // T#. We don't have access to T# though until resource tracking pass. For now assume no
-    // derivatives are present, otherwise we don't know where coordinates are placed in the address
-    // stream.
-    ASSERT_MSG(!flags.test(MimgModifier::Derivative), "Derivative image instruction");
+    const IR::Value derivatives = [&] -> IR::Value {
+        if (!flags.test(MimgModifier::Derivative)) {
+            return {};
+        }
+        addr_reg = addr_reg + 4;
+        return ir.CompositeConstruct(
+            ir.GetVectorReg<IR::F32>(addr_reg - 4), ir.GetVectorReg<IR::F32>(addr_reg - 3),
+            ir.GetVectorReg<IR::F32>(addr_reg - 2), ir.GetVectorReg<IR::F32>(addr_reg - 1));
+    }();
 
     // Now we can load body components as noted in Table 8.9 Image Opcodes with Sampler
     // Since these are at most 4 dwords, we load them into a single uvec4 and place them
@@ -177,6 +185,10 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
         ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
         ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
 
+    // Derivatives are tricky because their number depends on the texture type which is located in
+    // T#. We don't have access to T# though until resource tracking pass. For now assume if
+    // derivatives are present, that a 2D image is bound.
+    const bool has_derivatives = flags.test(MimgModifier::Derivative);
     const bool explicit_lod = flags.any(MimgModifier::Level0, MimgModifier::Lod);
 
     IR::TextureInstInfo info{};
@@ -186,9 +198,13 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     info.force_level0.Assign(flags.test(MimgModifier::Level0));
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     info.explicit_lod.Assign(explicit_lod);
+    info.has_derivatives.Assign(has_derivatives);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
+        if (has_derivatives) {
+            return ir.ImageGradient(handle, body, derivatives, offset, {}, info);
+        }
         if (!flags.test(MimgModifier::Pcf)) {
             if (explicit_lod) {
                 return ir.ImageSampleExplicitLod(handle, body, offset, info);
@@ -333,8 +349,7 @@ void Translator::IMAGE_STORE(const GcnInst& inst) {
     ir.ImageWrite(handle, body, value, {});
 }
 
-void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_format,
-                                    const GcnInst& inst) {
+void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
@@ -354,22 +369,19 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_forma
     info.index_enable.Assign(mtbuf.idxen);
     info.offset_enable.Assign(mtbuf.offen);
     info.inst_offset.Assign(mtbuf.offset);
-    info.is_typed.Assign(is_typed);
     if (is_typed) {
-        info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
-        info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
-        ASSERT(info.nfmt == AmdGpu::NumberFormat::Float &&
-               (info.dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
-                info.dmft == AmdGpu::DataFormat::Format32_32_32 ||
-                info.dmft == AmdGpu::DataFormat::Format32_32 ||
-                info.dmft == AmdGpu::DataFormat::Format32));
+        const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
+        const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
+        ASSERT(nfmt == AmdGpu::NumberFormat::Float &&
+               (dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
+                dmft == AmdGpu::DataFormat::Format32_32_32 ||
+                dmft == AmdGpu::DataFormat::Format32_32 || dmft == AmdGpu::DataFormat::Format32));
     }
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    const IR::Value value = is_format ? ir.LoadBufferFormat(num_dwords, handle, address, info)
-                                      : ir.LoadBuffer(num_dwords, handle, address, info);
+    const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
         ir.SetVectorReg(dst_reg, IR::F32{value});
@@ -380,8 +392,34 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, bool is_typed, bool is_forma
     }
 }
 
-void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_format,
-                                     const GcnInst& inst) {
+void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst) {
+    const auto& mubuf = inst.control.mubuf;
+    const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+    ASSERT_MSG(!mubuf.offen && mubuf.offset == 0, "Offsets for image buffers are not supported");
+    const IR::Value address = [&] -> IR::Value {
+        if (mubuf.idxen) {
+            return ir.GetVectorReg(vaddr);
+        }
+        return {};
+    }();
+    const IR::Value soffset{GetSrc(inst.src[3])};
+    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
+
+    IR::BufferInstInfo info{};
+    info.index_enable.Assign(mubuf.idxen);
+
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value value = ir.LoadBufferFormat(handle, address, info);
+    const IR::VectorReg dst_reg{inst.src[1].code};
+    for (u32 i = 0; i < num_dwords; i++) {
+        ir.SetVectorReg(dst_reg + i, IR::F32{ir.CompositeExtract(value, i)});
+    }
+}
+
+void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst) {
     const auto& mtbuf = inst.control.mtbuf;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
@@ -401,45 +439,76 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, bool is_typed, bool is_form
     info.index_enable.Assign(mtbuf.idxen);
     info.offset_enable.Assign(mtbuf.offen);
     info.inst_offset.Assign(mtbuf.offset);
-    info.is_typed.Assign(is_typed);
     if (is_typed) {
-        info.dmft.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));
-        info.nfmt.Assign(static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt));
+        const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
+        const auto nfmt = static_cast<AmdGpu::NumberFormat>(mtbuf.nfmt);
+        ASSERT(nfmt == AmdGpu::NumberFormat::Float &&
+               (dmft == AmdGpu::DataFormat::Format32_32_32_32 ||
+                dmft == AmdGpu::DataFormat::Format32_32_32 ||
+                dmft == AmdGpu::DataFormat::Format32_32 || dmft == AmdGpu::DataFormat::Format32));
     }
 
     IR::Value value{};
     const IR::VectorReg src_reg{inst.src[1].code};
     switch (num_dwords) {
     case 1:
-        value = ir.GetVectorReg<Shader::IR::F32>(src_reg);
+        value = ir.GetVectorReg<IR::F32>(src_reg);
         break;
     case 2:
-        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1));
+        value = ir.CompositeConstruct(ir.GetVectorReg<IR::F32>(src_reg),
+                                      ir.GetVectorReg<IR::F32>(src_reg + 1));
         break;
     case 3:
-        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 2));
+        value = ir.CompositeConstruct(ir.GetVectorReg<IR::F32>(src_reg),
+                                      ir.GetVectorReg<IR::F32>(src_reg + 1),
+                                      ir.GetVectorReg<IR::F32>(src_reg + 2));
         break;
     case 4:
-        value = ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::F32>(src_reg),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 1),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 2),
-                                      ir.GetVectorReg<Shader::IR::F32>(src_reg + 3));
+        value = ir.CompositeConstruct(
+            ir.GetVectorReg<IR::F32>(src_reg), ir.GetVectorReg<IR::F32>(src_reg + 1),
+            ir.GetVectorReg<IR::F32>(src_reg + 2), ir.GetVectorReg<IR::F32>(src_reg + 3));
         break;
     }
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
-    if (is_format) {
-        ir.StoreBufferFormat(num_dwords, handle, address, value, info);
-    } else {
-        ir.StoreBuffer(num_dwords, handle, address, value, info);
-    }
+    ir.StoreBuffer(num_dwords, handle, address, value, info);
 }
 
-// TODO: U64
+void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst) {
+    const auto& mubuf = inst.control.mubuf;
+    const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+    ASSERT_MSG(!mubuf.offen && mubuf.offset == 0, "Offsets for image buffers are not supported");
+    const IR::Value address = [&] -> IR::Value {
+        if (mubuf.idxen) {
+            return ir.GetVectorReg(vaddr);
+        }
+        return {};
+    }();
+    const IR::Value soffset{GetSrc(inst.src[3])};
+    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
+
+    IR::BufferInstInfo info{};
+    info.index_enable.Assign(mubuf.idxen);
+
+    const IR::VectorReg src_reg{inst.src[1].code};
+
+    std::array<IR::Value, 4> comps{};
+    for (u32 i = 0; i < num_dwords; i++) {
+        comps[i] = ir.GetVectorReg<IR::F32>(src_reg + i);
+    }
+    for (u32 i = num_dwords; i < 4; i++) {
+        comps[i] = ir.Imm32(0.f);
+    }
+
+    const IR::Value value = ir.CompositeConstruct(comps[0], comps[1], comps[2], comps[3]);
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    ir.StoreBufferFormat(handle, address, value, info);
+}
+
 void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -462,7 +531,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::Value original_val = [&] {
         switch (op) {
         case AtomicOp::Swap:
-            return ir.BufferAtomicExchange(handle, address, vdata_val, info);
+            return ir.BufferAtomicSwap(handle, address, vdata_val, info);
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, info);
         case AtomicOp::Smin:

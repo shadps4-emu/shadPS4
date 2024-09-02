@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "core/libraries/ajm/ajm.h"
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/dialogs/error_dialog.h"
+#include "core/libraries/dialogs/ime_dialog.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/libkernel.h"
-#include "core/libraries/libc/libc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/net.h"
@@ -33,11 +37,6 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videoout/video_out.h"
-#include "src/core/libraries/ajm/ajm.h"
-#include "src/core/libraries/avplayer/avplayer.h"
-#include "src/core/libraries/dialogs/error_dialog.h"
-#include "src/core/libraries/dialogs/ime_dialog.h"
-#include "src/core/libraries/libpng/pngdec.h"
 
 namespace Libraries {
 
@@ -46,9 +45,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::LibKernel_Register(sym);
     Libraries::GnmDriver::RegisterlibSceGnmDriver(sym);
     Libraries::VideoOut::RegisterLib(sym);
-    if (!Config::isLleLibc()) {
-        Libraries::LibC::libcSymbolsRegister(sym);
-    }
 
     // New libraries folder from autogen
     Libraries::UserService::RegisterlibSceUserService(sym);

@@ -48,7 +48,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory) {
     pos = mount->mount.size() + 1;
     const auto rel_path = std::string_view(corrected_path).substr(pos);
     const auto host_path = mount->host_path / rel_path;
-    if (!NeedsCaseInsensiveSearch) {
+    if (!NeedsCaseInsensitiveSearch) {
         return host_path;
     }
 
