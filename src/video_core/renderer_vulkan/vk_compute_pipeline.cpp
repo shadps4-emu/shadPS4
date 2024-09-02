@@ -112,7 +112,9 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         const auto src_sharp = src.GetSharp(*info);
         const auto& dst = info->texture_buffers[1];
         const auto dst_sharp = dst.GetSharp(*info);
-        if (dst_sharp.base_address == 0x510e0000 || dst_sharp.base_address == 0x1926e0000 ||
+        if (dst_sharp.base_address == 0x510e0000 ||
+            dst_sharp.base_address == 0x1926e0000 || // Release
+            dst_sharp.base_address == 0x1928e0000 || // ReleaseWithDebInfo
             dst_sharp.base_address == 0x1d42e0000) {
             VideoCore::ImageViewInfo view_info;
             view_info.format = vk::Format::eR8G8B8A8Unorm;
@@ -234,7 +236,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
                 }
             }
-            if (desc.is_written && info->pgm_hash != 0xfefebf9f && info->pgm_hash != 0x3d5ebf4e) {
+            if (desc.is_written && info->pgm_hash != 0xfefebf9f) { // Not skipping 0x3d5ebf4e as well, otherwise video player will be black
                 texture_cache.InvalidateMemory(address, size);
             }
             const u32 alignment = instance.TexelBufferMinAlignment();
