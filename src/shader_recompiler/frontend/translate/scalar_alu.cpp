@@ -373,8 +373,13 @@ void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
 void Translator::S_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IAdd(src0, src1));
-    // TODO: Overflow flag
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    SetDst(inst.dst[0], result);
+    const IR::U32 sign_mask = ir.Imm32(1 << 31);
+    const IR::U32 sign0 = ir.BitwiseAnd(src0, sign_mask);
+    const IR::U32 sign1 = ir.BitwiseAnd(src1, sign_mask);
+    const IR::U32 signr = ir.BitwiseAnd(result, sign_mask);
+    ir.SetScc(ir.LogicalAnd(ir.IEqual(sign0, sign1), ir.INotEqual(sign0, signr)));
 }
 
 void Translator::S_AND_B32(const GcnInst& inst) {
