@@ -669,7 +669,7 @@ void CheatsPatches::populateFileListPatches() {
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
     if (repository == "GoldHEN") {
-        url = "https://github.com/illusion0001/PS4-PS5-Game-Patch/tree/main"
+        url = "https://github.com/illusion0001/PS4-PS5-Game-Patch/tree/main/"
               "patches/xml";
     }
     if (repository == "shadPS4") {
