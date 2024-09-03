@@ -5,6 +5,8 @@
 
 #include "common/types.h"
 
+#include <stddef.h>
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
