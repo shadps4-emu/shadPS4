@@ -20,6 +20,20 @@ static const char* acb_task_name{"ACB_TASK"};
 
 std::array<u8, 48_KB> Liverpool::ConstantEngine::constants_heap;
 
+static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset) {
+    if (offset > span.size()) {
+        LOG_ERROR(
+            Lib_GnmDriver,
+            ": packet length exceeds remaining submission size. Packet dword count={}, remaining "
+            "submission dwords={}",
+            offset, span.size());
+        // Return empty subspan so check for next packet bails out
+        return {};
+    }
+
+    return span.subspan(offset);
+}
+
 Liverpool::Liverpool() {
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
@@ -150,7 +164,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
         }
-        ccb = ccb.subspan(header->type3.NumWords() + 1);
+        ccb = NextPacket(ccb, header->type3.NumWords() + 1);
     }
 
     TracyFiberLeave;
@@ -184,7 +198,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             break;
         case 2:
             // Type-2 packet are used for padding purposes
-            dcb = dcb.subspan(1);
+            dcb = NextPacket(dcb, 1);
             continue;
         case 3:
             const u32 count = header->type3.NumWords();
@@ -525,7 +539,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
             }
-            dcb = dcb.subspan(header->type3.NumWords() + 1);
+            dcb = NextPacket(dcb, header->type3.NumWords() + 1);
             break;
         }
     }
@@ -627,7 +641,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
                             static_cast<u32>(opcode), count);
         }
 
-        acb = acb.subspan(header->type3.NumWords() + 1);
+        acb = NextPacket(acb, header->type3.NumWords() + 1);
     }
 
     TracyFiberLeave;
