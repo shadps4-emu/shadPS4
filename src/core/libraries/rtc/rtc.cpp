@@ -80,7 +80,7 @@ int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc(OrbisRtcTick* pTickLocal, OrbisRtcT
 
     if (convertValue >= 0) {
         convertValue = sceRtcTickAddMinutes(
-            pTickUtc, pTickLocal, -((timezone.tz_dsttime + timezone.tz_minuteswest) / 0x3c));
+            pTickUtc, pTickLocal, -((timezone.tz_dsttime + timezone.tz_minuteswest) / 60));
     }
 
     return convertValue;
@@ -99,7 +99,7 @@ int PS4_SYSV_ABI sceRtcConvertUtcToLocalTime(OrbisRtcTick* pTickUtc, OrbisRtcTic
         (pTickUtc->tick + 0xff23400100d44000U) / 1000000, &seconds, &timezone, 0);
 
     if (convertValue >= 0) {
-        auto newTime = ((timezone.dst_sec + timezone.west_sec) / 0x3c) * 60000000;
+        auto newTime = ((timezone.dst_sec + timezone.west_sec) / 60) * 60000000;
 
         if (pTickLocal == nullptr)
             return ORBIS_RTC_ERROR_INVALID_POINTER;
@@ -124,7 +124,8 @@ int PS4_SYSV_ABI sceRtcEnd() {
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC2822(char* pszDateTime, const OrbisRtcTick* pTickUtc, int minutes) {
+int PS4_SYSV_ABI sceRtcFormatRFC2822(char* pszDateTime, const OrbisRtcTick* pTickUtc,
+                                     int iTimeZoneMinutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -134,7 +135,8 @@ int PS4_SYSV_ABI sceRtcFormatRFC2822LocalTime(char* pszDateTime, const OrbisRtcT
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcFormatRFC3339(char* pszDateTime, const OrbisRtcTick* pTickUtc, int minutes) {
+int PS4_SYSV_ABI sceRtcFormatRFC3339(char* pszDateTime, const OrbisRtcTick* pTickUtc,
+                                     int iTimeZoneMinutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -145,7 +147,7 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339LocalTime(char* pszDateTime, const OrbisRtcT
 }
 
 int PS4_SYSV_ABI sceRtcFormatRFC3339Precise(char* pszDateTime, const OrbisRtcTick* pTickUtc,
-                                            int minutes) {
+                                            int iTimeZoneMinutes) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -178,7 +180,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
-        return ORBIS_RTC_ERROR_INVALID_POINTER;
+        return ORBIS_RTC_ERROR_DATETIME_UNINITIALIZED;
 
     Kernel::OrbisKernelTimespec clocktime;
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
@@ -191,6 +193,9 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
         sceRtcSetTick(pTime, &clockTick);
     }
 
+    LOG_INFO(Lib_Rtc, "Got Current Clock {}/{}/{} @ {}:{}", pTime->year, pTime->month, pTime->day,
+             pTime->hour, pTime->minute);
+
     return returnValue;
 }
 
@@ -198,28 +203,37 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
-        return ORBIS_RTC_ERROR_INVALID_POINTER;
+        return ORBIS_RTC_ERROR_DATETIME_UNINITIALIZED;
 
-    Kernel::OrbisKernelTimespec clocktime;
-    int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
+    Kernel::OrbisKernelTimezone timeZone;
+    int returnValue = Kernel::sceKernelGettimezone(&timeZone);
 
     if (returnValue >= 0) {
-        u64 clockTick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        Kernel::OrbisKernelTimespec clocktime;
 
-        time_t seconds;
-        Kernel::OrbisTimesec timezone;
+        // calculate total timezone offset for converting UTC to local time
+        uint64_t tzOffset = -(timeZone.tz_minuteswest - (timeZone.tz_dsttime * 60));
 
-        returnValue =
-            Kernel::sceKernelConvertUtcToLocaltime(clockTick / 1000000, &seconds, &timezone, 0);
-
+        returnValue = sceKernelClockGettime(0, &clocktime);
         if (returnValue >= 0) {
             OrbisRtcTick newTick;
-            newTick.tick = clockTick;
-            sceRtcTickAddMinutes(&newTick, &newTick, (timezone.dst_sec + timezone.west_sec) / 0x3c);
+            newTick.tick =
+                ((unsigned __int64)((unsigned __int128)(clocktime.tv_nsec *
+                                                        (signed __int128)2361183241434822607LL) >>
+                                    64) >>
+                 63) +
+                ((signed __int64)((unsigned __int128)(clocktime.tv_nsec *
+                                                      (signed __int128)2361183241434822607LL) >>
+                                  64) >>
+                 7) +
+                1000000 * clocktime.tv_sec + 62135596800000000LL;
+            sceRtcTickAddMinutes(&newTick, &newTick, tzOffset);
             sceRtcSetTick(pTime, &newTick);
         }
     }
 
+    LOG_INFO(Lib_Rtc, "Got Local Time {}/{}/{} @ {}:{}", pTime->year, pTime->month, pTime->day,
+             pTime->hour, pTime->minute);
     return returnValue;
 }
 
@@ -281,7 +295,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTick == nullptr)
-        return ORBIS_RTC_ERROR_INVALID_POINTER;
+        return ORBIS_RTC_ERROR_DATETIME_UNINITIALIZED;
 
     Kernel::OrbisKernelTimespec clocktime;
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
@@ -323,7 +337,13 @@ int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day) {
     if (day <= 0 || day > daysInMonth)
         return ORBIS_RTC_ERROR_INVALID_DAY;
 
-    return ORBIS_OK;
+    std::chrono::sys_days chrono_time{std::chrono::year(year) / std::chrono::month(month) /
+                                      std::chrono::day(day)};
+    std::chrono::weekday chrono_weekday{chrono_time};
+
+    LOG_INFO(Lib_Rtc, "Got Day Of Week : {}", chrono_weekday.c_encoding());
+
+    return chrono_weekday.c_encoding();
 }
 
 int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
@@ -339,6 +359,8 @@ int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
     std::chrono::month chronoMonth = std::chrono::month(month);
     int lastDay = static_cast<int>(unsigned(
         std::chrono::year_month_day_last{chronoYear / chronoMonth / std::chrono::last}.day()));
+
+    LOG_INFO(Lib_Rtc, "Got Days In Month : {}", lastDay);
 
     return lastDay;
 }
