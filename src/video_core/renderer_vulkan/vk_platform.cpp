@@ -17,6 +17,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -32,7 +33,7 @@ VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instan
 namespace Vulkan {
 
 static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
-static const char* const API_DUMP_LAYER_NAME = "VK_LAYER_LUNARG_api_dump";
+static const char* const CRASH_DIAGNOSTIC_LAYER_NAME = "VK_LAYER_LUNARG_crash_diagnostic";
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
@@ -196,7 +197,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
 }
 
 vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
-                                  bool dump_command_buffers) {
+                                  bool enable_crash_diagnostic) {
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
 #if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
@@ -227,15 +228,23 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     u32 num_layers = 0;
     std::array<const char*, 2> layers;
 
+    vk::Bool32 enable_force_barriers = vk::False;
+    const char* log_path{};
+
 #if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
     if (enable_validation) {
         layers[num_layers++] = VALIDATION_LAYER_NAME;
     }
-    if (dump_command_buffers) {
-        layers[num_layers++] = API_DUMP_LAYER_NAME;
+
+    if (enable_crash_diagnostic) {
+        layers[num_layers++] = CRASH_DIAGNOSTIC_LAYER_NAME;
+        static const auto crash_diagnostic_path =
+            Common::FS::GetUserPathString(Common::FS::PathType::LogDir);
+        log_path = crash_diagnostic_path.c_str();
+        enable_force_barriers = vk::True;
     }
 #else
-    if (enable_validation || dump_command_buffers) {
+    if (enable_validation || enable_crash_diagnostic) {
         LOG_WARNING(Render_Vulkan,
                     "Skipping loading Vulkan layers as dynamic loading is not enabled.");
     }
@@ -258,7 +267,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         },
         vk::LayerSettingEXT{
             .pLayerName = VALIDATION_LAYER_NAME,
-            .pSettingName = "sync_queue_submit",
+            .pSettingName = "syncval_submit_time_validation",
             .type = vk::LayerSettingTypeEXT::eBool32,
             .valueCount = 1,
             .pValues = &enable_sync,
@@ -297,6 +306,20 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
             .type = vk::LayerSettingTypeEXT::eBool32,
             .valueCount = 1,
             .pValues = &enable_gpuav,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = "lunarg_crash_diagnostic",
+            .pSettingName = "output_path",
+            .type = vk::LayerSettingTypeEXT::eString,
+            .valueCount = 1,
+            .pValues = &log_path,
+        },
+        vk::LayerSettingEXT{
+            .pLayerName = "lunarg_crash_diagnostic",
+            .pSettingName = "sync_after_commands",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &enable_force_barriers,
         },
     };
 

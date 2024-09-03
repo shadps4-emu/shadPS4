@@ -11,7 +11,10 @@
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
+#pragma GCC diagnostic pop
 
 namespace Vulkan {
 
@@ -65,8 +68,10 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
 
 RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
-      instance{window, Config::getGpuId(), Config::vkValidationEnabled()}, draw_scheduler{instance},
-      present_scheduler{instance}, flip_scheduler{instance}, swapchain{instance, window},
+      instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
+               Config::vkCrashDiagnosticEnabled()},
+      draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
+      swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
       texture_cache{rasterizer->GetTextureCache()} {
     const u32 num_images = swapchain.GetImageCount();
@@ -354,7 +359,7 @@ Frame* RendererVulkan::GetRenderFrame() {
     {
         std::unique_lock lock{free_mutex};
         free_cv.wait(lock, [this] { return !free_queue.empty(); });
-        LOG_INFO(Render_Vulkan, "Got render frame, remaining {}", free_queue.size() - 1);
+        LOG_DEBUG(Render_Vulkan, "Got render frame, remaining {}", free_queue.size() - 1);
 
         // Take the frame from the queue
         frame = free_queue.front();
