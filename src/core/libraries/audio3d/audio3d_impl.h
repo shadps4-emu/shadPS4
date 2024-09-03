@@ -9,7 +9,6 @@ namespace Libraries::Audio3d {
 
 class Audio3d {
 public:
-
 private:
 };
 

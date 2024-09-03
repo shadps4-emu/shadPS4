@@ -10,6 +10,4 @@
 
 using namespace Libraries::Kernel;
 
-namespace Libraries::Audio3d {
-
-} // namespace Libraries::Audio3d
+namespace Libraries::Audio3d {} // namespace Libraries::Audio3d

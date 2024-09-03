@@ -6,17 +6,26 @@
 #include "audio3d_impl.h"
 
 #include "common/logging/log.h"
+#include "core/libraries/audio/audioout.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Audio3d {
 
-int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients() {
+int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients(OrbisAudio3dSpeakerArrayHandle handle,
+                                                          OrbisAudio3dPosition pos, float fSpread,
+                                                          float* pCoefficients,
+                                                          unsigned int uiNumCoefficients) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients2() {
+int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients2(OrbisAudio3dSpeakerArrayHandle handle,
+                                                           OrbisAudio3dPosition pos, float fSpread,
+                                                           float* pCoefficients,
+                                                           unsigned int uiNumCoefficients,
+                                                           bool bHeightAware,
+                                                           float fDownmixSpreadRadius) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -26,62 +35,78 @@ int PS4_SYSV_ABI sceAudio3dPortQueryDebug() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dObjectUnreserve() {
+int PS4_SYSV_ABI sceAudio3dObjectUnreserve(OrbisAudio3dPortId uiPortId,
+                                           OrbisAudio3dObjectId uiObjectId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dObjectSetAttributes() {
+int PS4_SYSV_ABI sceAudio3dObjectSetAttributes(OrbisAudio3dPortId uiPortId,
+                                               OrbisAudio3dObjectId uiObjectId,
+                                               size_t szNumAttributes,
+                                               const OrbisAudio3dAttribute* pAttributeArray) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dAudioOutOutput() {
+s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(s32 handle, const void* ptr) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray() {
+int PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray(OrbisAudio3dSpeakerArrayHandle handle) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported() {
+int PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId uiPortId,
+                                                      OrbisAudio3dAttributeId* pCapabilities,
+                                                      unsigned int* pNumCapabilities) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dBedWrite() {
+int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId uiPortId, unsigned int uiNumChannels,
+                                    OrbisAudio3dFormat eFormat, const void* pBuffer,
+                                    unsigned int uiNumSamples) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dStrError() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI sceAudio3dStrError(int iErrorCode) {
+    LOG_ERROR(Lib_Audio3d, "sceAudio3dStrError called, error code = %d", iErrorCode);
+    return "NOT_IMPLEMENTED";
 }
 
 int PS4_SYSV_ABI sceAudio3dPortGetState() {
+    LOG_WARNING(Lib_Audio3d, "DEBUG sceAudio3dPortGetState called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceAudio3dAudioOutOutputs(::Libraries::AudioOut::OrbisAudioOutOutputParam* param,
+                                           s32 num) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dAudioOutOutputs() {
+void PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* sParameters) {
+    if (sParameters != NULL) {
+        sParameters->szSizeThis = sizeof(OrbisAudio3dOpenParameters);
+        sParameters->uiGranularity = 256;
+        sParameters->eRate = ORBIS_AUDIO3D_RATE_48000;
+        sParameters->uiMaxObjects = 512;
+        sParameters->uiQueueDepth = 2;
+        sParameters->eBufferMode = ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH;
+        sParameters->uiNumBeds = 2;
+    }
+}
+
+int PS4_SYSV_ABI sceAudio3dPortDestroy(OrbisAudio3dPortId uiPortId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceAudio3dPortDestroy() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceAudio3dPortClose() {
+int PS4_SYSV_ABI sceAudio3dPortClose(OrbisAudio3dPortId uiPortId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -96,53 +121,60 @@ int PS4_SYSV_ABI sceAudio3dPortGetBufferLevel() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortGetList() {
+int PS4_SYSV_ABI sceAudio3dPortGetList(OrbisAudio3dPortId* pPorts, unsigned int* pNumPorts) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortCreate() {
+int PS4_SYSV_ABI sceAudio3dPortCreate(unsigned int uiGranularity, OrbisAudio3dRate eRate,
+                                      s64 iReserved, OrbisAudio3dPortId* pId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dInitialize() {
+int PS4_SYSV_ABI sceAudio3dInitialize(s64 iReserved) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortPush() {
+int PS4_SYSV_ABI sceAudio3dPortPush(OrbisAudio3dPortId uiPortId, OrbisAudio3dBlocking eBlocking) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudio3dTerminate() {
+    // TODO: When not initialized or some ports still open, return ORBIS_AUDIO3D_ERROR_NOT_READY
+    LOG_INFO(Lib_Audio3d, "sceAudio3dTerminate called");
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceAudio3dPortOpen(OrbisUserServiceUserId iUserId,
+                                    const OrbisAudio3dOpenParameters* pParameters,
+                                    OrbisAudio3dPortId* pId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortOpen() {
+int PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(OrbisAudio3dPortId uiPortId, unsigned int* pQueueLevel,
+                                             unsigned int* pQueueAvailable) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortGetQueueLevel() {
+int PS4_SYSV_ABI sceAudio3dPortSetAttribute(OrbisAudio3dPortId uiPortId,
+                                            OrbisAudio3dAttributeId uiAttributeId,
+                                            const void* pAttribute, size_t szAttribute) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortSetAttribute() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceAudio3dPortFlush() {
+int PS4_SYSV_ABI sceAudio3dPortFlush(OrbisAudio3dPortId uiPortId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudio3dPortGetParameters() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+    LOG_WARNING(Lib_Audio3d, "DEBUG sceAudio3dPortGetParameters called");
     return ORBIS_OK;
 }
 
@@ -151,27 +183,28 @@ int PS4_SYSV_ABI sceAudio3dPortGetStatus() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dObjectReserve() {
+int PS4_SYSV_ABI sceAudio3dObjectReserve(OrbisAudio3dPortId uiPortId, OrbisAudio3dObjectId* pId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize() {
+size_t PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize(unsigned int uiNumSpeakers, bool bIs3d) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dCreateSpeakerArray() {
+int PS4_SYSV_ABI sceAudio3dCreateSpeakerArray(OrbisAudio3dSpeakerArrayHandle* pHandle,
+                                              const OrbisAudio3dSpeakerArrayParameters* pParameters) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dPortAdvance() {
+int PS4_SYSV_ABI sceAudio3dPortAdvance(OrbisAudio3dPortId uiPortId) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dAudioOutClose() {
+s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(s32 handle) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -182,16 +215,21 @@ int PS4_SYSV_ABI sceAudio3dReportUnregisterHandler() {
 }
 
 int PS4_SYSV_ABI sceAudio3dPortFreeState() {
+    LOG_WARNING(Lib_Audio3d, "DEBUG sceAudio3dPortFreeState called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId uiPortId, OrbisUserServiceUserId userId,
+                                        s32 type, s32 index, u32 len, u32 freq,
+                                        u32 param) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dAudioOutOpen() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceAudio3dBedWrite2() {
+int PS4_SYSV_ABI sceAudio3dBedWrite2(OrbisAudio3dPortId uiPortId, unsigned int uiNumChannels,
+                                     OrbisAudio3dFormat eFormat, const void* pBuffer,
+                                     unsigned int uiNumSamples,
+                                     OrbisAudio3dOutputRoute eOutputRoute, bool bRestricted) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
