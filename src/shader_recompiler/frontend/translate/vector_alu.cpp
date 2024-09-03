@@ -483,7 +483,7 @@ void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
     static constexpr std::array IntToFloat = {
         0.0f,     0.0625f,  0.1250f,  0.1875f,  0.2500f,  0.3125f,  0.3750f,  0.4375f,
         -0.5000f, -0.4375f, -0.3750f, -0.3125f, -0.2500f, -0.1875f, -0.1250f, -0.0625f};
-    ir.SetVectorReg(dst_reg, ir.Imm32(IntToFloat[src0.U32()]));
+    ir.SetVectorReg(dst_reg, ir.Imm32(IntToFloat[src0.U32() & 0xF]));
 }
 
 void Translator::V_MED3_F32(const GcnInst& inst) {
