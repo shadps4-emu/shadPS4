@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 # Build shadPS4 for Windows
 
 This tutorial reads as if you have none of the prerequisites already installed. If you do, just ignore the steps regarding installation.
-If you are building to contribute to the project, please omit `--depth 1` from the git invokations.
+If you are building to contribute to the project, please omit `--depth 1` from the git invocations.
 
 Note: **ARM64 is not supported!** As of writing, it will not build nor run. The instructions with respect to ARM64 are for developers only.
 
@@ -15,6 +15,7 @@ Note: **ARM64 is not supported!** As of writing, it will not build nor run. The 
 ### (Prerequisite) Download the Community edition from [**Visual Studio 2022**](https://visualstudio.microsoft.com/vs/)
 
 Once you are within the installer:
+
 1. Select `Desktop development with C++`
 2. Go to "Individual Components" tab
 3. Search and select `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
@@ -30,11 +31,12 @@ Beware, this requires you to create a Qt account. If you do not want to do this,
    Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
 
 2. Download and install [Qt Visual Studio Tools](https://marketplace.visualstudio.com/items?itemName=TheQtCompany.QtVisualStudioTools2022)
-   
+
 Once you are finished, you will have to configure Qt within Visual Studio:
+
 1. Tools -> Options -> Qt -> Versions
-2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.7.2\msvc2019_64` 
-3. Enable the default checkmark on the new version you just created. 
+2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.7.2\msvc2019_64`
+3. Enable the default checkmark on the new version you just created.
 
 ### (Prerequisite) Download [**Git for Windows**](https://git-scm.com/download/win)
 
@@ -62,7 +64,7 @@ Go through the Git for Windows installation as normal
 Your shadps4.exe will be in `c:\path\to\source\Build\x64-Clang-Release\`
 
 To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
-`C:\Qt\6.7.2\msvc2019_64\bin\windeployqt.exe c:\path\to\shadps4.exe`  
+`C:\Qt\6.7.2\msvc2019_64\bin\windeployqt.exe "c:\path\to\shadps4.exe"`  
 (Change Qt path if you've installed it to non-default path)
 
 ## Option 2: MSYS2/MinGW
@@ -74,23 +76,31 @@ Go through the MSYS2 installation as normal
 If you are building to distribute, please omit `-DCMAKE_CXX_FLAGS="-O2 -march=native"` within the build configuration step.
 
 Normal x86-based computers, follow:
+
 1. Open "MSYS2 MINGW64" from your new applications
 2. Run `pacman -Syu`, let it complete;
-3. Run `pacman -S --needed git mingw-w64-x86_64-binutils mingw-w64-x86_64-clang mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-qt6-base`
+3. Run `pacman -S --needed git mingw-w64-x86_64-binutils mingw-w64-x86_64-clang mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-ffmpeg`
+   1. Optional (Qt only): run `pacman -S --needed mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools`
 4. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 5. Run `cd shadPS4`
-6. Run `cmake -S . -B build -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
+6. Run `cmake -S . -B build -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
+   1. Optional (Qt only): add `-DENABLE_QT_GUI=ON`
 7. Run `cmake --build build`
+   1. Optional (Qt only): run `windeployqt6 build/shadps4.exe`
 8. To run the finished product, run `./build/shadPS4.exe`
 
 ARM64-based computers, follow:
+
 1. Open "MSYS2 CLANGARM64" from your new applications
 2. Run `pacman -Syu`, let it complete;
-3. Run `pacman -S --needed git mingw-w64-clang-aarch64-binutils mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-cmake mingw-w64-clang-aarch64-ninja mingw-w64-clang-aarch64-qt6-base`
+3. Run `pacman -S --needed git mingw-w64-clang-aarch64-binutils mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-cmake mingw-w64-clang-aarch64-ninja mingw-w64-clang-aarch64-ffmpeg`
+   1. Optional (Qt only): run `pacman -S --needed mingw-w64-clang-aarch64-qt6-base mingw-w64-clang-aarch64-qt6-tools`
 4. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 5. Run `cd shadPS4`
-6. Run `cmake -S . -B build -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
+6. Run `cmake -S . -B build -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
+   1. Optional (Qt only): add `-DENABLE_QT_GUI=ON`
 7. Run `cmake --build build`
+   1. Optional (Qt only): run `windeployqt6 build/shadps4.exe`
 8. To run the finished product, run `./build/shadPS4.exe`
 
 ## Note on MSYS2 builds
