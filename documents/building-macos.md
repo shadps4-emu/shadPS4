@@ -7,7 +7,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ### Install the necessary tools to build shadPS4:
 
-For installing tools and library dependencies we will be using [Homebrew](https://brew.sh/).
+First, make sure you have **Xcode 16.0 or newer** installed.
+
+For installing other tools and library dependencies we will be using [Homebrew](https://brew.sh/).
 
 On an ARM system, we will need the native ARM Homebrew to install tools and x86_64 Homebrew to install libraries.
 
