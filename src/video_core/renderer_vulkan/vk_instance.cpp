@@ -118,11 +118,15 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     // Check and log format support details.
     for (const auto& key : format_properties | std::views::keys) {
         const auto format = key;
-        if (!IsFormatSupported(format)) {
+        if (!IsImageFormatSupported(format)) {
             const auto alternative = GetAlternativeFormat(format);
-            if (IsFormatSupported(alternative)) {
-                LOG_WARNING(Render_Vulkan, "Format {} is not supported, falling back to {}",
+            if (IsImageFormatSupported(alternative)) {
+                LOG_WARNING(Render_Vulkan,
+                            "Format {} is not supported for images, falling back to {}.",
                             vk::to_string(format), vk::to_string(alternative));
+            } else if (IsVertexFormatSupported(format)) {
+                LOG_WARNING(Render_Vulkan, "Format {} is only supported for vertex buffers.",
+                            vk::to_string(format));
             } else {
                 LOG_ERROR(Render_Vulkan,
                           "Format {} is not supported and no suitable alternative is supported.",
@@ -479,7 +483,7 @@ void Instance::CollectToolingInfo() {
     }
 }
 
-bool Instance::IsFormatSupported(const vk::Format format) const {
+bool Instance::IsImageFormatSupported(const vk::Format format) const {
     if (format == vk::Format::eUndefined) [[unlikely]] {
         return true;
     }
@@ -495,6 +499,20 @@ bool Instance::IsFormatSupported(const vk::Format format) const {
     return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
 }
 
+bool Instance::IsVertexFormatSupported(const vk::Format format) const {
+    if (format == vk::Format::eUndefined) [[unlikely]] {
+        return true;
+    }
+
+    const auto it = format_properties.find(format);
+    if (it == format_properties.end()) {
+        UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
+    }
+
+    constexpr vk::FormatFeatureFlags optimal_flags = vk::FormatFeatureFlagBits::eVertexBuffer;
+    return (it->second.bufferFeatures & optimal_flags) == optimal_flags;
+}
+
 vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
     if (format == vk::Format::eB5G6R5UnormPack16) {
         return vk::Format::eR5G6B5UnormPack16;
@@ -505,11 +523,11 @@ vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
 }
 
 vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
-    if (IsFormatSupported(format)) [[likely]] {
+    if (IsImageFormatSupported(format)) [[likely]] {
         return format;
     }
     const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsFormatSupported(alternative)) [[likely]] {
+    if (IsImageFormatSupported(alternative)) [[likely]] {
         return alternative;
     }
     return format;
@@ -517,7 +535,7 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
 
 vk::ComponentMapping Instance::GetSupportedComponentSwizzle(vk::Format format,
                                                             vk::ComponentMapping swizzle) const {
-    if (IsFormatSupported(format)) [[likely]] {
+    if (IsImageFormatSupported(format)) [[likely]] {
         return swizzle;
     }
 
