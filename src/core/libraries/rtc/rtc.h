@@ -19,6 +19,8 @@ constexpr int ORBIS_RTC_DAYOFWEEK_THURSDAY = 4;
 constexpr int ORBIS_RTC_DAYOFWEEK_FRIDAY = 5;
 constexpr int ORBIS_RTC_DAYOFWEEK_SATURDAY = 6;
 
+constexpr int64_t UNIX_EPOCH_TICKS = 0xdcbffeff2bc000;
+
 struct OrbisRtcTick {
     uint64_t tick;
 };
@@ -48,7 +50,7 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339PreciseLocalTime(char* pszDateTime,
                                                      const OrbisRtcTick* pTickUtc);
 int PS4_SYSV_ABI sceRtcGetCurrentAdNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone);
-int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTick);
+int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime);
 int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetCurrentNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcGetCurrentRawNetworkTick(OrbisRtcTick* pTick);

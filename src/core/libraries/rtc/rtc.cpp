@@ -168,7 +168,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentAdNetworkTick(OrbisRtcTick* pTick) {
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
 
     if (returnValue == 0) {
-        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
     } else {
         return ORBIS_RTC_ERROR_NOT_INITIALIZED;
     }
@@ -187,7 +187,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
 
     if (returnValue == 0) {
         OrbisRtcTick clockTick;
-        clockTick.tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        clockTick.tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
 
         sceRtcTickAddMinutes(&clockTick, &clockTick, timeZone);
         sceRtcSetTick(pTime, &clockTick);
@@ -214,19 +214,9 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
         // calculate total timezone offset for converting UTC to local time
         uint64_t tzOffset = -(timeZone.tz_minuteswest - (timeZone.tz_dsttime * 60));
 
-        returnValue = sceKernelClockGettime(0, &clocktime);
         if (returnValue >= 0) {
             OrbisRtcTick newTick;
-            newTick.tick =
-                ((unsigned __int64)((unsigned __int128)(clocktime.tv_nsec *
-                                                        (signed __int128)2361183241434822607LL) >>
-                                    64) >>
-                 63) +
-                ((signed __int64)((unsigned __int128)(clocktime.tv_nsec *
-                                                      (signed __int128)2361183241434822607LL) >>
-                                  64) >>
-                 7) +
-                1000000 * clocktime.tv_sec + 62135596800000000LL;
+            sceRtcGetCurrentTick(&newTick);
             sceRtcTickAddMinutes(&newTick, &newTick, tzOffset);
             sceRtcSetTick(pTime, &newTick);
         }
@@ -247,7 +237,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick(OrbisRtcTick* pTick) {
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
 
     if (returnValue == 0) {
-        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
     } else {
         return ORBIS_RTC_ERROR_NOT_INITIALIZED;
     }
@@ -265,7 +255,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentNetworkTick(OrbisRtcTick* pTick) {
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
 
     if (returnValue == 0) {
-        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
     } else {
         return ORBIS_RTC_ERROR_NOT_INITIALIZED;
     }
@@ -283,7 +273,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentRawNetworkTick(OrbisRtcTick* pTick) {
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
 
     if (returnValue == 0) {
-        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
     } else {
         return ORBIS_RTC_ERROR_NOT_INITIALIZED;
     }
@@ -301,7 +291,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentTick(OrbisRtcTick* pTick) {
     int returnValue = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &clocktime);
 
     if (returnValue >= 0) {
-        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + 0xdcbffeff2bc000;
+        pTick->tick = clocktime.tv_nsec / 1000 + clocktime.tv_sec * 1000000 + UNIX_EPOCH_TICKS;
     }
 
     return SCE_OK;
@@ -563,7 +553,7 @@ int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, time_t llTime) {
         newTick.tick = llTime * 1000000;
     }
 
-    newTick.tick += 0xdcbffeff2bc000;
+    newTick.tick += UNIX_EPOCH_TICKS;
     sceRtcSetTick(pTime, &newTick);
 
     return SCE_OK;
