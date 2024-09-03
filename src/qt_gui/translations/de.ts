@@ -500,6 +500,11 @@
 	</context>
     <context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game Lists</source>
+			<translation>Spiellisten</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -925,6 +930,49 @@
 			<location filename="../settings_dialog.cpp" line="86"/>
 			<source>Close</source>
 			<translation>Schließen</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Symbol</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Name</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Seriennummer</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Region</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Firmware</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Größe</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Version</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Pfad</translation>
 		</message>
 	</context>
 </TS>

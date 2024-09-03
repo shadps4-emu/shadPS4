@@ -343,151 +343,6 @@
 			<source>toolBar</source>
 			<translation>نوار ابزار</translation>
 		</message>
-		<message>
-			<location filename="../main_window.cpp" line="168"/>
-			<source> * Unsupported Vulkan Version</source>
-			<translation>شما پشتیبانی نمیشود Vulkan ورژن*</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="326"/>
-			<source>Download Cheats For All Installed Games</source>
-			<translation>دانلود چیت برای همه بازی ها</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="328"/>
-			<source>Download Patches For All Games</source>
-			<translation>دانلود پچ برای همه بازی ها</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="363"/>
-			<source>Download Complete</source>
-			<translation>دانلود کامل شد✅</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="364"/>
-			<source>You have downloaded cheats for all the games you have installed.</source>
-			<translation>چیت برای همه بازی های شما دانلودشد✅</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="391"/>
-			<source>Patches Downloaded Successfully!</source>
-			<translation>پچ ها با موفقیت دانلود شد✅</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="392"/>
-			<source>All Patches available for all games have been downloaded.</source>
-			<translation>✅تمام پچ های موجود برای همه بازی های شما دانلود شد</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="549"/>
-			<source>Games: </source>
-			<translation>بازی ها:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="575"/>
-			<source>PKG File (*.PKG)</source>
-			<translation>PKG فایل (*.PKG)</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="594"/>
-			<source>ELF files (*.bin *.elf *.oelf)</source>
-			<translation>ELF فایل های (*.bin *.elf *.oelf) </translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="600"/>
-			<source>Game Boot</source>
-			<translation>اجرای بازی</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="600"/>
-			<source>Only one file can be selected!</source>
-			<translation>فقط یک فایل انتخاب کنید!</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="623"/>
-			<source>PKG Extraction</source>
-			<translation>PKG استخراج فایل</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="646"/>
-			<source>Patch detected!</source>
-			<translation>پچ شناسایی شد!</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="646"/>
-			<source>PKG and Game versions match: </source>
-			<translation>و نسخه بازی همخوانی دارد PKG فایل:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="647"/>
-			<source>Would you like to overwrite?</source>
-			<translation>آیا مایل به جایگزینی فایل هستید؟</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="639"/>
-			<source>PKG Version %1 is older than installed version: </source>
-			<translation>نسخه فایل PKG %1 قدیمی تر از نسخه نصب شده است:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="660"/>
-			<source>Game is installed: </source>
-			<translation>بازی نصب شد:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="660"/>
-			<source>Would you like to install Patch: </source>
-			<translation>آیا مایل به نصب پچ هستید:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="673"/>
-			<source>DLC Installation</source>
-			<translation>نصب DLC</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="674"/>
-			<source>Would you like to install DLC: %1?</source>
-			<translation>آیا مایل به نصب DLC هستید: %1 </translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="688"/>
-			<source>DLC already installed:</source>
-			<translation>قبلا نصب شده DLC این:</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="701"/>
-			<source>Game already installed</source>
-			<translation>این بازی قبلا نصب شده</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="674"/>
-			<source>PKG is a patch, please install the game first!</source>
-			<translation>فایل انتخاب شده یک پچ است, لطفا اول بازی را نصب کنید</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="681"/>
-			<source>PKG ERROR</source>
-			<translation>PKG ارور فایل</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="693"/>
-			<source>Extracting PKG %1/%2</source>
-			<translation>درحال استخراج PKG %1/%2</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="703"/>
-			<source>Extraction Finished</source>
-			<translation>استخراج به پایان رسید</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="704"/>
-			<source>Game successfully installed at %1</source>
-			<translation>بازی با موفقیت در %1 نصب شد</translation>
-		</message>
-		<message>
-			<location filename="../main_window.cpp" line="725"/>
-			<source>File doesn&apos;t appear to be a valid PKG file</source>
-			<translation>  این فایل یک PKG درست به نظر نمی آید</translation>
-		</message>
 	</context>
 	<context>
 		<name>PKGViewer</name>
@@ -641,6 +496,159 @@
 			<location filename="../settings_dialog.ui" line="574"/>
 			<source>Enable RenderDoc Debugging</source>
 			<translation>RenderDoc Debugging</translation>
+		</message>
+	</context>
+	<context>
+        <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game Lists</source>
+			<translation>لیست بازی ها</translation>
+		</message>
+        <message>
+			<location filename="../main_window.cpp" line="168"/>
+			<source> * Unsupported Vulkan Version</source>
+			<translation>شما پشتیبانی نمیشود Vulkan ورژن*</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="326"/>
+			<source>Download Cheats For All Installed Games</source>
+			<translation>دانلود چیت برای همه بازی ها</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="328"/>
+			<source>Download Patches For All Games</source>
+			<translation>دانلود پچ برای همه بازی ها</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="363"/>
+			<source>Download Complete</source>
+			<translation>دانلود کامل شد✅</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="364"/>
+			<source>You have downloaded cheats for all the games you have installed.</source>
+			<translation>چیت برای همه بازی های شما دانلودشد✅</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="391"/>
+			<source>Patches Downloaded Successfully!</source>
+			<translation>پچ ها با موفقیت دانلود شد✅</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="392"/>
+			<source>All Patches available for all games have been downloaded.</source>
+			<translation>✅تمام پچ های موجود برای همه بازی های شما دانلود شد</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="549"/>
+			<source>Games: </source>
+			<translation>بازی ها:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="575"/>
+			<source>PKG File (*.PKG)</source>
+			<translation>PKG فایل (*.PKG)</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="594"/>
+			<source>ELF files (*.bin *.elf *.oelf)</source>
+			<translation>ELF فایل های (*.bin *.elf *.oelf) </translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="600"/>
+			<source>Game Boot</source>
+			<translation>اجرای بازی</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="600"/>
+			<source>Only one file can be selected!</source>
+			<translation>فقط یک فایل انتخاب کنید!</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="623"/>
+			<source>PKG Extraction</source>
+			<translation>PKG استخراج فایل</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="646"/>
+			<source>Patch detected!</source>
+			<translation>پچ شناسایی شد!</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="646"/>
+			<source>PKG and Game versions match: </source>
+			<translation>و نسخه بازی همخوانی دارد PKG فایل:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="647"/>
+			<source>Would you like to overwrite?</source>
+			<translation>آیا مایل به جایگزینی فایل هستید؟</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="639"/>
+			<source>PKG Version %1 is older than installed version: </source>
+			<translation>نسخه فایل PKG %1 قدیمی تر از نسخه نصب شده است:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="660"/>
+			<source>Game is installed: </source>
+			<translation>بازی نصب شد:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="660"/>
+			<source>Would you like to install Patch: </source>
+			<translation>آیا مایل به نصب پچ هستید:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="673"/>
+			<source>DLC Installation</source>
+			<translation>نصب DLC</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="674"/>
+			<source>Would you like to install DLC: %1?</source>
+			<translation>آیا مایل به نصب DLC هستید: %1 </translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="688"/>
+			<source>DLC already installed:</source>
+			<translation>قبلا نصب شده DLC این:</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="701"/>
+			<source>Game already installed</source>
+			<translation>این بازی قبلا نصب شده</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="674"/>
+			<source>PKG is a patch, please install the game first!</source>
+			<translation>فایل انتخاب شده یک پچ است, لطفا اول بازی را نصب کنید</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="681"/>
+			<source>PKG ERROR</source>
+			<translation>PKG ارور فایل</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="693"/>
+			<source>Extracting PKG %1/%2</source>
+			<translation>درحال استخراج PKG %1/%2</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="703"/>
+			<source>Extraction Finished</source>
+			<translation>استخراج به پایان رسید</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="704"/>
+			<source>Game successfully installed at %1</source>
+			<translation>بازی با موفقیت در %1 نصب شد</translation>
+		</message>
+		<message>
+			<location filename="../main_window.cpp" line="725"/>
+			<source>File doesn&apos;t appear to be a valid PKG file</source>
+			<translation>  این فایل یک PKG درست به نظر نمی آید</translation>
 		</message>
 	</context>
 	<context>
@@ -922,6 +930,49 @@
 			<location filename="../settings_dialog.cpp" line="86"/>
 			<source>Close</source>
 			<translation>بستن</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>آیکون</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>نام</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>سریال</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>منطقه</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>فریمور</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>اندازه</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>نسخه</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>مسیر</translation>
 		</message>
 	</context>
 </TS>

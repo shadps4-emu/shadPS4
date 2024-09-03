@@ -34,12 +34,12 @@ bool MainWindow::Init() {
     CreateActions();
     CreateRecentGameActions();
     ConfigureGuiFromSettings();
+    LoadTranslation();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
     GetPhysicalDevices();
-    LoadTranslation();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -103,7 +103,7 @@ void MainWindow::CreateDockWindows() {
     QWidget* phCentralWidget = new QWidget(this);
     setCentralWidget(phCentralWidget);
 
-    m_dock_widget.reset(new QDockWidget("Game List", this));
+    m_dock_widget.reset(new QDockWidget(tr("Game Lists"), this));
     m_game_list_frame.reset(new GameListFrame(m_game_info, this));
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));

@@ -500,6 +500,11 @@
     </context>
     <context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game Lists</source>
+			<translation>Pelilista</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -925,6 +930,49 @@
 			<location filename="../settings_dialog.cpp" line="86"/>
 			<source>Close</source>
 			<translation>Sulje</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Ikoni</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Nimi</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Sarjanumero</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Alue</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Ohjelmisto</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Koko</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Versio</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Polku</translation>
 		</message>
 	</context>
 </TS>
