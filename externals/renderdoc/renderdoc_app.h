@@ -37,7 +37,7 @@
 #define RENDERDOC_CC __cdecl
 #elif defined(__linux__) || defined(__FreeBSD__)
 #define RENDERDOC_CC
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__MACH__)
 #define RENDERDOC_CC
 #else
 #error "Unknown platform"
