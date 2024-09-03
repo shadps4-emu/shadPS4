@@ -669,7 +669,7 @@ void CheatsPatches::populateFileListPatches() {
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
     if (repository == "GoldHEN") {
-        url = "https://github.com/GoldHEN/GoldHEN_Patch_Repository/tree/main/"
+        url = "https://github.com/illusion0001/PS4-PS5-Game-Patch/tree/main/"
               "patches/xml";
     }
     if (repository == "shadPS4") {
@@ -713,8 +713,8 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
                     if (fileName.endsWith(".xml")) {
                         QString fileUrl;
                         if (repository == "GoldHEN") {
-                            fileUrl = QString("https://raw.githubusercontent.com/GoldHEN/"
-                                              "GoldHEN_Patch_Repository/main/%1")
+                            fileUrl = QString("https://raw.githubusercontent.com/illusion0001/"
+                                              "PS4-PS5-Game-Patch/main/%1")
                                           .arg(filePath);
                         }
                         if (repository == "shadPS4") {
