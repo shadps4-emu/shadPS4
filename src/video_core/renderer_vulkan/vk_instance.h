@@ -17,12 +17,6 @@ class WindowSDL;
 
 VK_DEFINE_HANDLE(VmaAllocator)
 
-#ifdef __APPLE__
-#define VULKAN_LIBRARY_NAME "libMoltenVK.dylib"
-#else
-#define VULKAN_LIBRARY_NAME
-#endif
-
 namespace Vulkan {
 
 class Instance {
@@ -240,7 +234,6 @@ private:
     vk::Format GetAlternativeFormat(const vk::Format format) const;
 
 private:
-    vk::DynamicLoader dl{VULKAN_LIBRARY_NAME};
     vk::UniqueInstance instance;
     vk::PhysicalDevice physical_device;
     vk::UniqueDevice device;

@@ -20,6 +20,15 @@
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
+static vk::DynamicLoader dl;
+#else
+extern "C" {
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance instance,
+                                                               const char* pName);
+}
+#endif
+
 namespace Vulkan {
 
 static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
@@ -186,12 +195,14 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     return extensions;
 }
 
-vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemType window_type,
-                                  bool enable_validation, bool dump_command_buffers) {
+vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
+                                  bool dump_command_buffers) {
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
     auto vkGetInstanceProcAddr =
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+#endif
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
     const u32 available_version = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
@@ -216,12 +227,19 @@ vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemT
     u32 num_layers = 0;
     std::array<const char*, 2> layers;
 
+#if VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL
     if (enable_validation) {
         layers[num_layers++] = VALIDATION_LAYER_NAME;
     }
     if (dump_command_buffers) {
         layers[num_layers++] = API_DUMP_LAYER_NAME;
     }
+#else
+    if (enable_validation || dump_command_buffers) {
+        LOG_WARNING(Render_Vulkan,
+                    "Skipping loading Vulkan layers as dynamic loading is not enabled.");
+    }
+#endif
 
     vk::Bool32 enable_sync =
         enable_validation && Config::vkValidationSyncEnabled() ? vk::True : vk::False;

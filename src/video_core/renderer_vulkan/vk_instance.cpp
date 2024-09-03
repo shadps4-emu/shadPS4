@@ -47,13 +47,13 @@ std::string GetReadableVersion(u32 version) {
 } // Anonymous namespace
 
 Instance::Instance(bool enable_validation, bool dump_command_buffers)
-    : instance{CreateInstance(dl, Frontend::WindowSystemType::Headless, enable_validation,
+    : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               dump_command_buffers)},
       physical_devices{instance->enumeratePhysicalDevices()} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/)
-    : instance{CreateInstance(dl, window.getWindowInfo().type, enable_validation, false)},
+    : instance{CreateInstance(window.getWindowInfo().type, enable_validation, false)},
       physical_devices{instance->enumeratePhysicalDevices()} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
