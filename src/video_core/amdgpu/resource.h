@@ -176,6 +176,18 @@ struct Image {
     u64 lod_hw_cnt_en : 1;
     u64 : 43;
 
+    static constexpr Image Null() {
+        Image image{};
+        image.data_format = u64(DataFormat::Format8_8_8_8);
+        image.dst_sel_x = 4;
+        image.dst_sel_y = 5;
+        image.dst_sel_z = 6;
+        image.dst_sel_w = 7;
+        image.tiling_index = u64(TilingMode::Texture_MicroTiled);
+        image.type = u64(ImageType::Color2D);
+        return image;
+    }
+
     bool Valid() const {
         return (type & 0x8u) != 0;
     }

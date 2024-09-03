@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include "common/alignment.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
-#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
@@ -471,14 +471,11 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle);
-    const auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
-        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-        inst.ReplaceUsesWith(
-            ir.CompositeConstruct(ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f)));
-        return;
+        image = AmdGpu::Image::Null();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);

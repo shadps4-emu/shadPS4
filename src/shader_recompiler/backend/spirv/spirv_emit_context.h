@@ -6,9 +6,9 @@
 #include <array>
 #include <sirit/sirit.h>
 
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
-#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -36,7 +36,8 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, const Shader::Info& info, u32& binding);
+    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
+                         u32& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
@@ -125,6 +126,7 @@ public:
     }
 
     const Info& info;
+    const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage{};
 

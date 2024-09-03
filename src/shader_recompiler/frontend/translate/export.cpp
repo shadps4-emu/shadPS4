@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Gcn {
 
@@ -19,12 +20,28 @@ void Translator::EmitExport(const GcnInst& inst) {
         IR::VectorReg(inst.src[3].code),
     };
 
+    const auto swizzle = [&](u32 comp) {
+        if (!IR::IsMrt(attrib)) {
+            return comp;
+        }
+        const u32 index = u32(attrib) - u32(IR::Attribute::RenderTarget0);
+        switch (runtime_info.fs_info.mrt_swizzles[index]) {
+        case MrtSwizzle::Identity:
+            return comp;
+        case MrtSwizzle::Alt:
+            static constexpr std::array<u32, 4> AltSwizzle = {2, 1, 0, 3};
+            return AltSwizzle[comp];
+        default:
+            UNREACHABLE();
+        }
+    };
+
     const auto unpack = [&](u32 idx) {
         const IR::Value value = ir.UnpackHalf2x16(ir.GetVectorReg(vsrc[idx]));
         const IR::F32 r = IR::F32{ir.CompositeExtract(value, 0)};
         const IR::F32 g = IR::F32{ir.CompositeExtract(value, 1)};
-        ir.SetAttribute(attrib, r, idx * 2);
-        ir.SetAttribute(attrib, g, idx * 2 + 1);
+        ir.SetAttribute(attrib, r, swizzle(idx * 2));
+        ir.SetAttribute(attrib, g, swizzle(idx * 2 + 1));
     };
 
     // Components are float16 packed into a VGPR
@@ -45,7 +62,7 @@ void Translator::EmitExport(const GcnInst& inst) {
                 continue;
             }
             const IR::F32 comp = ir.GetVectorReg<IR::F32>(vsrc[i]);
-            ir.SetAttribute(attrib, comp, i);
+            ir.SetAttribute(attrib, comp, swizzle(i));
         }
     }
 }

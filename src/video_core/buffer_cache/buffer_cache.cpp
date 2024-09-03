@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/scope_exit.h"
-#include "shader_recompiler/runtime_info.h"
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"

@@ -600,6 +600,8 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
             return is_vo_surface ? vk::Format::eB8G8R8A8Unorm : vk::Format::eB8G8R8A8Srgb;
         case vk::Format::eB8G8R8A8Srgb:
             return is_vo_surface ? vk::Format::eR8G8B8A8Unorm : vk::Format::eR8G8B8A8Srgb;
+        case vk::Format::eA2B10G10R10UnormPack32:
+            return vk::Format::eA2R10G10B10UnormPack32;
         default:
             break;
         }
