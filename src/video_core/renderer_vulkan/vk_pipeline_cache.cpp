@@ -106,7 +106,7 @@ Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage, const GraphicsPipeline
         break;
     }
     default:
-        UNREACHABLE();
+        break;
     }
     return info;
 }

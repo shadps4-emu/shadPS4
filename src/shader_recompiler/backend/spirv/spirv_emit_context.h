@@ -36,8 +36,8 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info,
-                         const Shader::Info& info, u32& binding);
+    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
+                         u32& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);

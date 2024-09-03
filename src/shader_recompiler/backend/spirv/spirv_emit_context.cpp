@@ -42,7 +42,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 } // Anonymous namespace
 
 EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
-                         const Shader::Info& info_, u32& binding_)
+                         const Info& info_, u32& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
@@ -169,7 +169,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 void EmitContext::DefineBufferOffsets() {
     for (auto& buffer : buffers) {
         const u32 binding = buffer.binding;
-        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
         const u32 offset = (binding & 0x3) << 3;
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
@@ -180,7 +180,7 @@ void EmitContext::DefineBufferOffsets() {
     }
     for (auto& tex_buffer : texture_buffers) {
         const u32 binding = tex_buffer.binding;
-        const u32 half = Shader::PushData::BufOffsetIndex + (binding >> 4);
+        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
         const u32 offset = (binding & 0x3) << 3;
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),

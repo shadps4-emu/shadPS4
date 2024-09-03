@@ -113,14 +113,16 @@ struct RuntimeInfo {
     RuntimeInfo(Stage stage_) : stage{stage_} {}
 
     bool operator==(const RuntimeInfo& other) const noexcept {
-        if (stage == Stage::Fragment) {
+        switch (stage) {
+        case Stage::Fragment:
             return fs_info == other.fs_info;
-        } else if (stage == Stage::Vertex) {
+        case Stage::Vertex:
             return vs_info == other.vs_info;
-        } else if (stage == Stage::Compute) {
+        case Stage::Compute:
             return cs_info == other.cs_info;
+        default:
+            return true;
         }
-        UNREACHABLE();
     }
 };
 
