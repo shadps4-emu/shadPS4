@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Oppdateringer lastet ned vellykket! Alle oppdateringer tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser.</translation>
+            <translation>Oppdateringer lastet ned vellykket! Alle oppdateringer tilgjengelige for alle spill har blitt lastet ned, det er ikke nødvendig å laste dem ned individuelt for hvert spill som skjer med jukser. Hvis oppdateringen ikke vises, kan det hende at den ikke finnes for den spesifikke serienummeret og versjonen av spillet. Det kan være nødvendig å oppdatere spillet.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

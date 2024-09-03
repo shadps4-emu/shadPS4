@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Korjaukset ladattu onnistuneesti! Kaikki saatavilla olevat korjaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille kuten huijauksissa.</translation>
+            <translation>Korjaukset ladattu onnistuneesti! Kaikki saatavilla olevat korjaukset kaikille peleille on ladattu, eikä niitä tarvitse ladata yksittäin jokaiselle pelille kuten huijauksissa. Jos päivitystä ei näy, se saattaa olla, että sitä ei ole saatavilla tietylle sarjanumerolle ja peliversiolle. Saattaa olla tarpeen päivittää peli.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patches succesvol gedownload! Alle beschikbare patches voor alle spellen zijn gedownload. Het is niet nodig om ze afzonderlijk te downloaden voor elk spel dat cheats heeft.</translation>
+            <translation>Patches succesvol gedownload! Alle beschikbare patches voor alle spellen zijn gedownload. Het is niet nodig om ze afzonderlijk te downloaden voor elk spel dat cheats heeft. Als de patch niet verschijnt, kan het zijn dat deze niet bestaat voor het specifieke serienummer en de versie van het spel. Het kan nodig zijn om het spel bij te werken.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

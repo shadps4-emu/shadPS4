@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patches descărcate cu succes! Toate Patches disponibile pentru toate jocurile au fost descărcate; nu este nevoie să le descarci individual pentru fiecare joc, așa cum se întâmplă cu Cheats.</translation>
+            <translation>Patches descărcate cu succes! Toate Patches disponibile pentru toate jocurile au fost descărcate; nu este nevoie să le descarci individual pentru fiecare joc, așa cum se întâmplă cu Cheats. Dacă patch-ul nu apare, este posibil să nu existe pentru seria și versiunea specifică a jocului. Poate fi necesar să actualizați jocul.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

@@ -851,7 +851,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>¡Parches descargados exitosamente! Todos los parches disponibles para todos los juegos han sido descargados, no es necesario descargarlos individualmente para cada juego como ocurre con los trucos.</translation>
+        	<translation>¡Parches descargados exitosamente! Todos los parches disponibles para todos los juegos han sido descargados, no es necesario descargarlos individualmente para cada juego como ocurre con los trucos. Si el parche no aparece, puede ser que no exista para el número de serie y versión específicos del juego. Puede ser necesario actualizar el juego.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>

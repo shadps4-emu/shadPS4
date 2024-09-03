@@ -851,7 +851,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi.</translation>
+        	<translation>Yamalar başarıyla indirildi! Tüm oyunlar için mevcut tüm yamalar indirildi, her oyun için ayrı ayrı indirme yapmanız gerekmez, hilelerle olduğu gibi. Yamanın görünmemesi durumunda, belirli seri numarası ve oyun sürümü için mevcut olmayabilir. Oyunu güncellemeniz gerekebilir.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>

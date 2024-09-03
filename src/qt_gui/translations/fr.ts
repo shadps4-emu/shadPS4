@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats.</translation>
+            <translation>Patchs téléchargés avec succès ! Tous les patches disponibles pour tous les jeux ont été téléchargés, il n'est pas nécessaire de les télécharger individuellement pour chaque jeu comme c'est le cas pour les Cheats. Si le correctif n'apparaît pas, il se peut qu'il n'existe pas pour le numéro de série et la version spécifiques du jeu. Il peut être nécessaire de mettre à jour le jeu.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

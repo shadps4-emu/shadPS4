@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>修補檔下載成功！所有遊戲的修補檔已下載完成，無需像作弊碼那樣為每個遊戲單獨下載。</translation>
+            <translation>修補檔下載成功！所有遊戲的修補檔已下載完成，無需像作弊碼那樣為每個遊戲單獨下載。如果補丁未顯示，可能是該補丁不適用於特定的序號和遊戲版本。可能需要更新遊戲。</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

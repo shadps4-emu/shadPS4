@@ -851,7 +851,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Bản vá đã tải xuống thành công! Tất cả các bản vá có sẵn cho tất cả các trò chơi đã được tải xuống, không cần tải xuống riêng lẻ cho mỗi trò chơi như trong Cheat.</translation>
+            <translation>Bản vá đã tải xuống thành công! Tất cả các bản vá có sẵn cho tất cả các trò chơi đã được tải xuống, không cần tải xuống riêng lẻ cho mỗi trò chơi như trong Cheat. Nếu bản vá không xuất hiện, có thể là nó không tồn tại cho số seri và phiên bản cụ thể của trò chơi. Có thể bạn cần phải cập nhật trò chơi.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>

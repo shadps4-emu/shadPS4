@@ -851,7 +851,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében.</translation>
+        	<translation>Frissítések sikeresen letöltve! Minden elérhető frissítés letöltésre került, nem szükséges egyesével letölteni őket minden játékhoz, mint a csalások esetében. Ha a javítás nem jelenik meg, lehet, hogy nem létezik a játék adott sorozatszámához és verziójához. Lehet, hogy frissítenie kell a játékot.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>
