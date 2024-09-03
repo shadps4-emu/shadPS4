@@ -206,7 +206,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     for (const auto& image_desc : info->images) {
         const auto tsharp = image_desc.GetSharp(*info);
         if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-            VideoCore::ImageInfo image_info{tsharp};
+            VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
             VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
             const auto& image_view = texture_cache.FindTexture(image_info, view_info);
             const auto& image = texture_cache.GetImage(image_view.image_id);

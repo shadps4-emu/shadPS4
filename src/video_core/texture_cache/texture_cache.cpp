@@ -173,50 +173,37 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(const ImageInfo& info) {
+ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
     if (info.guest_address == 0) [[unlikely]] {
         return NULL_IMAGE_VIEW_ID;
     }
 
-    std::unique_lock lock{mutex};
+    std::scoped_lock lock{mutex};
     boost::container::small_vector<ImageId, 8> image_ids;
-    ForEachImageInRegion(
-        info.guest_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
-            // Ignore images scheduled for deletion
-            if (True(image.flags & ImageFlagBits::Deleted)) {
-                return;
-            }
-
-            // Check if image is fully outside of the region
-            const auto in_image_cpu_addr = info.guest_address;
-            const auto in_image_cpu_addr_end = info.guest_address + info.guest_size_bytes;
-            if (in_image_cpu_addr_end <= image.cpu_addr) {
-                return;
-            }
-            if (in_image_cpu_addr >= image.cpu_addr_end) {
-                return;
-            }
-
-            image_ids.push_back(image_id);
-        });
+    ForEachImageInRegion(info.guest_address, info.guest_size_bytes,
+                         [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
     ImageId image_id{};
 
     // Check for a perfect match first
     for (const auto& cache_id : image_ids) {
         auto& cache_image = slot_images[cache_id];
-
-        if (cache_image.info.guest_address == info.guest_address &&
-            cache_image.info.guest_size_bytes == info.guest_size_bytes &&
-            cache_image.info.size == info.size) {
-
-            ASSERT(cache_image.info.type == info.type);
-            if (IsVulkanFormatCompatible((VkFormat)info.pixel_format,
-                                         (VkFormat)cache_image.info.pixel_format)) {
-                image_id = cache_id;
-            }
-            break;
+        if (cache_image.info.guest_address != info.guest_address) {
+            continue;
         }
+        if (False(flags & FindFlags::RelaxSize) &&
+            cache_image.info.guest_size_bytes != info.guest_size_bytes) {
+            continue;
+        }
+        if (False(flags & FindFlags::RelaxDim) && cache_image.info.size != info.size) {
+            continue;
+        }
+        if (False(flags & FindFlags::RelaxFmt) &&
+            !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
+            continue;
+        }
+        ASSERT(cache_image.info.type == info.type);
+        image_id = cache_id;
     }
 
     // Try to resolve overlaps (if any)
@@ -225,6 +212,10 @@ ImageId TextureCache::FindImage(const ImageInfo& info) {
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
             image_id = ResolveOverlap(merged_info, cache_id, image_id);
         }
+    }
+
+    if (True(flags & FindFlags::NoCreate) && !image_id) {
+        return {};
     }
 
     // Create and register a new image

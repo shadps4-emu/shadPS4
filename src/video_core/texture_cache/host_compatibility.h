@@ -7,7 +7,7 @@
 #pragma once
 
 #include <unordered_map>
-#include <vulkan/vulkan.h>
+#include "video_core/renderer_vulkan/vk_common.h"
 
 namespace VideoCore {
 /**
@@ -383,9 +383,10 @@ static const std::unordered_map<VkFormat, FORMAT_COMPATIBILITY_CLASS> vkFormatCl
  * @url
  * https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#formats-compatibility
  */
-static bool IsVulkanFormatCompatible(VkFormat lhs, VkFormat rhs) {
-    if (lhs == rhs)
+static bool IsVulkanFormatCompatible(vk::Format lhs, vk::Format rhs) {
+    if (lhs == rhs) {
         return true;
-    return vkFormatClassTable.at(lhs) == vkFormatClassTable.at(rhs);
+    }
+    return vkFormatClassTable.at(VkFormat(lhs)) == vkFormatClassTable.at(VkFormat(rhs));
 }
 } // namespace VideoCore
