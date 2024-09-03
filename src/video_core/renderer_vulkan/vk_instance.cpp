@@ -46,14 +46,15 @@ std::string GetReadableVersion(u32 version) {
 
 } // Anonymous namespace
 
-Instance::Instance(bool enable_validation, bool dump_command_buffers)
+Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
-                              dump_command_buffers)},
+                              enable_crash_diagnostic)},
       physical_devices{instance->enumeratePhysicalDevices()} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
-                   bool enable_validation /*= false*/)
-    : instance{CreateInstance(window.getWindowInfo().type, enable_validation, false)},
+                   bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
+    : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
+                              enable_crash_diagnostic)},
       physical_devices{instance->enumeratePhysicalDevices()} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
@@ -220,13 +221,6 @@ bool Instance::CreateDevice() {
     const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-
-    if (Config::isMarkersEnabled()) {
-        const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-        if (has_sync2) {
-            has_nv_checkpoints = add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME);
-        }
-    }
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.

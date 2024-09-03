@@ -140,8 +140,8 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
         return ORBIS_VIDEO_OUT_ERROR_INVALID_INDEX;
     }
 
-    LOG_INFO(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
-             flipArg);
+    LOG_DEBUG(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
+              flipArg);
 
     if (!driver->SubmitFlip(port, bufferIndex, flipArg)) {
         LOG_ERROR(Lib_VideoOut, "Flip queue is full");

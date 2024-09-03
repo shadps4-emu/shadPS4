@@ -64,7 +64,8 @@ Emulator::Emulator() {
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
-    LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::isMarkersEnabled());
+    LOG_INFO(Config, "Vulkan rdocMarkersEnable: {}", Config::vkMarkersEnabled());
+    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::vkCrashDiagnosticEnabled());
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();

@@ -321,7 +321,7 @@ void Rasterizer::UpdateDepthStencilState() {
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
-    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
         return;
     }
 
@@ -332,7 +332,7 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str) {
 }
 
 void Rasterizer::ScopeMarkerEnd() {
-    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
         return;
     }
 
@@ -341,7 +341,7 @@ void Rasterizer::ScopeMarkerEnd() {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
-    if (Config::nullGpu() || !Config::isMarkersEnabled()) {
+    if (Config::nullGpu() || !Config::vkMarkersEnabled()) {
         return;
     }
 
@@ -349,13 +349,6 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str) {
     cmdbuf.insertDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
         .pLabelName = str.data(),
     });
-}
-
-void Rasterizer::Breadcrumb(u64 id) {
-    if (Config::nullGpu() || !instance.HasNvCheckpoints()) {
-        return;
-    }
-    scheduler.CommandBuffer().setCheckpointNV(id);
 }
 
 } // namespace Vulkan
