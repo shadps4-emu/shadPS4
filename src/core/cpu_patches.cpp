@@ -307,9 +307,24 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     SaveRegisters(c, {scratch});
 
+    // BLSI sets CF to zero if source is zero, otherwise it sets CF to one.
+    Xbyak::Label set_carry, clear_carry, end;
+
     c.mov(scratch, *src);
-    c.neg(scratch);
+    c.neg(scratch); // NEG, like BLSI, clears CF if the source is zero and sets it otherwise
+    c.jc(set_carry);
+    c.jmp(clear_carry);
+
+    c.L(set_carry);
     c.and_(scratch, *src);
+    c.stc(); // setting/clearing carry needs to happen after the AND because that clears CF
+    c.jmp(end);
+
+    c.L(clear_carry);
+    c.and_(scratch, *src);
+    // We don't need to clear carry here since AND does that for us
+
+    c.L(end);
     c.mov(dst, scratch);
 
     RestoreRegisters(c, {scratch});
