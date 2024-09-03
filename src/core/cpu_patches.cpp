@@ -212,31 +212,38 @@ static void RestoreRegisters(Xbyak::CodeGenerator& c,
 }
 
 /// Switches to the patch stack and stores all registers.
-static void SaveContext(Xbyak::CodeGenerator& c) {
+static void SaveContext(Xbyak::CodeGenerator& c, bool save_flags = false) {
     SaveStack(c);
     for (int reg = Xbyak::Operand::RAX; reg <= Xbyak::Operand::R15; reg++) {
         c.push(Xbyak::Reg64(reg));
     }
     for (int reg = 0; reg <= 7; reg++) {
-        c.sub(rsp, 32);
+        c.lea(rsp, ptr[rsp - 32]);
         c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
+    }
+    if (save_flags) {
+        c.pushfq();
     }
 }
 
 /// Restores all registers and restores the original stack.
 /// If the destination is a register, it is not restored to preserve the output.
-static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst) {
+static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
+                           bool restore_flags = false) {
+    if (restore_flags) {
+        c.popfq();
+    }
     for (int reg = 7; reg >= 0; reg--) {
         if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
             c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
         }
-        c.add(rsp, 32);
+        c.lea(rsp, ptr[rsp + 32]);
     }
     for (int reg = Xbyak::Operand::R15; reg >= Xbyak::Operand::RAX; reg--) {
         if (!dst.isREG() || dst.getIdx() != reg) {
             c.pop(Xbyak::Reg64(reg));
         } else {
-            c.add(rsp, 8);
+            c.lea(rsp, ptr[rsp + 8]);
         }
     }
     RestoreStack(c);
@@ -307,9 +314,24 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     SaveRegisters(c, {scratch});
 
+    // BLSI sets CF to zero if source is zero, otherwise it sets CF to one.
+    Xbyak::Label set_carry, clear_carry, end;
+
     c.mov(scratch, *src);
-    c.neg(scratch);
+    c.neg(scratch); // NEG, like BLSI, clears CF if the source is zero and sets it otherwise
+    c.jc(set_carry);
+    c.jmp(clear_carry);
+
+    c.L(set_carry);
     c.and_(scratch, *src);
+    c.stc(); // setting/clearing carry needs to happen after the AND because that clears CF
+    c.jmp(end);
+
+    c.L(clear_carry);
+    c.and_(scratch, *src);
+    // We don't need to clear carry here since AND does that for us
+
+    c.L(end);
     c.mov(dst, scratch);
 
     RestoreRegisters(c, {scratch});
@@ -323,9 +345,26 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
 
     SaveRegisters(c, {scratch});
 
+    Xbyak::Label set_carry, clear_carry, end;
+
+    // BLSMSK sets CF to zero if source is NOT zero, otherwise it sets CF to one.
     c.mov(scratch, *src);
+    c.test(scratch, scratch);
+    c.jz(set_carry);
+    c.jmp(clear_carry);
+
+    c.L(set_carry);
     c.dec(scratch);
     c.xor_(scratch, *src);
+    c.stc();
+    c.jmp(end);
+
+    c.L(clear_carry);
+    c.dec(scratch);
+    c.xor_(scratch, *src);
+    // We don't need to clear carry here since XOR does that for us
+
+    c.L(end);
     c.mov(dst, scratch);
 
     RestoreRegisters(c, {scratch});
@@ -339,9 +378,26 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     SaveRegisters(c, {scratch});
 
+    Xbyak::Label set_carry, clear_carry, end;
+
+    // BLSR sets CF to zero if source is NOT zero, otherwise it sets CF to one.
     c.mov(scratch, *src);
+    c.test(scratch, scratch);
+    c.jz(set_carry);
+    c.jmp(clear_carry);
+
+    c.L(set_carry);
     c.dec(scratch);
     c.and_(scratch, *src);
+    c.stc();
+    c.jmp(end);
+
+    c.L(clear_carry);
+    c.dec(scratch);
+    c.and_(scratch, *src);
+    // We don't need to clear carry here since AND does that for us
+
+    c.L(end);
     c.mov(dst, scratch);
 
     RestoreRegisters(c, {scratch});
@@ -361,7 +417,7 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto float_count = dst.getBit() / 32;
     const auto byte_count = float_count * 4;
 
-    SaveContext(c);
+    SaveContext(c, true);
 
     // Allocate stack space for outputs and load into first parameter.
     c.sub(rsp, byte_count);
@@ -397,7 +453,7 @@ static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     }
     c.add(rsp, byte_count);
 
-    RestoreContext(c, dst);
+    RestoreContext(c, dst, true);
 }
 
 using SingleToHalfFloatConverter = half_float::half (*)(float);
@@ -425,7 +481,7 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
     const auto float_count = src.getBit() / 32;
     const auto byte_count = float_count * 4;
 
-    SaveContext(c);
+    SaveContext(c, true);
 
     if (dst->isXMM()) {
         // Allocate stack space for outputs and load into first parameter.
@@ -472,7 +528,7 @@ static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGe
         c.add(rsp, byte_count);
     }
 
-    RestoreContext(c, *dst);
+    RestoreContext(c, *dst, true);
 }
 
 static bool FilterRosetta2Only(const ZydisDecodedOperand*) {

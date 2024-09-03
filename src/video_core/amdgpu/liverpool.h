@@ -18,6 +18,7 @@
 #include "common/polyfill_thread.h"
 #include "common/types.h"
 #include "common/unique_function.h"
+#include "shader_recompiler/params.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
 
@@ -169,6 +170,15 @@ struct Liverpool {
         const auto* bininfo = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
         // ASSERT_MSG(bininfo->Valid(), "Invalid shader binary header");
         return bininfo;
+    }
+
+    static constexpr Shader::ShaderParams GetParams(const auto& sh) {
+        auto* bininfo = GetBinaryInfo(sh);
+        return {
+            .user_data = sh.user_data,
+            .code = sh.Code(),
+            .hash = bininfo->shader_hash,
+        };
     }
 
     union PsInputControl {

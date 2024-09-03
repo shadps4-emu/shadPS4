@@ -25,6 +25,7 @@ using Liverpool = AmdGpu::Liverpool;
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
+    std::array<Liverpool::ColorBuffer::SwapMode, Liverpool::NumColorBuffers> mrt_swizzles;
     vk::Format depth_format;
     vk::Format stencil_format;
 

@@ -56,7 +56,7 @@ struct OrbisVirtualQueryInfo {
         BitField<1, 1, u32> is_direct;
         BitField<2, 1, u32> is_stack;
         BitField<3, 1, u32> is_pooled;
-        BitField<4, 1, u32> is_commited;
+        BitField<4, 1, u32> is_committed;
     };
     std::array<char, 32> name;
 };

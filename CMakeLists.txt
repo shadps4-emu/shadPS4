@@ -419,7 +419,10 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/info.h
+                      src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
+                      src/shader_recompiler/specialization.h
                       src/shader_recompiler/backend/spirv/emit_spirv.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv.h
                       src/shader_recompiler/backend/spirv/emit_spirv_atomic.cpp
@@ -533,8 +536,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
-               src/video_core/renderer_vulkan/vk_shader_cache.cpp
-               src/video_core/renderer_vulkan/vk_shader_cache.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
@@ -647,12 +648,17 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
+  option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)
+  if (USE_SYSTEM_VULKAN_LOADER)
+      target_compile_definitions(shadps4 PRIVATE USE_SYSTEM_VULKAN_LOADER=1)
+  else()
+      # Link MoltenVK for Vulkan support
+      find_library(MOLTENVK MoltenVK REQUIRED)
+      target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
+  endif()
+
   # Reserve system-managed memory space.
   target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
-
-  # Link MoltenVK for Vulkan support
-  find_library(MOLTENVK MoltenVK REQUIRED)
-  target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
@@ -736,4 +742,11 @@ if (ENABLE_QT_GUI)
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)
+endif()
+
+if (UNIX AND NOT APPLE)
+    if (ENABLE_QT_GUI)
+        find_package(OpenSSL REQUIRED)
+        target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
+    endif()
 endif()

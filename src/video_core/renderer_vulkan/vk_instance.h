@@ -17,19 +17,13 @@ class WindowSDL;
 
 VK_DEFINE_HANDLE(VmaAllocator)
 
-#ifdef __APPLE__
-#define VULKAN_LIBRARY_NAME "libMoltenVK.dylib"
-#else
-#define VULKAN_LIBRARY_NAME
-#endif
-
 namespace Vulkan {
 
 class Instance {
 public:
-    explicit Instance(bool validation = false, bool dump_command_buffers = false);
+    explicit Instance(bool validation = false, bool crash_diagnostic = false);
     explicit Instance(Frontend::WindowSDL& window, s32 physical_device_index,
-                      bool enable_validation = false);
+                      bool enable_validation = false, bool enable_crash_diagnostic = false);
     ~Instance();
 
     /// Returns a formatted string for the driver version
@@ -86,10 +80,6 @@ public:
 
     TracyVkCtx GetProfilerContext() const {
         return profiler_context;
-    }
-
-    bool HasNvCheckpoints() const {
-        return has_nv_checkpoints;
     }
 
     /// Returns true when a known debugging tool is attached.
@@ -233,14 +223,16 @@ private:
     void CollectDeviceParameters();
     void CollectToolingInfo();
 
-    /// Determines if a format is supported.
-    [[nodiscard]] bool IsFormatSupported(vk::Format format) const;
+    /// Determines if a format is supported for images.
+    [[nodiscard]] bool IsImageFormatSupported(vk::Format format) const;
+
+    /// Determines if a format is supported for vertex buffers.
+    [[nodiscard]] bool IsVertexFormatSupported(vk::Format format) const;
 
     /// Gets a commonly available alternative for an unsupported pixel format.
     vk::Format GetAlternativeFormat(const vk::Format format) const;
 
 private:
-    vk::DynamicLoader dl{VULKAN_LIBRARY_NAME};
     vk::UniqueInstance instance;
     vk::PhysicalDevice physical_device;
     vk::UniqueDevice device;
@@ -274,7 +266,6 @@ private:
     bool debug_utils_supported{};
     bool has_nsight_graphics{};
     bool has_renderdoc{};
-    bool has_nv_checkpoints{};
 };
 
 } // namespace Vulkan

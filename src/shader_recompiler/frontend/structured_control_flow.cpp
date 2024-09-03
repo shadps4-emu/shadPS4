@@ -602,13 +602,14 @@ public:
                   Common::ObjectPool<IR::Block>& block_pool_,
                   Common::ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
                   IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
-                  Info& info_, const Profile& profile_)
+                  Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
-          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_}, profile{profile_} {
+          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_},
+          runtime_info{runtime_info_}, profile{profile_} {
         Visit(root_stmt, nullptr, nullptr);
 
         IR::Block& first_block{*syntax_list.front().data.block};
-        Translator{&first_block, info, profile}.EmitPrologue();
+        Translator{&first_block, info, runtime_info, profile}.EmitPrologue();
     }
 
 private:
@@ -637,7 +638,7 @@ private:
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
                     Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),
-                              info, profile);
+                              info, runtime_info, profile);
                 }
                 break;
             }
@@ -817,19 +818,20 @@ private:
     const Block dummy_flow_block{.is_dummy = true};
     std::span<const GcnInst> inst_list;
     Info& info;
+    const RuntimeInfo& runtime_info;
     const Profile& profile;
 };
 } // Anonymous namespace
 
 IR::AbstractSyntaxList BuildASL(Common::ObjectPool<IR::Inst>& inst_pool,
                                 Common::ObjectPool<IR::Block>& block_pool, CFG& cfg, Info& info,
-                                const Profile& profile) {
+                                const RuntimeInfo& runtime_info, const Profile& profile) {
     Common::ObjectPool<Statement> stmt_pool{64};
     GotoPass goto_pass{cfg, stmt_pool};
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;
-    TranslatePass{inst_pool,   block_pool,    stmt_pool, root,
-                  syntax_list, cfg.inst_list, info,      profile};
+    TranslatePass{inst_pool,     block_pool, stmt_pool,    root,   syntax_list,
+                  cfg.inst_list, info,       runtime_info, profile};
     ASSERT_MSG(!info.translation_failed, "Shader translation has failed");
     return syntax_list;
 }

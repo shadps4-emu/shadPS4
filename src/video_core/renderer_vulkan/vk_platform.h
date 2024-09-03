@@ -21,8 +21,8 @@ constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_2;
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& emu_window);
 
-vk::UniqueInstance CreateInstance(vk::DynamicLoader& dl, Frontend::WindowSystemType window_type,
-                                  bool enable_validation, bool dump_command_buffers);
+vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool enable_validation,
+                                  bool enable_crash_diagnostic);
 
 vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance);
 

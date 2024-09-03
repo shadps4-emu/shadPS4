@@ -14,7 +14,10 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
+#pragma GCC diagnostic pop
 
 namespace Vulkan {
 
@@ -46,14 +49,15 @@ std::string GetReadableVersion(u32 version) {
 
 } // Anonymous namespace
 
-Instance::Instance(bool enable_validation, bool dump_command_buffers)
-    : instance{CreateInstance(dl, Frontend::WindowSystemType::Headless, enable_validation,
-                              dump_command_buffers)},
+Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
+    : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
+                              enable_crash_diagnostic)},
       physical_devices{instance->enumeratePhysicalDevices()} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
-                   bool enable_validation /*= false*/)
-    : instance{CreateInstance(dl, window.getWindowInfo().type, enable_validation, false)},
+                   bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
+    : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
+                              enable_crash_diagnostic)},
       physical_devices{instance->enumeratePhysicalDevices()} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
@@ -118,11 +122,15 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     // Check and log format support details.
     for (const auto& key : format_properties | std::views::keys) {
         const auto format = key;
-        if (!IsFormatSupported(format)) {
+        if (!IsImageFormatSupported(format)) {
             const auto alternative = GetAlternativeFormat(format);
-            if (IsFormatSupported(alternative)) {
-                LOG_WARNING(Render_Vulkan, "Format {} is not supported, falling back to {}",
+            if (IsImageFormatSupported(alternative)) {
+                LOG_WARNING(Render_Vulkan,
+                            "Format {} is not supported for images, falling back to {}.",
                             vk::to_string(format), vk::to_string(alternative));
+            } else if (IsVertexFormatSupported(format)) {
+                LOG_WARNING(Render_Vulkan, "Format {} is only supported for vertex buffers.",
+                            vk::to_string(format));
             } else {
                 LOG_ERROR(Render_Vulkan,
                           "Format {} is not supported and no suitable alternative is supported.",
@@ -220,13 +228,6 @@ bool Instance::CreateDevice() {
     const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-
-    if (Config::isMarkersEnabled()) {
-        const bool has_sync2 = add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-        if (has_sync2) {
-            has_nv_checkpoints = add_extension(VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME);
-        }
-    }
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
@@ -479,7 +480,7 @@ void Instance::CollectToolingInfo() {
     }
 }
 
-bool Instance::IsFormatSupported(const vk::Format format) const {
+bool Instance::IsImageFormatSupported(const vk::Format format) const {
     if (format == vk::Format::eUndefined) [[unlikely]] {
         return true;
     }
@@ -495,6 +496,20 @@ bool Instance::IsFormatSupported(const vk::Format format) const {
     return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
 }
 
+bool Instance::IsVertexFormatSupported(const vk::Format format) const {
+    if (format == vk::Format::eUndefined) [[unlikely]] {
+        return true;
+    }
+
+    const auto it = format_properties.find(format);
+    if (it == format_properties.end()) {
+        UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
+    }
+
+    constexpr vk::FormatFeatureFlags optimal_flags = vk::FormatFeatureFlagBits::eVertexBuffer;
+    return (it->second.bufferFeatures & optimal_flags) == optimal_flags;
+}
+
 vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
     if (format == vk::Format::eB5G6R5UnormPack16) {
         return vk::Format::eR5G6B5UnormPack16;
@@ -505,11 +520,11 @@ vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
 }
 
 vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
-    if (IsFormatSupported(format)) [[likely]] {
+    if (IsImageFormatSupported(format)) [[likely]] {
         return format;
     }
     const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsFormatSupported(alternative)) [[likely]] {
+    if (IsImageFormatSupported(alternative)) [[likely]] {
         return alternative;
     }
     return format;
@@ -517,7 +532,7 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
 
 vk::ComponentMapping Instance::GetSupportedComponentSwizzle(vk::Format format,
                                                             vk::ComponentMapping swizzle) const {
-    if (IsFormatSupported(format)) [[likely]] {
+    if (IsImageFormatSupported(format)) [[likely]] {
         return swizzle;
     }
 

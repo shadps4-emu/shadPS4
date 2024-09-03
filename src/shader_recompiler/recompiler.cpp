@@ -6,6 +6,7 @@
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/recompiler.h"
 
 namespace Shader {
 
@@ -27,29 +28,32 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
     return blocks;
 }
 
-IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
-                             Common::ObjectPool<IR::Block>& block_pool, std::span<const u32> token,
-                             Info& info, const Profile& profile) {
+IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info,
+                             const RuntimeInfo& runtime_info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
-    ASSERT_MSG(token[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
+    ASSERT_MSG(code[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
 
-    Gcn::GcnCodeSlice slice(token.data(), token.data() + token.size());
+    Gcn::GcnCodeSlice slice(code.data(), code.data() + code.size());
     Gcn::GcnDecodeContext decoder;
 
     // Decode and save instructions
     IR::Program program{info};
-    program.ins_list.reserve(token.size());
+    program.ins_list.reserve(code.size());
     while (!slice.atEnd()) {
         program.ins_list.emplace_back(decoder.decodeInstruction(slice));
     }
+
+    // Clear any previous pooled data.
+    pools.ReleaseContents();
 
     // Create control flow graph
     Common::ObjectPool<Gcn::Block> gcn_block_pool{64};
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
-    program.syntax_list = Shader::Gcn::BuildASL(inst_pool, block_pool, cfg, program.info, profile);
+    program.syntax_list = Shader::Gcn::BuildASL(pools.inst_pool, pools.block_pool, cfg,
+                                                program.info, runtime_info, profile);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
@@ -63,7 +67,6 @@ IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::CollectShaderInfoPass(program);
-    LOG_DEBUG(Render_Vulkan, "{}", Shader::IR::DumpProgram(program));
 
     return program;
 }

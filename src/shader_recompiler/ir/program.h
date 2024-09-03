@@ -5,9 +5,9 @@
 
 #include <string>
 #include "shader_recompiler/frontend/instruction.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/abstract_syntax_list.h"
 #include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::IR {
 

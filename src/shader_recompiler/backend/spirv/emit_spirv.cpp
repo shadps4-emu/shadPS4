@@ -210,7 +210,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     }
     switch (program.info.stage) {
     case Stage::Compute: {
-        const std::array<u32, 3> workgroup_size{program.info.workgroup_size};
+        const std::array<u32, 3> workgroup_size{ctx.runtime_info.cs_info.workgroup_size};
         execution_model = spv::ExecutionModel::GLCompute;
         ctx.AddExecutionMode(main, spv::ExecutionMode::LocalSize, workgroup_size[0],
                              workgroup_size[1], workgroup_size[2]);
@@ -258,8 +258,9 @@ void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
 }
 } // Anonymous namespace
 
-std::vector<u32> EmitSPIRV(const Profile& profile, const IR::Program& program, u32& binding) {
-    EmitContext ctx{profile, program.info, binding};
+std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info,
+                           const IR::Program& program, u32& binding) {
+    EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
     if (program.info.stage == Stage::Vertex) {

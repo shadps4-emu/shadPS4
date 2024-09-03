@@ -47,7 +47,7 @@ To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or ou
 # Status
 
 > [!IMPORTANT]
-> shadPS4 is early in developement, don't expect a flawless experience.
+> shadPS4 is early in development, don't expect a flawless experience.
 
 Currently, the emulator successfully runs small games like [**Sonic Mania**](https://www.youtube.com/watch?v=AAHoNzhHyCU), [**Undertale**](https://youtu.be/5zIvdy65Ro4) and it can even *somewhat* run [**Bloodborne**](https://www.youtube.com/watch?v=wC6s0avpQRE).
 
@@ -64,6 +64,12 @@ Check the build instructions for [**Windows**](https://github.com/shadps4-emu/sh
 ## Linux
 
 Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
+
+## macOS
+
+Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
+
+Note that macOS users need at least macOS 15 on an Apple Silicon Mac, or at least macOS 11 on an Intel Mac.
 
 ## Building status
 

@@ -499,7 +499,7 @@ int PS4_SYSV_ABI sceGnmDestroyWorkloadStream() {
 }
 
 void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
-    LOG_INFO(Lib_GnmDriver, "vqid {}, offset_dw {}", gnm_vqid, next_offs_dw);
+    LOG_DEBUG(Lib_GnmDriver, "vqid {}, offset_dw {}", gnm_vqid, next_offs_dw);
 
     if (gnm_vqid == 0) {
         return;
@@ -2054,7 +2054,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, u32 flip_arg) {
-    LOG_INFO(Lib_GnmDriver, "called [buf = {}]", buf_idx);
+    LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
     auto* cmdbuf = dcb_gpu_addrs[count - 1];
     const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
@@ -2078,7 +2078,7 @@ int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload() {
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes) {
-    LOG_INFO(Lib_GnmDriver, "called");
+    LOG_DEBUG(Lib_GnmDriver, "called");
 
     if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
         LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs and dcbSizesInBytes must not be NULL");
@@ -2154,7 +2154,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload() {
 }
 
 int PS4_SYSV_ABI sceGnmSubmitDone() {
-    LOG_INFO(Lib_GnmDriver, "called");
+    LOG_DEBUG(Lib_GnmDriver, "called");
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
