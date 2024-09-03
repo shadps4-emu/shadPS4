@@ -251,7 +251,7 @@
         <message>
         	<location filename="../main_window_ui.h" line="343"/>
         	<source>Game Install Directory</source>
-        	<translation>Katalog zainstalowanych gry</translation>
+        	<translation>Katalog zainstalowanych gier</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
