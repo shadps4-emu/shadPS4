@@ -193,8 +193,9 @@ size_t PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize(unsigned int uiNumSpeake
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudio3dCreateSpeakerArray(OrbisAudio3dSpeakerArrayHandle* pHandle,
-                                              const OrbisAudio3dSpeakerArrayParameters* pParameters) {
+int PS4_SYSV_ABI
+sceAudio3dCreateSpeakerArray(OrbisAudio3dSpeakerArrayHandle* pHandle,
+                             const OrbisAudio3dSpeakerArrayParameters* pParameters) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -220,8 +221,7 @@ int PS4_SYSV_ABI sceAudio3dPortFreeState() {
 }
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId uiPortId, OrbisUserServiceUserId userId,
-                                        s32 type, s32 index, u32 len, u32 freq,
-                                        u32 param) {
+                                        s32 type, s32 index, u32 len, u32 freq, u32 param) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
     return ORBIS_OK;
 }

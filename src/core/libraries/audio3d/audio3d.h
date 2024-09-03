@@ -20,13 +20,11 @@ typedef unsigned int OrbisAudio3dAttributeId;
 typedef unsigned int OrbisAudio3dPluginId;
 
 enum OrbisAudio3dFormat {
-    ORBIS_AUDIO3D_FORMAT_S16 = 0, // s16
+    ORBIS_AUDIO3D_FORMAT_S16 = 0,  // s16
     ORBIS_AUDIO3D_FORMAT_FLOAT = 1 // f32
 };
 
-enum OrbisAudio3dRate {
-    ORBIS_AUDIO3D_RATE_48000 = 0
-};
+enum OrbisAudio3dRate { ORBIS_AUDIO3D_RATE_48000 = 0 };
 
 enum OrbisAudio3dBufferMode {
     ORBIS_AUDIO3D_BUFFER_NO_ADVANCE = 0,
@@ -34,10 +32,7 @@ enum OrbisAudio3dBufferMode {
     ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH = 2
 };
 
-enum OrbisAudio3dBlocking {
-    ORBIS_AUDIO3D_BLOCKING_ASYNC = 0,
-    ORBIS_AUDIO3D_BLOCKING_SYNC = 1
-};
+enum OrbisAudio3dBlocking { ORBIS_AUDIO3D_BLOCKING_ASYNC = 0, ORBIS_AUDIO3D_BLOCKING_SYNC = 1 };
 
 enum OrbisAudio3dPassthrough {
     ORBIS_AUDIO3D_PASSTHROUGH_NONE = 0,
