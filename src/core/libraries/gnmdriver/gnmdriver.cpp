@@ -371,15 +371,28 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->AddEvent(kernel_event);
 
-    Platform::IrqC::Instance()->Register(
-        Platform::InterruptId::GfxEop,
-        [=](Platform::InterruptId irq) {
-            ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                       "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
-                                                     // proper filtering in trigger function
-            eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
-        },
-        eq);
+    if (id == 64) {
+        Platform::IrqC::Instance()->Register(
+            Platform::InterruptId::GfxEop,
+            [=](Platform::InterruptId irq) {
+                ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
+                           "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
+                                                         // proper filtering in trigger function
+                eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
+            },
+            eq);
+    } else if (id == (u64)Platform::InterruptId::Compute0RelMem) {
+        Platform::IrqC::Instance()->Register(
+            Platform::InterruptId::Compute0RelMem,
+            [=](Platform::InterruptId irq) {
+                ASSERT_MSG(irq == Platform::InterruptId::Compute0RelMem,
+                           "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
+                                                         // proper filtering in trigger function
+                eq->TriggerEvent(GnmEventIdents::Compute0RelMem, SceKernelEvent::Filter::GraphicsCore, nullptr);
+            },
+            eq);
+    }
+
     return ORBIS_OK;
 }
 
