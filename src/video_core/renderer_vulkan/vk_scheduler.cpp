@@ -192,13 +192,6 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     try {
         instance.GetGraphicsQueue().submit(submit_info, info.fence);
     } catch (vk::DeviceLostError& err) {
-        if (instance.HasNvCheckpoints()) {
-            const auto checkpoint_data = instance.GetGraphicsQueue().getCheckpointData2NV();
-            for (const auto& cp : checkpoint_data) {
-                LOG_CRITICAL(Render_Vulkan, "{}: {:#x}", vk::to_string(cp.stage),
-                             reinterpret_cast<u64>(cp.pCheckpointMarker));
-            }
-        }
         UNREACHABLE_MSG("Device lost during submit: {}", err.what());
     }
 

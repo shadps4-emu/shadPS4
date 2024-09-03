@@ -30,7 +30,9 @@ static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
 static bool rdocEnable = false;
-static bool rdocMarkersEnable = false;
+static bool vkMarkers = false;
+static bool vkCrashDiagnostic = false;
+
 // Gui
 std::string settings_install_dir = "";
 u32 main_window_geometry_x = 400;
@@ -121,7 +123,7 @@ bool isRdocEnabled() {
 }
 
 bool isMarkersEnabled() {
-    return rdocMarkersEnable;
+    return vkMarkers;
 }
 
 u32 vblankDiv() {
@@ -138,6 +140,14 @@ bool vkValidationSyncEnabled() {
 
 bool vkValidationGpuEnabled() {
     return vkValidationGpu;
+}
+
+bool vkMarkersEnabled() {
+    return vkMarkers || vkCrashDiagnostic; // Crash diagnostic forces markers on
+}
+
+bool vkCrashDiagnosticEnabled() {
+    return vkCrashDiagnostic;
 }
 
 void setGpuId(s32 selectedGpuId) {
@@ -384,7 +394,8 @@ void load(const std::filesystem::path& path) {
         vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
         vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
-        rdocMarkersEnable = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
+        vkMarkers = toml::find_or<bool>(vk, "rdocMarkersEnable", false);
+        vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
     }
 
     if (data.contains("Debug")) {
@@ -460,7 +471,8 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["validation_sync"] = vkValidationSync;
     data["Vulkan"]["validation_gpu"] = vkValidationGpu;
     data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Vulkan"]["rdocMarkersEnable"] = rdocMarkersEnable;
+    data["Vulkan"]["rdocMarkersEnable"] = vkMarkers;
+    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["iconSize"] = m_icon_size;
@@ -504,7 +516,11 @@ void setDefaultValues() {
     shouldDumpPM4 = false;
     vblankDivider = 1;
     vkValidation = false;
+    vkValidationSync = false;
+    vkValidationGpu = false;
     rdocEnable = false;
+    vkMarkers = false;
+    vkCrashDiagnostic = false;
     emulator_language = "en";
     m_language = 1;
     gpuId = -1;
