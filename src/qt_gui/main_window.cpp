@@ -103,7 +103,7 @@ void MainWindow::CreateDockWindows() {
     QWidget* phCentralWidget = new QWidget(this);
     setCentralWidget(phCentralWidget);
 
-    m_dock_widget.reset(new QDockWidget(tr("Game Lists"), this));
+    m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
     m_game_list_frame.reset(new GameListFrame(m_game_info, this));
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));

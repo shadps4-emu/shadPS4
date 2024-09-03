@@ -502,8 +502,8 @@
         <name>MainWindow</name>
 		<message>
 			<location filename="../main_window.cpp" line="106"/>
-			<source>Game Lists</source>
-			<translation>Elenco Giochi</translation>
+			<source>Game List</source>
+			<translation>Elenco giochi</translation>
 		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
