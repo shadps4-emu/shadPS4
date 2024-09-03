@@ -904,4 +904,27 @@
 			<translation>Negalima taikyti sukčiavimų prieš pradedant žaidimą.</translation>
 		</message>
 	</context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Įrašyti</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Taikyti</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Atkurti numatytuosius nustatymus</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Uždaryti</translation>
+		</message>
+	</context>
 </TS>

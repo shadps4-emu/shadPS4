@@ -903,5 +903,28 @@
 			<source>Can't apply cheats before the game is started</source>
 			<translation>Kan ikke bruke juksetriks før spillet er startet.</translation>
 		</message>
-    </context>	
+    </context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Lag</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Bruk</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Gjenopprett standardinnstillinger</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Lukk</translation>
+		</message>
+	</context>
 </TS>

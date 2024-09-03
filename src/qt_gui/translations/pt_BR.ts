@@ -904,4 +904,27 @@
 			<translation>Não é possível aplicar cheats antes que o jogo comece.</translation>
 		</message>
 	</context>
+	<context>
+        <name>SettingsDialog</name>
+        <message>
+        	<location filename="../settings_dialog.cpp" line="83"/>
+        	<source>Save</source>
+        	<translation>Salvar</translation>
+        </message>
+		<message>
+        	<location filename="../settings_dialog.cpp" line="84"/>
+        	<source>Apply</source>
+        	<translation>Aplicar</translation>
+        </message>
+		<message>
+        	<location filename="../settings_dialog.cpp" line="85"/>
+        	<source>Restore Defaults</source>
+        	<translation>Restaurar Padrões</translation>
+        </message>
+		<message>
+        	<location filename="../settings_dialog.cpp" line="86"/>
+        	<source>Close</source>
+        	<translation>Fechar</translation>
+        </message>
+	</context>
 </TS>

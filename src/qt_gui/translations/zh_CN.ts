@@ -903,5 +903,28 @@
 			<source>Can't apply cheats before the game is started</source>
 			<translation>在游戏开始之前无法应用作弊。</translation>
 		</message>
-    </context>	
+    </context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>保存</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>应用</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>恢复默认</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>关闭</translation>
+		</message>
+	</context>
 </TS>

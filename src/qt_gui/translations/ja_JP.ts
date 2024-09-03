@@ -903,5 +903,28 @@
 			<source>Can't apply cheats before the game is started</source>
 			<translation>ゲームが開始される前にチートを適用することはできません。</translation>
 		</message>
-	</context>	
+	</context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>保存</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>適用</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>デフォルトに戻す</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>閉じる</translation>
+		</message>
+	</context>
 </TS>

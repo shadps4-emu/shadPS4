@@ -904,4 +904,27 @@
 			<translation>Nem lehet csalásokat alkalmazni, mielőtt a játék elindul.</translation>
 		</message>
 	</context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Mentés</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Alkalmaz</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Alapértelmezett értékek visszaállítása</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Bezárás</translation>
+		</message>
+	</context>
 </TS>
