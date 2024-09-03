@@ -227,8 +227,11 @@ private:
     void CollectDeviceParameters();
     void CollectToolingInfo();
 
-    /// Determines if a format is supported.
-    [[nodiscard]] bool IsFormatSupported(vk::Format format) const;
+    /// Determines if a format is supported for images.
+    [[nodiscard]] bool IsImageFormatSupported(vk::Format format) const;
+
+    /// Determines if a format is supported for vertex buffers.
+    [[nodiscard]] bool IsVertexFormatSupported(vk::Format format) const;
 
     /// Gets a commonly available alternative for an unsupported pixel format.
     vk::Format GetAlternativeFormat(const vk::Format format) const;
