@@ -647,12 +647,17 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
+  option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)
+  if (USE_SYSTEM_VULKAN_LOADER)
+      target_compile_definitions(shadps4 PRIVATE USE_SYSTEM_VULKAN_LOADER=1)
+  else()
+      # Link MoltenVK for Vulkan support
+      find_library(MOLTENVK MoltenVK REQUIRED)
+      target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
+  endif()
+
   # Reserve system-managed memory space.
   target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
-
-  # Link MoltenVK for Vulkan support
-  find_library(MOLTENVK MoltenVK REQUIRED)
-  target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)

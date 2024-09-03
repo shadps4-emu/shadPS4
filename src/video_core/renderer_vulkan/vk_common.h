@@ -3,6 +3,10 @@
 
 #pragma once
 
+#if defined(__APPLE__) && !USE_SYSTEM_VULKAN_LOADER
+#define VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL 0
+#endif
+
 // Include vulkan-hpp header
 #define VK_ENABLE_BETA_EXTENSIONS
 #define VK_NO_PROTOTYPES
