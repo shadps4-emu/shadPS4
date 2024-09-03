@@ -911,5 +911,10 @@
             <source>Name:</source>
             <translation>:الاسم</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>لا يمكن تطبيق الغش قبل بدء اللعبة.</translation>
+		</message>
     </context>
 </TS>

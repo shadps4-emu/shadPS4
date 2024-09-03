@@ -895,5 +895,10 @@
         <source>Name:</source>
         <translation>نام:</translation>
     </message>
+	<message>
+		<location filename="../cheats_patches.cpp" line="1163"/>
+		<source>Can't apply cheats before the game is started</source>
+		<translation>قبل از شروع بازی نمی توانید تقلب ها را اعمال کنید.</translation>
+	</message>
 </context>
 </TS>

@@ -898,5 +898,10 @@
             <source>Name:</source>
             <translation>Όνομα:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Δεν μπορείτε να εφαρμόσετε cheats πριν ξεκινήσει το παιχνίδι.</translation>
+		</message>
     </context>
 </TS>

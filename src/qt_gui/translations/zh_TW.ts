@@ -898,5 +898,10 @@
             <source>Name:</source>
             <translation>名稱:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>在遊戲開始之前無法應用作弊。</translation>
+		</message>
     </context>
 </TS>

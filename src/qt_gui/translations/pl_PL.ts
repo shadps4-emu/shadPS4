@@ -898,5 +898,10 @@
             <source>Failed to parse JSON:</source>
             <translation>Nie udało się przeanlizować JSON:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Nie można zastosować cheatów przed rozpoczęciem gry.</translation>
+		</message>
     </context>
 </TS>

@@ -898,5 +898,10 @@
             <source>Name:</source>
             <translation>Emri:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation> nuk mund të aplikoni mashtrime para se të fillojë loja.</translation>
+		</message>
 	</context>	
 </TS>

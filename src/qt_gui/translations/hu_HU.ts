@@ -898,5 +898,10 @@
         	<source>Name:</source>
         	<translation>Név:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Nem lehet csalásokat alkalmazni, mielőtt a játék elindul.</translation>
+		</message>
 	</context>
 </TS>
