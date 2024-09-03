@@ -65,6 +65,10 @@ Check the build instructions for [**Windows**](https://github.com/shadps4-emu/sh
 
 Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-linux.md).
 
+## macOS
+
+Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
+
 ## Building status
 
 <details>
