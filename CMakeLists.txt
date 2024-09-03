@@ -743,3 +743,10 @@ if (ENABLE_QT_GUI)
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)
 endif()
+
+if (UNIX AND NOT APPLE)
+    if (ENABLE_QT_GUI)
+        find_package(OpenSSL REQUIRED)
+        target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
+    endif()
+endif()
