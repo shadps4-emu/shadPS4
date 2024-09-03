@@ -10,7 +10,21 @@ void EmitPrologue(EmitContext& ctx) {
     ctx.DefineBufferOffsets();
 }
 
-void EmitEpilogue(EmitContext& ctx) {}
+void ConvertDepthMode(EmitContext& ctx) {
+    const Id type{ctx.F32[1]};
+    const Id position{ctx.OpLoad(ctx.F32[4], ctx.output_position)};
+    const Id z{ctx.OpCompositeExtract(type, position, 2u)};
+    const Id w{ctx.OpCompositeExtract(type, position, 3u)};
+    const Id screen_depth{ctx.OpFMul(type, ctx.OpFAdd(type, z, w), ctx.Constant(type, 0.5f))};
+    const Id vector{ctx.OpCompositeInsert(ctx.F32[4], screen_depth, position, 2u)};
+    ctx.OpStore(ctx.output_position, vector);
+}
+
+void EmitEpilogue(EmitContext& ctx) {
+    if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.emulate_depth_negative_one_to_one) {
+        ConvertDepthMode(ctx);
+    }
+}
 
 void EmitDiscard(EmitContext& ctx) {
     ctx.OpDemoteToHelperInvocationEXT();

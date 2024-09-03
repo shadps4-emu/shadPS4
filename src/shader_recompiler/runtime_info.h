@@ -63,9 +63,10 @@ using VsOutputMap = std::array<VsOutput, 4>;
 
 struct VertexRuntimeInfo {
     boost::container::static_vector<VsOutputMap, 3> outputs;
+    bool emulate_depth_negative_one_to_one{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
-        return true;
+        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one;
     }
 };
 
