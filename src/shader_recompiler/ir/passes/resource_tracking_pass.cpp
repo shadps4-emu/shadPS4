@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include "common/alignment.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
-#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {

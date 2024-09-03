@@ -5,9 +5,9 @@
 
 #include <span>
 #include "shader_recompiler/frontend/instruction.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
-#include "shader_recompiler/runtime_info.h"
 
 namespace Shader {
 struct Info;
@@ -55,7 +55,8 @@ enum class NegateMode : u32 {
 
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Info& info, const Profile& profile);
+    explicit Translator(IR::Block* block_, Info& info, const RuntimeInfo& runtime_info,
+                        const Profile& profile);
 
     // Instruction categories
     void EmitPrologue();
@@ -237,12 +238,13 @@ private:
 private:
     IR::IREmitter ir;
     Info& info;
+    const RuntimeInfo& runtime_info;
     const Profile& profile;
     IR::U32 m0_value;
     bool opcode_missing = false;
 };
 
 void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,
-               const Profile& profile);
+               const RuntimeInfo& runtime_info, const Profile& profile);
 
 } // namespace Shader::Gcn

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
-#include "shader_recompiler/specialization.h"
+#include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Gcn {
 
@@ -25,7 +25,7 @@ void Translator::EmitExport(const GcnInst& inst) {
             return comp;
         }
         const u32 index = u32(attrib) - u32(IR::Attribute::RenderTarget0);
-        switch (info.mrt_swizzles[index]) {
+        switch (runtime_info.fs_info.mrt_swizzles[index]) {
         case MrtSwizzle::Identity:
             return comp;
         case MrtSwizzle::Alt:

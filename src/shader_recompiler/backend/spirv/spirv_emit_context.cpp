@@ -41,9 +41,10 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 
 } // Anonymous namespace
 
-EmitContext::EmitContext(const Profile& profile_, const Shader::Info& info_, u32& binding_)
-    : Sirit::Module(profile_.supported_spirv), info{info_}, profile{profile_}, stage{info.stage},
-      binding{binding_} {
+EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
+                         const Shader::Info& info_, u32& binding_)
+    : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
+      profile{profile_}, stage{info.stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -247,7 +248,7 @@ void EmitContext::DefineInputs() {
         frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
-        for (const auto& input : info.ps_inputs) {
+        for (const auto& input : runtime_info.fs_info.inputs) {
             const u32 semantic = input.param_index;
             if (input.is_default && !input.is_flat) {
                 input_params[semantic] = {MakeDefaultValue(*this, input.default_value), F32[1],
@@ -554,7 +555,7 @@ void EmitContext::DefineSharedMemory() {
     if (!info.uses_shared) {
         return;
     }
-    u32 shared_memory_size = info.shared_memory_size;
+    u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     if (shared_memory_size == 0) {
         shared_memory_size = DefaultSharedMemSize;
     }

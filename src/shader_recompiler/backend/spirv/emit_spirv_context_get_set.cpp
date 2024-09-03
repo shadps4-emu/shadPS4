@@ -59,7 +59,7 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::Position2:
     case IR::Attribute::Position3: {
         const u32 index = u32(attr) - u32(IR::Attribute::Position1);
-        return VsOutputAttrPointer(ctx, ctx.info.vs_outputs[index][element]);
+        return VsOutputAttrPointer(ctx, ctx.runtime_info.vs_info.outputs[index][element]);
     }
     case IR::Attribute::RenderTarget0:
     case IR::Attribute::RenderTarget1:
