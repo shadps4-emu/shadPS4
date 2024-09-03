@@ -536,7 +536,7 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    constexpr FindFlags flags = FindFlags::NoCreate | FindFlags::ExactSize | FindFlags::RelaxDim;
+    constexpr FindFlags flags = FindFlags::NoCreate | FindFlags::FullOverlap | FindFlags::RelaxDim;
     ImageInfo info{};
     info.guest_address = device_addr;
     info.guest_size_bytes = size;

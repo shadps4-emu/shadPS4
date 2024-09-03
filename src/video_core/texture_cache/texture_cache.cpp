@@ -38,12 +38,12 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 TextureCache::~TextureCache() = default;
 
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
-    static constexpr size_t MaxInvalidateDist = 512_MB;
+    static constexpr size_t MaxInvalidateDist = 128_MB;
     std::unique_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         const size_t image_dist =
             image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
-        if (image_dist < MaxInvalidateDist) {
+        if (image_dist < MaxInvalidateDist && image.info.size.width != 1) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuModified;
         }
