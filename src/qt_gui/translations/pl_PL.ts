@@ -901,7 +901,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Nie można zastosować cheatów przed rozpoczęciem gry.</translation>
+			<translation>Nie można zastosować kodów przed uruchomieniem gry.</translation>
 		</message>
     </context>
 </TS>
