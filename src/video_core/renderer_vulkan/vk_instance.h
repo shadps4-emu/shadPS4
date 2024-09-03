@@ -117,6 +117,11 @@ public:
         return external_memory_host;
     }
 
+    /// Returns true when VK_EXT_depth_clip_control is supported
+    bool IsDepthClipControlSupported() const {
+        return depth_clip_control;
+    }
+
     /// Returns true when VK_EXT_color_write_enable is supported
     bool IsColorWriteEnableSupported() const {
         return color_write_en;
@@ -257,6 +262,7 @@ private:
     bool fragment_shader_barycentric{};
     bool shader_stencil_export{};
     bool external_memory_host{};
+    bool depth_clip_control{};
     bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
     bool vertex_input_dynamic_state{};

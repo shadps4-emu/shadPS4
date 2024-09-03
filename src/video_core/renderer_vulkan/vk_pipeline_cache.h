@@ -60,6 +60,7 @@ private:
                     std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, const Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx, u32& binding);
+    Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage);
 
 private:
     const Instance& instance;

@@ -69,28 +69,32 @@ void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
                    : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
 }
 
-Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage, const GraphicsPipelineKey& key,
-                                     const AmdGpu::Liverpool::Regs& regs) {
+Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     auto info = Shader::RuntimeInfo{stage};
+    const auto& regs = liverpool->regs;
     switch (stage) {
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
         info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
         GatherVertexOutputs(info.vs_info, regs.vs_output_control);
+        info.vs_info.emulate_depth_negative_one_to_one =
+            !instance.IsDepthClipControlSupported() &&
+            regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
         break;
     }
     case Shader::Stage::Fragment: {
         info.num_user_data = regs.ps_program.settings.num_user_regs;
-        std::ranges::transform(key.mrt_swizzles, info.fs_info.mrt_swizzles.begin(),
+        std::ranges::transform(graphics_key.mrt_swizzles, info.fs_info.mrt_swizzles.begin(),
                                [](Liverpool::ColorBuffer::SwapMode mode) {
                                    return static_cast<Shader::MrtSwizzle>(mode);
                                });
+        const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs.push_back({
-                .param_index = u8(regs.ps_inputs[i].input_offset.Value()),
-                .is_default = bool(regs.ps_inputs[i].use_default),
-                .is_flat = bool(regs.ps_inputs[i].flat_shade),
-                .default_value = u8(regs.ps_inputs[i].default_value),
+                .param_index = u8(ps_inputs[i].input_offset.Value()),
+                .is_default = bool(ps_inputs[i].use_default),
+                .is_flat = bool(ps_inputs[i].flat_shade),
+                .default_value = u8(ps_inputs[i].default_value),
             });
         }
         break;
@@ -327,7 +331,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
 
 std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram(
     Shader::Stage stage, Shader::ShaderParams params, u32& binding) {
-    const auto runtime_info = BuildRuntimeInfo(stage, graphics_key, liverpool->regs);
+    const auto runtime_info = BuildRuntimeInfo(stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
         Program* program = program_pool.Create(stage, params);
