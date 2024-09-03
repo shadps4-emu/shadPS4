@@ -565,7 +565,7 @@ int PS4_SYSV_ABI sceUserServiceGetLoginFlag() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList) {
-    LOG_INFO(Lib_UserService, "called");
+    LOG_DEBUG(Lib_UserService, "called");
     if (userIdList == nullptr) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;

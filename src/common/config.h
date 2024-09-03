@@ -31,7 +31,6 @@ bool copyGPUCmdBuffers();
 bool dumpShaders();
 bool dumpPM4();
 bool isRdocEnabled();
-bool isMarkersEnabled();
 u32 vblankDiv();
 
 void setDebugDump(bool enable);
@@ -62,6 +61,8 @@ void setRdocEnabled(bool enable);
 bool vkValidationEnabled();
 bool vkValidationSyncEnabled();
 bool vkValidationGpuEnabled();
+bool vkMarkersEnabled();
+bool vkCrashDiagnosticEnabled();
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);

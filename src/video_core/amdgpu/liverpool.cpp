@@ -347,7 +347,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndex2", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->Draw(true);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -363,7 +362,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("dcb:{}:DrawIndexOffset2", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->Draw(true, draw_index_off->index_offset);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -376,7 +374,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndexAuto", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->Draw(false);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -390,7 +387,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:DrawIndirect", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->DrawIndirect(false, ib_address, offset, size);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -406,7 +402,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("dcb:{}:DrawIndexIndirect", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->DrawIndirect(true, ib_address, offset, size);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -421,7 +416,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("dcb:{}:Dispatch", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->DispatchDirect();
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -437,7 +431,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("dcb:{}:DispatchIndirect", cmd_address));
-                    rasterizer->Breadcrumb(u64(cmd_address));
                     rasterizer->DispatchIndirect(ib_address, offset, size);
                     rasterizer->ScopeMarkerEnd();
                 }
@@ -602,7 +595,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             if (rasterizer && (regs.cs_program.dispatch_initiator & 1)) {
                 const auto cmd_address = reinterpret_cast<const void*>(header);
                 rasterizer->ScopeMarkerBegin(fmt::format("acb[{}]:{}:Dispatch", vqid, cmd_address));
-                rasterizer->Breadcrumb(u64(cmd_address));
                 rasterizer->DispatchDirect();
                 rasterizer->ScopeMarkerEnd();
             }

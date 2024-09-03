@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/image.h"
-#include "video_core/texture_cache/tile_manager.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnullability-completeness"
@@ -17,7 +15,6 @@
 namespace VideoCore {
 
 using namespace Vulkan;
-using Libraries::VideoOut::TilingMode;
 
 bool ImageInfo::IsBlockCoded() const {
     switch (pixel_format) {
