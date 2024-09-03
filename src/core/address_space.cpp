@@ -261,7 +261,7 @@ struct AddressSpace::Impl {
         }
 
         // Use assert to ensure success in debug builds
-        assert(success && "Failed to change virtual memory protection");
+        DEBUG_ASSERT(success && "Failed to change virtual memory protection");
     }
 
     HANDLE process{};
@@ -504,11 +504,8 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VA
 
 void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
     const bool read = True(perms & MemoryPermission::Read);
-
     const bool write = True(perms & MemoryPermission::Write);
-
     const bool execute = True(perms & MemoryPermission::Execute);
-
     return impl->Protect(virtual_addr, size, read, write, execute);
 }
 
