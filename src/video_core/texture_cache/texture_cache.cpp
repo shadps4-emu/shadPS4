@@ -38,13 +38,15 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 TextureCache::~TextureCache() = default;
 
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
+    static constexpr size_t MaxInvalidateDist = 512_MB;
     std::unique_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        if (!image.Overlaps(address, size)) {
-            return;
+        const size_t image_dist =
+            image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
+        if (image_dist < MaxInvalidateDist) {
+            // Ensure image is reuploaded when accessed again.
+            image.flags |= ImageFlagBits::CpuModified;
         }
-        // Ensure image is reuploaded when accessed again.
-        image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
@@ -354,6 +356,10 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
+    if (False(image.flags & ImageFlagBits::CpuModified)) {
+        return;
+    }
+
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
