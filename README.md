@@ -69,6 +69,8 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 
 Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
 
+Note that macOS users need at least macOS 15 on an Apple Silicon Mac, or at least macOS 11 on an Intel Mac.
+
 ## Building status
 
 <details>
