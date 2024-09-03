@@ -4,6 +4,7 @@
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
 #include "common/config.h"
+#include "common/path_util.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -30,12 +31,18 @@ namespace Core {
 void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& window,
                 const u32 image_count, vk::Format surface_format,
                 const vk::AllocationCallbacks* allocator) {
+
+    const auto config_path = GetUserPath(Common::FS::PathType::UserDir) / "imgui.ini";
+    const auto log_path = GetUserPath(Common::FS::PathType::LogDir) / "imgui_log.txt";
+
     CreateContext();
     ImGuiIO& io = GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
+    io.IniFilename = SDL_strdup(config_path.string().c_str());
+    io.LogFilename = SDL_strdup(log_path.string().c_str());
     StyleColorsDark();
 
     Sdl::Init(window.GetSdlWindow());
@@ -65,9 +72,16 @@ void OnResize() {
 void Shutdown(const vk::Device& device) {
     device.waitIdle();
 
+    const ImGuiIO& io = GetIO();
+    const auto ini_filename = (void*)io.IniFilename;
+    const auto log_filename = (void*)io.LogFilename;
+
     Vulkan::Shutdown();
     Sdl::Shutdown();
     DestroyContext();
+
+    SDL_free(ini_filename);
+    SDL_free(log_filename);
 }
 
 bool ProcessEvent(SDL_Event* event) {
