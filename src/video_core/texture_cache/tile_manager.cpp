@@ -377,9 +377,10 @@ void TileManager::FreeBuffer(ScratchBuffer buffer) {
     vmaDestroyBuffer(instance.GetAllocator(), buffer.first, buffer.second);
 }
 
-std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
+std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_offset,
+                                                  Image& image) {
     if (!image.info.props.is_tiled) {
-        return std::nullopt;
+        return {in_buffer, in_offset};
     }
 
     const auto* detiler = GetDetiler(image);
@@ -388,19 +389,10 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
             LOG_ERROR(Render_Vulkan, "Unsupported tiled image: {} ({})",
                       vk::to_string(image.info.pixel_format), NameOf(image.info.tiling_mode));
         }
-        return std::nullopt;
+        return {in_buffer, in_offset};
     }
 
-    // Prepare input buffer
     const u32 image_size = image.info.guest_size_bytes;
-    const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
-        // Request temporary host buffer for larger sizes.
-        auto in_buffer = AllocBuffer(image_size);
-        const auto addr = reinterpret_cast<const void*>(image.info.guest_address);
-        Upload(in_buffer, addr, image_size);
-        scheduler.DeferOperation([=, this]() { FreeBuffer(in_buffer); });
-        return {in_buffer.first, 0};
-    }();
 
     // Prepare output buffer
     auto out_buffer = AllocBuffer(image_size, true);
@@ -471,7 +463,7 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, post_barrier, {});
 
-    return {out_buffer.first};
+    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore
