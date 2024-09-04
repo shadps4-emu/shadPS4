@@ -365,7 +365,7 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryPr
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // Validate protection flag
+    // Validate protection flags
     constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
                                               MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
                                               MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
