@@ -292,14 +292,14 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP: {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
             result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
@@ -314,8 +314,8 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
             result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
                                            entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
             break;
         }
         default: {
