@@ -1054,7 +1054,7 @@ public:
     ~Liverpool();
 
     void SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb);
-    void SubmitAsc(u32 vqid, std::span<const u32> acb);
+    void SubmitAsc(u32 vqid, std::span<const u32> acb, u32 pipeId);
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};
@@ -1125,7 +1125,7 @@ private:
                                                                          std::span<const u32> ccb);
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
-    Task ProcessCompute(std::span<const u32> acb, int vqid);
+    Task ProcessCompute(std::span<const u32> acb, int vqid, u32 pipeId);
 
     void Process(std::stop_token stoken);
 
