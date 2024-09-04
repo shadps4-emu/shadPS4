@@ -6,15 +6,17 @@
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
-
 #include "game_install_dialog.h"
 
-GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
+GameInstallDialog::GameInstallDialog(QWidget* parent)
+    : QDialog(parent), m_gamesDirectory(new QLineEdit(this)) // Initialize member variable
+{
     auto layout = new QVBoxLayout(this);
 
     layout->addWidget(SetupGamesDirectory());
@@ -25,7 +27,7 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     setWindowIcon(QIcon(":images/shadps4.ico"));
 }
 
-GameInstallDialog::~GameInstallDialog() {}
+GameInstallDialog::~GameInstallDialog() = default;
 
 void GameInstallDialog::Browse() {
     auto path = QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
@@ -40,7 +42,6 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     auto layout = new QHBoxLayout(group);
 
     // Input.
-    m_gamesDirectory = new QLineEdit();
     m_gamesDirectory->setText(QString::fromStdString(Config::getGameInstallDir()));
     m_gamesDirectory->setMinimumWidth(400);
 
@@ -70,9 +71,9 @@ void GameInstallDialog::Save() {
     auto gamesDirectory = m_gamesDirectory->text();
 
     if (gamesDirectory.isEmpty() || !QDir(gamesDirectory).exists() ||
-        !QDir::isAbsolutePath(gamesDirectory)) {
+        !QDir(gamesDirectory).isAbsolute()) {
         QMessageBox::critical(this, tr("Error"),
-                              "The value for location to install games is not valid.");
+                              tr("The value for location to install games is not valid."));
         return;
     }
 

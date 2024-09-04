@@ -621,6 +621,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         auto extract_path = std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         QDir game_dir(QString::fromStdString(extract_path.string()));
+
+        bool isDLC = false; // Variable to track if the package is DLC
+
         if (game_dir.exists()) {
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
@@ -641,43 +644,45 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 QString game_app_version = QString::fromStdString(psf.GetString("APP_VER"));
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
+
+                QString message;
                 if (pkgD == appD) {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("PKG and Game versions match: ") + pkg_app_version +
-                                           "\n" + tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
+                    message = tr("Patch detected!\nPKG and Game versions match: %1\nWould you like "
+                                 "to overwrite?")
+                                  .arg(pkg_app_version);
                 } else if (pkgD < appD) {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("PKG Version %1 is older than installed version: ")
-                                               .arg(pkg_app_version) +
-                                           game_app_version + "\n" +
-                                           tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
+                    message = tr("Patch detected!\nPKG Version %1 is older than installed version: "
+                                 "%2\nWould you like to overwrite?")
+                                  .arg(pkg_app_version)
+                                  .arg(game_app_version);
                 } else {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("Game is installed: ") + game_app_version + "\n" +
-                                           tr("Would you like to install Patch: ") +
-                                           pkg_app_version + " ?"));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
+                    message = tr("Patch detected!\nGame is installed: %1\nWould you like to "
+                                 "install Patch: %2?")
+                                  .arg(game_app_version)
+                                  .arg(pkg_app_version);
                 }
+                msgBox.setText(message);
+                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                msgBox.setButtonText(QMessageBox::No, tr("No"));
+                msgBox.setDefaultButton(QMessageBox::No);
+
                 int result = msgBox.exec();
-                if (result == QMessageBox::Yes) {
-                    // Do nothing.
-                } else {
+                if (result != QMessageBox::Yes) {
                     return;
                 }
-            } else if (category == "ac") {
+            } else if (category == "ac") { // Check if category is DLC
+                isDLC = true;              // Set flag for DLC
                 if (!addon_dir.exists()) {
                     QMessageBox addonMsgBox;
                     addonMsgBox.setWindowTitle(tr("DLC Installation"));
-                    addonMsgBox.setText(QString(tr("Would you like to install DLC: %1?"))
+                    addonMsgBox.setText(tr("Would you like to install DLC: %1?")
                                             .arg(QString::fromStdString(entitlement_label)));
-
                     addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    addonMsgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    addonMsgBox.setButtonText(QMessageBox::No, tr("No"));
                     addonMsgBox.setDefaultButton(QMessageBox::No);
+
                     int result = addonMsgBox.exec();
                     if (result == QMessageBox::Yes) {
                         extract_path = addon_extract_path;
@@ -685,12 +690,17 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                         return;
                     }
                 } else {
-                    msgBox.setText(QString(tr("DLC already installed:") + "\n" +
-                                           QString::fromStdString(addon_extract_path.string()) +
-                                           "\n\n" + tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
-                    int result = msgBox.exec();
+                    QMessageBox addonMsgBox;
+                    addonMsgBox.setWindowTitle(tr("DLC Installation"));
+                    addonMsgBox.setText(
+                        tr("DLC already installed:\n%1\n\nWould you like to overwrite?")
+                            .arg(QString::fromStdString(addon_extract_path.string())));
+                    addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    addonMsgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                    addonMsgBox.setButtonText(QMessageBox::No, tr("No"));
+                    addonMsgBox.setDefaultButton(QMessageBox::No);
+
+                    int result = addonMsgBox.exec();
                     if (result == QMessageBox::Yes) {
                         extract_path = addon_extract_path;
                     } else {
@@ -698,30 +708,32 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                msgBox.setText(QString(tr("Game already installed") + "\n" +
-                                       QString::fromStdString(extract_path.string()) + "\n" +
-                                       tr("Would you like to overwrite?")));
+                msgBox.setText(tr("Game already installed\n%1\nWould you like to overwrite?")
+                                   .arg(QString::fromStdString(extract_path.string())));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+                msgBox.setButtonText(QMessageBox::No, tr("No"));
                 msgBox.setDefaultButton(QMessageBox::No);
+
                 int result = msgBox.exec();
-                if (result == QMessageBox::Yes) {
-                    // Do nothing.
-                } else {
+                if (result != QMessageBox::Yes) {
                     return;
                 }
             }
         } else {
-            // Do nothing;
             if (pkgType.contains("PATCH")) {
                 QMessageBox::information(this, tr("PKG Extraction"),
                                          tr("PKG is a patch, please install the game first!"));
                 return;
             }
-            // what else?
+            // Handle case when the game directory does not exist and it's not a patch.
+            // You might need to provide appropriate logic here.
         }
 
         if (!pkg.Extract(file, extract_path, failreason)) {
-            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
+            QMessageBox::critical(
+                this, tr("PKG ERROR"),
+                tr("Failed to extract PKG: %1").arg(QString::fromStdString(failreason)));
         } else {
             int nfiles = pkg.GetNumberOfFiles();
 
@@ -734,20 +746,27 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 QProgressDialog dialog;
                 dialog.setWindowTitle(tr("PKG Extraction"));
                 dialog.setWindowModality(Qt::WindowModal);
-                QString extractmsg = QString(tr("Extracting PKG %1/%2")).arg(pkgNum).arg(nPkg);
+                QString extractmsg = tr("Extracting PKG %1/%2").arg(pkgNum).arg(nPkg);
                 dialog.setLabelText(extractmsg);
                 dialog.setAutoClose(true);
                 dialog.setRange(0, nfiles);
 
                 QFutureWatcher<void> futureWatcher;
-                connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
+                connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=]() {
                     if (pkgNum == nPkg) {
                         QString path = QString::fromStdString(Config::getGameInstallDir());
                         QMessageBox extractMsgBox(this);
                         extractMsgBox.setWindowTitle(tr("Extraction Finished"));
-                        extractMsgBox.setText(
-                            QString(tr("Game successfully installed at %1")).arg(path));
-                        extractMsgBox.addButton(QMessageBox::Ok);
+
+                        // Display the appropriate message based on whether it was a DLC or a game
+                        if (isDLC) {
+                            extractMsgBox.setText(tr("DLC successfully installed at %1").arg(path));
+                        } else {
+                            extractMsgBox.setText(
+                                tr("Game successfully installed at %1").arg(path));
+                        }
+
+                        extractMsgBox.setButtonText(QMessageBox::Ok, tr("Ok"));
                         extractMsgBox.setDefaultButton(QMessageBox::Ok);
                         connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
                                 [&](QAbstractButton* button) {

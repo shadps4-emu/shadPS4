@@ -4,25 +4,23 @@
 #pragma once
 
 #include <QDialog>
-
+#include <QLineEdit>
 #include "common/config.h"
 #include "common/path_util.h"
 
-class QLineEdit;
+class GameInstallDialog : public QDialog {
+    Q_OBJECT // This macro is necessary for Qt's meta-object system
 
-class GameInstallDialog final : public QDialog {
-public:
-    GameInstallDialog();
-    ~GameInstallDialog();
+        public : explicit GameInstallDialog(QWidget* parent = nullptr);
+    ~GameInstallDialog() override;
 
 private slots:
     void Browse();
+    void Save();
 
 private:
     QWidget* SetupGamesDirectory();
     QWidget* SetupDialogActions();
-    void Save();
 
-private:
-    QLineEdit* m_gamesDirectory;
+    QLineEdit* m_gamesDirectory; // Pointer to the QLineEdit widget
 };

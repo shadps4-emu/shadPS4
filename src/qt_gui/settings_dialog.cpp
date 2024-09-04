@@ -1,43 +1,46 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QApplication>
 #include <QCompleter>
 #include <QDirIterator>
+#include <QLocale>
+#include <QTranslator>
 
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-QStringList languageNames = {"Arabic",
-                             "Czech",
-                             "Danish",
-                             "Dutch",
-                             "English (United Kingdom)",
-                             "English (United States)",
-                             "Finnish",
-                             "French (Canada)",
-                             "French (France)",
-                             "German",
-                             "Greek",
-                             "Hungarian",
-                             "Indonesian",
-                             "Italian",
-                             "Japanese",
-                             "Korean",
-                             "Norwegian",
-                             "Polish",
-                             "Portuguese (Brazil)",
-                             "Portuguese (Portugal)",
-                             "Romanian",
-                             "Russian",
-                             "Simplified Chinese",
-                             "Spanish (Latin America)",
-                             "Spanish (Spain)",
-                             "Swedish",
-                             "Thai",
-                             "Traditional Chinese",
-                             "Turkish",
-                             "Vietnamese"};
+QStringList languageNames = {QObject::tr("Arabic"),
+                             QObject::tr("Czech"),
+                             QObject::tr("Danish"),
+                             QObject::tr("Dutch"),
+                             QObject::tr("English (United Kingdom)"),
+                             QObject::tr("English (United States)"),
+                             QObject::tr("Finnish"),
+                             QObject::tr("French (Canada)"),
+                             QObject::tr("French (France)"),
+                             QObject::tr("German"),
+                             QObject::tr("Greek"),
+                             QObject::tr("Hungarian"),
+                             QObject::tr("Indonesian"),
+                             QObject::tr("Italian"),
+                             QObject::tr("Japanese"),
+                             QObject::tr("Korean"),
+                             QObject::tr("Norwegian"),
+                             QObject::tr("Polish"),
+                             QObject::tr("Portuguese (Brazil)"),
+                             QObject::tr("Portuguese (Portugal)"),
+                             QObject::tr("Romanian"),
+                             QObject::tr("Russian"),
+                             QObject::tr("Simplified Chinese"),
+                             QObject::tr("Spanish (Latin America)"),
+                             QObject::tr("Spanish (Spain)"),
+                             QObject::tr("Swedish"),
+                             QObject::tr("Thai"),
+                             QObject::tr("Traditional Chinese"),
+                             QObject::tr("Turkish"),
+                             QObject::tr("Vietnamese")};
 
 const QVector<int> languageIndexes = {21, 23, 14, 6,  18, 1,  12, 22, 2,  4, 25, 24, 29, 5,  0,
                                       9,  15, 16, 17, 7,  26, 8,  11, 20, 3, 13, 27, 10, 19, 28};
@@ -51,7 +54,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
 
     // Add list of available GPUs
-    ui->graphicsAdapterBox->addItem("Auto Select"); // -1, auto selection
+    ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
     for (const auto& device : physical_devices) {
         ui->graphicsAdapterBox->addItem(device);
     }
@@ -197,7 +200,7 @@ void SettingsDialog::InitializeEmulatorLanguages() {
         locale.remove(0, locale.lastIndexOf(QLatin1Char{'/'}) + 1);
         const QString lang = QLocale::languageToString(QLocale(locale).language());
         const QString country = QLocale::territoryToString(QLocale(locale).territory());
-        ui->emulatorLanguageComboBox->addItem(QStringLiteral("%1 (%2)").arg(lang, country), locale);
+        ui->emulatorLanguageComboBox->addItem(tr("%1 (%2)").arg(lang, country), locale);
 
         languages[locale.toStdString()] = idx;
         idx++;
