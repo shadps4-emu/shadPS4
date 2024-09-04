@@ -233,7 +233,7 @@ private:
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
-    IR::U16 Convert_F32_to_U16_Normalized(const IR::F32& src);
+    IR::U32 Convert_F32_to_U16_Normalized(const IR::F32& src);
     void LogMissingOpcode(const GcnInst& inst);
 
 private:

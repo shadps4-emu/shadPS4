@@ -344,25 +344,26 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_f32));
 }
 
-IR::U16 Translator::Convert_F32_to_U16_Normalized(const IR::F32& src) {
-    const IR::F32 as_float = ir.FPMul(src, ir.Imm32((f32)std::numeric_limits<u16>::max()));
+IR::U32 Translator::Convert_F32_to_U16_Normalized(const IR::F32& src) {
+    const IR::F32 clamped = ir.FPClamp(src, ir.Imm32(0.0f), ir.Imm32(1.0f));
+    const IR::F32 as_float = ir.FPMul(clamped, ir.Imm32((f32)std::numeric_limits<u16>::max()));
     const IR::U32 as_unsigned = ir.ConvertFToU(32, as_float);
-    return ir.UConvert(16, as_unsigned);
+    return as_unsigned;
 }
 
 void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
     const IR::VectorReg dst_reg{inst.dst[0].code};
 
-    const IR::F32 src0 = GetSrc<IR::F32>(inst.src[0]);
-    const IR::F32 src1 = GetSrc<IR::F32>(inst.src[1]);
+    const IR::U32 src0 = Convert_F32_to_U16_Normalized(GetSrc<IR::F32>(inst.src[0]));
+    const IR::U32 src1 = Convert_F32_to_U16_Normalized(GetSrc<IR::F32>(inst.src[1]));
 
-    const IR::Value vec_u16 =
-        ir.CompositeConstruct(
-            Convert_F32_to_U16_Normalized(src0),
-            Convert_F32_to_U16_Normalized(src1)
-        );
-
-    ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_u16));
+    ir.SetVectorReg(
+        dst_reg,
+        ir.BitwiseOr(
+            src0,
+            ir.ShiftLeftLogical(src1, ir.Imm32(16))
+        )
+    );
 }
 
 void Translator::V_CVT_F32_F16(const GcnInst& inst) {
