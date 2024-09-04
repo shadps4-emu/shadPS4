@@ -439,7 +439,7 @@ int PS4_SYSV_ABI sceGnmComputeWaitSemaphore() {
 
 int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u32* stream, const char* name) {
     if (name) {
-        LOG_ERROR(Lib_GnmDriver, "(STUBBED) sceGnmCreateWorkloadStream called with name: %s", name);
+        LOG_ERROR(Lib_GnmDriver, "(STUBBED) sceGnmCreateWorkloadStream called with name: {}", name);
     } else {
         LOG_ERROR(Lib_GnmDriver, "(STUBBED) sceGnmCreateWorkloadStream called with NULL name");
     }
