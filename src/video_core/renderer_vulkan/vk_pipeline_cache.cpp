@@ -298,6 +298,11 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
         const auto stage = Shader::StageFromIndex(i);
         const auto params = Liverpool::GetParams(*pgm);
+
+        if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
+            return false;
+        }
+
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }
     return true;
