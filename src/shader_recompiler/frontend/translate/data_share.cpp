@@ -171,9 +171,9 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
 
     if (info.stage != Stage::Compute) {
-        ir.SetScalarReg(dst, value);
+        SetDst(inst.dst[0], value);
     } else {
-        ir.SetScalarReg(dst, ir.ReadFirstLane(value));
+        SetDst(inst.dst[0], ir.ReadFirstLane(value));
     }
 }
 
