@@ -346,7 +346,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
     }
-    LOG_INFO(Kernel_Vmm, "sceKernelBatchMap2 finished : processed = {}, result = {}", processed,
+    LOG_INFO(Kernel_Vmm, "sceKernelBatchMap2 finished: processed = {}, result = {}", processed,
              result);
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.
         *numEntriesOut = processed;
