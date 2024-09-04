@@ -545,7 +545,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     TracyFiberLeave;
 }
 
-Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
+Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid, u32 pipeId) {
     TracyFiberEnter(acb_task_name);
 
     while (!acb.empty()) {
@@ -567,7 +567,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task = ProcessCompute(
-                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid, pipeId);
             while (!task.handle.done()) {
                 task.handle.resume();
 
@@ -625,7 +625,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
         }
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
-            release_mem->SignalFence(Platform::InterruptId::Compute0RelMem); // <---
+            release_mem->SignalFence((Platform::InterruptId)pipeId); // <---
             break;
         }
         default:
@@ -687,11 +687,11 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     submit_cv.notify_one();
 }
 
-void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb) {
+void Liverpool::SubmitAsc(u32 vqid, std::span<const u32> acb, u32 pipeId) {
     ASSERT_MSG(vqid >= 0 && vqid < NumTotalQueues, "Invalid virtual ASC queue index");
     auto& queue = mapped_queues[vqid];
 
-    const auto& task = ProcessCompute(acb, vqid);
+    const auto& task = ProcessCompute(acb, vqid, pipeId);
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
