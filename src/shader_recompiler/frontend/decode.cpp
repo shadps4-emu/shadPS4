@@ -5,6 +5,8 @@
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 
+#include "magic_enum.hpp"
+
 namespace Shader::Gcn {
 
 namespace bit {
@@ -253,7 +255,9 @@ void GcnDecodeContext::updateInstructionMeta(InstEncoding encoding) {
 
     ASSERT_MSG(instFormat.src_type != ScalarType::Undefined &&
                    instFormat.dst_type != ScalarType::Undefined,
-               "TODO: Instruction format table not complete, please fix it manually.");
+               "Instruction format table incomplete for opcode {} ({}, encoding = {})",
+               magic_enum::enum_name(m_instruction.opcode), u32(m_instruction.opcode),
+               magic_enum::enum_name(encoding));
 
     m_instruction.inst_class = instFormat.inst_class;
     m_instruction.category = instFormat.inst_category;
