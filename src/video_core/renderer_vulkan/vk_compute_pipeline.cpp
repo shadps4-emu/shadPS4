@@ -104,6 +104,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
+    boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
     u32 binding{};
 
@@ -153,9 +154,9 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     for (const auto& desc : info->texture_buffers) {
         const auto vsharp = desc.GetSharp(*info);
         vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
-        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+        const u32 size = vsharp.GetSize();
+        if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
             const VAddr address = vsharp.base_address;
-            const u32 size = vsharp.GetSize();
             if (desc.is_written) {
                 if (texture_cache.TouchMeta(address, true)) {
                     LOG_TRACE(Render_Vulkan, "Metadata update skipped");
@@ -183,6 +184,13 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
             buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                           vsharp.GetDataFmt(), vsharp.GetNumberFmt());
+
+            if (auto barrier =
+                    vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                          : vk::AccessFlagBits2::eShaderRead,
+                                          vk::PipelineStageFlagBits2::eComputeShader)) {
+                buffer_barriers.emplace_back(*barrier);
+            }
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
@@ -222,6 +230,9 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     }
     for (const auto& sampler : info->samplers) {
         const auto ssharp = sampler.GetSharp(*info);
+        if (ssharp.force_degamma) {
+            LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
+        }
         const auto vk_sampler = texture_cache.GetSampler(ssharp);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({
@@ -239,6 +250,15 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    if (!buffer_barriers.empty()) {
+        auto dependencies = vk::DependencyInfo{
+            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
+            .pBufferMemoryBarriers = buffer_barriers.data(),
+        };
+        cmdbuf.pipelineBarrier2(dependencies);
+    }
+
     cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(push_data),
                          &push_data);
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, set_writes);

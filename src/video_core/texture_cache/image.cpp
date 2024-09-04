@@ -242,6 +242,74 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
             vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
 }
 
+void Image::CopyImage(const Image& image) {
+    scheduler->EndRendering();
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+    auto cmdbuf = scheduler->CommandBuffer();
+
+    boost::container::small_vector<vk::ImageCopy, 14> image_copy{};
+    for (u32 m = 0; m < image.info.resources.levels; ++m) {
+        const auto mip_w = std::max(info.size.width >> m, 1u);
+        const auto mip_h = std::max(info.size.height >> m, 1u);
+        const auto mip_d = std::max(info.size.depth >> m, 1u);
+
+        image_copy.emplace_back(vk::ImageCopy{
+            .srcSubresource{
+                .aspectMask = image.aspect_mask,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = image.info.resources.layers,
+            },
+            .dstSubresource{
+                .aspectMask = image.aspect_mask,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = image.info.resources.layers,
+            },
+            .extent = {mip_w, mip_h, mip_d},
+        });
+    }
+    cmdbuf.copyImage(image.image, image.layout, this->image, this->layout, image_copy);
+
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+}
+
+void Image::CopyMip(const Image& image, u32 mip) {
+    scheduler->EndRendering();
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+
+    auto cmdbuf = scheduler->CommandBuffer();
+
+    const auto mip_w = std::max(info.size.width >> mip, 1u);
+    const auto mip_h = std::max(info.size.height >> mip, 1u);
+    const auto mip_d = std::max(info.size.depth >> mip, 1u);
+
+    ASSERT(mip_w == image.info.size.width);
+    ASSERT(mip_h == image.info.size.height);
+
+    const vk::ImageCopy image_copy{
+        .srcSubresource{
+            .aspectMask = image.aspect_mask,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = image.info.resources.layers,
+        },
+        .dstSubresource{
+            .aspectMask = image.aspect_mask,
+            .mipLevel = mip,
+            .baseArrayLayer = 0,
+            .layerCount = info.resources.layers,
+        },
+        .extent = {mip_w, mip_h, mip_d},
+    };
+    cmdbuf.copyImage(image.image, image.layout, this->image, this->layout, image_copy);
+
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+}
+
 Image::~Image() = default;
 
 } // namespace VideoCore

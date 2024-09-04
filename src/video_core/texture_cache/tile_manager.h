@@ -51,7 +51,6 @@ private:
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
-    StreamBuffer stream_buffer;
     std::array<DetilerContext, DetilerType::Max> detilers;
 };
 

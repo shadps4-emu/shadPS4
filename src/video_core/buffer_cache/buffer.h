@@ -118,6 +118,25 @@ public:
         return buffer;
     }
 
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlagBits2 dst_acess_mask,
+                                                       vk::PipelineStageFlagBits2 dst_stage) {
+        if (dst_acess_mask == access_mask && stage == dst_stage) {
+            return {};
+        }
+
+        auto barrier = vk::BufferMemoryBarrier2{
+            .srcStageMask = stage,
+            .srcAccessMask = access_mask,
+            .dstStageMask = dst_stage,
+            .dstAccessMask = dst_acess_mask,
+            .buffer = buffer.buffer,
+            .size = size_bytes,
+        };
+        access_mask = dst_acess_mask;
+        stage = dst_stage;
+        return barrier;
+    }
+
 public:
     VAddr cpu_addr = 0;
     bool is_picked{};
@@ -128,6 +147,8 @@ public:
     const Vulkan::Instance* instance{};
     MemoryUsage usage;
     UniqueBuffer buffer;
+    vk::AccessFlagBits2 access_mask{vk::AccessFlagBits2::eNone};
+    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eNone};
     struct BufferView {
         u32 offset;
         u32 size;

@@ -359,6 +359,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
     boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
+    boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
     u32 binding{};
 
@@ -407,9 +408,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& tex_buffer : stage->texture_buffers) {
             const auto vsharp = tex_buffer.GetSharp(*stage);
             vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
-            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+            const u32 size = vsharp.GetSize();
+            if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
                 const VAddr address = vsharp.base_address;
-                const u32 size = vsharp.GetSize();
                 const u32 alignment = instance.TexelBufferMinAlignment();
                 const auto [vk_buffer, offset] =
                     buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written, true);
@@ -424,6 +425,12 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 }
                 buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
+                const auto dst_access = tex_buffer.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                              : vk::AccessFlagBits2::eShaderRead;
+                if (auto barrier = vk_buffer->GetBarrier(
+                        dst_access, vk::PipelineStageFlagBits2::eVertexShader)) {
+                    buffer_barriers.emplace_back(*barrier);
+                }
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -441,7 +448,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             const auto tsharp = image_desc.GetSharp(*stage);
             if (tsharp) {
                 tsharps.emplace_back(tsharp);
-                VideoCore::ImageInfo image_info{tsharp};
+                VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
                 VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
                 const auto& image_view = texture_cache.FindTexture(image_info, view_info);
                 const auto& image = texture_cache.GetImage(image_view.image_id);
@@ -465,6 +472,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         }
         for (const auto& sampler : stage->samplers) {
             auto ssharp = sampler.GetSharp(*stage);
+            if (ssharp.force_degamma) {
+                LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
+            }
             if (sampler.disable_aniso) {
                 const auto& tsharp = tsharps[sampler.associated_image];
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {
@@ -485,6 +495,15 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    if (!buffer_barriers.empty()) {
+        auto dependencies = vk::DependencyInfo{
+            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
+            .pBufferMemoryBarriers = buffer_barriers.data(),
+        };
+        cmdbuf.pipelineBarrier2(dependencies);
+    }
+
     if (!set_writes.empty()) {
         cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
                                     set_writes);

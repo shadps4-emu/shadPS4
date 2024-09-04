@@ -145,6 +145,14 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
+    if (regs.depth_render_control.depth_compress_disable) {
+        LOG_TRACE(Render_Vulkan, "HTile decompress skipped (depth)");
+        return nullptr;
+    }
+    if (regs.depth_render_control.stencil_compress_disable) {
+        LOG_TRACE(Render_Vulkan, "HTile decompress skipped (stencil)");
+        return nullptr;
+    }
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }

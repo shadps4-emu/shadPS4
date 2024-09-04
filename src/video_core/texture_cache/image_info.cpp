@@ -174,6 +174,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     const auto color_slice_sz = buffer.GetColorSliceSize();
     guest_size_bytes = color_slice_sz * buffer.NumSlices();
     mips_layout.emplace_back(color_slice_sz, pitch, 0);
+    tiling_idx = static_cast<u32>(buffer.attrib.tile_mode_index.Value());
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
@@ -199,9 +200,19 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Image& image) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Image& image, bool force_depth /*= false*/) noexcept {
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    // Override format if image is forced to be a depth target
+    if (force_depth || tiling_mode == AmdGpu::TilingMode::Depth_MacroTiled) {
+        if (pixel_format == vk::Format::eR32Sfloat) {
+            pixel_format = vk::Format::eD32SfloatS8Uint;
+        } else if (pixel_format == vk::Format::eR16Sfloat) {
+            pixel_format = vk::Format::eD16UnormS8Uint;
+        } else {
+            UNREACHABLE();
+        }
+    }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
     props.is_cube = image.GetType() == AmdGpu::ImageType::Cube;
@@ -285,6 +296,76 @@ void ImageInfo::UpdateSize() {
         guest_size_bytes += mip_info.size;
     }
     guest_size_bytes *= resources.layers;
+}
+
+bool ImageInfo::IsMipOf(const ImageInfo& info) const {
+    if (!IsCompatible(info)) {
+        return false;
+    }
+
+    // Currently we expect only on level to be copied.
+    if (resources.levels != 1) {
+        return false;
+    }
+
+    const int mip = info.resources.levels - resources.levels;
+    if (mip < 1) {
+        return false;
+    }
+
+    const auto mip_w = std::max(info.size.width >> mip, 1u);
+    const auto mip_h = std::max(info.size.height >> mip, 1u);
+    if ((size.width != mip_w) || (size.height != mip_h)) {
+        return false;
+    }
+
+    const auto mip_d = std::max(info.size.depth >> mip, 1u);
+    if (info.type == vk::ImageType::e3D && type == vk::ImageType::e2D) {
+        // In case of 2D array to 3D copy, make sure we have proper number of layers.
+        if (resources.layers != mip_d) {
+            return false;
+        }
+    } else {
+        if (type != info.type) {
+            return false;
+        }
+    }
+
+    // Check if the mip has correct size.
+    if (info.mips_layout.size() <= mip || info.mips_layout[mip].size != guest_size_bytes) {
+        return false;
+    }
+
+    return true;
+}
+
+bool ImageInfo::IsSliceOf(const ImageInfo& info) const {
+    if (!IsCompatible(info)) {
+        return false;
+    }
+
+    // Array slices should be of the same type.
+    if (type != info.type) {
+        return false;
+    }
+
+    // 2D dimensions of both images should be the same.
+    if ((size.width != info.size.width) || (size.height != info.size.height)) {
+        return false;
+    }
+
+    // Check for size alignment.
+    const bool slice_size = info.guest_size_bytes / info.resources.layers;
+    if (guest_size_bytes % slice_size != 0) {
+        return false;
+    }
+
+    // Ensure that address is aligned too.
+    if (((info.guest_address - guest_address) % guest_size_bytes) != 0) {
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace VideoCore
