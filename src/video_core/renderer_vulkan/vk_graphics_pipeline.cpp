@@ -125,7 +125,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineViewportStateCreateInfo viewport_info = {
-        .pNext = &clip_control,
+        .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
         .viewportCount = 1,
         .pViewports = &viewport,
         .scissorCount = 1,
