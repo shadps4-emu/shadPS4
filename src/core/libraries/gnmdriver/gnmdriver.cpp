@@ -437,8 +437,18 @@ int PS4_SYSV_ABI sceGnmComputeWaitSemaphore() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmCreateWorkloadStream() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u32* stream, const char* name) {
+    if (name) {
+        LOG_ERROR(Lib_GnmDriver, "(STUBBED) sceGnmCreateWorkloadStream called with name: %s", name);
+    } else {
+        LOG_ERROR(Lib_GnmDriver, "(STUBBED) sceGnmCreateWorkloadStream called with NULL name");
+    }
+
+    // TODO: Implement proper functionality. For now, we stub it.
+    if (stream) {
+        *stream = 1; // Set stream to 1 as in Rust code
+    }
+
     return ORBIS_OK;
 }
 

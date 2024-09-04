@@ -20,7 +20,7 @@ int PS4_SYSV_ABI sceGnmBeginWorkload();
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
                                             u32 cmp_func, u32 ref);
 int PS4_SYSV_ABI sceGnmComputeWaitSemaphore();
-int PS4_SYSV_ABI sceGnmCreateWorkloadStream();
+int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u32* stream, const char* name);
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerHaltWavefront();
 int PS4_SYSV_ABI sceGnmDebuggerReadGds();
