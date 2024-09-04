@@ -217,8 +217,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
          {"libSceJpegEnc.sprx", nullptr},
          {"libSceFont.sprx", nullptr},
          {"libSceRazorCpu.sprx", nullptr},
-         {"libSceCesCs.sprx", nullptr}}
-    };
+         {"libSceCesCs.sprx", nullptr}}};
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
