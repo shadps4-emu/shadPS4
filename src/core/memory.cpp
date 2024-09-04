@@ -373,7 +373,7 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryPr
     MemoryProt invalid_flags = prot & ~valid_flags;
     if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
         LOG_ERROR(Core, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
-                  invalid_flags);
+                  u32(invalid_flags));
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
