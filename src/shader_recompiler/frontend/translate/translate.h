@@ -114,6 +114,7 @@ public:
     void V_SAD(const GcnInst& inst);
     void V_MAC_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
+    void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
     void V_CVT_F32_F16(const GcnInst& inst);
     void V_CVT_F16_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
@@ -232,7 +233,7 @@ private:
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
-
+    IR::U16 Convert_F32_to_U16_Normalized(const IR::F32& src);
     void LogMissingOpcode(const GcnInst& inst);
 
 private:
