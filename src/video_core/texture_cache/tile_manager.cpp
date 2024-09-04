@@ -254,11 +254,8 @@ struct DetilerParams {
     u32 sizes[14];
 };
 
-static constexpr size_t StreamBufferSize = 1_GB;
-
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
-    : instance{instance}, scheduler{scheduler},
-      stream_buffer{instance, scheduler, MemoryUsage::Upload, StreamBufferSize} {
+    : instance{instance}, scheduler{scheduler} {
     static const std::array detiler_shaders{
         HostShaders::DETILE_M8X1_COMP,  HostShaders::DETILE_M8X2_COMP,
         HostShaders::DETILE_M32X1_COMP, HostShaders::DETILE_M32X2_COMP,
@@ -397,11 +394,6 @@ std::optional<vk::Buffer> TileManager::TryDetile(Image& image) {
     // Prepare input buffer
     const u32 image_size = image.info.guest_size_bytes;
     const auto [in_buffer, in_offset] = [&] -> std::pair<vk::Buffer, u32> {
-        // Use stream buffer for smaller textures.
-        if (image_size <= stream_buffer.GetFreeSize()) {
-            u32 offset = stream_buffer.Copy(image.info.guest_address, image_size);
-            return {stream_buffer.Handle(), offset};
-        }
         // Request temporary host buffer for larger sizes.
         auto in_buffer = AllocBuffer(image_size);
         const auto addr = reinterpret_cast<const void*>(image.info.guest_address);
