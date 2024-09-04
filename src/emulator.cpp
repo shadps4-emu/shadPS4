@@ -38,8 +38,8 @@ namespace Core {
 
 Emulator::Emulator() {
     // Read configuration file.
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(config_dir / "config.toml");
+    const auto configs_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigsDir);
+    Config::load(configs_dir / "config.toml");
 
     // Initialize NT API functions
 #ifdef _WIN32
@@ -77,8 +77,8 @@ Emulator::Emulator() {
 }
 
 Emulator::~Emulator() {
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::save(config_dir / "config.toml");
+    const auto configs_dir = Common::FS::GetUserPath(Common::FS::PathType::ConfigsDir);
+    Config::save(configs_dir / "config.toml");
 }
 
 void Emulator::Run(const std::filesystem::path& file) {

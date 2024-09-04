@@ -117,6 +117,7 @@ static auto UserPaths = [] {
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
     create_path(PathType::AddonsDir, user_dir / ADDONS_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
+    create_path(PathType::ConfigsDir, user_dir / CONFIGS_DIR);
 
     return paths;
 }();

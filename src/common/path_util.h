@@ -24,6 +24,7 @@ enum class PathType {
     PatchesDir,     // Where patches are stored.
     AddonsDir,      // Where additional content is stored.
     MetaDataDir,    // Where game metadata (e.g. trophies and menu backgrounds) is stored.
+    ConfigsDir,     // Where configuration files are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -42,7 +43,6 @@ constexpr auto CAPTURES_DIR = "captures";
 constexpr auto CHEATS_DIR = "cheats";
 constexpr auto PATCHES_DIR = "patches";
 constexpr auto ADDONS_DIR = "addcont";
-constexpr auto METADATA_DIR = "game_data";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
