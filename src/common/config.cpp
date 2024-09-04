@@ -154,8 +154,7 @@ bool Configuration::configVersionDifference(const std::filesystem::path& path) {
             if (oldConfigData[defaultFirst].type() != defaultSecond.type()) {
                 return true;
             }
-        } else
-        {
+        } else {
             // If the key does not exist in the old config but exists in the new, mark difference
             return true;
         }
