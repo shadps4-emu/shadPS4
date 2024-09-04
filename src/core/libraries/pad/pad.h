@@ -16,6 +16,7 @@ constexpr int ORBIS_PAD_MAX_DEVICE_UNIQUE_DATA_SIZE = 12;
 
 constexpr int ORBIS_PAD_PORT_TYPE_STANDARD = 0;
 constexpr int ORBIS_PAD_PORT_TYPE_SPECIAL = 2;
+constexpr int ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL = 16;
 
 enum OrbisPadDeviceClass {
     ORBIS_PAD_DEVICE_CLASS_INVALID = -1,
