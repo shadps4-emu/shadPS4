@@ -1,54 +1,224 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <imgui.h>
+#include <magic_enum.hpp>
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/msgdialog.h"
-
-#include <magic_enum.hpp>
+#include "imgui/imgui_layer.h"
+#include "imgui/imgui_std.h"
 
 namespace Libraries::MsgDialog {
 
-int PS4_SYSV_ABI sceMsgDialogClose() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+class MsgDialogGui;
 
-int PS4_SYSV_ABI sceMsgDialogGetResult() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+using CommonDialog::Error;
+using CommonDialog::Result;
+using CommonDialog::Status;
 
-int PS4_SYSV_ABI sceMsgDialogGetStatus() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+using OrbisUserServiceUserId = s32;
 
-int PS4_SYSV_ABI sceMsgDialogInitialize() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+enum class MsgDialogMode : u32 {
+    USER_MSG = 1,
+    PROGRESS_BAR = 2,
+    SYSTEM_MSG = 3,
+};
 
-s32 PS4_SYSV_ABI sceMsgDialogOpen(const OrbisMsgDialogParam* param) {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    switch (param->mode) {
-    case ORBIS_MSG_DIALOG_MODE_USER_MSG:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen userMsg type = %s msg = %s",
-                 magic_enum::enum_name(param->userMsgParam->buttonType), param->userMsgParam->msg);
-        break;
-    case ORBIS_MSG_DIALOG_MODE_PROGRESS_BAR:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen progressBar type = %s msg = %s",
-                 magic_enum::enum_name(param->progBarParam->barType), param->progBarParam->msg);
-        break;
-    case ORBIS_MSG_DIALOG_MODE_SYSTEM_MSG:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen systemMsg type: %s",
-                 magic_enum::enum_name(param->sysMsgParam->sysMsgType));
-        break;
-    default:
-        break;
+enum class ButtonId : u32 {
+    INVALID = 0,
+    OK = 1,
+    YES = 1,
+    NO = 2,
+    BUTTON1 = 1,
+    BUTTON2 = 2,
+};
+
+enum class ButtonType : u32 {
+    OK = 0,
+    YESNO = 1,
+    NONE = 2,
+    OK_CANCEL = 3,
+    WAIT = 5,
+    WAIT_CANCEL = 6,
+    YESNO_FOCUS_NO = 7,
+    OK_CANCEL_FOCUS_CANCEL = 8,
+    TWO_BUTTONS = 9,
+};
+
+enum class ProgressBarType : u32 {
+    PERCENTAGE = 0,
+    PERCENTAGE_CANCEL = 1,
+};
+
+enum class SystemMessageType : u32 {
+    TRC_EMPTY_STORE = 0,
+    TRC_PSN_CHAT_RESTRICTION = 1,
+    TRC_PSN_UGC_RESTRICTION = 2,
+    CAMERA_NOT_CONNECTED = 4,
+    WARNING_PROFILE_PICTURE_AND_NAME_NOT_SHARED = 5,
+};
+
+struct ButtonsParam {
+    const char* msg1{};
+    const char* msg2{};
+    std::array<char, 32> reserved{};
+};
+
+struct UserMessageParam {
+    ButtonType buttonType{};
+    s32 : 32;
+    const char* msg{};
+    ButtonsParam* buttonsParam{};
+    std::array<char, 24> reserved{};
+};
+
+struct ProgressBarParam {
+    ProgressBarType barType{};
+    s32 : 32;
+    const char* msg{};
+    std::array<char, 64> reserved{};
+};
+
+struct SystemMessageParam {
+    SystemMessageType sysMsgType{};
+    std::array<char, 32> reserved{};
+};
+
+struct Param {
+    CommonDialog::BaseParam baseParam;
+    std::size_t size;
+    MsgDialogMode mode;
+    s32 : 32;
+    UserMessageParam* userMsgParam;
+    ProgressBarParam* progBarParam;
+    SystemMessageParam* sysMsgParam;
+    OrbisUserServiceUserId userId;
+    std::array<char, 40> reserved;
+    s32 : 32;
+};
+
+struct MsgDialogResult {
+    FixedValue<u32, 0> mode{};
+    Result result{};
+    ButtonId buttonId{};
+    std::array<char, 32> reserved{};
+};
+
+class MsgDialogGui final : public ImGui::Layer {
+    const Param* param{};
+
+    void DrawUser(const UserMessageParam& user_message_param) {
+        const auto ws = ImGui::GetWindowSize();
+        ImGui::SetCursorPosY(ws.y / 2.0f - 30.0f);
+        ImGui::BeginGroup();
+        ImGui::PushTextWrapPos(ws.x - 30.0f);
+        ImGui::SetCursorPosX(
+            (ws.x - ImGui::CalcTextSize(user_message_param.msg, nullptr, false, ws.x - 40.0f).x) /
+            2.0f);
+        ImGui::Text("%s", user_message_param.msg);
+        ImGui::PopTextWrapPos();
+        ImGui::EndGroup();
+        switch (user_message_param.buttonType) {}
     }
-    return ORBIS_OK;
+
+    void DrawProgressBar(const ProgressBarParam& progress_bar_param) {}
+
+    void DrawSystemMessage(const SystemMessageParam& system_message_param) {}
+
+public:
+    void Draw() override {
+        const auto& io = ImGui::GetIO();
+
+        const ImVec2 window_size{
+            std::min(io.DisplaySize.x, 500.0f),
+            std::min(io.DisplaySize.y, 300.0f),
+        };
+
+        ImGui::CentralizeWindow();
+        ImGui::SetNextWindowSize(window_size);
+        ImGui::Begin("##Message Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
+        switch (param->mode) {
+        case MsgDialogMode::USER_MSG:
+            DrawUser(*param->userMsgParam);
+            break;
+        case MsgDialogMode::PROGRESS_BAR:
+            DrawProgressBar(*param->progBarParam);
+            break;
+        case MsgDialogMode::SYSTEM_MSG:
+            DrawSystemMessage(*param->sysMsgParam);
+            break;
+        }
+        ImGui::End();
+    }
+
+    bool ShouldGrabGamepad() override {
+        return true;
+    }
+
+    explicit MsgDialogGui(const Param* param = nullptr) : param(param) {}
+} static g_msg_dialog_gui;
+
+static auto g_status = Status::NONE;
+static MsgDialogResult g_result{};
+
+Error PS4_SYSV_ABI sceMsgDialogClose() {
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    g_status = Status::FINISHED;
+    ImGui::Layer::RemoveLayer(&g_msg_dialog_gui);
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogGetResult(MsgDialogResult* result) {
+    if (g_status != Status::FINISHED) {
+        return Error::NOT_FINISHED;
+    }
+    if (result == nullptr) {
+        return Error::ARG_NULL;
+    }
+    for (const auto v : result->reserved) {
+        if (v != 0) {
+            return Error::PARAM_INVALID;
+        }
+    }
+    *result = g_result;
+    return Error::OK;
+}
+
+CommonDialog::Status PS4_SYSV_ABI sceMsgDialogGetStatus() {
+    return g_status;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogInitialize() {
+    if (!CommonDialog::g_isInitialized) {
+        return Error::NOT_SYSTEM_INITIALIZED;
+    }
+    if (g_status != Status::NONE) {
+        return Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Error::BUSY;
+    }
+    g_status = Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
+
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogOpen(const Param* param) {
+    if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
+        return Error::INVALID_STATE;
+    }
+    ASSERT(param->size == sizeof(Param));
+    ASSERT(param->baseParam.size == sizeof(CommonDialog::BaseParam));
+    g_status = Status::RUNNING;
+    g_msg_dialog_gui = MsgDialogGui(param);
+    ImGui::Layer::AddLayer(&g_msg_dialog_gui);
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceMsgDialogProgressBarInc() {
@@ -66,14 +236,20 @@ int PS4_SYSV_ABI sceMsgDialogProgressBarSetValue() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogTerminate() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogTerminate() {
+    if (g_status == Status::RUNNING) {
+        sceMsgDialogClose();
+    }
+    if (g_status == Status::NONE) {
+        return Error::NOT_INITIALIZED;
+    }
+    g_status = Status::NONE;
+    CommonDialog::g_isUsed = false;
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Status PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
+    return g_status;
 }
 
 void RegisterlibSceMsgDialog(Core::Loader::SymbolsResolver* sym) {

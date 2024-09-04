@@ -325,6 +325,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
+           src/common/fixed_value.h
            src/common/func_traits.h
            src/common/native_clock.cpp
            src/common/native_clock.h
@@ -563,6 +564,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
 
 set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
+          src/imgui/imgui_std.h
           src/imgui/layer/video_info.cpp
           src/imgui/layer/video_info.h
           src/imgui/renderer/imgui_core.cpp
