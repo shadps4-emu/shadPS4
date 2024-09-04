@@ -272,7 +272,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                                     int* numEntriesOut, int flags) {
     int result = ORBIS_OK;
     int processed = 0;
-    for (int i = 0; i < numEntries; i++) {
+    for (int i = 0; i < numEntries; i++, processed++) {
         if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
             result = ORBIS_KERNEL_ERROR_EINVAL;
             break; // break and assign a value to numEntriesOut.
