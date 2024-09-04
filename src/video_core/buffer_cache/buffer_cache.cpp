@@ -466,10 +466,6 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
 void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
                                     bool is_texel_buffer) {
     std::scoped_lock lk{mutex};
-    if (is_texel_buffer && SynchronizeBufferFromImage(buffer, device_addr, size)) {
-        return;
-    }
-
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;
@@ -488,6 +484,11 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         // Prevent uploading to gpu modified regions.
         // gpu_modified_ranges.ForEachNotInRange(device_addr_out, range_size, add_copy);
     });
+    SCOPE_EXIT {
+        if (is_texel_buffer) {
+            SynchronizeBufferFromImage(buffer, device_addr, size);
+        }
+    };
     if (total_size_bytes == 0) {
         return;
     }
