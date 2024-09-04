@@ -43,7 +43,7 @@ void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         const size_t image_dist =
             image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
-        if (image_dist < MaxInvalidateDist && image.info.size.width != 1) {
+        if (image_dist < MaxInvalidateDist && image.info.size.width > 16) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuModified;
         }
@@ -145,10 +145,6 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
             merged_image.CopyMip(tex_cache_image, image_info.resources.levels - 1);
 
             FreeImage(cache_image_id);
-        }
-
-        if (tex_cache_image.info.IsSliceOf(image_info)) {
-            UNREACHABLE();
         }
     }
 

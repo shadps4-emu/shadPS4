@@ -69,7 +69,7 @@ public:
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
         Image& image = slot_images[image_id];
-        TrackImage(image, image_id);
+        TrackImage(image_id);
         RefreshImage(image, custom_scheduler);
     }
 
