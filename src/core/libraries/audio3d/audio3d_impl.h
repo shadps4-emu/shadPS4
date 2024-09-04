@@ -10,6 +10,7 @@ namespace Libraries::Audio3d {
 class Audio3d {
 public:
 private:
+    typedef unsigned int OrbisAudio3dPluginId;
 };
 
 } // namespace Libraries::Audio3d

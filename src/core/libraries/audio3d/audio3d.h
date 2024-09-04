@@ -19,7 +19,6 @@ typedef int OrbisUserServiceUserId;
 typedef unsigned int OrbisAudio3dPortId;
 typedef unsigned int OrbisAudio3dObjectId;
 typedef unsigned int OrbisAudio3dAttributeId;
-typedef unsigned int OrbisAudio3dPluginId;
 
 enum OrbisAudio3dFormat {
     ORBIS_AUDIO3D_FORMAT_S16 = 0,  // s16
