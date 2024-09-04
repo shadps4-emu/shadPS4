@@ -382,14 +382,16 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
                 eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
             },
             eq);
-    } else if (id == (u64)Platform::InterruptId::Compute0RelMem) {
+    } else if (id >= 0 && id <= 6) {
+        auto interruptId = (Platform::InterruptId)id;
+
         Platform::IrqC::Instance()->Register(
-            Platform::InterruptId::Compute0RelMem,
+                interruptId,
             [=](Platform::InterruptId irq) {
-                ASSERT_MSG(irq == Platform::InterruptId::Compute0RelMem,
+                ASSERT_MSG(irq == interruptId,
                            "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
                                                          // proper filtering in trigger function
-                eq->TriggerEvent(GnmEventIdents::Compute0RelMem, SceKernelEvent::Filter::GraphicsCore, nullptr);
+                eq->TriggerEvent((GnmEventIdents)id, SceKernelEvent::Filter::GraphicsCore, nullptr);
             },
             eq);
     }
