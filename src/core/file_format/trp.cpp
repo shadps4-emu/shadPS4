@@ -1,8 +1,31 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/path_util.h"
+#include <cstdio>
+#include <filesystem>
+#include "../../common/path_util.h"
 #include "trp.h"
+
+void PrintToFile(const std::string& message) {
+    std::string filePath = "~/path.txt"; // Path with ~ to be expanded
+    if (filePath[0] == '~') {
+        const char* home = std::getenv("HOME");
+        if (home) {
+            filePath.replace(0, 1, home); // Replace ~ with the home directory
+        } else {
+            std::fprintf(stderr, "HOME environment variable not set.\n");
+            return;
+        }
+    }
+
+    FILE* file = std::fopen(filePath.c_str(), "a"); // Open file in append mode
+    if (file) {
+        std::fprintf(file, "%s\n", message.c_str()); // Write message to file
+        std::fclose(file);                           // Close the file
+    } else {
+        std::perror("Error opening file");
+    }
+}
 
 TRP::TRP() = default;
 TRP::~TRP() = default;
@@ -49,11 +72,35 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                 return false;
 
             s64 seekPos = sizeof(TrpHeader);
-            std::filesystem::path trpFilesPath(
-                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / title / "TrophyFiles" /
-                it.path().stem());
+
+#ifdef __APPLE__
+            // Check if the "user" directory exists within the user directory
+            std::filesystem::path user_base_dir =
+                Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+            std::filesystem::path portable_dir_path = user_base_dir / Common::FS::PORTABLE_DIR;
+
+            if (!std::filesystem::exists(portable_dir_path)) {
+                // If "user" directory does not exist, use UserDir
+                PrintToFile("Using UserDir: " + user_base_dir.string());
+                std::filesystem::path trpFilesPath =
+                    user_base_dir / "game_data" / title / "TrophyFiles" / it.path().stem();
+                PrintToFile("Using UserDir path: " + trpFilesPath.string());
+            } else {
+                // If "user" directory exists, use it
+                std::filesystem::path trpFilesPath =
+                    portable_dir_path / "game_data" / title / "TrophyFiles" / it.path().stem();
+                PrintToFile("Using PortableDir path: " + trpFilesPath.string());
+            }
+#else
+            // For non-Apple platforms, use the current working directory
+            std::filesystem::path trpFilesPath(std::filesystem::current_path() / "user/game_data" /
+                                               title / "TrophyFiles" / it.path().stem());
+            PrintToFile("Using current path: " + trpFilesPath.string());
+#endif
+
+            // Create the necessary directories
             std::filesystem::create_directories(trpFilesPath / "Icons");
-            std::filesystem::create_directory(trpFilesPath / "Xml");
+            std::filesystem::create_directories(trpFilesPath / "Xml");
 
             for (int i = 0; i < header.entry_num; i++) {
                 file.Seek(seekPos);
