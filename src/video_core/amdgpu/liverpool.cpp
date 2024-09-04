@@ -625,8 +625,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid, u3
         }
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
-            // todo: lots of assumptions here
-            *release_mem->Address<u32>() = release_mem->DataDWord();
             release_mem->SignalFence((Platform::InterruptId)pipeId);
             break;
         }
