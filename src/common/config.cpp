@@ -26,16 +26,14 @@ void Config::ConfigManager::loadConfigurations() {
         fmt::print("Loading configuration file {}\n", file.path().string());
 
         auto loadedConfiguration = std::make_shared<Config::Configuration>(file.path());
-        if (!loadedConfiguration)
-        {
+        if (!loadedConfiguration) {
             fmt::print("Error loading configuration file ({}).", file.path().string());
             continue;
         }
 
         // Validate title id
         auto& loadedTitleId = loadedConfiguration->getTitleId();
-        if (loadedTitleId.empty())
-        {
+        if (loadedTitleId.empty()) {
             loadedConfiguration.reset();
             continue;
         }
@@ -46,8 +44,8 @@ void Config::ConfigManager::loadConfigurations() {
 
     // If there were no configurations loaded, then create a global one
     if (!configsLoaded)
-        configurations[c_globalTitleId] =
-            std::make_shared<Config::Configuration>(configs_dir / (c_globalTitleId + c_configExtension));
+        configurations[c_globalTitleId] = std::make_shared<Config::Configuration>(
+            configs_dir / (c_globalTitleId + c_configExtension));
 }
 
 void Config::ConfigManager::setCurrentConfigId(std::string titleId) {
@@ -150,21 +148,15 @@ bool Configuration::configVersionDifference(const std::filesystem::path& path) {
         auto& defaultFirst = item.first;
         auto& defaultSecond = item.second;
 
-        // std::cout << "checking for key (" << defaultFirst << ") in old config." << std::endl;
-
         // Check to see if the old configuration contains the key provided
         if (oldConfigData.contains(defaultFirst)) {
-            // std::cout << "checking (" << defaultFirst.c_str() << ") type (" << defaultSecond.type()
-            //          << " = " << oldConfigData[defaultFirst].type() << ")" << std::endl;
-
             // Check to see that the types match for the second
             if (oldConfigData[defaultFirst].type() != defaultSecond.type()) {
-                // std::cout << "mismatch type found!" << std::endl;
                 return true;
             }
-        } else // If the key does not exist in the old config but exists in the new, mark difference
+        } else
         {
-            // std::cout << "key (" << defaultFirst << ") is not found in old config." << std::endl;
+            // If the key does not exist in the old config but exists in the new, mark difference
             return true;
         }
 
@@ -178,22 +170,12 @@ bool Configuration::configVersionDifference(const std::filesystem::path& path) {
                 auto& secondItemFirst = tableItemPair.first;
                 auto& secondItemSecond = tableItemPair.second;
 
-                // std::cout << "checking for key (" << secondItemFirst << ") in old config."
-                //          << std::endl;
-
                 if (oldConfigSecond.contains(secondItemFirst)) {
-                    // std::cout << "checking (" << secondItemFirst.c_str() << ") type ("
-                    //          << secondItemSecond.type() << " = "
-                    //          << oldConfigSecond[secondItemFirst].type() << ")" << std::endl;
-
                     // Check for type match
                     if (oldConfigSecond[secondItemFirst].type() != secondItemSecond.type()) {
-                        // std::cout << "mismatch type found!" << std::endl;
                         return true;
                     }
                 } else {
-                    // std::cout << "key (" << secondItemFirst << ") is not found in old config."
-                    //          << std::endl;
                     return true;
                 }
             }

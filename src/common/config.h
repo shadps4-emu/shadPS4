@@ -77,8 +77,8 @@ private:
                 {"validationGpu", false},  // Breaking change
                 {"rdocEnable", false},
                 {"rdocMarkersEnable", false},
-                {"debugDump", false}, // Breaking change
-                {"crashDiagnostic", false}, 
+                {"debugDump", false},
+                {"crashDiagnostic", false},
             },
         },
         {
