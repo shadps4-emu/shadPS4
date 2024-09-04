@@ -291,8 +291,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         const auto stage = Shader::StageFromIndex(i);
         const auto params = Liverpool::GetParams(*pgm);
 
-        if (stage != Shader::Stage::Vertex && 
-            stage != Shader::Stage::Fragment) {
+        if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
             return false;
         }
 
