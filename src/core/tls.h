@@ -5,9 +5,11 @@
 
 #include "common/types.h"
 
+#ifdef __x86_64__
 namespace Xbyak {
 class CodeGenerator;
 }
+#endif
 
 namespace Core {
 

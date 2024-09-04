@@ -127,6 +127,10 @@ bool memory_patch(u64 vaddr, u64 value) {
     MemoryMode old_mode{};
     // memory_protect(vaddr, 8, MemoryMode::ReadWrite, &old_mode);
 
+#if defined(__APPLE__) && defined(__aarch64__)
+    pthread_jit_write_protect_np(false);
+#endif
+
     auto* ptr = reinterpret_cast<uint64_t*>(vaddr);
 
     bool ret = (*ptr != value);
@@ -139,6 +143,10 @@ bool memory_patch(u64 vaddr, u64 value) {
     if (containsExecuteMode(old_mode)) {
         memory_flush(vaddr, 8);
     }
+
+#if defined(__APPLE__) && defined(__aarch64__)
+    pthread_jit_write_protect_np(true);
+#endif
 
     return ret;
 }

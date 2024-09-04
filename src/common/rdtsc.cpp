@@ -38,7 +38,10 @@ static u64 GetTimeNs() {
 #endif
 }
 
-u64 EstimateRDTSCFrequency() {
+u64 EstimateRDTSCFrequency() 
+{
+    #ifdef __x86_64__
+
     // Discard the first result measuring the rdtsc.
     FencedRDTSC();
     std::this_thread::sleep_for(std::chrono::milliseconds{1});
@@ -55,6 +58,12 @@ u64 EstimateRDTSCFrequency() {
     const u64 tsc_diff = tsc_end - tsc_start;
     const u64 tsc_freq = MultiplyAndDivide64(tsc_diff, 1000000000ULL, end_time - start_time);
     return RoundToNearest<100'000>(tsc_freq);
+
+    #else
+
+    return 0;
+
+    #endif
 }
 
 } // namespace Common

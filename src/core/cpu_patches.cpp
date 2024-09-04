@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+// full file
+#ifdef __x86_64__
+
 #include <memory>
 #include <mutex>
 #include <Zydis/Zydis.h>
@@ -682,3 +685,5 @@ void PatchInstructions(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator&
 }
 
 } // namespace Core
+
+#endif // __x86_64__

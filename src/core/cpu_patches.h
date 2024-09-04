@@ -3,6 +3,7 @@
 
 #pragma once
 
+#ifdef __x86_64__
 namespace Xbyak {
 class CodeGenerator;
 }
@@ -19,3 +20,4 @@ void CleanupThreadPatchStack();
 void PatchInstructions(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c);
 
 } // namespace Core
+#endif

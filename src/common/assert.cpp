@@ -4,7 +4,11 @@
 #include "common/assert.h"
 #include "common/logging/backend.h"
 
+#ifdef __x86_64__
 #define Crash() __asm__ __volatile__("int $3")
+#elif __aarch64__
+#define Crash() ;
+#endif
 
 void assert_fail_impl() {
     Common::Log::Stop();

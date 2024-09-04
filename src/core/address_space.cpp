@@ -17,8 +17,10 @@
 #endif
 
 #ifdef __APPLE__
+#ifdef __x86_64__
 // Reserve space for the system address space using a zerofill section.
 asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xFBFC00000");
+#endif
 #endif
 
 namespace Core {
@@ -299,6 +301,7 @@ struct AddressSpace::Impl {
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
         constexpr int base_map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
 #ifdef __APPLE__
+#ifdef __x86_64__
         // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
         // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. We can allocate the system
         // managed region, as well as system reserved if reduced in size slightly, but we cannot map
@@ -313,6 +316,14 @@ struct AddressSpace::Impl {
         // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
         user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
                                                protection_flags, base_map_flags, -1, 0));
+#else
+        const auto virtual_size = system_managed_size + system_reserved_size + user_size;
+        const auto virtual_base =
+            reinterpret_cast<u8*>(mmap(nullptr, virtual_size, protection_flags, base_map_flags | MAP_JIT, -1, 0));
+        system_managed_base = virtual_base;
+        system_reserved_base = virtual_base + (SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN);
+        user_base = virtual_base + (USER_MIN - SYSTEM_MANAGED_MIN);
+#endif
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
         const auto virtual_base =
@@ -382,13 +393,16 @@ struct AddressSpace::Impl {
     void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot,
               int fd = -1) {
         m_free_regions.subtract({virtual_addr, virtual_addr + size});
-        const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
-        const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
-        const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
-        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
-                         handle, host_offset);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
-        return ret;
+        if (phys_addr != -1) {
+            const int handle = fd == -1 ? backing_fd : fd;
+            void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | MAP_SHARED,
+                             handle, phys_addr);
+            ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        } else {
+            int ret = mprotect(reinterpret_cast<void*>(virtual_addr), size, prot);
+            ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
+        }
+        return reinterpret_cast<void*>(virtual_addr);
     }
 
     void Unmap(VAddr virtual_addr, size_t size, bool) {
@@ -407,9 +421,8 @@ struct AddressSpace::Impl {
         m_free_regions.insert({start_address, end_address});
 
         // Return the adjusted pointers.
-        void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
-                         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-        ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+        int ret = mprotect(reinterpret_cast<void*>(start_address), end_address - start_address, PROT_NONE);
+        ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
 
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {

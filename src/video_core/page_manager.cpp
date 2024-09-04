@@ -194,11 +194,17 @@ struct PageManager::Impl {
     static void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
         ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
         const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
-#ifdef __APPLE__
+
+#ifdef __x86_64__
+    #ifdef __APPLE__
         const u32 err = ctx->uc_mcontext->__es.__err;
-#else
+    #else
         const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
+    #endif
+#else
+        u32 err = 0;
 #endif
+
         if (err & 0x2) {
             const VAddr addr_aligned = Common::AlignDown(address, PAGESIZE);
             rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);

@@ -988,14 +988,22 @@ static void cleanup_thread(void* arg) {
             destructor(value);
         }
     }
+
+    #ifdef __x86_64__
     Core::SetTcbBase(nullptr);
+    #endif
+
     thread->is_almost_done = true;
 }
 
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
+
+    #ifdef __x86_64__
     Core::InitializeThreadPatchStack();
+    #endif
+    
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     linker->InitTlsForThread(false);
     void* ret = nullptr;

@@ -26,6 +26,7 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     fmt::print("exit function called\n");
 }
 
+#ifdef __x86_64__
 static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
     // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
     // a specific layout
@@ -47,6 +48,13 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  : "r"(addr), "r"(params), "r"(exit_func)
                  : "rax", "rsi", "rdi");
 }
+#elif __aarch64__
+static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
+    printf("Arm Entry\n");
+    while(1) {}
+}
+#endif
+
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -85,7 +93,11 @@ void Linker::Execute() {
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+
+    #ifdef __x86_64__
     InitializeThreadPatchStack();
+    #endif
+
     Libraries::Kernel::pthreadInitSelfMainThread();
     InitTlsForThread(true);
 
@@ -107,7 +119,9 @@ void Linker::Execute() {
         }
     }
 
+    #ifdef __x86_64__
     SetTcbBase(nullptr);
+    #endif
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -292,7 +306,9 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     return false;
 }
 
-void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
+void* Linker::TlsGetAddr(u64 module_index, u64 offset) 
+{
+#ifdef __x86_64__
     std::scoped_lock lk{mutex};
 
     DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
@@ -326,6 +342,9 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         addr = dest;
     }
     return addr + offset;
+#else
+    return 0;
+#endif
 }
 
 void Linker::InitTlsForThread(bool is_primary) {
@@ -395,8 +414,10 @@ void Linker::InitTlsForThread(bool is_primary) {
         tcb->tcb_dtv[module->tls.modid + 1].pointer = dest;
     }
 
+    #ifdef __x86_64__
     // Set pointer to FS base
     SetTcbBase(tcb);
+    #endif
 }
 
 void Linker::DebugDump() {

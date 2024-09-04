@@ -11,7 +11,10 @@
 
 namespace Common {
 
+#ifdef __x86_64__
+
 #ifdef _MSC_VER
+// MSVC
 __forceinline static u64 FencedRDTSC() {
     _mm_lfence();
     _ReadWriteBarrier();
@@ -21,6 +24,7 @@ __forceinline static u64 FencedRDTSC() {
     return result;
 }
 #else
+// Linux/Mac
 static inline u64 FencedRDTSC() {
     u64 eax;
     u64 edx;
@@ -29,6 +33,13 @@ static inline u64 FencedRDTSC() {
                  "lfence\n\t"
                  : "=a"(eax), "=d"(edx));
     return (edx << 32) | eax;
+}
+#endif
+
+#else
+// ARM
+static inline u64 FencedRDTSC() {
+    return 0;
 }
 #endif
 
