@@ -117,7 +117,34 @@ void MsgDialogUi::DrawProgressBar() {
     EndGroup();
 }
 
-void MsgDialogUi::DrawSystemMessage() {}
+struct {
+    const char* text;
+} static constexpr system_message_texts[] = {
+    "No product available in the store.",            // TRC_EMPTY_STORE
+    "PSN chat restriction.",                         // TRC_PSN_CHAT_RESTRICTION
+    "User-generated Media restriction",              // TRC_PSN_UGC_RESTRICTION
+    nullptr,                                         // !!NOP
+    "Camera not connected.",                         // CAMERA_NOT_CONNECTED
+    "Warning: profile picture and name are not set", // WARNING_PROFILE_PICTURE_AND_NAME_NOT_SHARED
+};
+static_assert(std::size(system_message_texts) ==
+              static_cast<int>(SystemMessageType::WARNING_PROFILE_PICTURE_AND_NAME_NOT_SHARED) + 1);
+
+void MsgDialogUi::DrawSystemMessage() {
+    // TODO: Implement go to settings & user profile
+    const auto& [msg_type, _] = *param->sysMsgParam;
+    ASSERT(msg_type <= SystemMessageType::WARNING_PROFILE_PICTURE_AND_NAME_NOT_SHARED);
+    auto [msg] = system_message_texts[static_cast<u32>(msg_type)];
+    DrawCenteredText(msg);
+    const auto ws = GetWindowSize();
+    SetCursorPos({
+        ws.x / 2.0f - BUTTON_SIZE.x / 2.0f,
+        ws.y - 10.0f - BUTTON_SIZE.y,
+    });
+    if (Button("OK", BUTTON_SIZE)) {
+        Finish(ButtonId::OK);
+    }
+}
 
 MsgDialogUi::MsgDialogUi(const Param* param, Status* status, MsgDialogResult* result)
     : dialog_unique_id([] {
