@@ -35,6 +35,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_OR_B64(NegateMode::Result, true, inst);
         case Opcode::S_ORN2_B64:
             return S_OR_B64(NegateMode::Src1, false, inst);
+        case Opcode::S_XOR_B32:
+            return S_OR_B32(inst, true);
         case Opcode::S_AND_B64:
             return S_AND_B64(NegateMode::None, inst);
         case Opcode::S_NAND_B64:
@@ -50,7 +52,7 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_ASHR_I32:
             return S_ASHR_I32(inst);
         case Opcode::S_OR_B32:
-            return S_OR_B32(inst);
+            return S_OR_B32(inst, false);
         case Opcode::S_LSHL_B32:
             return S_LSHL_B32(inst);
         case Opcode::S_LSHR_B32:
@@ -393,10 +395,16 @@ void Translator::S_ASHR_I32(const GcnInst& inst) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
-void Translator::S_OR_B32(const GcnInst& inst) {
+void Translator::S_OR_B32(const GcnInst& inst, bool is_xor) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result{ir.BitwiseOr(src0, src1)};
+    IR::U32 result;
+    if (is_xor) {
+        result = ir.BitwiseXor(src0, src1);
+    } else {
+        result = ir.BitwiseOr(src0, src1);
+    }
+
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
