@@ -12,10 +12,7 @@
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
-#pragma GCC diagnostic pop
 
 namespace Vulkan {
 

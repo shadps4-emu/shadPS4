@@ -15,10 +15,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <magic_enum.hpp>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
-#pragma GCC diagnostic pop
 
 namespace VideoCore {
 
