@@ -332,13 +332,17 @@ int MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
     std::scoped_lock lk{mutex};
 
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != dmem_map.end() && dmem_area->second.is_free && find_next) {
-        dmem_area++;
-    }
+    if (addr >= dmem_area->second.base + dmem_area->second.size) {
+        if (!find_next) {
+            LOG_ERROR(Core, "Unable to find allocated direct memory region to query!");
+            return ORBIS_KERNEL_ERROR_EACCES;
+        }
 
-    if (dmem_area == dmem_map.end() || dmem_area->second.is_free) {
-        LOG_ERROR(Core, "Unable to find allocated direct memory region to query!");
-        return ORBIS_KERNEL_ERROR_EACCES;
+        dmem_area++;
+        if (dmem_area == dmem_map.end()) {
+            LOG_ERROR(Core, "Unable to find allocated direct memory region to query!");
+            return ORBIS_KERNEL_ERROR_EACCES;
+        }
     }
 
     const auto& area = dmem_area->second;
