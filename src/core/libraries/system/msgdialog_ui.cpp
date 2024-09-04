@@ -12,6 +12,7 @@ using namespace Libraries::CommonDialog;
 using namespace Libraries::MsgDialog;
 
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
+static constexpr float PROGRESS_BAR_WIDTH{0.8f};
 
 struct {
     int count = 0;
@@ -62,7 +63,16 @@ void MsgDialogUi::DrawUser() {
         if (count == 2) {
             PushID(2);
             if (Button(text2, BUTTON_SIZE)) {
-                Finish(ButtonId::BUTTON2);
+                switch (button_type) {
+                case ButtonType::OK_CANCEL:
+                case ButtonType::WAIT_CANCEL:
+                case ButtonType::OK_CANCEL_FOCUS_CANCEL:
+                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                    break;
+                default:
+                    Finish(ButtonId::BUTTON2);
+                    break;
+                }
             }
             if (!focus_first) {
                 SetItemDefaultNav();
@@ -83,7 +93,29 @@ void MsgDialogUi::DrawUser() {
     EndGroup();
 }
 
-void MsgDialogUi::DrawProgressBar() {}
+void MsgDialogUi::DrawProgressBar() {
+    const auto& [bar_type, msg, _] = *param->progBarParam;
+    DrawCenteredText(msg);
+    const auto ws = GetWindowSize();
+    SetCursorPos({
+        ws.x * ((1 - PROGRESS_BAR_WIDTH) / 2.0f),
+        ws.y - 10.0f - BUTTON_SIZE.y,
+    });
+    bool has_cancel = bar_type == ProgressBarType::PERCENTAGE_CANCEL;
+    float bar_width = PROGRESS_BAR_WIDTH * ws.x;
+    if (has_cancel) {
+        bar_width -= BUTTON_SIZE.x - 10.0f;
+    }
+    BeginGroup();
+    ProgressBar((float)progress_bar_value / 100.0f, {bar_width, BUTTON_SIZE.y});
+    if (has_cancel) {
+        SameLine();
+        if (Button("Cancel", BUTTON_SIZE)) {
+            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+        }
+    }
+    EndGroup();
+}
 
 void MsgDialogUi::DrawSystemMessage() {}
 
@@ -120,8 +152,9 @@ MsgDialogUi& MsgDialogUi::operator=(MsgDialogUi other) {
     return *this;
 }
 
-void MsgDialogUi::Finish(ButtonId buttonId) {
+void MsgDialogUi::Finish(ButtonId buttonId, Result r) {
     if (result) {
+        result->result = r;
         result->buttonId = buttonId;
     }
     if (status) {
@@ -131,6 +164,14 @@ void MsgDialogUi::Finish(ButtonId buttonId) {
     status = nullptr;
     result = nullptr;
     RemoveLayer(this);
+}
+
+void MsgDialogUi::SetProgressBarValue(u32 value, bool increment) {
+    if (increment) {
+        progress_bar_value += value;
+    } else {
+        progress_bar_value = value;
+    }
 }
 
 void MsgDialogUi::Draw() {

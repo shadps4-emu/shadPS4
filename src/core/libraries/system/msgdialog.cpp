@@ -82,19 +82,48 @@ Error PS4_SYSV_ABI sceMsgDialogOpen(const Param* param) {
     return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarInc() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogProgressBarInc(OrbisMsgDialogProgressBarTarget target, u32 delta) {
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_msg_dialog_ui.SetProgressBarValue(delta, true);
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg(OrbisMsgDialogProgressBarTarget target,
+                                                 const char* msg) {
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_param.progBarParam->msg = msg;
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetValue() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogProgressBarTarget target,
+                                                   u32 value) {
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_msg_dialog_ui.SetProgressBarValue(value, false);
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceMsgDialogTerminate() {

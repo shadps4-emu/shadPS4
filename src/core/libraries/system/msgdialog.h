@@ -56,6 +56,10 @@ enum class SystemMessageType : u32 {
     WARNING_PROFILE_PICTURE_AND_NAME_NOT_SHARED = 5,
 };
 
+enum class OrbisMsgDialogProgressBarTarget : u32 {
+    DEFAULT = 0,
+};
+
 struct ButtonsParam {
     const char* msg1{};
     const char* msg2{};
@@ -107,6 +111,7 @@ class MsgDialogUi final : public ImGui::Layer {
     const Param* param{};
     CommonDialog::Status* status{};
     MsgDialogResult* result{};
+    u32 progress_bar_value{};
 
     void DrawUser();
     void DrawProgressBar();
@@ -120,7 +125,9 @@ public:
     MsgDialogUi(MsgDialogUi&& other) noexcept;
     MsgDialogUi& operator=(MsgDialogUi other);
 
-    void Finish(ButtonId buttonId);
+    void Finish(ButtonId buttonId, CommonDialog::Result r = CommonDialog::Result::OK);
+
+    void SetProgressBarValue(u32 value, bool increment);
 
     void Draw() override;
 
@@ -134,9 +141,12 @@ CommonDialog::Error PS4_SYSV_ABI sceMsgDialogGetResult(MsgDialogResult* result);
 CommonDialog::Status PS4_SYSV_ABI sceMsgDialogGetStatus();
 CommonDialog::Error PS4_SYSV_ABI sceMsgDialogInitialize();
 CommonDialog::Error PS4_SYSV_ABI sceMsgDialogOpen(const Param* param);
-int PS4_SYSV_ABI sceMsgDialogProgressBarInc();
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg();
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetValue();
+CommonDialog::Error PS4_SYSV_ABI sceMsgDialogProgressBarInc(OrbisMsgDialogProgressBarTarget,
+                                                            u32 delta);
+CommonDialog::Error PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg(OrbisMsgDialogProgressBarTarget,
+                                                               const char* msg);
+CommonDialog::Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogProgressBarTarget,
+                                                                 u32 value);
 CommonDialog::Error PS4_SYSV_ABI sceMsgDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceMsgDialogUpdateStatus();
 
