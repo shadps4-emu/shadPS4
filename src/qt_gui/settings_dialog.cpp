@@ -80,9 +80,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 }
             });
 
-    connect(ui->tabWidgetSettings, &QTabWidget::currentChanged, this, [this]() {
-        ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
-    });
+    ui->buttonBox->button(QDialogButtonBox::Save)->setText(tr("Save"));
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
+    ui->buttonBox->button(QDialogButtonBox::Close)->setText(tr("Close"));
+
+    connect(ui->tabWidgetSettings, &QTabWidget::currentChanged, this,
+            [this]() { ui->buttonBox->button(QDialogButtonBox::Close)->setFocus(); });
 
     // GENERAL TAB
     {
