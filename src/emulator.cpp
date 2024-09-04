@@ -195,7 +195,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
+    constexpr std::array<SysModules, 9> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
