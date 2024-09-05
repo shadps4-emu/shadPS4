@@ -7,7 +7,7 @@
 #ifdef __x86_64__
 #define Crash() __asm__ __volatile__("int $3")
 #elif __aarch64__
-#define Crash() ;
+#define Crash() __asm__ __volatile__ ("BRK 0")
 #endif
 
 void assert_fail_impl() {
