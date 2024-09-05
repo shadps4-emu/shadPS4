@@ -18,9 +18,11 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_SAMPLE_B:
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
     case Opcode::IMAGE_SAMPLE_D:
+    case Opcode::IMAGE_SAMPLE_CD:
         return IMAGE_SAMPLE(inst);
-    case Opcode::IMAGE_GATHER4_C:
     case Opcode::IMAGE_GATHER4_LZ:
+    case Opcode::IMAGE_GATHER4_C:
+    case Opcode::IMAGE_GATHER4_C_LZ:
     case Opcode::IMAGE_GATHER4_LZ_O:
         return IMAGE_GATHER(inst);
     case Opcode::IMAGE_ATOMIC_ADD:
@@ -98,6 +100,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_STORE(2, true, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZ:
         return BUFFER_STORE(3, true, inst);
+    case Opcode::TBUFFER_STORE_FORMAT_XYZW:
+        return BUFFER_STORE(4, true, inst);
 
     case Opcode::BUFFER_STORE_DWORD:
         return BUFFER_STORE(1, false, inst);
