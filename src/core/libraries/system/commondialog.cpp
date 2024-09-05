@@ -88,13 +88,16 @@ int PS4_SYSV_ABI _ZTVN3sce16CommonDialogUtil6ClientE() {
 
 Error PS4_SYSV_ABI sceCommonDialogInitialize() {
     if (g_isInitialized) {
+        LOG_INFO(Lib_CommonDlg, "already initialized");
         return Error::ALREADY_SYSTEM_INITIALIZED;
     }
+    LOG_DEBUG(Lib_CommonDlg, "initialized");
     g_isInitialized = true;
     return Error::OK;
 }
 
 bool PS4_SYSV_ABI sceCommonDialogIsUsed() {
+    LOG_TRACE(Lib_CommonDlg, "called");
     return g_isUsed;
 }
 
