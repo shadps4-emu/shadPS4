@@ -31,14 +31,8 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->setColumnWidth(5, 90);  // Size
     this->setColumnWidth(6, 90);  // Version
     QStringList headers;
-    headers << "Icon"
-            << "Name"
-            << "Serial"
-            << "Region"
-            << "Firmware"
-            << "Size"
-            << "Version"
-            << "Path";
+    headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
+            << tr("Size") << tr("Version") << tr("Path");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);

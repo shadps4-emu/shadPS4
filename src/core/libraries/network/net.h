@@ -10,8 +10,12 @@ class SymbolsResolver;
 }
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
+#ifndef HTONLL
 #define HTONLL(x) (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
+#endif
+#ifndef NTOHLL
 #define NTOHLL(x) (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
+#endif
 
 namespace Libraries::Net {
 

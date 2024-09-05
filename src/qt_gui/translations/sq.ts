@@ -500,6 +500,11 @@
     </context>
 	<context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>Lista e lojërave</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t&apos;i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet.</translation>
+            <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t&apos;i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës. Mund të jetë e nevojshme të përditësoni lojën.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
             <source>Name:</source>
             <translation>Emri:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Nuk mund të aplikoni mashtrime para se të fillojë loja.</translation>
+		</message>
 	</context>	
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Ruaj</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Përdor</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Rikthe parazgjedhjet</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Mbyll</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Ikonë</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Emri</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Seri</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Rajoni</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Firmware</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Madësia</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Versioni</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Rrugë</translation>
+		</message>
+	</context>
 </TS>

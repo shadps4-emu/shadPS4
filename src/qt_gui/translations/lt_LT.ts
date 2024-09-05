@@ -500,6 +500,11 @@
 	</context>
 	<context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>Žaidimų sąrašas</translation>
+		</message>
         <message>
         	<location filename="../main_window.cpp" line="168"/>
         	<source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais.</translation>
+        	<translation>Pataisos sėkmingai atsisiųstos! Visos pataisos visiems žaidimams buvo atsisiųstos, nebėra reikalo jas atsisiųsti atskirai kiekvienam žaidimui, kaip tai vyksta su sukčiavimais. Jei pleistras nepasirodo, gali būti, kad jo nėra tam tikram žaidimo serijos numeriui ir versijai. Gali prireikti atnaujinti žaidimą.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
         	<source>Name:</source>
         	<translation>Pavadinimas:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Negalima taikyti sukčiavimų prieš pradedant žaidimą.</translation>
+		</message>
+	</context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Įrašyti</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Taikyti</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Atkurti numatytuosius nustatymus</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Uždaryti</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Ikona</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Vardas</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Serijinis numeris</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Regionas</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Firmvare</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Dydis</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Versija</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Kelias</translation>
+		</message>
 	</context>
 </TS>

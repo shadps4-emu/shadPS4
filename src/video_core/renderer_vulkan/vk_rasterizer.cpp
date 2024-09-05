@@ -17,7 +17,7 @@ namespace Vulkan {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -178,6 +178,10 @@ u64 Rasterizer::Flush() {
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;
+
+    if (regs.color_control.degamma_enable) {
+        LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
+    }
 
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];

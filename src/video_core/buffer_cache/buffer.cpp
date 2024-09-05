@@ -91,10 +91,10 @@ void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usa
     buffer = vk::Buffer{unsafe_buffer};
 }
 
-Buffer::Buffer(const Vulkan::Instance& instance_, MemoryUsage usage_, VAddr cpu_addr_,
-               vk::BufferUsageFlags flags, u64 size_bytes_)
-    : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, usage{usage_},
-      buffer{instance->GetDevice(), instance->GetAllocator()} {
+Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_, MemoryUsage usage_,
+               VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_)
+    : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, scheduler{&scheduler_},
+      usage{usage_}, buffer{instance->GetDevice(), instance->GetAllocator()} {
     // Create buffer object.
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
@@ -117,13 +117,6 @@ Buffer::Buffer(const Vulkan::Instance& instance_, MemoryUsage usage_, VAddr cpu_
 
 vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataFormat dfmt,
                             AmdGpu::NumberFormat nfmt) {
-    const auto it{std::ranges::find_if(views, [=](const BufferView& view) {
-        return offset == view.offset && size == view.size && is_written == view.is_written &&
-               dfmt == view.dfmt && nfmt == view.nfmt;
-    })};
-    if (it != views.end()) {
-        return *it->handle;
-    }
     const vk::BufferUsageFlags2CreateInfoKHR usage_flags = {
         .usage = is_written ? vk::BufferUsageFlagBits2KHR::eStorageTexelBuffer
                             : vk::BufferUsageFlagBits2KHR::eUniformTexelBuffer,
@@ -135,23 +128,18 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
         .offset = offset,
         .range = size,
     };
-    views.push_back({
-        .offset = offset,
-        .size = size,
-        .is_written = is_written,
-        .dfmt = dfmt,
-        .nfmt = nfmt,
-        .handle = instance->GetDevice().createBufferViewUnique(view_ci),
-    });
-    return *views.back().handle;
+    const auto view = instance->GetDevice().createBufferView(view_ci);
+    scheduler->DeferOperation(
+        [view, device = instance->GetDevice()] { device.destroyBufferView(view); });
+    return view;
 }
 
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
 
-StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler_,
+StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                            MemoryUsage usage, u64 size_bytes)
-    : Buffer{instance, usage, 0, AllFlags, size_bytes}, scheduler{scheduler_} {
+    : Buffer{instance, scheduler, usage, 0, AllFlags, size_bytes} {
     ReserveWatches(current_watches, WATCHES_INITIAL_RESERVE);
     ReserveWatches(previous_watches, WATCHES_INITIAL_RESERVE);
     const auto device = instance.GetDevice();
@@ -206,7 +194,7 @@ void StreamBuffer::Commit() {
 
     auto& watch = current_watches[current_watch_cursor++];
     watch.upper_bound = offset;
-    watch.tick = scheduler.CurrentTick();
+    watch.tick = scheduler->CurrentTick();
 }
 
 void StreamBuffer::ReserveWatches(std::vector<Watch>& watches, std::size_t grow_size) {
@@ -220,7 +208,7 @@ void StreamBuffer::WaitPendingOperations(u64 requested_upper_bound) {
     while (requested_upper_bound > wait_bound && wait_cursor < *invalidation_mark) {
         auto& watch = previous_watches[wait_cursor];
         wait_bound = watch.upper_bound;
-        scheduler.Wait(watch.tick);
+        scheduler->Wait(watch.tick);
         ++wait_cursor;
     }
 }

@@ -251,7 +251,7 @@
         <message>
         	<location filename="../main_window_ui.h" line="343"/>
         	<source>Game Install Directory</source>
-        	<translation>Katalog zainstalowanych gry</translation>
+        	<translation>Katalog zainstalowanych gier</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="343"/>
@@ -500,6 +500,11 @@
 	</context>
     <context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>Lista gier</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody.</translation>
+            <translation>Poprawki zostały pomyślnie pobrane! Wszystkie dostępne poprawki dla wszystkich gier zostały pobrane. Nie ma potrzeby pobierania ich osobno dla każdej gry, która ma kody. Jeśli poprawka się nie pojawia, możliwe, że nie istnieje dla konkretnego numeru seryjnego i wersji gry. Może być konieczne zaktualizowanie gry.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
             <source>Failed to parse JSON:</source>
             <translation>Nie udało się przeanlizować JSON:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Nie można zastosować kodów przed uruchomieniem gry.</translation>
+		</message>
     </context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Zapisz</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Zastosuj</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Przywróć ustawienia domyślne</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Zamknij</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Ikona</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Nazwa</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Numer seryjny</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Region</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Oprogramowanie</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Rozmiar</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Wersja</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Ścieżka</translation>
+		</message>
+	</context>
 </TS>

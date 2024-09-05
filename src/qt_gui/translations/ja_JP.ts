@@ -500,6 +500,11 @@
     </context>
 	<context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>ゲームリスト</translation>
+		</message>
         <message>
         	<location filename="../main_window.cpp" line="168"/>
         	<source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="763"/>
         	<source>DownloadComplete_MSG</source>
-        	<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。</translation>
+        	<translation>パッチが正常にダウンロードされました！ すべてのゲームに利用可能なパッチがダウンロードされました。チートとは異なり、各ゲームごとに個別にダウンロードする必要はありません。 パッチが表示されない場合、特定のシリアル番号とバージョンのゲームには存在しない可能性があります。ゲームを更新する必要があるかもしれません。</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
         	<source>Name:</source>
         	<translation>名前:</translation>
         </message>
-	</context>	
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>ゲームが開始される前にチートを適用することはできません。</translation>
+		</message>
+	</context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>保存</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>適用</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>デフォルトに戻す</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>閉じる</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>アイコン</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>名前</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>シリアル</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>地域</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>ファームウェア</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>サイズ</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>バージョン</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>パス</translation>
+		</message>
+	</context>
 </TS>
