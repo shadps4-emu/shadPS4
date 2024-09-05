@@ -43,6 +43,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     case 0x609a13b: // Vertex attribute at location not consumed by shader
     case 0xc81ad50e:
     case 0xb7c39078:
+    case 0x32868fde: // vkCreateBufferView(): pCreateInfo->range does not equal VK_WHOLE_SIZE
     case 0x92d66fc1: // `pMultisampleState is NULL` for depth only passes (confirmed VL error)
         return VK_FALSE;
     default:

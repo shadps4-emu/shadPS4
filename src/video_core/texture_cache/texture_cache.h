@@ -31,6 +31,8 @@ enum class FindFlags {
 };
 DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
 
+static constexpr u32 MaxInvalidateDist = 12_MB;
+
 class TextureCache {
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
@@ -114,25 +116,6 @@ public:
         return false;
     }
 
-private:
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
-
-    /// Iterate over all page indices in a range
-    template <typename Func>
-    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
-        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
-        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
-        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
-            if constexpr (RETURNS_BOOL) {
-                if (func(page)) {
-                    break;
-                }
-            } else {
-                func(page);
-            }
-        }
-    }
-
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
@@ -174,6 +157,26 @@ private:
         }
     }
 
+private:
+    /// Iterate over all page indices in a range
+    template <typename Func>
+    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
+        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
+        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
+        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
+            if constexpr (RETURNS_BOOL) {
+                if (func(page)) {
+                    break;
+                }
+            } else {
+                func(page);
+            }
+        }
+    }
+
+    /// Registers an image view for provided image
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
+
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -209,6 +212,7 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     PageTable page_table;
     std::mutex mutex;
+    u64 modification_tick{0};
 
     struct MetaDataInfo {
         enum class Type {

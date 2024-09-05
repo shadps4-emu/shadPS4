@@ -166,8 +166,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     image.Create(image_ci);
 
-    Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {:#x}:{:#x}",
-                          info.guest_address, info.guest_size_bytes);
+    Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {:#x}:{:#x}",
+                          info.size.width, info.size.height, info.size.depth, info.guest_address,
+                          info.guest_size_bytes);
 }
 
 void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,

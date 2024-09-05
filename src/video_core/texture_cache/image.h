@@ -117,6 +117,7 @@ struct Image {
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;
     boost::container::small_vector<u64, 14> mip_hashes;
     u64 tick_accessed_last{0};
+    u64 modification_tick{0};
 };
 
 } // namespace VideoCore

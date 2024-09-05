@@ -541,46 +541,61 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    constexpr FindFlags flags = FindFlags::NoCreate | FindFlags::RelaxSize |
-                                FindFlags::RelaxFmt | FindFlags::RelaxDim;
-    ImageInfo info{};
-    info.guest_address = device_addr;
-    info.guest_size_bytes = size;
-    info.type = vk::ImageType::e2D;
-    const ImageId image_id = texture_cache.FindImage(info, flags);
-    if (!image_id) {
+    boost::container::small_vector<ImageId, 8> image_ids;
+    size = std::min(size, MaxInvalidateDist);
+    texture_cache.ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
+        if (True(image.flags & ImageFlagBits::CpuModified) ||
+            False(image.flags & ImageFlagBits::GpuModified)) {
+            return;
+        }
+        if (image.cpu_addr < device_addr || image.cpu_addr > device_addr + size) {
+            return;
+        }
+        image_ids.push_back(image_id);
+    });
+    if (image_ids.empty()) {
         return false;
     }
-    Image& image = texture_cache.GetImage(image_id);
+    // Sort images by modification tick. If there are overlaps we want to
+    // copy from least to most recently modified.
+    std::ranges::sort(image_ids, [&](ImageId lhs_id, ImageId rhs_id) {
+        const Image& lhs = texture_cache.GetImage(lhs_id);
+        const Image& rhs = texture_cache.GetImage(rhs_id);
+        return lhs.tick_accessed_last < rhs.tick_accessed_last;
+    });
     boost::container::small_vector<vk::BufferImageCopy, 8> copies;
-    u32 offset = buffer.Offset(device_addr);
-    const u32 num_layers = image.info.resources.layers;
-    for (u32 m = 0; m < image.info.resources.levels; m++) {
-        const u32 width = std::max(image.info.size.width >> m, 1u);
-        const u32 height = std::max(image.info.size.height >> m, 1u);
-        const u32 depth =
-            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
-        copies.push_back({
-            .bufferOffset = offset,
-            .bufferRowLength = static_cast<u32>(mip_pitch),
-            .bufferImageHeight = static_cast<u32>(mip_height),
-            .imageSubresource{
-                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = m,
-                .baseArrayLayer = 0,
-                .layerCount = num_layers,
-            },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
-        });
-        offset += mip_ofs * num_layers;
+    for (const ImageId image_id : image_ids) {
+        copies.clear();
+        Image& image = texture_cache.GetImage(image_id);
+        u32 offset = buffer.Offset(image.cpu_addr);
+        const u32 num_layers = image.info.resources.layers;
+        for (u32 m = 0; m < image.info.resources.levels; m++) {
+            const u32 width = std::max(image.info.size.width >> m, 1u);
+            const u32 height = std::max(image.info.size.height >> m, 1u);
+            const u32 depth =
+                image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+            const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
+            copies.push_back({
+                .bufferOffset = offset,
+                .bufferRowLength = static_cast<u32>(mip_pitch),
+                .bufferImageHeight = static_cast<u32>(mip_height),
+                .imageSubresource{
+                    .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                    .mipLevel = m,
+                    .baseArrayLayer = 0,
+                    .layerCount = num_layers,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {width, height, depth},
+            });
+            offset += mip_ofs * num_layers;
+        }
+        scheduler.EndRendering();
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
+                                 copies);
     }
-    scheduler.EndRendering();
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
-                             copies);
     return true;
 }
 

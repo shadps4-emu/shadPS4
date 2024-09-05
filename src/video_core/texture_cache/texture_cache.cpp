@@ -38,12 +38,11 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 TextureCache::~TextureCache() = default;
 
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
-    static constexpr size_t MaxInvalidateDist = 128_MB;
-    std::unique_lock lock{mutex};
+    std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         const size_t image_dist =
             image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
-        if (image_dist < MaxInvalidateDist && image.info.size.width > 16) {
+        if (image_dist < MaxInvalidateDist) {
             // Ensure image is reuploaded when accessed again.
             image.flags |= ImageFlagBits::CpuModified;
         }
@@ -152,7 +151,6 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-
     const auto new_image_id = slot_images.insert(instance, scheduler, info);
     RegisterImage(new_image_id);
 
@@ -220,7 +218,9 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
         RegisterImage(image_id);
     }
 
-    slot_images[image_id].tick_accessed_last = scheduler.CurrentTick();
+    Image& image = slot_images[image_id];
+    image.tick_accessed_last = scheduler.CurrentTick();
+    image.modification_tick = ++modification_tick;
 
     return image_id;
 }
@@ -248,8 +248,11 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
-    UpdateImage(image_id);
     Image& image = slot_images[image_id];
+    if (view_info.is_storage) {
+        image.flags |= ImageFlagBits::GpuModified;
+    }
+    UpdateImage(image_id);
     auto& usage = image.info.usage;
 
     if (view_info.is_storage) {
@@ -405,7 +408,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     // hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
-        auto dependencies = vk::DependencyInfo{
+        const auto dependencies = vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers = &barrier.value(),
         };
