@@ -132,26 +132,26 @@ int PS4_SYSV_ABI sceRtcFormatRFC2822(char* pszDateTime, const OrbisRtcTick* pTic
     if (validTime >= 0) {
         int weekDay = sceRtcGetDayOfWeek(formatTime.year, formatTime.month, formatTime.day);
         switch (weekDay) {
-            case 0:
-                formattedString = "Sun, ";
+        case 0:
+            formattedString = "Sun, ";
             break;
-            case 1:
-                formattedString = "Mon, ";
+        case 1:
+            formattedString = "Mon, ";
             break;
-            case 2:
-                formattedString = "Tue, ";
+        case 2:
+            formattedString = "Tue, ";
             break;
-            case 3:
-                formattedString = "Wed, ";
+        case 3:
+            formattedString = "Wed, ";
             break;
-            case 4:
-                formattedString = "Thu, ";
+        case 4:
+            formattedString = "Thu, ";
             break;
-            case 5:
-                formattedString = "Fri, ";
+        case 5:
+            formattedString = "Fri, ";
             break;
-            case 6:
-                formattedString = "Sat, "; 
+        case 6:
+            formattedString = "Sat, "; 
             break;
         }
 
@@ -162,46 +162,46 @@ int PS4_SYSV_ABI sceRtcFormatRFC2822(char* pszDateTime, const OrbisRtcTick* pTic
         }
 
         switch (formatTime.month) {
-            case 1:
-                formattedString += "Jan ";
+        case 1:
+            formattedString += "Jan ";
             break;
-            case 2:
-                formattedString += "Feb ";
+        case 2:
+            formattedString += "Feb ";
             break;
-            case 3:
-                formattedString += "Mar ";
+        case 3:
+            formattedString += "Mar ";
             break;
-            case 4:
-                formattedString += "Apr ";
+        case 4:
+            formattedString += "Apr ";
             break;
-            case 5:
-                formattedString += "May ";
+        case 5:
+            formattedString += "May ";
             break;
-            case 6:
-                formattedString += "Jun ";
+        case 6:
+            formattedString += "Jun ";
             break;
-            case 7:
-                formattedString += "Jul ";
+        case 7:
+            formattedString += "Jul ";
             break;
-            case 8:
-                formattedString += "Aug ";
+        case 8:
+            formattedString += "Aug ";
             break;
-            case 9:
-                formattedString += "Sep ";
+        case 9:
+            formattedString += "Sep ";
             break;
-            case 10:
-                formattedString += "Oct ";
+        case 10:
+            formattedString += "Oct ";
             break;
-            case 11:
-                formattedString += "Nov ";
+        case 11:
+            formattedString += "Nov ";
             break;
-            case 12:
-                formattedString += "Dec ";
+        case 12:
+            formattedString += "Dec ";
             break;
         }
 
         formattedString += std::to_string(formatTime.year) + " ";
-        
+
         if (formatTime.hour < 10) {
             formattedString += "0" + std::to_string(formatTime.hour) + ":";
         } else {
@@ -319,7 +319,7 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339Precise(char* pszDateTime, const OrbisRtcTic
     } else {
         formattedString += std::to_string(formatTime.day) + "T";
     }
-    
+
     if (formatTime.hour < 10) {
         formattedString += "0" + std::to_string(formatTime.hour) + ":";
     } else {
@@ -371,8 +371,6 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339Precise(char* pszDateTime, const OrbisRtcTic
             formattedString += ":" + std::to_string(timeZoneRemainder);
         }
     }
-
-    
 
     for (int i = 0; i < formattedString.size() + 1; ++i) {
         pszDateTime[i] = formattedString.c_str()[i];
