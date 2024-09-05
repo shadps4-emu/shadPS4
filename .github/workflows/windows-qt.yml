@@ -5,7 +5,7 @@ name: Windows-Qt
 
 on:
   push:
-    branches: [ "MugetsuD" ]
+    branches: [ "MugetsuD" "main" ]
   pull_request:
     branches: [ "main" ]
 
