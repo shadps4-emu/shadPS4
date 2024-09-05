@@ -18,6 +18,11 @@
 #include "core/tls.h"
 #include "core/virtual_memory.h"
 
+
+//// [temp]
+#include "core/libraries/kernel/file_system.h"
+
+
 namespace Core {
 
 using ExitFunc = PS4_SYSV_ABI void (*)();
@@ -27,6 +32,7 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
 }
 
 #ifdef __x86_64__
+
 static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
     // reinterpret_cast<entry_func_t>(addr)(params, exit_func); // can't be used, stack has to have
     // a specific layout
@@ -48,11 +54,129 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
                  : "r"(addr), "r"(params), "r"(exit_func)
                  : "rax", "rsi", "rdi");
 }
+
 #elif __aarch64__
-static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func) {
+
+//// [temp]
+char buffer[24] = "Hello World libKernel\n";
+
+static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, auto& m) {
     printf("Arm Entry\n");
+    printf("Goal to get to: %08x\n", &Libraries::Kernel::sceKernelWrite);
+
+    unsigned char* pc;
+    unsigned char* elf;
+    unsigned int offset;
+    unsigned char* jumpPtr;
+
+    memcpy(&pc, &addr, 8);
+    addr = m->GetBaseAddress();
+    memcpy(&elf, &addr, 8);
+
+    while(1)
+    {
+        switch(pc[0])
+        {
+            case 0x55:
+                printf("PUSH\n");
+                pc += 1;
+                break;
+
+            case 0x48:
+                switch(pc[1])
+                {
+                    case 0x89:
+                        printf("MOV REG\n");
+                        pc += 3;
+                        break;
+
+                    case 0x8d:
+                        printf("LEA\n");
+                        pc += 7;
+                        break;
+                }
+                break;
+
+            case 0x31:
+                printf("XOR\n");
+                pc += 2;
+                break;
+
+            case 0xba:
+                printf("MOV IMM\n");
+                pc += 5;
+                break;
+
+            case 0xe8:
+                printf("CALL\n");
+                
+                offset = 
+                    (pc[1]) + (pc[2]<<8) + (pc[3]<<16) + (pc[4]<<24);
+                
+                pc += (int)offset + 5;
+                break;
+
+            case 0xff:
+                switch(pc[1])
+                {
+                    case 0x25:
+                        printf("JMP TO PTR\n");
+                
+                        offset = 
+                            (pc[2]) + (pc[3]<<8) + (pc[4]<<16) + (pc[5]<<24);
+                        
+                        printf("offset: %08x\n", offset);
+                        pc += (int)offset + 6;
+
+                        printf("PC Val: %08x\n", pc);
+                        printf("PC deref: %08x\n", *(int*)pc);
+
+                        printf("ELF-Offset: %08x\n", pc-elf);
+
+                        // TODO
+                        // Find where HLE resolver has overwritten pointers
+
+                        // NORMALLY
+                        // Jump to elf-relative PC-deref
+                        if(0)
+                        {
+                            pc = elf + *(int*)pc;
+                        }
+
+                        // HLE
+                        // Jump to *(int*)pc, and execute ARM
+                        else
+                        {
+                            printf("CALL HLE\n");
+                        }
+
+                        // next, resolve *(int*)jumpPtr (0x176)
+                        // to elf virtual addr + 0x176,
+                        // which goes to PUSH and then another JMP
+                        while(1) {}
+
+                        break;
+                }
+                break;
+
+            case 0x68:
+                printf("PUSH\n");
+                while(1) {}
+                break;
+            
+            default:
+                printf("Unknown opcode\n");
+                while(1) {}
+        }
+
+    }
+
+    //Libraries::Kernel::sceKernelWrite(0, &buffer[0], 24);
+
+    printf("Done\n");
     while(1) {}
 }
+
 #endif
 
 
@@ -115,7 +239,12 @@ void Linker::Execute() {
 
     for (auto& m : m_modules) {
         if (!m->IsSharedLib()) {
-            RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc);
+            RunMainEntry(m->GetEntryAddress(), &p, ProgramExitFunc
+            
+                #if defined(__aarch64__)
+                ,m
+                #endif
+            );
         }
     }
 
