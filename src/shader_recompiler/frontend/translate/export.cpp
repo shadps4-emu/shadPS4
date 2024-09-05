@@ -31,6 +31,12 @@ void Translator::EmitExport(const GcnInst& inst) {
         case MrtSwizzle::Alt:
             static constexpr std::array<u32, 4> AltSwizzle = {2, 1, 0, 3};
             return AltSwizzle[comp];
+        case MrtSwizzle::Reverse:
+            static constexpr std::array<u32, 4> RevSwizzle = {3, 2, 1, 0};
+            return RevSwizzle[comp];
+        case MrtSwizzle::ReverseAlt:
+            static constexpr std::array<u32, 4> AltRevSwizzle = {3, 0, 1, 2};
+            return AltRevSwizzle[comp];
         default:
             UNREACHABLE();
         }
