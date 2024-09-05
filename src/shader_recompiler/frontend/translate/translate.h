@@ -220,7 +220,7 @@ public:
     void IMAGE_GET_RESINFO(const GcnInst& inst);
     void IMAGE_SAMPLE(const GcnInst& inst);
     void IMAGE_GATHER(const GcnInst& inst);
-    void IMAGE_STORE(const GcnInst& inst);
+    void IMAGE_STORE(bool has_mip, const GcnInst& inst);
     void IMAGE_LOAD(bool has_mip, const GcnInst& inst);
     void IMAGE_GET_LOD(const GcnInst& inst);
     void IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst);
