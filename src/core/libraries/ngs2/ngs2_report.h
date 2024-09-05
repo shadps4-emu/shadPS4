@@ -5,6 +5,8 @@
 
 #include "ngs2.h"
 
+#include <stdarg.h> // va_list
+
 namespace Libraries::Ngs2 {
 
 class Ngs2Report;
