@@ -109,10 +109,17 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
         const VAddr segment_addr = base_virtual_addr + phdr.p_vaddr;
-        if (do_map) {
+        if (do_map) 
+        {
+#if defined(__APPLE__) && defined(__aarch64__)
             pthread_jit_write_protect_np(false);
+#endif
+
             elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
+            
+#if defined(__APPLE__) && defined(__aarch64__)
             pthread_jit_write_protect_np(true);
+#endif
         }
         auto& segment = info.segments[info.num_segments++];
         segment.address = segment_addr;
