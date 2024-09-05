@@ -372,29 +372,28 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->AddEvent(kernel_event);
 
-    if (id == 64) {
-        Platform::IrqC::Instance()->Register(
-            Platform::InterruptId::GfxEop,
-            [=](Platform::InterruptId irq) {
-                ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                           "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
-                                                         // proper filtering in trigger function
-                eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
-            },
-            eq);
-    } else if (id >= 0 && id <= 6) {
-        auto interruptId = (Platform::InterruptId)id;
+    Platform::InterruptId interruptId;
+    GnmEventIdents eventId;
 
-        Platform::IrqC::Instance()->Register(
-                interruptId,
-            [=](Platform::InterruptId irq) {
-                ASSERT_MSG(irq == interruptId,
-                           "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
-                                                         // proper filtering in trigger function
-                eq->TriggerEvent((GnmEventIdents)id, SceKernelEvent::Filter::GraphicsCore, nullptr);
-            },
-            eq);
+    if (id == 64) {
+        interruptId = Platform::InterruptId::GfxEop;
+        eventId = GnmEventIdents::GfxEop;
+    } else if (id >= 0 && id <= 6) {
+        interruptId = static_cast<Platform::InterruptId>(id);
+        eventId = static_cast<GnmEventIdents>(id);
+    } else {
+        LOG_ERROR(Lib_GnmDriver, "unknown id {}", id);
+        return ORBIS_OK;
     }
+
+    Platform::IrqC::Instance()->Register(
+        interruptId,
+        [=](Platform::InterruptId irq) {
+            ASSERT_MSG(irq == interruptId, "An unexpected IRQ occurred");
+            eq->TriggerEvent(eventId, SceKernelEvent::Filter::GraphicsCore, nullptr);
+        },
+        eq
+    );
 
     return ORBIS_OK;
 }
