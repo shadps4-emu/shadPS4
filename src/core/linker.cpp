@@ -62,7 +62,6 @@ char buffer[24] = "Hello World libKernel\n";
 
 static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, auto& m) {
     printf("Arm Entry\n");
-    printf("Goal to get to: %08x\n", &Libraries::Kernel::sceKernelWrite);
 
     unsigned char* pc;
     unsigned char* elf;
@@ -89,7 +88,7 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
             case 0x55:
             case 0x56:
             case 0x57:
-                printf("PUSH reg%d\n", pc[0]&7);
+                //printf("PUSH reg%d\n", pc[0]&7);
                 pc += 1;
                 break;
 
@@ -117,7 +116,7 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
                         break;
 
                     case 0x8d:
-                        printf("LEA\n");
+                        //printf("LEA\n");
                         
                         offset = 
                             (pc[3]) + (pc[4]<<8) + (pc[5]<<16) + (pc[6]<<24);
@@ -208,11 +207,9 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
                             // param3: r[2] = 0x18
                             //printf("%d %s %d\n", r[7], r[6], r[2]);
 
-                            //int (*f)(int a, u64 b, int c);
-                            //memcpy(&f, &pc, 8);
-                            //f(r[7], r[6], r[2]);
-
-                            Libraries::Kernel::sceKernelWrite(r[7], (char*)r[6], r[2]);  
+                            int (*f)(int a, u64 b, int c);
+                            memcpy(&f, pc, 8);
+                            f(r[7], r[6], r[2]);
                         }
 
                         // next, resolve *(int*)jumpPtr (0x176)
