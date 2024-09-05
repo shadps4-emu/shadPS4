@@ -119,9 +119,7 @@ void Linker::Execute() {
         }
     }
 
-    #ifdef __x86_64__
     SetTcbBase(nullptr);
-    #endif
 }
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
@@ -409,10 +407,8 @@ void Linker::InitTlsForThread(bool is_primary) {
         tcb->tcb_dtv[module->tls.modid + 1].pointer = dest;
     }
 
-    #ifdef __x86_64__
     // Set pointer to FS base
     SetTcbBase(tcb);
-    #endif
 }
 
 void Linker::DebugDump() {
