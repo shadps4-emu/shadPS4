@@ -6,10 +6,10 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/msgdialog.h"
 #include "imgui_internal.h"
+#include "msgdialog_ui.h"
 
 namespace Libraries::MsgDialog {
 
@@ -18,8 +18,8 @@ using CommonDialog::Result;
 using CommonDialog::Status;
 
 static auto g_status = Status::NONE;
-static Param g_param{};
-static MsgDialogResult g_result{};
+static MsgDialogState g_state{};
+static DialogResult g_result{};
 static MsgDialogUi g_msg_dialog_ui;
 
 Error PS4_SYSV_ABI sceMsgDialogClose() {
@@ -30,7 +30,7 @@ Error PS4_SYSV_ABI sceMsgDialogClose() {
     return Error::OK;
 }
 
-Error PS4_SYSV_ABI sceMsgDialogGetResult(MsgDialogResult* result) {
+Error PS4_SYSV_ABI sceMsgDialogGetResult(DialogResult* result) {
     if (g_status != Status::FINISHED) {
         return Error::NOT_FINISHED;
     }
@@ -66,19 +66,19 @@ Error PS4_SYSV_ABI sceMsgDialogInitialize() {
     return Error::OK;
 }
 
-Error PS4_SYSV_ABI sceMsgDialogOpen(const Param* param) {
+Error PS4_SYSV_ABI sceMsgDialogOpen(const OrbisParam* param) {
     if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
         return Error::INVALID_STATE;
     }
     if (param == nullptr) {
         return Error::ARG_NULL;
     }
-    ASSERT(param->size == sizeof(Param));
+    ASSERT(param->size == sizeof(OrbisParam));
     ASSERT(param->baseParam.size == sizeof(CommonDialog::BaseParam));
-    g_status = Status::RUNNING;
-    g_param = *param;
     g_result = {};
-    g_msg_dialog_ui = MsgDialogUi(&g_param, &g_status, &g_result);
+    g_state = MsgDialogState{*param};
+    g_status = Status::RUNNING;
+    g_msg_dialog_ui = MsgDialogUi(&g_state, &g_status, &g_result);
     return Error::OK;
 }
 
@@ -86,13 +86,13 @@ Error PS4_SYSV_ABI sceMsgDialogProgressBarInc(OrbisMsgDialogProgressBarTarget ta
     if (g_status != Status::RUNNING) {
         return Error::NOT_RUNNING;
     }
-    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
         return Error::NOT_SUPPORTED;
     }
     if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
         return Error::PARAM_INVALID;
     }
-    g_msg_dialog_ui.SetProgressBarValue(delta, true);
+    g_state.GetState<MsgDialogState::ProgressState>().progress += delta;
     return Error::OK;
 }
 
@@ -101,13 +101,13 @@ Error PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg(OrbisMsgDialogProgressBarTarget
     if (g_status != Status::RUNNING) {
         return Error::NOT_RUNNING;
     }
-    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
         return Error::NOT_SUPPORTED;
     }
     if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
         return Error::PARAM_INVALID;
     }
-    g_param.progBarParam->msg = msg;
+    g_state.GetState<MsgDialogState::ProgressState>().msg = msg;
     return Error::OK;
 }
 
@@ -116,13 +116,13 @@ Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogProgressBarTarg
     if (g_status != Status::RUNNING) {
         return Error::NOT_RUNNING;
     }
-    if (g_param.mode != MsgDialogMode::PROGRESS_BAR) {
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
         return Error::NOT_SUPPORTED;
     }
     if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
         return Error::PARAM_INVALID;
     }
-    g_msg_dialog_ui.SetProgressBarValue(value, false);
+    g_state.GetState<MsgDialogState::ProgressState>().progress = value;
     return Error::OK;
 }
 

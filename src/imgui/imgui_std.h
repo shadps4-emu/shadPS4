@@ -18,12 +18,10 @@ inline void KeepNavHighlight() {
     GetCurrentContext()->NavDisableHighlight = false;
 }
 
-inline void SetItemDefaultNav() {
-    if (IsWindowAppearing()) {
-        const auto ctx = GetCurrentContext();
-        SetFocusID(ctx->LastItemData.ID, ctx->CurrentWindow);
-        ctx->NavInitResult.Clear();
-    }
+inline void SetItemCurrentNavFocus() {
+    const auto ctx = GetCurrentContext();
+    SetFocusID(ctx->LastItemData.ID, ctx->CurrentWindow);
+    ctx->NavInitResult.Clear();
 }
 
 } // namespace ImGui
