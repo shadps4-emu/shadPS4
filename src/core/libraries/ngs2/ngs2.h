@@ -16,8 +16,7 @@ namespace Libraries::Ngs2 {
 
 class Ngs2;
 
-typedef s32 (*OrbisNgs2ParseReadHandler)(uintptr_t userData, u32 offset, void* data,
-                                           size_t size);
+typedef s32 (*OrbisNgs2ParseReadHandler)(uintptr_t userData, u32 offset, void* data, size_t size);
 
 enum class OrbisNgs2HandleType : u32 {
     System = 0,

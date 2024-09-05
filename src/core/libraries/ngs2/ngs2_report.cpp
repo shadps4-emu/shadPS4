@@ -10,6 +10,4 @@
 
 using namespace Libraries::Kernel;
 
-namespace Libraries::Ngs2 {
-
-} // namespace Libraries::Ngs2
+namespace Libraries::Ngs2 {} // namespace Libraries::Ngs2
