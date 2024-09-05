@@ -54,8 +54,8 @@ int PS4_SYSV_ABI sceAudio3dPortClose(OrbisAudio3dPortId uiPortId) {
 int PS4_SYSV_ABI sceAudio3dPortSetAttribute(OrbisAudio3dPortId uiPortId,
                                             OrbisAudio3dAttributeId uiAttributeId,
                                             const void* pAttribute, size_t szAttribute) {
-    LOG_INFO(Lib_Audio3d, "uiPortId = {}, uiAttributeId = {}, szAttribute = {}",
-             uiPortId, uiAttributeId, szAttribute);
+    LOG_INFO(Lib_Audio3d, "uiPortId = {}, uiAttributeId = {}, szAttribute = {}", uiPortId,
+             uiAttributeId, szAttribute);
     return ORBIS_OK;
 }
 
