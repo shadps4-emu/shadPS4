@@ -171,12 +171,14 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 }
 
 bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
-    static constexpr std::array<u64, 0> skip_hashes = {};
-    if (std::ranges::contains(skip_hashes, shader_hash)) {
+   static constexpr std::array<u64, 24> skip_hashes = {0x2da7fe60, 0x8e3f8dc4, 0x42f2a521, 0xa509af23, 0x4ca76892, 0xa954e79d, 0x1635154c, 0x77d1c63, 0xff7a6d7c, 0xddfbac23,
+       0x4899010a, 0xc8854a11, 0xaa9d023d, 0x17a64a21, 0x94ec4dfb, 0xbddb8fc7, 0x733dae6f, 0x9a987165, 0x70ffb249, 0x34e9da69, 0xbfed1ef4, 0x6faab5f9, 0x125a83c1, 0xc0cbc309}; // death freeze
+
+   if (std::ranges::contains(skip_hashes, shader_hash)) {
         LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
         return true;
-    }
-    return false;
+   } 
+   return false;
 }
 
 bool PipelineCache::RefreshGraphicsKey() {
