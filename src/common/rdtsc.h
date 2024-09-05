@@ -8,6 +8,7 @@
 #endif
 
 #include "common/types.h"
+#include "common/logging/log.h"
 
 namespace Common {
 
@@ -38,7 +39,9 @@ static inline u64 FencedRDTSC() {
 
 #else
 // ARM
-static inline u64 FencedRDTSC() {
+static inline u64 FencedRDTSC() 
+{
+    LOG_INFO(Core_Linker, "TODO: ARM FencedRDTSC");
     return 0;
 }
 #endif
