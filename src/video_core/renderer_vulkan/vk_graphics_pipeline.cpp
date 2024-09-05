@@ -501,6 +501,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
     if (!buffer_barriers.empty()) {
         const auto dependencies = vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
             .pBufferMemoryBarriers = buffer_barriers.data(),
         };
