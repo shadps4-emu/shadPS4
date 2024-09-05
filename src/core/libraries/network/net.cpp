@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #endif
 
-#include <thread>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -560,7 +559,6 @@ int PS4_SYSV_ABI sceNetEpollDestroy() {
 }
 
 int PS4_SYSV_ABI sceNetEpollWait() {
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
     LOG_TRACE(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }

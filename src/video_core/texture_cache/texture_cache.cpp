@@ -220,7 +220,6 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
 
     Image& image = slot_images[image_id];
     image.tick_accessed_last = scheduler.CurrentTick();
-    image.modification_tick = ++modification_tick;
 
     return image_id;
 }

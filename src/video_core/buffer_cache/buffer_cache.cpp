@@ -542,13 +542,16 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
     boost::container::small_vector<ImageId, 8> image_ids;
-    size = std::min(size, MaxInvalidateDist);
-    texture_cache.ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
+    const u32 inv_size = std::min(size, MaxInvalidateDist);
+    texture_cache.ForEachImageInRegion(device_addr, inv_size, [&](ImageId image_id, Image& image) {
+        // Only consider GPU modified images, i.e render targets or storage images.
+        // Also avoid any CPU modified images as the image data is likely to be stale.
         if (True(image.flags & ImageFlagBits::CpuModified) ||
             False(image.flags & ImageFlagBits::GpuModified)) {
             return;
         }
-        if (image.cpu_addr < device_addr || image.cpu_addr > device_addr + size) {
+        // Image must fully overlap with the provided buffer range.
+        if (image.cpu_addr < device_addr || image.cpu_addr_end > device_addr + size) {
             return;
         }
         image_ids.push_back(image_id);

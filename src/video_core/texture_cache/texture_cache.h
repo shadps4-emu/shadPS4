@@ -212,7 +212,6 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     PageTable page_table;
     std::mutex mutex;
-    u64 modification_tick{0};
 
     struct MetaDataInfo {
         enum class Type {
