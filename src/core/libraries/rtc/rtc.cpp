@@ -80,7 +80,7 @@ int PS4_SYSV_ABI sceRtcConvertLocalTimeToUtc(OrbisRtcTick* pTickLocal, OrbisRtcT
 
     if (convertValue >= 0) {
         convertValue = sceRtcTickAddMinutes(
-            pTickUtc, pTickLocal, -((timezone.tz_dsttime + timezone.tz_minuteswest) / 60));
+            pTickUtc, pTickLocal, -(((timezone.tz_dsttime * 60) - timezone.tz_minuteswest)));
     }
 
     return convertValue;
@@ -95,29 +95,13 @@ int PS4_SYSV_ABI sceRtcConvertUtcToLocalTime(OrbisRtcTick* pTickUtc, OrbisRtcTic
     time_t seconds;
     Kernel::OrbisTimesec timezone;
 
-    int convertValue = Kernel::sceKernelConvertUtcToLocaltime(
-        (pTickUtc->tick + 0xff23400100d44000U) / 1000000, &seconds, &timezone, 0);
+    Kernel::OrbisKernelTimezone timeZone;
+    int returnValue = Kernel::sceKernelGettimezone(&timeZone);
 
-    if (convertValue >= 0) {
-        auto newTime = ((timezone.dst_sec + timezone.west_sec) / 60) * 60000000;
+    sceRtcTickAddMinutes(pTickLocal, pTickUtc,
+                         -(timeZone.tz_minuteswest - (timeZone.tz_dsttime * 60)));
 
-        if (pTickLocal == nullptr)
-            return ORBIS_RTC_ERROR_INVALID_POINTER;
-
-        if (newTime < 0) {
-            if (pTickUtc->tick < -newTime) {
-                return ORBIS_RTC_ERROR_INVALID_VALUE;
-            }
-        } else {
-            if ((pTickUtc->tick + newTime) < pTickUtc->tick) {
-                return ORBIS_RTC_ERROR_INVALID_VALUE;
-            }
-        }
-        pTickLocal->tick = pTickUtc->tick + newTime;
-        convertValue = 0;
-    }
-
-    return convertValue;
+    return 0;
 }
 
 int PS4_SYSV_ABI sceRtcEnd() {
@@ -471,14 +455,13 @@ int PS4_SYSV_ABI sceRtcSetDosTime(OrbisRtcDateTime* pTime, u32 dosTime) {
     pTime->microsecond = 0;
     pTime->second = (dosTime << 1) & 0x3e;
     pTime->minute = (dosTime >> 5) & 0x3f;
-    pTime->hour = ((dosTime & 0xf800) >> 0xb);
+    pTime->hour = (dosTime & 0xf800) >> 0xb;
 
-    int days = (dosTime >> 0x10);
+    int16_t days = dosTime >> 0x10;
 
     pTime->day = days & 0x1f;
-    pTime->month = (days >> 5) & 0xf;
-    pTime->year = (days >> 9) + 0x7bc;
-
+    pTime->month = (days >> 5) & 0x0f;
+    pTime->year = (days >> 9) + 1980;
     return SCE_OK;
 }
 
@@ -559,13 +542,13 @@ int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, time_t llTime) {
     return SCE_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, uint64_t ulWin32Time) {
+int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, int64_t ulWin32Time) {
     LOG_TRACE(Lib_Rtc, "called");
 
     if (pTime == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    u64 convertedTime = (ulWin32Time / 10) + 0xb36168b6a58000;
+    u64 convertedTime = (ulWin32Time / 10) + WIN32_FILETIME_EPOCH_TICKS;
 
     OrbisRtcTick convertedTick;
     convertedTick.tick = convertedTime;

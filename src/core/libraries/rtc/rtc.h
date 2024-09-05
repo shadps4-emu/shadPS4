@@ -20,6 +20,7 @@ constexpr int ORBIS_RTC_DAYOFWEEK_FRIDAY = 5;
 constexpr int ORBIS_RTC_DAYOFWEEK_SATURDAY = 6;
 
 constexpr int64_t UNIX_EPOCH_TICKS = 0xdcbffeff2bc000;
+constexpr int64_t WIN32_FILETIME_EPOCH_TICKS = 0xb36168b6a58000;
 
 struct OrbisRtcTick {
     uint64_t tick;
@@ -74,7 +75,7 @@ int PS4_SYSV_ABI sceRtcSetCurrentTick();
 int PS4_SYSV_ABI sceRtcSetDosTime(OrbisRtcDateTime* pTime, u32 dosTime);
 int PS4_SYSV_ABI sceRtcSetTick(OrbisRtcDateTime* pTime, OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetTime_t(OrbisRtcDateTime* pTime, time_t llTime);
-int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, uint64_t ulWin32Time);
+int PS4_SYSV_ABI sceRtcSetWin32FileTime(OrbisRtcDateTime* pTime, int64_t ulWin32Time);
 int PS4_SYSV_ABI sceRtcTickAddDays(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, int32_t lAdd);
 int PS4_SYSV_ABI sceRtcTickAddHours(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, int32_t lAdd);
 int PS4_SYSV_ABI sceRtcTickAddMicroseconds(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2,
