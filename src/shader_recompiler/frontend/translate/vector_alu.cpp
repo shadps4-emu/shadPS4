@@ -357,13 +357,7 @@ void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
     const IR::U32 src0 = Convert_F32_to_U16_Normalized(GetSrc<IR::F32>(inst.src[0]));
     const IR::U32 src1 = Convert_F32_to_U16_Normalized(GetSrc<IR::F32>(inst.src[1]));
 
-    ir.SetVectorReg(
-        dst_reg,
-        ir.BitwiseOr(
-            src0,
-            ir.ShiftLeftLogical(src1, ir.Imm32(16))
-        )
-    );
+    ir.SetVectorReg(dst_reg, ir.BitwiseOr(src0, ir.ShiftLeftLogical(src1, ir.Imm32(16))));
 }
 
 void Translator::V_CVT_F32_F16(const GcnInst& inst) {

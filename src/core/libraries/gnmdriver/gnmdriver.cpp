@@ -392,8 +392,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
             ASSERT_MSG(irq == interruptId, "An unexpected IRQ occurred");
             eq->TriggerEvent(eventId, SceKernelEvent::Filter::GraphicsCore, nullptr);
         },
-        eq
-    );
+        eq);
 
     return ORBIS_OK;
 }
