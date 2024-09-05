@@ -21,7 +21,7 @@ struct OrbisNgs2SubmixerRackOption {
 struct OrbisNgs2SubmixerVoiceSetupParam {
     OrbisNgs2VoiceParamHeader header;
     u32 numIoChannels;
-    u32 flags;
+    u32 flags; 
 };
 
 struct OrbisNgs2SubmixerVoiceEnvelopeParam {
