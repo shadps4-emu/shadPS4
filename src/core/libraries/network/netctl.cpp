@@ -143,7 +143,17 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetInfo() {
+int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
+    switch (code) {
+    case ORBIS_NET_CTL_INFO_DEVICE:
+        info->device = 0;
+        break;
+    case ORBIS_NET_CTL_INFO_LINK:
+        info->link = 0; // disconnected
+        break;
+    default:
+        LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
+    }
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -173,8 +183,9 @@ int PS4_SYSV_ABI sceNetCtlGetNetEvConfigInfoIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetResult() {
+int PS4_SYSV_ABI sceNetCtlGetResult(int eventType, int* errorCode) {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    *errorCode = 0;
     return ORBIS_OK;
 }
 
@@ -213,8 +224,9 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetState() {
+int PS4_SYSV_ABI sceNetCtlGetState(int* state) {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    *state = 0;
     return ORBIS_OK;
 }
 
@@ -248,8 +260,9 @@ int PS4_SYSV_ABI sceNetCtlIsBandwidthManagementEnabledIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlRegisterCallback() {
+int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid) {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    *cid = 1;
     return ORBIS_OK;
 }
 
