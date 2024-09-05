@@ -306,9 +306,8 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     return false;
 }
 
-void* Linker::TlsGetAddr(u64 module_index, u64 offset) 
-{
-#ifdef __x86_64__
+void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
+
     std::scoped_lock lk{mutex};
 
     DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
@@ -341,10 +340,6 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset)
         dtv_table[module_index + 1].pointer = dest;
         addr = dest;
     }
-    return addr + offset;
-#else
-    return 0;
-#endif
 }
 
 void Linker::InitTlsForThread(bool is_primary) {

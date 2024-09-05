@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#ifdef __x86_64__
-
 #include <mutex>
 #include "common/assert.h"
 #include "common/types.h"
@@ -42,7 +40,7 @@ Tcb* GetTcbBase() {
     return reinterpret_cast<Tcb*>(TlsGetValue(GetTcbKey()));
 }
 
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(__x86_64__)
 
 // Reserve space in the 32-bit address range for allocating TCB pages.
 asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
@@ -134,6 +132,17 @@ Tcb* GetTcbBase() {
     return tcb;
 }
 
+#elif defined(__APPLE__) && defined(__aarch64__)
+
+void SetTcbBase(void* image_address) {
+    LOG_INFO(Core_Linker, "TODO: SetTcbBase");
+}
+
+Tcb* GetTcbBase() {
+    LOG_INFO(Core_Linker, "TODO: GetTcbBase");
+    return 0;
+}
+
 #else
 
 void SetTcbBase(void* image_address) {
@@ -149,5 +158,3 @@ Tcb* GetTcbBase() {
 #endif
 
 } // namespace Core
-
-#endif
