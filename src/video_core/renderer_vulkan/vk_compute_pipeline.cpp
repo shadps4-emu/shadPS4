@@ -167,9 +167,6 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
                 }
             }
-            if (desc.is_written) {
-                texture_cache.InvalidateMemory(address, size);
-            }
             const u32 alignment = instance.TexelBufferMinAlignment();
             const auto [vk_buffer, offset] =
                 buffer_cache.ObtainBuffer(address, size, desc.is_written, true);
@@ -184,12 +181,14 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
             buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                           vsharp.GetDataFmt(), vsharp.GetNumberFmt());
-
             if (auto barrier =
                     vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
                                                           : vk::AccessFlagBits2::eShaderRead,
                                           vk::PipelineStageFlagBits2::eComputeShader)) {
                 buffer_barriers.emplace_back(*barrier);
+            }
+            if (desc.is_written) {
+                texture_cache.InvalidateMemory(address, size);
             }
         }
         set_writes.push_back({
@@ -206,7 +205,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     for (const auto& image_desc : info->images) {
         const auto tsharp = image_desc.GetSharp(*info);
         if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-            VideoCore::ImageInfo image_info{tsharp};
+            VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
             VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
             const auto& image_view = texture_cache.FindTexture(image_info, view_info);
             const auto& image = texture_cache.GetImage(image_view.image_id);
@@ -252,10 +251,12 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     const auto cmdbuf = scheduler.CommandBuffer();
 
     if (!buffer_barriers.empty()) {
-        auto dependencies = vk::DependencyInfo{
+        const auto dependencies = vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
             .pBufferMemoryBarriers = buffer_barriers.data(),
         };
+        scheduler.EndRendering();
         cmdbuf.pipelineBarrier2(dependencies);
     }
 

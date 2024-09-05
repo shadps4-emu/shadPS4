@@ -414,11 +414,6 @@ ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     if (addr == nullptr || *addr != nullptr) {
         return addr;
     }
-    static std::mutex mutex;
-    std::scoped_lock lk{mutex};
-    if (*addr != nullptr) {
-        return addr;
-    }
     const VAddr vaddr = reinterpret_cast<VAddr>(addr);
     std::string name = fmt::format("mutex{:#x}", vaddr);
     scePthreadMutexInit(addr, nullptr, name.c_str());
@@ -584,8 +579,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
-    mutex = createMutex(mutex);
-    if (mutex == nullptr) {
+    if (mutex == nullptr || *mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 

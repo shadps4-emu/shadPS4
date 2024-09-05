@@ -28,7 +28,7 @@ using BufferId = Common::SlotId;
 
 static constexpr BufferId NULL_BUFFER_ID{0};
 
-static constexpr u32 NUM_VERTEX_BUFFERS = 32;
+class TextureCache;
 
 class BufferCache {
 public:
@@ -53,7 +53,8 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         const AmdGpu::Liverpool* liverpool, PageManager& tracker);
+                         const AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
+                         PageManager& tracker);
     ~BufferCache();
 
     /// Invalidates any buffer in the logical page range.
@@ -116,13 +117,16 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    bool SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size);
+    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_texel_buffer);
+
+    bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
 
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     const AmdGpu::Liverpool* liverpool;
+    TextureCache& texture_cache;
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;

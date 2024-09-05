@@ -10,20 +10,24 @@
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/texture_cache/texture_cache.h"
 
 namespace VideoCore {
 
+static constexpr size_t NumVertexBuffers = 32;
 static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                         const AmdGpu::Liverpool* liverpool_, PageManager& tracker_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_}, tracker{tracker_},
+                         const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
+                         PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
       memory_tracker{&tracker} {
     // Ensure the first slot is used for the null buffer
-    void(slot_buffers.insert(instance, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
+    void(slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
 }
 
 BufferCache::~BufferCache() = default;
@@ -100,9 +104,9 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         return false;
     }
 
-    std::array<vk::Buffer, NUM_VERTEX_BUFFERS> host_buffers;
-    std::array<vk::DeviceSize, NUM_VERTEX_BUFFERS> host_offsets;
-    boost::container::static_vector<AmdGpu::Buffer, NUM_VERTEX_BUFFERS> guest_buffers;
+    std::array<vk::Buffer, NumVertexBuffers> host_buffers;
+    std::array<vk::DeviceSize, NumVertexBuffers> host_offsets;
+    boost::container::static_vector<AmdGpu::Buffer, NumVertexBuffers> guest_buffers;
 
     struct BufferRange {
         VAddr base_address;
@@ -117,7 +121,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
 
     // Calculate buffers memory overlaps
     bool has_step_rate = false;
-    boost::container::static_vector<BufferRange, NUM_VERTEX_BUFFERS> ranges{};
+    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges{};
     for (const auto& input : vs_info.vs_inputs) {
         if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
             input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate1) {
@@ -152,7 +156,7 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         return lhv.base_address < rhv.base_address;
     });
 
-    boost::container::static_vector<BufferRange, NUM_VERTEX_BUFFERS> ranges_merged{ranges[0]};
+    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges_merged{ranges[0]};
     for (auto range : ranges) {
         auto& prev_range = ranges_merged.back();
         if (prev_range.end_address < range.base_address) {
@@ -232,7 +236,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
                                                   bool is_texel_buffer) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
     const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
-    if (!is_written && !is_texel_buffer && size <= StreamThreshold && !is_gpu_dirty) {
+    if (!is_written && size <= StreamThreshold && !is_gpu_dirty) {
         // For small uniform buffers that have not been modified by gpu
         // use device local stream buffer to reduce renderpass breaks.
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
@@ -241,7 +245,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
 
     const BufferId buffer_id = FindBuffer(device_addr, size);
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size);
+    SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
     if (is_written) {
         memory_tracker.MarkRegionAsGpuModified(device_addr, size);
     }
@@ -420,8 +424,8 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     wanted_size = static_cast<u32>(device_addr_end - device_addr);
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
-    const BufferId new_buffer_id =
-        slot_buffers.insert(instance, MemoryUsage::DeviceLocal, overlap.begin, AllFlags, size);
+    const BufferId new_buffer_id = slot_buffers.insert(
+        instance, scheduler, MemoryUsage::DeviceLocal, overlap.begin, AllFlags, size);
     auto& new_buffer = slot_buffers[new_buffer_id];
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -459,7 +463,8 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     }
 }
 
-bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size) {
+void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
+                                    bool is_texel_buffer) {
     std::scoped_lock lk{mutex};
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
@@ -479,8 +484,13 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
         // Prevent uploading to gpu modified regions.
         // gpu_modified_ranges.ForEachNotInRange(device_addr_out, range_size, add_copy);
     });
+    SCOPE_EXIT {
+        if (is_texel_buffer) {
+            SynchronizeBufferFromImage(buffer, device_addr, size);
+        }
+    };
     if (total_size_bytes == 0) {
-        return true;
+        return;
     }
     vk::Buffer src_buffer = staging_buffer.Handle();
     if (total_size_bytes < StagingBufferSize) {
@@ -496,7 +506,11 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     } else {
         // For large one time transfers use a temporary host buffer.
         // RenderDoc can lag quite a bit if the stream buffer is too large.
-        Buffer temp_buffer{instance, MemoryUsage::Upload, 0, vk::BufferUsageFlagBits::eTransferSrc,
+        Buffer temp_buffer{instance,
+                           scheduler,
+                           MemoryUsage::Upload,
+                           0,
+                           vk::BufferUsageFlagBits::eTransferSrc,
                            total_size_bytes};
         src_buffer = temp_buffer.Handle();
         u8* const staging = temp_buffer.mapped_data.data();
@@ -524,7 +538,68 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size)
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eAllCommands,
                            vk::DependencyFlagBits::eByRegion, WRITE_BARRIER, {}, {});
-    return false;
+}
+
+bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
+    boost::container::small_vector<ImageId, 8> image_ids;
+    const u32 inv_size = std::min(size, MaxInvalidateDist);
+    texture_cache.ForEachImageInRegion(device_addr, inv_size, [&](ImageId image_id, Image& image) {
+        // Only consider GPU modified images, i.e render targets or storage images.
+        // Also avoid any CPU modified images as the image data is likely to be stale.
+        if (True(image.flags & ImageFlagBits::CpuModified) ||
+            False(image.flags & ImageFlagBits::GpuModified)) {
+            return;
+        }
+        // Image must fully overlap with the provided buffer range.
+        if (image.cpu_addr < device_addr || image.cpu_addr_end > device_addr + size) {
+            return;
+        }
+        image_ids.push_back(image_id);
+    });
+    if (image_ids.empty()) {
+        return false;
+    }
+    // Sort images by modification tick. If there are overlaps we want to
+    // copy from least to most recently modified.
+    std::ranges::sort(image_ids, [&](ImageId lhs_id, ImageId rhs_id) {
+        const Image& lhs = texture_cache.GetImage(lhs_id);
+        const Image& rhs = texture_cache.GetImage(rhs_id);
+        return lhs.tick_accessed_last < rhs.tick_accessed_last;
+    });
+    boost::container::small_vector<vk::BufferImageCopy, 8> copies;
+    for (const ImageId image_id : image_ids) {
+        copies.clear();
+        Image& image = texture_cache.GetImage(image_id);
+        u32 offset = buffer.Offset(image.cpu_addr);
+        const u32 num_layers = image.info.resources.layers;
+        for (u32 m = 0; m < image.info.resources.levels; m++) {
+            const u32 width = std::max(image.info.size.width >> m, 1u);
+            const u32 height = std::max(image.info.size.height >> m, 1u);
+            const u32 depth =
+                image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+            const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
+            copies.push_back({
+                .bufferOffset = offset,
+                .bufferRowLength = static_cast<u32>(mip_pitch),
+                .bufferImageHeight = static_cast<u32>(mip_height),
+                .imageSubresource{
+                    .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                    .mipLevel = m,
+                    .baseArrayLayer = 0,
+                    .layerCount = num_layers,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {width, height, depth},
+            });
+            offset += mip_ofs * num_layers;
+        }
+        scheduler.EndRendering();
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
+                                 copies);
+    }
+    return true;
 }
 
 void BufferCache::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {

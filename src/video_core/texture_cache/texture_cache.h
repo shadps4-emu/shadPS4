@@ -23,6 +23,16 @@ namespace VideoCore {
 class BufferCache;
 class PageManager;
 
+enum class FindFlags {
+    NoCreate = 1 << 0,  ///< Do not create an image if searching for one fails.
+    RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
+    RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
+    RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
+};
+DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
+
+static constexpr u32 MaxInvalidateDist = 12_MB;
+
 class TextureCache {
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
@@ -44,7 +54,7 @@ public:
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(const ImageInfo& info);
+    [[nodiscard]] ImageId FindImage(const ImageInfo& info, FindFlags flags = {});
 
     /// Retrieves an image view with the properties of the specified image descriptor.
     [[nodiscard]] ImageView& FindTexture(const ImageInfo& image_info,
@@ -61,11 +71,8 @@ public:
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
         Image& image = slot_images[image_id];
-        if (False(image.flags & ImageFlagBits::CpuModified)) {
-            return;
-        }
-        RefreshImage(image, custom_scheduler);
         TrackImage(image_id);
+        RefreshImage(image, custom_scheduler);
     }
 
     [[nodiscard]] ImageId ResolveOverlap(const ImageInfo& info, ImageId cache_img_id,
@@ -109,31 +116,12 @@ public:
         return false;
     }
 
-private:
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
-
-    /// Iterate over all page indices in a range
-    template <typename Func>
-    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
-        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
-        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
-        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
-            if constexpr (RETURNS_BOOL) {
-                if (func(page)) {
-                    break;
-                }
-            } else {
-                func(page);
-            }
-        }
-    }
-
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         boost::container::small_vector<ImageId, 32> images;
-        ForEachPage(cpu_addr, size, [this, &images, func](u64 page) {
+        ForEachPage(cpu_addr, size, [this, &images, cpu_addr, size, func](u64 page) {
             const auto it = page_table.find(page);
             if (it == nullptr) {
                 if constexpr (BOOL_BREAK) {
@@ -145,6 +133,9 @@ private:
             for (const ImageId image_id : *it) {
                 Image& image = slot_images[image_id];
                 if (image.flags & ImageFlagBits::Picked) {
+                    continue;
+                }
+                if (!image.Overlaps(cpu_addr, size)) {
                     continue;
                 }
                 image.flags |= ImageFlagBits::Picked;
@@ -165,6 +156,26 @@ private:
             slot_images[image_id].flags &= ~ImageFlagBits::Picked;
         }
     }
+
+private:
+    /// Iterate over all page indices in a range
+    template <typename Func>
+    static void ForEachPage(PAddr addr, size_t size, Func&& func) {
+        static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
+        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
+        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
+            if constexpr (RETURNS_BOOL) {
+                if (func(page)) {
+                    break;
+                }
+            } else {
+                func(page);
+            }
+        }
+    }
+
+    /// Registers an image view for provided image
+    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);

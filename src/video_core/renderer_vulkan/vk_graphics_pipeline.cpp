@@ -405,15 +405,15 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             });
         }
 
-        for (const auto& tex_buffer : stage->texture_buffers) {
-            const auto vsharp = tex_buffer.GetSharp(*stage);
+        for (const auto& desc : stage->texture_buffers) {
+            const auto vsharp = desc.GetSharp(*stage);
             vk::BufferView& buffer_view = buffer_views.emplace_back(VK_NULL_HANDLE);
             const u32 size = vsharp.GetSize();
             if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
                 const VAddr address = vsharp.base_address;
                 const u32 alignment = instance.TexelBufferMinAlignment();
                 const auto [vk_buffer, offset] =
-                    buffer_cache.ObtainBuffer(address, size, tex_buffer.is_written, true);
+                    buffer_cache.ObtainBuffer(address, size, desc.is_written, true);
                 const u32 fmt_stride = AmdGpu::NumBits(vsharp.GetDataFmt()) >> 3;
                 ASSERT_MSG(fmt_stride == vsharp.GetStride(),
                            "Texel buffer stride must match format stride");
@@ -423,13 +423,16 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     ASSERT(adjust % fmt_stride == 0);
                     push_data.AddOffset(binding, adjust / fmt_stride);
                 }
-                buffer_view = vk_buffer->View(offset_aligned, size + adjust, tex_buffer.is_written,
+                buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
-                const auto dst_access = tex_buffer.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                              : vk::AccessFlagBits2::eShaderRead;
+                const auto dst_access = desc.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                        : vk::AccessFlagBits2::eShaderRead;
                 if (auto barrier = vk_buffer->GetBarrier(
                         dst_access, vk::PipelineStageFlagBits2::eVertexShader)) {
                     buffer_barriers.emplace_back(*barrier);
+                }
+                if (desc.is_written) {
+                    texture_cache.InvalidateMemory(address, size);
                 }
             }
             set_writes.push_back({
@@ -437,8 +440,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 .dstBinding = binding++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
-                .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                        : vk::DescriptorType::eUniformTexelBuffer,
+                .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
+                                                  : vk::DescriptorType::eUniformTexelBuffer,
                 .pTexelBufferView = &buffer_view,
             });
         }
@@ -497,10 +500,12 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     const auto cmdbuf = scheduler.CommandBuffer();
 
     if (!buffer_barriers.empty()) {
-        auto dependencies = vk::DependencyInfo{
+        const auto dependencies = vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
             .pBufferMemoryBarriers = buffer_barriers.data(),
         };
+        scheduler.EndRendering();
         cmdbuf.pipelineBarrier2(dependencies);
     }
 

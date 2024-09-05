@@ -38,13 +38,14 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 TextureCache::~TextureCache() = default;
 
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
-    std::unique_lock lock{mutex};
+    std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        if (!image.Overlaps(address, size)) {
-            return;
+        const size_t image_dist =
+            image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
+        if (image_dist < MaxInvalidateDist) {
+            // Ensure image is reuploaded when accessed again.
+            image.flags |= ImageFlagBits::CpuModified;
         }
-        // Ensure image is reuploaded when accessed again.
-        image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
@@ -144,17 +145,12 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
 
             FreeImage(cache_image_id);
         }
-
-        if (tex_cache_image.info.IsSliceOf(image_info)) {
-            UNREACHABLE();
-        }
     }
 
     return merged_image_id;
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-
     const auto new_image_id = slot_images.insert(instance, scheduler, info);
     RegisterImage(new_image_id);
 
@@ -171,50 +167,37 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(const ImageInfo& info) {
+ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
     if (info.guest_address == 0) [[unlikely]] {
         return NULL_IMAGE_VIEW_ID;
     }
 
-    std::unique_lock lock{mutex};
+    std::scoped_lock lock{mutex};
     boost::container::small_vector<ImageId, 8> image_ids;
-    ForEachImageInRegion(
-        info.guest_address, info.guest_size_bytes, [&](ImageId image_id, Image& image) {
-            // Ignore images scheduled for deletion
-            if (True(image.flags & ImageFlagBits::Deleted)) {
-                return;
-            }
-
-            // Check if image is fully outside of the region
-            const auto in_image_cpu_addr = info.guest_address;
-            const auto in_image_cpu_addr_end = info.guest_address + info.guest_size_bytes;
-            if (in_image_cpu_addr_end <= image.cpu_addr) {
-                return;
-            }
-            if (in_image_cpu_addr >= image.cpu_addr_end) {
-                return;
-            }
-
-            image_ids.push_back(image_id);
-        });
+    ForEachImageInRegion(info.guest_address, info.guest_size_bytes,
+                         [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
     ImageId image_id{};
 
     // Check for a perfect match first
     for (const auto& cache_id : image_ids) {
         auto& cache_image = slot_images[cache_id];
-
-        if (cache_image.info.guest_address == info.guest_address &&
-            cache_image.info.guest_size_bytes == info.guest_size_bytes &&
-            cache_image.info.size == info.size) {
-
-            ASSERT(cache_image.info.type == info.type);
-            if (IsVulkanFormatCompatible((VkFormat)info.pixel_format,
-                                         (VkFormat)cache_image.info.pixel_format)) {
-                image_id = cache_id;
-            }
-            break;
+        if (cache_image.info.guest_address != info.guest_address) {
+            continue;
         }
+        if (False(flags & FindFlags::RelaxSize) &&
+            cache_image.info.guest_size_bytes != info.guest_size_bytes) {
+            continue;
+        }
+        if (False(flags & FindFlags::RelaxDim) && cache_image.info.size != info.size) {
+            continue;
+        }
+        if (False(flags & FindFlags::RelaxFmt) &&
+            !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
+            continue;
+        }
+        ASSERT(cache_image.info.type == info.type);
+        image_id = cache_id;
     }
 
     // Try to resolve overlaps (if any)
@@ -225,13 +208,18 @@ ImageId TextureCache::FindImage(const ImageInfo& info) {
         }
     }
 
+    if (True(flags & FindFlags::NoCreate) && !image_id) {
+        return {};
+    }
+
     // Create and register a new image
     if (!image_id) {
         image_id = slot_images.insert(instance, scheduler, info);
         RegisterImage(image_id);
     }
 
-    slot_images[image_id].tick_accessed_last = scheduler.CurrentTick();
+    Image& image = slot_images[image_id];
+    image.tick_accessed_last = scheduler.CurrentTick();
 
     return image_id;
 }
@@ -259,8 +247,11 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
-    UpdateImage(image_id);
     Image& image = slot_images[image_id];
+    if (view_info.is_storage) {
+        image.flags |= ImageFlagBits::GpuModified;
+    }
+    UpdateImage(image_id);
     auto& usage = image.info.usage;
 
     if (view_info.is_storage) {
@@ -354,6 +345,10 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
+    if (False(image.flags & ImageFlagBits::CpuModified)) {
+        return;
+    }
+
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
@@ -407,27 +402,20 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size_bytes;
-    vk::Buffer buffer{};
-    u32 offset{};
-    if (auto upload_buffer = tile_manager.TryDetile(image); upload_buffer) {
-        buffer = *upload_buffer;
-    } else {
-        const auto [vk_buffer, buf_offset] = buffer_cache.ObtainTempBuffer(image_addr, image_size);
-        buffer = vk_buffer->Handle();
-        offset = buf_offset;
-
-        // The obtained buffer may be written by a shader so we need to emit a barrier to prevent
-        // RAW hazard
-        if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
-                                                 vk::PipelineStageFlagBits2::eTransfer)) {
-            auto dependencies = vk::DependencyInfo{
-                .bufferMemoryBarrierCount = 1,
-                .pBufferMemoryBarriers = &barrier.value(),
-            };
-            cmdbuf.pipelineBarrier2(dependencies);
-        }
+    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainTempBuffer(image_addr, image_size);
+    // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
+    // hazard
+    if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
+                                             vk::PipelineStageFlagBits2::eTransfer)) {
+        const auto dependencies = vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &barrier.value(),
+        };
+        cmdbuf.pipelineBarrier2(dependencies);
     }
 
+    const auto [buffer, offset] = tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image);
     for (auto& copy : image_copy) {
         copy.bufferOffset += offset;
     }
