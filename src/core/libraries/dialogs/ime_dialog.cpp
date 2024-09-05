@@ -93,11 +93,6 @@ int PS4_SYSV_ABI sceImeDialogTerm() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeUpdate() {
-    return ORBIS_OK;
-}
-
-
 void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("oBmw4xrmfKs", "libSceImeDialog", 1, "libSceImeDialog", 1, 1, sceImeDialogAbort);
     LIB_FUNCTION("bX4H+sxPI-o", "libSceImeDialog", 1, "libSceImeDialog", 1, 1,
@@ -126,7 +121,6 @@ void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-2WqB87KKGg", "libSceImeDialog", 1, "libSceImeDialog", 1, 1,
                  sceImeDialogSetPanelPosition);
     LIB_FUNCTION("gyTyVn+bXMw", "libSceImeDialog", 1, "libSceImeDialog", 1, 1, sceImeDialogTerm);
-    LIB_FUNCTION("-4GCfYdNF1s", "libSceIme", 1, "libSceIme", 1, 1, sceImeUpdate);
 };
 
 } // namespace Libraries::ImeDialog
