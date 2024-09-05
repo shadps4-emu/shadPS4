@@ -73,12 +73,35 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
     addr = m->GetBaseAddress();
     memcpy(&elf, &addr, 8);
 
+    // 8 registers in x86
+    u64 r[8];
+    memset(r, 0, sizeof(r));
+
     while(1)
     {
         switch(pc[0])
         {
+            case 0x50: // PUSH RAX
+            case 0x51: // PUSH RCX
+            case 0x52:
+            case 0x53:
+            case 0x54:
             case 0x55:
-                printf("PUSH\n");
+            case 0x56:
+            case 0x57:
+                printf("PUSH reg%d\n", pc[0]&7);
+                pc += 1;
+                break;
+
+            case 0x58:
+            case 0x59:
+            case 0x5A:
+            case 0x5B:
+            case 0x5C:
+            case 0x5D:
+            case 0x5E:
+            case 0x5F:
+                //printf("POP reg%d\n", pc[0]&7);
                 pc += 1;
                 break;
 
@@ -86,24 +109,47 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
                 switch(pc[1])
                 {
                     case 0x89:
-                        printf("MOV REG\n");
+                        //printf("MOV REG\n");
+
+                        r[pc[2] & 7] = r[(pc[2]>>3) & 7];
+
                         pc += 3;
                         break;
 
                     case 0x8d:
                         printf("LEA\n");
+                        
+                        offset = 
+                            (pc[3]) + (pc[4]<<8) + (pc[5]<<16) + (pc[6]<<24);
+
+                        r[(pc[2]>>3) & 7] = (u64)(pc+7+offset);
+                        printf("%d %08x\n", (pc[2]>>3) & 7, offset);
+                        
                         pc += 7;
                         break;
                 }
                 break;
 
             case 0x31:
-                printf("XOR\n");
+                //printf("XOR\n");
+
+                r[pc[1] & 7] ^= r[pc[1]>>3 & 7];
+                
                 pc += 2;
                 break;
 
+            case 0xb8:
+            case 0xb9:
             case 0xba:
-                printf("MOV IMM\n");
+            case 0xbb:
+            case 0xbc:
+            case 0xbd:
+            case 0xbe:
+            case 0xbf:
+                //printf("MOV IMM\n");
+                offset = 
+                    (pc[1]) + (pc[2]<<8) + (pc[3]<<16) + (pc[4]<<24);
+                *(int*)&r[pc[0] & 7] = offset;
                 pc += 5;
                 break;
 
@@ -125,20 +171,27 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
                         offset = 
                             (pc[2]) + (pc[3]<<8) + (pc[4]<<16) + (pc[5]<<24);
                         
-                        printf("offset: %08x\n", offset);
+                        //printf("offset: %08x\n", offset);
                         pc += (int)offset + 6;
 
-                        printf("PC Val: %08x\n", pc);
-                        printf("PC deref: %08x\n", *(int*)pc);
+                        //printf("PC Val: %08x\n", pc);
+                        //printf("PC deref: %08x\n", *(int*)pc);
 
-                        printf("ELF-Offset: %08x\n", pc-elf);
-
+                        //printf("ELF-Offset: %08x\n", pc-elf);
+        
                         // TODO
-                        // Find where HLE resolver has overwritten pointers
+                        // Can this be done with m->ForEachRelocatable?
+                        // Find if this is relocated or not
+                        bool reloc=false;
+                        for (u32 i = 0; i < m->dynamic_info.jmp_relocation_table_size / sizeof(elf_relocation); i++) {
+                            if(m->dynamic_info.jmp_relocation_table[i].rel_offset == (pc-elf))
+                                reloc = true;
+                        }
+
 
                         // NORMALLY
                         // Jump to elf-relative PC-deref
-                        if(0)
+                        if(!reloc)
                         {
                             pc = elf + *(int*)pc;
                         }
@@ -147,7 +200,19 @@ static void RunMainEntry(VAddr addr, EntryParams* params, ExitFunc exit_func, au
                         // Jump to *(int*)pc, and execute ARM
                         else
                         {
-                            printf("CALL HLE\n");
+                            printf("CALL HLE: %08x\n", *(int*)pc);
+
+                            // C parameters (may not match ARM order)
+                            // param1: r[7] = 0
+                            // param2: r[6] = buffer
+                            // param3: r[2] = 0x18
+                            //printf("%d %s %d\n", r[7], r[6], r[2]);
+
+                            //int (*f)(int a, u64 b, int c);
+                            //memcpy(&f, &pc, 8);
+                            //f(r[7], r[6], r[2]);
+
+                            Libraries::Kernel::sceKernelWrite(r[7], (char*)r[6], r[2]);  
                         }
 
                         // next, resolve *(int*)jumpPtr (0x176)
