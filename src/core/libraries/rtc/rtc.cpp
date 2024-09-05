@@ -338,10 +338,12 @@ int PS4_SYSV_ABI sceRtcFormatRFC3339Precise(char* pszDateTime, const OrbisRtcTic
 
     if (formatTime.microsecond != 0) {
         formattedString += "." + std::to_string(formatTime.microsecond / 1000).substr(0, 2);
+    } else {
+        formattedString += ".00";
     }
 
     if (iTimeZoneMinutes == 0) {
-        formattedString += "z";
+        formattedString += "Z";
     } else {
         int timeZoneHours = iTimeZoneMinutes / 60;
         int timeZoneRemainder = iTimeZoneMinutes % 60;
@@ -421,9 +423,6 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
         sceRtcSetTick(pTime, &clockTick);
     }
 
-    LOG_INFO(Lib_Rtc, "Got Current Clock {}/{}/{} @ {}:{}", pTime->year, pTime->month, pTime->day,
-             pTime->hour, pTime->minute);
-
     return returnValue;
 }
 
@@ -450,8 +449,6 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
         }
     }
 
-    LOG_INFO(Lib_Rtc, "Got Local Time {}/{}/{} @ {}:{}", pTime->year, pTime->month, pTime->day,
-             pTime->hour, pTime->minute);
     return returnValue;
 }
 
@@ -559,8 +556,6 @@ int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day) {
                                       std::chrono::day(day)};
     std::chrono::weekday chrono_weekday{chrono_time};
 
-    LOG_INFO(Lib_Rtc, "Got Day Of Week : {}", chrono_weekday.c_encoding());
-
     return chrono_weekday.c_encoding();
 }
 
@@ -577,8 +572,6 @@ int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
     std::chrono::month chronoMonth = std::chrono::month(month);
     int lastDay = static_cast<int>(unsigned(
         std::chrono::year_month_day_last{chronoYear / chronoMonth / std::chrono::last}.day()));
-
-    LOG_INFO(Lib_Rtc, "Got Days In Month : {}", lastDay);
 
     return lastDay;
 }
@@ -600,7 +593,7 @@ int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, unsigned int* dosTime
     *dosTime |= (pTime->day & 0x1F) << 16;
     *dosTime |= (pTime->month & 0x0F) << 21;
     *dosTime |= ((pTime->year - 1980) & 0x7F) << 25;
-    
+
     return SCE_OK;
 }
 
@@ -707,14 +700,132 @@ int PS4_SYSV_ABI sceRtcIsLeapYear(int yearInt) {
     return (ymdl.day() == 29d);
 }
 
+int GetMonthFromString(std::string monthStr) {
+    if (monthStr == "Jan")
+        return 1;
+
+    if (monthStr == "Feb")
+        return 2;
+
+    if (monthStr == "Mar")
+        return 3;
+
+    if (monthStr == "Apr")
+        return 4;
+
+    if (monthStr == "May")
+        return 5;
+
+    if (monthStr == "Jun")
+        return 6;
+
+    if (monthStr == "Jul")
+        return 7;
+
+    if (monthStr == "Aug")
+        return 8;
+
+    if (monthStr == "Sep")
+        return 9;
+
+    if (monthStr == "Oct")
+        return 10;
+
+    if (monthStr == "Nov")
+        return 11;
+
+    if (monthStr == "Dec")
+        return 12;
+
+    return 1;
+}
+
 int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDateTime) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_Rtc, "called");
+
+    if (pTickUtc == nullptr || pszDateTime == nullptr)
+        return ORBIS_RTC_ERROR_INVALID_POINTER;
+
+    std::string dateTimeString = std::string(pszDateTime);
+
+    char formatKey = dateTimeString[22];
+    OrbisRtcDateTime dateTime;
+
+    if (formatKey == 'Z' || formatKey == '-' || formatKey == '+') {
+        // RFC3339
+        sceRtcParseRFC3339(pTickUtc, pszDateTime);
+    } else if (formatKey == ':') {
+        // RFC2822
+        dateTime.day = std::stoi(dateTimeString.substr(5, 2));
+        dateTime.month = GetMonthFromString(dateTimeString.substr(8, 3));
+        dateTime.year = std::stoi(dateTimeString.substr(12, 4));
+        dateTime.hour = std::stoi(dateTimeString.substr(17, 2));
+        dateTime.minute = std::stoi(dateTimeString.substr(20, 2));
+        dateTime.second = std::stoi(dateTimeString.substr(23, 2));
+        dateTime.microsecond = 0;
+
+        sceRtcGetTick(&dateTime, pTickUtc);
+
+        if (dateTimeString[26] == '+') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(27, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(29, 2));
+            sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
+        } else if (dateTimeString[26] == '-') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(27, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(29, 2));
+            timeZoneOffset *= -1;
+            sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
+        }
+
+    } else {
+        // asctime
+        dateTime.month = GetMonthFromString(dateTimeString.substr(4, 3));
+        dateTime.day = std::stoi(dateTimeString.substr(8, 2));
+        dateTime.hour = std::stoi(dateTimeString.substr(11, 2));
+        dateTime.minute = std::stoi(dateTimeString.substr(14, 2));
+        dateTime.second = std::stoi(dateTimeString.substr(17, 2));
+        dateTime.year = std::stoi(dateTimeString.substr(20, 4));
+        dateTime.microsecond = 0;
+
+        sceRtcGetTick(&dateTime, pTickUtc);
+    }
+
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateTime) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_Rtc, "called");
+
+    if (pTickUtc == nullptr || pszDateTime == nullptr)
+        return ORBIS_RTC_ERROR_INVALID_POINTER;
+
+    std::string dateTimeString = std::string(pszDateTime);
+
+    OrbisRtcDateTime dateTime;
+    dateTime.year = std::stoi(dateTimeString.substr(0, 4));
+    dateTime.month = std::stoi(dateTimeString.substr(5, 2));
+    dateTime.day = std::stoi(dateTimeString.substr(8, 2));
+    dateTime.hour = std::stoi(dateTimeString.substr(11, 2));
+    dateTime.minute = std::stoi(dateTimeString.substr(14, 2));
+    dateTime.second = std::stoi(dateTimeString.substr(17, 2));
+    dateTime.microsecond = std::stoi(dateTimeString.substr(20, 2));
+
+    sceRtcGetTick(&dateTime, pTickUtc);
+
+    if (dateTimeString[22] != 'Z') {
+        if (dateTimeString[22] == '-') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(23, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(26, 2));
+            timeZoneOffset *= -1;
+            sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
+        } else if (dateTimeString[22] == '+') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(23, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(26, 2));
+            sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
+        }
+    }
+
+    return SCE_OK;
 }
 
 int PS4_SYSV_ABI sceRtcSetConf() {
@@ -722,22 +833,22 @@ int PS4_SYSV_ABI sceRtcSetConf() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetCurrentAdNetworkTick() {
+int PS4_SYSV_ABI sceRtcSetCurrentAdNetworkTick(OrbisRtcTick* pTick) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick() {
+int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick(OrbisRtcTick* pTick) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick() {
+int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick(OrbisRtcTick* pTick) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetCurrentTick() {
+int PS4_SYSV_ABI sceRtcSetCurrentTick(OrbisRtcTick* pTick) {
     LOG_ERROR(Lib_Rtc, "(STUBBED) called");
     return ORBIS_OK;
 }
