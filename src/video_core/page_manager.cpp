@@ -3,6 +3,7 @@
 
 #include <thread>
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "video_core/page_manager.h"
@@ -159,6 +160,27 @@ struct PageManager::Impl {
     int uffd;
 };
 #else
+
+#if defined(__APPLE__)
+
+#if defined(ARCH_X86_64)
+#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext->__es.__err & 0x2)
+#elif defined(ARCH_ARM64)
+#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext->__es.__esr & 0x40)
+#endif
+
+#else
+
+#if defined(ARCH_X86_64)
+#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext.gregs[REG_ERR] & 0x2)
+#endif
+
+#endif
+
+#ifndef IS_WRITE_ERROR
+#error "Missing IS_WRITE_ERROR() implementation for target OS and CPU architecture.
+#endif
+
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
@@ -194,12 +216,7 @@ struct PageManager::Impl {
     static void GuestFaultSignalHandler(int sig, siginfo_t* info, void* raw_context) {
         ucontext_t* ctx = reinterpret_cast<ucontext_t*>(raw_context);
         const VAddr address = reinterpret_cast<VAddr>(info->si_addr);
-#ifdef __APPLE__
-        const u32 err = ctx->uc_mcontext->__es.__err;
-#else
-        const greg_t err = ctx->uc_mcontext.gregs[REG_ERR];
-#endif
-        if (err & 0x2) {
+        if (IS_WRITE_ERROR(ctx)) {
             const VAddr addr_aligned = Common::AlignDown(address, PAGESIZE);
             rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);
         } else {

@@ -3,11 +3,13 @@
 
 #include <boost/icl/separate_interval_set.hpp>
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/memory.h"
+#include "libraries/error_codes.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -15,9 +17,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #endif
-#include "libraries/error_codes.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(ARCH_X86_64)
 // Reserve space for the system address space using a zerofill section.
 asm(".zerofill GUEST_SYSTEM,GUEST_SYSTEM,__guest_system,0xFBFC00000");
 #endif
@@ -308,12 +309,12 @@ struct AddressSpace::Impl {
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
         constexpr int base_map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-#ifdef __APPLE__
-        // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
-        // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. We can allocate the system
-        // managed region, as well as system reserved if reduced in size slightly, but we cannot map
-        // the user region where we want, so we must let the OS put it wherever possible and hope
-        // the game won't rely on its location.
+#if defined(__APPLE__) && defined(ARCH_X86_64)
+        // On ARM64 Macs under Rosetta 2, we run into limitations due to the commpage from
+        // 0xFC0000000 - 0xFFFFFFFFF and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF.
+        // We can allocate the system managed region, as well as system reserved if reduced in size
+        // slightly, but we cannot map the user region where we want, so we must let the OS put it
+        // wherever possible and hope the game won't rely on its location.
         system_managed_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size, protection_flags,
                  base_map_flags | MAP_FIXED, -1, 0));
@@ -325,12 +326,22 @@ struct AddressSpace::Impl {
                                                protection_flags, base_map_flags, -1, 0));
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
+#if defined(ARCH_X86_64)
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, base_map_flags | MAP_FIXED, -1, 0));
         system_managed_base = virtual_base;
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
+#else
+        // Map memory wherever possible and instruction translation can handle offsetting to the
+        // base.
+        const auto virtual_base = reinterpret_cast<u8*>(
+            mmap(nullptr, virtual_size, protection_flags, base_map_flags, -1, 0));
+        system_managed_base = virtual_base;
+        system_reserved_base = virtual_base + SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN;
+        user_base = virtual_base + USER_MIN - SYSTEM_MANAGED_MIN;
+#endif
 #endif
         if (system_managed_base == MAP_FAILED || system_reserved_base == MAP_FAILED ||
             user_base == MAP_FAILED) {
@@ -430,9 +441,11 @@ struct AddressSpace::Impl {
         if (write) {
             flags |= PROT_WRITE;
         }
+#ifdef ARCH_X86_64
         if (execute) {
             flags |= PROT_EXEC;
         }
+#endif
         int ret = mprotect(reinterpret_cast<void*>(virtual_addr), size, flags);
         ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
@@ -463,8 +476,14 @@ AddressSpace::~AddressSpace() = default;
 
 void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr,
                         bool is_exec) {
-    return impl->Map(virtual_addr, phys_addr, size,
-                     is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+#if ARCH_X86_64
+    const auto prot = is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
+#else
+    // On non-native architectures, we can simplify things by ignoring the execute flag for the
+    // canonical copy of the memory and rely on the JIT to map translated code as executable.
+    constexpr auto prot = PAGE_READWRITE;
+#endif
+    return impl->Map(virtual_addr, phys_addr, size, prot);
 }
 
 void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot,
