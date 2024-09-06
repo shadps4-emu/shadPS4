@@ -431,6 +431,9 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                         dst_access, vk::PipelineStageFlagBits2::eVertexShader)) {
                     buffer_barriers.emplace_back(*barrier);
                 }
+                if (desc.is_written) {
+                    texture_cache.MarkWritten(address, size);
+                }
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,

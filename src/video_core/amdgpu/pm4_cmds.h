@@ -513,13 +513,17 @@ struct PM4CmdEventWriteEos {
     }
 
     void SignalFence() const {
-        switch (command.Value()) {
+        const auto cmd = command.Value();
+        switch (cmd) {
         case Command::SingalFence: {
             *Address() = DataDWord();
             break;
         }
+        case Command::GdsStore: {
+            break;
+        }
         default: {
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown command {}", u32(cmd));
         }
         }
     }

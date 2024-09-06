@@ -975,8 +975,9 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
             inst.src[1].field == OperandField::ConstZero) {
             return;
         }
-        // v_mbcnt_hi_u32_b32 v20, exec_hi, 0
-        if (inst.src[0].field == OperandField::ExecHi) {
+        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0
+        if (inst.src[0].field == OperandField::ExecHi &&
+            inst.src[1].field == OperandField::ConstZero) {
             return;
         }
     } else {

@@ -297,8 +297,14 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
             return false;
         }
+
+        static bool TessMissingLogged = false;
         if (auto* pgm = regs.ProgramForStage(3);
             regs.stage_enable.IsStageEnabled(3) && pgm->Address() != 0) {
+            if (!TessMissingLogged) {
+                LOG_WARNING(Render_Vulkan, "Tess pipeline compilation skipped");
+                TessMissingLogged = true;
+            }
             return false;
         }
 

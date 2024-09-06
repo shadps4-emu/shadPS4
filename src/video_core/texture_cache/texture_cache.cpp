@@ -491,8 +491,6 @@ void TextureCache::DeleteImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Tracked), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
 
-    image.flags |= ImageFlagBits::Deleted;
-
     // Remove any registered meta areas.
     const auto& meta_info = image.info.meta_info;
     if (meta_info.cmask_addr) {

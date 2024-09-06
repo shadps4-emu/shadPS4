@@ -16,8 +16,8 @@ namespace VideoCore {
 
 static constexpr size_t NumVertexBuffers = 32;
 static constexpr size_t GdsBufferSize = 64_KB;
-static constexpr size_t StagingBufferSize = 512_MB;
-static constexpr size_t UboStreamBufferSize = 64_MB;
+static constexpr size_t StagingBufferSize = 1_GB;
+static constexpr size_t UboStreamBufferSize = 128_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -26,7 +26,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
-      gds_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, GdsBufferSize},
+      gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, GdsBufferSize},
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
 
@@ -240,6 +240,20 @@ void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
     ASSERT_MSG(gds_offset % 4 == 0, "GDS offset must be dword aligned");
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
+    const vk::BufferMemoryBarrier2 buf_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .buffer = gds_buffer.Handle(),
+        .offset = gds_offset,
+        .size = sizeof(u32),
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &buf_barrier,
+    });
     cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
 }
 

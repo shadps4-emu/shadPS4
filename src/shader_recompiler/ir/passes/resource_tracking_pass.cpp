@@ -641,7 +641,7 @@ void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         // M0 must be set by some user data register.
         const IR::Inst* prod = gds_offset.InstRecursive();
         const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-        u32 m0_val = info.user_data[ud_reg];
+        u32 m0_val = info.user_data[ud_reg] >> 16;
         if (prod->GetOpcode() == IR::Opcode::IAdd32) {
             m0_val += prod->Arg(1).U32();
         }
