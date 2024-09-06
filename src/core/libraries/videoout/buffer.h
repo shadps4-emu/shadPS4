@@ -14,7 +14,6 @@ constexpr std::size_t MaxDisplayBuffers = 16;
 constexpr std::size_t MaxDisplayBufferGroups = 4;
 
 enum class PixelFormat : u32 {
-    Unknown,
     A8R8G8B8Srgb = 0x80000000,
     A8B8G8R8Srgb = 0x80002200,
     A2R10G10B10 = 0x88060000,
@@ -28,7 +27,7 @@ enum class TilingMode : s32 {
     Linear = 1,
 };
 
-constexpr std::string_view GetPixelFormatString(PixelFormat format) {
+constexpr fmt::string_view GetPixelFormatString(PixelFormat format) {
     switch (format) {
     case PixelFormat::A8R8G8B8Srgb:
         return "A8R8G8B8Srgb";

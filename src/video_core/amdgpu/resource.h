@@ -77,7 +77,7 @@ struct Buffer {
         return GetStride() * num_records;
     }
 };
-static_assert(sizeof(Buffer) == 16); // 128bits
+static_assert (sizeof(Buffer) == 16); // 256bits
 
 enum class ImageType : u64 {
     Invalid = 0,
@@ -91,7 +91,7 @@ enum class ImageType : u64 {
     Color2DMsaaArray = 15,
 };
 
-constexpr std::string_view NameOf(ImageType type) {
+constexpr fmt::string_view NameOf(ImageType type) {
     switch (type) {
     case ImageType::Invalid:
         return "Invalid";
@@ -124,7 +124,7 @@ enum class TilingMode : u32 {
     Texture_MacroTiled = 0xEu,
 };
 
-constexpr std::string_view NameOf(TilingMode type) {
+constexpr fmt::string_view NameOf(TilingMode type) {
     switch (type) {
     case TilingMode::Depth_MacroTiled:
         return "Depth_MacroTiled";
@@ -134,8 +134,7 @@ constexpr std::string_view NameOf(TilingMode type) {
         return "Display_MacroTiled";
     case TilingMode::Texture_MicroTiled:
         return "Texture_MicroTiled";
-    case TilingMode::Texture_MacroTiled:
-        return "Texture_MacroTiled";
+
     default:
         return "Unknown";
     }
