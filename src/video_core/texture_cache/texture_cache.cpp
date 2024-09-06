@@ -40,20 +40,16 @@ TextureCache::~TextureCache() = default;
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        const size_t image_dist =
-            image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
-        if (image_dist < MaxInvalidateDist) {
-            // Ensure image is reuploaded when accessed again.
-            image.flags |= ImageFlagBits::CpuModified;
-        }
+        // Ensure image is reuploaded when accessed again.
+        image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
 }
 
 void TextureCache::MarkWritten(VAddr address, size_t max_size) {
-    static constexpr FindFlags find_flags = FindFlags::NoCreate | FindFlags::RelaxDim |
-                                            FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    static constexpr FindFlags find_flags =
+        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
     ImageInfo info{};
     info.guest_address = address;
     info.guest_size_bytes = max_size;
@@ -265,9 +261,6 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
-    if (view_info.is_storage) {
-        image.flags |= ImageFlagBits::GpuModified;
-    }
     UpdateImage(image_id);
     auto& usage = image.info.usage;
 
@@ -365,7 +358,6 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     if (False(image.flags & ImageFlagBits::CpuModified)) {
         return;
     }
-
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 

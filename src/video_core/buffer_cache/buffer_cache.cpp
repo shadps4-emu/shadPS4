@@ -269,6 +269,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) 
     if (buffer_id) {
         Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
+            SynchronizeBuffer(buffer, gpu_addr, size, false);
             return {&buffer, buffer.Offset(gpu_addr)};
         }
     }
@@ -552,8 +553,8 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    static constexpr FindFlags find_flags = FindFlags::NoCreate | FindFlags::RelaxDim |
-                                            FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    static constexpr FindFlags find_flags =
+        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
     ImageInfo info{};
     info.guest_address = device_addr;
     info.guest_size_bytes = size;
@@ -562,6 +563,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
+    if (image.info.guest_size_bytes > size) {
+        return false;
+    }
     boost::container::small_vector<vk::BufferImageCopy, 8> copies;
     u32 offset = buffer.Offset(image.cpu_addr);
     const u32 num_layers = image.info.resources.layers;
