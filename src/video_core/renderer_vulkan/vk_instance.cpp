@@ -220,12 +220,13 @@ bool Instance::CreateDevice() {
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     const bool topology_restart =
         add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
+    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    add_extension(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
     add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);

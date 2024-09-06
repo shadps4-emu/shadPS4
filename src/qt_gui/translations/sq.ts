@@ -37,7 +37,7 @@
         <message>
             <location filename="../game_info.cpp" line="26"/>
             <source>Loading game list, please wait :3</source>
-            <translation>Duke ngarkuar listën e lojërave, të lutem prit :3</translation>
+            <translation>Po ngarkohet lista e lojërave, të lutem prit :3</translation>
         </message>
         <message>
             <location filename="../game_info.cpp" line="26"/>
@@ -181,7 +181,7 @@
         <message>
             <location filename="../main_window_ui.h" line="318"/>
             <source>Install application from a .pkg file</source>
-            <translation>Instalo aplikacionin nga skedari .pkg</translation>
+            <translation>Instalo aplikacionin nga një skedar .pkg</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="320"/>
@@ -256,12 +256,12 @@
         <message>
             <location filename="../main_window_ui.h" line="343"/>
             <source>Download Cheats/Patches</source>
-            <translation>Shkarko Mashtrimet / Arnat</translation>
+            <translation>Shkarko Mashtrime/Arna</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="345"/>
             <source>Dump Game List</source>
-            <translation>Zbraz Listën e lojërave</translation>
+            <translation>Zbraz Listën e Lojërave</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="346"/>
@@ -276,12 +276,12 @@
         <message>
             <location filename="../main_window_ui.h" line="349"/>
             <source>File</source>
-            <translation>Skedar</translation>
+            <translation>Skedari</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="350"/>
             <source>View</source>
-            <translation>Pamje</translation>
+            <translation>Pamja</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="352"/>
@@ -301,7 +301,7 @@
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Shërbime</translation>
+            <translation>Shërbimet</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
@@ -647,7 +647,7 @@
         </message>
         <message>
             <location filename="../main_window.cpp" line="725"/>
-            <source>File doesn&apos;t appear to be a valid PKG file</source>
+            <source>File doesn't appear to be a valid PKG file</source>
             <translation>Skedari nuk duket si skedar PKG i vlefshëm</translation>
         </message>
 	</context>
@@ -661,7 +661,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>Mashtrimet/Arnat janë eksperimentale.\nPërdori me kujdes.\n\nShkarko mashtrimet individualisht duke zgjedhur depon dhe duke klikuar butonin e shkarkimit.\nNë skedën Arna, mund t&apos;i shkarkosh të gjitha arnat menjëherë, të zgjidhësh cilat dëshiron të përdorësh dhe të ruash zgjedhjen tënde.\n\nMeqenëse ne nuk zhvillojmë Mashtrimet/Arnat,\ntë lutem raporto problemet te autori i mashtrimit.\n\nKe krijuar një mashtrim të ri? Vizito:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>Mashtrimet/Arnat janë eksperimentale.\nPërdori me kujdes.\n\nShkarko mashtrimet individualisht duke zgjedhur depon dhe duke klikuar butonin e shkarkimit.\nNë skedën Arna, mund t'i shkarkosh të gjitha arnat menjëherë, të zgjidhësh cilat dëshiron të përdorësh dhe të ruash zgjedhjen tënde.\n\nMeqenëse ne nuk zhvillojmë Mashtrimet/Arnat,\ntë lutem raporto problemet te autori i mashtrimit.\n\nKe krijuar një mashtrim të ri? Vizito:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
@@ -856,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t&apos;i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës. Mund të jetë e nevojshme të përditësoni lojën.</translation>
+            <translation>Arnat u shkarkuan me sukses! Të gjitha arnat e ofruara për të gjitha lojërat janë shkarkuar, nuk ka nevojë t'i shkarkosh ato individualisht për secilën lojë siç ndodh me Mashtrimet. Nëse patch-i nuk shfaqet, mund të mos ekzistojë për numrin e serisë dhe versionin specifik të lojës. Mund të jetë e nevojshme të përditësosh lojën.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -906,7 +906,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Nuk mund të aplikoni mashtrime para se të fillojë loja.</translation>
+			<translation>Nuk mund të zbatohen mashtrime para se të fillojë loja.</translation>
 		</message>
 	</context>	
 	<context>
@@ -919,12 +919,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="84"/>
 			<source>Apply</source>
-			<translation>Përdor</translation>
+			<translation>Zbato</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="85"/>
 			<source>Restore Defaults</source>
-			<translation>Rikthe parazgjedhjet</translation>
+			<translation>Rikthe paracaktimet</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="86"/>
@@ -937,7 +937,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Icon</source>
-			<translation>Ikonë</translation>
+			<translation>Ikona</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -947,7 +947,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Serial</source>
-			<translation>Seri</translation>
+			<translation>Seriku</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -957,12 +957,12 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Firmware</source>
-			<translation>Firmware</translation>
+			<translation>Firmueri</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Size</source>
-			<translation>Madësia</translation>
+			<translation>Madhësia</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="35"/>
@@ -972,7 +972,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
-			<translation>Rrugë</translation>
+			<translation>Shtegu</translation>
 		</message>
 	</context>
 </TS>
