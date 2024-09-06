@@ -481,7 +481,7 @@ struct PM4CmdWriteData {
 struct PM4CmdEventWriteEos {
     enum class Command : u32 {
         GdsStore = 1u,
-        SingalFence = 2u,
+        SignalFence = 2u,
     };
 
     PM4Type3Header header;
