@@ -109,37 +109,42 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     u32 binding{};
 
     for (const auto& desc : info->buffers) {
-        const auto vsharp = desc.GetSharp(*info);
-        const bool is_storage = desc.IsStorage(vsharp);
-        const VAddr address = vsharp.base_address;
-        // Most of the time when a metadata is updated with a shader it gets cleared. It means we
-        // can skip the whole dispatch and update the tracked state instead. Also, it is not
-        // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
-        // need its full emulation anyways. For cases of metadata read a warning will be logged.
-        if (desc.is_written) {
-            if (texture_cache.TouchMeta(address, true)) {
-                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
-                return false;
-            }
+        bool is_storage = true;
+        if (desc.is_gds_buffer) {
+            auto* vk_buffer = buffer_cache.GetGdsBuffer();
+            buffer_infos.emplace_back(vk_buffer->Handle(), 0, vk_buffer->SizeBytes());
         } else {
-            if (texture_cache.IsMeta(address)) {
-                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
+            const auto vsharp = desc.GetSharp(*info);
+            is_storage = desc.IsStorage(vsharp);
+            const VAddr address = vsharp.base_address;
+            // Most of the time when a metadata is updated with a shader it gets cleared. It means
+            // we can skip the whole dispatch and update the tracked state instead. Also, it is not
+            // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
+            // will need its full emulation anyways. For cases of metadata read a warning will be
+            // logged.
+            if (desc.is_written) {
+                if (texture_cache.TouchMeta(address, true)) {
+                    LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                    return false;
+                }
+            } else {
+                if (texture_cache.IsMeta(address)) {
+                    LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a CS shader (buffer)");
+                }
             }
+            const u32 size = vsharp.GetSize();
+            const u32 alignment =
+                is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
+            const auto [vk_buffer, offset] =
+                buffer_cache.ObtainBuffer(address, size, desc.is_written);
+            const u32 offset_aligned = Common::AlignDown(offset, alignment);
+            const u32 adjust = offset - offset_aligned;
+            if (adjust != 0) {
+                ASSERT(adjust % 4 == 0);
+                push_data.AddOffset(binding, adjust);
+            }
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
         }
-        const u32 size = vsharp.GetSize();
-        if (desc.is_written) {
-            texture_cache.InvalidateMemory(address, size);
-        }
-        const u32 alignment =
-            is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-        const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(address, size, desc.is_written);
-        const u32 offset_aligned = Common::AlignDown(offset, alignment);
-        const u32 adjust = offset - offset_aligned;
-        if (adjust != 0) {
-            ASSERT(adjust % 4 == 0);
-            push_data.AddOffset(binding, adjust);
-        }
-        buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = binding++,
@@ -188,7 +193,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written) {
-                texture_cache.InvalidateMemory(address, size);
+                texture_cache.MarkWritten(address, size);
             }
         }
         set_writes.push_back({

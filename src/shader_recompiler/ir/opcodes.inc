@@ -17,8 +17,7 @@ OPCODE(DiscardCond,                                         Void,           U1, 
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U32x2,          U32,                                                            )
-OPCODE(ReadConstBuffer,                                     F32,            Opaque,         U32,                                                            )
-OPCODE(ReadConstBufferU32,                                  U32,            Opaque,         U32,                                                            )
+OPCODE(ReadConstBuffer,                                     U32,            Opaque,         U32,                                                            )
 
 // Barriers
 OPCODE(Barrier,                                             Void,                                                                                           )
@@ -77,21 +76,19 @@ OPCODE(UndefU32,                                            U32,                
 OPCODE(UndefU64,                                            U64,                                                                                            )
 
 // Buffer operations
-OPCODE(LoadBufferF32,                                       F32,            Opaque,         Opaque,                                                         )
-OPCODE(LoadBufferF32x2,                                     F32x2,          Opaque,         Opaque,                                                         )
-OPCODE(LoadBufferF32x3,                                     F32x3,          Opaque,         Opaque,                                                         )
-OPCODE(LoadBufferF32x4,                                     F32x4,          Opaque,         Opaque,                                                         )
-OPCODE(LoadBufferFormatF32,                                 F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32,                                       U32,            Opaque,         Opaque,                                                         )
-OPCODE(StoreBufferF32,                                      Void,           Opaque,         Opaque,         F32,                                            )
-OPCODE(StoreBufferF32x2,                                    Void,           Opaque,         Opaque,         F32x2,                                          )
-OPCODE(StoreBufferF32x3,                                    Void,           Opaque,         Opaque,         F32x3,                                          )
-OPCODE(StoreBufferF32x4,                                    Void,           Opaque,         Opaque,         F32x4,                                          )
-OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32x4,                                          )
+OPCODE(LoadBufferU32x2,                                     U32x2,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferU32x3,                                     U32x3,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferU32x4,                                     U32x4,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferFormatF32,                                 F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
+OPCODE(StoreBufferU32x2,                                    Void,           Opaque,         Opaque,         U32x2,                                          )
+OPCODE(StoreBufferU32x3,                                    Void,           Opaque,         Opaque,         U32x3,                                          )
+OPCODE(StoreBufferU32x4,                                    Void,           Opaque,         Opaque,         U32x4,                                          )
+OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         U32x4,                                          )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,									U32,			Opaque,			Opaque,			U32												)
+OPCODE(BufferAtomicIAdd32,                                  U32,	    Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
 OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
@@ -101,7 +98,7 @@ OPCODE(BufferAtomicDec32,                                   U32,            Opaq
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
 OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicSwap32,									U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicSwap32,				    U32,            Opaque,			Opaque,			U32,											)
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -345,3 +342,5 @@ OPCODE(QuadShuffle,                                         U32,            U32,
 OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
 OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
+OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
+OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )

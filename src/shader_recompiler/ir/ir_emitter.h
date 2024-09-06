@@ -90,7 +90,7 @@ public:
     [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
-    [[nodiscard]] F32 ReadConstBuffer(const Value& handle, const U32& index);
+    [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);
@@ -120,6 +120,8 @@ public:
     [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
 
+    [[nodiscard]] U32 DataAppend(const U32& counter);
+    [[nodiscard]] U32 DataConsume(const U32& counter);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);

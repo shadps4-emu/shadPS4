@@ -43,6 +43,10 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_MIN_U32(inst, false, true);
     case Opcode::DS_MAX_RTN_U32:
         return DS_MAX_U32(inst, false, true);
+    case Opcode::DS_APPEND:
+        return DS_APPEND(inst);
+    case Opcode::DS_CONSUME:
+        return DS_CONSUME(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -190,6 +194,20 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     const IR::U32 lane{GetSrc(inst.src[1])};
     const IR::U32 old_value{GetSrc(inst.dst[0])};
     ir.SetVectorReg(dst, ir.WriteLane(old_value, value, lane));
+}
+
+void Translator::DS_APPEND(const GcnInst& inst) {
+    const u32 inst_offset = inst.control.ds.offset0;
+    const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
+    const IR::U32 prev = ir.DataAppend(gds_offset);
+    SetDst(inst.dst[0], prev);
+}
+
+void Translator::DS_CONSUME(const GcnInst& inst) {
+    const u32 inst_offset = inst.control.ds.offset0;
+    const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
+    const IR::U32 prev = ir.DataConsume(gds_offset);
+    SetDst(inst.dst[0], prev);
 }
 
 } // namespace Shader::Gcn

@@ -101,8 +101,8 @@ public:
     void S_ADDC_U32(const GcnInst& inst);
     void S_MULK_I32(const GcnInst& inst);
     void S_ADDK_I32(const GcnInst& inst);
-    void S_MAX_U32(const GcnInst& inst);
-    void S_MIN_U32(const GcnInst& inst);
+    void S_MAX_U32(bool is_signed, const GcnInst& inst);
+    void S_MIN_U32(bool is_signed, const GcnInst& inst);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
 
     // Scalar Memory
@@ -173,7 +173,7 @@ public:
     void V_BCNT_U32_B32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
-    void V_MAX3_U32(const GcnInst& inst);
+    void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
@@ -217,6 +217,8 @@ public:
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
+    void DS_APPEND(const GcnInst& inst);
+    void DS_CONSUME(const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG

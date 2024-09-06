@@ -227,7 +227,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_MAX3_F32:
         return V_MAX3_F32(inst);
     case Opcode::V_MAX3_U32:
-        return V_MAX3_U32(inst);
+        return V_MAX3_U32(false, inst);
+    case Opcode::V_MAX3_I32:
+        return V_MAX_U32(true, inst);
     case Opcode::V_TRUNC_F32:
         return V_TRUNC_F32(inst);
     case Opcode::V_CEIL_F32:
@@ -831,11 +833,11 @@ void Translator::V_MAX3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(src0, ir.FPMax(src1, src2)));
 }
 
-void Translator::V_MAX3_U32(const GcnInst& inst) {
+void Translator::V_MAX3_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.UMax(src0, ir.UMax(src1, src2)));
+    SetDst(inst.dst[0], ir.IMax(src0, ir.IMax(src1, src2, is_signed), is_signed));
 }
 
 void Translator::V_CVT_I32_F32(const GcnInst& inst) {
@@ -967,14 +969,29 @@ void Translator::V_FFBL_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
     if (!is_low) {
-        ASSERT(src0.IsImmediate() && src0.U32() == ~0U && src1.IsImmediate() && src1.U32() == 0U);
-        return;
+        // v_mbcnt_hi_u32_b32 v2, -1, 0
+        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
+            inst.src[1].field == OperandField::ConstZero) {
+            return;
+        }
+        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0
+        if (inst.src[0].field == OperandField::ExecHi &&
+            inst.src[1].field == OperandField::ConstZero) {
+            return;
+        }
+    } else {
+        // v_mbcnt_lo_u32_b32 v2, -1, vX
+        // used combined with above to fetch lane id in non-compute stages
+        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
+            SetDst(inst.dst[0], ir.LaneId());
+        }
+        // v_mbcnt_lo_u32_b32 v20, exec_lo, vX
+        // used combined in above for append buffer indexing.
+        if (inst.src[0].field == OperandField::ExecLo) {
+            SetDst(inst.dst[0], ir.Imm32(0));
+        }
     }
-    ASSERT(src0.IsImmediate() && src0.U32() == ~0U);
-    SetDst(inst.dst[0], ir.LaneId());
 }
 
 void Translator::V_BFM_B32(const GcnInst& inst) {

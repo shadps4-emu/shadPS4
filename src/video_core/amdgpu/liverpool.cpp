@@ -465,6 +465,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::EventWriteEos: {
                 const auto* event_eos = reinterpret_cast<const PM4CmdEventWriteEos*>(header);
                 event_eos->SignalFence();
+                if (event_eos->command == PM4CmdEventWriteEos::Command::GdsStore) {
+                    ASSERT(event_eos->size == 1);
+                    if (rasterizer) {
+                        rasterizer->Finish();
+                        const u32 value = rasterizer->ReadDataFromGds(event_eos->gds_index);
+                        *event_eos->Address() = value;
+                    }
+                }
                 break;
             }
             case PM4ItOpcode::EventWriteEop: {
@@ -474,6 +482,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DmaData: {
                 const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
+                if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
+                    rasterizer->InlineDataToGds(dma_data->dst_addr_lo, dma_data->data);
+                }
                 break;
             }
             case PM4ItOpcode::WriteData: {

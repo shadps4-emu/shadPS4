@@ -159,6 +159,20 @@ Open a PR and we'll check it :)
   <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
 </a>
 
+
+# Special Thanks
+
+A few noteworthy teams/projects who've helped us along the way are:
+
+- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat. They have been incredibly helpful in understanding and solving problems that came up from natively executing the x64 code of PS4 binaries
+
+- [**fpPS4**](https://github.com/red-prig/fpPS4): The fpPS4 team has assisted massively with understanding some of the more complex parts of the PS4 operating system and libraries, by helping with reverse engineering work and research.
+
+- **yuzu**: Our shader compiler has been designed with yuzu's Hades compiler as a blueprint. This allowed us to focus on the challenges of emulating a modern AMD GPU while having a high-quality optimizing shader compiler implementation as a base.
+
+- [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
+
+
 # Sister Projects
 
 - [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.

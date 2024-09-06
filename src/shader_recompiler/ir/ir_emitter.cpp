@@ -313,21 +313,21 @@ U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
 
-F32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
-    return Inst<F32>(Opcode::ReadConstBuffer, handle, index);
+U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
+    return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
 }
 
 Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                             BufferInstInfo info) {
     switch (num_dwords) {
     case 1:
-        return Inst(Opcode::LoadBufferF32, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32, Flags{info}, handle, address);
     case 2:
-        return Inst(Opcode::LoadBufferF32x2, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x2, Flags{info}, handle, address);
     case 3:
-        return Inst(Opcode::LoadBufferF32x3, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x3, Flags{info}, handle, address);
     case 4:
-        return Inst(Opcode::LoadBufferF32x4, Flags{info}, handle, address);
+        return Inst(Opcode::LoadBufferU32x4, Flags{info}, handle, address);
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
@@ -341,17 +341,16 @@ void IREmitter::StoreBuffer(int num_dwords, const Value& handle, const Value& ad
                             const Value& data, BufferInstInfo info) {
     switch (num_dwords) {
     case 1:
-        Inst(data.Type() == Type::F32 ? Opcode::StoreBufferF32 : Opcode::StoreBufferU32,
-             Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32, Flags{info}, handle, address, data);
         break;
     case 2:
-        Inst(Opcode::StoreBufferF32x2, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x2, Flags{info}, handle, address, data);
         break;
     case 3:
-        Inst(Opcode::StoreBufferF32x3, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x3, Flags{info}, handle, address, data);
         break;
     case 4:
-        Inst(Opcode::StoreBufferF32x4, Flags{info}, handle, address, data);
+        Inst(Opcode::StoreBufferU32x4, Flags{info}, handle, address, data);
         break;
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
@@ -408,6 +407,14 @@ Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, con
 void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
                                   BufferInstInfo info) {
     Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
+}
+
+U32 IREmitter::DataAppend(const U32& counter) {
+    return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
+}
+
+U32 IREmitter::DataConsume(const U32& counter) {
+    return Inst<U32>(Opcode::DataConsume, counter, Imm32(0));
 }
 
 U32 IREmitter::LaneId() {

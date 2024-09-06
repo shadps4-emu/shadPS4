@@ -585,11 +585,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
 
 vk::Format AdjustColorBufferFormat(vk::Format base_format,
                                    Liverpool::ColorBuffer::SwapMode comp_swap, bool is_vo_surface) {
-    ASSERT_MSG(comp_swap == Liverpool::ColorBuffer::SwapMode::Standard ||
-                   comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate,
-               "Unsupported component swap mode {}", static_cast<u32>(comp_swap));
-
     const bool comp_swap_alt = comp_swap == Liverpool::ColorBuffer::SwapMode::Alternate;
+    const bool comp_swap_reverse = comp_swap == Liverpool::ColorBuffer::SwapMode::StandardReverse;
+    const bool comp_swap_alt_reverse =
+        comp_swap == Liverpool::ColorBuffer::SwapMode::AlternateReverse;
     if (comp_swap_alt) {
         switch (base_format) {
         case vk::Format::eR8G8B8A8Unorm:
@@ -605,6 +604,18 @@ vk::Format AdjustColorBufferFormat(vk::Format base_format,
         default:
             break;
         }
+    } else if (comp_swap_reverse) {
+        switch (base_format) {
+        case vk::Format::eR8G8B8A8Unorm:
+            return vk::Format::eA8B8G8R8UnormPack32;
+        case vk::Format::eR8G8B8A8Srgb:
+            return is_vo_surface ? vk::Format::eA8B8G8R8UnormPack32
+                                 : vk::Format::eA8B8G8R8SrgbPack32;
+        default:
+            break;
+        }
+    } else if (comp_swap_alt_reverse) {
+        return base_format;
     } else {
         if (is_vo_surface && base_format == vk::Format::eR8G8B8A8Srgb) {
             return vk::Format::eR8G8B8A8Unorm;

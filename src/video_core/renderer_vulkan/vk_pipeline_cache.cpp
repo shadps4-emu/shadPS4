@@ -298,6 +298,16 @@ bool PipelineCache::RefreshGraphicsKey() {
             return false;
         }
 
+        static bool TessMissingLogged = false;
+        if (auto* pgm = regs.ProgramForStage(3);
+            regs.stage_enable.IsStageEnabled(3) && pgm->Address() != 0) {
+            if (!TessMissingLogged) {
+                LOG_WARNING(Render_Vulkan, "Tess pipeline compilation skipped");
+                TessMissingLogged = true;
+            }
+            return false;
+        }
+
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }
     return true;

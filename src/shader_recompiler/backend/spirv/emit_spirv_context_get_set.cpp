@@ -133,10 +133,6 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     return ctx.OpLoad(buffer.data_types->Get(1), ptr);
 }
 
-Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
-    return ctx.OpBitcast(ctx.U32[1], EmitReadConstBuffer(ctx, handle, index));
-}
-
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
     return ctx.OpLoad(
         ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
@@ -222,12 +218,8 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     ctx.OpStore(pointer, ctx.OpBitcast(ctx.F32[1], value));
 }
 
-Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return EmitLoadBufferF32(ctx, inst, handle, address);
-}
-
 template <u32 N>
-static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
+static Id EmitLoadBufferU32xN(EmitContext& ctx, u32 handle, Id address) {
     auto& buffer = ctx.buffers[handle];
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
@@ -246,20 +238,20 @@ static Id EmitLoadBufferF32xN(EmitContext& ctx, u32 handle, Id address) {
     }
 }
 
-Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferF32xN<1>(ctx, handle, address);
+Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    return EmitLoadBufferU32xN<1>(ctx, handle, address);
 }
 
-Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferF32xN<2>(ctx, handle, address);
+Id EmitLoadBufferU32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    return EmitLoadBufferU32xN<2>(ctx, handle, address);
 }
 
-Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferF32xN<3>(ctx, handle, address);
+Id EmitLoadBufferU32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    return EmitLoadBufferU32xN<3>(ctx, handle, address);
 }
 
-Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferF32xN<4>(ctx, handle, address);
+Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
+    return EmitLoadBufferU32xN<4>(ctx, handle, address);
 }
 
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
@@ -275,7 +267,7 @@ Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addr
 }
 
 template <u32 N>
-static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
+static void EmitStoreBufferU32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
     auto& buffer = ctx.buffers[handle];
     address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
@@ -287,29 +279,25 @@ static void EmitStoreBufferF32xN(EmitContext& ctx, u32 handle, Id address, Id va
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
             const Id ptr =
                 ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(ctx.F32[1], value, i));
+            ctx.OpStore(ptr, ctx.OpCompositeExtract(buffer.data_types->Get(1), value, i));
         }
     }
 }
 
-void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferF32xN<1>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferF32xN<2>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferF32xN<3>(ctx, handle, address, value);
-}
-
-void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferF32xN<4>(ctx, handle, address, value);
-}
-
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferF32xN<1>(ctx, handle, address, value);
+    EmitStoreBufferU32xN<1>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32xN<2>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32xN<3>(ctx, handle, address, value);
+}
+
+void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferU32xN<4>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {

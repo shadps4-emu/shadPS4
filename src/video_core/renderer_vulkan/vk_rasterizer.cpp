@@ -175,6 +175,10 @@ u64 Rasterizer::Flush() {
     return current_tick;
 }
 
+void Rasterizer::Finish() {
+    scheduler.Finish();
+}
+
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;
@@ -249,6 +253,17 @@ void Rasterizer::BeginRendering() {
                             AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
     scheduler.BeginRendering(state);
+}
+
+void Rasterizer::InlineDataToGds(u32 gds_offset, u32 value) {
+    buffer_cache.InlineDataToGds(gds_offset, value);
+}
+
+u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
+    auto* gds_buf = buffer_cache.GetGdsBuffer();
+    u32 value;
+    std::memcpy(&value, gds_buf->mapped_data.data() + gds_offset, sizeof(u32));
+    return value;
 }
 
 void Rasterizer::InvalidateMemory(VAddr addr, u64 size) {

@@ -15,8 +15,9 @@
 namespace VideoCore {
 
 static constexpr size_t NumVertexBuffers = 32;
-static constexpr size_t StagingBufferSize = 512_MB;
-static constexpr size_t UboStreamBufferSize = 64_MB;
+static constexpr size_t GdsBufferSize = 64_KB;
+static constexpr size_t StagingBufferSize = 1_GB;
+static constexpr size_t UboStreamBufferSize = 128_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -25,7 +26,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
+      gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, GdsBufferSize},
       memory_tracker{&tracker} {
+    Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
+
     // Ensure the first slot is used for the null buffer
     void(slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
 }
@@ -232,6 +236,27 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     return regs.num_indices;
 }
 
+void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
+    ASSERT_MSG(gds_offset % 4 == 0, "GDS offset must be dword aligned");
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const vk::BufferMemoryBarrier2 buf_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .buffer = gds_buffer.Handle(),
+        .offset = gds_offset,
+        .size = sizeof(u32),
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &buf_barrier,
+    });
+    cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
+}
+
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
                                                   bool is_texel_buffer) {
     static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
@@ -258,6 +283,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainTempBuffer(VAddr gpu_addr, u32 size) 
     if (buffer_id) {
         Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
+            SynchronizeBuffer(buffer, gpu_addr, size, false);
             return {&buffer, buffer.Offset(gpu_addr)};
         }
     }
@@ -541,64 +567,48 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    boost::container::small_vector<ImageId, 8> image_ids;
-    const u32 inv_size = std::min(size, MaxInvalidateDist);
-    texture_cache.ForEachImageInRegion(device_addr, inv_size, [&](ImageId image_id, Image& image) {
-        // Only consider GPU modified images, i.e render targets or storage images.
-        // Also avoid any CPU modified images as the image data is likely to be stale.
-        if (True(image.flags & ImageFlagBits::CpuModified) ||
-            False(image.flags & ImageFlagBits::GpuModified)) {
-            return;
-        }
-        // Image must fully overlap with the provided buffer range.
-        if (image.cpu_addr < device_addr || image.cpu_addr_end > device_addr + size) {
-            return;
-        }
-        image_ids.push_back(image_id);
-    });
-    if (image_ids.empty()) {
+    static constexpr FindFlags find_flags =
+        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    ImageInfo info{};
+    info.guest_address = device_addr;
+    info.guest_size_bytes = size;
+    const ImageId image_id = texture_cache.FindImage(info, find_flags);
+    if (!image_id) {
         return false;
     }
-    // Sort images by modification tick. If there are overlaps we want to
-    // copy from least to most recently modified.
-    std::ranges::sort(image_ids, [&](ImageId lhs_id, ImageId rhs_id) {
-        const Image& lhs = texture_cache.GetImage(lhs_id);
-        const Image& rhs = texture_cache.GetImage(rhs_id);
-        return lhs.tick_accessed_last < rhs.tick_accessed_last;
-    });
-    boost::container::small_vector<vk::BufferImageCopy, 8> copies;
-    for (const ImageId image_id : image_ids) {
-        copies.clear();
-        Image& image = texture_cache.GetImage(image_id);
-        u32 offset = buffer.Offset(image.cpu_addr);
-        const u32 num_layers = image.info.resources.layers;
-        for (u32 m = 0; m < image.info.resources.levels; m++) {
-            const u32 width = std::max(image.info.size.width >> m, 1u);
-            const u32 height = std::max(image.info.size.height >> m, 1u);
-            const u32 depth =
-                image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-            const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
-            copies.push_back({
-                .bufferOffset = offset,
-                .bufferRowLength = static_cast<u32>(mip_pitch),
-                .bufferImageHeight = static_cast<u32>(mip_height),
-                .imageSubresource{
-                    .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                    .mipLevel = m,
-                    .baseArrayLayer = 0,
-                    .layerCount = num_layers,
-                },
-                .imageOffset = {0, 0, 0},
-                .imageExtent = {width, height, depth},
-            });
-            offset += mip_ofs * num_layers;
-        }
-        scheduler.EndRendering();
-        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
-                                 copies);
+    Image& image = texture_cache.GetImage(image_id);
+    if (image.info.guest_size_bytes > size) {
+        return false;
     }
+    boost::container::small_vector<vk::BufferImageCopy, 8> copies;
+    u32 offset = buffer.Offset(image.cpu_addr);
+    const u32 num_layers = image.info.resources.layers;
+    for (u32 m = 0; m < image.info.resources.levels; m++) {
+        const u32 width = std::max(image.info.size.width >> m, 1u);
+        const u32 height = std::max(image.info.size.height >> m, 1u);
+        const u32 depth =
+            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
+        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
+        copies.push_back({
+            .bufferOffset = offset,
+            .bufferRowLength = static_cast<u32>(mip_pitch),
+            .bufferImageHeight = static_cast<u32>(mip_height),
+            .imageSubresource{
+                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .mipLevel = m,
+                .baseArrayLayer = 0,
+                .layerCount = num_layers,
+            },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, depth},
+        });
+        offset += mip_ofs * num_layers;
+    }
+    scheduler.EndRendering();
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
+                             copies);
     return true;
 }
 

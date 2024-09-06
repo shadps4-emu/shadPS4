@@ -147,10 +147,6 @@ void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
 
 void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const auto& mimg = inst.control.mimg;
-    if (mimg.da) {
-        LOG_WARNING(Render_Vulkan, "Image instruction declares an array");
-    }
-
     IR::VectorReg addr_reg{inst.src[0].code};
     IR::VectorReg dest_reg{inst.dst[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
@@ -388,11 +384,11 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     const IR::Value value = ir.LoadBuffer(num_dwords, handle, address, info);
     const IR::VectorReg dst_reg{inst.src[1].code};
     if (num_dwords == 1) {
-        ir.SetVectorReg(dst_reg, IR::F32{value});
+        ir.SetVectorReg(dst_reg, IR::U32{value});
         return;
     }
     for (u32 i = 0; i < num_dwords; i++) {
-        ir.SetVectorReg(dst_reg + i, IR::F32{ir.CompositeExtract(value, i)});
+        ir.SetVectorReg(dst_reg + i, IR::U32{ir.CompositeExtract(value, i)});
     }
 }
 
@@ -456,21 +452,18 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     const IR::VectorReg src_reg{inst.src[1].code};
     switch (num_dwords) {
     case 1:
-        value = ir.GetVectorReg<IR::F32>(src_reg);
+        value = ir.GetVectorReg(src_reg);
         break;
     case 2:
-        value = ir.CompositeConstruct(ir.GetVectorReg<IR::F32>(src_reg),
-                                      ir.GetVectorReg<IR::F32>(src_reg + 1));
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1));
         break;
     case 3:
-        value = ir.CompositeConstruct(ir.GetVectorReg<IR::F32>(src_reg),
-                                      ir.GetVectorReg<IR::F32>(src_reg + 1),
-                                      ir.GetVectorReg<IR::F32>(src_reg + 2));
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
+                                      ir.GetVectorReg(src_reg + 2));
         break;
     case 4:
-        value = ir.CompositeConstruct(
-            ir.GetVectorReg<IR::F32>(src_reg), ir.GetVectorReg<IR::F32>(src_reg + 1),
-            ir.GetVectorReg<IR::F32>(src_reg + 2), ir.GetVectorReg<IR::F32>(src_reg + 3));
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
+                                      ir.GetVectorReg(src_reg + 2), ir.GetVectorReg(src_reg + 3));
         break;
     }
     const IR::Value handle =
@@ -518,6 +511,15 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::VectorReg vdata{inst.src[1].code};
     const IR::ScalarReg srsrc{inst.src[2].code * 4};
+    const IR::Value address = [&] -> IR::Value {
+        if (mubuf.idxen && mubuf.offen) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
+        }
+        if (mubuf.idxen || mubuf.offen) {
+            return ir.GetVectorReg(vaddr);
+        }
+        return {};
+    }();
     const IR::U32 soffset{GetSrc(inst.src[3])};
     ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
@@ -527,7 +529,6 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     info.offset_enable.Assign(mubuf.offen);
 
     IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
-    const IR::U32 address = ir.GetVectorReg(vaddr);
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
