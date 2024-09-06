@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
-#include "common/alignment.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -42,11 +41,10 @@ bool IsBufferAtomic(const IR::Inst& inst) {
 
 bool IsBufferStore(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
     case IR::Opcode::StoreBufferU32:
+    case IR::Opcode::StoreBufferU32x2:
+    case IR::Opcode::StoreBufferU32x3:
+    case IR::Opcode::StoreBufferU32x4:
         return true;
     default:
         return IsBufferAtomic(inst);
@@ -55,11 +53,10 @@ bool IsBufferStore(const IR::Inst& inst) {
 
 bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferF32:
-    case IR::Opcode::LoadBufferF32x2:
-    case IR::Opcode::LoadBufferF32x3:
-    case IR::Opcode::LoadBufferF32x4:
     case IR::Opcode::LoadBufferU32:
+    case IR::Opcode::LoadBufferU32x2:
+    case IR::Opcode::LoadBufferU32x3:
+    case IR::Opcode::LoadBufferU32x4:
     case IR::Opcode::ReadConstBuffer:
         return true;
     default:
@@ -97,18 +94,15 @@ bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferF32:
-    case IR::Opcode::LoadBufferF32x2:
-    case IR::Opcode::LoadBufferF32x3:
-    case IR::Opcode::LoadBufferF32x4:
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
-        return IR::Type::F32;
     case IR::Opcode::LoadBufferU32:
-    case IR::Opcode::ReadConstBuffer:
+    case IR::Opcode::LoadBufferU32x2:
+    case IR::Opcode::LoadBufferU32x3:
+    case IR::Opcode::LoadBufferU32x4:
     case IR::Opcode::StoreBufferU32:
+    case IR::Opcode::StoreBufferU32x2:
+    case IR::Opcode::StoreBufferU32x3:
+    case IR::Opcode::StoreBufferU32x4:
+    case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::BufferAtomicIAdd32:
     case IR::Opcode::BufferAtomicSwap32:
         return IR::Type::U32;

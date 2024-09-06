@@ -51,12 +51,11 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::Discard:
     case Opcode::DiscardCond:
     case Opcode::SetAttribute:
-    case Opcode::StoreBufferF32:
-    case Opcode::StoreBufferF32x2:
-    case Opcode::StoreBufferF32x3:
-    case Opcode::StoreBufferF32x4:
-    case Opcode::StoreBufferFormatF32:
     case Opcode::StoreBufferU32:
+    case Opcode::StoreBufferU32x2:
+    case Opcode::StoreBufferU32x3:
+    case Opcode::StoreBufferU32x4:
+    case Opcode::StoreBufferFormatF32:
     case Opcode::BufferAtomicIAdd32:
     case Opcode::BufferAtomicSMin32:
     case Opcode::BufferAtomicUMin32:
