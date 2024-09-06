@@ -455,18 +455,15 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
         value = ir.GetVectorReg(src_reg);
         break;
     case 2:
-        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg),
-                                      ir.GetVectorReg(src_reg + 1));
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1));
         break;
     case 3:
-        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg),
-                                      ir.GetVectorReg(src_reg + 1),
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
                                       ir.GetVectorReg(src_reg + 2));
         break;
     case 4:
-        value = ir.CompositeConstruct(
-            ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
-            ir.GetVectorReg(src_reg + 2), ir.GetVectorReg(src_reg + 3));
+        value = ir.CompositeConstruct(ir.GetVectorReg(src_reg), ir.GetVectorReg(src_reg + 1),
+                                      ir.GetVectorReg(src_reg + 2), ir.GetVectorReg(src_reg + 3));
         break;
     }
     const IR::Value handle =

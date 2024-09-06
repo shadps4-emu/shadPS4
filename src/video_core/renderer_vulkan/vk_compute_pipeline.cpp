@@ -117,10 +117,11 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             const auto vsharp = desc.GetSharp(*info);
             is_storage = desc.IsStorage(vsharp);
             const VAddr address = vsharp.base_address;
-            // Most of the time when a metadata is updated with a shader it gets cleared. It means we
-            // can skip the whole dispatch and update the tracked state instead. Also, it is not
-            // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we will
-            // need its full emulation anyways. For cases of metadata read a warning will be logged.
+            // Most of the time when a metadata is updated with a shader it gets cleared. It means
+            // we can skip the whole dispatch and update the tracked state instead. Also, it is not
+            // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
+            // will need its full emulation anyways. For cases of metadata read a warning will be
+            // logged.
             if (desc.is_written) {
                 if (texture_cache.TouchMeta(address, true)) {
                     LOG_TRACE(Render_Vulkan, "Metadata update skipped");
@@ -137,7 +138,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             }
             const u32 alignment =
                 is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(address, size, desc.is_written);
+            const auto [vk_buffer, offset] =
+                buffer_cache.ObtainBuffer(address, size, desc.is_written);
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             if (adjust != 0) {

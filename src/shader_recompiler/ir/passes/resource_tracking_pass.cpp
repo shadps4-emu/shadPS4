@@ -609,7 +609,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
 }
 
-void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
+                              Descriptors& descriptors) {
     // Insert gds binding in the shader if it doesn't exist already.
     // The buffer is used for append/consume counters.
     constexpr static AmdGpu::Buffer GdsSharp{.base_address = 1};
