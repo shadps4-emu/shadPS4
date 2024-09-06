@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/path_util.h"
 #include "trp.h"
 
 TRP::TRP() = default;
@@ -48,8 +49,9 @@ bool TRP::Extract(const std::filesystem::path& trophyPath) {
                 return false;
 
             s64 seekPos = sizeof(TrpHeader);
-            std::filesystem::path trpFilesPath(std::filesystem::current_path() / "user/game_data" /
-                                               title / "TrophyFiles" / it.path().stem());
+            std::filesystem::path trpFilesPath(
+                Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / title / "TrophyFiles" /
+                it.path().stem());
             std::filesystem::create_directories(trpFilesPath / "Icons");
             std::filesystem::create_directory(trpFilesPath / "Xml");
 
