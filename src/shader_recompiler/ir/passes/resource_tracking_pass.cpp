@@ -61,7 +61,6 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferF32x4:
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::ReadConstBuffer:
-    case IR::Opcode::ReadConstBufferU32:
         return true;
     default:
         return IsBufferStore(inst);
@@ -73,7 +72,7 @@ bool IsTextureBufferInstruction(const IR::Inst& inst) {
            inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32;
 }
 
-static bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
+bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
     switch (num_format) {
     case AmdGpu::NumberFormat::Float:
         switch (data_format) {
@@ -102,14 +101,13 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
     case IR::Opcode::LoadBufferF32x4:
-    case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::StoreBufferF32:
     case IR::Opcode::StoreBufferF32x2:
     case IR::Opcode::StoreBufferF32x3:
     case IR::Opcode::StoreBufferF32x4:
         return IR::Type::F32;
     case IR::Opcode::LoadBufferU32:
-    case IR::Opcode::ReadConstBufferU32:
+    case IR::Opcode::ReadConstBuffer:
     case IR::Opcode::StoreBufferU32:
     case IR::Opcode::BufferAtomicIAdd32:
     case IR::Opcode::BufferAtomicSwap32:
@@ -399,8 +397,7 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     ASSERT(!buffer.swizzle_enable && !buffer.add_tid_enable);
 
     // Address of constant buffer reads can be calculated at IR emittion time.
-    if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer ||
-        inst.GetOpcode() == IR::Opcode::ReadConstBufferU32) {
+    if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
         return;
     }
 

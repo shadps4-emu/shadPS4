@@ -133,10 +133,6 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     return ctx.OpLoad(buffer.data_types->Get(1), ptr);
 }
 
-Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index) {
-    return ctx.OpBitcast(ctx.U32[1], EmitReadConstBuffer(ctx, handle, index));
-}
-
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
     return ctx.OpLoad(
         ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),

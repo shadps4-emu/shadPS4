@@ -64,7 +64,6 @@ void EmitGetGotoVariable(EmitContext& ctx);
 void EmitSetScc(EmitContext& ctx);
 Id EmitReadConst(EmitContext& ctx);
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index);
-Id EmitReadConstBufferU32(EmitContext& ctx, u32 handle, Id index);
 Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);

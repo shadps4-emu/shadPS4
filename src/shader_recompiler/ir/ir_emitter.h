@@ -90,7 +90,7 @@ public:
     [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
-    [[nodiscard]] F32 ReadConstBuffer(const Value& handle, const U32& index);
+    [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
     [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
                                    BufferInstInfo info);

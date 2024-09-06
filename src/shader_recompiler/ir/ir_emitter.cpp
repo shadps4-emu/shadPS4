@@ -313,8 +313,8 @@ U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
 
-F32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
-    return Inst<F32>(Opcode::ReadConstBuffer, handle, index);
+U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
+    return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
 }
 
 Value IREmitter::LoadBuffer(int num_dwords, const Value& handle, const Value& address,
