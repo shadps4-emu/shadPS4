@@ -145,14 +145,6 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
-    if (regs.depth_render_control.depth_compress_disable) {
-        LOG_TRACE(Render_Vulkan, "HTile decompress skipped (depth)");
-        return nullptr;
-    }
-    if (regs.depth_render_control.stencil_compress_disable) {
-        LOG_TRACE(Render_Vulkan, "HTile decompress skipped (stencil)");
-        return nullptr;
-    }
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }
@@ -300,6 +292,11 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
         const auto stage = Shader::StageFromIndex(i);
         const auto params = Liverpool::GetParams(*pgm);
+
+        if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
+            return false;
+        }
+
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }
     return true;

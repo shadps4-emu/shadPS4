@@ -272,7 +272,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                                     int* numEntriesOut, int flags) {
     int result = ORBIS_OK;
     int processed = 0;
-    for (int i = 0; i < numEntries; i++) {
+    for (int i = 0; i < numEntries; i++, processed++) {
         if (entries == nullptr || entries[i].length == 0 || entries[i].operation > 4) {
             result = ORBIS_KERNEL_ERROR_EINVAL;
             break; // break and assign a value to numEntriesOut.
@@ -292,41 +292,16 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP: {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
-
-            if (result == 0)
-                processed++;
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
+            break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
             result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
-            if (result != ORBIS_OK) {
-                LOG_ERROR(Kernel_Vmm, "BatchMap: MProtect failed on entry {} with result {}", i,
-                          result);
-            }
-            if (result == 0) {
-                processed++;
-            }
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
             break;
         }
-
-        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
-            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
-                                           entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "BatchMap: entry = {}, operation = {}, len = {:#x}, result = {}",
-                     i, entries[i].operation, entries[i].length, result);
-            if (result != ORBIS_OK) {
-                LOG_ERROR(Kernel_Vmm, "BatchMap: MProtect failed on entry {} with result {}", i,
-                          result);
-            }
-            if (result == 0) {
-                processed++;
-            }
-            break;
-        }
-
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
@@ -336,7 +311,13 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                      i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
             break;
         }
-
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
+            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
+                                           entries[i].protection);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
+            break;
+        }
         default: {
             UNREACHABLE();
         }
@@ -346,8 +327,6 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
     }
-    LOG_INFO(Kernel_Vmm, "sceKernelBatchMap2 finished: processed = {}, result = {}", processed,
-             result);
     if (numEntriesOut != NULL) { // can be zero. do not return an error code.
         *numEntriesOut = processed;
     }
