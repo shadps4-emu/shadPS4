@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <mutex>
 #include <vector>
 #include "core/module.h"
@@ -79,9 +78,7 @@ public:
         return m_modules.at(index).get();
     }
 
-    int GetNumberModules() const {
-        return m_modules.size();
-    }
+    int GetNumberModules() const;
 
     void RelocateAnyImports(Module* m) {
         Relocate(m);

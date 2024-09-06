@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/config.h"
@@ -416,6 +418,10 @@ void Linker::DebugDump() {
         m.get()->elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
         m.get()->elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
     }
+}
+
+int Linker::GetNumberModules() const {
+    return m_modules.size();
 }
 
 } // namespace Core
