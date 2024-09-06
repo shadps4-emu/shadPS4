@@ -399,21 +399,20 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 4096;
 }
 
-int PS4_SYSV_ABI sceKernelGetModuleList(Core::Module** pArray, size_t numArray, size_t* pActualNum) {
+int PS4_SYSV_ABI sceKernelGetModuleList(Core::Module** pArray, size_t numArray,
+                                        size_t* pActualNum) {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     int numModules = linker->GetNumberModules();
-    for (int i = 0; i < std::min(static_cast<int>(numArray), numModules); ++i)
-    {
+    for (int i = 0; i < std::min(static_cast<int>(numArray), numModules); ++i) {
         auto m = linker->GetModule(i);
-        if (!m)
-        {
+        if (!m) {
             *pActualNum = i;
             break;
         }
 
         pArray[i] = m;
     }
-    
+
     return ORBIS_OK;
 }
 
