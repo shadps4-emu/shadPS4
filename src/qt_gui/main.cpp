@@ -16,7 +16,6 @@ int main(int argc, char* argv[]) {
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
-    std::filesystem::create_directory(user_dir / "game_data");
 
     // Check if elf or eboot.bin path was passed as a command line argument
     bool has_command_line_argument = argc > 1;
