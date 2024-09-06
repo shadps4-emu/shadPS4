@@ -43,11 +43,11 @@ s32 PS4_SYSV_ABI sceNgs2ParseWaveformFile(const char* path, u64 offset,
 
 s32 PS4_SYSV_ABI sceNgs2ParseWaveformUser(OrbisNgs2ParseReadHandler handler, uintptr_t userData,
                                           OrbisNgs2WaveformInfo* outInfo) {
+    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     if (handler == nullptr) {
         LOG_ERROR(Lib_Ngs2, "handler is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     return ORBIS_OK;
 }
 
@@ -55,11 +55,11 @@ s32 PS4_SYSV_ABI sceNgs2RackCreate(OrbisNgs2Handle systemHandle, u32 rackId,
                                    const OrbisNgs2RackOption* option,
                                    const OrbisNgs2ContextBufferInfo* bufferInfo,
                                    OrbisNgs2Handle* outHandle) {
+    LOG_INFO(Lib_Ngs2, "rackId = {}", rackId);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "rackId = {}", rackId);
     return ORBIS_OK;
 }
 
@@ -67,11 +67,11 @@ s32 PS4_SYSV_ABI sceNgs2RackCreateWithAllocator(OrbisNgs2Handle systemHandle, u3
                                                 const OrbisNgs2RackOption* option,
                                                 const OrbisNgs2BufferAllocator* allocator,
                                                 OrbisNgs2Handle* outHandle) {
+    LOG_INFO(Lib_Ngs2, "rackId = {}", rackId);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "rackId = {}", rackId);
     return ORBIS_OK;
 }
 
@@ -87,11 +87,11 @@ s32 PS4_SYSV_ABI sceNgs2RackDestroy(OrbisNgs2Handle rackHandle,
 
 s32 PS4_SYSV_ABI sceNgs2RackGetInfo(OrbisNgs2Handle rackHandle, OrbisNgs2RackInfo* outInfo,
                                     size_t infoSize) {
+    LOG_INFO(Lib_Ngs2, "infoSize = {}", infoSize);
     if (rackHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "rackHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "infoSize = {}", infoSize);
     return ORBIS_OK;
 }
 
@@ -106,11 +106,11 @@ s32 PS4_SYSV_ABI sceNgs2RackGetUserData(OrbisNgs2Handle rackHandle, uintptr_t* o
 
 s32 PS4_SYSV_ABI sceNgs2RackGetVoiceHandle(OrbisNgs2Handle rackHandle, u32 voiceIndex,
                                            OrbisNgs2Handle* outHandle) {
+    LOG_INFO(Lib_Ngs2, "voiceIndex = {}", voiceIndex);
     if (rackHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "rackHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "voiceIndex = {}", voiceIndex);
     return ORBIS_OK;
 }
 
@@ -130,11 +130,11 @@ s32 PS4_SYSV_ABI sceNgs2RackQueryBufferSize(u32 rackId, const OrbisNgs2RackOptio
 }
 
 s32 PS4_SYSV_ABI sceNgs2RackSetUserData(OrbisNgs2Handle rackHandle, uintptr_t userData) {
+    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     if (rackHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "rackHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     return ORBIS_OK;
 }
 
@@ -178,21 +178,21 @@ s32 PS4_SYSV_ABI sceNgs2SystemEnumHandles(OrbisNgs2Handle* aOutHandle, u32 maxHa
 
 s32 PS4_SYSV_ABI sceNgs2SystemEnumRackHandles(OrbisNgs2Handle systemHandle,
                                               OrbisNgs2Handle* aOutHandle, u32 maxHandles) {
+    LOG_INFO(Lib_Ngs2, "maxHandles = {}", maxHandles);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "maxHandles = {}", maxHandles);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2SystemGetInfo(OrbisNgs2Handle rackHandle, OrbisNgs2SystemInfo* outInfo,
                                       size_t infoSize) {
+    LOG_INFO(Lib_Ngs2, "infoSize = {}", infoSize);
     if (rackHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "rackHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "infoSize = {}", infoSize);
     return ORBIS_OK;
 }
 
@@ -223,11 +223,11 @@ s32 PS4_SYSV_ABI sceNgs2SystemQueryBufferSize(const OrbisNgs2SystemOption* optio
 s32 PS4_SYSV_ABI sceNgs2SystemRender(OrbisNgs2Handle systemHandle,
                                      const OrbisNgs2RenderBufferInfo* aBufferInfo,
                                      u32 numBufferInfo) {
+    LOG_INFO(Lib_Ngs2, "numBufferInfo = {}", numBufferInfo);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "numBufferInfo = {}", numBufferInfo);
     return ORBIS_OK;
 }
 
@@ -244,29 +244,29 @@ static s32 PS4_SYSV_ABI sceNgs2SystemResetOption(OrbisNgs2SystemOption* outOptio
 }
 
 s32 PS4_SYSV_ABI sceNgs2SystemSetGrainSamples(OrbisNgs2Handle systemHandle, u32 numSamples) {
+    LOG_INFO(Lib_Ngs2, "numSamples = {}", numSamples);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "numSamples = {}", numSamples);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2SystemSetSampleRate(OrbisNgs2Handle systemHandle, u32 sampleRate) {
+    LOG_INFO(Lib_Ngs2, "sampleRate = {}", sampleRate);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "sampleRate = {}", sampleRate);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2SystemSetUserData(OrbisNgs2Handle systemHandle, uintptr_t userData) {
+    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     if (systemHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "userData = {}", userData);
     return ORBIS_OK;
 }
 
@@ -291,11 +291,11 @@ s32 PS4_SYSV_ABI sceNgs2VoiceControl(OrbisNgs2Handle voiceHandle,
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetMatrixInfo(OrbisNgs2Handle voiceHandle, u32 matrixId,
                                            OrbisNgs2VoiceMatrixInfo* outInfo, size_t outInfoSize) {
+    LOG_INFO(Lib_Ngs2, "matrixId = {}, outInfoSize = {}", matrixId, outInfoSize);
     if (voiceHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "voiceHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "matrixId = {}, outInfoSize = {}", matrixId, outInfoSize);
     return ORBIS_OK;
 }
 
@@ -311,21 +311,21 @@ s32 PS4_SYSV_ABI sceNgs2VoiceGetOwner(OrbisNgs2Handle voiceHandle, OrbisNgs2Hand
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetPortInfo(OrbisNgs2Handle voiceHandle, u32 port,
                                          OrbisNgs2VoicePortInfo* outInfo, size_t outInfoSize) {
+    LOG_INFO(Lib_Ngs2, "port = {}, outInfoSize = {}", port, outInfoSize);
     if (voiceHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "voiceHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "port = {}, outInfoSize = {}", port, outInfoSize);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetState(OrbisNgs2Handle voiceHandle, OrbisNgs2VoiceState* outState,
                                       size_t stateSize) {
+    LOG_INFO(Lib_Ngs2, "stateSize = {}", stateSize);
     if (voiceHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "voiceHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "stateSize = {}", stateSize);
     return ORBIS_OK;
 }
 
@@ -343,11 +343,11 @@ s32 PS4_SYSV_ABI sceNgs2VoiceGetStateFlags(OrbisNgs2Handle voiceHandle, u32* out
 s32 PS4_SYSV_ABI sceNgs2CustomRackGetModuleInfo(OrbisNgs2Handle rackHandle, u32 moduleIndex,
                                                 OrbisNgs2CustomModuleInfo* outInfo,
                                                 size_t infoSize) {
+    LOG_INFO(Lib_Ngs2, "moduleIndex = {}, infoSize = {}", moduleIndex, infoSize);
     if (rackHandle == nullptr) {
         LOG_ERROR(Lib_Ngs2, "rackHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "moduleIndex = {}, infoSize = {}", moduleIndex, infoSize);
     return ORBIS_OK;
 }
 
@@ -398,11 +398,11 @@ s32 PS4_SYSV_ABI sceNgs2PanGetVolumeMatrix(OrbisNgs2PanWork* work, const OrbisNg
 
 s32 PS4_SYSV_ABI sceNgs2ReportRegisterHandler(u32 reportType, OrbisNgs2ReportHandler handler,
                                               uintptr_t userData, OrbisNgs2Handle* outHandle) {
+    LOG_INFO(Lib_Ngs2, "reportType = {}, userData = {}", reportType, userData);
     if (handler == nullptr) {
         LOG_ERROR(Lib_Ngs2, "handler is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "reportType = {}, userData = {}", reportType, userData);
     return ORBIS_OK;
 }
 

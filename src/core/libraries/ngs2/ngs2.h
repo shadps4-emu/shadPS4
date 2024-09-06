@@ -19,7 +19,11 @@ class Ngs2;
 typedef s32 (*OrbisNgs2ParseReadHandler)(uintptr_t userData, u32 offset, void* data, size_t size);
 
 enum class OrbisNgs2HandleType : u32 {
-    System = 0,
+    Invalid = 0,
+    System = 1,
+    Rack = 2,
+    Voice = 3,
+    VoiceControl = 6
 };
 
 static const int ORBIS_NGS2_MAX_VOICE_CHANNELS = 8;
