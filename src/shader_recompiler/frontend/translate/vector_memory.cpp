@@ -280,6 +280,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     info.has_bias.Assign(flags.test(MimgModifier::LodBias));
     info.has_lod_clamp.Assign(flags.test(MimgModifier::LodClamp));
     info.force_level0.Assign(flags.test(MimgModifier::Level0));
+    info.has_offset.Assign(flags.test(MimgModifier::Offset));
     // info.explicit_lod.Assign(explicit_lod);
     info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
 
