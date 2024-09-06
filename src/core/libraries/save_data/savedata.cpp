@@ -191,7 +191,8 @@ int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* 
         if (cond->dirName == nullptr || std::string_view(cond->dirName->data).empty()) {
             // Look for all dirs if no dir is provided.
             for (const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
-                if (i >= maxDirNum) break;
+                if (i >= maxDirNum)
+                    break;
 
                 if (std::filesystem::is_directory(entry.path()) &&
                     entry.path().filename().string() != "sdmemory") {
@@ -217,11 +218,12 @@ int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* 
             }
 
             for (const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
-                if (i >= maxDirNum) break;
+                if (i >= maxDirNum)
+                    break;
 
                 if (std::filesystem::is_directory(entry.path())) {
                     std::string dirName = entry.path().filename().string();
-                    
+
                     if (wildcardPos != std::string::npos) {
                         if (dirName.compare(0, baseName.size(), baseName) != 0) {
                             continue;
