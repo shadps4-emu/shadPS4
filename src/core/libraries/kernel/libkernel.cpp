@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 
@@ -398,6 +399,24 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 4096;
 }
 
+int PS4_SYSV_ABI sceKernelGetModuleList(Core::Module** pArray, size_t numArray, size_t* pActualNum) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    int numModules = linker->GetNumberModules();
+    for (int i = 0; i < std::min(static_cast<int>(numArray), numModules); ++i)
+    {
+        auto m = linker->GetModule(i);
+        if (!m)
+        {
+            *pActualNum = i;
+            break;
+        }
+
+        pArray[i] = m;
+    }
+    
+    return ORBIS_OK;
+}
+
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -442,6 +461,8 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2SKEx6bSq-4", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap);
     LIB_FUNCTION("kBJzF8x4SyE", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap2);
     LIB_FUNCTION("DGMG3JshrZU", "libkernel", 1, "libkernel", 1, 1, sceKernelSetVirtualRangeName);
+
+    LIB_FUNCTION("IuxnUuXk6Bg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleList);
 
     // equeue
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);

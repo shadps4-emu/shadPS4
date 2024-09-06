@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "common/types.h"
+#include "core/module.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -34,6 +35,7 @@ typedef struct {
 
 int* PS4_SYSV_ABI __Error();
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+int PS4_SYSV_ABI sceKernelGetModuleList(Core::Module** pArray, size_t numArray, size_t* pActualNum);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);
 
