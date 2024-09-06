@@ -331,8 +331,16 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC() {
     return ORBIS_OK;
 }
 
+struct NetCtlCallbackForNpToolkit {
+    OrbisNetCtlCallbackForNpToolkit func;
+    void* arg;
+};
+
+NetCtlCallbackForNpToolkit NetCtlCbForNp;
+
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    // LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    NetCtlCbForNp.func(1, NetCtlCbForNp.arg); // disconnect
     return ORBIS_OK;
 }
 
@@ -341,8 +349,12 @@ int PS4_SYSV_ABI sceNetCtlClearEventForNpToolkit() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit() {
+int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func,
+                                                       void* arg, int* ci) {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    *ci = 1;
+    NetCtlCbForNp.func = func;
+    NetCtlCbForNp.arg = arg;
     return ORBIS_OK;
 }
 
