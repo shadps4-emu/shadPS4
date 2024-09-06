@@ -162,6 +162,8 @@ uint32_t GcnDecodeContext::getEncodingLength(InstEncoding encoding) {
     case InstEncoding::EXP:
         instLength = sizeof(uint64_t);
         break;
+    default:
+        break;
     }
     return instLength;
 }
@@ -216,6 +218,8 @@ uint32_t GcnDecodeContext::getOpMapOffset(InstEncoding encoding) {
         break;
     case InstEncoding::VOP2:
         offset = (uint32_t)OpcodeMap::OP_MAP_VOP2;
+        break;
+    default:
         break;
     }
     return offset;
@@ -311,6 +315,8 @@ void GcnDecodeContext::repairOperandType() {
     case Opcode::IMAGE_GATHER4_C:
         m_instruction.src[0].type = ScalarType::Any;
         break;
+    default:
+        break;
     }
 }
 
@@ -363,6 +369,8 @@ void GcnDecodeContext::decodeInstruction32(InstEncoding encoding, GcnCodeSlice& 
     case InstEncoding::VINTRP:
         decodeInstructionVINTRP(hexInstruction);
         break;
+    default:
+        break;
     }
 }
 
@@ -386,6 +394,8 @@ void GcnDecodeContext::decodeInstruction64(InstEncoding encoding, GcnCodeSlice& 
         break;
     case InstEncoding::EXP:
         decodeInstructionEXP(hexInstruction);
+        break;
+    default:
         break;
     }
 }
@@ -994,6 +1004,8 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode) {
     case Opcode::IMAGE_SAMPLE_C_CD_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::LodClamp,
                   MimgModifier::Offset);
+        break;
+    default:
         break;
     }
 
