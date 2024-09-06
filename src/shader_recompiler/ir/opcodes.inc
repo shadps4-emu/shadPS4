@@ -342,3 +342,5 @@ OPCODE(QuadShuffle,                                         U32,            U32,
 OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
 OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
+OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
+OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )

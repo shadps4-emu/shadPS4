@@ -297,6 +297,9 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (stage != Shader::Stage::Vertex && stage != Shader::Stage::Fragment) {
             return false;
         }
+        if (auto* pgm = regs.ProgramForStage(3); regs.stage_enable.IsStageEnabled(3) && pgm->Address() != 0) {
+            return false;
+        }
 
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }

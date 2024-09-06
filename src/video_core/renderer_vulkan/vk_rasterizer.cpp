@@ -251,6 +251,10 @@ void Rasterizer::BeginRendering() {
     scheduler.BeginRendering(state);
 }
 
+void Rasterizer::InlineDataToGds(u32 gds_offset, u32 value) {
+    buffer_cache.InlineDataToGds(gds_offset, value);
+}
+
 void Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
     texture_cache.InvalidateMemory(addr, size);

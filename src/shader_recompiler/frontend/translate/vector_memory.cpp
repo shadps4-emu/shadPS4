@@ -514,6 +514,15 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::VectorReg vdata{inst.src[1].code};
     const IR::ScalarReg srsrc{inst.src[2].code * 4};
+    const IR::Value address = [&] -> IR::Value {
+        if (mubuf.idxen && mubuf.offen) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
+        }
+        if (mubuf.idxen || mubuf.offen) {
+            return ir.GetVectorReg(vaddr);
+        }
+        return {};
+    }();
     const IR::U32 soffset{GetSrc(inst.src[3])};
     ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
@@ -523,7 +532,6 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     info.offset_enable.Assign(mubuf.offen);
 
     IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
-    const IR::U32 address = ir.GetVectorReg(vaddr);
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));

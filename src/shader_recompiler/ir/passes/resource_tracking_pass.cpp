@@ -64,6 +64,11 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     }
 }
 
+bool IsDataRingInstruction(const IR::Inst& inst) {
+    return inst.GetOpcode() == IR::Opcode::DataAppend ||
+           inst.GetOpcode() == IR::Opcode::DataConsume;
+}
+
 bool IsTextureBufferInstruction(const IR::Inst& inst) {
     return inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
            inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32;
@@ -183,6 +188,10 @@ public:
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
+            // Only one GDS binding can exist.
+            if (desc.is_gds_buffer && existing.is_gds_buffer) {
+                return true;
+            }
             return desc.sgpr_base == existing.sgpr_base &&
                    desc.dword_offset == existing.dword_offset &&
                    desc.inline_cbuf == existing.inline_cbuf;
@@ -600,6 +609,50 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
 }
 
+void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+    // Insert gds binding in the shader if it doesn't exist already.
+    // The buffer is used for append/consume counters.
+    constexpr static AmdGpu::Buffer GdsSharp{.base_address = 1};
+    const u32 binding = descriptors.Add(BufferResource{
+        .used_types = IR::Type::U32,
+        .inline_cbuf = GdsSharp,
+        .is_gds_buffer = true,
+        .is_written = true,
+    });
+
+    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+            return inst;
+        }
+        return std::nullopt;
+    };
+
+    // Attempt to deduce the GDS address of counter at compile time.
+    const u32 gds_addr = [&] {
+        const IR::Value& gds_offset = inst.Arg(0);
+        if (gds_offset.IsImmediate()) {
+            // Nothing to do, offset is known.
+            return gds_offset.U32() & 0xFFFF;
+        }
+        const auto result = IR::BreadthFirstSearch(&inst, pred);
+        ASSERT_MSG(result, "Unable to track M0 source");
+
+        // M0 must be set by some user data register.
+        const IR::Inst* prod = gds_offset.InstRecursive();
+        const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
+        u32 m0_val = info.user_data[ud_reg];
+        if (prod->GetOpcode() == IR::Opcode::IAdd32) {
+            m0_val += prod->Arg(1).U32();
+        }
+        return m0_val & 0xFFFF;
+    }();
+
+    // Patch instruction.
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    inst.SetArg(0, ir.Imm32(gds_addr >> 2));
+    inst.SetArg(1, ir.Imm32(binding));
+}
+
 void ResourceTrackingPass(IR::Program& program) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
@@ -616,6 +669,10 @@ void ResourceTrackingPass(IR::Program& program) {
             }
             if (IsImageInstruction(inst)) {
                 PatchImageInstruction(*block, inst, info, descriptors);
+                continue;
+            }
+            if (IsDataRingInstruction(inst)) {
+                PatchDataRingInstruction(*block, inst, info, descriptors);
             }
         }
     }

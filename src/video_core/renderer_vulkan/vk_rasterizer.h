@@ -41,6 +41,7 @@ public:
     void ScopeMarkerEnd();
     void ScopedMarkerInsert(const std::string_view& str);
 
+    void InlineDataToGds(u32 gds_offset, u32 value);
     void InvalidateMemory(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);

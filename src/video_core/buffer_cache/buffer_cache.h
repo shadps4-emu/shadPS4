@@ -57,6 +57,11 @@ public:
                          PageManager& tracker);
     ~BufferCache();
 
+    /// Returns a pointer to GDS device local buffer.
+    [[nodiscard]] const Buffer* GetGdsBuffer() const noexcept {
+        return &gds_buffer;
+    }
+
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
@@ -65,6 +70,9 @@ public:
 
     /// Bind host index buffer for the current draw.
     u32 BindIndexBuffer(bool& is_indexed, u32 index_offset);
+
+    /// Writes a value to GDS buffer.
+    void InlineDataToGds(u32 gds_offset, u32 value);
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
@@ -130,6 +138,7 @@ private:
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
+    Buffer gds_buffer;
     std::mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     MemoryTracker memory_tracker;

@@ -397,12 +397,13 @@ Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
-
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
 Id EmitReadFirstLane(EmitContext& ctx, Id value);
 Id EmitReadLane(EmitContext& ctx, Id value, u32 lane);
 Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane);
+Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding);
+Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding);
 
 } // namespace Shader::Backend::SPIRV

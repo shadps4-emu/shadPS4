@@ -67,6 +67,8 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicOr32:
     case Opcode::BufferAtomicXor32:
     case Opcode::BufferAtomicSwap32:
+    case Opcode::DataAppend:
+    case Opcode::DataConsume:
     case Opcode::WriteSharedU128:
     case Opcode::WriteSharedU64:
     case Opcode::WriteSharedU32:

@@ -409,6 +409,14 @@ void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, con
     Inst(Opcode::StoreBufferFormatF32, Flags{info}, handle, address, data);
 }
 
+U32 IREmitter::DataAppend(const U32& counter) {
+    return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
+}
+
+U32 IREmitter::DataConsume(const U32& counter) {
+    return Inst<U32>(Opcode::DataConsume, counter, Imm32(0));
+}
+
 U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
 }

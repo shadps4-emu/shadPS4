@@ -120,6 +120,8 @@ public:
     [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
 
+    [[nodiscard]] U32 DataAppend(const U32& counter);
+    [[nodiscard]] U32 DataConsume(const U32& counter);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);

@@ -15,6 +15,7 @@
 namespace VideoCore {
 
 static constexpr size_t NumVertexBuffers = 32;
+static constexpr size_t GdsBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 
@@ -25,7 +26,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
+      gds_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, GdsBufferSize},
       memory_tracker{&tracker} {
+    Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
+
     // Ensure the first slot is used for the null buffer
     void(slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, ReadFlags, 1));
 }
@@ -230,6 +234,13 @@ u32 BufferCache::BindIndexBuffer(bool& is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
     return regs.num_indices;
+}
+
+void BufferCache::InlineDataToGds(u32 gds_offset, u32 value) {
+    ASSERT_MSG(gds_offset % 4 == 0, "GDS offset must be dword aligned");
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.updateBuffer(gds_buffer.Handle(), gds_offset, sizeof(u32), &value);
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
