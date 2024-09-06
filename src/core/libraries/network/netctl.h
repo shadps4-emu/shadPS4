@@ -117,7 +117,8 @@ int PS4_SYSV_ABI sceNetCtlUnsetStunWithPaddingFlagIpcInt();
 int PS4_SYSV_ABI Func_D8DCB6973537A3DC();
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlClearEventForNpToolkit();
-int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func, void* arg, int* ci);
+int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func,
+                                                       void* arg, int* ci);
 int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlApCheckCallback();
 int PS4_SYSV_ABI sceNetCtlApClearEvent();
