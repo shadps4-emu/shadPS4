@@ -65,26 +65,22 @@ private:
 class DescriptorHeap final : public ResourcePool {
 public:
     explicit DescriptorHeap(const Instance& instance, MasterSemaphore* master_semaphore,
-                            std::span<const vk::DescriptorSetLayoutBinding> bindings,
+                            std::span<const vk::DescriptorPoolSize> pool_sizes,
                             u32 descriptor_heap_count = 1024);
     ~DescriptorHeap() override;
 
-    const vk::DescriptorSetLayout& Layout() const {
-        return *descriptor_set_layout;
-    }
-
     void Allocate(std::size_t begin, std::size_t end) override;
 
-    vk::DescriptorSet Commit();
+    vk::DescriptorSet Commit(vk::DescriptorSetLayout set_layout);
 
 private:
     void AppendDescriptorPool();
 
 private:
     vk::Device device;
-    vk::UniqueDescriptorSetLayout descriptor_set_layout;
+    vk::DescriptorSetLayout descriptor_set_layout;
     u32 descriptor_heap_count;
-    std::vector<vk::DescriptorPoolSize> pool_sizes;
+    std::span<const vk::DescriptorPoolSize> pool_sizes;
     std::vector<vk::UniqueDescriptorPool> pools;
     std::vector<vk::DescriptorSet> descriptor_sets;
     std::vector<std::size_t> hashes;

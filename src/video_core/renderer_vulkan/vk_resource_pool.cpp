@@ -106,31 +106,10 @@ vk::CommandBuffer CommandPool::Commit() {
 constexpr u32 DESCRIPTOR_SET_BATCH = 32;
 
 DescriptorHeap::DescriptorHeap(const Instance& instance, MasterSemaphore* master_semaphore,
-                               std::span<const vk::DescriptorSetLayoutBinding> bindings,
+                               std::span<const vk::DescriptorPoolSize> pool_sizes_,
                                u32 descriptor_heap_count_)
     : ResourcePool{master_semaphore, DESCRIPTOR_SET_BATCH}, device{instance.GetDevice()},
-      descriptor_heap_count{descriptor_heap_count_} {
-    // Create descriptor set layout.
-    const vk::DescriptorSetLayoutCreateInfo layout_ci = {
-        .bindingCount = static_cast<u32>(bindings.size()),
-        .pBindings = bindings.data(),
-    };
-    descriptor_set_layout = device.createDescriptorSetLayoutUnique(layout_ci);
-    if (instance.HasDebuggingToolAttached()) {
-        SetObjectName(device, *descriptor_set_layout, "DescriptorSetLayout");
-    }
-
-    // Build descriptor set pool counts.
-    std::unordered_map<vk::DescriptorType, u16> descriptor_type_counts;
-    for (const auto& binding : bindings) {
-        descriptor_type_counts[binding.descriptorType] += binding.descriptorCount;
-    }
-    for (const auto& [type, count] : descriptor_type_counts) {
-        auto& pool_size = pool_sizes.emplace_back();
-        pool_size.descriptorCount = count * descriptor_heap_count;
-        pool_size.type = type;
-    }
-
+      descriptor_heap_count{descriptor_heap_count_}, pool_sizes{pool_sizes_} {
     // Create descriptor pool
     AppendDescriptorPool();
 }
@@ -143,7 +122,7 @@ void DescriptorHeap::Allocate(std::size_t begin, std::size_t end) {
     hashes.resize(end);
 
     std::array<vk::DescriptorSetLayout, DESCRIPTOR_SET_BATCH> layouts;
-    layouts.fill(*descriptor_set_layout);
+    layouts.fill(descriptor_set_layout);
 
     u32 current_pool = 0;
     vk::DescriptorSetAllocateInfo alloc_info = {
@@ -171,7 +150,8 @@ void DescriptorHeap::Allocate(std::size_t begin, std::size_t end) {
     }
 }
 
-vk::DescriptorSet DescriptorHeap::Commit() {
+vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
+    this->descriptor_set_layout = set_layout;
     const std::size_t index = CommitResource();
     return descriptor_sets[index];
 }

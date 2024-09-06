@@ -17,11 +17,11 @@
 namespace Vulkan {
 
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
-                                   const GraphicsPipelineKey& key_,
+                                   DescriptorHeap& desc_heap_, const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
                                    std::span<const vk::ShaderModule> modules)
-    : instance{instance_}, scheduler{scheduler_}, key{key_} {
+    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, key{key_} {
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
@@ -343,8 +343,12 @@ void GraphicsPipeline::BuildDescSetLayout() {
             });
         }
     }
+    uses_push_descriptors = binding < instance.MaxPushDescriptors();
+    const auto flags = uses_push_descriptors
+                           ? vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR
+                           : vk::DescriptorSetLayoutCreateFlagBits{};
     const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .flags = flags,
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
@@ -510,8 +514,18 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     }
 
     if (!set_writes.empty()) {
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                    set_writes);
+        if (uses_push_descriptors) {
+            cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
+                                        set_writes);
+        } else {
+            const auto desc_set = desc_heap.Commit(*desc_layout);
+            for (auto& set_write : set_writes) {
+                set_write.dstSet = desc_set;
+            }
+            instance.GetDevice().updateDescriptorSets(set_writes, {});
+            cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
+                                      desc_set, {});
+        }
     }
     cmdbuf.pushConstants(*pipeline_layout,
                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0U,

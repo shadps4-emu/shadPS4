@@ -89,7 +89,7 @@ struct PushData {
 
     u32 step0;
     u32 step1;
-    std::array<u8, 32> buf_offsets;
+    std::array<u8, 48> buf_offsets;
 
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());
@@ -166,6 +166,7 @@ struct Info {
     bool has_image_query{};
     bool uses_lane_id{};
     bool uses_group_quad{};
+    bool uses_group_ballot{};
     bool uses_shared{};
     bool uses_fp16{};
     bool uses_step_rates{};

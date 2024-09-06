@@ -223,12 +223,8 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            if (desc.sgpr_base == existing.sgpr_base &&
-                desc.dword_offset == existing.dword_offset) {
-                return true;
-            }
-            // Samplers with different bindings might still be the same.
-            return existing.GetSharp(info) == desc.GetSharp(info);
+            return desc.sgpr_base == existing.sgpr_base &&
+                   desc.dword_offset == existing.dword_offset;
         })};
         return index;
     }
