@@ -69,6 +69,15 @@ Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_,
 
 Module::~Module() = default;
 
+void* Module::FindByName(std::string_view name) {
+    const auto symbols = export_sym.GetSymbols();
+    const auto it = std::ranges::find(symbols, name, &Loader::SymbolRecord::nid_name);
+    if (it != symbols.end()) {
+        return reinterpret_cast<void*>(it->virtual_address);
+    }
+    return nullptr;
+}
+
 s32 Module::Start(size_t args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();

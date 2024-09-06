@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <mutex>
 #include <vector>
 #include "core/module.h"
