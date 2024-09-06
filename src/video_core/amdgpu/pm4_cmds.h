@@ -515,7 +515,7 @@ struct PM4CmdEventWriteEos {
     void SignalFence() const {
         const auto cmd = command.Value();
         switch (cmd) {
-        case Command::SingalFence: {
+        case Command::SignalFence: {
             *Address() = DataDWord();
             break;
         }
