@@ -107,6 +107,7 @@ struct RuntimeInfo {
     Stage stage;
     u32 num_user_data;
     u32 num_input_vgprs;
+    u32 num_allocated_vgprs;
     VertexRuntimeInfo vs_info;
     FragmentRuntimeInfo fs_info;
     ComputeRuntimeInfo cs_info;

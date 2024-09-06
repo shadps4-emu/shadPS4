@@ -217,6 +217,10 @@ U32 IREmitter::GetVccHi() {
     return Inst<U32>(Opcode::GetVccHi);
 }
 
+U32 IREmitter::GetM0() {
+    return Inst<U32>(Opcode::GetM0);
+}
+
 void IREmitter::SetScc(const U1& value) {
     Inst(Opcode::SetScc, value);
 }
@@ -239,6 +243,10 @@ void IREmitter::SetVccLo(const U32& value) {
 
 void IREmitter::SetVccHi(const U32& value) {
     Inst(Opcode::SetVccHi, value);
+}
+
+void IREmitter::SetM0(const U32& value) {
+    Inst(Opcode::SetM0, value);
 }
 
 F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp) {

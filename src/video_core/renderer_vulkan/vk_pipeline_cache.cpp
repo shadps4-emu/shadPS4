@@ -76,6 +76,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
         info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
+        info.num_allocated_vgprs = regs.vs_program.settings.num_vgprs * 4;
         GatherVertexOutputs(info.vs_info, regs.vs_output_control);
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
@@ -84,6 +85,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     }
     case Shader::Stage::Fragment: {
         info.num_user_data = regs.ps_program.settings.num_user_regs;
+        info.num_allocated_vgprs = regs.ps_program.settings.num_vgprs * 4;
         std::ranges::transform(graphics_key.mrt_swizzles, info.fs_info.mrt_swizzles.begin(),
                                [](Liverpool::ColorBuffer::SwapMode mode) {
                                    return static_cast<Shader::MrtSwizzle>(mode);
@@ -102,6 +104,7 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
     case Shader::Stage::Compute: {
         const auto& cs_pgm = regs.cs_program;
         info.num_user_data = cs_pgm.settings.num_user_regs;
+        info.num_allocated_vgprs = regs.cs_program.settings.num_vgprs * 4;
         info.cs_info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                        cs_pgm.num_thread_z.full};
         info.cs_info.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),

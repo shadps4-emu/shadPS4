@@ -67,12 +67,14 @@ public:
     [[nodiscard]] U1 GetVcc();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
+    [[nodiscard]] U32 GetM0();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
     void SetVcc(const U1& value);
     void SetSccLo(const U32& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
+    void SetM0(const U32& value);
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 

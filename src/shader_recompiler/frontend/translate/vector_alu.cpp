@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 
 namespace Shader::Gcn {
@@ -309,6 +310,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MBCNT_U32_B32(true, inst);
     case Opcode::V_MBCNT_HI_U32_B32:
         return V_MBCNT_U32_B32(false, inst);
+    case Opcode::V_MOVRELS_B32:
+        return V_MOVRELS_B32(inst);
+    case Opcode::V_MOVRELD_B32:
+        return V_MOVRELD_B32(inst);
+    case Opcode::V_MOVRELSD_B32:
+        return V_MOVRELSD_B32(inst);
     case Opcode::V_NOP:
         return;
 
@@ -988,6 +995,54 @@ void Translator::V_FFBH_U32(const GcnInst& inst) {
     // Select 0xFFFFFFFF if src0 was 0
     const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
     SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
+}
+
+// TODO: add range analysis pass to hopefully put an upper bound on m0, and only select one of
+// [src_vgprno, src_vgprno + max_m0]. Same for dst regs we may write back to
+
+IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0) {
+    // Read from VGPR0 by default when src_vgprno + m0 > num_allocated_vgprs
+    IR::U32 src_val = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
+    for (u32 i = src_vgprno; i < runtime_info.num_allocated_vgprs; i++) {
+        const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - src_vgprno));
+        src_val =
+            IR::U32{ir.Select(cond, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i), src_val)};
+    }
+    return src_val;
+}
+
+void Translator::VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0) {
+    for (u32 i = dst_vgprno; i < runtime_info.num_allocated_vgprs; i++) {
+        const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - dst_vgprno));
+        const IR::U32 dst_val =
+            IR::U32{ir.Select(cond, src_val, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i))};
+        ir.SetVectorReg(IR::VectorReg::V0 + i, dst_val);
+    }
+}
+
+void Translator::V_MOVRELS_B32(const GcnInst& inst) {
+    u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
+    const IR::U32 m0 = ir.GetM0();
+
+    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0);
+    SetDst(inst.dst[0], src_val);
+}
+
+void Translator::V_MOVRELD_B32(const GcnInst& inst) {
+    const IR::U32 src_val{GetSrc(inst.src[0])};
+    u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
+    IR::U32 m0 = ir.GetM0();
+
+    VMovRelDHelper(dst_vgprno, src_val, m0);
+}
+
+void Translator::V_MOVRELSD_B32(const GcnInst& inst) {
+    u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
+    u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
+    IR::U32 m0 = ir.GetM0();
+
+    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0);
+    VMovRelDHelper(dst_vgprno, src_val, m0);
 }
 
 } // namespace Shader::Gcn
