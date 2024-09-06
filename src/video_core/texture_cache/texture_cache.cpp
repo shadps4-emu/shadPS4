@@ -51,6 +51,20 @@ void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     });
 }
 
+void TextureCache::MarkWritten(VAddr address, size_t max_size) {
+    static constexpr FindFlags find_flags = FindFlags::NoCreate | FindFlags::RelaxDim |
+                                            FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    ImageInfo info{};
+    info.guest_address = address;
+    info.guest_size_bytes = max_size;
+    const ImageId image_id = FindImage(info, find_flags);
+    if (!image_id) {
+        return;
+    }
+    // Ensure image is copied when accessed again.
+    slot_images[image_id].flags |= ImageFlagBits::CpuModified;
+}
+
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
@@ -199,8 +213,12 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
             !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
             continue;
         }
-        ASSERT(cache_image.info.type == info.type);
+        ASSERT(cache_image.info.type == info.type || True(flags & FindFlags::RelaxFmt));
         image_id = cache_id;
+    }
+
+    if (True(flags & FindFlags::NoCreate) && !image_id) {
+        return {};
     }
 
     // Try to resolve overlaps (if any)
@@ -209,10 +227,6 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
             image_id = ResolveOverlap(merged_info, cache_id, image_id);
         }
-    }
-
-    if (True(flags & FindFlags::NoCreate) && !image_id) {
-        return {};
     }
 
     // Create and register a new image
