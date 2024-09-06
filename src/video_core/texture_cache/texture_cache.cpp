@@ -109,9 +109,12 @@ ImageId TextureCache::ResolveOverlap(const ImageInfo& image_info, ImageId cache_
         }
 
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
-            image_info.size != tex_cache_image.info.size ||
             image_info.guest_size_bytes <= tex_cache_image.info.guest_size_bytes) {
-            return merged_image_id ? merged_image_id : cache_image_id;
+            auto result_id = merged_image_id ? merged_image_id : cache_image_id;
+            const auto& result_image = slot_images[result_id];
+            return IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
+                       ? result_id
+                       : ImageId{};
         }
 
         ImageId new_image_id{};
