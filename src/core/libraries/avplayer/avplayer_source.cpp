@@ -21,7 +21,6 @@ extern "C" {
 }
 
 // The av_err2str macro in libavutil/error.h does not play nice with C++ 
-// More info: https://github.com/joncampbell123/composite-video-simulator/issues/5
 #ifdef av_err2str
 #undef av_err2str
 #include <string>
