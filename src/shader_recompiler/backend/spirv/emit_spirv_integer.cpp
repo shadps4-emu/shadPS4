@@ -96,6 +96,14 @@ Id EmitUDiv32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpUDiv(ctx.U32[1], a, b);
 }
 
+Id EmitSMod32(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpSMod(ctx.U32[1], a, b);
+}
+
+Id EmitUMod32(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpUMod(ctx.U32[1], a, b);
+}
+
 Id EmitINeg32(EmitContext& ctx, Id value) {
     return ctx.OpSNegate(ctx.U32[1], value);
 }

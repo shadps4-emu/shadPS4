@@ -269,6 +269,8 @@ Id EmitIMul32(EmitContext& ctx, Id a, Id b);
 Id EmitIMul64(EmitContext& ctx, Id a, Id b);
 Id EmitSDiv32(EmitContext& ctx, Id a, Id b);
 Id EmitUDiv32(EmitContext& ctx, Id a, Id b);
+Id EmitSMod32(EmitContext& ctx, Id a, Id b);
+Id EmitUMod32(EmitContext& ctx, Id a, Id b);
 Id EmitINeg32(EmitContext& ctx, Id value);
 Id EmitINeg64(EmitContext& ctx, Id value);
 Id EmitIAbs32(EmitContext& ctx, Id value);
