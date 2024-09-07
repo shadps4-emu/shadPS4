@@ -477,21 +477,21 @@ int PS4_SYSV_ABI sceSaveDataGetUpdatedDataCount() {
 int PS4_SYSV_ABI sceSaveDataInitialize() {
     LOG_INFO(Lib_SaveData, "called");
     static auto* param_sfo = Common::Singleton<PSF>::Instance();
-    game_serial = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+    game_serial = std::string(*param_sfo->GetString("CONTENT_ID"), 7, 9);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize2() {
     LOG_INFO(Lib_SaveData, "called");
     static auto* param_sfo = Common::Singleton<PSF>::Instance();
-    game_serial = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+    game_serial = std::string(*param_sfo->GetString("CONTENT_ID"), 7, 9);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataInitialize3() {
     LOG_INFO(Lib_SaveData, "called");
     static auto* param_sfo = Common::Singleton<PSF>::Instance();
-    game_serial = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+    game_serial = std::string(*param_sfo->GetString("CONTENT_ID"), 7, 9);
     return ORBIS_OK;
 }
 

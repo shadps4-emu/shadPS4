@@ -14,9 +14,10 @@
 
 namespace Common {
 
-std::string ToLower(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+std::string ToLower(std::string_view input) {
+    std::string str;
+    str.resize(input.size());
+    std::ranges::transform(input, str.begin(), tolower);
     return str;
 }
 

@@ -636,9 +636,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
 
-            psf.open("", pkg.sfo);
+            psf.Open(pkg.sfo);
 
-            std::string content_id = psf.GetString("CONTENT_ID");
+            std::string content_id{*psf.GetString("CONTENT_ID")};
             std::string entitlement_label = Common::SplitString(content_id, '-')[2];
 
             auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
@@ -647,9 +647,11 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             auto category = psf.GetString("CATEGORY");
 
             if (pkgType.contains("PATCH")) {
-                QString pkg_app_version = QString::fromStdString(psf.GetString("APP_VER"));
-                psf.open(extract_path.string() + "/sce_sys/param.sfo", {});
-                QString game_app_version = QString::fromStdString(psf.GetString("APP_VER"));
+                QString pkg_app_version =
+                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                psf.Open(extract_path / "sce_sys" / "param.sfo");
+                QString game_app_version =
+                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
