@@ -660,8 +660,8 @@ void EmitQuadToTriangleListIndices(u8* out_ptr, u32 num_vertices) {
         *out_data++ = i;
         *out_data++ = i + 1;
         *out_data++ = i + 2;
-        *out_data++ = i + 2;
         *out_data++ = i;
+        *out_data++ = i + 2;
         *out_data++ = i + 3;
     }
 }
