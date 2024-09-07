@@ -171,7 +171,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            LOG_WARNING(Render_Vulkan, "Input abs modifier on integer instruction");
+            value = ir.IAbs(value);
         }
         if (operand.input_modifier.neg) {
             UNREACHABLE();

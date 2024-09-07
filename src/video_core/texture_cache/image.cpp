@@ -73,7 +73,6 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
         if (!info.IsBlockCoded() && !info.IsPacked()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
-
         // In cases where an image is created as a render/depth target and cleared with compute,
         // we cannot predict whether it will be used as a storage image. A proper solution would
         // involve re-creating the resource with a new configuration and copying previous content

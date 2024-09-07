@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #pragma once
 
 #include <span>
@@ -182,6 +181,7 @@ struct Info {
         const u32* base = user_data.data();
         if (ptr_index != IR::NumScalarRegs) {
             std::memcpy(&base, &user_data[ptr_index], sizeof(base));
+            base = reinterpret_cast<const u32*>(VAddr(base) & 0xFFFFFFFFFFFFULL);
         }
         std::memcpy(&data, base + dword_offset, sizeof(T));
         return data;

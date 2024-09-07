@@ -10,6 +10,7 @@
 #ifdef ENABLE_QT_GUI
 #include "qt_gui/memory_patcher.h"
 #endif
+#include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"

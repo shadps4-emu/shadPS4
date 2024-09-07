@@ -187,6 +187,11 @@ struct PM4CmdSetData {
         BitField<28, 4, u32> index;      ///< Index for UCONFIG/CONTEXT on CI+
                                          ///< Program to zero for other opcodes and on SI
     };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
 
     template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
     static constexpr u32* SetContextReg(u32* cmdbuf, Args... data) {
@@ -350,6 +355,16 @@ struct PM4CmdEventWriteEop {
     }
 };
 
+struct PM4CmdAcquireMem {
+    PM4Type3Header header;
+    u32 cp_coher_cntl;
+    u32 cp_coher_size_lo;
+    u32 cp_coher_size_hi;
+    u32 cp_coher_base_lo;
+    u32 cp_coher_base_hi;
+    u32 poll_interval;
+};
+
 enum class DmaDataDst : u32 {
     Memory = 0,
     Gds = 1,
@@ -466,6 +481,10 @@ struct PM4CmdWriteData {
         u64 addr64;
     };
     u32 data[0];
+
+    u32 Size() const {
+        return (header.count.Value() - 2) * 4;
+    }
 
     template <typename T>
     void Address(T addr) {

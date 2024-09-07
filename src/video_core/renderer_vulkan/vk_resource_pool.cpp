@@ -151,8 +151,7 @@ vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
 
     // The pool has run out. Record current tick and place it in pending list.
     ASSERT_MSG(result == vk::Result::eErrorOutOfPoolMemory,
-               "Unexpected error during descriptor set allocation {}",
-               vk::to_string(result));
+               "Unexpected error during descriptor set allocation {}", vk::to_string(result));
     pending_pools.emplace_back(curr_pool, master_semaphore->CurrentTick());
     if (const auto [pool, tick] = pending_pools.front(); master_semaphore->IsFree(tick)) {
         curr_pool = pool;
@@ -166,8 +165,7 @@ vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
     alloc_info.descriptorPool = curr_pool;
     result = device.allocateDescriptorSets(&alloc_info, desc_sets.data());
     ASSERT_MSG(result == vk::Result::eSuccess,
-               "Unexpected error during descriptor set allocation {}",
-               vk::to_string(result));
+               "Unexpected error during descriptor set allocation {}", vk::to_string(result));
 
     // We've changed pool so also reset descriptor batch cache.
     descriptor_sets.clear();
