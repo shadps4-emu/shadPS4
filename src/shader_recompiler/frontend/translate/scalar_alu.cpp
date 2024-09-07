@@ -393,7 +393,7 @@ void Translator::S_AND_B32(NegateMode negate, const GcnInst& inst) {
     }
     IR::U32 result{ir.BitwiseAnd(src0, src1)};
     if (negate == NegateMode::Result) {
-        IR::U32 result{ir.BitwiseNot(ir.BitwiseAnd(src0, src1))};
+        result = ir.BitwiseNot(ir.BitwiseAnd(src0, src1));
     }
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
