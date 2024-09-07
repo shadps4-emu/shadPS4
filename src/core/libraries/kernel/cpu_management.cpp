@@ -8,7 +8,7 @@
 namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelIsNeoMode() {
-    LOG_INFO(Kernel_Sce, "called");
+    LOG_DEBUG(Kernel_Sce, "called");
     return Config::isNeoMode();
 }
 
