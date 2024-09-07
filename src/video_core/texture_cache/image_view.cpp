@@ -69,7 +69,12 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexcept
     : is_storage{is_storage_} {
     type = ConvertImageViewType(image.GetType());
-    format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    const auto dfmt = image.GetDataFmt();
+    auto nfmt = image.GetNumberFmt();
+    if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
+        nfmt = AmdGpu::NumberFormat::Unorm;
+    }
+    format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level + 1;
@@ -143,7 +148,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
             .levelCount = info.range.extent.levels - info.range.base.level,
-            .baseArrayLayer = info_.range.base.layer,
+            .baseArrayLayer = info.range.base.layer,
             .layerCount = info.range.extent.layers - info.range.base.layer,
         },
     };

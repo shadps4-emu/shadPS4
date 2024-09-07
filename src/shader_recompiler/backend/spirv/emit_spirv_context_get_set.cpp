@@ -305,7 +305,7 @@ void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id a
     const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
     const Id coord = ctx.OpIAdd(ctx.U32[1], address, buffer.coord_offset);
     if (buffer.is_integer) {
-        value = ctx.OpBitcast(ctx.U32[4], value);
+        value = ctx.OpBitcast(ctx.S32[4], value);
     }
     ctx.OpImageWrite(tex_buffer, coord, value);
 }

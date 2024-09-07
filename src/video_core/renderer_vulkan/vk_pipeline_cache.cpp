@@ -20,6 +20,10 @@ namespace Vulkan {
 
 using Shader::VsOutput;
 
+[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
+    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1024},
@@ -28,10 +32,6 @@ constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
-
-[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
-    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-}
 
 void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
                          const AmdGpu::Liverpool::VsOutputControl& ctl) {
@@ -184,7 +184,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 }
 
 bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
-    static constexpr std::array<u64, 0> skip_hashes = {};
+    static constexpr std::array<u64, 4> skip_hashes = {0x6f27708a, 0x6af8ef74, 0xdf795c1f, 0xc2c49a3b};
     if (std::ranges::contains(skip_hashes, shader_hash)) {
         LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
         return true;

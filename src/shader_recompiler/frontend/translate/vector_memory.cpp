@@ -117,6 +117,10 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
     case Opcode::BUFFER_ATOMIC_SWAP:
         return BUFFER_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::BUFFER_ATOMIC_UMIN:
+        return BUFFER_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::BUFFER_ATOMIC_UMAX:
+        return BUFFER_ATOMIC(AtomicOp::Umax, inst);
     default:
         LogMissingOpcode(inst);
     }

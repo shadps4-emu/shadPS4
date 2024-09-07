@@ -10,7 +10,6 @@
 #ifdef ENABLE_QT_GUI
 #include "qt_gui/memory_patcher.h"
 #endif
-#include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
@@ -26,7 +25,6 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
-#include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"

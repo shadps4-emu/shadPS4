@@ -98,22 +98,7 @@ bool UseFP16(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format) {
 }
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferU32:
-    case IR::Opcode::LoadBufferU32x2:
-    case IR::Opcode::LoadBufferU32x3:
-    case IR::Opcode::LoadBufferU32x4:
-    case IR::Opcode::StoreBufferU32:
-    case IR::Opcode::StoreBufferU32x2:
-    case IR::Opcode::StoreBufferU32x3:
-    case IR::Opcode::StoreBufferU32x4:
-    case IR::Opcode::ReadConstBuffer:
-    case IR::Opcode::BufferAtomicIAdd32:
-    case IR::Opcode::BufferAtomicSwap32:
-        return IR::Type::U32;
-    default:
-        UNREACHABLE();
-    }
+    return IR::Type::U32;
 }
 
 bool IsImageAtomicInstruction(const IR::Inst& inst) {

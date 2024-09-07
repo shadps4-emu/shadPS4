@@ -301,7 +301,6 @@ GraphicsPipeline::~GraphicsPipeline() = default;
 
 void GraphicsPipeline::BuildDescSetLayout() {
     u32 binding{};
-    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
@@ -450,7 +449,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             });
         }
 
-        boost::container::static_vector<AmdGpu::Image, 16> tsharps;
+        boost::container::static_vector<AmdGpu::Image, 32> tsharps;
         for (const auto& image_desc : stage->images) {
             const auto tsharp = image_desc.GetSharp(*stage);
             if (tsharp) {

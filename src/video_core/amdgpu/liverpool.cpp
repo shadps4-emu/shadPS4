@@ -581,6 +581,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
             break;
         }
+        case PM4ItOpcode::DmaData: {
+            break;
+        }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
             auto task = ProcessCompute(
