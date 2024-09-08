@@ -577,7 +577,7 @@ void MainWindow::SaveWindowState() const {
 void MainWindow::InstallPkg() {
     QFileDialog dialog;
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter(tr("PKG File (*.PKG)"));
+    dialog.setNameFilter(tr("PKG File (*.PKG *.pkg)"));
     if (dialog.exec()) {
         QStringList fileNames = dialog.selectedFiles();
         int nPkg = fileNames.size();

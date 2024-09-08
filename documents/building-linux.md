@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #### Debian & Ubuntu
 ```
-sudo apt-get install build-essential libasound2-dev libpulse-dev libopenal-dev zlib1g-dev libedit-dev libvulkan-dev libudev-dev git libevdev-dev libsdl2-2.0 libsdl2-dev libjack-dev libsndio-dev
+sudo apt-get install build-essential libasound2-dev libpulse-dev libopenal-dev zlib1g-dev libedit-dev libvulkan-dev libudev-dev git libevdev-dev libsdl2-2.0 libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev
 ```
 
 #### Fedora
@@ -34,9 +34,9 @@ git clone --recursive https://github.com/shadps4-emu/shadPS4.git
 cd shadPS4
 ```
 
-Generate the build directory in the shadPS4 directory:
+Generate the build directory in the shadPS4 directory. To enable the QT GUI, pass the ```-DENABLE_QT_GUI=ON``` flag:
 ```
-cmake -S . -B build/
+cmake -S . -B build/ -DENABLE_QT_GUI=ON
 ```
 
 Enter the directory:
@@ -49,8 +49,11 @@ Use make to build the project:
 cmake --build . --parallel$(nproc)
 ```
 
-Now run the emulator:
-
+Now run the emulator. If QT is enabled:
+```
+./shadps4
+```
+Otherwise, specify the path to your PKG's boot file:
 ```
 ./shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
 ```
