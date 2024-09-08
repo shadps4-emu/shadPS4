@@ -260,7 +260,6 @@ void ImageInfo::UpdateSize() {
 
         switch (tiling_mode) {
         case AmdGpu::TilingMode::Display_Linear: {
-            ASSERT(!props.is_cube);
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, bpp, num_samples);
             mip_info.height = mip_h;
