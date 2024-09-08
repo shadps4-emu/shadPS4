@@ -88,6 +88,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
     ui->toolBar->addWidget(ui->stopButton);
+    ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
     QFrame* line = new QFrame(this);
@@ -177,6 +178,7 @@ void MainWindow::CreateConnects() {
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
@@ -852,6 +854,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->playButton->setIcon(RecolorIcon(ui->playButton->icon(), isWhite));
     ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
+    ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));

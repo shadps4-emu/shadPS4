@@ -295,7 +295,7 @@ ScePthread PS4_SYSV_ABI scePthreadSelf() {
 
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (pattr == nullptr || *pattr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -387,7 +387,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t st
 }
 
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (thread == nullptr) {
         return SCE_KERNEL_ERROR_ESRCH;

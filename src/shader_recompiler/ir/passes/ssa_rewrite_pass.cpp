@@ -33,6 +33,7 @@ struct ExecFlagTag : FlagTag {};
 struct VccFlagTag : FlagTag {};
 struct VccLoTag : FlagTag {};
 struct VccHiTag : FlagTag {};
+struct M0Tag : FlagTag {};
 
 struct GotoVariable : FlagTag {
     GotoVariable() = default;
@@ -43,8 +44,17 @@ struct GotoVariable : FlagTag {
     u32 index;
 };
 
-using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, SccFlagTag, ExecFlagTag,
-                             VccFlagTag, VccLoTag, VccHiTag>;
+struct ThreadBitScalar : FlagTag {
+    ThreadBitScalar() = default;
+    explicit ThreadBitScalar(IR::ScalarReg sgpr_) : sgpr{sgpr_} {}
+
+    auto operator<=>(const ThreadBitScalar&) const noexcept = default;
+
+    IR::ScalarReg sgpr;
+};
+
+using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, ThreadBitScalar,
+                             SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -67,6 +77,13 @@ struct DefTable {
     }
     void SetDef(IR::Block* block, GotoVariable variable, const IR::Value& value) {
         goto_vars[variable.index].insert_or_assign(block, value);
+    }
+
+    const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
+        return block->ssa_sreg_values[RegIndex(variable.sgpr)];
+    }
+    void SetDef(IR::Block* block, ThreadBitScalar variable, const IR::Value& value) {
+        block->ssa_sreg_values[RegIndex(variable.sgpr)] = value;
     }
 
     const IR::Value& Def(IR::Block* block, SccFlagTag) {
@@ -103,6 +120,12 @@ struct DefTable {
     void SetDef(IR::Block* block, VccFlagTag, const IR::Value& value) {
         vcc_flag.insert_or_assign(block, value);
     }
+    const IR::Value& Def(IR::Block* block, M0Tag) {
+        return m0_flag[block];
+    }
+    void SetDef(IR::Block* block, M0Tag, const IR::Value& value) {
+        m0_flag.insert_or_assign(block, value);
+    }
 
     std::unordered_map<u32, ValueMap> goto_vars;
     ValueMap scc_flag;
@@ -111,6 +134,7 @@ struct DefTable {
     ValueMap scc_lo_flag;
     ValueMap vcc_lo_flag;
     ValueMap vcc_hi_flag;
+    ValueMap m0_flag;
 };
 
 IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
@@ -126,6 +150,10 @@ IR::Opcode UndefOpcode(const VccLoTag) noexcept {
 }
 
 IR::Opcode UndefOpcode(const VccHiTag) noexcept {
+    return IR::Opcode::UndefU32;
+}
+
+IR::Opcode UndefOpcode(const M0Tag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
@@ -161,7 +189,7 @@ public:
     }
 
     template <typename Type>
-    IR::Value ReadVariable(Type variable, IR::Block* root_block, bool is_thread_bit = false) {
+    IR::Value ReadVariable(Type variable, IR::Block* root_block) {
         boost::container::small_vector<ReadState<Type>, 64> stack{
             ReadState<Type>(nullptr),
             ReadState<Type>(root_block),
@@ -189,7 +217,7 @@ public:
                 } else if (!block->IsSsaSealed()) {
                     // Incomplete CFG
                     IR::Inst* phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(is_thread_bit ? IR::Type::U1 : IR::TypeOf(UndefOpcode(variable)));
+                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
 
                     incomplete_phis[block].insert_or_assign(variable, phi);
                     stack.back().result = IR::Value{&*phi};
@@ -202,7 +230,7 @@ public:
                 } else {
                     // Break potential cycles with operandless phi
                     IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(is_thread_bit ? IR::Type::U1 : IR::TypeOf(UndefOpcode(variable)));
+                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
 
                     WriteVariable(variable, block, IR::Value{phi});
 
@@ -251,9 +279,7 @@ private:
     template <typename Type>
     IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
         for (IR::Block* const imm_pred : block->ImmPredecessors()) {
-            const bool is_thread_bit =
-                std::is_same_v<Type, IR::ScalarReg> && phi.Flags<IR::Type>() == IR::Type::U1;
-            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred, is_thread_bit));
+            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred));
         }
         return TryRemoveTrivialPhi(phi, block, UndefOpcode(variable));
     }
@@ -301,7 +327,11 @@ private:
 void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
-    case IR::Opcode::SetThreadBitScalarReg:
+    case IR::Opcode::SetThreadBitScalarReg: {
+        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
+        pass.WriteVariable(ThreadBitScalar{reg}, block, inst.Arg(1));
+        break;
+    }
     case IR::Opcode::SetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
         pass.WriteVariable(reg, block, inst.Arg(1));
@@ -330,11 +360,18 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetVccHi:
         pass.WriteVariable(VccHiTag{}, block, inst.Arg(0));
         break;
-    case IR::Opcode::GetThreadBitScalarReg:
+    case IR::Opcode::SetM0:
+        pass.WriteVariable(M0Tag{}, block, inst.Arg(0));
+        break;
+    case IR::Opcode::GetThreadBitScalarReg: {
+        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
+        const IR::Value value = pass.ReadVariable(ThreadBitScalar{reg}, block);
+        inst.ReplaceUsesWith(value);
+        break;
+    }
     case IR::Opcode::GetScalarRegister: {
         const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        const bool thread_bit = opcode == IR::Opcode::GetThreadBitScalarReg;
-        const IR::Value value = pass.ReadVariable(reg, block, thread_bit);
+        const IR::Value value = pass.ReadVariable(reg, block);
         inst.ReplaceUsesWith(value);
         break;
     }
@@ -361,6 +398,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::GetVccHi:
         inst.ReplaceUsesWith(pass.ReadVariable(VccHiTag{}, block));
+        break;
+    case IR::Opcode::GetM0:
+        inst.ReplaceUsesWith(pass.ReadVariable(M0Tag{}, block));
         break;
     default:
         break;

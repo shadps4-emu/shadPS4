@@ -40,15 +40,25 @@ TextureCache::~TextureCache() = default;
 void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
-        const size_t image_dist =
-            image.cpu_addr > address ? image.cpu_addr - address : address - image.cpu_addr;
-        if (image_dist < MaxInvalidateDist) {
-            // Ensure image is reuploaded when accessed again.
-            image.flags |= ImageFlagBits::CpuModified;
-        }
+        // Ensure image is reuploaded when accessed again.
+        image.flags |= ImageFlagBits::CpuModified;
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
+}
+
+void TextureCache::MarkWritten(VAddr address, size_t max_size) {
+    static constexpr FindFlags find_flags =
+        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
+    ImageInfo info{};
+    info.guest_address = address;
+    info.guest_size_bytes = max_size;
+    const ImageId image_id = FindImage(info, find_flags);
+    if (!image_id) {
+        return;
+    }
+    // Ensure image is copied when accessed again.
+    slot_images[image_id].flags |= ImageFlagBits::CpuModified;
 }
 
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
@@ -199,8 +209,12 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
             !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
             continue;
         }
-        ASSERT(cache_image.info.type == info.type);
+        ASSERT(cache_image.info.type == info.type || True(flags & FindFlags::RelaxFmt));
         image_id = cache_id;
+    }
+
+    if (True(flags & FindFlags::NoCreate) && !image_id) {
+        return {};
     }
 
     // Try to resolve overlaps (if any)
@@ -209,10 +223,6 @@ ImageId TextureCache::FindImage(const ImageInfo& info, FindFlags flags) {
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
             image_id = ResolveOverlap(merged_info, cache_id, image_id);
         }
-    }
-
-    if (True(flags & FindFlags::NoCreate) && !image_id) {
-        return {};
     }
 
     // Create and register a new image
@@ -251,9 +261,6 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
 ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
     const ImageId image_id = FindImage(info);
     Image& image = slot_images[image_id];
-    if (view_info.is_storage) {
-        image.flags |= ImageFlagBits::GpuModified;
-    }
     UpdateImage(image_id);
     auto& usage = image.info.usage;
 
@@ -351,7 +358,6 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     if (False(image.flags & ImageFlagBits::CpuModified)) {
         return;
     }
-
     // Mark image as validated.
     image.flags &= ~ImageFlagBits::CpuModified;
 
@@ -484,8 +490,6 @@ void TextureCache::DeleteImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(False(image.flags & ImageFlagBits::Tracked), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
-
-    image.flags |= ImageFlagBits::Deleted;
 
     // Remove any registered meta areas.
     const auto& meta_info = image.info.meta_info;

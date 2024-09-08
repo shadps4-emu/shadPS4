@@ -32,7 +32,6 @@ enum ImageFlagBits : u32 {
     Registered = 1 << 6,     ///< True when the image is registered
     Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
     MetaRegistered = 1 << 8, ///< True when metadata for this surface is known and registered
-    Deleted = 1 << 9,        ///< Indicates that images was marked for deletion once frame is done
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 

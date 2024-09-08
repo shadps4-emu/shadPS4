@@ -41,12 +41,15 @@ public:
     void ScopeMarkerEnd();
     void ScopedMarkerInsert(const std::string_view& str);
 
+    void InlineDataToGds(u32 gds_offset, u32 value);
+    u32 ReadDataFromGds(u32 gsd_offset);
     void InvalidateMemory(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
     void CpSync();
     u64 Flush();
+    void Finish();
 
 private:
     void BeginRendering();

@@ -101,8 +101,8 @@ public:
     void S_ADDC_U32(const GcnInst& inst);
     void S_MULK_I32(const GcnInst& inst);
     void S_ADDK_I32(const GcnInst& inst);
-    void S_MAX_U32(const GcnInst& inst);
-    void S_MIN_U32(const GcnInst& inst);
+    void S_MAX_U32(bool is_signed, const GcnInst& inst);
+    void S_MIN_U32(bool is_signed, const GcnInst& inst);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
 
     // Scalar Memory
@@ -173,7 +173,7 @@ public:
     void V_BCNT_U32_B32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);
     void V_MAX3_F32(const GcnInst& inst);
-    void V_MAX3_U32(const GcnInst& inst);
+    void V_MAX3_U32(bool is_signed, const GcnInst& inst);
     void V_CVT_I32_F32(const GcnInst& inst);
     void V_MIN_I32(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
@@ -192,6 +192,9 @@ public:
     void V_MBCNT_U32_B32(bool is_low, const GcnInst& inst);
     void V_BFM_B32(const GcnInst& inst);
     void V_FFBH_U32(const GcnInst& inst);
+    void V_MOVRELS_B32(const GcnInst& inst);
+    void V_MOVRELD_B32(const GcnInst& inst);
+    void V_MOVRELSD_B32(const GcnInst& inst);
 
     // Vector Memory
     void BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst);
@@ -214,6 +217,8 @@ public:
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
+    void DS_APPEND(const GcnInst& inst);
+    void DS_CONSUME(const GcnInst& inst);
     void S_BARRIER();
 
     // MIMG
@@ -233,6 +238,9 @@ private:
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
+    IR::U32 VMovRelSHelper(u32 src_vgprno, const IR::U32 m0);
+    void VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0);
+
     void LogMissingOpcode(const GcnInst& inst);
 
 private:
@@ -240,7 +248,6 @@ private:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    IR::U32 m0_value;
     bool opcode_missing = false;
 };
 

@@ -315,14 +315,12 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     SaveRegisters(c, {scratch});
 
     // BLSI sets CF to zero if source is zero, otherwise it sets CF to one.
-    Xbyak::Label set_carry, clear_carry, end;
+    Xbyak::Label clear_carry, end;
 
     c.mov(scratch, *src);
     c.neg(scratch); // NEG, like BLSI, clears CF if the source is zero and sets it otherwise
-    c.jc(set_carry);
-    c.jmp(clear_carry);
+    c.jnc(clear_carry);
 
-    c.L(set_carry);
     c.and_(scratch, *src);
     c.stc(); // setting/clearing carry needs to happen after the AND because that clears CF
     c.jmp(end);
@@ -345,15 +343,13 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
 
     SaveRegisters(c, {scratch});
 
-    Xbyak::Label set_carry, clear_carry, end;
+    Xbyak::Label clear_carry, end;
 
     // BLSMSK sets CF to zero if source is NOT zero, otherwise it sets CF to one.
     c.mov(scratch, *src);
     c.test(scratch, scratch);
-    c.jz(set_carry);
-    c.jmp(clear_carry);
+    c.jnz(clear_carry);
 
-    c.L(set_carry);
     c.dec(scratch);
     c.xor_(scratch, *src);
     c.stc();
@@ -378,15 +374,13 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     SaveRegisters(c, {scratch});
 
-    Xbyak::Label set_carry, clear_carry, end;
+    Xbyak::Label clear_carry, end;
 
     // BLSR sets CF to zero if source is NOT zero, otherwise it sets CF to one.
     c.mov(scratch, *src);
     c.test(scratch, scratch);
-    c.jz(set_carry);
-    c.jmp(clear_carry);
+    c.jnz(clear_carry);
 
-    c.L(set_carry);
     c.dec(scratch);
     c.and_(scratch, *src);
     c.stc();
