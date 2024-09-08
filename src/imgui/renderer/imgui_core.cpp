@@ -183,7 +183,7 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
         },
     };
     vk::RenderingInfo render_info = {};
-    render_info.renderArea = {
+    render_info.renderArea = vk::Rect2D{
         .offset = {0, 0},
         .extent = {frame->width, frame->height},
     };
