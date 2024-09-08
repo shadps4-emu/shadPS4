@@ -504,7 +504,6 @@ int PS4_SYSV_ABI sceNetCtlApRpStop() {
 
 int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback() {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
     return ORBIS_OK;
 }
 
