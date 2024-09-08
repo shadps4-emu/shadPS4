@@ -182,11 +182,12 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
             .storeOp = vk::AttachmentStoreOp::eStore,
         },
     };
-    vk::RenderingInfo render_info = {};
-    render_info.renderArea = {
+    vk::Rect2D renderArea = {
         .offset = {0, 0},
         .extent = {frame->width, frame->height},
     };
+    vk::RenderingInfo render_info = {};
+    render_info.renderArea = renderArea;
     render_info.layerCount = 1;
     render_info.colorAttachmentCount = 1;
     render_info.pColorAttachments = color_attachments;
