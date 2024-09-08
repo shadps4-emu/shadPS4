@@ -18,3 +18,8 @@ void assert_fail_impl() {
     Crash();
     throw std::runtime_error("Unreachable code");
 }
+
+void assert_fail_debug_msg(const char* msg) {
+    LOG_CRITICAL(Debug, "Assertion Failed!\n{}", msg);
+    assert_fail_impl();
+}
