@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "net_ctl_obj.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -45,9 +46,6 @@ typedef union OrbisNetCtlInfo {
     char http_proxy_server[ORBIS_NET_CTL_HOSTNAME_LEN];
     u16 http_proxy_port;
 } SceNetCtlInfo;
-
-using OrbisNetCtlCallback = PS4_SYSV_ABI void (*)(int eventType, void* arg);
-using OrbisNetCtlCallbackForNpToolkit = PS4_SYSV_ABI void (*)(int eventType, void* arg);
 
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
@@ -118,7 +116,7 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC();
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlClearEventForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func,
-                                                       void* arg, int* ci);
+                                                       void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlApCheckCallback();
 int PS4_SYSV_ABI sceNetCtlApClearEvent();

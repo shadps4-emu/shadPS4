@@ -212,6 +212,9 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net.cpp
                  src/core/libraries/network/netctl.cpp
                  src/core/libraries/network/netctl.h
+                 src/core/libraries/network/net_ctl_obj.cpp
+                 src/core/libraries/network/net_ctl_obj.h
+                 src/core/libraries/network/net_ctl_codes.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
