@@ -267,8 +267,8 @@ public:
         menuView->addAction(menuGame_List_Mode->menuAction());
         menuView->addAction(menuGame_List_Icons->menuAction());
         menuView->addAction(menuThemes->menuAction());
-        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeDark);
+        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeGreen);
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);
