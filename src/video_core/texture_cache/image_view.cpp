@@ -114,11 +114,11 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
-                     ImageId image_id_, std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
+                     ImageId image_id_)
     : image_id{image_id_}, info{info_} {
-    vk::ImageViewUsageCreateInfo usage_ci{};
-    if (usage_override) {
-        usage_ci.usage = usage_override.value();
+    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage};
+    if (!info.is_storage) {
+        usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
     // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
     vk::Format format = info.format;
@@ -134,7 +134,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     }
 
     const vk::ImageViewCreateInfo image_view_ci = {
-        .pNext = usage_override ? &usage_ci : nullptr,
+        .pNext = &usage_ci,
         .image = image.image,
         .viewType = info.type,
         .format = instance.GetSupportedFormat(format),
