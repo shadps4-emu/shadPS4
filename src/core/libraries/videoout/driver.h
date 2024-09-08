@@ -102,6 +102,7 @@ private:
     };
 
     std::chrono::microseconds Flip(const Request& req);
+    void DrawBlankFrame(); // Used when there is no flip request to keep ImGui up to date
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
     void PresentThread(std::stop_token token);
 

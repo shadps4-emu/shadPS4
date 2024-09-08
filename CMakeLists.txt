@@ -561,6 +561,18 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderdoc.h
 )
 
+set(IMGUI src/imgui/imgui_config.h
+          src/imgui/imgui_layer.h
+          src/imgui/layer/video_info.cpp
+          src/imgui/layer/video_info.h
+          src/imgui/renderer/imgui_core.cpp
+          src/imgui/renderer/imgui_core.h
+          src/imgui/renderer/imgui_impl_sdl3.cpp
+          src/imgui/renderer/imgui_impl_sdl3.h
+          src/imgui/renderer/imgui_impl_vulkan.cpp
+          src/imgui/renderer/imgui_impl_vulkan.h
+)
+
 set(INPUT src/input/controller.cpp
           src/input/controller.h
 )
@@ -617,6 +629,7 @@ endif()
 if (ENABLE_QT_GUI)
     qt_add_executable(shadps4
         ${AUDIO_CORE}
+        ${IMGUI}
         ${INPUT}
         ${QT_GUI}
         ${COMMON}
@@ -629,6 +642,7 @@ if (ENABLE_QT_GUI)
 else()
     add_executable(shadps4
         ${AUDIO_CORE}
+        ${IMGUI}
         ${INPUT}
         ${COMMON}
         ${CORE}
@@ -645,8 +659,11 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
+
+target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
+target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
 
 if (APPLE)
   option(USE_SYSTEM_VULKAN_LOADER "Enables using the system Vulkan loader instead of directly linking with MoltenVK. Useful for loading validation layers." OFF)

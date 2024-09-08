@@ -9,6 +9,7 @@
 #include "common/config.h"
 #include "common/version.h"
 #include "core/libraries/pad/pad.h"
+#include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
@@ -80,6 +81,10 @@ void WindowSDL::waitEvent() {
         return;
     }
 
+    if (ImGui::Core::ProcessEvent(&event)) {
+        return;
+    }
+
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
@@ -115,6 +120,7 @@ void WindowSDL::waitEvent() {
 
 void WindowSDL::onResize() {
     SDL_GetWindowSizeInPixels(window, &width, &height);
+    ImGui::Core::OnResize();
 }
 
 void WindowSDL::onKeyPress(const SDL_Event* event) {

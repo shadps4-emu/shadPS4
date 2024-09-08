@@ -6,6 +6,7 @@
 #include "common/singleton.h"
 #include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
+#include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -73,7 +74,7 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
-      texture_cache{rasterizer->GetTextureCache()} {
+      texture_cache{rasterizer->GetTextureCache()}, video_info_ui{this} {
     const u32 num_images = swapchain.GetImageCount();
     const vk::Device device = instance.GetDevice();
 
@@ -84,9 +85,14 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
         frame.present_done = device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
         free_queue.push(&frame);
     }
+
+    // Setup ImGui
+    ImGui::Core::Initialize(instance, window, num_images, swapchain.GetSurfaceFormat().format);
+    ImGui::Layer::AddLayer(&video_info_ui);
 }
 
 RendererVulkan::~RendererVulkan() {
+    ImGui::Layer::RemoveLayer(&video_info_ui);
     draw_scheduler.Finish();
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
@@ -94,6 +100,7 @@ RendererVulkan::~RendererVulkan() {
         device.destroyImageView(frame.image_view);
         device.destroyFence(frame.present_done);
     }
+    ImGui::Core::Shutdown(device);
 }
 
 void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
@@ -254,6 +261,8 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 }
 
 void RendererVulkan::Present(Frame* frame) {
+    ImGui::Core::NewFrame();
+
     swapchain.AcquireNextImage();
 
     const vk::Image swapchain_image = swapchain.Image();
@@ -286,7 +295,7 @@ void RendererVulkan::Present(Frame* frame) {
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
                 .dstAccessMask = vk::AccessFlagBits::eTransferRead,
-                .oldLayout = vk::ImageLayout::eGeneral,
+                .oldLayout = vk::ImageLayout::eUndefined,
                 .newLayout = vk::ImageLayout::eTransferSrcOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -316,6 +325,8 @@ void RendererVulkan::Present(Frame* frame) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
+
+        ImGui::Core::Render(cmdbuf, frame);
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                vk::PipelineStageFlagBits::eTransfer,
