@@ -1,9 +1,7 @@
-# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
-# SPDX-License-Identifier: GPL-2.0-or-later
-
 name: Windows-Qt
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
