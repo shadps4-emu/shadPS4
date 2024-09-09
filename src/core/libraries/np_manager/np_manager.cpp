@@ -874,8 +874,16 @@ int PS4_SYSV_ABI sceNpCheckCallback() {
     return ORBIS_OK;
 }
 
+struct NpStateCallbackForNpToolkit {
+    OrbisNpStateCallbackForNpToolkit func;
+    void* userdata;
+};
+
+NpStateCallbackForNpToolkit NpStateCbForNp;
+
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    // LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    NpStateCbForNp.func(0, ORBIS_NP_STATE_SIGNED_OUT, NpStateCbForNp.userdata);
     return ORBIS_OK;
 }
 
@@ -2507,9 +2515,12 @@ int PS4_SYSV_ABI Func_FF966E4351E564D6() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit() {
+int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
+                                                      void* userdata) {
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+    NpStateCbForNp.func = callback;
+    NpStateCbForNp.userdata = userdata;
+    return 1;
 }
 
 int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
