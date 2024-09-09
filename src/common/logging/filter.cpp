@@ -113,6 +113,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, ImeDialog)                                                                            \
     SUB(Lib, AvPlayer)                                                                             \
     SUB(Lib, Ngs2)                                                                                 \
+    SUB(Lib, Audio3d)                                                                              \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

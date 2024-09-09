@@ -260,6 +260,11 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_impl.cpp
                 src/core/libraries/ngs2/ngs2_impl.h
                 src/core/libraries/ajm/ajm_error.h
+                src/core/libraries/audio3d/audio3d.cpp
+                src/core/libraries/audio3d/audio3d.h
+                src/core/libraries/audio3d/audio3d_error.h
+                src/core/libraries/audio3d/audio3d_impl.cpp
+                src/core/libraries/audio3d/audio3d_impl.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h

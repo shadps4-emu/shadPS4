@@ -6,6 +6,7 @@
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/audio3d/audio3d.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/dialogs/error_dialog.h"
 #include "core/libraries/dialogs/ime_dialog.h"
@@ -75,6 +76,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ErrorDialog::RegisterlibSceErrorDialog(sym);
     Libraries::ImeDialog::RegisterlibSceImeDialog(sym);
     Libraries::AvPlayer::RegisterlibSceAvPlayer(sym);
+    Libraries::Audio3d::RegisterlibSceAudio3d(sym);
 }
 
 } // namespace Libraries
