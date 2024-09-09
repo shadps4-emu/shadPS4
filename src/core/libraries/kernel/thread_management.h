@@ -119,7 +119,7 @@ struct PthreadSemInternal {
 
 class PThreadPool {
 public:
-    ScePthread Create();
+    ScePthread Create(const char* name);
 
 private:
     std::vector<ScePthread> m_threads;
