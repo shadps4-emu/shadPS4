@@ -588,7 +588,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                         it->attribute("unlockstate").set_value("unlocked");
                     }
 
-                    g_trophy_ui = TrophyUI(trophyId, currentTrophyName, TrophyType::BRONZE);
+                    g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName, TrophyType::BRONZE);
 
                     //doc.save_file((trophyDir.string() + "\\trophy00\\Xml\\TROP.XML").c_str());
                 }

@@ -4,6 +4,8 @@
 #pragma once
 
 #include <variant>
+#include <vector>
+#include <string>
 
 #include "common/fixed_value.h"
 #include "common/types.h"
@@ -20,18 +22,21 @@ enum TrophyType {
     BRONZE,
 };
 
-class TrophyUI final : public ImGui::Layer {
-    bool first_render{false};
-
+struct TrophyInfo {
     int trophyId = -1;
     std::string trophyName;
-    std::string trophyDescription;
     TrophyType trophyType;
+};
+
+class TrophyUI final : public ImGui::Layer {
+    bool first_render{false};
+    std::vector<TrophyInfo> trophyQueue;
 
 public:
-    explicit TrophyUI(int trophyId, std::string trophyName, TrophyType trophyType);
     TrophyUI();
     ~TrophyUI() override;
+
+    void AddTrophyToQueue(int trophyId, std::string trophyName, TrophyType trophyType);
 
     void Finish();
 

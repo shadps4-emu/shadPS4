@@ -2,18 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <imgui.h>
+#include <chrono>
 #include "common/assert.h"
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
 
 using namespace ImGui;
 using namespace Libraries::NpTrophy;
-
-TrophyUI::TrophyUI(int trophyId, std::string trophyName, TrophyType trophyType)
-                   : trophyId(trophyId), trophyName(trophyName), trophyType(trophyType) {
-    first_render = true;
-    AddLayer(this);
-}
 
 TrophyUI::TrophyUI() {
     first_render = true;
@@ -25,9 +20,21 @@ TrophyUI::~TrophyUI() {
     Finish();
 }
 
+void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(int trophyId, std::string trophyName,
+                                                     TrophyType trophyType) {
+    TrophyInfo newInfo;
+    newInfo.trophyId = trophyId;
+    newInfo.trophyName = trophyName;
+    newInfo.trophyType = trophyType;
+    trophyQueue.push_back(newInfo);
+}
+
 void TrophyUI::Finish() {
     RemoveLayer(this);
 }
+
+bool displayingTrophy;
+std::chrono::steady_clock::time_point trophyStartedTime;
 
 void TrophyUI::Draw() {
     const auto& io = GetIO();
@@ -45,13 +52,30 @@ void TrophyUI::Draw() {
     PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
     KeepNavHighlight();
 
-    if (trophyId != -1) {
-        if (Begin("Trophy Window", nullptr,
-            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-            Text("Trophy earned!");
-            Text(trophyName.c_str());
+    if (trophyQueue.size() != 0) {
+        if (!displayingTrophy) {
+            displayingTrophy = true;
+            trophyStartedTime = std::chrono::steady_clock::now();
+        }
 
-            End();
+        std::chrono::steady_clock::time_point timeNow = std::chrono::steady_clock::now();
+        std::chrono::seconds duration =
+            std::chrono::duration_cast<std::chrono::seconds>(timeNow - trophyStartedTime);
+
+        if (duration.count() >= 5) {
+            trophyQueue.erase(trophyQueue.begin());
+            displayingTrophy = false;
+        }
+
+        if (trophyQueue.size() != 0) {
+            TrophyInfo currentTrophyInfo = trophyQueue[0];
+            if (Begin("Trophy Window", nullptr,
+                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
+                Text("Trophy earned!");
+                Text(currentTrophyInfo.trophyName.c_str());
+
+                End();
+            }
         }
     }
 
