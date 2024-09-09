@@ -14,18 +14,9 @@
 
 namespace Libraries::NpTrophy {
 
-enum TrophyType {
-    UNKNOWN,
-    PLATINUM,
-    GOLD,
-    SILVER,
-    BRONZE,
-};
-
 struct TrophyInfo {
     int trophyId = -1;
     std::string trophyName;
-    TrophyType trophyType;
 };
 
 class TrophyUI final : public ImGui::Layer {
@@ -36,7 +27,7 @@ public:
     TrophyUI();
     ~TrophyUI() override;
 
-    void AddTrophyToQueue(int trophyId, std::string trophyName, TrophyType trophyType);
+    void AddTrophyToQueue(int trophyId, std::string trophyName);
 
     void Finish();
 

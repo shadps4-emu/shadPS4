@@ -19,12 +19,10 @@ TrophyUI::~TrophyUI() {
     Finish();
 }
 
-void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(int trophyId, std::string trophyName,
-                                                     TrophyType trophyType) {
+void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(int trophyId, std::string trophyName) {
     TrophyInfo newInfo;
     newInfo.trophyId = trophyId;
     newInfo.trophyName = trophyName;
-    newInfo.trophyType = trophyType;
     trophyQueue.push_back(newInfo);
 }
 
@@ -66,8 +64,8 @@ void TrophyUI::Draw() {
 
             TrophyInfo currentTrophyInfo = trophyQueue[0];
             if (Begin("Trophy Window", nullptr,
-                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings
-                      | ImGuiWindowFlags_NoInputs)) {
+                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                          ImGuiWindowFlags_NoInputs)) {
                 Text("Trophy earned!");
                 TextWrapped(currentTrophyInfo.trophyName.c_str());
 

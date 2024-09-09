@@ -102,8 +102,8 @@ void Emulator::Run(const std::filesystem::path& file) {
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
                 Libraries::NpTrophy::game_serial = id;
-                const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                       id / "TrophyFiles";
+                const auto trophyDir =
+                    Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
                 if (!std::filesystem::exists(trophyDir)) {
                     TRP trp;
                     if (!trp.Extract(file.parent_path())) {

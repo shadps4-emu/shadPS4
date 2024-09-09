@@ -9,8 +9,8 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "externals/pugixml/src/pugixml.hpp"
-#include "trophy_ui.h"
 #include "np_trophy.h"
+#include "trophy_ui.h"
 
 namespace Libraries::NpTrophy {
 
@@ -213,6 +213,9 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
     // flags->flag_bits = 0u;
+    // temporary workaround till i implement this properly
+    uint32_t* flagTemp = reinterpret_cast<uint32_t*>(flags);
+    *flagTemp = 0u;
     *count = 0;
     return ORBIS_OK;
 }
@@ -549,49 +552,106 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     pugi::xml_parse_result result =
         doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
 
-    // only do this if platinum is not unlocked
     *platinumId = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
-    // check if all trophies are unlocked and if they are unlock plat and set its ID
+
+    int numTrophies = 0;
+    int numTrophiesUnlocked = 0;
+
+    pugi::xml_node_iterator platinumIt;
+    int platinumTrophyGroup = -1;
 
     if (result) {
-        bool foundTrophy = false;
         auto trophyconf = doc.child("trophyconf");
         for (pugi::xml_node_iterator it = trophyconf.children().begin();
-             it != trophyconf.children().end() && !foundTrophy; ++it) {
+             it != trophyconf.children().end(); ++it) {
 
-            std::string currentTrophyId =
-                reinterpret_cast<const char*>(it->attribute("id").value());
-            std::string currentTrophyName =
-                reinterpret_cast<const char*>(it->child("name").text().as_string());
-            std::string currentTrophyDescription =
-                reinterpret_cast<const char*>(it->child("detail").text().as_string());
-            std::string currentTrophyType =
-                reinterpret_cast<const char*>(it->attribute("ttype").value());
-            std::string currentTrophyUnlockState =
-                reinterpret_cast<const char*>(it->attribute("unlockstate").value());
+            std::string currentTrophyId = it->attribute("id").value();
+            std::string currentTrophyName = it->child("name").text().as_string();
+            std::string currentTrophyDescription = it->child("detail").text().as_string();
+            std::string currentTrophyType = it->attribute("ttype").value();
+            std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
 
-            if (std::string(it->name()) == "trophy" && std::stoi(currentTrophyId) == trophyId) {
+            if (currentTrophyType == "P") {
+                platinumIt = it;
 
-                LOG_INFO(Lib_NpTrophy, "Found trophy to unlock {} : {}",
-                         it->child("name").text().as_string(),
-                         it->child("detail").text().as_string());
-                if (currentTrophyUnlockState == "unlocked") {
-                    LOG_INFO(Lib_NpTrophy, "Trophy already unlocked");
-                    return ORBIS_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
+                if (std::string(platinumIt->attribute("gid").value()).empty()) {
+                    platinumTrophyGroup = -1;
                 } else {
-                    if (std::string(it->attribute("unlockstate").value()).empty()) {
-                        it->append_attribute("unlockstate") = "unlocked";
-                    } else {
-                        it->attribute("unlockstate").set_value("unlocked");
-                    }
-
-                    g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName, TrophyType::BRONZE);
-
-                    //doc.save_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+                    platinumTrophyGroup =
+                        std::stoi(std::string(platinumIt->attribute("gid").value()));
                 }
-                foundTrophy = true;
+
+                if (trophyId == std::stoi(currentTrophyId)) {
+                    return ORBIS_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK;
+                }
+            }
+
+            if (std::string(it->name()) == "trophy") {
+                if (platinumTrophyGroup == -1) {
+                    if (std::string(it->attribute("gid").value()).empty()) {
+                        numTrophies++;
+                        if (currentTrophyUnlockState == "unlocked") {
+                            numTrophiesUnlocked++;
+                        }
+                    }
+                } else {
+                    if (!std::string(it->attribute("gid").value()).empty()) {
+                        if (std::stoi(std::string(it->attribute("gid").value())) ==
+                            platinumTrophyGroup) {
+                            numTrophies++;
+                            if (currentTrophyUnlockState == "unlocked") {
+                                numTrophiesUnlocked++;
+                            }
+                        }
+                    }
+                }
+                
+                if (std::stoi(currentTrophyId) == trophyId) {
+                    LOG_INFO(Lib_NpTrophy, "Found trophy to unlock {} : {}",
+                             it->child("name").text().as_string(),
+                             it->child("detail").text().as_string());
+                    if (currentTrophyUnlockState == "unlocked") {
+                        LOG_INFO(Lib_NpTrophy, "Trophy already unlocked");
+                        return ORBIS_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
+                    } else {
+                        if (std::string(it->attribute("unlockstate").value()).empty()) {
+                            it->append_attribute("unlockstate") = "unlocked";
+                        } else {
+                            it->attribute("unlockstate").set_value("unlocked");
+                        }
+
+                        g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName);
+                    }
+                }
             }
         }
+
+        if (std::string(platinumIt->attribute("unlockstate").value()).empty()) {
+            if ((numTrophies - 2) == numTrophiesUnlocked) {
+
+                platinumIt->append_attribute("unlockstate") = "unlocked";
+
+                std::string platinumTrophyId = platinumIt->attribute("id").value();
+                std::string platinumTrophyName = platinumIt->child("name").text().as_string();
+
+                *platinumId = std::stoi(platinumTrophyId);
+                g_trophy_ui.AddTrophyToQueue(*platinumId, platinumTrophyName);
+            }
+        } else if (std::string(platinumIt->attribute("unlockstate").value()) == "locked") {
+            if ((numTrophies - 2) == numTrophiesUnlocked) {
+
+                platinumIt->attribute("unlockstate").set_value("unlocked");
+
+                std::string platinumTrophyId = platinumIt->attribute("id").value();
+                std::string platinumTrophyName = platinumIt->child("name").text().as_string();
+
+                *platinumId = std::stoi(platinumTrophyId);
+                g_trophy_ui.AddTrophyToQueue(*platinumId, platinumTrophyName);
+            }
+        }
+
+        doc.save_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+
     } else
         LOG_INFO(Lib_NpTrophy, "couldnt parse xml : {}", result.description());
 
