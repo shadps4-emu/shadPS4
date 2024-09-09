@@ -542,17 +542,12 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     if (platinumId == nullptr)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
-#ifdef _WIN32
     const auto trophyDir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-#else
-    const auto trophyDir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-#endif
 
     pugi::xml_document doc;
     pugi::xml_parse_result result =
-        doc.load_file((trophyDir.string() + "\\trophy00\\Xml\\TROP.XML").c_str());
+        doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
 
     // only do this if platinum is not unlocked
     *platinumId = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
@@ -564,8 +559,10 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         for (pugi::xml_node_iterator it = trophyconf.children().begin();
              it != trophyconf.children().end() && !foundTrophy; ++it) {
 
-            std::string currentTrophyId = reinterpret_cast<const char*>(it->attribute("id").value());
-            std::string currentTrophyName = reinterpret_cast<const char*>(it->child("name").text().as_string());
+            std::string currentTrophyId =
+                reinterpret_cast<const char*>(it->attribute("id").value());
+            std::string currentTrophyName =
+                reinterpret_cast<const char*>(it->child("name").text().as_string());
             std::string currentTrophyDescription =
                 reinterpret_cast<const char*>(it->child("detail").text().as_string());
             std::string currentTrophyType =
@@ -590,7 +587,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
                     g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName, TrophyType::BRONZE);
 
-                    //doc.save_file((trophyDir.string() + "\\trophy00\\Xml\\TROP.XML").c_str());
+                    //doc.save_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
                 }
                 foundTrophy = true;
             }

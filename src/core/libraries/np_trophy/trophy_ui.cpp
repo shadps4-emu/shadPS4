@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <imgui.h>
 #include <chrono>
+#include <imgui.h>
 #include "common/assert.h"
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
@@ -14,7 +14,6 @@ TrophyUI::TrophyUI() {
     first_render = true;
     AddLayer(this);
 }
-
 
 TrophyUI::~TrophyUI() {
     Finish();
@@ -41,16 +40,8 @@ void TrophyUI::Draw() {
 
     const ImVec2 window_size{
         std::min(io.DisplaySize.x, 200.f),
-        std::min(io.DisplaySize.y, 125.f),
+        std::min(io.DisplaySize.y, 75.f),
     };
-
-    CentralizeWindow();
-    SetNextWindowSize(window_size);
-    SetNextWindowFocus();
-    SetNextWindowCollapsed(false);
-    SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 50));
-    PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
-    KeepNavHighlight();
 
     if (trophyQueue.size() != 0) {
         if (!displayingTrophy) {
@@ -68,17 +59,21 @@ void TrophyUI::Draw() {
         }
 
         if (trophyQueue.size() != 0) {
+            SetNextWindowSize(window_size);
+            SetNextWindowCollapsed(false);
+            SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 50));
+            KeepNavHighlight();
+
             TrophyInfo currentTrophyInfo = trophyQueue[0];
             if (Begin("Trophy Window", nullptr,
-                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
+                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings
+                      | ImGuiWindowFlags_NoInputs)) {
                 Text("Trophy earned!");
-                Text(currentTrophyInfo.trophyName.c_str());
+                TextWrapped(currentTrophyInfo.trophyName.c_str());
 
                 End();
             }
         }
     }
-
-    PopStyleColor();
     first_render = false;
 }

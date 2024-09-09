@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <string>
 #include <variant>
 #include <vector>
-#include <string>
 
 #include "common/fixed_value.h"
 #include "common/types.h"
