@@ -25,6 +25,7 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
+#include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
@@ -99,6 +100,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+                Libraries::NpTrophy::game_serial = id;
 #ifdef ENABLE_QT_GUI
                 MemoryPatcher::g_game_serial = id;
 #endif
