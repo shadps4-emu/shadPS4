@@ -58,6 +58,10 @@ public:
         return is_open;
     }
 
+    [[nodiscard]] SDL_Window* GetSdlWindow() const {
+        return window;
+    }
+
     WindowSystemInfo getWindowInfo() const {
         return window_info;
     }

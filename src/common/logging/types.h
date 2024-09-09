@@ -84,6 +84,7 @@ enum class Class : u8 {
     Render,             ///< Video Core
     Render_Vulkan,      ///< Vulkan backend
     Render_Recompiler,  ///< Shader recompiler
+    ImGui,              ///< ImGui
     Loader,             ///< ROM loader
     Input,              ///< Input emulation
     Tty,                ///< Debug output from emu

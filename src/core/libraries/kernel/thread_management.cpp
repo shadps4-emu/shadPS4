@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
@@ -989,7 +990,9 @@ static void cleanup_thread(void* arg) {
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
+#ifdef ARCH_X86_64
     Core::InitializeThreadPatchStack();
+#endif
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     linker->InitTlsForThread(false);
     void* ret = nullptr;
@@ -1182,6 +1185,7 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     int result = pthread_condattr_destroy(&(*attr)->cond_attr);
 
     LOG_DEBUG(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
+    delete *attr;
 
     switch (result) {
     case 0:

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "common/arch.h"
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
@@ -13,15 +15,20 @@ namespace Common {
 
 #ifdef _MSC_VER
 __forceinline static u64 FencedRDTSC() {
+#ifdef ARCH_X86_64
     _mm_lfence();
     _ReadWriteBarrier();
     const u64 result = __rdtsc();
     _mm_lfence();
     _ReadWriteBarrier();
     return result;
+#else
+#error "Missing FencedRDTSC() implementation for target CPU architecture."
+#endif
 }
 #else
 static inline u64 FencedRDTSC() {
+#ifdef ARCH_X86_64
     u64 eax;
     u64 edx;
     asm volatile("lfence\n\t"
@@ -29,6 +36,16 @@ static inline u64 FencedRDTSC() {
                  "lfence\n\t"
                  : "=a"(eax), "=d"(edx));
     return (edx << 32) | eax;
+#elif defined(ARCH_ARM64)
+    u64 ret;
+    asm volatile("isb\n\t"
+                 "mrs %0, cntvct_el0\n\t"
+                 "isb\n\t"
+                 : "=r"(ret)::"memory");
+    return ret;
+#else
+#error "Missing FencedRDTSC() implementation for target CPU architecture."
+#endif
 }
 #endif
 

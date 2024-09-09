@@ -21,7 +21,7 @@
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>Ce logiciel ne doit pas être utilisé pour jouer à des jeux que vous n&apos;avez pas obtenus légalement.</translation>
+            <translation>Ce logiciel ne doit pas être utilisé pour jouer à des jeux que vous n'avez pas obtenus légalement.</translation>
         </message>
     </context>
     <context>
@@ -60,7 +60,7 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="31"/>
             <source>Directory to install games</source>
-            <translation>Répertoire d&apos;installation des jeux</translation>
+            <translation>Répertoire d'installation des jeux</translation>
         </message>
         <message>
             <location filename="../game_install_dialog.cpp" line="50"/>
@@ -75,7 +75,7 @@
         <message>
             <location filename="../game_install_dialog.cpp" line="75"/>
             <source>The value for location to install games is not valid.</source>
-            <translation>Le répertoire d'installation des jeux n&apos;est pas valide.</translation>
+            <translation>Le répertoire d'installation des jeux n'est pas valide.</translation>
         </message>
     </context>
     <context>
@@ -118,7 +118,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
-            <translation>Copier le numéro de série</translation>
+            <translation>Copier le N° de série</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="62"/>
@@ -201,7 +201,7 @@
         <message>
             <location filename="../main_window_ui.h" line="327"/>
             <source>Exit the application.</source>
-            <translation>Fermer l&apos;application.</translation>
+            <translation>Fermer l'application.</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="330"/>
@@ -291,7 +291,7 @@
         <message>
             <location filename="../main_window_ui.h" line="354"/>
             <source>Game List Mode</source>
-            <translation>Mode d&apos;affichage</translation>
+            <translation>Mode d'affichage</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="355"/>
@@ -301,7 +301,7 @@
         <message>
             <location filename="../main_window_ui.h" line="356"/>
             <source>Utils</source>
-            <translation>Utilitaire</translation>
+            <translation>Utilitaires</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="357"/>
@@ -316,12 +316,12 @@
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
-            <translation>Noir</translation>
+            <translation>Sombre</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="360"/>
             <source>Light</source>
-            <translation>Blanc</translation>
+            <translation>Clair</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="361"/>
@@ -341,7 +341,7 @@
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>Bare d&apos;outils</translation>
+            <translation>Bare d'outils</translation>
         </message>
     </context>
     <context>
@@ -385,7 +385,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="95"/>
             <source>Emulator Language</source>
-            <translation>Langage de l&apos;émulateur</translation>
+            <translation>Langage de l'émulateur</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="114"/>
@@ -400,7 +400,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="129"/>
             <source>Show Splash</source>
-            <translation>Afficher l&apos;image du jeu</translation>
+            <translation>Afficher l'image du jeu</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="136"/>
@@ -410,7 +410,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="155"/>
             <source>Username</source>
-            <translation>Nom d&apos;utilisateur</translation>
+            <translation>Nom d'utilisateur</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="178"/>
@@ -538,7 +538,7 @@
         <message>
             <location filename="../main_window.cpp" line="392"/>
             <source>All Patches available for all games have been downloaded.</source>
-            <translation>Tous les patchs disponibles pour les jeux ont été téléchargés.</translation>
+            <translation>Tous les patchs disponibles ont été téléchargés.</translation>
         </message>
         <message>
             <location filename="../main_window.cpp" line="549"/>
@@ -906,7 +906,7 @@
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
-			<translation>Impossible d'appliquer les triches avant que le jeu ne commence.</translation>
+			<translation>Impossible d'appliquer les Cheats avant que le jeu ne commence.</translation>
 		</message>
     </context>	
 	<context>
@@ -972,7 +972,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
-			<translation>Chemin</translation>
+			<translation>Répertoire</translation>
 		</message>
 	</context>
 </TS>
