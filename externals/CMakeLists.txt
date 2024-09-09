@@ -43,7 +43,6 @@ else()
 endif()
 
 if (NOT TARGET FFmpeg::ffmpeg)
-    set(ARCHITECTURE "x86_64")
     add_subdirectory(ffmpeg-core)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
 endif()

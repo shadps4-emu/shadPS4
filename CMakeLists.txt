@@ -31,6 +31,22 @@ endif()
 
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 
+# First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
+if (APPLE AND CMAKE_OSX_ARCHITECTURES)
+    set(BASE_ARCHITECTURE "${CMAKE_OSX_ARCHITECTURES}")
+else()
+    set(BASE_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+# Next, match common architecture strings down to a known common value.
+if (BASE_ARCHITECTURE MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+    set(ARCHITECTURE "x86_64")
+elseif (BASE_ARCHITECTURE MATCHES "(aarch64)|(AARCH64)|(arm64)|(ARM64)")
+    set(ARCHITECTURE "arm64")
+else()
+    message(FATAL_ERROR "Unsupported CPU architecture: ${BASE_ARCHITECTURE}")
+endif()
+
 # This function should be passed a list of all files in a target. It will automatically generate file groups
 # following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
 function(create_target_directory_groups target_name)
@@ -309,6 +325,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/logging/text_formatter.h
            src/common/logging/types.h
            src/common/alignment.h
+           src/common/arch.h
            src/common/assert.cpp
            src/common/assert.h
            src/common/bit_field.h
@@ -358,8 +375,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/cpu_patches.cpp
-         src/core/cpu_patches.h
          src/core/crypto/crypto.cpp
          src/core/crypto/crypto.h
          src/core/crypto/keys.h
@@ -416,6 +431,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/virtual_memory.cpp
          src/core/virtual_memory.h
 )
+
+if (ARCHITECTURE STREQUAL "x86_64")
+    set(CORE ${CORE}
+             src/core/cpu_patches.cpp
+             src/core/cpu_patches.h)
+endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/profile.h
@@ -678,8 +699,10 @@ if (APPLE)
       target_link_libraries(shadps4 PRIVATE ${MOLTENVK})
   endif()
 
-  # Reserve system-managed memory space.
-  target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
+  if (ARCHITECTURE STREQUAL "x86_64")
+      # Reserve system-managed memory space.
+      target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
+  endif()
 
   # Replacement for std::chrono::time_zone
   target_link_libraries(shadps4 PRIVATE date::date-tz)
