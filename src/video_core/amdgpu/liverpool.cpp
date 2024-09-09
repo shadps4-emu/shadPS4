@@ -221,11 +221,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto marker_sz = nop->header.count.Value() * 2;
                     const std::string_view label{reinterpret_cast<const char*>(&nop->data_block[1]),
                                                  marker_sz};
-                    rasterizer->ScopeMarkerBegin(label);
+                    if (rasterizer) {
+                        rasterizer->ScopeMarkerBegin(label);
+                    }
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPop: {
-                    rasterizer->ScopeMarkerEnd();
+                    if (rasterizer) {
+                        rasterizer->ScopeMarkerEnd();
+                    }
                     break;
                 }
                 default:
@@ -536,7 +540,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::PfpSyncMe: {
-                rasterizer->CpSync();
+                if (rasterizer) {
+                    rasterizer->CpSync();
+                }
                 break;
             }
             default:
