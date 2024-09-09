@@ -54,11 +54,12 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
+    const char* name = "Main_Thread";
     auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
-    g_pthread_self = pthread_pool->Create();
+    g_pthread_self = pthread_pool->Create(name);
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
-    g_pthread_self->name = "Main_Thread";
+    g_pthread_self->name = name;
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
@@ -1016,7 +1017,7 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
         attr = g_pthread_cxt->GetDefaultAttr();
     }
 
-    *thread = pthread_pool->Create();
+    *thread = pthread_pool->Create(name);
 
     if ((*thread)->attr != nullptr) {
         scePthreadAttrDestroy(&(*thread)->attr);
@@ -1058,11 +1059,11 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     }
 }
 
-ScePthread PThreadPool::Create() {
+ScePthread PThreadPool::Create(const char* name) {
     std::scoped_lock lock{m_mutex};
 
     for (auto* p : m_threads) {
-        if (p->is_free) {
+        if (p->is_free && p->name == name) {
             p->is_free = false;
             return p;
         }
@@ -1491,6 +1492,8 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 }
 
 [[noreturn]] void PS4_SYSV_ABI scePthreadExit(void* value_ptr) {
+    g_pthread_self->is_free = true;
+
     pthread_exit(value_ptr);
     UNREACHABLE();
 }
