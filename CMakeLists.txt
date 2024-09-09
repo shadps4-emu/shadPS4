@@ -293,6 +293,8 @@ set(NP_LIBS src/core/libraries/np_manager/np_manager.cpp
             src/core/libraries/np_score/np_score.h
             src/core/libraries/np_trophy/np_trophy.cpp
             src/core/libraries/np_trophy/np_trophy.h
+            src/core/libraries/np_trophy/trophy_ui.cpp
+            src/core/libraries/np_trophy/trophy_ui.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp

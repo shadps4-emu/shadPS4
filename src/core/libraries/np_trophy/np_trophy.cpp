@@ -9,9 +9,12 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "externals/pugixml/src/pugixml.hpp"
+#include "trophy_ui.h"
 #include "np_trophy.h"
 
 namespace Libraries::NpTrophy {
+
+static TrophyUI g_trophy_ui;
 
 std::string game_serial;
 
@@ -561,18 +564,21 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         for (pugi::xml_node_iterator it = trophyconf.children().begin();
              it != trophyconf.children().end() && !foundTrophy; ++it) {
 
-            std::string childTrophyId = reinterpret_cast<const char*>(it->attribute("id").value());
-            std::string childTrophyName = reinterpret_cast<const char*>(it->name());
-            std::string childTrophyType =
+            std::string currentTrophyId = reinterpret_cast<const char*>(it->attribute("id").value());
+            std::string currentTrophyName = reinterpret_cast<const char*>(it->child("name").text().as_string());
+            std::string currentTrophyDescription =
+                reinterpret_cast<const char*>(it->child("detail").text().as_string());
+            std::string currentTrophyType =
                 reinterpret_cast<const char*>(it->attribute("ttype").value());
-            std::string childTrophyUnlockState =
+            std::string currentTrophyUnlockState =
                 reinterpret_cast<const char*>(it->attribute("unlockstate").value());
 
-            if (std::string(childTrophyName) == "trophy" && std::stoi(childTrophyId) == trophyId) {
+            if (std::string(it->name()) == "trophy" && std::stoi(currentTrophyId) == trophyId) {
+
                 LOG_INFO(Lib_NpTrophy, "Found trophy to unlock {} : {}",
                          it->child("name").text().as_string(),
                          it->child("detail").text().as_string());
-                if (childTrophyUnlockState == "unlocked") {
+                if (currentTrophyUnlockState == "unlocked") {
                     LOG_INFO(Lib_NpTrophy, "Trophy already unlocked");
                     return ORBIS_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
                 } else {
@@ -582,7 +588,9 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                         it->attribute("unlockstate").set_value("unlocked");
                     }
 
-                    doc.save_file((trophyDir.string() + "\\trophy00\\Xml\\TROP.XML").c_str());
+                    g_trophy_ui = TrophyUI(trophyId, currentTrophyName, TrophyType::BRONZE);
+
+                    //doc.save_file((trophyDir.string() + "\\trophy00\\Xml\\TROP.XML").c_str());
                 }
                 foundTrophy = true;
             }
