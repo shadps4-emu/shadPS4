@@ -605,7 +605,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                         }
                     }
                 }
-                
+
                 if (std::stoi(currentTrophyId) == trophyId) {
                     LOG_INFO(Lib_NpTrophy, "Found trophy to unlock {} : {}",
                              it->child("name").text().as_string(),
