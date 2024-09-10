@@ -35,6 +35,45 @@ static Common::SlotVector<OrbisNpTrophyHandle> trophy_handles{};
 static Common::SlotVector<ContextKey> trophy_contexts{};
 static std::unordered_map<ContextKey, TrophyContext, ContextKeyHash> contexts_internal{};
 
+void ORBIS_NP_TROPHY_FLAG_ZERO(OrbisNpTrophyFlagArray* p) {
+    for (int i = 0; i < ORBIS_NP_TROPHY_NUM_MAX; i++) {
+        uint32_t array_index = i / 32;
+        uint32_t bit_position = i % 32;
+
+        p->flag_bits[array_index] &= ~(1U << bit_position);
+    }
+}
+
+void ORBIS_NP_TROPHY_FLAG_SET(int32_t trophyId, OrbisNpTrophyFlagArray* p) {
+    uint32_t array_index = trophyId / 32;
+    uint32_t bit_position = trophyId % 32;
+
+    p->flag_bits[array_index] |= (1U << bit_position);
+}
+
+void ORBIS_NP_TROPHY_FLAG_SET_ALL(OrbisNpTrophyFlagArray* p) {
+    for (int i = 0; i < ORBIS_NP_TROPHY_NUM_MAX; i++) {
+        uint32_t array_index = i / 32;
+        uint32_t bit_position = i % 32;
+
+        p->flag_bits[array_index] |= (1U << bit_position);
+    }
+}
+
+void ORBIS_NP_TROPHY_FLAG_CLR(int32_t trophyId, OrbisNpTrophyFlagArray* p) {
+    uint32_t array_index = trophyId / 32;
+    uint32_t bit_position = trophyId % 32;
+
+    p->flag_bits[array_index] &= ~(1U << bit_position);
+}
+
+bool ORBIS_NP_TROPHY_FLAG_ISSET(int32_t trophyId, OrbisNpTrophyFlagArray* p) {
+    uint32_t array_index = trophyId / 32;
+    uint32_t bit_position = trophyId % 32;
+
+    return (p->flag_bits[array_index] & (1U << bit_position)) ? 1 : 0;
+}
+
 int PS4_SYSV_ABI sceNpTrophyAbortHandle(OrbisNpTrophyHandle handle) {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
@@ -201,7 +240,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
 s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
                                                  OrbisNpTrophyHandle handle,
                                                  OrbisNpTrophyFlagArray* flags, u32* count) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+    LOG_INFO(Lib_NpTrophy, "GetTrophyUnlockState called");
 
     if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
@@ -212,11 +251,37 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
     if (flags == nullptr || count == nullptr)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
-    // flags->flag_bits = 0u;
-    // temporary workaround till i implement this properly
-    uint32_t* flagTemp = reinterpret_cast<uint32_t*>(flags);
-    *flagTemp = 0u;
-    *count = 0;
+    ORBIS_NP_TROPHY_FLAG_ZERO(flags);
+
+    const auto trophyDir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result =
+        doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+
+    int numTrophies = 0;
+
+    if (result) {
+        auto trophyconf = doc.child("trophyconf");
+        for (pugi::xml_node_iterator it = trophyconf.children().begin();
+             it != trophyconf.children().end(); ++it) {
+
+            std::string currentTrophyId = it->attribute("id").value();
+            std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
+
+            if (std::string(it->name()) == "trophy") {
+                numTrophies++;
+            }
+
+            if (currentTrophyUnlockState == "unlocked") {
+                ORBIS_NP_TROPHY_FLAG_SET(std::stoi(currentTrophyId), flags);
+            }
+        }
+    } else
+        LOG_INFO(Lib_NpTrophy, "couldnt parse xml : {}", result.description());
+
+    *count = numTrophies;
     return ORBIS_OK;
 }
 

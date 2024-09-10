@@ -39,6 +39,12 @@ struct OrbisNpTrophyFlagArray {
         flag_bits[ORBIS_NP_TROPHY_FLAG_SETSIZE >> ORBIS_NP_TROPHY_FLAG_BITS_SHIFT];
 };
 
+void ORBIS_NP_TROPHY_FLAG_ZERO(OrbisNpTrophyFlagArray* p);
+void ORBIS_NP_TROPHY_FLAG_SET(int32_t trophyId, OrbisNpTrophyFlagArray* p);
+void ORBIS_NP_TROPHY_FLAG_SET_ALL(OrbisNpTrophyFlagArray* p);
+void ORBIS_NP_TROPHY_FLAG_CLR(int32_t trophyId, OrbisNpTrophyFlagArray* p);
+bool ORBIS_NP_TROPHY_FLAG_ISSET(int32_t trophyId, OrbisNpTrophyFlagArray* p);
+
 struct OrbisNpTrophyData {
     size_t size;
     OrbisNpTrophyId trophyId;
