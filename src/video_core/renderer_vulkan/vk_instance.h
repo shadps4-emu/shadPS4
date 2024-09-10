@@ -207,6 +207,11 @@ public:
         return properties.limits.maxTexelBufferElements;
     }
 
+    /// Returns the maximum number of push descriptors.
+    u32 MaxPushDescriptors() const {
+        return push_descriptor_props.maxPushDescriptors;
+    }
+
     /// Returns true if shaders can declare the ClipDistance attribute
     bool IsShaderClipDistanceSupported() const {
         return features.shaderClipDistance;
@@ -242,6 +247,7 @@ private:
     vk::PhysicalDevice physical_device;
     vk::UniqueDevice device;
     vk::PhysicalDeviceProperties properties;
+    vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};

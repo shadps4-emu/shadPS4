@@ -37,14 +37,14 @@ struct ImageSpecialization {
  * after the first compilation of a module.
  */
 struct StageSpecialization {
-    static constexpr size_t MaxStageResources = 32;
+    static constexpr size_t MaxStageResources = 64;
 
     const Shader::Info* info;
     RuntimeInfo runtime_info;
     std::bitset<MaxStageResources> bitset{};
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
-    boost::container::small_vector<ImageSpecialization, 8> images;
+    boost::container::small_vector<ImageSpecialization, 16> images;
     u32 start_binding{};
 
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,

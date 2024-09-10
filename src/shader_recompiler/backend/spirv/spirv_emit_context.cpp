@@ -324,16 +324,18 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4]), "AuxData")};
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4]), "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, 0, "sr0");
     MemberName(struct_type, 1, "sr1");
     MemberName(struct_type, 2, "buf_offsets0");
     MemberName(struct_type, 3, "buf_offsets1");
+    MemberName(struct_type, 4, "buf_offsets2");
     MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
     MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
     MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
     MemberDecorate(struct_type, 3, spv::Decoration::Offset, 24U);
+    MemberDecorate(struct_type, 4, spv::Decoration::Offset, 40U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);

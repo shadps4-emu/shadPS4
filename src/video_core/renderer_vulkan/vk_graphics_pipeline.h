@@ -19,6 +19,7 @@ static constexpr u32 MaxShaderStages = 5;
 
 class Instance;
 class Scheduler;
+class DescriptorHeap;
 
 using Liverpool = AmdGpu::Liverpool;
 
@@ -59,7 +60,8 @@ struct GraphicsPipelineKey {
 class GraphicsPipeline {
 public:
     explicit GraphicsPipeline(const Instance& instance, Scheduler& scheduler,
-                              const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
+                              DescriptorHeap& desc_heap, const GraphicsPipelineKey& key,
+                              vk::PipelineCache pipeline_cache,
                               std::span<const Shader::Info*, MaxShaderStages> stages,
                               std::span<const vk::ShaderModule> modules);
     ~GraphicsPipeline();
@@ -98,11 +100,14 @@ private:
 private:
     const Instance& instance;
     Scheduler& scheduler;
+    DescriptorHeap& desc_heap;
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
     std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
+    bool uses_push_descriptors{};
+    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
 };
 
 } // namespace Vulkan

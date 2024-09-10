@@ -3,8 +3,8 @@
 
 #include <cstddef>
 #include <optional>
-#include <unordered_map>
 #include "common/assert.h"
+#include "common/scope_exit.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
@@ -103,88 +103,86 @@ vk::CommandBuffer CommandPool::Commit() {
     return cmd_buffers[index];
 }
 
-constexpr u32 DESCRIPTOR_SET_BATCH = 32;
-
-DescriptorHeap::DescriptorHeap(const Instance& instance, MasterSemaphore* master_semaphore,
-                               std::span<const vk::DescriptorSetLayoutBinding> bindings,
+DescriptorHeap::DescriptorHeap(const Instance& instance, MasterSemaphore* master_semaphore_,
+                               std::span<const vk::DescriptorPoolSize> pool_sizes_,
                                u32 descriptor_heap_count_)
-    : ResourcePool{master_semaphore, DESCRIPTOR_SET_BATCH}, device{instance.GetDevice()},
-      descriptor_heap_count{descriptor_heap_count_} {
-    // Create descriptor set layout.
-    const vk::DescriptorSetLayoutCreateInfo layout_ci = {
-        .bindingCount = static_cast<u32>(bindings.size()),
-        .pBindings = bindings.data(),
-    };
-    descriptor_set_layout = device.createDescriptorSetLayoutUnique(layout_ci);
-    if (instance.HasDebuggingToolAttached()) {
-        SetObjectName(device, *descriptor_set_layout, "DescriptorSetLayout");
-    }
-
-    // Build descriptor set pool counts.
-    std::unordered_map<vk::DescriptorType, u16> descriptor_type_counts;
-    for (const auto& binding : bindings) {
-        descriptor_type_counts[binding.descriptorType] += binding.descriptorCount;
-    }
-    for (const auto& [type, count] : descriptor_type_counts) {
-        auto& pool_size = pool_sizes.emplace_back();
-        pool_size.descriptorCount = count * descriptor_heap_count;
-        pool_size.type = type;
-    }
-
-    // Create descriptor pool
-    AppendDescriptorPool();
+    : device{instance.GetDevice()}, master_semaphore{master_semaphore_},
+      descriptor_heap_count{descriptor_heap_count_}, pool_sizes{pool_sizes_} {
+    CreateDescriptorPool();
 }
 
-DescriptorHeap::~DescriptorHeap() = default;
+DescriptorHeap::~DescriptorHeap() {
+    device.destroyDescriptorPool(curr_pool);
+    for (const auto [pool, tick] : pending_pools) {
+        master_semaphore->Wait(tick);
+        device.destroyDescriptorPool(pool);
+    }
+}
 
-void DescriptorHeap::Allocate(std::size_t begin, std::size_t end) {
-    ASSERT(end - begin == DESCRIPTOR_SET_BATCH);
-    descriptor_sets.resize(end);
-    hashes.resize(end);
+vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
+    const u64 set_key = std::bit_cast<u64>(set_layout);
+    const auto [it, _] = descriptor_sets.try_emplace(set_key);
 
-    std::array<vk::DescriptorSetLayout, DESCRIPTOR_SET_BATCH> layouts;
-    layouts.fill(*descriptor_set_layout);
+    // Check if allocated sets exist and pick one.
+    if (!it->second.empty()) {
+        const auto desc_set = it->second.back();
+        it.value().pop_back();
+        return desc_set;
+    }
 
-    u32 current_pool = 0;
+    DescSetBatch desc_sets(DescriptorSetBatch);
+    std::array<vk::DescriptorSetLayout, DescriptorSetBatch> layouts;
+    layouts.fill(set_layout);
+
     vk::DescriptorSetAllocateInfo alloc_info = {
-        .descriptorPool = *pools[current_pool],
-        .descriptorSetCount = DESCRIPTOR_SET_BATCH,
+        .descriptorPool = curr_pool,
+        .descriptorSetCount = DescriptorSetBatch,
         .pSetLayouts = layouts.data(),
     };
 
-    // Attempt to allocate the descriptor set batch. If the pool has run out of space, use a new
-    // one.
-    while (true) {
-        const auto result =
-            device.allocateDescriptorSets(&alloc_info, descriptor_sets.data() + begin);
-        if (result == vk::Result::eSuccess) {
-            break;
-        }
-        if (result == vk::Result::eErrorOutOfPoolMemory) {
-            current_pool++;
-            if (current_pool == pools.size()) {
-                LOG_INFO(Render_Vulkan, "Run out of pools, creating new one!");
-                AppendDescriptorPool();
-            }
-            alloc_info.descriptorPool = *pools[current_pool];
-        }
+    // Attempt to allocate the descriptor set batch.
+    auto result = device.allocateDescriptorSets(&alloc_info, desc_sets.data());
+    if (result == vk::Result::eSuccess) {
+        const auto desc_set = desc_sets.back();
+        desc_sets.pop_back();
+        it.value() = std::move(desc_sets);
+        return desc_set;
     }
+
+    // The pool has run out. Record current tick and place it in pending list.
+    ASSERT_MSG(result == vk::Result::eErrorOutOfPoolMemory,
+               "Unexpected error during descriptor set allocation {}", vk::to_string(result));
+    pending_pools.emplace_back(curr_pool, master_semaphore->CurrentTick());
+    if (const auto [pool, tick] = pending_pools.front(); master_semaphore->IsFree(tick)) {
+        curr_pool = pool;
+        pending_pools.pop_front();
+        device.resetDescriptorPool(curr_pool);
+    } else {
+        CreateDescriptorPool();
+    }
+
+    // Attempt to allocate again with fresh pool.
+    alloc_info.descriptorPool = curr_pool;
+    result = device.allocateDescriptorSets(&alloc_info, desc_sets.data());
+    ASSERT_MSG(result == vk::Result::eSuccess,
+               "Unexpected error during descriptor set allocation {}", vk::to_string(result));
+
+    // We've changed pool so also reset descriptor batch cache.
+    descriptor_sets.clear();
+    const auto desc_set = desc_sets.back();
+    desc_sets.pop_back();
+    descriptor_sets[set_key] = std::move(desc_sets);
+    return desc_set;
 }
 
-vk::DescriptorSet DescriptorHeap::Commit() {
-    const std::size_t index = CommitResource();
-    return descriptor_sets[index];
-}
-
-void DescriptorHeap::AppendDescriptorPool() {
+void DescriptorHeap::CreateDescriptorPool() {
     const vk::DescriptorPoolCreateInfo pool_info = {
         .flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind,
         .maxSets = descriptor_heap_count,
         .poolSizeCount = static_cast<u32>(pool_sizes.size()),
         .pPoolSizes = pool_sizes.data(),
     };
-    auto& pool = pools.emplace_back();
-    pool = device.createDescriptorPoolUnique(pool_info);
+    curr_pool = device.createDescriptorPool(pool_info);
 }
 
 } // namespace Vulkan

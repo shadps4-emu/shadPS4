@@ -24,6 +24,15 @@ using Shader::VsOutput;
     return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
 
+constexpr static std::array DescriptorHeapSizes = {
+    vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
+    vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1024},
+    vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 128},
+    vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 128},
+    vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
+    vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
+};
+
 void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
                          const AmdGpu::Liverpool::VsOutputControl& ctl) {
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
@@ -120,7 +129,8 @@ Shader::RuntimeInfo PipelineCache::BuildRuntimeInfo(Shader::Stage stage) {
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                              AmdGpu::Liverpool* liverpool_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_} {
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     profile = Shader::Profile{
         .supported_spirv = instance.ApiVersion() >= VK_API_VERSION_1_3 ? 0x00010600U : 0x00010500U,
         .subgroup_size = instance.SubgroupSize(),
@@ -153,8 +163,8 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, graphics_key,
-                                                        *pipeline_cache, infos, modules);
+        it.value() = std::make_unique<GraphicsPipeline>(
+            instance, scheduler, desc_heap, graphics_key, *pipeline_cache, infos, modules);
     }
     const GraphicsPipeline* pipeline = it->second.get();
     return pipeline;
@@ -166,8 +176,8 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = std::make_unique<ComputePipeline>(instance, scheduler, *pipeline_cache,
-                                                       compute_key, *infos[0], modules[0]);
+        it.value() = std::make_unique<ComputePipeline>(
+            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
     }
     const ComputePipeline* pipeline = it->second.get();
     return pipeline;

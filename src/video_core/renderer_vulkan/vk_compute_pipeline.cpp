@@ -12,9 +12,11 @@
 namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
-                                 vk::PipelineCache pipeline_cache, u64 compute_key_,
-                                 const Shader::Info& info_, vk::ShaderModule module)
-    : instance{instance_}, scheduler{scheduler_}, compute_key{compute_key_}, info{&info_} {
+                                 DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
+                                 u64 compute_key_, const Shader::Info& info_,
+                                 vk::ShaderModule module)
+    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, compute_key{compute_key_},
+      info{&info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
@@ -66,8 +68,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .size = sizeof(Shader::PushData),
     };
 
+    uses_push_descriptors = binding < instance.MaxPushDescriptors();
+    const auto flags = uses_push_descriptors
+                           ? vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR
+                           : vk::DescriptorSetLayoutCreateFlagBits{};
     const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .flags = flags,
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
@@ -101,8 +107,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                                     VideoCore::TextureCache& texture_cache) const {
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::BufferView, 8> buffer_views;
-    boost::container::static_vector<vk::DescriptorBufferInfo, 16> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 16> image_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
+    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
@@ -265,9 +271,21 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         cmdbuf.pipelineBarrier2(dependencies);
     }
 
+    if (uses_push_descriptors) {
+        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0,
+                                    set_writes);
+    } else {
+        const auto desc_set = desc_heap.Commit(*desc_layout);
+        for (auto& set_write : set_writes) {
+            set_write.dstSet = desc_set;
+        }
+        instance.GetDevice().updateDescriptorSets(set_writes, {});
+        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, desc_set,
+                                  {});
+    }
+
     cmdbuf.pushConstants(*pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(push_data),
                          &push_data);
-    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pipeline_layout, 0, set_writes);
     return true;
 }
 

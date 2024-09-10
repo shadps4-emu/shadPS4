@@ -176,8 +176,10 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
-        vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties>();
+        vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties,
+        vk::PhysicalDevicePushDescriptorPropertiesKHR>();
     subgroup_size = properties_chain.get<vk::PhysicalDeviceVulkan11Properties>().subgroupSize;
+    push_descriptor_props = properties_chain.get<vk::PhysicalDevicePushDescriptorPropertiesKHR>();
     LOG_INFO(Render_Vulkan, "Physical device subgroup size {}", subgroup_size);
 
     features = feature_chain.get().features;
