@@ -116,7 +116,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 #endif
                 title = *param_sfo->GetString("TITLE");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-                u32 fw_version = *param_sfo->GetInteger("SYSTEM_VER");
+                u32 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
                 app_version = *param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
