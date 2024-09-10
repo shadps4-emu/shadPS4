@@ -669,105 +669,86 @@ void CheatsPatches::populateFileListPatches() {
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
     if (repository == "GoldHEN") {
-        url = "https://github.com/illusion0001/PS4-PS5-Game-Patch/tree/main/"
-              "patches/xml";
+        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
     }
     if (repository == "shadPS4") {
-        url = "https://github.com/shadps4-emu/ps4_cheats/tree/main/"
-              "PATCHES";
+        url = "https://api.github.com/repos/shadps4-emu/ps4_cheats/contents/PATCHES";
     }
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request(url);
+    request.setRawHeader("Accept", "application/vnd.github.v3+json");
     QNetworkReply* reply = manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, [=, this]() {
+    connect(reply, &QNetworkReply::finished, [=]() {
         if (reply->error() == QNetworkReply::NoError) {
-            QByteArray htmlData = reply->readAll();
+            QByteArray jsonData = reply->readAll();
             reply->deleteLater();
 
-            // Parsear HTML e extrair JSON usando QRegularExpression
-            QString htmlString = QString::fromUtf8(htmlData);
-            QRegularExpression jsonRegex(
-                R"(<script type="application/json" data-target="react-app.embeddedData">(.+?)</script>)");
-            QRegularExpressionMatch match = jsonRegex.match(htmlString);
+            QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
+            QJsonArray itemsArray = jsonDoc.array();
 
-            if (match.hasMatch()) {
-                QByteArray jsonData = match.captured(1).toUtf8();
-                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                QJsonObject jsonObj = jsonDoc.object();
-                QJsonArray itemsArray =
-                    jsonObj["payload"].toObject()["tree"].toObject()["items"].toArray();
-
-                QDir dir(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
-                QString fullPath = dir.filePath(repository);
-                if (!dir.exists(fullPath)) {
-                    dir.mkpath(fullPath);
-                }
-                dir.setPath(fullPath);
-
-                foreach (const QJsonValue& value, itemsArray) {
-                    QJsonObject fileObj = value.toObject();
-                    QString fileName = fileObj["name"].toString();
-                    QString filePath = fileObj["path"].toString();
-
-                    if (fileName.endsWith(".xml")) {
-                        QString fileUrl;
-                        if (repository == "GoldHEN") {
-                            fileUrl = QString("https://raw.githubusercontent.com/illusion0001/"
-                                              "PS4-PS5-Game-Patch/main/%1")
-                                          .arg(filePath);
-                        }
-                        if (repository == "shadPS4") {
-                            fileUrl = QString("https://raw.githubusercontent.com/shadps4-emu/"
-                                              "ps4_cheats/main/%1")
-                                          .arg(filePath);
-                        }
-                        QNetworkRequest fileRequest(fileUrl);
-                        QNetworkReply* fileReply = manager->get(fileRequest);
-
-                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
-                            if (fileReply->error() == QNetworkReply::NoError) {
-                                QByteArray fileData = fileReply->readAll();
-                                QFile localFile(dir.filePath(fileName));
-                                if (localFile.open(QIODevice::WriteOnly)) {
-                                    localFile.write(fileData);
-                                    localFile.close();
-                                } else {
-                                    if (showMessageBox) {
-                                        QMessageBox::warning(
-                                            this, tr("Error"),
-                                            QString(tr("Failed to save:") + "\n%1").arg(fileName));
-                                    }
-                                }
-                            } else {
-                                if (showMessageBox) {
-                                    QMessageBox::warning(
-                                        this, tr("Error"),
-                                        QString(tr("Failed to download:") + "\n%1").arg(fileUrl));
-                                }
-                            }
-                            fileReply->deleteLater();
-                        });
-                    }
-                }
-                if (showMessageBox) {
-                    QMessageBox::information(this, tr("Download Complete"),
-                                             QString(tr("DownloadComplete_MSG")));
-                }
-
-                // Create the files.json file with the identification of which file to open
-                createFilesJson(repository);
-                populateFileListPatches();
-
-            } else {
+            if (itemsArray.isEmpty()) {
                 if (showMessageBox) {
                     QMessageBox::warning(this, tr("Error"),
                                          tr("Failed to parse JSON data from HTML."));
                 }
+                return;
             }
+
+            QDir dir(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
+            QString fullPath = dir.filePath(repository);
+            if (!dir.exists(fullPath)) {
+                dir.mkpath(fullPath);
+            }
+            dir.setPath(fullPath);
+
+            foreach (const QJsonValue& value, itemsArray) {
+                QJsonObject fileObj = value.toObject();
+                QString fileName = fileObj["name"].toString();
+                QString filePath = fileObj["path"].toString();
+                QString downloadUrl = fileObj["download_url"].toString();
+
+                if (fileName.endsWith(".xml")) {
+                    QNetworkRequest fileRequest(downloadUrl);
+                    QNetworkReply* fileReply = manager->get(fileRequest);
+
+                    connect(fileReply, &QNetworkReply::finished, [=]() {
+                        if (fileReply->error() == QNetworkReply::NoError) {
+                            QByteArray fileData = fileReply->readAll();
+                            QFile localFile(dir.filePath(fileName));
+                            if (localFile.open(QIODevice::WriteOnly)) {
+                                localFile.write(fileData);
+                                localFile.close();
+                            } else {
+                                if (showMessageBox) {
+                                    QMessageBox::warning(
+                                        this, tr("Error"),
+                                        QString(tr("Failed to save:") + "\n%1").arg(fileName));
+                                }
+                            }
+                        } else {
+                            if (showMessageBox) {
+                                QMessageBox::warning(
+                                    this, tr("Error"),
+                                    QString(tr("Failed to download:") + "\n%1").arg(downloadUrl));
+                            }
+                        }
+                        fileReply->deleteLater();
+                    });
+                }
+            }
+            if (showMessageBox) {
+                QMessageBox::information(this, tr("Download Complete"),
+                                         QString(tr("DownloadComplete_MSG")));
+            }
+            // Create the files.json file with the identification of which file to open
+            createFilesJson(repository);
+            populateFileListPatches();
         } else {
             if (showMessageBox) {
-                QMessageBox::warning(this, tr("Error"), tr("Failed to retrieve HTML page."));
+                QMessageBox::warning(this, tr("Error"),
+                                     QString(tr("Failed to retrieve HTML page.") + "\n%1")
+                                         .arg(reply->errorString()));
             }
         }
         emit downloadFinished();
