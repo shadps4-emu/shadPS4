@@ -8,8 +8,6 @@
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
 
-#include <optional>
-
 namespace Vulkan {
 class Instance;
 class Scheduler;
@@ -28,7 +26,7 @@ struct ImageViewInfo {
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
-    bool is_storage;
+    bool is_storage = false;
 
     auto operator<=>(const ImageViewInfo&) const = default;
 };
@@ -38,8 +36,8 @@ struct Image;
 constexpr Common::SlotId NULL_IMAGE_VIEW_ID{0};
 
 struct ImageView {
-    explicit ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
-                       ImageId image_id, std::optional<vk::ImageUsageFlags> usage_override = {});
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
+              ImageId image_id);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;
