@@ -232,7 +232,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog_ui.cpp
                 src/core/libraries/system/posix.cpp
                 src/core/libraries/system/posix.h
-                src/core/libraries/save_data/error_codes.h
+                src/core/libraries/save_data/save_instance.cpp
+                src/core/libraries/save_data/save_instance.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
                 src/core/libraries/system/savedatadialog.cpp

@@ -21,6 +21,10 @@ std::string ToLower(std::string_view input) {
     return str;
 }
 
+void ToLowerInPlace(std::string& str) {
+    std::ranges::transform(str, str.begin(), tolower);
+}
+
 std::vector<std::string> SplitString(const std::string& str, char delimiter) {
     std::istringstream iss(str);
     std::vector<std::string> output(1);
