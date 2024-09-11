@@ -679,7 +679,7 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
     request.setRawHeader("Accept", "application/vnd.github.v3+json");
     QNetworkReply* reply = manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, [=]() {
+    connect(reply, &QNetworkReply::finished, [=, this]() {
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray jsonData = reply->readAll();
             reply->deleteLater();
@@ -712,7 +712,7 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
                     QNetworkRequest fileRequest(downloadUrl);
                     QNetworkReply* fileReply = manager->get(fileRequest);
 
-                    connect(fileReply, &QNetworkReply::finished, [=]() {
+                    connect(fileReply, &QNetworkReply::finished, [=, this]() {
                         if (fileReply->error() == QNetworkReply::NoError) {
                             QByteArray fileData = fileReply->readAll();
                             QFile localFile(dir.filePath(fileName));
