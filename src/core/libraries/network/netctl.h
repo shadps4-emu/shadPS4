@@ -4,12 +4,52 @@
 #pragma once
 
 #include "common/types.h"
+#include "net_ctl_obj.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::NetCtl {
+
+constexpr int ORBIS_NET_ETHER_ADDR_LEN = 6;
+
+struct OrbisNetEtherAddr {
+    u8 data[ORBIS_NET_ETHER_ADDR_LEN];
+};
+
+constexpr int ORBIS_NET_CTL_SSID_LEN = 32 + 1;
+constexpr int ORBIS_NET_CTL_HOSTNAME_LEN = 255 + 1;
+constexpr int ORBIS_NET_CTL_AUTH_NAME_LEN = 127 + 1;
+constexpr int ORBIS_NET_CTL_IPV4_ADDR_STR_LEN = 16;
+
+typedef union OrbisNetCtlInfo {
+    u32 device;
+    OrbisNetEtherAddr ether_addr;
+    u32 mtu;
+    u32 link;
+    OrbisNetEtherAddr bssid;
+    char ssid[ORBIS_NET_CTL_SSID_LEN];
+    u32 wifi_security;
+    u8 rssi_dbm;
+    uint8_t rssi_percentage;
+    u8 channel;
+    u32 ip_config;
+    char dhcp_hostname[ORBIS_NET_CTL_HOSTNAME_LEN];
+    char pppoe_auth_name[ORBIS_NET_CTL_AUTH_NAME_LEN];
+    char ip_address[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    char netmask[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    char default_route[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    char primary_dns[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    char secondary_dns[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    u32 http_proxy_config;
+    char http_proxy_server[ORBIS_NET_CTL_HOSTNAME_LEN];
+    u16 http_proxy_port;
+} SceNetCtlInfo;
+
+// GetInfo codes
+constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
+constexpr int ORBIS_NET_CTL_INFO_LINK = 4;
 
 int PS4_SYSV_ABI sceNetBweCheckCallbackIpcInt();
 int PS4_SYSV_ABI sceNetBweClearEventIpcInt();
@@ -38,13 +78,13 @@ int PS4_SYSV_ABI sceNetCtlEnableBandwidthManagementIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetBandwidthInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetEtherLinkMode();
 int PS4_SYSV_ABI sceNetCtlGetIfStat();
-int PS4_SYSV_ABI sceNetCtlGetInfo();
+int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info);
 int PS4_SYSV_ABI sceNetCtlGetInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetInfoV6IpcInt();
 int PS4_SYSV_ABI sceNetCtlGetNatInfo();
 int PS4_SYSV_ABI sceNetCtlGetNatInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetNetEvConfigInfoIpcInt();
-int PS4_SYSV_ABI sceNetCtlGetResult();
+int PS4_SYSV_ABI sceNetCtlGetResult(int eventType, int* errorCode);
 int PS4_SYSV_ABI sceNetCtlGetResultIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetResultV6IpcInt();
 int PS4_SYSV_ABI sceNetCtlGetScanInfoBssidForSsidListScanIpcInt();
@@ -52,14 +92,14 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoBssidIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetScanInfoByBssidIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidListScanIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt();
-int PS4_SYSV_ABI sceNetCtlGetState();
+int PS4_SYSV_ABI sceNetCtlGetState(int* state);
 int PS4_SYSV_ABI sceNetCtlGetState2IpcInt();
 int PS4_SYSV_ABI sceNetCtlGetStateIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetStateV6IpcInt();
 int PS4_SYSV_ABI sceNetCtlGetWifiType();
 int PS4_SYSV_ABI sceNetCtlInit();
 int PS4_SYSV_ABI sceNetCtlIsBandwidthManagementEnabledIpcInt();
-int PS4_SYSV_ABI sceNetCtlRegisterCallback();
+int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlRegisterCallbackForLibIpcInt();
 int PS4_SYSV_ABI sceNetCtlRegisterCallbackIpcInt();
 int PS4_SYSV_ABI sceNetCtlRegisterCallbackV6IpcInt();
@@ -75,7 +115,8 @@ int PS4_SYSV_ABI sceNetCtlUnsetStunWithPaddingFlagIpcInt();
 int PS4_SYSV_ABI Func_D8DCB6973537A3DC();
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlClearEventForNpToolkit();
-int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit();
+int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpToolkit func,
+                                                       void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlApCheckCallback();
 int PS4_SYSV_ABI sceNetCtlApClearEvent();

@@ -11,6 +11,15 @@ class SymbolsResolver;
 
 namespace Libraries::NpManager {
 
+enum OrbisNpState {
+    ORBIS_NP_STATE_UNKNOWN = 0,
+    ORBIS_NP_STATE_SIGNED_OUT,
+    ORBIS_NP_STATE_SIGNED_IN
+};
+
+using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
+                                                               void* userdata);
+
 constexpr int ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 typedef int OrbisUserServiceUserId;
@@ -526,7 +535,8 @@ int PS4_SYSV_ABI Func_F91B5B25CC9B30D9();
 int PS4_SYSV_ABI Func_FC335B7102A585B3();
 int PS4_SYSV_ABI Func_FCEAC354CA8B206E();
 int PS4_SYSV_ABI Func_FF966E4351E564D6();
-int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit();
+int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
+                                                      void* userdata);
 int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit();
 
 void RegisterlibSceNpManager(Core::Loader::SymbolsResolver* sym);

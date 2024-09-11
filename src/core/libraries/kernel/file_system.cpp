@@ -150,7 +150,6 @@ int PS4_SYSV_ABI posix_close(int d) {
         return -1;
     }
     return result;
-    return ORBIS_OK;
 }
 
 size_t PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
@@ -367,8 +366,17 @@ s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
 
 int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    if (fd < 3) {
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
+    if (sb == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
     if (file->is_directory) {
@@ -421,15 +429,24 @@ int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
 }
 
 static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
-    // TODO error codes
-    ASSERT(buf != nullptr);
+    if (fd < 3) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (buf == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-
+    if (file == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
     if (file->dirents_index == file->dirents.size()) {
         return ORBIS_OK;
     }
-
+    if (!file->is_directory || nbytes < 512 || file->dirents_index > file->dirents.size()) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     const auto& entry = file->dirents.at(file->dirents_index++);
     auto str = entry.name;
     auto str_size = str.size() - 1;
