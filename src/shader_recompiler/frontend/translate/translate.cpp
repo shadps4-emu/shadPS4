@@ -153,10 +153,11 @@ T Translator::GetSrc(const InstOperand& operand) {
         break;
     case OperandField::M0:
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.BitCast<IR::F32>(ir.GetM0());
         } else {
-            return m0_value;
+            value = ir.GetM0();
         }
+        break;
     default:
         UNREACHABLE();
     }
@@ -170,7 +171,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            LOG_WARNING(Render_Vulkan, "Input abs modifier on integer instruction");
+            value = ir.IAbs(value);
         }
         if (operand.input_modifier.neg) {
             UNREACHABLE();
@@ -296,8 +297,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     case OperandField::VccHi:
         return ir.SetVccHi(result);
     case OperandField::M0:
-        m0_value = result;
-        break;
+        return ir.SetM0(result);
     default:
         UNREACHABLE();
     }

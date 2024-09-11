@@ -500,6 +500,11 @@
 	</context>
     <context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>Lijst met spellen</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Patches succesvol gedownload! Alle beschikbare patches voor alle spellen zijn gedownload. Het is niet nodig om ze afzonderlijk te downloaden voor elk spel dat cheats heeft.</translation>
+            <translation>Patches succesvol gedownload! Alle beschikbare patches voor alle spellen zijn gedownload. Het is niet nodig om ze afzonderlijk te downloaden voor elk spel dat cheats heeft. Als de patch niet verschijnt, kan het zijn dat deze niet bestaat voor het specifieke serienummer en de versie van het spel. Het kan nodig zijn om het spel bij te werken.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
             <source>Name:</source>
             <translation>Naam:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Je kunt geen cheats toepassen voordat het spel is gestart.</translation>
+		</message>
     </context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Opslaan</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Toepassen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Standaardinstellingen herstellen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Sluiten</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Pictogram</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Naam</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Serienummer</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Regio</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Firmware</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Grootte</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Versie</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Pad</translation>
+		</message>
+	</context>
 </TS>

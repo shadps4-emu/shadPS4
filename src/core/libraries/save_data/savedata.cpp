@@ -179,15 +179,21 @@ int PS4_SYSV_ABI sceSaveDataDeleteUser() {
 
 int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* cond,
                                           OrbisSaveDataDirNameSearchResult* result) {
-    if (cond == nullptr)
+    if (cond == nullptr || result == nullptr)
         return ORBIS_SAVE_DATA_ERROR_PARAMETER;
-    LOG_INFO(Lib_SaveData, "called");
+    LOG_INFO(Lib_SaveData, "Number of directories = {}", result->dirNamesNum);
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
                             std::to_string(cond->userId) / game_serial;
     if (!mount_dir.empty() && std::filesystem::exists(mount_dir)) {
-        if (cond->dirName == nullptr || std::string_view(cond->dirName->data)
-                                            .empty()) { // look for all dirs if no dir is provided.
-            for (int i = 0; const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
+        int maxDirNum = result->dirNamesNum; // Games set a maximum of directories to search for
+        int i = 0;
+
+        if (cond->dirName == nullptr || std::string_view(cond->dirName->data).empty()) {
+            // Look for all dirs if no dir is provided.
+            for (const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
+                if (i >= maxDirNum)
+                    break;
+
                 if (std::filesystem::is_directory(entry.path()) &&
                     entry.path().filename().string() != "sdmemory") {
                     // sceSaveDataDirNameSearch does not search for dataMemory1/2 dirs.
@@ -199,13 +205,50 @@ int PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond* 
                     result->setNum = i;
                 }
             }
-        } else { // Need a game to test.
-            LOG_ERROR(Lib_SaveData, "Check Me. sceSaveDataDirNameSearch: dirName = {}",
-                      cond->dirName->data);
-            strncpy(result->dirNames[0].data, cond->dirName->data, 32);
-            result->hitNum = 1;
-            result->dirNamesNum = 1;
-            result->setNum = 1;
+        } else {
+            // Game checks for a specific directory.
+            LOG_INFO(Lib_SaveData, "dirName = {}", cond->dirName->data);
+
+            // Games can pass '%' as a wildcard
+            // e.g. `SAVELIST%` searches for all folders with names starting with `SAVELIST`
+            std::string baseName(cond->dirName->data);
+            u64 wildcardPos = baseName.find('%');
+            if (wildcardPos != std::string::npos) {
+                baseName = baseName.substr(0, wildcardPos);
+            }
+
+            for (const auto& entry : std::filesystem::directory_iterator(mount_dir)) {
+                if (i >= maxDirNum)
+                    break;
+
+                if (std::filesystem::is_directory(entry.path())) {
+                    std::string dirName = entry.path().filename().string();
+
+                    if (wildcardPos != std::string::npos) {
+                        if (dirName.compare(0, baseName.size(), baseName) != 0) {
+                            continue;
+                        }
+                    } else if (wildcardPos == std::string::npos && dirName != cond->dirName->data) {
+                        continue;
+                    }
+
+                    strncpy(result->dirNames[i].data, cond->dirName->data, 32);
+
+                    i++;
+                    result->hitNum = i;
+                    result->dirNamesNum = i;
+                    result->setNum = i;
+                }
+            }
+        }
+
+        if (result->params != nullptr) {
+            Common::FS::IOFile file(mount_dir / cond->dirName->data / "param.txt",
+                                    Common::FS::FileAccessMode::Read);
+            if (file.IsOpen()) {
+                file.ReadRaw<u8>((void*)result->params, sizeof(OrbisSaveDataParam));
+                file.Close();
+            }
         }
     } else {
         result->hitNum = 0;

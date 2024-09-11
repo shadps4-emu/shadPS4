@@ -500,6 +500,11 @@
 	</context>
     <context>
         <name>MainWindow</name>
+		<message>
+			<location filename="../main_window.cpp" line="106"/>
+			<source>Game List</source>
+			<translation>Λίστα παιχνιδιών</translation>
+		</message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -851,7 +856,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="763"/>
             <source>DownloadComplete_MSG</source>
-            <translation>Τα Patches κατεβάστηκαν επιτυχώς! Όλα τα Patches για όλα τα παιχνίδια έχουν κατέβει, δεν είναι απαραίτητο να τα κατεβάσετε ένα-ένα για κάθε παιχνίδι, όπως με τα Cheats.</translation>
+            <translation>Τα Patches κατεβάστηκαν επιτυχώς! Όλα τα Patches για όλα τα παιχνίδια έχουν κατέβει, δεν είναι απαραίτητο να τα κατεβάσετε ένα-ένα για κάθε παιχνίδι, όπως με τα Cheats. Εάν η ενημέρωση δεν εμφανίζεται, μπορεί να μην υπάρχει για τον συγκεκριμένο σειριακό αριθμό και έκδοση του παιχνιδιού. Μπορεί να χρειαστεί να ενημερώσετε το παιχνίδι.</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="773"/>
@@ -898,5 +903,76 @@
             <source>Name:</source>
             <translation>Όνομα:</translation>
         </message>
+		<message>
+			<location filename="../cheats_patches.cpp" line="1163"/>
+			<source>Can't apply cheats before the game is started</source>
+			<translation>Δεν μπορείτε να εφαρμόσετε cheats πριν ξεκινήσει το παιχνίδι.</translation>
+		</message>
     </context>
+	<context>
+		<name>SettingsDialog</name>
+		<message>
+			<location filename="../settings_dialog.cpp" line="83"/>
+			<source>Save</source>
+			<translation>Αποθήκευση</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="84"/>
+			<source>Apply</source>
+			<translation>Εφαρμογή</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="85"/>
+			<source>Restore Defaults</source>
+			<translation>Επαναφορά Προεπιλογών</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="86"/>
+			<source>Close</source>
+			<translation>Κλείσιμο</translation>
+		</message>
+	</context>
+	<context>
+		<name>GameListFrame</name>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Icon</source>
+			<translation>Εικονίδιο</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Name</source>
+			<translation>Όνομα</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Serial</source>
+			<translation>Σειριακός αριθμός</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Region</source>
+			<translation>Περιοχή</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="34"/>
+			<source>Firmware</source>
+			<translation>Λογισμικό</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Size</source>
+			<translation>Μέγεθος</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Version</source>
+			<translation>Έκδοση</translation>
+		</message>
+		<message>
+			<location filename="../game_list_frame.cpp" line="35"/>
+			<source>Path</source>
+			<translation>Διαδρομή</translation>
+		</message>
+	</context>
 </TS>

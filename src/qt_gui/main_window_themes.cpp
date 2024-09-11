@@ -8,13 +8,13 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
 
     switch (theme) {
     case Theme::Dark:
-        mw_searchbar->setStyleSheet("background-color: #1e1e1e; /* Dark background */"
-                                    "color: #ffffff;            /* White text */"
-                                    "border: 1px solid #ffffff; /* White border */"
+        mw_searchbar->setStyleSheet("background-color: #1e1e1e;" // Dark background
+                                    "color: #ffffff;"            // White text
+                                    "border: 2px solid #ffffff;" // White border
                                     "padding: 5px;");
-        themePalette.setColor(QPalette::Window, QColor(53, 53, 53));
+        themePalette.setColor(QPalette::Window, QColor(50, 50, 50));
         themePalette.setColor(QPalette::WindowText, Qt::white);
-        themePalette.setColor(QPalette::Base, QColor(25, 25, 25));
+        themePalette.setColor(QPalette::Base, QColor(20, 20, 20));
         themePalette.setColor(QPalette::AlternateBase, QColor(25, 25, 25));
         themePalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
         themePalette.setColor(QPalette::ToolTipBase, Qt::white);
@@ -30,8 +30,9 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         break;
 
     case Theme::Light:
-        mw_searchbar->setStyleSheet("background-color: #ffffff; /* Light gray background */"
-                                    "color: #000000;            /* Black text */"
+        mw_searchbar->setStyleSheet("background-color: #ffffff;" // Light gray background
+                                    "color: #000000;"            // Black text
+                                    "border: 2px solid #000000;" // Black border
                                     "padding: 5px;");
         themePalette.setColor(QPalette::Window, QColor(240, 240, 240));   // Light gray
         themePalette.setColor(QPalette::WindowText, Qt::black);           // Black
@@ -49,9 +50,9 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         break;
 
     case Theme::Green:
-        mw_searchbar->setStyleSheet("background-color: #354535; /* Dark green background */"
-                                    "color: #ffffff;            /* White text */"
-                                    "border: 1px solid #ffffff; /* White border */"
+        mw_searchbar->setStyleSheet("background-color: #1e1e1e;" // Dark background
+                                    "color: #ffffff;"            // White text
+                                    "border: 2px solid #ffffff;" // White border
                                     "padding: 5px;");
         themePalette.setColor(QPalette::Window, QColor(53, 69, 53)); // Dark green background
         themePalette.setColor(QPalette::WindowText, Qt::white);      // White text
@@ -72,9 +73,9 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         break;
 
     case Theme::Blue:
-        mw_searchbar->setStyleSheet("background-color: #283c5a; /* Dark blue background */"
-                                    "color: #ffffff;            /* White text */"
-                                    "border: 1px solid #ffffff; /* White border */"
+        mw_searchbar->setStyleSheet("background-color: #1e1e1e;" // Dark background
+                                    "color: #ffffff;"            // White text
+                                    "border: 2px solid #ffffff;" // White border
                                     "padding: 5px;");
         themePalette.setColor(QPalette::Window, QColor(40, 60, 90)); // Dark blue background
         themePalette.setColor(QPalette::WindowText, Qt::white);      // White text
@@ -95,9 +96,9 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         break;
 
     case Theme::Violet:
-        mw_searchbar->setStyleSheet("background-color: #643278; /* Violet background */"
-                                    "color: #ffffff;            /* White text */"
-                                    "border: 1px solid #ffffff; /* White border */"
+        mw_searchbar->setStyleSheet("background-color: #1e1e1e;" // Dark background
+                                    "color: #ffffff;"            // White text
+                                    "border: 2px solid #ffffff;" // White border
                                     "padding: 5px;");
         themePalette.setColor(QPalette::Window, QColor(100, 50, 120)); // Violet background
         themePalette.setColor(QPalette::WindowText, Qt::white);        // White text

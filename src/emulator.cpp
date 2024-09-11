@@ -19,14 +19,15 @@
 #include "core/file_format/playgo_chunk.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/splash.h"
+#include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/kernel/thread_management.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
+#include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/rtc/rtc.h"
-#include "core/libraries/videoout/video_out.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
@@ -99,6 +100,15 @@ void Emulator::Run(const std::filesystem::path& file) {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
                 param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
                 id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+                Libraries::NpTrophy::game_serial = id;
+                const auto trophyDir =
+                    Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
+                if (!std::filesystem::exists(trophyDir)) {
+                    TRP trp;
+                    if (!trp.Extract(file.parent_path())) {
+                        LOG_ERROR(Loader, "Couldn't extract trophies");
+                    }
+                }
 #ifdef ENABLE_QT_GUI
                 MemoryPatcher::g_game_serial = id;
 #endif
@@ -195,7 +205,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 9> ModulesToLoad{
+    constexpr std::array<SysModules, 10> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
@@ -204,7 +214,8 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
          {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
-         {"libSceJpegEnc.sprx", nullptr}},
+         {"libSceJpegEnc.sprx", nullptr},
+         {"libSceFont.sprx", nullptr}},
     };
 
     std::vector<std::filesystem::path> found_modules;

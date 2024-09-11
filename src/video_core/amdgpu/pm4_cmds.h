@@ -187,6 +187,11 @@ struct PM4CmdSetData {
         BitField<28, 4, u32> index;      ///< Index for UCONFIG/CONTEXT on CI+
                                          ///< Program to zero for other opcodes and on SI
     };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
 
     template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
     static constexpr u32* SetContextReg(u32* cmdbuf, Args... data) {
@@ -350,6 +355,27 @@ struct PM4CmdEventWriteEop {
     }
 };
 
+struct PM4CmdAcquireMem {
+    PM4Type3Header header;
+    u32 cp_coher_cntl;
+    u32 cp_coher_size_lo;
+    u32 cp_coher_size_hi;
+    u32 cp_coher_base_lo;
+    u32 cp_coher_base_hi;
+    u32 poll_interval;
+};
+
+enum class DmaDataDst : u32 {
+    Memory = 0,
+    Gds = 1,
+};
+
+enum class DmaDataSrc : u32 {
+    Memory = 0,
+    Gds = 1,
+    Data = 2,
+};
+
 struct PM4DmaData {
     PM4Type3Header header;
     union {
@@ -357,11 +383,11 @@ struct PM4DmaData {
         BitField<12, 1, u32> src_atc;
         BitField<13, 2, u32> src_cache_policy;
         BitField<15, 1, u32> src_volatile;
-        BitField<20, 2, u32> dst_sel;
+        BitField<20, 2, DmaDataDst> dst_sel;
         BitField<24, 1, u32> dst_atc;
         BitField<25, 2, u32> dst_cache_policy;
         BitField<27, 1, u32> dst_volatile;
-        BitField<29, 2, u32> src_sel;
+        BitField<29, 2, DmaDataSrc> src_sel;
         BitField<31, 1, u32> cp_sync;
     };
     union {
@@ -456,6 +482,10 @@ struct PM4CmdWriteData {
     };
     u32 data[0];
 
+    u32 Size() const {
+        return (header.count.Value() - 2) * 4;
+    }
+
     template <typename T>
     void Address(T addr) {
         addr64 = static_cast<u64>(addr);
@@ -502,13 +532,17 @@ struct PM4CmdEventWriteEos {
     }
 
     void SignalFence() const {
-        switch (command.Value()) {
+        const auto cmd = command.Value();
+        switch (cmd) {
         case Command::SingalFence: {
             *Address() = DataDWord();
             break;
         }
+        case Command::GdsStore: {
+            break;
+        }
         default: {
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown command {}", u32(cmd));
         }
         }
     }

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #pragma once
 
 #include <span>
@@ -37,12 +36,13 @@ struct BufferResource {
     u32 dword_offset;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
+    bool is_gds_buffer{};
     bool is_instance_data{};
     bool is_written{};
 
     bool IsStorage(AmdGpu::Buffer buffer) const noexcept {
         static constexpr size_t MaxUboSize = 65536;
-        return buffer.GetSize() > MaxUboSize || is_written;
+        return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
     }
 
     constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
@@ -88,7 +88,7 @@ struct PushData {
 
     u32 step0;
     u32 step1;
-    std::array<u8, 32> buf_offsets;
+    std::array<u8, 48> buf_offsets;
 
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());
@@ -165,6 +165,7 @@ struct Info {
     bool has_image_query{};
     bool uses_lane_id{};
     bool uses_group_quad{};
+    bool uses_group_ballot{};
     bool uses_shared{};
     bool uses_fp16{};
     bool uses_step_rates{};
@@ -180,6 +181,7 @@ struct Info {
         const u32* base = user_data.data();
         if (ptr_index != IR::NumScalarRegs) {
             std::memcpy(&base, &user_data[ptr_index], sizeof(base));
+            base = reinterpret_cast<const u32*>(VAddr(base) & 0xFFFFFFFFFFFFULL);
         }
         std::memcpy(&data, base + dword_offset, sizeof(T));
         return data;

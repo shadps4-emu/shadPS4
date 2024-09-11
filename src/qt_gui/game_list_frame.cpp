@@ -31,14 +31,8 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->setColumnWidth(5, 90);  // Size
     this->setColumnWidth(6, 90);  // Version
     QStringList headers;
-    headers << "Icon"
-            << "Name"
-            << "Serial"
-            << "Region"
-            << "Firmware"
-            << "Size"
-            << "Version"
-            << "Path";
+    headers << tr("Icon") << tr("Name") << tr("Serial") << tr("Region") << tr("Firmware")
+            << tr("Size") << tr("Version") << tr("Path");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -96,9 +90,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     }
 
     QString pic1Path = QString::fromStdString(m_game_info->m_games[item->row()].pic_path);
-    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                 "game_data" / m_game_info->m_games[item->row()].serial /
-                                 "pic1.png";
+    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                                 m_game_info->m_games[item->row()].serial / "pic1.png";
 #ifdef _WIN32
     const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
 #else
@@ -111,7 +104,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
 
         std::filesystem::path img_path =
-            std::filesystem::path("user/game_data/") / m_game_info->m_games[item->row()].serial;
+            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+            m_game_info->m_games[item->row()].serial;
         std::filesystem::create_directories(img_path);
         if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
             // qDebug() << "Error: Unable to save image.";

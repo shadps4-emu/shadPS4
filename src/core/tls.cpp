@@ -2,22 +2,27 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/tls.h"
 
 #ifdef _WIN32
 #include <windows.h>
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(ARCH_X86_64)
 #include <architecture/i386/table.h>
 #include <boost/icl/interval_set.hpp>
 #include <i386/user_ldt.h>
 #include <sys/mman.h>
+#elif !defined(ARCH_X86_64)
+#include <pthread.h>
 #endif
 
 namespace Core {
 
 #ifdef _WIN32
+
+// Windows
 
 static DWORD slot = 0;
 static std::once_flag slot_alloc_flag;
@@ -40,7 +45,9 @@ Tcb* GetTcbBase() {
     return reinterpret_cast<Tcb*>(TlsGetValue(GetTcbKey()));
 }
 
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(ARCH_X86_64)
+
+// Apple x86_64
 
 // Reserve space in the 32-bit address range for allocating TCB pages.
 asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
@@ -132,7 +139,9 @@ Tcb* GetTcbBase() {
     return tcb;
 }
 
-#else
+#elif defined(ARCH_X86_64)
+
+// Other POSIX x86_64
 
 void SetTcbBase(void* image_address) {
     asm volatile("wrgsbase %0" ::"r"(image_address) : "memory");
@@ -142,6 +151,32 @@ Tcb* GetTcbBase() {
     Tcb* tcb;
     asm volatile("rdgsbase %0" : "=r"(tcb)::"memory");
     return tcb;
+}
+
+#else
+
+// POSIX non-x86_64
+// Just sets up a simple thread-local variable to store it, then instruction translation can point
+// code to it.
+
+static pthread_key_t slot = 0;
+static std::once_flag slot_alloc_flag;
+
+static void AllocTcbKey() {
+    ASSERT(pthread_key_create(&slot, nullptr) == 0);
+}
+
+pthread_key_t GetTcbKey() {
+    std::call_once(slot_alloc_flag, &AllocTcbKey);
+    return slot;
+}
+
+void SetTcbBase(void* image_address) {
+    ASSERT(pthread_setspecific(GetTcbKey(), image_address) == 0);
+}
+
+Tcb* GetTcbBase() {
+    return static_cast<Tcb*>(pthread_getspecific(GetTcbKey()));
 }
 
 #endif

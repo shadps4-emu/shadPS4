@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/address_space.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/memory_management.h"
 #include "core/linker.h"
@@ -218,6 +219,19 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
+int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
+    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
+    return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
+}
+
+int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
+    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
+    return memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
+                                        static_cast<Core::VMAType>(mtype), protection_flags);
+}
+
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize) {
     LOG_WARNING(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
@@ -282,6 +296,12 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
                      entries[i].operation, entries[i].length, result);
             break;
         }
+        case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
+            result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
+            break;
+        }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "");
@@ -292,11 +312,10 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
-            // By now, ignore protection and log it instead
-            LOG_WARNING(Kernel_Vmm,
-                        "entry = {}, operation = {}, len = {:#x}, type = {} "
-                        "is UNSUPPORTED and skipped",
-                        i, entries[i].operation, entries[i].length, (u8)entries[i].type);
+            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
+                                           entries[i].protection);
+            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
+                     entries[i].operation, entries[i].length, result);
             break;
         }
         default: {

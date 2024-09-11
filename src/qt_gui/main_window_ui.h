@@ -38,6 +38,7 @@ public:
     QPushButton* playButton;
     QPushButton* pauseButton;
     QPushButton* stopButton;
+    QPushButton* refreshButton;
     QPushButton* settingsButton;
     QPushButton* controllerButton;
 
@@ -176,6 +177,10 @@ public:
         stopButton->setFlat(true);
         stopButton->setIcon(QIcon(":images/stop_icon.png"));
         stopButton->setIconSize(QSize(40, 40));
+        refreshButton = new QPushButton(centralWidget);
+        refreshButton->setFlat(true);
+        refreshButton->setIcon(QIcon(":images/refresh_icon.png"));
+        refreshButton->setIconSize(QSize(32, 32));
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
@@ -262,8 +267,8 @@ public:
         menuView->addAction(menuGame_List_Mode->menuAction());
         menuView->addAction(menuGame_List_Icons->menuAction());
         menuView->addAction(menuThemes->menuAction());
-        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeDark);
+        menuThemes->addAction(setThemeLight);
         menuThemes->addAction(setThemeGreen);
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);

@@ -17,7 +17,7 @@ namespace Vulkan {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -175,9 +175,17 @@ u64 Rasterizer::Flush() {
     return current_tick;
 }
 
+void Rasterizer::Finish() {
+    scheduler.Finish();
+}
+
 void Rasterizer::BeginRendering() {
     const auto& regs = liverpool->regs;
     RenderState state;
+
+    if (regs.color_control.degamma_enable) {
+        LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
+    }
 
     for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
         const auto& col_buf = regs.color_buffers[col_buf_id];
@@ -245,6 +253,17 @@ void Rasterizer::BeginRendering() {
                             AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     }
     scheduler.BeginRendering(state);
+}
+
+void Rasterizer::InlineDataToGds(u32 gds_offset, u32 value) {
+    buffer_cache.InlineDataToGds(gds_offset, value);
+}
+
+u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
+    auto* gds_buf = buffer_cache.GetGdsBuffer();
+    u32 value;
+    std::memcpy(&value, gds_buf->mapped_data.data() + gds_offset, sizeof(u32));
+    return value;
 }
 
 void Rasterizer::InvalidateMemory(VAddr addr, u64 size) {

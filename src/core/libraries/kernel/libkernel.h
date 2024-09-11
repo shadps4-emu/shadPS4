@@ -33,6 +33,8 @@ typedef struct {
 } OrbisKernelUuid;
 
 int* PS4_SYSV_ABI __Error();
+int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
+                                                struct OrbisTimesec* st, unsigned long* dst_sec);
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);

@@ -22,6 +22,7 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::WriteSharedU64:
         info.uses_shared = true;
         break;
+    case IR::Opcode::ConvertF16F32:
     case IR::Opcode::ConvertF32F16:
     case IR::Opcode::BitCastF16U16:
         info.uses_fp16 = true;
@@ -37,6 +38,11 @@ void Visit(Info& info, IR::Inst& inst) {
         break;
     case IR::Opcode::QuadShuffle:
         info.uses_group_quad = true;
+        break;
+    case IR::Opcode::ReadLane:
+    case IR::Opcode::ReadFirstLane:
+    case IR::Opcode::WriteLane:
+        info.uses_group_ballot = true;
         break;
     case IR::Opcode::Discard:
     case IR::Opcode::DiscardCond:

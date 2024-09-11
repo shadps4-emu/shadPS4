@@ -1,79 +1,157 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <imgui.h>
+#include <magic_enum.hpp>
+
+#include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/msgdialog.h"
-
-#include <magic_enum.hpp>
+#include "imgui_internal.h"
+#include "msgdialog_ui.h"
 
 namespace Libraries::MsgDialog {
 
-int PS4_SYSV_ABI sceMsgDialogClose() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+using CommonDialog::Error;
+using CommonDialog::Result;
+using CommonDialog::Status;
 
-int PS4_SYSV_ABI sceMsgDialogGetResult() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
+static auto g_status = Status::NONE;
+static MsgDialogState g_state{};
+static DialogResult g_result{};
+static MsgDialogUi g_msg_dialog_ui;
 
-int PS4_SYSV_ABI sceMsgDialogGetStatus() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceMsgDialogInitialize() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceMsgDialogOpen(const OrbisMsgDialogParam* param) {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    switch (param->mode) {
-    case ORBIS_MSG_DIALOG_MODE_USER_MSG:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen userMsg type = %s msg = %s",
-                 magic_enum::enum_name(param->userMsgParam->buttonType), param->userMsgParam->msg);
-        break;
-    case ORBIS_MSG_DIALOG_MODE_PROGRESS_BAR:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen progressBar type = %s msg = %s",
-                 magic_enum::enum_name(param->progBarParam->barType), param->progBarParam->msg);
-        break;
-    case ORBIS_MSG_DIALOG_MODE_SYSTEM_MSG:
-        LOG_INFO(Lib_MsgDlg, "sceMsgDialogOpen systemMsg type: %s",
-                 magic_enum::enum_name(param->sysMsgParam->sysMsgType));
-        break;
-    default:
-        break;
+Error PS4_SYSV_ABI sceMsgDialogClose() {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
     }
-    return ORBIS_OK;
+    g_msg_dialog_ui.Finish(ButtonId::INVALID);
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarInc() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogGetResult(DialogResult* result) {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status != Status::FINISHED) {
+        return Error::NOT_FINISHED;
+    }
+    if (result == nullptr) {
+        return Error::ARG_NULL;
+    }
+    for (const auto v : result->reserved) {
+        if (v != 0) {
+            return Error::PARAM_INVALID;
+        }
+    }
+    *result = g_result;
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Status PS4_SYSV_ABI sceMsgDialogGetStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
-int PS4_SYSV_ABI sceMsgDialogProgressBarSetValue() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogInitialize() {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (!CommonDialog::g_isInitialized) {
+        return Error::NOT_SYSTEM_INITIALIZED;
+    }
+    if (g_status != Status::NONE) {
+        return Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Error::BUSY;
+    }
+    g_status = Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
+
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogTerminate() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogOpen(const OrbisParam* param) {
+    if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
+        LOG_INFO(Lib_MsgDlg, "called without initialize");
+        return Error::INVALID_STATE;
+    }
+    if (param == nullptr) {
+        LOG_DEBUG(Lib_MsgDlg, "called param:(NULL)");
+        return Error::ARG_NULL;
+    }
+    LOG_DEBUG(Lib_MsgDlg, "called param->mode: {}", magic_enum::enum_name(param->mode));
+    ASSERT(param->size == sizeof(OrbisParam));
+    ASSERT(param->baseParam.size == sizeof(CommonDialog::BaseParam));
+    g_result = {};
+    g_state = MsgDialogState{*param};
+    g_status = Status::RUNNING;
+    g_msg_dialog_ui = MsgDialogUi(&g_state, &g_status, &g_result);
+    return Error::OK;
 }
 
-int PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
-    LOG_ERROR(Lib_MsgDlg, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceMsgDialogProgressBarInc(OrbisMsgDialogProgressBarTarget target, u32 delta) {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_state.GetState<MsgDialogState::ProgressState>().progress += delta;
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogProgressBarSetMsg(OrbisMsgDialogProgressBarTarget target,
+                                                 const char* msg) {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_state.GetState<MsgDialogState::ProgressState>().msg = msg;
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogProgressBarTarget target,
+                                                   u32 value) {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
+    }
+    if (g_state.GetMode() != MsgDialogMode::PROGRESS_BAR) {
+        return Error::NOT_SUPPORTED;
+    }
+    if (target != OrbisMsgDialogProgressBarTarget::DEFAULT) {
+        return Error::PARAM_INVALID;
+    }
+    g_state.GetState<MsgDialogState::ProgressState>().progress = value;
+    return Error::OK;
+}
+
+Error PS4_SYSV_ABI sceMsgDialogTerminate() {
+    LOG_DEBUG(Lib_MsgDlg, "called");
+    if (g_status == Status::RUNNING) {
+        sceMsgDialogClose();
+    }
+    if (g_status == Status::NONE) {
+        return Error::NOT_INITIALIZED;
+    }
+    g_status = Status::NONE;
+    CommonDialog::g_isUsed = false;
+    return Error::OK;
+}
+
+Status PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
 void RegisterlibSceMsgDialog(Core::Loader::SymbolsResolver* sym) {

@@ -34,12 +34,12 @@ bool MainWindow::Init() {
     CreateActions();
     CreateRecentGameActions();
     ConfigureGuiFromSettings();
+    LoadTranslation();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
     GetPhysicalDevices();
-    LoadTranslation();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
     setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
@@ -89,6 +89,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
     ui->toolBar->addWidget(ui->stopButton);
+    ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
     auto connection = QObject::connect(ui->controllerButton, &QPushButton::clicked, this,
                                        &MainWindow::ControllerConfigurationButtonPressed);
@@ -111,7 +112,7 @@ void MainWindow::CreateDockWindows() {
     QWidget* phCentralWidget = new QWidget(this);
     setCentralWidget(phCentralWidget);
 
-    m_dock_widget.reset(new QDockWidget("Game List", this));
+    m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
     m_game_list_frame.reset(new GameListFrame(m_game_info, this));
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_game_info, this));
@@ -185,6 +186,7 @@ void MainWindow::CreateConnects() {
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
     connect(ui->exitAct, &QAction::triggered, this, &QWidget::close);
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
+    connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
 
@@ -583,7 +585,7 @@ void MainWindow::SaveWindowState() const {
 void MainWindow::InstallPkg() {
     QFileDialog dialog;
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter(tr("PKG File (*.PKG)"));
+    dialog.setNameFilter(tr("PKG File (*.PKG *.pkg)"));
     if (dialog.exec()) {
         QStringList fileNames = dialog.selectedFiles();
         int nPkg = fileNames.size();
@@ -864,6 +866,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->playButton->setIcon(RecolorIcon(ui->playButton->icon(), isWhite));
     ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
+    ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));

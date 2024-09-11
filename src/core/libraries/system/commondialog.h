@@ -11,9 +11,44 @@ class SymbolsResolver;
 
 namespace Libraries::CommonDialog {
 
-struct OrbisCommonDialogBaseParam {
+enum class Status : u32 {
+    NONE = 0,
+    INITIALIZED = 1,
+    RUNNING = 2,
+    FINISHED = 3,
+};
+
+enum class Result : u32 {
+    OK = 0,
+    USER_CANCELED = 1,
+};
+
+enum class Error : u32 {
+    OK = 0,
+    NOT_SYSTEM_INITIALIZED = 0x80B80001,
+    ALREADY_SYSTEM_INITIALIZED = 0x80B80002,
+    NOT_INITIALIZED = 0x80B80003,
+    ALREADY_INITIALIZED = 0x80B80004,
+    NOT_FINISHED = 0x80B80005,
+    INVALID_STATE = 0x80B80006,
+    RESULT_NONE = 0x80B80007,
+    BUSY = 0x80B80008,
+    OUT_OF_MEMORY = 0x80B80009,
+    PARAM_INVALID = 0x80B8000A,
+    NOT_RUNNING = 0x80B8000B,
+    ALREADY_CLOSE = 0x80B8000C,
+    ARG_NULL = 0x80B8000D,
+    UNEXPECTED_FATAL = 0x80B8000E,
+    NOT_SUPPORTED = 0x80B8000F,
+    INHIBIT_SHAREPLAY_CLIENT = 0x80B80010,
+};
+
+extern bool g_isInitialized;
+extern bool g_isUsed;
+
+struct BaseParam {
     std::size_t size;
-    u8 reserved[36];
+    std::array<u8, 36> reserved;
     u32 magic;
 };
 
@@ -32,8 +67,8 @@ int PS4_SYSV_ABI _ZNK3sce16CommonDialogUtil6Client8getAppIdEv();
 int PS4_SYSV_ABI _ZNK3sce16CommonDialogUtil6Client8isFinishEv();
 int PS4_SYSV_ABI _ZNK3sce16CommonDialogUtil6Client9getResultEv();
 int PS4_SYSV_ABI _ZTVN3sce16CommonDialogUtil6ClientE();
-int PS4_SYSV_ABI sceCommonDialogInitialize();
-int PS4_SYSV_ABI sceCommonDialogIsUsed();
+Error PS4_SYSV_ABI sceCommonDialogInitialize();
+bool PS4_SYSV_ABI sceCommonDialogIsUsed();
 int PS4_SYSV_ABI Func_0FF577E4E8457883();
 int PS4_SYSV_ABI Func_41716C2CE379416C();
 int PS4_SYSV_ABI Func_483A427D8F6E0748();

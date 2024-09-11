@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
@@ -53,11 +54,12 @@ void init_pthreads() {
 }
 
 void pthreadInitSelfMainThread() {
+    const char* name = "Main_Thread";
     auto* pthread_pool = g_pthread_cxt->GetPthreadPool();
-    g_pthread_self = pthread_pool->Create();
+    g_pthread_self = pthread_pool->Create(name);
     scePthreadAttrInit(&g_pthread_self->attr);
     g_pthread_self->pth = pthread_self();
-    g_pthread_self->name = "Main_Thread";
+    g_pthread_self->name = name;
 }
 
 int PS4_SYSV_ABI scePthreadAttrInit(ScePthreadAttr* attr) {
@@ -295,7 +297,7 @@ ScePthread PS4_SYSV_ABI scePthreadSelf() {
 
 int PS4_SYSV_ABI scePthreadAttrSetaffinity(ScePthreadAttr* pattr,
                                            const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (pattr == nullptr || *pattr == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
@@ -387,7 +389,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setstacksize(ScePthreadAttr* attr, size_t st
 }
 
 int PS4_SYSV_ABI scePthreadSetaffinity(ScePthread thread, const /*SceKernelCpumask*/ u64 mask) {
-    LOG_INFO(Kernel_Pthread, "called");
+    LOG_DEBUG(Kernel_Pthread, "called");
 
     if (thread == nullptr) {
         return SCE_KERNEL_ERROR_ESRCH;
@@ -412,11 +414,6 @@ int PS4_SYSV_ABI scePthreadGetaffinity(ScePthread thread, /*SceKernelCpumask*/ u
 
 ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     if (addr == nullptr || *addr != nullptr) {
-        return addr;
-    }
-    static std::mutex mutex;
-    std::scoped_lock lk{mutex};
-    if (*addr != nullptr) {
         return addr;
     }
     const VAddr vaddr = reinterpret_cast<VAddr>(addr);
@@ -584,8 +581,7 @@ int PS4_SYSV_ABI scePthreadMutexLock(ScePthreadMutex* mutex) {
 }
 
 int PS4_SYSV_ABI scePthreadMutexUnlock(ScePthreadMutex* mutex) {
-    mutex = createMutex(mutex);
-    if (mutex == nullptr) {
+    if (mutex == nullptr || *mutex == nullptr) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
 
@@ -995,7 +991,9 @@ static void cleanup_thread(void* arg) {
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
+#ifdef ARCH_X86_64
     Core::InitializeThreadPatchStack();
+#endif
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     linker->InitTlsForThread(false);
     void* ret = nullptr;
@@ -1019,7 +1017,7 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
         attr = g_pthread_cxt->GetDefaultAttr();
     }
 
-    *thread = pthread_pool->Create();
+    *thread = pthread_pool->Create(name);
 
     if ((*thread)->attr != nullptr) {
         scePthreadAttrDestroy(&(*thread)->attr);
@@ -1061,11 +1059,11 @@ int PS4_SYSV_ABI scePthreadCreate(ScePthread* thread, const ScePthreadAttr* attr
     }
 }
 
-ScePthread PThreadPool::Create() {
+ScePthread PThreadPool::Create(const char* name) {
     std::scoped_lock lock{m_mutex};
 
     for (auto* p : m_threads) {
-        if (p->is_free) {
+        if (p->is_free && p->name == name) {
             p->is_free = false;
             return p;
         }
@@ -1188,6 +1186,7 @@ int PS4_SYSV_ABI scePthreadCondattrDestroy(ScePthreadCondattr* attr) {
     int result = pthread_condattr_destroy(&(*attr)->cond_attr);
 
     LOG_DEBUG(Kernel_Pthread, "scePthreadCondattrDestroy: result = {} ", result);
+    delete *attr;
 
     switch (result) {
     case 0:
@@ -1493,6 +1492,8 @@ int PS4_SYSV_ABI scePthreadOnce(int* once_control, void (*init_routine)(void)) {
 }
 
 [[noreturn]] void PS4_SYSV_ABI scePthreadExit(void* value_ptr) {
+    g_pthread_self->is_free = true;
+
     pthread_exit(value_ptr);
     UNREACHABLE();
 }

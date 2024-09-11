@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include "common/arch.h"
 #include "common/enum.h"
 #include "common/types.h"
 
@@ -23,7 +24,7 @@ constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
 constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(ARCH_X86_64)
 // Can only comfortably reserve the first 0x7C0000000 of system reserved space.
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
 #else

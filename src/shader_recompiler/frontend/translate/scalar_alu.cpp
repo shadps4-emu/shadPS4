@@ -46,7 +46,11 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_ADD_I32:
             return S_ADD_I32(inst);
         case Opcode::S_AND_B32:
-            return S_AND_B32(inst);
+            return S_AND_B32(NegateMode::None, inst);
+        case Opcode::S_NAND_B32:
+            return S_AND_B32(NegateMode::Result, inst);
+        case Opcode::S_ANDN2_B32:
+            return S_AND_B32(NegateMode::Src1, inst);
         case Opcode::S_ASHR_I32:
             return S_ASHR_I32(inst);
         case Opcode::S_OR_B32:
@@ -73,9 +77,13 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_SUB_I32:
             return S_SUB_U32(inst);
         case Opcode::S_MIN_U32:
-            return S_MIN_U32(inst);
+            return S_MIN_U32(false, inst);
+        case Opcode::S_MIN_I32:
+            return S_MIN_U32(true, inst);
         case Opcode::S_MAX_U32:
-            return S_MAX_U32(inst);
+            return S_MAX_U32(false, inst);
+        case Opcode::S_MAX_I32:
+            return S_MAX_U32(true, inst);
         case Opcode::S_WQM_B64:
             break;
         default:
@@ -377,10 +385,16 @@ void Translator::S_ADD_I32(const GcnInst& inst) {
     // TODO: Overflow flag
 }
 
-void Translator::S_AND_B32(const GcnInst& inst) {
+void Translator::S_AND_B32(NegateMode negate, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result{ir.BitwiseAnd(src0, src1)};
+    IR::U32 src1{GetSrc(inst.src[1])};
+    if (negate == NegateMode::Src1) {
+        src1 = ir.BitwiseNot(src1);
+    }
+    IR::U32 result{ir.BitwiseAnd(src0, src1)};
+    if (negate == NegateMode::Result) {
+        result = ir.BitwiseNot(result);
+    }
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
@@ -533,18 +547,18 @@ void Translator::S_ADDC_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), carry));
 }
 
-void Translator::S_MAX_U32(const GcnInst& inst) {
+void Translator::S_MAX_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result = ir.UMax(src0, src1);
+    const IR::U32 result = ir.IMax(src0, src1, is_signed);
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.IEqual(result, src0));
 }
 
-void Translator::S_MIN_U32(const GcnInst& inst) {
+void Translator::S_MIN_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 result = ir.UMin(src0, src1);
+    const IR::U32 result = ir.IMin(src0, src1, is_signed);
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.IEqual(result, src0));
 }

@@ -208,6 +208,9 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
     if (info.uses_group_quad) {
         ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
     }
+    if (info.uses_group_ballot) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
+    }
     switch (program.info.stage) {
     case Stage::Compute: {
         const std::array<u32, 3> workgroup_size{ctx.runtime_info.cs_info.workgroup_size};
@@ -327,6 +330,10 @@ void EmitGetVccHi(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitGetM0(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitSetScc(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
@@ -348,6 +355,10 @@ void EmitSetVccLo(EmitContext& ctx) {
 }
 
 void EmitSetVccHi(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetM0(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

@@ -95,6 +95,9 @@ struct Image {
                  vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
+    void CopyImage(const Image& image);
+    void CopyMip(const Image& image, u32 mip);
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
@@ -112,6 +115,7 @@ struct Image {
     vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
     vk::ImageLayout layout = vk::ImageLayout::eUndefined;
     boost::container::small_vector<u64, 14> mip_hashes;
+    u64 tick_accessed_last{0};
 };
 
 } // namespace VideoCore

@@ -176,8 +176,10 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
-        vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties>();
+        vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, vk::PhysicalDeviceVulkan11Properties,
+        vk::PhysicalDevicePushDescriptorPropertiesKHR>();
     subgroup_size = properties_chain.get<vk::PhysicalDeviceVulkan11Properties>().subgroupSize;
+    push_descriptor_props = properties_chain.get<vk::PhysicalDevicePushDescriptorPropertiesKHR>();
     LOG_INFO(Render_Vulkan, "Physical device subgroup size {}", subgroup_size);
 
     features = feature_chain.get().features;
@@ -220,14 +222,16 @@ bool Instance::CreateDevice() {
     const bool robustness = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     const bool topology_restart =
         add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
+    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
     const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-    const bool maintenance5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    add_extension(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
     add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
+    add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
@@ -296,6 +300,7 @@ bool Instance::CreateDevice() {
             .shaderFloat16 = vk12_features.shaderFloat16,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
             .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
+            .separateDepthStencilLayouts = vk12_features.separateDepthStencilLayouts,
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
         },

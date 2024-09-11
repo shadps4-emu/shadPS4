@@ -3,6 +3,7 @@
 
 #include <xbyak/xbyak.h>
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
@@ -134,9 +135,11 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
             add_segment(elf_pheader[i]);
+#ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PatchInstructions(segment_addr, segment_file_size, c);
             }
+#endif
             break;
         }
         case PT_DYNAMIC:

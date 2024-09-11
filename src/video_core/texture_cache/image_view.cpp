@@ -69,7 +69,12 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexcept
     : is_storage{is_storage_} {
     type = ConvertImageViewType(image.GetType());
-    format = Vulkan::LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    const auto dfmt = image.GetDataFmt();
+    auto nfmt = image.GetNumberFmt();
+    if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
+        nfmt = AmdGpu::NumberFormat::Unorm;
+    }
+    format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level + 1;
@@ -114,22 +119,27 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
-                     ImageId image_id_, std::optional<vk::ImageUsageFlags> usage_override /*= {}*/)
+                     ImageId image_id_)
     : image_id{image_id_}, info{info_} {
-    vk::ImageViewUsageCreateInfo usage_ci{};
-    if (usage_override) {
-        usage_ci.usage = usage_override.value();
+    vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage};
+    if (!info.is_storage) {
+        usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
     // When sampling D32 texture from shader, the T# specifies R32 Float format so adjust it.
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
-    if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth && format == vk::Format::eR32Sfloat) {
+    if (image.aspect_mask & vk::ImageAspectFlagBits::eDepth &&
+        (format == vk::Format::eR32Sfloat || format == vk::Format::eD32Sfloat)) {
         format = image.info.pixel_format;
         aspect = vk::ImageAspectFlagBits::eDepth;
     }
+    if (image.aspect_mask & vk::ImageAspectFlagBits::eStencil && format == vk::Format::eR8Unorm) {
+        format = image.info.pixel_format;
+        aspect = vk::ImageAspectFlagBits::eStencil;
+    }
 
     const vk::ImageViewCreateInfo image_view_ci = {
-        .pNext = usage_override ? &usage_ci : nullptr,
+        .pNext = &usage_ci,
         .image = image.image,
         .viewType = info.type,
         .format = instance.GetSupportedFormat(format),
@@ -138,7 +148,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
             .levelCount = info.range.extent.levels - info.range.base.level,
-            .baseArrayLayer = info_.range.base.layer,
+            .baseArrayLayer = info.range.base.layer,
             .layerCount = info.range.extent.layers - info.range.base.layer,
         },
     };

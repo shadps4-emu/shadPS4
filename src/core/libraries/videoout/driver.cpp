@@ -161,10 +161,6 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 }
 
 std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
-    if (!req) {
-        return std::chrono::microseconds{0};
-    }
-
     const auto start = std::chrono::high_resolution_clock::now();
 
     // Whatever the game is rendering show splash if it is active
@@ -205,6 +201,11 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
 
     const auto end = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+}
+
+void VideoOutDriver::DrawBlankFrame() {
+    const auto empty_frame = renderer->PrepareBlankFrame(false);
+    renderer->Present(empty_frame);
 }
 
 bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
@@ -283,7 +284,14 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         auto& vblank_status = main_port.vblank_status;
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
-            delay = Flip(request);
+            if (!request) {
+                delay = std::chrono::microseconds{0};
+                if (!main_port.is_open) {
+                    DrawBlankFrame();
+                }
+            } else {
+                delay = Flip(request);
+            }
             FRAME_END;
         }
 

@@ -43,7 +43,6 @@ else()
 endif()
 
 if (NOT TARGET FFmpeg::ffmpeg)
-    set(ARCHITECTURE "x86_64")
     add_subdirectory(ffmpeg-core)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
 endif()
@@ -155,6 +154,17 @@ if (APPLE)
     endif()
 endif()
 
+# Dear ImGui
+add_library(Dear_ImGui
+        dear_imgui/imgui.cpp
+        dear_imgui/imgui_demo.cpp
+        dear_imgui/imgui_draw.cpp
+        dear_imgui/imgui_internal.h
+        dear_imgui/imgui_tables.cpp
+        dear_imgui/imgui_widgets.cpp
+)
+target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
+
 # Tracy
 option(TRACY_ENABLE "" ON)
 option(TRACY_NO_CRASH_HANDLER "" ON) # Otherwise texture cache exceptions will be treaten as a crash
@@ -168,3 +178,8 @@ option(TRACY_NO_SAMPLING "" ON)
 option(TRACY_ONLY_LOCALHOST "" ON)
 option(TRACY_NO_CONTEXT_SWITCH "" ON)
 add_subdirectory(tracy)
+
+# pugixml
+if (NOT TARGET pugixml::pugixml)
+    add_subdirectory(pugixml)
+endif()
