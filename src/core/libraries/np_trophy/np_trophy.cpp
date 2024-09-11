@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+#include <pugixml.hpp>
 
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "externals/pugixml/src/pugixml.hpp"
 #include "np_trophy.h"
 #include "trophy_ui.h"
 
