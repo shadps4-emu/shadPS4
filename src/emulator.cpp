@@ -146,7 +146,7 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     window = std::make_unique<Frontend::WindowSDL>(
         Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
-
+    window->setKeysBindingsMap(Config::getKeyboardBindingMap());
     g_window = window.get();
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;

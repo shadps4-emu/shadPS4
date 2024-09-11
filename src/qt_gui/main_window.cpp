@@ -50,6 +50,7 @@ bool MainWindow::Init() {
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     statusBar.reset(new QStatusBar);
+    m_controllerControlsDialog.reset(new KeyboardControlsWindow());
     this->setStatusBar(statusBar.data());
     // Update status bar
     int numGames = m_game_info->m_games.size();
@@ -90,6 +91,9 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->stopButton);
     ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
+    auto connection = QObject::connect(ui->controllerButton, &QPushButton::clicked, this,
+                                       &MainWindow::ControllerConfigurationButtonPressed);
+
     ui->toolBar->addWidget(ui->controllerButton);
     QFrame* line = new QFrame(this);
     line->setFrameShape(QFrame::StyledPanel);
@@ -97,6 +101,10 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(line);
     ui->toolBar->addWidget(ui->sizeSliderContainer);
     ui->toolBar->addWidget(ui->mw_searchbar);
+}
+
+void MainWindow::ControllerConfigurationButtonPressed() {
+    m_controllerControlsDialog->show();
 }
 
 void MainWindow::CreateDockWindows() {
@@ -779,6 +787,10 @@ void MainWindow::InstallDirectory() {
     GameInstallDialog dlg;
     dlg.exec();
     RefreshGameTable();
+}
+
+std::map<u32, KeysMapping> MainWindow::getKeysMapping() {
+    return m_controllerControlsDialog->getKeysMapping();
 }
 
 void MainWindow::SetLastUsedTheme() {

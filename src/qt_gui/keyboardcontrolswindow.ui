@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<ui version="4.0">
+ <class>KeyboardControlsWindow</class>
+ <widget class="QDialog" name="KeyboardControlsWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1155</width>
+    <height>790</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1148</width>
+    <height>731</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1155</width>
+    <height>790</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Configure Controller Bindings</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <widget class="QTabWidget" name="tabWidget">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>1131</width>
+     <height>711</height>
+    </rect>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="port_1">
+    <attribute name="title">
+     <string>Port 1</string>
+    </attribute>
+    <widget class="QWidget" name="centralwidget" native="true">
+     <property name="geometry">
+      <rect>
+       <x>-10</x>
+       <y>20</y>
+       <width>1131</width>
+       <height>621</height>
+      </rect>
+     </property>
+     <widget class="QWidget" name="bgWidget" native="true">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>50</y>
+        <width>870</width>
+        <height>522</height>
+       </rect>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"> QWidget { background-image: url(:images/PS4_controller_scheme.png);
+                            background-repeat: no-repeat;
+                            background-position: center; }
+       </string>
+      </property>
+      <widget class="QKeySequenceEdit" name="StartKeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>550</x>
+         <y>0</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="SelectKeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>260</x>
+         <y>0</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="LAnalogDownkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>480</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="LAnalogLeftkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>240</x>
+         <y>440</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="LAnalogUpkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>400</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="LAnalogRightkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>440</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="PSkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>400</x>
+         <y>400</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="RAnalogDownkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>520</x>
+         <y>480</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="RAnalogLeftkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>440</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="RAnalogUpkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>520</x>
+         <y>400</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+      <widget class="QKeySequenceEdit" name="RAnalogRightkeySequenceEdit">
+       <property name="geometry">
+        <rect>
+         <x>560</x>
+         <y>440</y>
+         <width>71</width>
+         <height>40</height>
+        </rect>
+       </property>
+       <property name="maximumSequenceLength">
+        <longLong>1</longLong>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QKeySequenceEdit" name="DPadLeftkeySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>230</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="DPadRightkeySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>230</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="DPadUpkeySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>190</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="DPadDownkeySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>270</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="L2keySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>40</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="L1keySequenceEdit">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>110</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="CrossKeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>380</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="R2KeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>30</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="CircleKeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>240</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="R1KeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>100</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="SquareKeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>310</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+     <widget class="QKeySequenceEdit" name="TriangleKeySequenceEdit">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>1050</x>
+        <y>170</y>
+        <width>71</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="maximumSequenceLength">
+       <longLong>1</longLong>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="port_2">
+    <attribute name="title">
+     <string>Port 2</string>
+    </attribute>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="applyButton">
+   <property name="geometry">
+    <rect>
+     <x>1030</x>
+     <y>740</y>
+     <width>100</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Apply</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cancelButton">
+   <property name="geometry">
+    <rect>
+     <x>890</x>
+     <y>740</y>
+     <width>100</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Cancel</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
