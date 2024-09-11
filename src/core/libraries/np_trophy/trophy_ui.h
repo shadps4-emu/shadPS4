@@ -20,7 +20,6 @@ struct TrophyInfo {
 };
 
 class TrophyUI final : public ImGui::Layer {
-    bool first_render{false};
     std::vector<TrophyInfo> trophyQueue;
 
 public:

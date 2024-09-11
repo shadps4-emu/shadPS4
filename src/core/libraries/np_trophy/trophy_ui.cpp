@@ -11,7 +11,6 @@ using namespace ImGui;
 using namespace Libraries::NpTrophy;
 
 TrophyUI::TrophyUI() {
-    first_render = true;
     AddLayer(this);
 }
 
@@ -68,10 +67,8 @@ void TrophyUI::Draw() {
                           ImGuiWindowFlags_NoInputs)) {
                 Text("Trophy earned!");
                 TextWrapped(currentTrophyInfo.trophyName.c_str());
-
-                End();
             }
+            End();
         }
     }
-    first_render = false;
 }
