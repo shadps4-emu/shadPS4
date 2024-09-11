@@ -158,6 +158,10 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
         return nullptr;
     }
+    if (regs.primitive_type == Liverpool::PrimitiveType::None) {
+        LOG_TRACE(Render_Vulkan, "Primitive type 'None' skipped");
+        return nullptr;
+    }
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }
