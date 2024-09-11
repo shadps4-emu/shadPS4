@@ -51,6 +51,8 @@ PSF& PSF::operator=(PSF&& other) noexcept {
 }
 
 bool PSF::Open(const std::filesystem::path& filepath) {
+    last_write = std::filesystem::last_write_time(filepath);
+
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
         return false;
@@ -124,6 +126,8 @@ bool PSF::Encode(const std::filesystem::path& filepath) const {
     if (!file.IsOpen()) {
         return false;
     }
+
+    last_write = std::filesystem::file_time_type::clock::now();
 
     const auto psf_buffer = Encode();
     return file.Write(psf_buffer) == psf_buffer.size();

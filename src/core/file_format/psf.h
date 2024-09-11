@@ -70,11 +70,17 @@ public:
     void AddString(std::string key, std::string value, bool update = false);
     void AddInteger(std::string key, s32 value, bool update = false);
 
+    [[nodiscard]] std::filesystem::file_time_type GetLastWrite() const {
+        return last_write;
+    }
+
     [[nodiscard]] const std::vector<Entry>& GetEntries() const {
         return entry_list;
     }
 
 private:
+    mutable std::filesystem::file_time_type last_write;
+
     std::vector<Entry> entry_list;
 
     std::unordered_map<size_t, std::vector<u8>> map_binaries;

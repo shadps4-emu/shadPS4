@@ -10,25 +10,23 @@ class SymbolsResolver;
 }
 
 namespace Libraries::SaveData {
-
-constexpr int ORBIS_SAVE_DATA_FINGERPRINT_DATA_SIZE = 65;
-struct OrbisSaveDataFingerprint {
-    char data[ORBIS_SAVE_DATA_FINGERPRINT_DATA_SIZE];
-    char padding[15];
-};
-
 enum class Error : u32;
 enum class OrbisSaveDataParamType : u32;
 
+struct OrbisSaveDataBackup;
+struct OrbisSaveDataCheckBackupData;
 struct OrbisSaveDataDelete;
+struct OrbisSaveDataDirNameSearchCond;
+struct OrbisSaveDataDirNameSearchResult;
+struct OrbisSaveDataEvent;
+struct OrbisSaveDataEventParam;
 struct OrbisSaveDataIcon;
 struct OrbisSaveDataMount2;
 struct OrbisSaveDataMount;
 struct OrbisSaveDataMountInfo;
 struct OrbisSaveDataMountPoint;
 struct OrbisSaveDataMountResult;
-struct OrbisSaveDataDirNameSearchCond;
-struct OrbisSaveDataDirNameSearchResult;
+struct OrbisSaveDataRestoreBackupData;
 
 /*typedef u32 OrbisSaveDataSaveDataMemoryOption;
 #define ORBIS_SAVE_DATA_MEMORY_OPTION_NONE (0x00000000)
@@ -49,22 +47,6 @@ struct OrbisSaveDataMemorySetup2 {
 struct OrbisSaveDataMemorySetupResult {
     size_t existedMemorySize;
     u8 reserved[16];
-};
-
-typedef u32 OrbisSaveDataEventType;
-#define SCE_SAVE_DATA_EVENT_TYPE_INVALID (0)
-#define SCE_SAVE_DATA_EVENT_TYPE_UMOUNT_BACKUP_END (1)
-#define SCE_SAVE_DATA_EVENT_TYPE_BACKUP_END (2)
-#define SCE_SAVE_DATA_EVENT_TYPE_SAVE_DATA_MEMORY_SYNC_END (3)
-
-struct OrbisSaveDataEvent {
-    OrbisSaveDataEventType type;
-    s32 errorCode;
-    s32 userId;
-    u8 padding[4];
-    OrbisSaveDataTitleId titleId;
-    OrbisSaveDataDirName dirName;
-    u8 reserved[40];
 };
 
 struct OrbisSaveDataMemoryData {
@@ -95,18 +77,6 @@ struct OrbisSaveDataMemorySet2 {
     u8 reserved[24];
 };
 
-struct OrbisSaveDataCheckBackupData {
-    s32 userId;
-    int : 32;
-    const OrbisSaveDataTitleId* titleId;
-    const OrbisSaveDataDirName* dirName;
-    OrbisSaveDataParam* param;
-    OrbisSaveDataIcon* icon;
-    u8 reserved[32];
-};
-
-typedef struct _OrbisSaveDataEventParam OrbisSaveDataEventParam;
-
 typedef u32 OrbisSaveDataMemorySyncOption;
 
 #define SCE_SAVE_DATA_MEMORY_SYNC_OPTION_NONE (0x00000000)
@@ -127,12 +97,12 @@ constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_USER_PARAM = 4;
 constexpr int ORBIS_SAVE_DATA_PARAM_TYPE_MTIME = 5;*/
 
 int PS4_SYSV_ABI sceSaveDataAbort();
-int PS4_SYSV_ABI sceSaveDataBackup();
+Error PS4_SYSV_ABI sceSaveDataBackup(const OrbisSaveDataBackup* backup);
 int PS4_SYSV_ABI sceSaveDataBindPsnAccount();
 int PS4_SYSV_ABI sceSaveDataBindPsnAccountForSystemBackup();
 int PS4_SYSV_ABI sceSaveDataChangeDatabase();
 int PS4_SYSV_ABI sceSaveDataChangeInternal();
-int PS4_SYSV_ABI sceSaveDataCheckBackupData(/*const OrbisSaveDataCheckBackupData* check*/);
+Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData* check);
 int PS4_SYSV_ABI sceSaveDataCheckBackupDataForCdlg();
 int PS4_SYSV_ABI sceSaveDataCheckBackupDataInternal();
 int PS4_SYSV_ABI sceSaveDataCheckCloudData();
@@ -140,7 +110,7 @@ int PS4_SYSV_ABI sceSaveDataCheckIpmiIfSize();
 int PS4_SYSV_ABI sceSaveDataCheckSaveDataBroken();
 int PS4_SYSV_ABI sceSaveDataCheckSaveDataVersion();
 int PS4_SYSV_ABI sceSaveDataCheckSaveDataVersionLatest();
-int PS4_SYSV_ABI sceSaveDataClearProgress();
+Error PS4_SYSV_ABI sceSaveDataClearProgress();
 int PS4_SYSV_ABI sceSaveDataCopy5();
 int PS4_SYSV_ABI sceSaveDataCreateUploadData();
 int PS4_SYSV_ABI sceSaveDataDebug();
@@ -169,8 +139,8 @@ int PS4_SYSV_ABI sceSaveDataGetClientThreadPriority();
 int PS4_SYSV_ABI sceSaveDataGetCloudQuotaInfo();
 int PS4_SYSV_ABI sceSaveDataGetDataBaseFilePath();
 int PS4_SYSV_ABI sceSaveDataGetEventInfo();
-int PS4_SYSV_ABI sceSaveDataGetEventResult(/*const OrbisSaveDataEventParam* eventParam,
-                                           OrbisSaveDataEvent* event*/);
+Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam* eventParam,
+                                             OrbisSaveDataEvent* event);
 int PS4_SYSV_ABI sceSaveDataGetFormat();
 int PS4_SYSV_ABI sceSaveDataGetMountedSaveDataCount();
 Error PS4_SYSV_ABI sceSaveDataGetMountInfo(const OrbisSaveDataMountPoint* mountPoint,
@@ -178,7 +148,7 @@ Error PS4_SYSV_ABI sceSaveDataGetMountInfo(const OrbisSaveDataMountPoint* mountP
 Error PS4_SYSV_ABI sceSaveDataGetParam(const OrbisSaveDataMountPoint* mountPoint,
                                        OrbisSaveDataParamType paramType, void* paramBuf,
                                        size_t paramBufSize, size_t* gotSize);
-int PS4_SYSV_ABI sceSaveDataGetProgress();
+Error PS4_SYSV_ABI sceSaveDataGetProgress(float* progress);
 int PS4_SYSV_ABI sceSaveDataGetSaveDataCount();
 int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const u32 userId, void* buf, const size_t bufSize,
                                               const int64_t offset);
@@ -206,7 +176,7 @@ int PS4_SYSV_ABI sceSaveDataMountSys();
 int PS4_SYSV_ABI sceSaveDataPromote5();
 int PS4_SYSV_ABI sceSaveDataRebuildDatabase();
 int PS4_SYSV_ABI sceSaveDataRegisterEventCallback();
-int PS4_SYSV_ABI sceSaveDataRestoreBackupData();
+Error PS4_SYSV_ABI sceSaveDataRestoreBackupData(const OrbisSaveDataRestoreBackupData* restore);
 int PS4_SYSV_ABI sceSaveDataRestoreBackupDataForCdlg();
 int PS4_SYSV_ABI sceSaveDataRestoreLoadSaveDataMemory();
 Error PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint,
@@ -232,7 +202,7 @@ Error PS4_SYSV_ABI sceSaveDataTerminate();
 int PS4_SYSV_ABI sceSaveDataTransferringMount();
 Error PS4_SYSV_ABI sceSaveDataUmount(const OrbisSaveDataMountPoint* mountPoint);
 int PS4_SYSV_ABI sceSaveDataUmountSys();
-int PS4_SYSV_ABI sceSaveDataUmountWithBackup(const OrbisSaveDataMountPoint* mountPoint);
+Error PS4_SYSV_ABI sceSaveDataUmountWithBackup(const OrbisSaveDataMountPoint* mountPoint);
 int PS4_SYSV_ABI sceSaveDataUnregisterEventCallback();
 int PS4_SYSV_ABI sceSaveDataUpload();
 int PS4_SYSV_ABI Func_02E4C4D201716422();

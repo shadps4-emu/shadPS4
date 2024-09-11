@@ -113,7 +113,6 @@ SaveInstance& SaveInstance::operator=(SaveInstance&& other) noexcept {
     param_sfo_path = std::move(other.param_sfo_path);
     corrupt_file_path = std::move(other.corrupt_file_path);
     corrupt_file = std::move(other.corrupt_file);
-    last_write = other.last_write;
     param_sfo = std::move(other.param_sfo);
     mount_point = std::move(other.mount_point);
     max_blocks = other.max_blocks;
@@ -140,14 +139,12 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
             }
         }
         exists = true;
-        last_write = std::filesystem::file_time_type::clock::now();
     } else {
         if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
             throw std::filesystem::filesystem_error(
                 "Corrupted save data", corrupt_file_path,
                 std::make_error_code(std::errc::illegal_byte_sequence));
         }
-        last_write = fs::last_write_time(param_sfo_path);
         if (!param_sfo.Open(param_sfo_path)) {
             throw std::filesystem::filesystem_error(
                 "Failed to read param.sfo", param_sfo_path,
@@ -155,7 +152,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         }
     }
 
-    if (!ignore_corrupt) {
+    if (!ignore_corrupt && !read_only) {
         int err = corrupt_file.Open(corrupt_file_path, Common::FS::FileAccessMode::Write);
         if (err != 0) {
             throw std::filesystem::filesystem_error(
@@ -183,7 +180,6 @@ void SaveInstance::Umount() {
         throw std::filesystem::filesystem_error("Failed to write param.sfo", param_sfo_path,
                                                 std::make_error_code(std::errc::permission_denied));
     }
-    last_write = std::filesystem::file_time_type::clock::now();
     param_sfo = PSF();
 
     corrupt_file.Close();

@@ -5,6 +5,7 @@
 
 #include <filesystem>
 
+#include "common/io_file.h"
 #include "core/file_format/psf.h"
 
 namespace Core::FileSys {
@@ -43,7 +44,6 @@ class SaveInstance {
 
     Common::FS::IOFile corrupt_file;
 
-    std::filesystem::file_time_type last_write;
     PSF param_sfo;
     std::string mount_point;
 
@@ -90,16 +90,20 @@ public:
         return exists;
     }
 
+    [[nodiscard]] OrbisUserServiceUserId GetUserId() const noexcept {
+        return user_id;
+    }
+
+    [[nodiscard]] std::string_view GetTitleId() const noexcept {
+        return game_serial;
+    }
+
     [[nodiscard]] const std::string& GetDirName() const noexcept {
         return dir_name;
     }
 
     [[nodiscard]] const std::filesystem::path& GetSavePath() const noexcept {
         return save_path;
-    }
-
-    [[nodiscard]] const std::filesystem::file_time_type& GetLastWrite() const noexcept {
-        return last_write;
     }
 
     [[nodiscard]] const PSF& GetParamSFO() const noexcept {
