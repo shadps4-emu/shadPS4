@@ -178,3 +178,8 @@ option(TRACY_NO_SAMPLING "" ON)
 option(TRACY_ONLY_LOCALHOST "" ON)
 option(TRACY_NO_CONTEXT_SWITCH "" ON)
 add_subdirectory(tracy)
+
+# pugixml
+if (NOT TARGET pugixml::pugixml)
+    add_subdirectory(pugixml)
+endif()
