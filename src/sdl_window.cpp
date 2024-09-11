@@ -285,12 +285,12 @@ void WindowSDL::onKeyPress(const SDL_Event* event) {
                 SDL_SetWindowFullscreen(window, !is_fullscreen);
             }
             break;
-	    case SDLK_F12:
-			if (event->type == SDL_EVENT_KEY_DOWN) {
-				// Trigger rdoc capture
-				VideoCore::TriggerCapture();
-			}
-			break;
+        case SDLK_F12:
+            if (event->type == SDL_EVENT_KEY_DOWN) {
+                // Trigger rdoc capture
+                VideoCore::TriggerCapture();
+            }
+            break;
         default:
             break;
         }
