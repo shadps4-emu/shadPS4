@@ -29,7 +29,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     info.UpdateSize();
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
     ASSERT(null_id.index == 0);
-    slot_images[null_id].flags = ImageFlagBits{};
+    slot_images[null_id].flags = ImageFlagBits::Tracked;
 
     ImageViewInfo view_info;
     void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
