@@ -685,6 +685,16 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                             it->attribute("unlockstate").set_value("unlocked");
                         }
 
+                        Rtc::OrbisRtcTick trophyTimestamp;
+                        Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                        if (std::string(it->attribute("timestamp").value()).empty()) {
+                            it->append_attribute("timestamp") =
+                                std::to_string(trophyTimestamp.tick).c_str();
+                        } else {
+                            it->attribute("timestamp").set_value(std::to_string(trophyTimestamp.tick).c_str());
+                        }
+
                         g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName);
                     }
                 }
@@ -696,6 +706,17 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
                 platinumIt->append_attribute("unlockstate") = "unlocked";
 
+                Rtc::OrbisRtcTick trophyTimestamp;
+                Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                if (std::string(platinumIt->attribute("timestamp").value()).empty()) {
+                    platinumIt->append_attribute("timestamp") =
+                        std::to_string(trophyTimestamp.tick).c_str();
+                } else {
+                    platinumIt->attribute("timestamp")
+                        .set_value(std::to_string(trophyTimestamp.tick).c_str());
+                }
+
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();
 
@@ -706,6 +727,17 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             if ((numTrophies - 2) == numTrophiesUnlocked) {
 
                 platinumIt->attribute("unlockstate").set_value("unlocked");
+
+                Rtc::OrbisRtcTick trophyTimestamp;
+                Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                if (std::string(platinumIt->attribute("timestamp").value()).empty()) {
+                    platinumIt->append_attribute("timestamp") =
+                        std::to_string(trophyTimestamp.tick).c_str();
+                } else {
+                    platinumIt->attribute("timestamp")
+                        .set_value(std::to_string(trophyTimestamp.tick).c_str());
+                }
 
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();
