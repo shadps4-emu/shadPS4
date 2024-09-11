@@ -34,6 +34,6 @@ private:
     Input::GameController* controller;
     Core::Linker* linker;
     std::unique_ptr<Frontend::WindowSDL> window;
-    std::map<u32, KeysMapping> m_keysBindingsMap;
 };
+
 } // namespace Core

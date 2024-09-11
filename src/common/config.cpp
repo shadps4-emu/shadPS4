@@ -53,7 +53,6 @@ std::vector<std::string> m_recent_files;
 std::string emulator_language = "en";
 // Settings
 u32 m_language = 1; // english
-std::map<u32, KeysMapping> m_keyboard_binding_map;
 
 bool isNeoMode() {
     return isNeo;
@@ -284,12 +283,7 @@ void setRecentFiles(const std::vector<std::string>& recentFiles) {
 void setEmulatorLanguage(std::string language) {
     emulator_language = language;
 }
-void setKeyboardBindingMap(std::map<u32, KeysMapping> map) {
-    m_keyboard_binding_map = map;
-}
-const std::map<u32, KeysMapping>& getKeyboardBindingMap() {
-    return m_keyboard_binding_map;
-}
+
 u32 getMainWindowGeometryX() {
     return main_window_geometry_x;
 }
@@ -437,34 +431,6 @@ void load(const std::filesystem::path& path) {
 
         m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
     }
-
-    if (data.contains("Controls")) {
-        auto controls = toml::find<toml::table>(data, "Controls");
-
-        toml::table keyboardBindings{};
-        auto it = controls.find("keyboardBindings");
-        if (it != controls.end() && it->second.is_table()) {
-            keyboardBindings = it->second.as_table();
-        }
-
-        // Convert TOML table to std::map<u32, KeysMapping>
-        for (const auto& [key, value] : keyboardBindings) {
-            try {
-                Uint32 int_key = static_cast<u32>(std::stoll(key));
-                if (value.is_integer()) {
-                    // Convert the TOML integer value to KeysMapping (int)
-                    int int_value = value.as_integer();
-
-                    // Add to the map
-                    m_keyboard_binding_map[int_key] = static_cast<KeysMapping>(int_value);
-                } else {
-                    fmt::print("Unexpected type for value: expected integer, got other type\n");
-                }
-            } catch (const std::exception& e) {
-                fmt::print("Error processing key-value pair: {}\n", e.what());
-            }
-        }
-    }
 }
 void save(const std::filesystem::path& path) {
     toml::value data;
@@ -525,15 +491,6 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
     data["GUI"]["emulatorLanguage"] = emulator_language;
-
-    // Create a TOML table with keyboard bindings
-    toml::table keyboardBindingsTable;
-    // Serialize the map to the TOML table
-    for (const auto& [key, value] : m_keyboard_binding_map) {
-        keyboardBindingsTable[std::to_string(key)] = static_cast<int>(value);
-    }
-
-    data["Controls"]["keyboardBindings"] = keyboardBindingsTable;
 
     data["Settings"]["consoleLanguage"] = m_language;
 

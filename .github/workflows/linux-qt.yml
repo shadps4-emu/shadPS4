@@ -23,13 +23,7 @@ jobs:
 
     - name: Install misc packages
       run: >
-       sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
-    
-    - name: Setup Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        arch: linux_gcc_64
-        version: 6.7.1
+       sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev
 
     - name: Cache CMake dependency source code
       uses: actions/cache@v4

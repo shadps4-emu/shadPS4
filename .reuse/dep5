@@ -15,7 +15,6 @@ Files: CMakeSettings.json
        documents/Screenshots/Undertale.png
        documents/Screenshots/We are DOOMED.png
        scripts/ps4_names.txt
-       src/images/PS4_controller_scheme.png
        src/images/about_icon.png
        src/images/controller_icon.png
        src/images/exit_icon.png

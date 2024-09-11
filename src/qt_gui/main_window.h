@@ -17,7 +17,6 @@
 #include "game_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
-#include "keyboardcontrolswindow.h"
 #include "main_window_themes.h"
 #include "main_window_ui.h"
 #include "pkg_viewer.h"
@@ -38,8 +37,6 @@ public:
     void InstallDirectory();
     void StartGame();
 
-    std::map<u32, KeysMapping> getKeysMapping();
-
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
     void SaveWindowState() const;
@@ -48,7 +45,6 @@ private Q_SLOTS:
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
     void OnLanguageChanged(const std::string& locale);
-    void ControllerConfigurationButtonPressed();
 
 private:
     Ui_MainWindow* ui;
@@ -84,7 +80,6 @@ private:
     QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
-    QScopedPointer<KeyboardControlsWindow> m_controllerControlsDialog;
     // Available GPU devices
     std::vector<QString> m_physical_devices;
 
