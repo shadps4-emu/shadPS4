@@ -500,7 +500,7 @@ struct PM4CmdWriteData {
 struct PM4CmdEventWriteEos {
     enum class Command : u32 {
         GdsStore = 1u,
-        SingalFence = 2u,
+        SignalFence = 2u,
     };
 
     PM4Type3Header header;
@@ -534,7 +534,7 @@ struct PM4CmdEventWriteEos {
     void SignalFence() const {
         const auto cmd = command.Value();
         switch (cmd) {
-        case Command::SingalFence: {
+        case Command::SignalFence: {
             *Address() = DataDWord();
             break;
         }
