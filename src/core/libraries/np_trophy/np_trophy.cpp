@@ -311,8 +311,10 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
                             details->hidden = false;
                         }
 
-                        strcpy_s(details->name, currentTrophyName.c_str());
-                        strcpy_s(details->description, currentTrophyDescription.c_str());
+                        strncpy(details->name, currentTrophyName.c_str(),
+                                ORBIS_NP_TROPHY_NAME_MAX_SIZE);
+                        strncpy(details->description, currentTrophyDescription.c_str(),
+                                ORBIS_NP_TROPHY_DESCR_MAX_SIZE);
 
                         data->trophyId = trophyId;
                         data->unlocked = true;
@@ -335,8 +337,10 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
                             details->hidden = false;
                         }
 
-                        strcpy_s(details->name, currentTrophyName.c_str());
-                        strcpy_s(details->description, currentTrophyDescription.c_str());
+                        strncpy(details->name, currentTrophyName.c_str(),
+                                ORBIS_NP_TROPHY_NAME_MAX_SIZE);
+                        strncpy(details->description, currentTrophyDescription.c_str(),
+                                ORBIS_NP_TROPHY_DESCR_MAX_SIZE);
 
                         data->trophyId = trophyId;
                         data->unlocked = false;
