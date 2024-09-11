@@ -84,7 +84,7 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
             port.stream =
                 SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, NULL, NULL);
             SDL_ResumeAudioDevice(SDL_GetAudioStreamDevice(port.stream));
-            return id + 1;
+            return id + 1; // Handle range 1..n keeps 0 reserved
         }
     }
 
@@ -93,22 +93,35 @@ int SDLAudio::AudioOutOpen(int type, u32 samples_num, u32 freq,
 
 s32 SDLAudio::AudioOutOutput(s32 handle, const void* ptr) {
     std::shared_lock lock{m_mutex};
+    if (handle < 1 || handle > portsOut.size()) {
+        // Handle is outside range 1..n
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
     auto& port = portsOut[handle - 1];
     if (!port.isOpen) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
-    if (ptr == nullptr) {
-        return 0;
-    }
-    // TODO mixing channels
-    int result = SDL_PutAudioStreamData(port.stream, ptr,
-                                        port.samples_num * port.sample_size * port.channels_num);
-    // TODO find a correct value 8192 is estimated
-    while (SDL_GetAudioStreamAvailable(port.stream) > 65536) {
-        SDL_Delay(0);
+
+    // Allow call with null - this acts as "wait for buffer ready"
+    if (ptr != nullptr) {
+        // TODO mixing channels
+        int result = SDL_PutAudioStreamData(
+            port.stream, ptr, port.samples_num * port.sample_size * port.channels_num);
+        if (result != 0) {
+            // There's various possible failures, just assume some buffer is full
+            return ORBIS_AUDIO_OUT_ERROR_PORT_FULL;
+        }
     }
 
-    return result;
+    auto bytesPerSecond = 48000 * port.sample_size * port.channels_num;
+    const int TARGET_LATENCY_MS = 20; // Arbitrary, but slightly more than one 60fps frame
+    auto sizeTarget = (bytesPerSecond * TARGET_LATENCY_MS) / 1000;
+
+    while (SDL_GetAudioStreamAvailable(port.stream) > sizeTarget) {
+        SDL_Delay(1); // Sleep behaviour is platform-dependent; 1ms may be up to 17ms
+    }
+
+    return ORBIS_OK;
 }
 
 bool SDLAudio::AudioOutSetVolume(s32 handle, s32 bitflag, s32* volume) {
