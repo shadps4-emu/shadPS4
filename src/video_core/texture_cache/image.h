@@ -91,8 +91,11 @@ struct Image {
         return image_view_ids[std::distance(image_view_infos.begin(), it)];
     }
 
-    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,
-                 vk::CommandBuffer cmdbuf = {});
+    boost::container::small_vector<vk::ImageMemoryBarrier2, 32> GetBarriers(
+        vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+        vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range);
+    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+                 std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
     void CopyImage(const Image& image);
@@ -111,10 +114,16 @@ struct Image {
 
     // Resource state tracking
     vk::ImageUsageFlags usage;
-    vk::Flags<vk::PipelineStageFlagBits> pl_stage = vk::PipelineStageFlagBits::eAllCommands;
-    vk::Flags<vk::AccessFlagBits> access_mask = vk::AccessFlagBits::eNone;
-    vk::ImageLayout layout = vk::ImageLayout::eUndefined;
-    boost::container::small_vector<u64, 14> mip_hashes;
+    struct State {
+        u32 mip_level{};
+        u32 layer{};
+        vk::Flags<vk::PipelineStageFlagBits2> pl_stage = vk::PipelineStageFlagBits2::eAllCommands;
+        vk::Flags<vk::AccessFlagBits2> access_mask = vk::AccessFlagBits2::eNone;
+        vk::ImageLayout layout = vk::ImageLayout::eUndefined;
+    };
+    State last_state{};
+    std::vector<State> subresource_states{};
+    boost::container::small_vector<u64, 14> mip_hashes{};
     u64 tick_accessed_last{0};
 };
 

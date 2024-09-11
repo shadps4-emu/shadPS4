@@ -240,7 +240,7 @@ void Rasterizer::BeginRendering() {
         state.depth_image = image.image;
         state.depth_attachment = {
             .imageView = *image_view.image_view,
-            .imageLayout = image.layout,
+            .imageLayout = image.last_state.layout,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,

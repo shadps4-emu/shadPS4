@@ -607,7 +607,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     }
     if (!copies.empty()) {
         scheduler.EndRendering();
-        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
         const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
                                  copies);
