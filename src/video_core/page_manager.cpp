@@ -12,6 +12,12 @@
 
 #ifndef _WIN64
 #include <sys/mman.h>
+#ifdef ENABLE_USERFAULTFD
+#include <fcntl.h>
+#include <linux/userfaultfd.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#endif
 #else
 #include <windows.h>
 #endif
@@ -21,6 +27,101 @@ namespace VideoCore {
 constexpr size_t PAGESIZE = 4_KB;
 constexpr size_t PAGEBITS = 12;
 
+#if ENABLE_USERFAULTFD
+struct PageManager::Impl {
+    Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
+        uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
+        ASSERT_MSG(uffd != -1, "{}", Common::GetLastErrorMsg());
+
+        // Request uffdio features from kernel.
+        uffdio_api api;
+        api.api = UFFD_API;
+        api.features = UFFD_FEATURE_THREAD_ID;
+        const int ret = ioctl(uffd, UFFDIO_API, &api);
+        ASSERT(ret == 0 && api.api == UFFD_API);
+
+        // Create uffd handler thread
+        ufd_thread = std::jthread([&](std::stop_token token) { UffdHandler(token); });
+    }
+
+    void OnMap(VAddr address, size_t size) {
+        uffdio_register reg;
+        reg.range.start = address;
+        reg.range.len = size;
+        reg.mode = UFFDIO_REGISTER_MODE_WP;
+        const int ret = ioctl(uffd, UFFDIO_REGISTER, &reg);
+        ASSERT_MSG(ret != -1, "Uffdio register failed");
+    }
+
+    void OnUnmap(VAddr address, size_t size) {
+        uffdio_range range;
+        range.start = address;
+        range.len = size;
+        const int ret = ioctl(uffd, UFFDIO_UNREGISTER, &range);
+        ASSERT_MSG(ret != -1, "Uffdio unregister failed");
+    }
+
+    void Protect(VAddr address, size_t size, bool allow_write) {
+        uffdio_writeprotect wp;
+        wp.range.start = address;
+        wp.range.len = size;
+        wp.mode = allow_write ? 0 : UFFDIO_WRITEPROTECT_MODE_WP;
+        const int ret = ioctl(uffd, UFFDIO_WRITEPROTECT, &wp);
+        ASSERT_MSG(ret != -1, "Uffdio writeprotect failed with error: {}",
+                   Common::GetLastErrorMsg());
+    }
+
+    void UffdHandler(std::stop_token token) {
+        while (!token.stop_requested()) {
+            pollfd pollfd;
+            pollfd.fd = uffd;
+            pollfd.events = POLLIN;
+
+            // Block until the descriptor is ready for data reads.
+            const int pollres = poll(&pollfd, 1, -1);
+            switch (pollres) {
+            case -1:
+                perror("Poll userfaultfd");
+                continue;
+                break;
+            case 0:
+                continue;
+            case 1:
+                break;
+            default:
+                UNREACHABLE_MSG("Unexpected number of descriptors {} out of poll", pollres);
+            }
+
+            // We don't want an error condition to have occured.
+            ASSERT_MSG(!(pollfd.revents & POLLERR), "POLLERR on userfaultfd");
+
+            // We waited until there is data to read, we don't care about anything else.
+            if (!(pollfd.revents & POLLIN)) {
+                continue;
+            }
+
+            // Read message from kernel.
+            uffd_msg msg;
+            const int readret = read(uffd, &msg, sizeof(msg));
+            ASSERT_MSG(readret != -1 || errno == EAGAIN, "Unexpected result of uffd read");
+            if (errno == EAGAIN) {
+                continue;
+            }
+            ASSERT_MSG(readret == sizeof(msg), "Unexpected short read, exiting");
+            ASSERT(msg.arg.pagefault.flags & UFFD_PAGEFAULT_FLAG_WP);
+
+            // Notify rasterizer about the fault.
+            const VAddr addr = msg.arg.pagefault.address;
+            const VAddr addr_page = Common::AlignDown(addr, PAGESIZE);
+            rasterizer->InvalidateMemory(addr_page, PAGESIZE);
+        }
+    }
+
+    Vulkan::Rasterizer* rasterizer;
+    std::jthread ufd_thread;
+    int uffd;
+};
+#else
 struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
@@ -64,6 +165,7 @@ struct PageManager::Impl {
     inline static Vulkan::Rasterizer* rasterizer;
     inline static boost::icl::interval_set<VAddr> owned_ranges;
 };
+#endif
 
 PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
     : impl{std::make_unique<Impl>(rasterizer_)}, rasterizer{rasterizer_} {}
