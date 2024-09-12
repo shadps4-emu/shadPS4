@@ -81,6 +81,7 @@ bool Value::operator==(const Value& other) const {
     case Type::F64x2:
     case Type::F64x3:
     case Type::F64x4:
+    default:
         break;
     }
     UNREACHABLE_MSG("Invalid type {}", type);
