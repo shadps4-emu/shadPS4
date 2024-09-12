@@ -200,6 +200,7 @@ public:
         Id sampled_type;
         Id pointer_type;
         Id image_type;
+        bool is_storage = false;
     };
 
     struct BufferDefinition {
@@ -216,8 +217,8 @@ public:
         u32 binding;
         Id image_type;
         Id result_type;
-        bool is_integer;
-        bool is_storage;
+        bool is_integer = false;
+        bool is_storage = false;
     };
 
     u32& binding;

@@ -534,6 +534,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
+            .is_storage = image_desc.is_storage,
         });
         interfaces.push_back(id);
         ++binding;
