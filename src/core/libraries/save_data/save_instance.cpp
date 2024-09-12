@@ -57,6 +57,7 @@ std::filesystem::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_
     return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / std::to_string(user_id) /
            game_serial / dir_name;
 }
+
 int SaveInstance::GetMaxBlocks(const std::filesystem::path& save_path) {
     Common::FS::IOFile max_blocks_file{save_path / sce_sys / max_block_file_name,
                                        Common::FS::FileAccessMode::Read};
@@ -73,6 +74,25 @@ int SaveInstance::GetMaxBlocks(const std::filesystem::path& save_path) {
 
 std::filesystem::path SaveInstance::GetParamSFOPath(const std::filesystem::path& dir_path) {
     return dir_path / sce_sys / "param.sfo";
+}
+
+void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
+                                        std::string game_serial) {
+    std::string locale = Config::getEmulatorLanguage();
+    if (!default_title.contains(locale)) {
+        locale = "en";
+    }
+
+#define P(type, key, ...) param_sfo.Add##type(std::string{key}, __VA_ARGS__)
+    // TODO Link with user service
+    P(Binary, SaveParams::ACCOUNT_ID, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    P(String, SaveParams::MAINTITLE, default_title.at(locale));
+    P(String, SaveParams::SUBTITLE, "");
+    P(String, SaveParams::DETAIL, "");
+    P(String, SaveParams::SAVEDATA_DIRECTORY, std::move(dir_name));
+    P(Integer, SaveParams::SAVEDATA_LIST_PARAM, 0);
+    P(String, SaveParams::TITLE_ID, std::move(game_serial));
+#undef P
 }
 
 SaveInstance::SaveInstance(int slot_num, OrbisUserServiceUserId user_id, std::string _game_serial,
@@ -190,21 +210,7 @@ void SaveInstance::CreateFiles() {
     const auto sce_sys_dir = save_path / sce_sys;
     fs::create_directories(sce_sys_dir);
 
-    std::string locale = Config::getEmulatorLanguage();
-    if (!default_title.contains(locale)) {
-        locale = "en";
-    }
-
-#define P(type, key, ...) param_sfo.Add##type(std::string{key}, __VA_ARGS__)
-    // TODO Link with user service
-    P(Binary, SaveParams::ACCOUNT_ID, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-    P(String, SaveParams::MAINTITLE, default_title.at(locale));
-    P(String, SaveParams::SUBTITLE, "");
-    P(String, SaveParams::DETAIL, "");
-    P(String, SaveParams::SAVEDATA_DIRECTORY, dir_name);
-    P(Integer, SaveParams::SAVEDATA_LIST_PARAM, 0);
-    P(String, SaveParams::TITLE_ID, game_serial);
-#undef P
+    SetupDefaultParamSFO(param_sfo, dir_name, game_serial);
 
     const bool ok = param_sfo.Encode(param_sfo_path);
     if (!ok) {

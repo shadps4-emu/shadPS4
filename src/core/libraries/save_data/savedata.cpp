@@ -4,6 +4,7 @@
 #include <span>
 #include <vector>
 
+#include <core/libraries/system/msgdialog_ui.h>
 #include <magic_enum.hpp>
 
 #include "common/assert.h"
@@ -18,8 +19,10 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/savedata.h"
+#include "core/libraries/system/msgdialog.h"
 #include "save_backup.h"
 #include "save_instance.h"
+#include "save_memory.h"
 
 namespace fs = std::filesystem;
 namespace chrono = std::chrono;
@@ -43,7 +46,16 @@ enum class Error : u32 {
     BAD_MOUNTED = 0x809F000D,
     BROKEN = 0x809F000F,
     INVALID_LOGIN_USER = 0x809F0011,
+    MEMORY_NOT_READY = 0x809F0012,
     BACKUP_BUSY = 0x809F0013,
+    BUSY_FOR_SAVING = 0x809F0016,
+};
+
+enum class OrbisSaveDataSaveDataMemoryOption : u32 {
+    NONE = 0,
+    SET_PARAM = 1 << 0,
+    DOUBLE_BUFFER = 1 << 1,
+    UNLOCK_LIMITATIONS = 1 << 2,
 };
 
 using OrbisUserServiceUserId = s32;
@@ -63,9 +75,6 @@ constexpr size_t OrbisSaveDataTitleMaxsize = 128;       // Maximum title name si
 constexpr size_t OrbisSaveDataSubtitleMaxsize = 128;    // Maximum subtitle name size
 constexpr size_t OrbisSaveDataDetailMaxsize = 1024;     // Maximum detail name size
 constexpr size_t OrbisSaveDataFingerprintDataSize = 65; // Maximum fingerprint size
-
-constexpr std::string_view OrbisSaveDataDirnameSaveDataMemory = "sce_sdmemory";
-constexpr std::string_view OrbisSaveDataFilenameSaveDataMemory = "memory.dat";
 
 enum class OrbisSaveDataMountMode : u32 {
     RDONLY = 1 << 0,
@@ -131,6 +140,14 @@ struct OrbisSaveDataParam {
         const auto time_since_epoch = sfo.GetLastWrite().time_since_epoch();
         mtime = chrono::duration_cast<chrono::seconds>(time_since_epoch).count();
     }
+
+    void ToSFO(PSF& sfo) const {
+        sfo.AddString(std::string{SaveParams::MAINTITLE}, std::string{title}, true);
+        sfo.AddString(std::string{SaveParams::SUBTITLE}, std::string{subTitle}, true);
+        sfo.AddString(std::string{SaveParams::DETAIL}, std::string{detail}, true);
+        sfo.AddInteger(std::string{SaveParams::SAVEDATA_LIST_PARAM}, static_cast<s32>(userParam),
+                       true);
+    }
 };
 
 struct OrbisSaveDataFingerprint {
@@ -185,6 +202,51 @@ struct OrbisSaveDataIcon {
         }
         return Error::OK;
     }
+};
+
+struct OrbisSaveDataMemoryData {
+    void* buf;
+    size_t bufSize;
+    s64 offset;
+    u8 _reserved[40];
+};
+
+struct OrbisSaveDataMemoryGet2 {
+    OrbisUserServiceUserId userId;
+    std::array<u8, 4> _pad;
+    OrbisSaveDataMemoryData* data;
+    OrbisSaveDataParam* param;
+    OrbisSaveDataIcon* icon;
+    std::array<u8, 32> _reserved;
+};
+
+struct OrbisSaveDataMemorySet2 {
+    OrbisUserServiceUserId userId;
+    std::array<u8, 4> _pad;
+    const OrbisSaveDataMemoryData* data;
+    const OrbisSaveDataParam* param;
+    const OrbisSaveDataIcon* icon;
+    std::array<u8, 32> _reserved;
+};
+
+struct OrbisSaveDataMemorySetup2 {
+    OrbisSaveDataSaveDataMemoryOption option;
+    OrbisUserServiceUserId userId;
+    size_t memorySize;
+    size_t iconMemorySize;
+    const OrbisSaveDataParam* initParam;
+    const OrbisSaveDataIcon* initIcon;
+    std::array<u8, 24> _reserved;
+};
+
+struct OrbisSaveDataMemorySetupResult {
+    size_t existedMemorySize;
+    std::array<u8, 16> _reserved;
+};
+
+struct OrbisSaveDataMemorySync {
+    OrbisUserServiceUserId userId;
+    std::array<u8, 36> _reserved;
 };
 
 struct OrbisSaveDataMount2 {
@@ -281,8 +343,6 @@ struct OrbisSaveDataEvent {
     OrbisSaveDataDirName dirName;
     std::array<u8, 40> _reserved;
 };
-
-bool is_rw_mode = false;
 
 static bool g_initialized = false;
 static std::string g_game_serial;
@@ -401,6 +461,9 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
         if (e.code() == std::errc::illegal_byte_sequence) {
             LOG_ERROR(Lib_SaveData, "Corrupted save data");
             return Error::BROKEN;
+        }
+        if (e.code() == std::errc::no_space_on_device) {
+            return Error::NO_SPACE_FS;
         }
         LOG_ERROR(Lib_SaveData, "Failed to mount save data: {}", e.what());
         return Error::INTERNAL;
@@ -871,7 +934,7 @@ Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
-    LOG_DEBUG(Lib_SaveData, "called");
+    LOG_TRACE(Lib_SaveData, "called");
 
     auto last_event = Backup::PopLastEvent();
     if (!last_event.has_value()) {
@@ -1017,25 +1080,56 @@ int PS4_SYSV_ABI sceSaveDataGetSaveDataCount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const u32 userId, void* buf, const size_t bufSize,
-                                              const int64_t offset) {
-    const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(userId) / g_game_serial / "sdmemory/save_mem1.sav";
-
-    Common::FS::IOFile file(mount_dir, Common::FS::FileAccessMode::Read);
-    if (!file.IsOpen()) {
-        return false;
-    }
-    file.Seek(offset);
-    size_t nbytes = file.ReadRaw<u8>(buf, bufSize);
-    LOG_INFO(Lib_SaveData, "called: bufSize = {}, offset = {}", bufSize, offset, nbytes);
-
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const OrbisUserServiceUserId userId, void* buf,
+                                                const size_t bufSize, const int64_t offset) {
+    LOG_DEBUG(Lib_SaveData, "Redirecting to sceSaveDataGetSaveDataMemory2");
+    OrbisSaveDataMemoryData data{};
+    data.buf = buf;
+    data.bufSize = bufSize;
+    data.offset = offset;
+    OrbisSaveDataMemoryGet2 param{};
+    param.userId = userId;
+    param.data = &data;
+    param.param = nullptr;
+    param.icon = nullptr;
+    return sceSaveDataGetSaveDataMemory2(&param);
 }
 
-int PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(/*OrbisSaveDataMemoryGet2* getParam*/) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getParam) {
+    if (!g_initialized) {
+        LOG_INFO(Lib_SaveData, "called without initialize");
+        return Error::NOT_INITIALIZED;
+    }
+    if (getParam == nullptr) {
+        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+        return Error::PARAMETER;
+    }
+    if (!SaveMemory::IsSaveMemoryInitialized()) {
+        LOG_INFO(Lib_SaveData, "called without save memory initialized");
+        return Error::MEMORY_NOT_READY;
+    }
+    if (SaveMemory::IsSaving()) {
+        LOG_TRACE(Lib_SaveData, "called while saving");
+        return Error::BUSY_FOR_SAVING;
+    }
+    LOG_DEBUG(Lib_SaveData, "called");
+    auto data = getParam->data;
+    if (data != nullptr) {
+        SaveMemory::ReadMemory(data->buf, data->bufSize, data->offset);
+    }
+    auto param = getParam->param;
+    if (param != nullptr) {
+        param->FromSFO(SaveMemory::GetParamSFO());
+    }
+    auto icon = getParam->icon;
+    if (icon != nullptr) {
+        auto icon_mem = SaveMemory::GetIcon();
+        size_t total = std::min(icon->bufSize, icon_mem.size());
+        std::memcpy(icon->buf, icon_mem.data(), total);
+        icon->dataSize = total;
+    }
+
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataGetSaveDataRootDir() {
@@ -1317,13 +1411,7 @@ Error PS4_SYSV_ABI sceSaveDataSetParam(const OrbisSaveDataMountPoint* mountPoint
     case OrbisSaveDataParamType::ALL: {
         const auto param = static_cast<const OrbisSaveDataParam*>(paramBuf);
         ASSERT(paramBufSize == sizeof(OrbisSaveDataParam));
-
-        param_sfo->AddString(std::string{SaveParams::MAINTITLE}, std::string{param->title}, true);
-        param_sfo->AddString(std::string{SaveParams::SUBTITLE}, std::string{param->subTitle}, true);
-        param_sfo->AddString(std::string{SaveParams::DETAIL}, std::string{param->detail}, true);
-        param_sfo->AddInteger(std::string{SaveParams::SAVEDATA_LIST_PARAM},
-                              static_cast<s32>(param->userParam), true);
-
+        param->ToSFO(*param_sfo);
         return Error::OK;
     } break;
     case OrbisSaveDataParamType::TITLE: {
@@ -1339,7 +1427,7 @@ Error PS4_SYSV_ABI sceSaveDataSetParam(const OrbisSaveDataMountPoint* mountPoint
         param_sfo->AddString(std::string{SaveParams::DETAIL}, {value}, true);
     } break;
     case OrbisSaveDataParamType::USER_PARAM: {
-        const auto value = static_cast<const u32*>(paramBuf);
+        const auto value = static_cast<const s32*>(paramBuf);
         param_sfo->AddInteger(std::string{SaveParams::SAVEDATA_LIST_PARAM}, *value, true);
     } break;
     default:
@@ -1354,15 +1442,53 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataLibraryUser() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(const u32 userId, const void* buf,
-                                              const size_t bufSize, const int64_t offset) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(OrbisUserServiceUserId userId, void* buf,
+                                                size_t bufSize, int64_t offset) {
+    LOG_DEBUG(Lib_SaveData, "Redirecting to sceSaveDataSetSaveDataMemory2");
+    OrbisSaveDataMemoryData data{};
+    data.buf = buf;
+    data.bufSize = bufSize;
+    data.offset = offset;
+    OrbisSaveDataMemorySet2 setParam{};
+    setParam.userId = userId;
+    setParam.data = &data;
+    return sceSaveDataSetSaveDataMemory2(&setParam);
 }
 
-int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(/*const OrbisSaveDataMemorySet2* setParam*/) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* setParam) {
+    if (!g_initialized) {
+        LOG_INFO(Lib_SaveData, "called without initialize");
+        return Error::NOT_INITIALIZED;
+    }
+    if (setParam == nullptr) {
+        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+        return Error::PARAMETER;
+    }
+    if (!SaveMemory::IsSaveMemoryInitialized()) {
+        LOG_INFO(Lib_SaveData, "called without save memory initialized");
+        return Error::MEMORY_NOT_READY;
+    }
+    if (SaveMemory::IsSaving()) {
+        LOG_TRACE(Lib_SaveData, "called while saving");
+        return Error::BUSY_FOR_SAVING;
+    }
+    LOG_DEBUG(Lib_SaveData, "called");
+    auto data = setParam->data;
+    if (data != nullptr) {
+        SaveMemory::WriteMemory(data->buf, data->bufSize, data->offset);
+    }
+    auto param = setParam->param;
+    if (param != nullptr) {
+        param->ToSFO(SaveMemory::GetParamSFO());
+        SaveMemory::SaveSFO();
+    }
+    auto icon = setParam->icon;
+    if (icon != nullptr) {
+        SaveMemory::WriteIcon(icon->buf, icon->bufSize);
+    }
+
+    SaveMemory::TriggerSaveWithoutEvent();
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(/*u32 userId, size_t memorySize,
@@ -1371,10 +1497,59 @@ int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(/*u32 userId, size_t memorySize,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(/*const OrbisSaveDataMemorySetup2* setupParam,
-                                                 OrbisSaveDataMemorySetupResult* result*/) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetup2* setupParam,
+                                                   OrbisSaveDataMemorySetupResult* result) {
+    if (!g_initialized) {
+        LOG_INFO(Lib_SaveData, "called without initialize");
+        return Error::NOT_INITIALIZED;
+    }
+    if (setupParam == nullptr) {
+        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+        return Error::PARAMETER;
+    }
+    LOG_DEBUG(Lib_SaveData, "called");
+
+    SaveMemory::SetDirectories(setupParam->userId, g_game_serial);
+
+    const auto& save_path = SaveMemory::GetSavePath();
+    for (const auto& instance : g_mount_slots) {
+        if (instance.has_value() && instance->GetSavePath() == save_path) {
+            return Error::BUSY;
+        }
+    }
+
+    try {
+        size_t existed_size = SaveMemory::CreateSaveMemory(setupParam->memorySize);
+        if (existed_size == 0) { // Just created
+            if (setupParam->initParam != nullptr) {
+                auto& sfo = SaveMemory::GetParamSFO();
+                setupParam->initParam->ToSFO(sfo);
+            }
+            SaveMemory::SaveSFO();
+
+            auto init_icon = setupParam->initIcon;
+            if (init_icon != nullptr) {
+                SaveMemory::SetIcon(init_icon->buf, init_icon->bufSize);
+            } else {
+                SaveMemory::SetIcon(nullptr, 0);
+            }
+        }
+        if (result != nullptr) {
+            result->existedMemorySize = existed_size;
+        }
+    } catch (const fs::filesystem_error& e) {
+        LOG_ERROR(Lib_SaveData, "Failed to create/load save memory: {}", e.what());
+
+        const MsgDialog::MsgDialogState dialog{MsgDialog::MsgDialogState::UserState{
+            .type = MsgDialog::ButtonType::OK,
+            .msg = "Failed to create or load save memory:\n" + std::string{e.what()},
+        }};
+        MsgDialog::ShowMsgDialog(dialog);
+
+        return Error::INTERNAL;
+    }
+
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataShutdownStart() {
@@ -1392,9 +1567,25 @@ int PS4_SYSV_ABI sceSaveDataSyncCloudList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(/*OrbisSaveDataMemorySync* syncParam*/) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncParam) {
+    if (!g_initialized) {
+        LOG_INFO(Lib_SaveData, "called without initialize");
+        return Error::NOT_INITIALIZED;
+    }
+    if (syncParam == nullptr) {
+        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+        return Error::PARAMETER;
+    }
+    if (!SaveMemory::IsSaveMemoryInitialized()) {
+        LOG_INFO(Lib_SaveData, "called without save memory initialized");
+        return Error::MEMORY_NOT_READY;
+    }
+    LOG_DEBUG(Lib_SaveData, "called");
+    bool ok = SaveMemory::TriggerSave();
+    if (!ok) {
+        return Error::BUSY_FOR_SAVING;
+    }
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceSaveDataTerminate() {

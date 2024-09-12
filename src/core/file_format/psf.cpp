@@ -135,7 +135,11 @@ bool PSF::Encode(const std::filesystem::path& filepath) const {
 
 std::vector<u8> PSF::Encode() const {
     std::vector<u8> psf_buffer;
+    Encode(psf_buffer);
+    return psf_buffer;
+}
 
+void PSF::Encode(std::vector<u8>& psf_buffer) const {
     psf_buffer.resize(sizeof(PSFHeader) + sizeof(PSFRawEntry) * entry_list.size());
 
     {
@@ -197,8 +201,6 @@ std::vector<u8> PSF::Encode() const {
         ASSERT_MSG(additional_padding >= 0, "PSF entry max size mismatch");
         std::ranges::fill_n(std::back_inserter(psf_buffer), additional_padding, 0);
     }
-
-    return psf_buffer;
 }
 
 std::optional<std::span<const u8>> PSF::GetBinary(std::string_view key) const {

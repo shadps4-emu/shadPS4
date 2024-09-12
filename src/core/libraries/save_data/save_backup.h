@@ -53,6 +53,8 @@ std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path);
 
 std::optional<BackupRequest> PopLastEvent();
 
+void PushBackupEvent(BackupRequest&& req);
+
 float GetProgress();
 
 void ClearProgress();

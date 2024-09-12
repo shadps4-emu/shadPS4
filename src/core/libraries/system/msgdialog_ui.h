@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <string>
 #include <variant>
 
 #include "common/fixed_value.h"
@@ -129,6 +130,11 @@ private:
 
 public:
     explicit MsgDialogState(const OrbisParam& param);
+
+    explicit MsgDialogState(UserState mode);
+    explicit MsgDialogState(ProgressState mode);
+    explicit MsgDialogState(SystemState mode);
+
     MsgDialogState() = default;
 
     [[nodiscard]] OrbisUserServiceUserId GetUserId() const {
@@ -173,5 +179,9 @@ public:
         return true;
     }
 };
+
+// Utility function to show a message dialog
+// !!! This function can block !!!
+DialogResult ShowMsgDialog(MsgDialogState state, bool block = true);
 
 }; // namespace Libraries::MsgDialog

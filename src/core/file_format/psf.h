@@ -60,6 +60,7 @@ public:
     bool Open(const std::vector<u8>& psf_buffer);
 
     [[nodiscard]] std::vector<u8> Encode() const;
+    void Encode(std::vector<u8>& buf) const;
     bool Encode(const std::filesystem::path& filepath) const;
 
     std::optional<std::span<const u8>> GetBinary(std::string_view key) const;

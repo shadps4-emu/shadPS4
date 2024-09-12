@@ -188,6 +188,14 @@ std::optional<BackupRequest> PopLastEvent() {
     return req;
 }
 
+void PushBackupEvent(BackupRequest&& req) {
+    std::scoped_lock lk{g_backup_queue_mutex};
+    g_result_queue.push_back(std::move(req));
+    if (g_result_queue.size() > 20) {
+        g_result_queue.pop_front();
+    }
+}
+
 float GetProgress() {
     return static_cast<float>(g_backup_progress) / 100.0f;
 }

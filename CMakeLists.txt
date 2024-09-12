@@ -236,6 +236,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/save_backup.h
                 src/core/libraries/save_data/save_instance.cpp
                 src/core/libraries/save_data/save_instance.h
+                src/core/libraries/save_data/save_memory.cpp
+                src/core/libraries/save_data/save_memory.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
                 src/core/libraries/system/savedatadialog.cpp

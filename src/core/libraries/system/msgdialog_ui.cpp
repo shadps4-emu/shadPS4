@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <thread>
+
 #include <imgui.h>
 #include "common/assert.h"
 #include "imgui/imgui_std.h"
@@ -79,6 +81,21 @@ MsgDialogState::MsgDialogState(const OrbisParam& param) {
     default:
         UNREACHABLE_MSG("Unknown dialog mode");
     }
+}
+
+MsgDialogState::MsgDialogState(UserState mode) {
+    this->mode = MsgDialogMode::USER_MSG;
+    this->state = mode;
+}
+
+MsgDialogState::MsgDialogState(ProgressState mode) {
+    this->mode = MsgDialogMode::PROGRESS_BAR;
+    this->state = mode;
+}
+
+MsgDialogState::MsgDialogState(SystemState mode) {
+    this->mode = MsgDialogMode::SYSTEM_MSG;
+    this->state = mode;
 }
 
 void MsgDialogUi::DrawUser() {
@@ -269,4 +286,16 @@ void MsgDialogUi::Draw() {
     End();
 
     first_render = false;
+}
+
+DialogResult Libraries::MsgDialog::ShowMsgDialog(MsgDialogState state, bool block) {
+    DialogResult result{};
+    Status status = Status::RUNNING;
+    MsgDialogUi dialog(&state, &status, &result);
+    if (block) {
+        while (status == Status::RUNNING) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+    return result;
 }
