@@ -26,6 +26,7 @@ s32 getGpuId();
 
 bool debugDump();
 bool showSplash();
+bool autoUpdate();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
@@ -35,6 +36,7 @@ u32 vblankDiv();
 
 void setDebugDump(bool enable);
 void setShowSplash(bool enable);
+void setAutoUpdate(bool enable);
 void setNullGpu(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);

@@ -628,6 +628,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/about_dialog.ui
            src/qt_gui/cheats_patches.cpp
            src/qt_gui/cheats_patches.h
+           src/qt_gui/checkUpdate.cpp
+           src/qt_gui/checkUpdate.h
            src/qt_gui/memory_patcher.cpp
            src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h

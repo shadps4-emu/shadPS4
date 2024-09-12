@@ -11,15 +11,18 @@ on:
 
 env:
   BUILD_TYPE: Release
+  TARGET_REPO: "DanielSvoboda/teste"
+  SHADPS4_TOKEN: ${{ secrets.SHADPS4_TOKEN }}
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
-          submodules: recursive
+        submodules: recursive
 
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
@@ -33,35 +36,86 @@ jobs:
     - name: Cache CMake dependency source code
       uses: actions/cache@v4
       env:
-          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources
+        cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources
       with:
-          path: | 
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
+        path: |
+          ${{ github.workspace }}/build
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        restore-keys: |
+          ${{ env.cache-name }}-
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -T ClangCL -DENABLE_QT_GUI=ON
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} --parallel
 
     - name: Deploy
       run: |
         mkdir upload
         move build/Release/shadPS4.exe upload
         windeployqt --dir upload upload/shadPS4.exe
-        
+
     - name: Get date and git hash
       id: vars
       shell: pwsh
       run: |
-        echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
-        echo "shorthash=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+        $date = Get-Date -Format 'yyyy-MM-dd'
+        $shorthash = git rev-parse --short HEAD
+        echo "date=$date" >> $env:GITHUB_ENV
+        echo "shorthash=$shorthash" >> $env:GITHUB_ENV
+
+    - name: Create Zip Archive
+      if: github.event_name == 'push'
+      run: |
+        $zipName = "shadPS4-win64-qt-$($env:date)-$($env:shorthash).zip"
+        Compress-Archive -Path upload/* -DestinationPath $zipName
+        echo "zipName=$zipName" >> $env:GITHUB_ENV
 
     - name: Upload executable
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-win64-qt-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: upload
+
+    - name: Upload Zip Archive
+      if: github.event_name == 'push'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.zipName }}
+        path: ${{ env.zipName }}
+
+    - name: Create GitHub Release
+      if: github.event_name == 'push'
+      id: create_release
+      shell: pwsh
+      run: |
+        $date = $env:date
+        $shorthash = $env:shorthash
+        $uri = "https://api.github.com/repos/${{ env.TARGET_REPO }}/releases"
+        $headers = @{
+          "Authorization" = "token $($env:SHADPS4_TOKEN)"
+          "Accept" = "application/vnd.github.v3+json"
+        }
+        $body = @{
+          "tag_name" = "build-$date-$shorthash"
+          "name" = "shadPS4-win64-qt-$($env:date)-$($env:shorthash)"
+          "draft" = $false
+          "prerelease" = $false
+        } | ConvertTo-Json
+        
+        $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $body -ContentType "application/json"
+        $response.id | Out-File -FilePath release_id.txt
+
+    - name: Upload to GitHub Release  
+      if: github.event_name == 'push'
+      shell: pwsh
+      run: |
+        $release_id = Get-Content release_id.txt
+        $filePath = $env:zipName
+        $url = "https://uploads.github.com/repos/${{ env.TARGET_REPO }}/releases/$release_id/assets?name=$filePath"
+        Write-Output "Uploading $filePath to $url"
+        Invoke-RestMethod -Uri $url -Method Post -Headers @{
+          "Authorization" = "token $($env:SHADPS4_TOKEN)"
+          "Content-Type" = "application/octet-stream"
+        } -InFile $filePath

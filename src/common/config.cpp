@@ -21,6 +21,7 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
 static bool isShowSplash = false;
+static bool isAutoUpdate = true;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool shouldDumpShaders = false;
@@ -102,6 +103,10 @@ bool showSplash() {
     return isShowSplash;
 }
 
+bool autoUpdate() {
+    return isAutoUpdate;
+}
+
 bool nullGpu() {
     return isNullGpu;
 }
@@ -168,6 +173,10 @@ void setDebugDump(bool enable) {
 
 void setShowSplash(bool enable) {
     isShowSplash = enable;
+}
+
+void setAutoUpdate(bool enable) {
+    isAutoUpdate = enable;
 }
 
 void setNullGpu(bool enable) {
@@ -365,6 +374,7 @@ void load(const std::filesystem::path& path) {
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
+        isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", true);
     }
 
     if (data.contains("Input")) {
@@ -457,6 +467,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
     data["General"]["showSplash"] = isShowSplash;
+    data["General"]["autoUpdate"] = isAutoUpdate;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -511,6 +522,7 @@ void setDefaultValues() {
     specialPadClass = 1;
     isDebugDump = false;
     isShowSplash = false;
+    isAutoUpdate = true;
     isNullGpu = false;
     shouldDumpShaders = false;
     shouldDumpPM4 = false;
