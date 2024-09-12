@@ -718,7 +718,7 @@ vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color
     return {.color = color};
 }
 
-vk::SampleCountFlagBits NumSamples(u32 num_samples) {
+vk::SampleCountFlagBits RawNumSamples(u32 num_samples) {
     switch (num_samples) {
     case 1:
         return vk::SampleCountFlagBits::e1;
@@ -733,6 +733,16 @@ vk::SampleCountFlagBits NumSamples(u32 num_samples) {
     default:
         UNREACHABLE();
     }
+}
+
+vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags) {
+    vk::SampleCountFlagBits flags = RawNumSamples(num_samples);
+    // Half sample counts until supported, with a minimum of 1.
+    while (!(supported_flags & flags) && num_samples > 1) {
+        num_samples /= 2;
+        flags = RawNumSamples(num_samples);
+    }
+    return flags;
 }
 
 } // namespace Vulkan::LiverpoolToVK

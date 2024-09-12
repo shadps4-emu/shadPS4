@@ -102,7 +102,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = LiverpoolToVK::NumSamples(key.num_samples),
+        .rasterizationSamples =
+            LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
         .sampleShadingEnable = false,
     };
 

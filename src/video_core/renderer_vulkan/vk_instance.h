@@ -222,6 +222,13 @@ public:
         return min_imported_host_pointer_alignment;
     }
 
+    /// Returns the sample count flags supported by framebuffers.
+    vk::SampleCountFlags GetFramebufferSampleCounts() const {
+        return properties.limits.framebufferColorSampleCounts &
+               properties.limits.framebufferDepthSampleCounts &
+               properties.limits.framebufferStencilSampleCounts;
+    }
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();
