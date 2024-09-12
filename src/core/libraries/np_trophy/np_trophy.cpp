@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+#include <pugixml.hpp>
 
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "externals/pugixml/src/pugixml.hpp"
 #include "np_trophy.h"
 #include "trophy_ui.h"
 
@@ -72,6 +72,26 @@ bool ORBIS_NP_TROPHY_FLAG_ISSET(int32_t trophyId, OrbisNpTrophyFlagArray* p) {
     uint32_t bit_position = trophyId % 32;
 
     return (p->flag_bits[array_index] & (1U << bit_position)) ? 1 : 0;
+}
+
+OrbisNpTrophyGrade GetTrophyGradeFromChar(char trophyType) {
+    switch (trophyType) {
+    default:
+        return ORBIS_NP_TROPHY_GRADE_UNKNOWN;
+        break;
+    case 'B':
+        return ORBIS_NP_TROPHY_GRADE_BRONZE;
+        break;
+    case 'S':
+        return ORBIS_NP_TROPHY_GRADE_SILVER;
+        break;
+    case 'G':
+        return ORBIS_NP_TROPHY_GRADE_GOLD;
+        break;
+    case 'P':
+        return ORBIS_NP_TROPHY_GRADE_PLATINUM;
+        break;
+    }
 }
 
 int PS4_SYSV_ABI sceNpTrophyAbortHandle(OrbisNpTrophyHandle handle) {
@@ -206,7 +226,94 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
 int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         OrbisNpTrophyGameDetails* details,
                                         OrbisNpTrophyGameData* data) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+    LOG_INFO(Lib_NpTrophy, "Getting Game Trophy");
+
+    if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+
+    if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
+
+    if (details == nullptr || data == nullptr)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    if (details->size != 0x4A0 || data->size != 0x20)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    const auto trophyDir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result =
+        doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+
+    if (result) {
+
+        uint32_t numGroups = 0;
+        uint32_t numTrophies = 0;
+        uint32_t numTrophiesByRarity[5];
+        numTrophiesByRarity[1] = 0;
+        numTrophiesByRarity[2] = 0;
+        numTrophiesByRarity[3] = 0;
+        numTrophiesByRarity[4] = 0;
+        uint32_t unlockedTrophies = 0;
+        uint32_t unlockedTrophiesByRarity[5];
+        unlockedTrophiesByRarity[1] = 0;
+        unlockedTrophiesByRarity[2] = 0;
+        unlockedTrophiesByRarity[3] = 0;
+        unlockedTrophiesByRarity[4] = 0;
+
+        auto trophyconf = doc.child("trophyconf");
+        for (pugi::xml_node_iterator it = trophyconf.children().begin();
+             it != trophyconf.children().end(); ++it) {
+
+            if (std::string(it->name()) == "title-name") {
+                strncpy(details->title, it->text().as_string(),
+                        ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE);
+            }
+
+            if (std::string(it->name()) == "title-detail") {
+                strncpy(details->description, it->text().as_string(),
+                        ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE);
+            }
+
+            if (std::string(it->name()) == "group")
+                numGroups++;
+
+            if (std::string(it->name()) == "trophy") {
+                std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
+                std::string currentTrophyGrade = it->attribute("ttype").value();
+
+                numTrophies++;
+                if (!currentTrophyGrade.empty()) {
+                    int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
+                    numTrophiesByRarity[trophyGrade]++;
+                    if (currentTrophyUnlockState == "unlocked") {
+                        unlockedTrophies++;
+                        unlockedTrophiesByRarity[trophyGrade]++;
+                    }
+                }
+            }
+        }
+
+        details->numGroups = numGroups;
+        details->numTrophies = numTrophies;
+        details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        details->numGold = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        details->numSilver = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        details->numBronze = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        data->unlockedTrophies = unlockedTrophies;
+        data->unlockedPlatinum = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        data->unlockedGold = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        data->unlockedSilver = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        data->unlockedBronze = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+
+        // maybe this should be 1 instead of 100?
+        data->progressPercentage = 100;
+
+    } else
+        LOG_INFO(Lib_NpTrophy, "couldnt parse xml : {}", result.description());
+
     return ORBIS_OK;
 }
 
@@ -220,7 +327,104 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
                                          OrbisNpTrophyGroupId groupId,
                                          OrbisNpTrophyGroupDetails* details,
                                          OrbisNpTrophyGroupData* data) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+    LOG_INFO(Lib_NpTrophy, "Getting Trophy Group Info for id {}", groupId);
+
+    if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+
+    if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
+
+    if (details == nullptr || data == nullptr)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    if (details->size != 0x4A0 || data->size != 0x28)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    const auto trophyDir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result =
+        doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+
+    if (result) {
+
+        uint32_t numGroups = 0;
+        uint32_t numTrophies = 0;
+        uint32_t numTrophiesByRarity[5];
+        numTrophiesByRarity[1] = 0;
+        numTrophiesByRarity[2] = 0;
+        numTrophiesByRarity[3] = 0;
+        numTrophiesByRarity[4] = 0;
+        uint32_t unlockedTrophies = 0;
+        uint32_t unlockedTrophiesByRarity[5];
+        unlockedTrophiesByRarity[1] = 0;
+        unlockedTrophiesByRarity[2] = 0;
+        unlockedTrophiesByRarity[3] = 0;
+        unlockedTrophiesByRarity[4] = 0;
+
+        auto trophyconf = doc.child("trophyconf");
+        for (pugi::xml_node_iterator it = trophyconf.children().begin();
+             it != trophyconf.children().end(); ++it) {
+
+            if (std::string(it->name()) == "group") {
+                numGroups++;
+                std::string currentGroupId = it->attribute("id").value();
+                if (!currentGroupId.empty()) {
+                    if (std::stoi(currentGroupId) == groupId) {
+                        std::string currentGroupName = it->child("name").text().as_string();
+                        std::string currentGroupDescription =
+                            it->child("detail").text().as_string();
+
+                        strncpy(details->title, currentGroupName.c_str(),
+                                ORBIS_NP_TROPHY_GROUP_TITLE_MAX_SIZE);
+                        strncpy(details->description, currentGroupDescription.c_str(),
+                                ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE);
+                    }
+                }
+            }
+
+            data->groupId = groupId;
+
+            if (std::string(it->name()) == "trophy") {
+                std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
+                std::string currentTrophyGrade = it->attribute("ttype").value();
+                std::string currentTrophyGroupID = it->attribute("gid").value();
+
+                if (!currentTrophyGroupID.empty()) {
+                    if (std::stoi(currentTrophyGroupID) == groupId) {
+                        numTrophies++;
+                        if (!currentTrophyGrade.empty()) {
+                            int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
+                            numTrophiesByRarity[trophyGrade]++;
+                            if (currentTrophyUnlockState == "unlocked") {
+                                unlockedTrophies++;
+                                unlockedTrophiesByRarity[trophyGrade]++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        details->numTrophies = numTrophies;
+        details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        details->numGold = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        details->numSilver = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        details->numBronze = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        data->unlockedTrophies = unlockedTrophies;
+        data->unlockedPlatinum = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        data->unlockedGold = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        data->unlockedSilver = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        data->unlockedBronze = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+
+        // maybe this should be 1 instead of 100?
+        data->progressPercentage = 100;
+
+    } else
+        LOG_INFO(Lib_NpTrophy, "couldnt parse xml : {}", result.description());
+
     return ORBIS_OK;
 }
 
@@ -233,7 +437,105 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpT
 int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                           OrbisNpTrophyId trophyId, OrbisNpTrophyDetails* details,
                                           OrbisNpTrophyData* data) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+    LOG_INFO(Lib_NpTrophy, "Getting trophy info for id {}", trophyId);
+
+    if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+
+    if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
+
+    if (trophyId >= 127)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
+
+    if (details == nullptr || data == nullptr)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    if (details->size != 0x498 || data->size != 0x18)
+        return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
+
+    const auto trophyDir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+
+    pugi::xml_document doc;
+    pugi::xml_parse_result result =
+        doc.load_file((trophyDir.string() + "/trophy00/Xml/TROP.XML").c_str());
+
+    if (result) {
+        auto trophyconf = doc.child("trophyconf");
+        for (pugi::xml_node_iterator it = trophyconf.children().begin();
+             it != trophyconf.children().end(); ++it) {
+
+            if (std::string(it->name()) == "trophy") {
+                std::string currentTrophyId = it->attribute("id").value();
+                if (std::stoi(currentTrophyId) == trophyId) {
+                    std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
+                    std::string currentTrophyTimestamp = it->attribute("timestamp").value();
+                    std::string currentTrophyGrade = it->attribute("ttype").value();
+                    std::string currentTrophyGroupID = it->attribute("gid").value();
+                    std::string currentTrophyHidden = it->attribute("hidden").value();
+                    std::string currentTrophyName = it->child("name").text().as_string();
+                    std::string currentTrophyDescription = it->child("detail").text().as_string();
+
+                    if (currentTrophyUnlockState == "unlocked") {
+                        details->trophyId = trophyId;
+                        if (currentTrophyGrade.empty()) {
+                            details->trophyGrade = ORBIS_NP_TROPHY_GRADE_UNKNOWN;
+                        } else {
+                            details->trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
+                        }
+                        if (currentTrophyGroupID.empty()) {
+                            details->groupId = ORBIS_NP_TROPHY_BASE_GAME_GROUP_ID;
+                        } else {
+                            details->groupId = std::stoi(currentTrophyGroupID);
+                        }
+                        if (currentTrophyHidden == "yes") {
+                            details->hidden = true;
+                        } else {
+                            details->hidden = false;
+                        }
+
+                        strncpy(details->name, currentTrophyName.c_str(),
+                                ORBIS_NP_TROPHY_NAME_MAX_SIZE);
+                        strncpy(details->description, currentTrophyDescription.c_str(),
+                                ORBIS_NP_TROPHY_DESCR_MAX_SIZE);
+
+                        data->trophyId = trophyId;
+                        data->unlocked = true;
+                        data->timestamp.tick = std::stoull(currentTrophyTimestamp);
+                    } else {
+                        details->trophyId = trophyId;
+                        if (currentTrophyGrade.empty()) {
+                            details->trophyGrade = ORBIS_NP_TROPHY_GRADE_UNKNOWN;
+                        } else {
+                            details->trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
+                        }
+                        if (currentTrophyGroupID.empty()) {
+                            details->groupId = ORBIS_NP_TROPHY_BASE_GAME_GROUP_ID;
+                        } else {
+                            details->groupId = std::stoi(currentTrophyGroupID);
+                        }
+                        if (currentTrophyHidden == "yes") {
+                            details->hidden = true;
+                        } else {
+                            details->hidden = false;
+                        }
+
+                        strncpy(details->name, currentTrophyName.c_str(),
+                                ORBIS_NP_TROPHY_NAME_MAX_SIZE);
+                        strncpy(details->description, currentTrophyDescription.c_str(),
+                                ORBIS_NP_TROPHY_DESCR_MAX_SIZE);
+
+                        data->trophyId = trophyId;
+                        data->unlocked = false;
+                        data->timestamp.tick = 0;
+                    }
+                }
+            }
+        }
+    } else
+        LOG_INFO(Lib_NpTrophy, "couldnt parse xml : {}", result.description());
+
     return ORBIS_OK;
 }
 
@@ -685,6 +987,17 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                             it->attribute("unlockstate").set_value("unlocked");
                         }
 
+                        Rtc::OrbisRtcTick trophyTimestamp;
+                        Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                        if (std::string(it->attribute("timestamp").value()).empty()) {
+                            it->append_attribute("timestamp") =
+                                std::to_string(trophyTimestamp.tick).c_str();
+                        } else {
+                            it->attribute("timestamp")
+                                .set_value(std::to_string(trophyTimestamp.tick).c_str());
+                        }
+
                         g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName);
                     }
                 }
@@ -696,6 +1009,17 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
                 platinumIt->append_attribute("unlockstate") = "unlocked";
 
+                Rtc::OrbisRtcTick trophyTimestamp;
+                Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                if (std::string(platinumIt->attribute("timestamp").value()).empty()) {
+                    platinumIt->append_attribute("timestamp") =
+                        std::to_string(trophyTimestamp.tick).c_str();
+                } else {
+                    platinumIt->attribute("timestamp")
+                        .set_value(std::to_string(trophyTimestamp.tick).c_str());
+                }
+
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();
 
@@ -706,6 +1030,17 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             if ((numTrophies - 2) == numTrophiesUnlocked) {
 
                 platinumIt->attribute("unlockstate").set_value("unlocked");
+
+                Rtc::OrbisRtcTick trophyTimestamp;
+                Rtc::sceRtcGetCurrentTick(&trophyTimestamp);
+
+                if (std::string(platinumIt->attribute("timestamp").value()).empty()) {
+                    platinumIt->append_attribute("timestamp") =
+                        std::to_string(trophyTimestamp.tick).c_str();
+                } else {
+                    platinumIt->attribute("timestamp")
+                        .set_value(std::to_string(trophyTimestamp.tick).c_str());
+                }
 
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();

@@ -66,7 +66,7 @@ void TrophyUI::Draw() {
                       ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
                           ImGuiWindowFlags_NoInputs)) {
                 Text("Trophy earned!");
-                TextWrapped(currentTrophyInfo.trophyName.c_str());
+                TextWrapped("%s", currentTrophyInfo.trophyName.c_str());
             }
             End();
         }
