@@ -243,6 +243,8 @@ OPCODE(SMulExt,                                             U32x2,          U32,
 OPCODE(UMulExt,                                             U32x2,          U32,            U32,                                                            )
 OPCODE(SDiv32,                                              U32,            U32,            U32,                                                            )
 OPCODE(UDiv32,                                              U32,            U32,            U32,                                                            )
+OPCODE(SMod32,                                              U32,            U32,            U32,                                                            )
+OPCODE(UMod32,                                              U32,            U32,            U32,                                                            )
 OPCODE(INeg32,                                              U32,            U32,                                                                            )
 OPCODE(INeg64,                                              U64,            U64,                                                                            )
 OPCODE(IAbs32,                                              U32,            U32,                                                                            )
