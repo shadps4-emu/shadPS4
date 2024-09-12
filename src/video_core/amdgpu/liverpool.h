@@ -1088,6 +1088,15 @@ public:
         submit_cv.notify_one();
     }
 
+    void reserveCopyBufferSpace() {
+        GpuQueue& gfx_queue = mapped_queues[GfxQueueId];
+        std::scoped_lock<std::mutex> lk(gfx_queue.m_access);
+
+        constexpr size_t gfx_reserved_size = (2 << 21) / sizeof(u32); // 2MB
+        gfx_queue.ccb_buffer.reserve(gfx_reserved_size);
+        gfx_queue.dcb_buffer.reserve(gfx_reserved_size);
+    }
+
 private:
     struct Task {
         struct promise_type {

@@ -2667,6 +2667,10 @@ void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
         sdk_version = 0;
     }
 
+    if (Config::copyGPUCmdBuffers()) {
+        liverpool->reserveCopyBufferSpace();
+    }
+
     Platform::IrqC::Instance()->Register(Platform::InterruptId::GpuIdle, ResetSubmissionLock,
                                          nullptr);
 
