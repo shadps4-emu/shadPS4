@@ -295,7 +295,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
                 }
             }
         }
-        
+
         details->numGroups = numGroups;
         details->numTrophies = numTrophies;
         details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
