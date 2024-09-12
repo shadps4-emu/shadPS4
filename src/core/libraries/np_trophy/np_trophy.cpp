@@ -75,7 +75,7 @@ bool ORBIS_NP_TROPHY_FLAG_ISSET(int32_t trophyId, OrbisNpTrophyFlagArray* p) {
 }
 
 OrbisNpTrophyGrade GetTrophyGradeFromChar(char trophyType) {
-    switch (trophyType) { 
+    switch (trophyType) {
     default:
         return ORBIS_NP_TROPHY_GRADE_UNKNOWN;
         break;
@@ -295,7 +295,8 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
                 }
             }
         }
-
+        
+        details->numGroups = numGroups;
         details->numTrophies = numTrophies;
         details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
         details->numGold = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
@@ -370,14 +371,17 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
             if (std::string(it->name()) == "group") {
                 numGroups++;
                 std::string currentGroupId = it->attribute("id").value();
-                if (std::stoi(currentGroupId) == groupId) {
-                    std::string currentGroupName = it->child("name").text().as_string();
-                    std::string currentGroupDescription = it->child("detail").text().as_string();
+                if (!currentGroupId.empty()) {
+                    if (std::stoi(currentGroupId) == groupId) {
+                        std::string currentGroupName = it->child("name").text().as_string();
+                        std::string currentGroupDescription =
+                            it->child("detail").text().as_string();
 
-                    strncpy(details->title, currentGroupName.c_str(),
-                            ORBIS_NP_TROPHY_GROUP_TITLE_MAX_SIZE);
-                    strncpy(details->description, currentGroupDescription.c_str(),
-                            ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE);
+                        strncpy(details->title, currentGroupName.c_str(),
+                                ORBIS_NP_TROPHY_GROUP_TITLE_MAX_SIZE);
+                        strncpy(details->description, currentGroupDescription.c_str(),
+                                ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE);
+                    }
                 }
             }
 
@@ -388,14 +392,16 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
                 std::string currentTrophyGrade = it->attribute("ttype").value();
                 std::string currentTrophyGroupID = it->attribute("gid").value();
 
-                if (std::stoi(currentTrophyGroupID) == groupId) {
-                    numTrophies++;
-                    if (!currentTrophyGrade.empty()) {
-                        int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
-                        numTrophiesByRarity[trophyGrade]++;
-                        if (currentTrophyUnlockState == "unlocked") {
-                            unlockedTrophies++;
-                            unlockedTrophiesByRarity[trophyGrade]++;
+                if (!currentTrophyGroupID.empty()) {
+                    if (std::stoi(currentTrophyGroupID) == groupId) {
+                        numTrophies++;
+                        if (!currentTrophyGrade.empty()) {
+                            int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
+                            numTrophiesByRarity[trophyGrade]++;
+                            if (currentTrophyUnlockState == "unlocked") {
+                                unlockedTrophies++;
+                                unlockedTrophiesByRarity[trophyGrade]++;
+                            }
                         }
                     }
                 }
@@ -988,7 +994,8 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                             it->append_attribute("timestamp") =
                                 std::to_string(trophyTimestamp.tick).c_str();
                         } else {
-                            it->attribute("timestamp").set_value(std::to_string(trophyTimestamp.tick).c_str());
+                            it->attribute("timestamp")
+                                .set_value(std::to_string(trophyTimestamp.tick).c_str());
                         }
 
                         g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName);
