@@ -21,12 +21,12 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include "checkUpdate.h"
-//#include "externals/minizip-ng/mz.h"
-//#include "externals/minizip-ng/mz_strm.h"
-//#include "externals/minizip-ng/mz_strm_buf.h"
-//#include "externals/minizip-ng/mz_strm_mem.h"
-//#include "externals/minizip-ng/mz_strm_os.h"
-//#include "externals/minizip-ng/mz_zip.h"
+// #include "externals/minizip-ng/mz.h"
+// #include "externals/minizip-ng/mz_strm.h"
+// #include "externals/minizip-ng/mz_strm_buf.h"
+// #include "externals/minizip-ng/mz_strm_mem.h"
+// #include "externals/minizip-ng/mz_strm_os.h"
+// #include "externals/minizip-ng/mz_zip.h"
 
 using namespace Common::FS;
 namespace fs = std::filesystem;
@@ -172,32 +172,35 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
 }
 
 void CheckUpdate::Unzip() {
-    //QString userPath =
-    //    QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
-    //QString tempDirPath = userPath + "/temp_download_update";
-    //QString zipFilePath = tempDirPath + "/temp_download_update.zip";
+    // QString userPath =
+    //     QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+    // QString tempDirPath = userPath + "/temp_download_update";
+    // QString zipFilePath = tempDirPath + "/temp_download_update.zip";
 
-    //if (!fs::exists(zipFilePath.toStdString())) {
+    // if (!fs::exists(zipFilePath.toStdString())) {
+    //     QMessageBox::warning(this, tr("Error"),
+    //                          QString(tr("Arquivo zip não encontrado:") +
+    //                          "\n%1").arg(zipFilePath));
+    //     return;
+    // }
+
+    // void* zip_reader = NULL;
+    // void* stream = NULL;
+
+    // mz_stream_os_create();
+    // if (mz_stream_os_open(stream, zipFilePath.toStdString().c_str(), MZ_OPEN_MODE_READ) != MZ_OK)
+    // {
+
     //    QMessageBox::warning(this, tr("Error"),
-    //                         QString(tr("Arquivo zip não encontrado:") + "\n%1").arg(zipFilePath));
-    //    return;
-    //}
-
-    //void* zip_reader = NULL;
-    //void* stream = NULL;
-
-    //mz_stream_os_create();
-    //if (mz_stream_os_open(stream, zipFilePath.toStdString().c_str(), MZ_OPEN_MODE_READ) != MZ_OK) {
-
-    //    QMessageBox::warning(this, tr("Error"),
-    //                         QString(tr("Erro ao abrir o arquivo zip") + "\n%1").arg(zipFilePath));
+    //                         QString(tr("Erro ao abrir o arquivo zip") +
+    //                         "\n%1").arg(zipFilePath));
     //    mz_stream_os_delete(&stream);
     //    return;
     //}
 
     //// Criar o leitor do ZIP
-    //mz_zip_create();
-    //if (mz_zip_open(zip_reader, stream, MZ_OPEN_MODE_READ) != MZ_OK) {
+    // mz_zip_create();
+    // if (mz_zip_open(zip_reader, stream, MZ_OPEN_MODE_READ) != MZ_OK) {
 
     //    QMessageBox::warning(
     //        this, tr("Error"),
@@ -209,15 +212,15 @@ void CheckUpdate::Unzip() {
     //}
 
     //// Passa por (arquivo ou diretório) no arquivo zip
-    //while (mz_zip_goto_next_entry(zip_reader) == MZ_OK) {
-    //    mz_zip_file* file_info = nullptr;
-    //    if (mz_zip_entry_get_info(zip_reader, &file_info) != MZ_OK) {
-    //        QMessageBox::warning(
-    //            this, tr("Error"),
-    //            QString(tr("Erro ao obter informações da entrada no zip.") + "\n%1")
-    //                .arg(zipFilePath));
-    //        continue;
-    //    }
+    // while (mz_zip_goto_next_entry(zip_reader) == MZ_OK) {
+    //     mz_zip_file* file_info = nullptr;
+    //     if (mz_zip_entry_get_info(zip_reader, &file_info) != MZ_OK) {
+    //         QMessageBox::warning(
+    //             this, tr("Error"),
+    //             QString(tr("Erro ao obter informações da entrada no zip.") + "\n%1")
+    //                 .arg(zipFilePath));
+    //         continue;
+    //     }
 
     //    QString caminho_arquivo = tempDirPath + "/" + file_info->filename;
 
@@ -236,7 +239,8 @@ void CheckUpdate::Unzip() {
 
     //            QMessageBox::warning(
     //                this, tr("Error"),
-    //                QString(tr("Erro ao abrir o arquivo de saída:") + "\n%1").arg(caminho_arquivo));
+    //                QString(tr("Erro ao abrir o arquivo de saída:") +
+    //                "\n%1").arg(caminho_arquivo));
 
     //            mz_zip_entry_close(zip_reader);
     //            continue;
@@ -258,13 +262,13 @@ void CheckUpdate::Unzip() {
     //}
 
     //// Fechar o arquivo zip
-    //mz_zip_close(zip_reader);
-    //mz_zip_delete(&zip_reader);
-    //mz_stream_os_close(stream);
-    //mz_stream_os_delete(&stream);
+    // mz_zip_close(zip_reader);
+    // mz_zip_delete(&zip_reader);
+    // mz_stream_os_close(stream);
+    // mz_stream_os_delete(&stream);
 
-    //QMessageBox::warning(this, tr("Error"),
-    //                     QString(tr("Descompactação concluída em:") + "\n%1").arg(tempDirPath));
+    // QMessageBox::warning(this, tr("Error"),
+    //                      QString(tr("Descompactação concluída em:") + "\n%1").arg(tempDirPath));
 }
 
 //// Criar e executar o arquivo batch para atualizar
