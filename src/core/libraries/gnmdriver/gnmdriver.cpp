@@ -304,6 +304,7 @@ struct AscQueueInfo {
     VAddr map_addr;
     u32* read_addr;
     u32 ring_size_dw;
+    u32 pipe_id;
 };
 static Common::SlotVector<AscQueueInfo> asc_queues{};
 static constexpr VAddr tessellation_factors_ring_addr = Core::SYSTEM_RESERVED_MAX - 0xFFFFFFF;
@@ -371,15 +372,28 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.udata = udata;
     eq->AddEvent(kernel_event);
 
+    Platform::InterruptId interruptId;
+    GnmEventIdents eventId;
+
+    if (id == 64) {
+        interruptId = Platform::InterruptId::GfxEop;
+        eventId = GnmEventIdents::GfxEop;
+    } else if (id >= 0 && id <= 6) {
+        interruptId = static_cast<Platform::InterruptId>(id);
+        eventId = static_cast<GnmEventIdents>(id);
+    } else {
+        LOG_ERROR(Lib_GnmDriver, "unknown id {}", id);
+        return ORBIS_OK;
+    }
+
     Platform::IrqC::Instance()->Register(
-        Platform::InterruptId::GfxEop,
+        interruptId,
         [=](Platform::InterruptId irq) {
-            ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                       "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
-                                                     // proper filtering in trigger function
-            eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
+            ASSERT_MSG(irq == interruptId, "An unexpected IRQ occurred");
+            eq->TriggerEvent(eventId, SceKernelEvent::Filter::GraphicsCore, nullptr);
         },
         eq);
+
     return ORBIS_OK;
 }
 
@@ -540,15 +554,14 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         DumpCommandList(acb, fmt::format("acb_{}_{}", gnm_vqid, seq_num));
     }
 
-    liverpool->SubmitAsc(vqid, acb_span);
+    liverpool->SubmitAsc(vqid, acb_span, asc_queue.pipe_id);
 
     *asc_queue.read_addr += acb_size;
     *asc_queue.read_addr %= asc_queue.ring_size_dw * 4;
 }
 
-int PS4_SYSV_ABI sceGnmDingDongForWorkload() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw) {
+    sceGnmDingDong(gnm_vqid, next_offs_dw);
 }
 
 int PS4_SYSV_ABI sceGnmDisableMipStatsReport() {
@@ -1192,7 +1205,7 @@ int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_bas
         return ORBIS_GNM_ERROR_COMPUTEQUEUE_INVALID_READ_PTR_ADDR;
     }
 
-    auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw);
+    auto vqid = asc_queues.insert(VAddr(ring_base_addr), read_ptr_addr, ring_size_dw, pipe_id);
     // We need to offset index as `dingDong` assumes it to be from the range [1..64]
     const auto gnm_vqid = vqid.index + 1;
     LOG_INFO(Lib_GnmDriver, "ASC pipe {} queue {} mapped to vqueue {}", pipe_id, queue_id,
