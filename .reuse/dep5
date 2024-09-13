@@ -7,8 +7,6 @@ Files: CMakeSettings.json
        .github/shadps4.png
        .gitmodules
        documents/changelog.txt
-       documents/readme.txt
-       documents/Quickstart/1.png
        documents/Quickstart/2.png
        documents/Screenshots/Bloodborne.png
        documents/Screenshots/Sonic Mania.png
@@ -38,6 +36,7 @@ Files: CMakeSettings.json
        src/images/shadPS4.icns
        src/images/shadps4.ico
        src/images/themes_icon.png
+       src/images/update_icon.png
        src/shadps4.qrc
        src/shadps4.rc
 Copyright: shadPS4 Emulator Project
