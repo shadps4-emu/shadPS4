@@ -104,6 +104,7 @@ public:
     void S_MAX_U32(bool is_signed, const GcnInst& inst);
     void S_MIN_U32(bool is_signed, const GcnInst& inst);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
+    void S_ABSDIFF_I32(const GcnInst& inst);
 
     // Scalar Memory
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
