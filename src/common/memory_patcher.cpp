@@ -3,8 +3,8 @@
 
 #include <algorithm>
 #include <codecvt>
-#include <string>
 #include <sstream>
+#include <string>
 #include <pugixml.hpp>
 #ifdef ENABLE_QT_GUI
 #include <QFile>
@@ -23,7 +23,7 @@
 namespace MemoryPatcher {
 
 uintptr_t g_eboot_address;
-u64 g_eboot_image_size;
+uint64_t g_eboot_image_size;
 std::string g_game_serial;
 std::string patchFile;
 std::vector<patchInfo> pending_patches;
@@ -92,7 +92,7 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
         std::vector<unsigned char> byteArray;
         // convert to little endian
         for (char16_t ch : valueStringU16) {
-            unsigned char low_byte = static_cast<unsigned char>(ch & 0x00FF); 
+            unsigned char low_byte = static_cast<unsigned char>(ch & 0x00FF);
             unsigned char high_byte = static_cast<unsigned char>((ch >> 8) & 0x00FF);
 
             byteArray.push_back(low_byte);
