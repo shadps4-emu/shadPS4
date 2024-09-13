@@ -259,8 +259,7 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindTexture(const ImageInfo& info, const ImageViewInfo& view_info) {
-    const ImageId image_id = FindImage(info);
+ImageView& TextureCache::FindTexture(ImageId image_id, const ImageViewInfo& view_info) {
     Image& image = slot_images[image_id];
     UpdateImage(image_id);
     auto& usage = image.info.usage;

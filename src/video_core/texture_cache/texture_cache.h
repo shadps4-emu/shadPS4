@@ -59,9 +59,8 @@ public:
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(const ImageInfo& info, FindFlags flags = {});
 
-    /// Retrieves an image view with the properties of the specified image descriptor.
-    [[nodiscard]] ImageView& FindTexture(const ImageInfo& image_info,
-                                         const ImageViewInfo& view_info);
+    /// Retrieves an image view with the properties of the specified image id.
+    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& FindRenderTarget(const ImageInfo& image_info,

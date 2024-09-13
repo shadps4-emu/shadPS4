@@ -21,20 +21,19 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
     static boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     image_infos.clear();
 
-    using ImageBindingInfo = std::tuple<VideoCore::Image*, VideoCore::ImageView*, bool>;
+    using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, bool>;
     boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
         if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
             VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
-            VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-            auto& image_view = texture_cache.FindTexture(image_info, view_info);
-            auto& image = texture_cache.GetImage(image_view.image_id);
+            const auto image_id = texture_cache.FindImage(image_info);
+            auto& image = texture_cache.GetImage(image_id);
             image.flags |= VideoCore::ImageFlagBits::Bound;
-            image_bindings.emplace_back(&image, &image_view, image_desc.is_storage);
+            image_bindings.emplace_back(image_id, tsharp, image_desc.is_storage);
         } else {
-            image_bindings.emplace_back(nullptr, nullptr, image_desc.is_storage);
+            image_bindings.emplace_back(VideoCore::ImageId{}, tsharp, image_desc.is_storage);
         }
 
         if (texture_cache.IsMeta(tsharp.Address())) {
@@ -43,8 +42,8 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
     }
 
     // Second pass to re-bind images that were updated after binding
-    for (auto& [image, image_view, is_storage] : image_bindings) {
-        if (!image || !image_view) {
+    for (auto [image_id, tsharp, is_storage] : image_bindings) {
+        if (!image_id) {
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             } else {
@@ -53,13 +52,15 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
                                          vk::ImageLayout::eGeneral);
             }
         } else {
-            vk::ImageLayout layout = image->last_state.layout;
-            if (True(image->flags & VideoCore::ImageFlagBits::NeedsRebind)) {
-                image_view = &texture_cache.FindTexture(image->info, image_view->info);
-                layout = texture_cache.GetImage(image_view->image_id).last_state.layout;
+            auto& image = texture_cache.GetImage(image_id);
+            if (True(image.flags & VideoCore::ImageFlagBits::NeedsRebind)) {
+                image_id = texture_cache.FindImage(image.info);
             }
-            image_infos.emplace_back(VK_NULL_HANDLE, *image_view->image_view, layout);
-            image->flags &=
+            VideoCore::ImageViewInfo view_info{tsharp, is_storage};
+            auto& image_view = texture_cache.FindTexture(image_id, view_info);
+            image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
+                                     texture_cache.GetImage(image_id).last_state.layout);
+            image.flags &=
                 ~(VideoCore::ImageFlagBits::NeedsRebind | VideoCore::ImageFlagBits::Bound);
         }
 
