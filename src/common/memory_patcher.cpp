@@ -2,14 +2,20 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <codecvt>
+#include <sstream>
 #include <string>
+#include <pugixml.hpp>
+#ifdef ENABLE_QT_GUI
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QListView>
 #include <QMessageBox>
+#include <QString>
 #include <QXmlStreamReader>
+#endif
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "memory_patcher.h"
@@ -17,78 +23,169 @@
 namespace MemoryPatcher {
 
 uintptr_t g_eboot_address;
-u64 g_eboot_image_size;
+uint64_t g_eboot_image_size;
 std::string g_game_serial;
+std::string patchFile;
 std::vector<patchInfo> pending_patches;
 
-QString toHex(unsigned long long value, size_t byteSize) {
+std::string toHex(unsigned long long value, size_t byteSize) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0') << std::setw(byteSize * 2) << value;
-    return QString::fromStdString(ss.str());
+    return ss.str();
 }
 
-QString convertValueToHex(const QString& type, const QString& valueStr) {
-    QString result;
-    std::string typeStr = type.toStdString();
-    std::string valueStrStd = valueStr.toStdString();
+std::string convertValueToHex(const std::string type, const std::string valueStr) {
+    std::string result;
 
-    if (typeStr == "byte") {
-        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
+    if (type == "byte") {
+        unsigned int value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 1);
-    } else if (typeStr == "bytes16") {
-        unsigned int value = std::stoul(valueStrStd, nullptr, 16);
+    } else if (type == "bytes16") {
+        unsigned int value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 2);
-    } else if (typeStr == "bytes32") {
-        unsigned long value = std::stoul(valueStrStd, nullptr, 16);
+    } else if (type == "bytes32") {
+        unsigned long value = std::stoul(valueStr, nullptr, 16);
         result = toHex(value, 4);
-    } else if (typeStr == "bytes64") {
-        unsigned long long value = std::stoull(valueStrStd, nullptr, 16);
+    } else if (type == "bytes64") {
+        unsigned long long value = std::stoull(valueStr, nullptr, 16);
         result = toHex(value, 8);
-    } else if (typeStr == "float32") {
+    } else if (type == "float32") {
         union {
             float f;
             uint32_t i;
         } floatUnion;
-        floatUnion.f = std::stof(valueStrStd);
+        floatUnion.f = std::stof(valueStr);
         result = toHex(floatUnion.i, sizeof(floatUnion.i));
-    } else if (typeStr == "float64") {
+    } else if (type == "float64") {
         union {
             double d;
             uint64_t i;
         } doubleUnion;
-        doubleUnion.d = std::stod(valueStrStd);
+        doubleUnion.d = std::stod(valueStr);
         result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
-    } else if (typeStr == "utf8") {
-        QByteArray byteArray = QString::fromStdString(valueStrStd).toUtf8();
-        byteArray.append('\0');
+    } else if (type == "utf8") {
+        std::vector<unsigned char> byteArray =
+            std::vector<unsigned char>(valueStr.begin(), valueStr.end());
+        byteArray.push_back('\0');
         std::stringstream ss;
         for (unsigned char c : byteArray) {
             ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
         }
-        result = QString::fromStdString(ss.str());
-    } else if (typeStr == "utf16") {
-        QByteArray byteArray(
-            reinterpret_cast<const char*>(QString::fromStdString(valueStrStd).utf16()),
-            QString::fromStdString(valueStrStd).size() * 2);
-        byteArray.append('\0');
-        byteArray.append('\0');
-        std::stringstream ss;
-        for (unsigned char c : byteArray) {
-            ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c);
+        result = ss.str();
+    } else if (type == "utf16") {
+        std::wstring wide_str(valueStr.size(), L'\0');
+        std::mbstowcs(&wide_str[0], valueStr.c_str(), valueStr.size());
+        wide_str.resize(std::wcslen(wide_str.c_str()));
+
+        std::u16string valueStringU16;
+
+        for (wchar_t wc : wide_str) {
+            if (wc <= 0xFFFF) {
+                valueStringU16.push_back(static_cast<char16_t>(wc));
+            } else {
+                wc -= 0x10000;
+                valueStringU16.push_back(static_cast<char16_t>(0xD800 | (wc >> 10)));
+                valueStringU16.push_back(static_cast<char16_t>(0xDC00 | (wc & 0x3FF)));
+            }
         }
-        result = QString::fromStdString(ss.str());
-    } else if (typeStr == "bytes") {
+
+        std::vector<unsigned char> byteArray;
+        // convert to little endian
+        for (char16_t ch : valueStringU16) {
+            unsigned char low_byte = static_cast<unsigned char>(ch & 0x00FF);
+            unsigned char high_byte = static_cast<unsigned char>((ch >> 8) & 0x00FF);
+
+            byteArray.push_back(low_byte);
+            byteArray.push_back(high_byte);
+        }
+        byteArray.push_back('\0');
+        byteArray.push_back('\0');
+        std::stringstream ss;
+
+        for (unsigned char ch : byteArray) {
+            ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(ch);
+        }
+        result = ss.str();
+    } else if (type == "bytes") {
         result = valueStr;
-    } else if (typeStr == "mask" || typeStr == "mask_jump32") {
+    } else if (type == "mask" || type == "mask_jump32") {
         result = valueStr;
     } else {
-        LOG_INFO(Loader, "Error applying Patch, unknown type: {}", typeStr);
+        LOG_INFO(Loader, "Error applying Patch, unknown type: {}", type);
     }
     return result;
 }
 
 void OnGameLoaded() {
 
+    if (!patchFile.empty()) {
+        std::string patchDir = Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string();
+
+        std::string filePath = patchDir + "/" + patchFile;
+
+        pugi::xml_document doc;
+        pugi::xml_parse_result result = doc.load_file(filePath.c_str());
+
+        if (result) {
+            auto patchXML = doc.child("Patch");
+            for (pugi::xml_node_iterator it = patchXML.children().begin();
+                 it != patchXML.children().end(); ++it) {
+
+                if (std::string(it->name()) == "Metadata") {
+                    if (std::string(it->attribute("isEnabled").value()) == "true") {
+                        auto patchList = it->first_child();
+
+                        std::string currentPatchName = it->attribute("Name").value();
+
+                        for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
+                             patchLineIt != patchList.children().end(); ++patchLineIt) {
+
+                            std::string type = patchLineIt->attribute("Type").value();
+                            std::string address = patchLineIt->attribute("Address").value();
+                            std::string patchValue = patchLineIt->attribute("Value").value();
+                            std::string maskOffsetStr = patchLineIt->attribute("type").value();
+
+                            patchValue = convertValueToHex(type, patchValue);
+
+                            bool littleEndian = false;
+
+                            if (type == "bytes16") {
+                                littleEndian = true;
+                            } else if (type == "bytes32") {
+                                littleEndian = true;
+                            } else if (type == "bytes64") {
+                                littleEndian = true;
+                            }
+
+                            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+                            int maskOffsetValue = 0;
+
+                            if (type == "mask") {
+                                patchMask = MemoryPatcher::PatchMask::Mask;
+
+                                // im not sure if this works, there is no games to test the mask
+                                // offset on yet
+                                if (!maskOffsetStr.empty())
+                                    maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
+                            }
+
+                            if (type == "mask_jump32")
+                                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
+                            MemoryPatcher::PatchMemory(currentPatchName, address, patchValue, false,
+                                                       littleEndian, patchMask);
+                        }
+                    }
+                }
+            }
+        } else
+            LOG_ERROR(Loader, "couldnt patch parse xml : {}", result.description());
+
+        ApplyPendingPatches();
+        return;
+    }
+
+#ifdef ENABLE_QT_GUI
     // We use the QT headers for the xml and json parsing, this define is only true on QT builds
     QString patchDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
@@ -190,7 +287,8 @@ void OnGameLoaded() {
                             QString patchValue = lineObject["Value"].toString();
                             QString maskOffsetStr = lineObject["Offset"].toString();
 
-                            patchValue = convertValueToHex(type, patchValue);
+                            patchValue = QString::fromStdString(
+                                convertValueToHex(type.toStdString(), patchValue.toStdString()));
 
                             bool littleEndian = false;
 
@@ -233,6 +331,7 @@ void OnGameLoaded() {
         }
         ApplyPendingPatches();
     }
+#endif
 }
 
 void AddPatchToQueue(patchInfo patchToAdd) {
