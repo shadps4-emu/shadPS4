@@ -6,6 +6,7 @@
 #include "emulator.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
+#include "common/memory_patcher.h"
 
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
@@ -36,6 +37,13 @@ int main(int argc, char* argv[]) {
     // Check for command line arguments
     if (has_command_line_argument) {
         Core::Emulator emulator;
+        for (int i = 0; i < argc; i++) {
+            std::string curArg = argv[i];
+            if (curArg == "-p") {
+                std::string patchFile = argv[i + 1];
+                MemoryPatcher::patchFile = patchFile;
+            }
+        }
         emulator.Run(argv[1]);
     }
 

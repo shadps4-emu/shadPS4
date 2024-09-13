@@ -3,6 +3,7 @@
 
 #include <fmt/core.h>
 #include "emulator.h"
+#include "common/memory_patcher.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
@@ -10,7 +11,16 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    for (int i = 0; i < argc; i++) {
+        std::string curArg = argv[i];
+        if (curArg == "-p") {
+            std::string patchFile = argv[i + 1];
+            MemoryPatcher::patchFile = patchFile;
+        }
+    }
+
     Core::Emulator emulator;
     emulator.Run(argv[1]);
+
     return 0;
 }

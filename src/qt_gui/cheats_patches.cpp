@@ -30,7 +30,7 @@
 #include "cheats_patches.h"
 #include "common/path_util.h"
 #include "core/module.h"
-#include "qt_gui/memory_patcher.h"
+#include "common/memory_patcher.h"
 
 using namespace Common::FS;
 
@@ -1178,7 +1178,8 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             QString patchValue = lineObject["Value"].toString();
             QString maskOffsetStr = lineObject["Offset"].toString();
 
-            patchValue = MemoryPatcher::convertValueToHex(type, patchValue);
+            patchValue = QString::fromStdString(
+                MemoryPatcher::convertValueToHex(type.toStdString(), patchValue.toStdString()));
 
             bool littleEndian = false;
 
