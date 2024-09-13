@@ -1063,7 +1063,7 @@ ScePthread PThreadPool::Create(const char* name) {
     std::scoped_lock lock{m_mutex};
 
     for (auto* p : m_threads) {
-        if (p->is_free && p->name == name) {
+        if (p->is_free && name != nullptr && p->name == name) {
             p->is_free = false;
             return p;
         }
