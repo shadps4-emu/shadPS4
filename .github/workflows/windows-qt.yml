@@ -4,6 +4,7 @@
 name: Windows-Qt
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
