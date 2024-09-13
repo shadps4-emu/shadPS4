@@ -14,6 +14,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_SAMPLE_LZ:
     case Opcode::IMAGE_SAMPLE:
     case Opcode::IMAGE_SAMPLE_L:
+    case Opcode::IMAGE_SAMPLE_L_O:
     case Opcode::IMAGE_SAMPLE_C_O:
     case Opcode::IMAGE_SAMPLE_B:
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
