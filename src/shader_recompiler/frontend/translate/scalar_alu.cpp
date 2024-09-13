@@ -570,6 +570,7 @@ void Translator::S_ABSDIFF_I32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.IAbs(ir.ISub(src0, src1))};
     SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
 } // namespace Shader::Gcn
