@@ -103,6 +103,7 @@ public:
     void S_ADDK_I32(const GcnInst& inst);
     void S_MAX_U32(bool is_signed, const GcnInst& inst);
     void S_MIN_U32(bool is_signed, const GcnInst& inst);
+    void S_ABSDIFF_I32(const GcnInst& inst);
     void S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst);
 
     // Scalar Memory
