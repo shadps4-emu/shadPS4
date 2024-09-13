@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <codecvt>
 #include <string>
+#include <sstream>
 #include <pugixml.hpp>
 #ifdef ENABLE_QT_GUI
 #include <QFile>
@@ -63,7 +64,8 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
         doubleUnion.d = std::stod(valueStr);
         result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
     } else if (type == "utf8") {
-        std::vector<unsigned char> byteArray = std::vector<unsigned char>(valueStr.begin(), valueStr.end());
+        std::vector<unsigned char> byteArray =
+            std::vector<unsigned char>(valueStr.begin(), valueStr.end());
         byteArray.push_back('\0');
         std::stringstream ss;
         for (unsigned char c : byteArray) {
@@ -82,20 +84,16 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
                 valueStringU16.push_back(static_cast<char16_t>(wc));
             } else {
                 wc -= 0x10000;
-                valueStringU16.push_back(
-                    static_cast<char16_t>(0xD800 | (wc >> 10)));
-                valueStringU16.push_back(
-                    static_cast<char16_t>(0xDC00 | (wc & 0x3FF)));
+                valueStringU16.push_back(static_cast<char16_t>(0xD800 | (wc >> 10)));
+                valueStringU16.push_back(static_cast<char16_t>(0xDC00 | (wc & 0x3FF)));
             }
         }
 
         std::vector<unsigned char> byteArray;
         // convert to little endian
         for (char16_t ch : valueStringU16) {
-            unsigned char low_byte =
-                static_cast<unsigned char>(ch & 0x00FF); 
-            unsigned char high_byte =
-                static_cast<unsigned char>((ch >> 8) & 0x00FF);
+            unsigned char low_byte = static_cast<unsigned char>(ch & 0x00FF); 
+            unsigned char high_byte = static_cast<unsigned char>((ch >> 8) & 0x00FF);
 
             byteArray.push_back(low_byte);
             byteArray.push_back(high_byte);
@@ -187,7 +185,7 @@ void OnGameLoaded() {
         return;
     }
 
-    #ifdef ENABLE_QT_GUI
+#ifdef ENABLE_QT_GUI
     // We use the QT headers for the xml and json parsing, this define is only true on QT builds
     QString patchDir =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
@@ -289,8 +287,8 @@ void OnGameLoaded() {
                             QString patchValue = lineObject["Value"].toString();
                             QString maskOffsetStr = lineObject["Offset"].toString();
 
-                            patchValue =
-                                QString::fromStdString(convertValueToHex(type.toStdString(), patchValue.toStdString()));
+                            patchValue = QString::fromStdString(
+                                convertValueToHex(type.toStdString(), patchValue.toStdString()));
 
                             bool littleEndian = false;
 
@@ -333,7 +331,7 @@ void OnGameLoaded() {
         }
         ApplyPendingPatches();
     }
-    #endif
+#endif
 }
 
 void AddPatchToQueue(patchInfo patchToAdd) {

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/core.h>
-#include "emulator.h"
 #include "common/memory_patcher.h"
+#include "emulator.h"
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {

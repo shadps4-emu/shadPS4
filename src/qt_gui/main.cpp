@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
+#include "common/memory_patcher.h"
 #include "core/file_sys/fs.h"
 #include "emulator.h"
 #include "game_install_dialog.h"
 #include "main_window.h"
-#include "common/memory_patcher.h"
 
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
