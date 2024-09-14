@@ -55,6 +55,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_ASHR_I32(inst);
         case Opcode::S_OR_B32:
             return S_OR_B32(inst);
+        case Opcode::S_XOR_B32:
+            return S_XOR_B32(inst);
         case Opcode::S_LSHL_B32:
             return S_LSHL_B32(inst);
         case Opcode::S_LSHR_B32:
@@ -413,6 +415,14 @@ void Translator::S_OR_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.BitwiseOr(src0, src1)};
+    SetDst(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_XOR_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result{ir.BitwiseXor(src0, src1)};
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
