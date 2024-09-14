@@ -211,7 +211,7 @@ public:
 
     // Data share
     void DS_SWIZZLE_B32(const GcnInst& inst);
-    void DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst);
+    void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_ADD_U32(const GcnInst& inst, bool rtn);
     void DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn);
