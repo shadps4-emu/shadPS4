@@ -34,9 +34,9 @@ OPCODE(WriteSharedU128,                                     Void,           U32,
 
 // Shared atomic operations
 OPCODE(SharedAtomicIAdd32,                                  U32,            U32,            U32,                                                            )
-OPCODE(SharedAtomicSMin32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMin32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMin32,                                  U32,            U32,            U32,                                                            )
-OPCODE(SharedAtomicSMax32,									U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicSMax32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMax32,                                  U32,            U32,            U32,                                                            )
 
 // Context getters/setters
@@ -88,17 +88,17 @@ OPCODE(StoreBufferU32x4,                                    Void,           Opaq
 OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         U32x4,                                          )
 
 // Buffer atomic operations
-OPCODE(BufferAtomicIAdd32,                                  U32,	        Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,			Opaque,			U32												)
-OPCODE(BufferAtomicInc32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicDec32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicOr32,                                    U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicXor32,                                   U32,            Opaque,			Opaque,			U32,											)
-OPCODE(BufferAtomicSwap32,				                    U32,            Opaque,			Opaque,			U32,											)
+OPCODE(BufferAtomicIAdd32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicInc32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicDec32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicOr32,                                    U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicXor32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(BufferAtomicSwap32,                                  U32,            Opaque,         Opaque,         U32,                                            )
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
