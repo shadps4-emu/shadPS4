@@ -47,6 +47,11 @@ else()
     message(FATAL_ERROR "Unsupported CPU architecture: ${BASE_ARCHITECTURE}")
 endif()
 
+if (APPLE AND ARCHITECTURE STREQUAL "x86_64")
+    # Exclude ARM homebrew path to avoid conflicts when cross compiling.
+    list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
+endif()
+
 # This function should be passed a list of all files in a target. It will automatically generate file groups
 # following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
 function(create_target_directory_groups target_name)
