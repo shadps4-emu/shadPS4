@@ -769,13 +769,21 @@ int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(u32 userId, size_t memorySize,
 
     LOG_INFO(Lib_SaveData, "called:userId = {}, memorySize = {}", userId, memorySize);
 
+    if (param == nullptr) {
+        return ORBIS_SAVE_DATA_ERROR_PARAMETER;
+    }
+
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
                             std::to_string(userId) / game_serial / "sdmemory";
 
-    if (std::filesystem::exists(mount_dir)) {
-        return ORBIS_SAVE_DATA_ERROR_EXISTS;
+    if (!std::filesystem::exists(mount_dir)) {
+        std::filesystem::create_directories(mount_dir);
     }
-    std::filesystem::create_directories(mount_dir);
+
+    // NOTE: Reminder that games can pass params:
+    // memset(param, 0, sizeof(param_t));
+    // strncpy(param->title, "Beach Buggy Racing", 127);
+
     std::vector<u8> buf(memorySize);
     Common::FS::IOFile::WriteBytes(mount_dir / "save_mem1.sav", buf);
     return ORBIS_OK;
