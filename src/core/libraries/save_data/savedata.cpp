@@ -783,7 +783,7 @@ int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(u32 userId, size_t memorySize,
     // NOTE: Reminder that games can pass params:
     // memset(param, 0, sizeof(param_t));
     // strncpy(param->title, "Beach Buggy Racing", 127);
-    
+
     std::vector<u8> buf(memorySize);
     Common::FS::IOFile::WriteBytes(mount_dir / "save_mem1.sav", buf);
     return ORBIS_OK;
