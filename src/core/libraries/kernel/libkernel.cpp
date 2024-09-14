@@ -481,6 +481,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
+    LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
 }
 
 } // namespace Libraries::Kernel

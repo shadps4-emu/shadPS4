@@ -184,7 +184,15 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 }
 
 bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
-    static constexpr std::array<u64, 0> skip_hashes = {};
+    static constexpr std::array<u64, 5> skip_hashes = {
+        0x35e6d1c958998c1eULL,
+        // debugbreak called if not skipped
+        0xdd2e7072, 0xc5f6bede,
+        // Unhandled exception at 0x0000000900BD6A88 in shadps4.exe: 0xC0000005: Access violation
+        // reading location 0xFFFFFFFFFFFFFFFF
+        //(int 0x41 in game disassembly) if not skipped
+        0x1651ce59, 0x9f991c28 // causes above error, disables splash screen.
+    };
     if (std::ranges::contains(skip_hashes, shader_hash)) {
         LOG_WARNING(Render_Vulkan, "Skipped {} shader hash {:#x}.", shader_type, shader_hash);
         return true;

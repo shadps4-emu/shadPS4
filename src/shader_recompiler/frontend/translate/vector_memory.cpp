@@ -48,6 +48,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_GET_LOD:
         return IMAGE_GET_LOD(inst);
     case Opcode::IMAGE_STORE:
+    case Opcode::IMAGE_STORE_MIP:
         return IMAGE_STORE(inst);
     case Opcode::IMAGE_LOAD_MIP:
         return IMAGE_LOAD(true, inst);

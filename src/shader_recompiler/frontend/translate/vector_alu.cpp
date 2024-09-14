@@ -188,7 +188,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_MED3_F32:
         return V_MED3_F32(inst);
     case Opcode::V_MED3_I32:
-        return V_MED3_I32(inst);
+        return V_MED3_I32(true, inst);
+    case Opcode::V_MED3_U32:
+        return V_MED3_I32(false, inst);
     case Opcode::V_FLOOR_F32:
         return V_FLOOR_F32(inst);
     case Opcode::V_SUB_F32:
@@ -307,6 +309,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
     case Opcode::V_CMPX_LG_I32:
         return V_CMP_U32(ConditionOp::LG, true, true, inst);
+    case Opcode::V_CMPX_EQ_I32:
+        return V_CMP_U32(ConditionOp::EQ, true, true, inst);
+    case Opcode::V_CMPX_LE_I32:
+        return V_CMP_U32(ConditionOp::LE, true, true, inst);
 
     case Opcode::V_MBCNT_LO_U32_B32:
         return V_MBCNT_U32_B32(true, inst);
@@ -503,12 +509,12 @@ void Translator::V_MED3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMax(ir.FPMin(src0, src1), mmx));
 }
 
-void Translator::V_MED3_I32(const GcnInst& inst) {
+void Translator::V_MED3_I32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    const IR::U32 mmx = ir.SMin(ir.SMax(src0, src1), src2);
-    SetDst(inst.dst[0], ir.SMax(ir.SMin(src0, src1), mmx));
+    const IR::U32 mmx = ir.IMin(ir.IMax(src0, src1, is_signed), src2, is_signed);
+    SetDst(inst.dst[0], ir.IMax(ir.IMin(src0, src1, is_signed), mmx, is_signed));
 }
 
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
@@ -958,6 +964,8 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
         return ir.SetVcc(value);
+    case OperandField::ScalarGPR:
+        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), value);
     default:
         UNREACHABLE();
     }

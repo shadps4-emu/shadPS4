@@ -1112,9 +1112,31 @@ int PS4_SYSV_ABI sceGnmInsertSetColorMarker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmInsertSetMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmInsertSetMarker(u32 *param_1,int param_2,char *param_3) {
+    int iVar1;
+    int iVar2;
+    u32 uVar3;
+    size_t sVar4;
+    u32 uVar5;
+    u64 uVar6;
+
+    uVar6 = 0xffffffff;
+    if ((param_1 != (u32 *)0x0) && (param_3 != (char *)0x0)) {
+        sVar4 = strlen(param_3);
+        iVar2 = (int)sVar4;
+        uVar3 = (iVar2 + 0xcU) >> 3;
+        uVar5 = (iVar2 + 8U) >> 2;
+        if (uVar5 + 2 + uVar3 * 2 == param_2) {
+            iVar1 = uVar5 + uVar3 * 2;
+            uVar3 = iVar2 + 1;
+            *param_1 = iVar1 * 0x10000 | 0xc0001000;
+            param_1[1] = 0x68750003;
+            memcpy(param_1 + 2,param_3,(ulong)uVar3);
+            uVar6 = 0;
+            memset((void *)((long)(param_1 + 2) + (ulong)uVar3),0,(ulong)(iVar1 * 4 - uVar3));
+        }
+    }
+    return uVar6;
 }
 
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker() {

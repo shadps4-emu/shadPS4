@@ -200,6 +200,7 @@ public:
         Id sampled_type;
         Id pointer_type;
         Id image_type;
+        bool is_storage;
     };
 
     struct BufferDefinition {

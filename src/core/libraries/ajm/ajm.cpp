@@ -8,6 +8,8 @@
 #include "common/logging/log.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/ajm/ajm_error.h"
+#include "core/libraries/ajm/ajm_instance.h"
+#include "core/libraries/ajm/ajm_mp3.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
@@ -26,10 +28,6 @@ static constexpr u32 AJM_INSTANCE_STATISTICS = 0x80000;
 
 static constexpr u32 MaxInstances = 0x2fff;
 
-struct AjmInstance {
-    AjmCodecType codec_type;
-};
-
 struct AjmDevice {
     u32 max_prio;
     u32 min_prio;
@@ -37,8 +35,7 @@ struct AjmDevice {
     u32 release_cursor{MaxInstances - 1};
     std::array<bool, NumAjmCodecs> is_registered{};
     std::array<u32, MaxInstances> free_instances{};
-    std::array<AjmInstance, MaxInstances> instances{};
-    MP3Decoder mp3dec;
+    std::array<std::unique_ptr<AjmInstance>, MaxInstances> instances;
 
     bool IsRegistered(AjmCodecType type) const {
         return is_registered[static_cast<u32>(type)];
@@ -66,7 +63,7 @@ int PS4_SYSV_ABI sceAjmBatchErrorDump() {
 }
 
 void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmSingleJob* batch_pos, u32 instance, AjmFlags flags,
-                                                 const u8* in_buffer, u32 in_size, u8* out_buffer,
+                                                 u8* in_buffer, u32 in_size, u8* out_buffer,
                                                  u32 out_size, const void* ret_addr) {
     LOG_INFO(Lib_Ajm, "called instance = {:#x}, flags = {:#x}, cmd = {}, in_size = {:#x}, out_size = {:#x}, ret_addr = {}",
              instance, flags.raw, magic_enum::enum_name(AjmJobControlFlags(flags.command)),
@@ -124,7 +121,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(AjmMultiJob* batch_pos, u32 in
                                                   const AjmBuffer* out_buffers, u64 num_out_buffers,
                                                   void* sideband_output, u64 sideband_output_size,
                                                   const void* ret_addr) {
-    LOG_INFO(Lib_Ajm, "called instance = {}, flags = {:#x}, cmd = {}, sideband_cmd = {} num_input_buffers = {}, num_output_buffers = {}, "
+    LOG_DEBUG(Lib_Ajm, "called instance = {}, flags = {:#x}, cmd = {}, sideband_cmd = {} num_input_buffers = {}, num_output_buffers = {}, "
                       "ret_addr = {}", instance, flags.raw, magic_enum::enum_name(AjmJobRunFlags(flags.command)),
                                         magic_enum::enum_name(AjmJobSidebandFlags(flags.sideband)),
                                         num_in_buffers, num_out_buffers, fmt::ptr(ret_addr));
@@ -207,13 +204,18 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
         std::memcpy(&header, batch_ptr, sizeof(u64));
 
         const auto& opcode = header.opcode;
+        const u32 instance = opcode.instance;
+        const u8* job_ptr = batch_ptr + sizeof(AjmJobHeader) + opcode.is_debug * 16;
+
         if (opcode.is_control) {
             ASSERT_MSG(!opcode.is_statistic, "Statistic instance is not handled");
             const auto command = AjmJobControlFlags(opcode.command_flags);
             switch (command) {
-            case AjmJobControlFlags::Reset:
+            case AjmJobControlFlags::Reset: {
                 LOG_INFO(Lib_Ajm, "Resetting instance {}", opcode.instance);
+                dev->instances[opcode.instance]->Reset();
                 break;
+            }
             case (AjmJobControlFlags::Initialize | AjmJobControlFlags::Reset):
                 LOG_INFO(Lib_Ajm, "Initializing instance {}", opcode.instance);
                 break;
@@ -223,19 +225,55 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context, const u8* batch, u32 batch_
             default:
                 break;
             }
+
+            // Write sideband structures.
+            const AjmJobBuffer* out_buffer = reinterpret_cast<const AjmJobBuffer*>(job_ptr + 24);
+            auto* result = reinterpret_cast<AjmSidebandResult*>(out_buffer->buffer);
+            result->result = 0;
+            result->internal_result = 0;
         } else {
             const auto command = AjmJobRunFlags(opcode.command_flags);
             const auto sideband = AjmJobSidebandFlags(opcode.sideband_flags);
-            const u8* job_ptr = batch_ptr + sizeof(AjmJobHeader) + opcode.is_debug * 16;
             const AjmJobBuffer* in_buffer = reinterpret_cast<const AjmJobBuffer*>(job_ptr);
+            const AjmJobBuffer* out_buffer = reinterpret_cast<const AjmJobBuffer*>(job_ptr + 24);
+            job_ptr += 24;
+
             LOG_INFO(Lib_Ajm, "Decode job cmd = {}, sideband = {}, in_addr = {}, in_size = {}",
                      magic_enum::enum_name(command), magic_enum::enum_name(sideband),
                      fmt::ptr(in_buffer->buffer), in_buffer->buf_size);
-            dev->mp3dec.Decode(in_buffer->buffer, in_buffer->buf_size);
+
+            // Decode as much of the input bitstream as possible.
+            auto* instance = dev->instances[opcode.instance].get();
+            const auto [in_remain, out_remain, num_frames] =
+                instance->Decode(in_buffer->buffer, in_buffer->buf_size,
+                                 out_buffer->buffer, out_buffer->buf_size);
+
+            // Write sideband structures.
+            auto* sideband_ptr = *reinterpret_cast<u8* const *>(job_ptr + 8);
+            auto* result = reinterpret_cast<AjmSidebandResult*>(sideband_ptr);
+            result->result = 0;
+            result->internal_result = 0;
+            sideband_ptr += sizeof(AjmSidebandResult);
+
+            // Check sideband flags
+            if (True(sideband & AjmJobSidebandFlags::Stream)) {
+                auto* stream = reinterpret_cast<AjmSidebandStream*>(sideband_ptr);
+                stream->input_consumed = in_buffer->buf_size - in_remain;
+                stream->output_written = out_buffer->buf_size - out_remain;
+                stream->total_decoded_samples = instance->decoded_samples;
+                sideband_ptr += sizeof(AjmSidebandStream);
+            }
+            if (True(command & AjmJobRunFlags::MultipleFrames)) {
+                auto* mframe = reinterpret_cast<AjmSidebandMFrame*>(sideband_ptr);
+                mframe->num_frames = num_frames;
+                sideband_ptr += sizeof(AjmSidebandMFrame);
+            }
         }
 
         batch_ptr += sizeof(AjmJobHeader) + header.job_size;
     }
+    static int batch_id = 0;
+    *out_batch_id = ++batch_id;
 
     return ORBIS_OK;
 }
@@ -259,7 +297,7 @@ int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* buf, u32 stream_size, int pars
     if ((buf[0] & SYNCWORDH) != SYNCWORDH || (buf[1] & SYNCWORDL) != SYNCWORDL) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
-    return ParseMp3Header(buf, stream_size, parse_ofl, frame);
+    return AjmMp3Decoder::ParseMp3Header(buf, stream_size, parse_ofl, frame);
 }
 
 int PS4_SYSV_ABI sceAjmFinalize() {
@@ -282,7 +320,8 @@ int PS4_SYSV_ABI sceAjmInstanceCodecType() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags, u32* instance) {
+int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags,
+                                      u32* out_instance) {
     if (codec_type >= AjmCodecType::Max) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
@@ -297,8 +336,12 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmI
     }
     const u32 index = dev->free_instances[dev->curr_cursor++];
     dev->curr_cursor %= MaxInstances;
-    dev->instances[index].codec_type = codec_type;
-    *instance = index;
+    auto instance = std::make_unique<AjmMp3Decoder>();
+    instance->index = index;
+    instance->codec_type = codec_type;
+    instance->num_channels = flags.channels;
+    dev->instances[index] = std::move(instance);
+    *out_instance = index;
     LOG_INFO(Lib_Ajm, "called codec_type = {}, flags = {:#x}, instance = {}",
              magic_enum::enum_name(codec_type), flags.raw, index);
 
@@ -315,6 +358,7 @@ int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context, u32 instance) {
         dev->free_instances[dev->release_cursor] = instance;
         dev->release_cursor = next_slot;
     }
+    dev->instances[instance].reset();
     return ORBIS_OK;
 }
 

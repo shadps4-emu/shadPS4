@@ -118,6 +118,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
       image{instance->GetDevice(), instance->GetAllocator()}, cpu_addr{info.guest_address},
       cpu_addr_end{cpu_addr + info.guest_size_bytes} {
     mip_hashes.resize(info.resources.levels);
+    if (info.size.height == 1620) {
+        printf("bad\n");
+    }
     ASSERT(info.pixel_format != vk::Format::eUndefined);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested

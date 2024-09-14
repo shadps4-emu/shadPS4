@@ -365,7 +365,7 @@ void EmitContext::DefineBuffers() {
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
         const Id data_type = (*data_types)[1];
         const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(sharp.NumDwords()))};
+                                              : TypeArray(data_type, ConstU32(16384U))};
         const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
 
         const auto storage_class =
@@ -501,6 +501,8 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Color2DArray:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, sampled, format);
+    case AmdGpu::ImageType::Color2DMsaa:
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, true, sampled, format);
     case AmdGpu::ImageType::Color3D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Cube:
@@ -528,6 +530,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
+            .is_storage = image_desc.is_storage,
         });
         interfaces.push_back(id);
         ++binding;

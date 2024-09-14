@@ -452,7 +452,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         boost::container::static_vector<AmdGpu::Image, 32> tsharps;
         for (const auto& image_desc : stage->images) {
             const auto tsharp = image_desc.GetSharp(*stage);
-            if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
+            if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && tsharp.data_format != 15) {
                 tsharps.emplace_back(tsharp);
                 VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
                 VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};

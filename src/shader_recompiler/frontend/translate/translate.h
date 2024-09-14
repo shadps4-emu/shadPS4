@@ -132,7 +132,7 @@ public:
     void V_ADD_F32(const GcnInst& inst);
     void V_CVT_OFF_F32_I4(const GcnInst& inst);
     void V_MED3_F32(const GcnInst& inst);
-    void V_MED3_I32(const GcnInst& inst);
+    void V_MED3_I32(bool is_signed, const GcnInst& inst);
     void V_FLOOR_F32(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);

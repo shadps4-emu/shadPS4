@@ -5,7 +5,6 @@
 
 #include "common/types.h"
 #include "common/enum.h"
-#include "core/libraries/ajm/ajm_mp3.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -34,7 +33,7 @@ struct AjmBuffer {
 struct AjmJobBuffer {
     u32 props;
     u32 buf_size;
-    const u8* buffer;
+    u8* buffer;
 };
 
 struct AjmInOutJob {
@@ -55,6 +54,7 @@ enum class AjmJobRunFlags : u32 {
     GetCodecInfo = 1 << 0,
     MultipleFrames = 1 << 1,
 };
+DECLARE_ENUM_FLAG_OPERATORS(AjmJobRunFlags)
 
 enum class AjmJobSidebandFlags : u32 {
     GaplessDecode = 1 << 0,
@@ -106,14 +106,6 @@ struct AjmMultiJob {
     };
 };
 
-enum class AjmCodecType : u32 {
-    Mp3Dec = 0,
-    At9Dec = 1,
-    M4aacDec = 2,
-    Max = 23,
-};
-static constexpr u32 NumAjmCodecs = u32(AjmCodecType::Max);
-
 union AjmFlags {
     u64 raw;
     struct {
@@ -136,10 +128,13 @@ union AjmInstanceFlags {
     };
 };
 
+struct AjmDecMp3ParseFrame;
+enum class AjmCodecType : u32;
+
 int PS4_SYSV_ABI sceAjmBatchCancel();
 int PS4_SYSV_ABI sceAjmBatchErrorDump();
 void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(AjmSingleJob* batch_pos, u32 instance, AjmFlags flags,
-                                                 const u8* in_buffer, u32 in_size, u8* out_buffer,
+                                                 u8* in_buffer, u32 in_size, u8* out_buffer,
                                                  u32 out_size, const void* ret_addr);
 int PS4_SYSV_ABI sceAjmBatchJobInlineBuffer();
 int PS4_SYSV_ABI sceAjmBatchJobRunBufferRa();

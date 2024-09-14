@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <fstream>
 #include "common/types.h"
+#include "core/libraries/ajm/ajm_instance.h"
 
 extern "C" {
 struct AVCodec;
@@ -55,28 +57,28 @@ struct AjmSidebandDecMp3CodecInfo {
     u16 reserved[3];
 };
 
-struct AjmSidebandResult {
-    s32	result;
-    s32	internal_result;
-};
-
 struct AjmDecMp3GetCodecInfoResult {
     AjmSidebandResult result;
     AjmSidebandDecMp3CodecInfo codec_info;
 };
 
-struct MP3Decoder {
+struct AjmMp3Decoder : public AjmInstance {
     const AVCodec* codec = nullptr;
     AVCodecContext* c = nullptr;
     AVCodecParserContext* parser = nullptr;
+    u32 index;
+    std::ofstream file;
 
-    explicit MP3Decoder();
-    ~MP3Decoder();
+    explicit AjmMp3Decoder();
+    ~AjmMp3Decoder() override;
 
-    void Decode(const u8* in_buf, u32 frame_size);
+    void Reset() override;
+
+    std::tuple<u32, u32, u32> Decode(const u8* in_buf, u32 in_size,
+                                     u8* out_buf, u32 out_size) override;
+
+    static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
+                              AjmDecMp3ParseFrame* frame);
 };
-
-int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
-                   AjmDecMp3ParseFrame* frame);
 
 } // namespace Libraries::Ajm

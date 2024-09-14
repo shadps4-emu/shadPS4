@@ -149,7 +149,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .baseMipLevel = info.range.base.level,
             .levelCount = info.range.extent.levels - info.range.base.level,
             .baseArrayLayer = info.range.base.layer,
-            .layerCount = info.range.extent.layers - info.range.base.layer,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
     image_view = instance.GetDevice().createImageViewUnique(image_view_ci);

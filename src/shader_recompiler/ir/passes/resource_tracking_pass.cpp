@@ -200,9 +200,10 @@ public:
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
             return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset && desc.type == existing.type &&
-                   desc.is_storage == existing.is_storage;
+                   desc.dword_offset == existing.dword_offset;
         })};
+        auto& image = image_resources[index];
+        image.is_storage |= desc.is_storage;
         return index;
     }
 

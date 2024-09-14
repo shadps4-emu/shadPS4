@@ -46,6 +46,14 @@ Liverpool::~Liverpool() {
 void Liverpool::Process(std::stop_token stoken) {
     Common::SetCurrentThreadName("GPU_CommandProcessor");
 
+    for (int i = 0; i < NumTotalQueues; i++) {
+        GpuQueue& queue = mapped_queues[i];
+        std::scoped_lock<std::mutex> lk(queue.m_access);
+
+        queue.ccb_buffer.reserve(1024 * 1024);
+        queue.dcb_buffer.reserve(1024 * 1024);
+    }
+
     while (!stoken.stop_requested()) {
         {
             std::unique_lock lk{submit_mutex};
@@ -97,8 +105,8 @@ void Liverpool::Process(std::stop_token stoken) {
                 std::scoped_lock lock{queue.m_access};
                 queue.submits.pop();
 
-                --num_submits;
                 std::scoped_lock lock2{submit_mutex};
+                --num_submits;
                 submit_cv.notify_all();
             }
         }
@@ -462,6 +470,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 mapped_queues[GfxQueueId].indirect_args_addr = set_base->Address<u64>();
                 break;
             }
+            case PM4ItOpcode::SetPredication:
             case PM4ItOpcode::EventWrite: {
                 // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
                 break;
@@ -601,6 +610,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
             std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
                         (count - 1) * sizeof(u32));
+            break;
+        }
+        case PM4ItOpcode::DmaData: {
             break;
         }
         case PM4ItOpcode::DispatchDirect: {
