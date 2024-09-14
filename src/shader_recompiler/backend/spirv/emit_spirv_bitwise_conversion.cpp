@@ -14,8 +14,8 @@ Id EmitBitCastU32F32(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.U32[1], value);
 }
 
-void EmitBitCastU64F64(EmitContext&) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+Id EmitBitCastU64F64(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.U64, value);
 }
 
 Id EmitBitCastF16U16(EmitContext& ctx, Id value) {
@@ -36,6 +36,10 @@ Id EmitPackUint2x32(EmitContext& ctx, Id value) {
 
 Id EmitUnpackUint2x32(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.U32[2], value);
+}
+
+Id EmitPackFloat2x32(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.F64[1], value);
 }
 
 Id EmitPackFloat2x16(EmitContext& ctx, Id value) {

@@ -141,6 +141,7 @@ public:
     void V_FMA_F32(const GcnInst& inst);
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_MAX_F32(const GcnInst& inst, bool is_legacy = false);
+    void V_MAX_F64(const GcnInst& inst);
     void V_MAX_U32(bool is_signed, const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);

@@ -168,6 +168,7 @@ struct Info {
     bool uses_group_ballot{};
     bool uses_shared{};
     bool uses_fp16{};
+    bool uses_fp64{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
 
