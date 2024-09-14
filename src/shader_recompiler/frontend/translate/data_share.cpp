@@ -10,13 +10,15 @@ void Translator::EmitDataShare(const GcnInst& inst) {
     case Opcode::DS_SWIZZLE_B32:
         return DS_SWIZZLE_B32(inst);
     case Opcode::DS_READ_B32:
-        return DS_READ(32, false, false, inst);
+        return DS_READ(32, false, false, false, inst);
+    case Opcode::DS_READ2ST64_B32:
+        return DS_READ(32, false, true, true, inst);
     case Opcode::DS_READ_B64:
-        return DS_READ(64, false, false, inst);
+        return DS_READ(64, false, false, false, inst);
     case Opcode::DS_READ2_B32:
-        return DS_READ(32, false, true, inst);
+        return DS_READ(32, false, true, false, inst);
     case Opcode::DS_READ2_B64:
-        return DS_READ(64, false, true, inst);
+        return DS_READ(64, false, true, false, inst);
     case Opcode::DS_WRITE_B32:
         return DS_WRITE(32, false, false, false, inst);
     case Opcode::DS_WRITE2ST64_B32:
@@ -65,12 +67,13 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.QuadShuffle(src, index));
 }
 
-void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, const GcnInst& inst) {
+void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64,
+                         const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     IR::VectorReg dst_reg{inst.dst[0].code};
     if (is_pair) {
         // Pair loads are either 32 or 64-bit
-        const u32 adj = bit_size == 32 ? 4 : 8;
+        const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
         const IR::Value data0 = ir.LoadShared(bit_size, is_signed, addr0);
         if (bit_size == 32) {
