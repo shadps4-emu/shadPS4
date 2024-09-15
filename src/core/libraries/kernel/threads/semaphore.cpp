@@ -34,10 +34,14 @@ public:
 
         // Create waiting thread object and add it into the list of waiters.
         WaitingThread waiter{need_count, is_fifo};
-        AddWaiter(&waiter);
+        const auto it = AddWaiter(&waiter);
 
         // Perform the wait.
-        return waiter.Wait(lk, timeout);
+        const s32 result = waiter.Wait(lk, timeout);
+        if (result == SCE_KERNEL_ERROR_ETIMEDOUT) {
+            wait_list.erase(it);
+        }
+        return result;
     }
 
     bool Signal(s32 signal_count) {
@@ -129,11 +133,13 @@ public:
         }
     };
 
-    void AddWaiter(WaitingThread* waiter) {
+    using WaitList = std::list<WaitingThread*>;
+
+    WaitList::iterator AddWaiter(WaitingThread* waiter) {
         // Insert at the end of the list for FIFO order.
         if (is_fifo) {
             wait_list.push_back(waiter);
-            return;
+            return --wait_list.end();
         }
         // Find the first with priority less then us and insert right before it.
         auto it = wait_list.begin();
@@ -141,9 +147,10 @@ public:
             it++;
         }
         wait_list.insert(it, waiter);
+        return it;
     }
 
-    std::list<WaitingThread*> wait_list;
+    WaitList wait_list;
     std::string name;
     std::atomic<s32> token_count;
     std::mutex mutex;
