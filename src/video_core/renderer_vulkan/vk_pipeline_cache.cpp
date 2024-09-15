@@ -197,10 +197,13 @@ bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
 }
 
 bool PipelineCache::RefreshGraphicsKey() {
+    std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
+
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
     key.depth = regs.depth_control;
+    key.depth.raw &= Liverpool::DepthControl::Mask();
     key.depth.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
                                         !regs.depth_render_control.depth_clear_enable);
     key.depth_bounds_min = regs.depth_bounds_min;
@@ -217,6 +220,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     key.depth_bias_clamp = regs.poly_offset.depth_bias;
     key.stencil = regs.stencil_control;
+    key.stencil.raw &= Liverpool::StencilControl::Mask();
     key.stencil_ref_front = regs.stencil_ref_front;
     key.stencil_ref_back = regs.stencil_ref_back;
     key.prim_type = regs.primitive_type;
@@ -277,7 +281,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);
         key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
-        key.cb_shader_mask = regs.color_shader_mask;
+        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
 
         ++remapped_cb;
     }

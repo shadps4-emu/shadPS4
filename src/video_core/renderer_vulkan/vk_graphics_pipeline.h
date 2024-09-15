@@ -37,7 +37,7 @@ struct GraphicsPipelineKey {
     float depth_bias_slope_factor;
     float depth_bias_clamp;
     u32 depth_bias_enable;
-    u32 num_samples = 1;
+    u32 num_samples;
     Liverpool::StencilControl stencil;
     Liverpool::StencilRefMask stencil_ref_front;
     Liverpool::StencilRefMask stencil_ref_back;
@@ -48,7 +48,7 @@ struct GraphicsPipelineKey {
     Liverpool::CullMode cull_mode;
     Liverpool::FrontFace front_face;
     Liverpool::ClipSpace clip_space;
-    Liverpool::ColorBufferMask cb_shader_mask{};
+    Liverpool::ColorBufferMask cb_shader_mask;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
 

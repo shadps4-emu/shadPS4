@@ -305,6 +305,13 @@ struct Liverpool {
         BitField<20, 3, CompareFunc> stencil_bf_func;
         BitField<30, 1, u32> enable_color_writes_on_depth_fail;
         BitField<31, 1, u32> disable_color_writes_on_depth_pass;
+
+        static constexpr u32 Mask() {
+            return decltype(stencil_enable)::mask | decltype(depth_enable)::mask |
+                   decltype(depth_write_enable)::mask | decltype(depth_bounds_enable)::mask |
+                   decltype(depth_func)::mask | decltype(backface_enable)::mask |
+                   decltype(stencil_ref_func)::mask | decltype(stencil_bf_func)::mask;
+        }
     };
 
     enum class StencilFunc : u32 {
@@ -334,6 +341,11 @@ struct Liverpool {
         BitField<12, 4, StencilFunc> stencil_fail_back;
         BitField<16, 4, StencilFunc> stencil_zpass_back;
         BitField<20, 4, StencilFunc> stencil_zfail_back;
+        BitField<24, 8, u32> padding;
+
+        static constexpr u32 Mask() {
+            return ~decltype(padding)::mask;
+        }
     };
 
     union StencilRefMask {
@@ -505,6 +517,11 @@ struct Liverpool {
 
         u32 GetMask(int buf_id) const {
             return (raw >> (buf_id * 4)) & 0xfu;
+        }
+
+        void SetMask(int buf_id, u32 mask) {
+            raw &= ~(0xf << (buf_id * 4));
+            raw |= (mask << (buf_id * 4));
         }
     };
 
