@@ -74,8 +74,10 @@ private:
     Shader::Pools pools;
     tsl::robin_map<size_t, Program*> program_cache;
     Common::ObjectPool<Program> program_pool;
-    tsl::robin_map<size_t, std::unique_ptr<ComputePipeline>> compute_pipelines;
-    tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    Common::ObjectPool<GraphicsPipeline> graphics_pipeline_pool;
+    Common::ObjectPool<ComputePipeline> compute_pipeline_pool;
+    tsl::robin_map<size_t, ComputePipeline*> compute_pipelines;
+    tsl::robin_map<GraphicsPipelineKey, GraphicsPipeline*> graphics_pipelines;
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
     GraphicsPipelineKey graphics_key{};

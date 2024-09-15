@@ -167,11 +167,10 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = std::make_unique<GraphicsPipeline>(
-            instance, scheduler, desc_heap, graphics_key, *pipeline_cache, infos, modules);
+        it.value() = graphics_pipeline_pool.Create(instance, scheduler, desc_heap, graphics_key,
+                                                   *pipeline_cache, infos, modules);
     }
-    const GraphicsPipeline* pipeline = it->second.get();
-    return pipeline;
+    return it->second;
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
@@ -180,11 +179,10 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = std::make_unique<ComputePipeline>(
-            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
+        it.value() = compute_pipeline_pool.Create(instance, scheduler, desc_heap, *pipeline_cache,
+                                                  compute_key, *infos[0], modules[0]);
     }
-    const ComputePipeline* pipeline = it->second.get();
-    return pipeline;
+    return it->second;
 }
 
 bool ShouldSkipShader(u64 shader_hash, const char* shader_type) {
@@ -218,7 +216,6 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.depth_stencil.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
     }
     key.stencil = regs.stencil_control;
-    key.stencil.raw &= Liverpool::StencilControl::Mask();
 
     if (db.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid) {
         key.stencil_format = key.depth_format;
