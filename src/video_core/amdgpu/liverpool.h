@@ -473,6 +473,11 @@ struct Liverpool {
         CullMode CullingMode() const {
             return static_cast<CullMode>(cull_front | cull_back << 1);
         }
+
+        bool NeedsBias() const {
+            return enable_polygon_offset_back || enable_polygon_offset_front ||
+                   enable_polygon_offset_para;
+        }
     };
 
     union VsOutputConfig {
@@ -505,6 +510,11 @@ struct Liverpool {
 
         u32 GetMask(int buf_id) const {
             return (raw >> (buf_id * 4)) & 0xfu;
+        }
+
+        void SetMask(int buf_id, u32 mask) {
+            raw &= ~(0xf << (buf_id * 4));
+            raw |= (mask << (buf_id * 4));
         }
     };
 

@@ -654,7 +654,7 @@ int PS4_SYSV_ABI scePthreadCondInit(ScePthreadCond* cond, const ScePthreadCondat
     int result = pthread_cond_init(&(*cond)->cond, &(*attr)->cond_attr);
 
     if (name != nullptr) {
-        LOG_INFO(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
+        LOG_TRACE(Kernel_Pthread, "name={}, result={}", (*cond)->name, result);
     }
 
     switch (result) {

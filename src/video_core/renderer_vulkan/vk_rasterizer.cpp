@@ -297,6 +297,43 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
         cmdbuf.setColorWriteEnableEXT(write_ens);
         cmdbuf.setColorWriteMaskEXT(0, write_masks);
     }
+    if (regs.depth_control.depth_bounds_enable) {
+        cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
+    }
+    if (regs.polygon_control.NeedsBias()) {
+        if (regs.polygon_control.enable_polygon_offset_front) {
+            cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.front_scale);
+        } else {
+            cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.back_scale);
+        }
+    }
+    if (regs.depth_control.stencil_enable) {
+        const auto front = regs.stencil_ref_front;
+        const auto back = regs.stencil_ref_back;
+        if (front.stencil_test_val == back.stencil_test_val) {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_test_val);
+        } else {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFront, front.stencil_test_val);
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eBack, back.stencil_test_val);
+        }
+        if (front.stencil_write_mask == back.stencil_write_mask) {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_write_mask);
+        } else {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFront, front.stencil_write_mask);
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eBack, back.stencil_write_mask);
+        }
+        if (front.stencil_mask == back.stencil_mask) {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                         front.stencil_mask);
+        } else {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFront, front.stencil_mask);
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eBack, back.stencil_mask);
+        }
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {
