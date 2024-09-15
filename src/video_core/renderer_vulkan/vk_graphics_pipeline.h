@@ -31,16 +31,9 @@ struct GraphicsPipelineKey {
     vk::Format stencil_format;
 
     Liverpool::DepthControl depth_stencil;
-    float depth_bounds_min;
-    float depth_bounds_max;
-    float depth_bias_const_factor;
-    float depth_bias_slope_factor;
-    float depth_bias_clamp;
     u32 depth_bias_enable;
     u32 num_samples;
     Liverpool::StencilControl stencil;
-    Liverpool::StencilRefMask stencil_ref_front;
-    Liverpool::StencilRefMask stencil_ref_back;
     Liverpool::PrimitiveType prim_type;
     u32 enable_primitive_restart;
     u32 primitive_restart_index;

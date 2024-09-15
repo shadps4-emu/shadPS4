@@ -309,6 +309,31 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
                                 regs.poly_offset.back_scale);
         }
     }
+    if (regs.depth_control.stencil_enable) {
+        const auto front = regs.stencil_ref_front;
+        const auto back = regs.stencil_ref_back;
+        if (front.stencil_test_val == back.stencil_test_val) {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_test_val);
+        } else {
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFront, front.stencil_test_val);
+            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eBack, back.stencil_test_val);
+        }
+        if (front.stencil_write_mask == back.stencil_write_mask) {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                       front.stencil_write_mask);
+        } else {
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFront, front.stencil_write_mask);
+            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eBack, back.stencil_write_mask);
+        }
+        if (front.stencil_mask == back.stencil_mask) {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
+                                         front.stencil_mask);
+        } else {
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFront, front.stencil_mask);
+            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eBack, back.stencil_mask);
+        }
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {

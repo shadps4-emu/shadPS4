@@ -95,9 +95,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = bool(key.depth_bias_enable),
-        .depthBiasConstantFactor = key.depth_bias_const_factor,
-        .depthBiasClamp = key.depth_bias_clamp,
-        .depthBiasSlopeFactor = key.depth_bias_slope_factor,
         .lineWidth = 1.0f,
     };
 
@@ -134,9 +131,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewport,       vk::DynamicState::eScissor,
-        vk::DynamicState::eBlendConstants, vk::DynamicState::eDepthBounds,
-        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eViewport,           vk::DynamicState::eScissor,
+        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthBounds,
+        vk::DynamicState::eDepthBias,          vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
     };
 
     if (instance.IsColorWriteEnableSupported()) {
@@ -163,9 +161,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_front),
             .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_front),
             .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.stencil_ref_func),
-            .compareMask = key.stencil_ref_front.stencil_mask,
-            .writeMask = key.stencil_ref_front.stencil_write_mask,
-            .reference = key.stencil_ref_front.stencil_test_val,
         },
         .back{
             .failOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
@@ -180,12 +175,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.backface_enable
                                                       ? key.depth_stencil.stencil_bf_func.Value()
                                                       : key.depth_stencil.stencil_ref_func.Value()),
-            .compareMask = key.stencil_ref_back.stencil_mask,
-            .writeMask = key.stencil_ref_back.stencil_write_mask,
-            .reference = key.stencil_ref_back.stencil_test_val,
         },
-        .minDepthBounds = key.depth_bounds_min,
-        .maxDepthBounds = key.depth_bounds_max,
     };
 
     auto stage = u32(Shader::Stage::Vertex);
