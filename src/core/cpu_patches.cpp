@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <Zydis/Zydis.h>
 #include <xbyak/xbyak.h>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/types.h"
+#include "core/signals.h"
 #include "core/tls.h"
 #include "cpu_patches.h"
 
@@ -534,7 +538,7 @@ static bool FilterRosetta2Only(const ZydisDecodedOperand*) {
     return ret;
 }
 
-#endif // __APPLE__
+#else // __APPLE__
 
 static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
     const auto& dst_op = operands[0];
@@ -580,6 +584,8 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 #endif
 }
 
+#endif // __APPLE__
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
 using InstructionGenerator = void (*)(const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
@@ -615,64 +621,154 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
 #endif
 };
 
-void PatchInstructions(u64 segment_addr, u64 segment_size, Xbyak::CodeGenerator& c) {
-    if (Patches.empty()) {
-        // Nothing to patch on this platform.
-        return;
+static std::once_flag init_flag;
+static ZydisDecoder instr_decoder;
+
+struct PatchModule {
+    /// Mutex controlling access to module code regions.
+    std::mutex mutex{};
+
+    /// Start of the module.
+    u8* start;
+
+    /// End of the module.
+    u8* end;
+
+    /// Tracker for patched code locations.
+    std::set<u8*> patched;
+
+    /// Code generator for patching the module.
+    Xbyak::CodeGenerator patch_gen;
+
+    /// Code generator for writing trampoline patches.
+    Xbyak::CodeGenerator trampoline_gen;
+
+    PatchModule(u8* module_ptr, const u64 module_size, u8* trampoline_ptr,
+                const u64 trampoline_size)
+        : start(module_ptr), end(module_ptr + module_size), patch_gen(module_size, module_ptr),
+          trampoline_gen(trampoline_size, trampoline_ptr) {}
+};
+static std::map<u64, PatchModule> modules;
+
+static PatchModule* GetModule(const void* ptr) {
+    auto upper_bound = modules.upper_bound(reinterpret_cast<u64>(ptr));
+    if (upper_bound == modules.begin()) {
+        return nullptr;
+    }
+    return &(std::prev(upper_bound)->second);
+}
+
+static bool TryPatch(void* code_address) {
+    auto* code = static_cast<u8*>(code_address);
+    auto* module = GetModule(code);
+    if (module == nullptr) {
+        return false;
     }
 
-    ZydisDecoder instr_decoder;
+    std::unique_lock lock{module->mutex};
+
+    // Return early if already patched, in case multiple threads signaled at the same time.
+    if (std::ranges::find(module->patched, code) != module->patched.end()) {
+        return true;
+    }
+
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    ZydisDecoderInit(&instr_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
+    const auto status =
+        ZydisDecoderDecodeFull(&instr_decoder, code, module->end - code, &instruction, operands);
+    if (!ZYAN_SUCCESS(status)) {
+        return false;
+    }
 
-    u8* code = reinterpret_cast<u8*>(segment_addr);
-    u8* end = code + segment_size;
-    while (code < end) {
-        ZyanStatus status =
-            ZydisDecoderDecodeFull(&instr_decoder, code, end - code, &instruction, operands);
-        if (!ZYAN_SUCCESS(status)) {
-            code++;
-            continue;
-        }
+    if (Patches.contains(instruction.mnemonic)) {
+        const auto& patch_info = Patches.at(instruction.mnemonic);
+        if (patch_info.filter(operands)) {
+            auto& patch_gen = module->patch_gen;
 
-        if (Patches.contains(instruction.mnemonic)) {
-            auto patch_info = Patches.at(instruction.mnemonic);
-            if (patch_info.filter(operands)) {
-                auto patch_gen = Xbyak::CodeGenerator(instruction.length, code);
+            // Reset state and move to current code position.
+            patch_gen.reset();
+            patch_gen.setSize(code - patch_gen.getCode());
 
-                if (patch_info.trampoline) {
-                    const auto trampoline_ptr = c.getCurr();
+            if (patch_info.trampoline) {
+                auto& trampoline_gen = module->trampoline_gen;
+                const auto trampoline_ptr = trampoline_gen.getCurr();
 
-                    patch_info.generator(operands, c);
+                patch_info.generator(operands, trampoline_gen);
 
-                    // Return to the following instruction at the end of the trampoline.
-                    c.jmp(code + instruction.length);
+                // Return to the following instruction at the end of the trampoline.
+                trampoline_gen.jmp(code + instruction.length);
 
-                    // Replace instruction with near jump to the trampoline.
-                    patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
-                } else {
-                    patch_info.generator(operands, patch_gen);
-                }
+                // Replace instruction with near jump to the trampoline.
+                patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
+            } else {
+                patch_info.generator(operands, patch_gen);
+            }
 
-                const auto patch_size = patch_gen.getCurr() - code;
-                if (patch_size > 0) {
-                    ASSERT_MSG(instruction.length >= patch_size,
-                               "Instruction {} with length {} is too short to replace at: {}",
-                               ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
-                               fmt::ptr(code));
+            const auto patch_size = patch_gen.getCurr() - code;
+            if (patch_size > 0) {
+                ASSERT_MSG(instruction.length >= patch_size,
+                           "Instruction {} with length {} is too short to replace at: {}",
+                           ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
+                           fmt::ptr(code));
 
-                    // Fill remaining space with nops.
-                    patch_gen.nop(instruction.length - patch_size);
+                // Fill remaining space with nops.
+                patch_gen.nop(instruction.length - patch_size);
 
-                    LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
-                              ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
-                }
+                module->patched.insert(code);
+                LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
+                          ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
+                return true;
             }
         }
-
-        code += instruction.length;
     }
+
+    return false;
+}
+
+static bool PatchesAccessViolationHandler(void* code_address, void* fault_address, bool is_write) {
+    return TryPatch(code_address);
+}
+
+static bool PatchesIllegalInstructionHandler(void* code_address) {
+    return TryPatch(code_address);
+}
+
+static void PatchesInit() {
+    ZydisDecoderInit(&instr_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
+
+    if (!Patches.empty()) {
+        auto* signals = Signals::Instance();
+        // Should be called last.
+        constexpr auto priority = std::numeric_limits<u32>::max();
+        signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
+        signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
+    }
+}
+
+void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
+                         u64 trampoline_area_size) {
+    std::call_once(init_flag, PatchesInit);
+
+    const auto module_addr = reinterpret_cast<u64>(module_ptr);
+    modules.emplace(std::piecewise_construct, std::forward_as_tuple(module_addr),
+                    std::forward_as_tuple(static_cast<u8*>(module_ptr), module_size,
+                                          static_cast<u8*>(trampoline_area_ptr),
+                                          trampoline_area_size));
+}
+
+void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
+#ifdef __APPLE__
+    // HACK: For some reason patching in the signal handler at the start of a page does not work
+    // under Rosetta 2. Patch any instructions at the start of a page ahead of time.
+    if (!Patches.empty()) {
+        auto* code_page = reinterpret_cast<u8*>(Common::AlignUp(segment_addr, 0x1000));
+        const auto* end_page = code_page + Common::AlignUp(segment_size, 0x1000);
+        while (code_page < end_page) {
+            TryPatch(code_page);
+            code_page += 0x1000;
+        }
+    }
+#endif
 }
 
 } // namespace Core
