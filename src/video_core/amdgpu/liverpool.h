@@ -306,11 +306,18 @@ struct Liverpool {
         BitField<30, 1, u32> enable_color_writes_on_depth_fail;
         BitField<31, 1, u32> disable_color_writes_on_depth_pass;
 
-        static constexpr u32 Mask() {
-            return decltype(stencil_enable)::mask | decltype(depth_enable)::mask |
-                   decltype(depth_write_enable)::mask | decltype(depth_bounds_enable)::mask |
-                   decltype(depth_func)::mask | decltype(backface_enable)::mask |
-                   decltype(stencil_ref_func)::mask | decltype(stencil_bf_func)::mask;
+        constexpr u32 DepthState() const {
+            static constexpr u32 DepthMask =
+                decltype(depth_enable)::mask | decltype(depth_write_enable)::mask |
+                decltype(depth_bounds_enable)::mask | decltype(depth_func)::mask;
+            return raw & DepthMask;
+        }
+
+        constexpr u32 StencilState() const {
+            static constexpr u32 StencilMask =
+                decltype(stencil_enable)::mask | decltype(backface_enable)::mask |
+                decltype(stencil_ref_func)::mask | decltype(stencil_bf_func)::mask;
+            return raw & StencilMask;
         }
     };
 

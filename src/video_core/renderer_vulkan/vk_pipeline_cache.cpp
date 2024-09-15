@@ -208,22 +208,25 @@ bool PipelineCache::RefreshGraphicsKey() {
     if (depth_enable) {
         const bool depth_write = regs.depth_control.depth_write_enable.Value() &&
                                  !regs.depth_render_control.depth_clear_enable;
-        key.depth.depth_write_enable.Assign(depth_write);
-        key.depth = regs.depth_control;
-        key.depth.raw &= Liverpool::DepthControl::Mask();
-        key.depth_bounds_min = regs.depth_bounds_min;
-        key.depth_bounds_max = regs.depth_bounds_max;
+        key.depth_stencil.raw |= regs.depth_control.DepthState();
+        key.depth_stencil.depth_write_enable.Assign(depth_write);
+        if (key.depth_stencil.depth_bounds_enable) {
+            key.depth_bounds_min = regs.depth_bounds_min;
+            key.depth_bounds_max = regs.depth_bounds_max;
+        }
         key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
                                 regs.polygon_control.enable_polygon_offset_front ||
                                 regs.polygon_control.enable_polygon_offset_para;
-        if (regs.polygon_control.enable_polygon_offset_front) {
-            key.depth_bias_const_factor = regs.poly_offset.front_offset;
-            key.depth_bias_slope_factor = regs.poly_offset.front_scale;
-        } else {
-            key.depth_bias_const_factor = regs.poly_offset.back_offset;
-            key.depth_bias_slope_factor = regs.poly_offset.back_scale;
+        if (key.depth_bias_enable) {
+            if (regs.polygon_control.enable_polygon_offset_front) {
+                key.depth_bias_const_factor = regs.poly_offset.front_offset;
+                key.depth_bias_slope_factor = regs.poly_offset.front_scale;
+            } else {
+                key.depth_bias_const_factor = regs.poly_offset.back_offset;
+                key.depth_bias_slope_factor = regs.poly_offset.back_scale;
+            }
+            key.depth_bias_clamp = regs.poly_offset.depth_bias;
         }
-        key.depth_bias_clamp = regs.poly_offset.depth_bias;
 
         const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
 
@@ -232,14 +235,15 @@ bool PipelineCache::RefreshGraphicsKey() {
         } else {
             key.depth_format = vk::Format::eUndefined;
         }
-        if (key.depth.depth_enable) {
-            key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
+        if (regs.depth_control.depth_enable) {
+            key.depth_stencil.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
         }
     }
     const bool stencil_enable =
         regs.depth_control.stencil_enable &&
         db.stencil_info.format != Liverpool::DepthBuffer::StencilFormat::Invalid;
     if (stencil_enable) {
+        key.depth_stencil.raw |= regs.depth_control.StencilState();
         key.stencil = regs.stencil_control;
         key.stencil.raw &= Liverpool::StencilControl::Mask();
         key.stencil_ref_front = regs.stencil_ref_front;
@@ -250,8 +254,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         } else {
             key.stencil_format = vk::Format::eUndefined;
         }
-        if (key.depth.stencil_enable) {
-            key.depth.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
+        if (regs.depth_control.stencil_enable) {
+            key.depth_stencil.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
         }
     }
     key.prim_type = regs.primitive_type;

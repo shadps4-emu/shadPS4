@@ -153,33 +153,33 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth.depth_enable,
-        .depthWriteEnable = key.depth.depth_write_enable,
-        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth.depth_func),
-        .depthBoundsTestEnable = key.depth.depth_bounds_enable,
-        .stencilTestEnable = key.depth.stencil_enable,
+        .depthTestEnable = key.depth_stencil.depth_enable,
+        .depthWriteEnable = key.depth_stencil.depth_write_enable,
+        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth_stencil.depth_func),
+        .depthBoundsTestEnable = key.depth_stencil.depth_bounds_enable,
+        .stencilTestEnable = key.depth_stencil.stencil_enable,
         .front{
             .failOp = LiverpoolToVK::StencilOp(key.stencil.stencil_fail_front),
             .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_front),
             .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_front),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth.stencil_ref_func),
+            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.stencil_ref_func),
             .compareMask = key.stencil_ref_front.stencil_mask,
             .writeMask = key.stencil_ref_front.stencil_write_mask,
             .reference = key.stencil_ref_front.stencil_test_val,
         },
         .back{
-            .failOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .failOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                    ? key.stencil.stencil_fail_back.Value()
                                                    : key.stencil.stencil_fail_front.Value()),
-            .passOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .passOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                    ? key.stencil.stencil_zpass_back.Value()
                                                    : key.stencil.stencil_zpass_front.Value()),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .depthFailOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                         ? key.stencil.stencil_zfail_back.Value()
                                                         : key.stencil.stencil_zfail_front.Value()),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth.backface_enable
-                                                      ? key.depth.stencil_bf_func.Value()
-                                                      : key.depth.stencil_ref_func.Value()),
+            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.backface_enable
+                                                      ? key.depth_stencil.stencil_bf_func.Value()
+                                                      : key.depth_stencil.stencil_ref_func.Value()),
             .compareMask = key.stencil_ref_back.stencil_mask,
             .writeMask = key.stencil_ref_back.stencil_write_mask,
             .reference = key.stencil_ref_back.stencil_test_val,

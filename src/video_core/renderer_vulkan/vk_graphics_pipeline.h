@@ -30,7 +30,7 @@ struct GraphicsPipelineKey {
     vk::Format depth_format;
     vk::Format stencil_format;
 
-    Liverpool::DepthControl depth;
+    Liverpool::DepthControl depth_stencil;
     float depth_bounds_min;
     float depth_bounds_max;
     float depth_bias_const_factor;
@@ -91,7 +91,7 @@ public:
     }
 
     bool IsDepthEnabled() const {
-        return key.depth.depth_enable.Value();
+        return key.depth_stencil.depth_enable.Value();
     }
 
 private:
