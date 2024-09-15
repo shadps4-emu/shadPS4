@@ -134,9 +134,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eScissor,
-        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eViewport,       vk::DynamicState::eScissor,
+        vk::DynamicState::eBlendConstants, vk::DynamicState::eDepthBounds,
+        vk::DynamicState::eDepthBias,
     };
 
     if (instance.IsColorWriteEnableSupported()) {

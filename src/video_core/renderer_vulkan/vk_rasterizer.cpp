@@ -297,6 +297,18 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
         cmdbuf.setColorWriteEnableEXT(write_ens);
         cmdbuf.setColorWriteMaskEXT(0, write_masks);
     }
+    if (regs.depth_control.depth_bounds_enable) {
+        cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
+    }
+    if (regs.polygon_control.NeedsBias()) {
+        if (regs.polygon_control.enable_polygon_offset_front) {
+            cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.front_scale);
+        } else {
+            cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
+                                regs.poly_offset.back_scale);
+        }
+    }
 }
 
 void Rasterizer::UpdateViewportScissorState() {

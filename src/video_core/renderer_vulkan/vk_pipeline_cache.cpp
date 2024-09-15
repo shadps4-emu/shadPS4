@@ -210,26 +210,8 @@ bool PipelineCache::RefreshGraphicsKey() {
                                  !regs.depth_render_control.depth_clear_enable;
         key.depth_stencil.raw |= regs.depth_control.DepthState();
         key.depth_stencil.depth_write_enable.Assign(depth_write);
-        if (key.depth_stencil.depth_bounds_enable) {
-            key.depth_bounds_min = regs.depth_bounds_min;
-            key.depth_bounds_max = regs.depth_bounds_max;
-        }
-        key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
-                                regs.polygon_control.enable_polygon_offset_front ||
-                                regs.polygon_control.enable_polygon_offset_para;
-        if (key.depth_bias_enable) {
-            if (regs.polygon_control.enable_polygon_offset_front) {
-                key.depth_bias_const_factor = regs.poly_offset.front_offset;
-                key.depth_bias_slope_factor = regs.poly_offset.front_scale;
-            } else {
-                key.depth_bias_const_factor = regs.poly_offset.back_offset;
-                key.depth_bias_slope_factor = regs.poly_offset.back_scale;
-            }
-            key.depth_bias_clamp = regs.poly_offset.depth_bias;
-        }
 
         const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
-
         if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
             key.depth_format = ds_format;
         } else {

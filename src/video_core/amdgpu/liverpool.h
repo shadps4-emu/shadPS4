@@ -492,6 +492,11 @@ struct Liverpool {
         CullMode CullingMode() const {
             return static_cast<CullMode>(cull_front | cull_back << 1);
         }
+
+        bool NeedsBias() const {
+            return enable_polygon_offset_back || enable_polygon_offset_front ||
+                   enable_polygon_offset_para;
+        }
     };
 
     union VsOutputConfig {
