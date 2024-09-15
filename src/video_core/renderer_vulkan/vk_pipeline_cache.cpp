@@ -167,6 +167,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
+        LOG_INFO(Render_Vulkan, "New pipeline");
         it.value() = std::make_unique<GraphicsPipeline>(
             instance, scheduler, desc_heap, graphics_key, *pipeline_cache, infos, modules);
     }
