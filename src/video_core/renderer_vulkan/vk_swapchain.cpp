@@ -107,9 +107,6 @@ bool Swapchain::AcquireNextImage() {
 }
 
 void Swapchain::Present() {
-    if (needs_recreation) {
-        return;
-    }
 
     const vk::PresentInfoKHR present_info = {
         .waitSemaphoreCount = 1,
