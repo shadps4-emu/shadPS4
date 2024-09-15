@@ -210,6 +210,7 @@ bool PipelineCache::RefreshGraphicsKey() {
                                  !regs.depth_render_control.depth_clear_enable;
         key.depth_stencil.raw |= regs.depth_control.DepthState();
         key.depth_stencil.depth_write_enable.Assign(depth_write);
+        key.depth_bias_enable = regs.polygon_control.NeedsBias();
 
         const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
         if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
