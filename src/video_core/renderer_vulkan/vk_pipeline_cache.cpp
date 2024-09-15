@@ -202,27 +202,58 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    key.depth = regs.depth_control;
-    key.depth.raw &= Liverpool::DepthControl::Mask();
-    key.depth.depth_write_enable.Assign(regs.depth_control.depth_write_enable.Value() &&
-                                        !regs.depth_render_control.depth_clear_enable);
-    key.depth_bounds_min = regs.depth_bounds_min;
-    key.depth_bounds_max = regs.depth_bounds_max;
-    key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
-                            regs.polygon_control.enable_polygon_offset_front ||
-                            regs.polygon_control.enable_polygon_offset_para;
-    if (regs.polygon_control.enable_polygon_offset_front) {
-        key.depth_bias_const_factor = regs.poly_offset.front_offset;
-        key.depth_bias_slope_factor = regs.poly_offset.front_scale;
-    } else {
-        key.depth_bias_const_factor = regs.poly_offset.back_offset;
-        key.depth_bias_slope_factor = regs.poly_offset.back_scale;
+    const auto& db = regs.depth_buffer;
+    const bool depth_enable = db.Address() != 0 && regs.depth_control.depth_enable &&
+                              db.z_info.format != Liverpool::DepthBuffer::ZFormat::Invalid;
+    if (depth_enable) {
+        const bool depth_write = regs.depth_control.depth_write_enable.Value() &&
+                                 !regs.depth_render_control.depth_clear_enable;
+        key.depth.depth_write_enable.Assign(depth_write);
+        key.depth = regs.depth_control;
+        key.depth.raw &= Liverpool::DepthControl::Mask();
+        key.depth_bounds_min = regs.depth_bounds_min;
+        key.depth_bounds_max = regs.depth_bounds_max;
+        key.depth_bias_enable = regs.polygon_control.enable_polygon_offset_back ||
+                                regs.polygon_control.enable_polygon_offset_front ||
+                                regs.polygon_control.enable_polygon_offset_para;
+        if (regs.polygon_control.enable_polygon_offset_front) {
+            key.depth_bias_const_factor = regs.poly_offset.front_offset;
+            key.depth_bias_slope_factor = regs.poly_offset.front_scale;
+        } else {
+            key.depth_bias_const_factor = regs.poly_offset.back_offset;
+            key.depth_bias_slope_factor = regs.poly_offset.back_scale;
+        }
+        key.depth_bias_clamp = regs.poly_offset.depth_bias;
+
+        const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
+
+        if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
+            key.depth_format = ds_format;
+        } else {
+            key.depth_format = vk::Format::eUndefined;
+        }
+        if (key.depth.depth_enable) {
+            key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
+        }
     }
-    key.depth_bias_clamp = regs.poly_offset.depth_bias;
-    key.stencil = regs.stencil_control;
-    key.stencil.raw &= Liverpool::StencilControl::Mask();
-    key.stencil_ref_front = regs.stencil_ref_front;
-    key.stencil_ref_back = regs.stencil_ref_back;
+    const bool stencil_enable =
+        regs.depth_control.stencil_enable &&
+        db.stencil_info.format != Liverpool::DepthBuffer::StencilFormat::Invalid;
+    if (stencil_enable) {
+        key.stencil = regs.stencil_control;
+        key.stencil.raw &= Liverpool::StencilControl::Mask();
+        key.stencil_ref_front = regs.stencil_ref_front;
+        key.stencil_ref_back = regs.stencil_ref_back;
+
+        if (db.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid) {
+            key.stencil_format = key.depth_format;
+        } else {
+            key.stencil_format = vk::Format::eUndefined;
+        }
+        if (key.depth.stencil_enable) {
+            key.depth.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
+        }
+    }
     key.prim_type = regs.primitive_type;
     key.enable_primitive_restart = regs.enable_primitive_restart & 1;
     key.primitive_restart_index = regs.primitive_restart_index;
@@ -231,27 +262,6 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.clip_space = regs.clipper_control.clip_space;
     key.front_face = regs.polygon_control.front_face;
     key.num_samples = regs.aa_config.NumSamples();
-
-    const auto& db = regs.depth_buffer;
-    const auto ds_format = LiverpoolToVK::DepthFormat(db.z_info.format, db.stencil_info.format);
-
-    if (db.z_info.format != AmdGpu::Liverpool::DepthBuffer::ZFormat::Invalid) {
-        key.depth_format = ds_format;
-    } else {
-        key.depth_format = vk::Format::eUndefined;
-    }
-    if (key.depth.depth_enable) {
-        key.depth.depth_enable.Assign(key.depth_format != vk::Format::eUndefined);
-    }
-
-    if (db.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid) {
-        key.stencil_format = key.depth_format;
-    } else {
-        key.stencil_format = vk::Format::eUndefined;
-    }
-    if (key.depth.stencil_enable) {
-        key.depth.stencil_enable.Assign(key.stencil_format != vk::Format::eUndefined);
-    }
 
     const auto skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
