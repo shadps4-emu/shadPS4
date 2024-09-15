@@ -262,6 +262,12 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 }
 
 void RendererVulkan::Present(Frame* frame) {
+    // Recreate the swapchain if the window was resized.
+    if (window.getWidth() != swapchain.GetExtent().width ||
+        window.getHeight() != swapchain.GetExtent().height) {
+        swapchain.Recreate(window.getWidth(), window.getHeight());
+    }
+    
     ImGui::Core::NewFrame();
 
     swapchain.AcquireNextImage();
