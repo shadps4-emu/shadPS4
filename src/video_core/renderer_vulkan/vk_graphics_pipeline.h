@@ -100,7 +100,6 @@ private:
     std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
     bool uses_push_descriptors{};
-    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
 };
 
 } // namespace Vulkan

@@ -292,6 +292,7 @@ GraphicsPipeline::~GraphicsPipeline() = default;
 
 void GraphicsPipeline::BuildDescSetLayout() {
     u32 binding{};
+    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
