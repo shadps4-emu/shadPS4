@@ -629,6 +629,10 @@ Value IREmitter::UnpackUint2x32(const U64& value) {
     return Inst<Value>(Opcode::UnpackUint2x32, value);
 }
 
+F64 IREmitter::PackFloat2x32(const Value& vector) {
+    return Inst<F64>(Opcode::PackFloat2x32, vector);
+}
+
 U32 IREmitter::PackFloat2x16(const Value& vector) {
     return Inst<U32>(Opcode::PackFloat2x16, vector);
 }

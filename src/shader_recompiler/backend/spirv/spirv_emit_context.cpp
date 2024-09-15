@@ -85,6 +85,9 @@ void EmitContext::DefineArithmeticTypes() {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");
     }
+    if (info.uses_fp64) {
+        F64[1] = Name(TypeFloat(64), "f64_id");
+    }
     F32[1] = Name(TypeFloat(32), "f32_id");
     S32[1] = Name(TypeSInt(32), "i32_id");
     U32[1] = Name(TypeUInt(32), "u32_id");
@@ -93,6 +96,9 @@ void EmitContext::DefineArithmeticTypes() {
     for (u32 i = 2; i <= 4; i++) {
         if (info.uses_fp16) {
             F16[i] = Name(TypeVector(F16[1], i), fmt::format("f16vec{}_id", i));
+        }
+        if (info.uses_fp64) {
+            F64[i] = Name(TypeVector(F64[1], i), fmt::format("f64vec{}_id", i));
         }
         F32[i] = Name(TypeVector(F32[1], i), fmt::format("f32vec{}_id", i));
         S32[i] = Name(TypeVector(S32[1], i), fmt::format("i32vec{}_id", i));

@@ -142,6 +142,8 @@ public:
     [[nodiscard]] U64 PackUint2x32(const Value& vector);
     [[nodiscard]] Value UnpackUint2x32(const U64& value);
 
+    [[nodiscard]] F64 PackFloat2x32(const Value& vector);
+
     [[nodiscard]] U32 PackFloat2x16(const Value& vector);
     [[nodiscard]] Value UnpackFloat2x16(const U32& value);
 

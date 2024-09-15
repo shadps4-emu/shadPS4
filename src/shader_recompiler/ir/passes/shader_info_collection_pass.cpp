@@ -27,6 +27,9 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::BitCastF16U16:
         info.uses_fp16 = true;
         break;
+    case IR::Opcode::BitCastU64F64:
+        info.uses_fp64 = true;
+        break;
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
