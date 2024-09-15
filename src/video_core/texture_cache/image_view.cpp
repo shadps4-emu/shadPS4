@@ -79,6 +79,10 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexc
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level + 1;
     range.extent.layers = image.last_array + 1;
+    if (type == vk::ImageViewType::e3D && range.extent.layers > 1) {
+        // Some games pass incorrect layer count for 3D textures so we need to fixup it
+        range.extent.layers = 1;
+    }
     if (!is_storage) {
         mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
         mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
