@@ -39,6 +39,7 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             int results[4];   // that's the type __cpuidex expects
             int rax = (int)(u32)pExp->ContextRecord->Rax;
             int rcx = (int)(u32)pExp->ContextRecord->Rcx;
+            LOG_ERROR(Core, "CPUID - RAX BEFORE: 0x{:x}, RCX BEFORE: 0x{:x}", rax, rcx);
             __cpuidex(reinterpret_cast<int*>(results), static_cast<int>(rax),
                       static_cast<int>(rcx));
             pExp->ContextRecord->Rax = results[0];
@@ -46,6 +47,8 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             pExp->ContextRecord->Rcx = results[2];
             pExp->ContextRecord->Rdx = results[3];
             pExp->ContextRecord->Rip += 1; // skip the illegal instruction
+            LOG_ERROR(Core, "CPUID - RAX AFTER: 0x{:x}, RBX AFTER: 0x{:x}, RCX AFTER: 0x{:x}, RDX AFTER: 0x{:x}",
+                      results[0], results[1], results[2], results[3]);
             handled = EXCEPTION_CONTINUE_EXECUTION;
         } else {
             handled = signals->DispatchIllegalInstruction(code_address);
@@ -126,12 +129,15 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
             u64 results[4];
             u64 rax = ctx->uc_mcontext.gregs[REG_RAX];
             u64 rcx = ctx->uc_mcontext.gregs[REG_RCX];
+            LOG_ERROR(Core, "CPUID - RAX BEFORE: 0x{:x}, RCX BEFORE: 0x{:x}", rax, rcx);
             __cpuid_count(rax, rcx, results[0], results[1], results[2], results[3]);
             ctx->uc_mcontext.gregs[REG_RAX] = results[0];
             ctx->uc_mcontext.gregs[REG_RBX] = results[1];
             ctx->uc_mcontext.gregs[REG_RCX] = results[2];
             ctx->uc_mcontext.gregs[REG_RDX] = results[3];
             ctx->uc_mcontext.gregs[REG_RIP] += 1; // skip the illegal instruction
+            LOG_ERROR(Core, "CPUID - RAX AFTER: 0x{:x}, RBX AFTER: 0x{:x}, RCX AFTER: 0x{:x}, RDX AFTER: 0x{:x}",
+                      results[0], results[1], results[2], results[3]);
             break;
         } else {
             if (!signals->DispatchIllegalInstruction(code_address)) {
