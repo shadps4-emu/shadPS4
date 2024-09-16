@@ -253,10 +253,17 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
                            {}, {}, pre_barrier);
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
+<<<<<<< HEAD
     cmdbuf.blitImage(
         image.image, image.last_state.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
         MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width, frame->height),
         vk::Filter::eLinear);
+=======
+    cmdbuf.blitImage(image.image, image.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
+                     MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width,
+                                      frame->height),
+                     vk::Filter::eLinear);
+>>>>>>> 228571f9 (clang-format)
 
     const vk::ImageMemoryBarrier post_barrier{
         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
@@ -292,7 +299,7 @@ void RendererVulkan::Present(Frame* frame) {
         window.getHeight() != swapchain.GetExtent().height) {
         swapchain.Recreate(window.getWidth(), window.getHeight());
     }
-    
+
     ImGui::Core::NewFrame();
 
     swapchain.AcquireNextImage();
@@ -365,10 +372,11 @@ void RendererVulkan::Present(Frame* frame) {
                                vk::PipelineStageFlagBits::eTransfer,
                                vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
-        cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
-                         vk::ImageLayout::eTransferDstOptimal,
-                         MakeImageBlitStretch(frame->width, frame->height, extent.width, extent.height),
-                         vk::Filter::eLinear);
+        cmdbuf.blitImage(
+            frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
+            vk::ImageLayout::eTransferDstOptimal,
+            MakeImageBlitStretch(frame->width, frame->height, extent.width, extent.height),
+            vk::Filter::eLinear);
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                                vk::PipelineStageFlagBits::eAllCommands,
