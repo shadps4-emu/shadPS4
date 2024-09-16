@@ -264,7 +264,7 @@ private:
     vk::Queue graphics_queue;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
-    std::unordered_map<vk::Format, vk::FormatProperties> format_properties;
+    std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
     bool image_view_reinterpretation{true};
