@@ -6,8 +6,8 @@
 #include "core/signals.h"
 
 #ifdef _WIN32
-#include <windows.h>
 #include <intrin.h>
+#include <windows.h>
 #else
 #include <csignal>
 #include <cpuid.h>
@@ -36,8 +36,17 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case EXCEPTION_ILLEGAL_INSTRUCTION: {
         u8 opcode = *reinterpret_cast<u8*>(code_address);
         if (opcode == 0x37) { // 0x37 is AAA instruction, we use that to patch CPUID
-            handled = EXCEPTION_CONTINUE_EXECUTION;
+            int results[4];   // that's the type __cpuidex expects
+            int rax = (int)(u32)pExp->ContextRecord->Rax;
+            int rcx = (int)(u32)pExp->ContextRecord->Rcx;
+            __cpuidex(reinterpret_cast<int*>(results), static_cast<int>(rax),
+                      static_cast<int>(rcx));
+            pExp->ContextRecord->Rax = results[0];
+            pExp->ContextRecord->Rbx = results[1];
+            pExp->ContextRecord->Rcx = results[2];
+            pExp->ContextRecord->Rdx = results[3];
             pExp->ContextRecord->Rip += 1; // skip the illegal instruction
+            handled = EXCEPTION_CONTINUE_EXECUTION;
         } else {
             handled = signals->DispatchIllegalInstruction(code_address);
         }
@@ -115,11 +124,13 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         u8 opcode = *reinterpret_cast<u8*>(code_address);
         if (opcode == 0x37) { // 0x37 is AAA instruction, we use that to patch CPUID
             u64 results[4];
-            u64 eax = ctx->uc_mcontext.gregs[REG_RAX];
-            u64 ecx = ctx->uc_mcontext.gregs[REG_RCX];
-            LOG_WARNING(Core, "CPUID: eax=%lx ecx=%lx\n", eax, ecx);
-            __cpuid_count(eax, ecx, results[0], results[1], results[2], results[3]);
-            LOG_WARNING(Core, "RESULTS: %lx %lx %lx %lx\n", results[0], results[1], results[2], results[3]);
+            u64 rax = ctx->uc_mcontext.gregs[REG_RAX];
+            u64 rcx = ctx->uc_mcontext.gregs[REG_RCX];
+            __cpuid_count(rax, rcx, results[0], results[1], results[2], results[3]);
+            ctx->uc_mcontext.gregs[REG_RAX] = results[0];
+            ctx->uc_mcontext.gregs[REG_RBX] = results[1];
+            ctx->uc_mcontext.gregs[REG_RCX] = results[2];
+            ctx->uc_mcontext.gregs[REG_RDX] = results[3];
             ctx->uc_mcontext.gregs[REG_RIP] += 1; // skip the illegal instruction
             break;
         } else {
