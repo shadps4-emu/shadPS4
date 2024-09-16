@@ -439,7 +439,8 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread started");
 
     while (!stop.stop_requested()) {
-        if (m_video_packets.Size() > 30 && m_audio_packets.Size() > 8) {
+        if (m_video_packets.Size() > 30 &&
+            (!m_audio_stream_index.has_value() || m_audio_packets.Size() > 8)) {
             std::this_thread::sleep_for(milliseconds(5));
             continue;
         }
