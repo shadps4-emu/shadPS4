@@ -117,8 +117,6 @@ struct Image {
     // Resource state tracking
     vk::ImageUsageFlags usage;
     struct State {
-        u32 mip_level{};
-        u32 layer{};
         vk::Flags<vk::PipelineStageFlagBits2> pl_stage = vk::PipelineStageFlagBits2::eAllCommands;
         vk::Flags<vk::AccessFlagBits2> access_mask = vk::AccessFlagBits2::eNone;
         vk::ImageLayout layout = vk::ImageLayout::eUndefined;
