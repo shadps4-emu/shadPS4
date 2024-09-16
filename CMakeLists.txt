@@ -369,6 +369,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/signal_context.h
+           src/common/signal_context.cpp
            src/common/singleton.h
            src/common/slot_vector.h
            src/common/string_util.cpp
