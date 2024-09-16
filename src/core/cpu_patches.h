@@ -18,4 +18,7 @@ void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_are
 /// Applies CPU patches that need to be done before beginning executions.
 void PrePatchInstructions(u64 segment_addr, u64 segment_size);
 
+// Patches CPUID instructions with an illegal instruction to handle them specially in the signal handler
+void PatchCPUID(u64 segment_addr, u64 segment_size);
+
 } // namespace Core

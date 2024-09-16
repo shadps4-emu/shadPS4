@@ -137,6 +137,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PrePatchInstructions(segment_addr, segment_file_size);
+                PatchCPUID(segment_addr, segment_file_size);
             }
 #endif
             break;

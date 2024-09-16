@@ -798,4 +798,50 @@ void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
 #endif
 }
 
+// We patch CPUID to handle it specially and simulate an AMD environment.
+// Because CPUID is at minimum 2 bytes, a trampoline jump is not possible.
+// Instead, we replace the instruction with an illegal instruction and handle it in the illegal instruction handler.
+void PatchCPUID(u64 segment_addr, u64 segment_size) {
+    u8* code = reinterpret_cast<u8*>(segment_addr);
+    u8* end = code + segment_size;
+    bool previous_instruction_ok = false;
+
+    while (code < end) {
+        ZydisDecodedInstruction instruction;
+        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+        const auto status = ZydisDecoderDecodeFull(&instr_decoder, code, end - code, &instruction, operands);
+
+        if (!ZYAN_SUCCESS(status)) {
+            code++;
+            previous_instruction_ok = false;
+            continue;
+        }
+
+        if (instruction.mnemonic == ZYDIS_MNEMONIC_CPUID) {
+            if (!previous_instruction_ok) {
+                // It should be highly unlikely that the CPUID instruction is not preceded by a valid instruction.
+                // Instead of patching it we're going to skip it and generate a warning, because we could be in some
+                // data section that must not be changed.
+                LOG_ERROR(Core, "CPUID instruction is not preceded by a valid instruction at: {} while patching", fmt::ptr(code));
+                code++;
+                continue;
+            }
+
+            LOG_CRITICAL(Core, "FOUND CPUID INSTRUCTION AT: {}", fmt::ptr(code));
+
+            // Replace any potential prefixes and the 0F byte with single byte NOPs
+            u8 instruction_length = instruction.length;
+            for (u8 i = 0; i < instruction_length - 1; i++) {
+                code[i] = 0x90;
+            }
+
+            // Replace the CPUID instruction with an illegal instruction
+            code[instruction_length - 1] = 0x37; // 0x37 is AAA, illegal in x86-64
+        }
+
+        code += instruction.length;
+        previous_instruction_ok = true;
+    }
+}
+
 } // namespace Core

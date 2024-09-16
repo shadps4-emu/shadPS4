@@ -7,8 +7,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <intrin.h>
 #else
 #include <csignal>
+#include <cpuid.h>
 #ifdef ARCH_X86_64
 #include <Zydis/Decoder.h>
 #include <Zydis/Formatter.h>
@@ -31,9 +33,16 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             code_address, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]),
             pExp->ExceptionRecord->ExceptionInformation[0] == 1);
         break;
-    case EXCEPTION_ILLEGAL_INSTRUCTION:
-        handled = signals->DispatchIllegalInstruction(code_address);
+    case EXCEPTION_ILLEGAL_INSTRUCTION: {
+        u8 opcode = *reinterpret_cast<u8*>(code_address);
+        if (opcode == 0x37) { // 0x37 is AAA instruction, we use that to patch CPUID
+            handled = EXCEPTION_CONTINUE_EXECUTION;
+            pExp->ContextRecord->Rip += 1; // skip the illegal instruction
+        } else {
+            handled = signals->DispatchIllegalInstruction(code_address);
+        }
         break;
+    }
     default:
         break;
     }
@@ -87,7 +96,7 @@ static std::string DisassembleInstruction(void* code_address) {
 }
 
 static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
-    const auto* ctx = static_cast<ucontext_t*>(raw_context);
+    auto* ctx = static_cast<ucontext_t*>(raw_context);
     const auto* signals = Signals::Instance();
 
     auto* code_address = CODE_ADDRESS(ctx);
@@ -102,12 +111,25 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
                             fmt::ptr(info->si_addr));
         }
         break;
-    case SIGILL:
-        if (!signals->DispatchIllegalInstruction(code_address)) {
-            UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
-                            fmt::ptr(code_address), DisassembleInstruction(code_address));
+    case SIGILL: {
+        u8 opcode = *reinterpret_cast<u8*>(code_address);
+        if (opcode == 0x37) { // 0x37 is AAA instruction, we use that to patch CPUID
+            u64 results[4];
+            u64 eax = ctx->uc_mcontext.gregs[REG_RAX];
+            u64 ecx = ctx->uc_mcontext.gregs[REG_RCX];
+            LOG_WARNING(Core, "CPUID: eax=%lx ecx=%lx\n", eax, ecx);
+            __cpuid_count(eax, ecx, results[0], results[1], results[2], results[3]);
+            LOG_WARNING(Core, "RESULTS: %lx %lx %lx %lx\n", results[0], results[1], results[2], results[3]);
+            ctx->uc_mcontext.gregs[REG_RIP] += 1; // skip the illegal instruction
+            break;
+        } else {
+            if (!signals->DispatchIllegalInstruction(code_address)) {
+                UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
+                                fmt::ptr(code_address), DisassembleInstruction(code_address));
+            }
         }
         break;
+    }
     default:
         break;
     }
