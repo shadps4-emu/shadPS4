@@ -126,7 +126,7 @@ int PS4_SYSV_ABI sceUserServiceGetGlsIsCameraHidden();
 int PS4_SYSV_ABI sceUserServiceGetGlsIsFacebookEnabled();
 int PS4_SYSV_ABI sceUserServiceGetGlsIsMuteEnabled();
 int PS4_SYSV_ABI sceUserServiceGetGlsIsRecDisabled();
-int PS4_SYSV_ABI sceUserServiceGetGlsIsRecievedMessageHidden();
+int PS4_SYSV_ABI sceUserServiceGetGlsIsReceivedMessageHidden();
 int PS4_SYSV_ABI sceUserServiceGetGlsIsTwitterEnabled();
 int PS4_SYSV_ABI sceUserServiceGetGlsLanguageFilter();
 int PS4_SYSV_ABI sceUserServiceGetGlsLfpsSortOrder();
