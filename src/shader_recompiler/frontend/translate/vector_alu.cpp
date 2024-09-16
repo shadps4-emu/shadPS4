@@ -548,14 +548,14 @@ void Translator::V_FMA_F32(const GcnInst& inst) {
 }
 
 void Translator::V_RCP_F64(const GcnInst& inst) {
-    const IR::F64 src0{GetSrc<IR::F64>(inst.src[0])};
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
     SetDst64(inst.dst[0], ir.FPRecip(src0));
 }
 
 void Translator::V_FMA_F64(const GcnInst& inst) {
-    const IR::F64 src0{GetSrc<IR::F64>(inst.src[0])};
-    const IR::F64 src1{GetSrc<IR::F64>(inst.src[1])};
-    const IR::F64 src2{GetSrc<IR::F64>(inst.src[2])};
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    const IR::F64 src2{GetSrc64<IR::F64>(inst.src[2])};
     SetDst64(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
