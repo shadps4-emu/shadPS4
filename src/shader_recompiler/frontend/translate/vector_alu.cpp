@@ -198,6 +198,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FMA_F32(inst);
     case Opcode::V_MAX_F32:
         return V_MAX_F32(inst);
+    case Opcode::V_ADD_F64:
+        return V_ADD_F64(inst);
+    case Opcode::V_MUL_F64:
+        return V_MUL_F64(inst);
+    case Opcode::V_MIN_F64:
+        return V_MIN_F64(inst);
     case Opcode::V_MAX_F64:
         return V_MAX_F64(inst);
     case Opcode::V_RSQ_F32:
@@ -582,6 +588,24 @@ void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
+}
+
+void Translator::V_ADD_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    SetDst64(inst.dst[0], ir.FPAdd(src0, src1));
+}
+
+void Translator::V_MUL_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    SetDst64(inst.dst[0], ir.FPMul(src0, src1));
+}
+
+void Translator::V_MIN_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    SetDst64(inst.dst[0], ir.FPMin(src0, src1));
 }
 
 void Translator::V_MAX_F64(const GcnInst& inst) {
