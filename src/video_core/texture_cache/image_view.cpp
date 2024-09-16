@@ -68,7 +68,6 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexcept
     : is_storage{is_storage_} {
-    type = ConvertImageViewType(image.GetType());
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
@@ -79,10 +78,20 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexc
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level + 1;
     range.extent.layers = image.last_array + 1;
+    type = ConvertImageViewType(image.GetType());
+
+    // Adjust view type for partial cubemaps and arrays
+    if (image.IsPartialCubemap()) {
+        type = vk::ImageViewType::e2DArray;
+    }
+    if (type == vk::ImageViewType::eCube && range.extent.layers > 6) {
+        type = vk::ImageViewType::eCubeArray;
+    }
     if (type == vk::ImageViewType::e3D && range.extent.layers > 1) {
         // Some games pass incorrect layer count for 3D textures so we need to fixup it
         range.extent.layers = 1;
     }
+
     if (!is_storage) {
         mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
         mapping.g = ConvertComponentSwizzle(image.dst_sel_y);

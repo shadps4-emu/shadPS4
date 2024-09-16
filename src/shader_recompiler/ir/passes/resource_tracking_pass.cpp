@@ -482,10 +482,11 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
+    const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
-        .type = image.GetType(),
+        .type = type,
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
