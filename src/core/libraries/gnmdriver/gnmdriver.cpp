@@ -375,7 +375,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
         Platform::InterruptId::GfxEop,
         [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxEop,
-                       "An unexpected IRQ occured"); // We need to convert IRQ# to event id and do
+                       "An unexpected IRQ occurred"); // We need to convert IRQ# to event id and do
                                                      // proper filtering in trigger function
             eq->TriggerEvent(GnmEventIdents::GfxEop, SceKernelEvent::Filter::GraphicsCore, nullptr);
         },

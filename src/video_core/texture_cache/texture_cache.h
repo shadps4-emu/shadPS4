@@ -25,7 +25,7 @@ class PageManager;
 
 enum class FindFlags {
     NoCreate = 1 << 0,  ///< Do not create an image if searching for one fails.
-    RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
+    RelaxDim = 1 << 1,  ///< Do not check the dimensions of image, only address.
     RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
     RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
 };

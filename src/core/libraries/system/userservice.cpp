@@ -1470,7 +1470,7 @@ int PS4_SYSV_ABI sceUserServiceSetGlsIsRecDisabled() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceSetGlsIsRecievedMessageHidden() {
+int PS4_SYSV_ABI sceUserServiceSetGlsIsReceivedMessageHidden() {
     LOG_ERROR(Lib_UserService, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -2735,7 +2735,7 @@ void RegisterlibSceUserService(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6oZ3DZGzjIE", "libSceUserService", 1, "libSceUserService", 1, 1,
                  sceUserServiceSetGlsIsRecDisabled);
     LIB_FUNCTION("AmJ3FJxT7r8", "libSceUserService", 1, "libSceUserService", 1, 1,
-                 sceUserServiceSetGlsIsRecievedMessageHidden);
+                 sceUserServiceSetGlsIsReceivedMessageHidden);
     LIB_FUNCTION("lsdxBeRnEes", "libSceUserService", 1, "libSceUserService", 1, 1,
                  sceUserServiceSetGlsIsTwitterEnabled);
     LIB_FUNCTION("wgVAwa31l0E", "libSceUserService", 1, "libSceUserService", 1, 1,

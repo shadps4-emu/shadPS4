@@ -92,7 +92,7 @@ struct PageManager::Impl {
                 UNREACHABLE_MSG("Unexpected number of descriptors {} out of poll", pollres);
             }
 
-            // We don't want an error condition to have occured.
+            // We don't want an error condition to have occurred.
             ASSERT_MSG(!(pollfd.revents & POLLERR), "POLLERR on userfaultfd");
 
             // We waited until there is data to read, we don't care about anything else.
