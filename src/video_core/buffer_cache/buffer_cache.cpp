@@ -613,12 +613,13 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         });
         total_size += mip_size * num_layers;
     }
-    ASSERT(!copies.empty()); // If triggered, need to find which layers fit
-    scheduler.EndRendering();
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
-                             copies);
+    if (!copies.empty()) {
+        scheduler.EndRendering();
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
+                                 copies);
+    }
     return true;
 }
 

@@ -42,6 +42,7 @@ protected:
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
+    static boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
 };
 
 } // namespace Vulkan
