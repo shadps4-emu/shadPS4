@@ -17,6 +17,19 @@
 #endif
 #endif
 
+// CPUID constants from http://instlatx64.atw.hu/
+// There wasn't dumps for the PS4 itself, we used a Jaguar CPU: AMD A9-9820
+// Optimally at some point we should dump the PS4 CPUID values
+// For EAX=0 / EAX=0x80000000
+constexpr static u32 maxCpuid = 0xD;
+constexpr static const char* vendorId = "AuthenticAMD";
+
+// For EAX=1
+constexpr static u32 processorFamilyIDs = 0x00720F61;
+constexpr static u32 additionalInfo = 0x00080800;
+constexpr static u32 featureInfoEcx = 0x3ED8220B;
+constexpr static u32 featureInfoEdx = 0x178BFBFF;
+
 namespace Core {
 
 #if defined(_WIN32)
@@ -40,8 +53,22 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             int rax = (int)(u32)pExp->ContextRecord->Rax;
             int rcx = (int)(u32)pExp->ContextRecord->Rcx;
             LOG_ERROR(Core, "CPUID - RAX BEFORE: 0x{:x}, RCX BEFORE: 0x{:x}", rax, rcx);
-            __cpuidex(reinterpret_cast<int*>(results), static_cast<int>(rax),
+            if (rax == 1) {
+                results[0] = processorFamilyIDs;
+                results[1] = additionalInfo;
+                results[2] = featureInfoEcx;
+                results[3] = featureInfoEdx;
+            } else {
+                __cpuidex(reinterpret_cast<int*>(results), static_cast<int>(rax),
                       static_cast<int>(rcx));
+                if (rax == 0 || rax == 0x80000000) {
+                    // The order looks weird but is correct
+                    // The string is saved in order of EBX, EDX, ECX
+                    memcpy(&results[1], vendorId, 4);
+                    memcpy(&results[3], vendorId + 4, 4);
+                    memcpy(&results[2], vendorId + 8, 4);
+                }
+            }
             pExp->ContextRecord->Rax = results[0];
             pExp->ContextRecord->Rbx = results[1];
             pExp->ContextRecord->Rcx = results[2];
@@ -126,11 +153,25 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGILL: {
         u8 opcode = *reinterpret_cast<u8*>(code_address);
         if (opcode == 0x37) { // 0x37 is AAA instruction, we use that to patch CPUID
-            u64 results[4];
-            u64 rax = ctx->uc_mcontext.gregs[REG_RAX];
-            u64 rcx = ctx->uc_mcontext.gregs[REG_RCX];
+            u32 results[4];
+            int rax = ctx->uc_mcontext.gregs[REG_RAX];
+            int rcx = ctx->uc_mcontext.gregs[REG_RCX];
             LOG_ERROR(Core, "CPUID - RAX BEFORE: 0x{:x}, RCX BEFORE: 0x{:x}", rax, rcx);
-            __cpuid_count(rax, rcx, results[0], results[1], results[2], results[3]);
+            if (rax == 1) {
+                results[0] = processorFamilyIDs;
+                results[1] = additionalInfo;
+                results[2] = featureInfoEcx;
+                results[3] = featureInfoEdx;
+            } else {
+                __cpuid_count(rax, rcx, results[0], results[1], results[2], results[3]);
+                if (rax == 0 || rax == 0x80000000) {
+                    // The order looks weird but is correct
+                    // The string is saved in order of EBX, EDX, ECX
+                    memcpy(&results[1], vendorId, 4);
+                    memcpy(&results[3], vendorId + 4, 4);
+                    memcpy(&results[2], vendorId + 8, 4);
+                }
+            }
             ctx->uc_mcontext.gregs[REG_RAX] = results[0];
             ctx->uc_mcontext.gregs[REG_RBX] = results[1];
             ctx->uc_mcontext.gregs[REG_RCX] = results[2];
