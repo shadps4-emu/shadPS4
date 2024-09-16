@@ -59,7 +59,7 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 #endif
 
 #ifndef IS_WRITE_ERROR
-#error "Missing IS_WRITE_ERROR() implementation for target OS and CPU architecture.
+#error "Missing IS_WRITE_ERROR() implementation for target OS and CPU architecture."
 #endif
 
 static std::string DisassembleInstruction(void* code_address) {
@@ -120,9 +120,11 @@ SignalDispatch::SignalDispatch() {
     ASSERT_MSG(handle = AddVectoredExceptionHandler(0, SignalHandler),
                "Failed to register exception handler.");
 #else
-    constexpr struct sigaction action {
-        .sa_flags = SA_SIGINFO | SA_ONSTACK, .sa_sigaction = SignalHandler, .sa_mask = 0,
-    };
+    struct sigaction action {};
+    action.sa_sigaction = SignalHandler;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigemptyset(&action.sa_mask);
+
     ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
                    sigaction(SIGBUS, &action, nullptr) == 0,
                "Failed to register access violation signal handler.");
@@ -135,9 +137,11 @@ SignalDispatch::~SignalDispatch() {
 #if defined(_WIN32)
     ASSERT_MSG(RemoveVectoredExceptionHandler(handle), "Failed to remove exception handler.");
 #else
-    constexpr struct sigaction action {
-        .sa_flags = 0, .sa_handler = SIG_DFL, .sa_mask = 0,
-    };
+    struct sigaction action {};
+    action.sa_handler = SIG_DFL;
+    action.sa_flags = 0;
+    sigemptyset(&action.sa_mask);
+
     ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
                    sigaction(SIGBUS, &action, nullptr) == 0,
                "Failed to remove access violation signal handler.");
