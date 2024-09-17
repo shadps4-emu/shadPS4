@@ -64,7 +64,7 @@ jobs:
       run: |
         mkdir upload
         move build/shadPS4.exe upload
-        windeployqt --no-compiler-runtime --dir upload upload/shadPS4.exe
+        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         
     - name: Get date and git hash
       id: vars
