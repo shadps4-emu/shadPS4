@@ -39,8 +39,8 @@ public:
 
 private:
     // Event Replacement
-    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, s32 event_id, s32 source_id,
-                                                   void* event_data);
+    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, SceAvPlayerEvents event_id,
+                                                   s32 source_id, void* event_data);
 
     void OnWarning(u32 id) override;
     void OnError() override;
