@@ -69,7 +69,7 @@ static std::string DisassembleInstruction(void* code_address) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status =
-        Common::Decoder::Instance().decodeInstruction(instruction, operands, code_address);
+        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
     if (ZYAN_SUCCESS(status)) {
         ZydisFormatter formatter;
         ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
