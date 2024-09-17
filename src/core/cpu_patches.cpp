@@ -663,8 +663,8 @@ static PatchModule* GetModule(const void* ptr) {
 static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status = Common::Decoder::Instance().decodeInstruction(instruction, operands, code,
-                                                                      module->end - code);
+    const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
+                                                                       module->end - code);
     if (!ZYAN_SUCCESS(status)) {
         return std::make_pair(false, 1);
     }
