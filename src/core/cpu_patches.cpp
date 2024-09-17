@@ -827,8 +827,6 @@ void PatchCPUID(u64 segment_addr, u64 segment_size) {
                 continue;
             }
 
-            LOG_CRITICAL(Core, "FOUND CPUID INSTRUCTION AT: {}", fmt::ptr(code));
-
             // Replace any potential prefixes and the 0F byte with single byte NOPs
             u8 instruction_length = instruction.length;
             for (u8 i = 0; i < instruction_length - 1; i++) {

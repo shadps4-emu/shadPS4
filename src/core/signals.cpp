@@ -18,17 +18,23 @@
 #endif
 
 // CPUID constants from http://instlatx64.atw.hu/
-// There wasn't dumps for the PS4 itself, we used a Jaguar CPU: AMD A9-9820
+// There aren't dumps for the PS4 itself, these are from a 7600x
 // Optimally at some point we should dump the PS4 CPUID values
 // For EAX=0 / EAX=0x80000000
-constexpr static u32 maxCpuid = 0xD;
+constexpr static u32 maxCpuid = 0x10;
 constexpr static const char* vendorId = "AuthenticAMD";
 
 // For EAX=1
-constexpr static u32 processorFamilyIDs = 0x00720F61;
-constexpr static u32 additionalInfo = 0x00080800;
-constexpr static u32 featureInfoEcx = 0x3ED8220B;
+constexpr static u32 processorFamilyIDs = 0x00A60F12;
+constexpr static u32 additionalInfo = 0x000C0800;
+constexpr static u32 featureInfoEcx = 0x7EF8320B;
 constexpr static u32 featureInfoEdx = 0x178BFBFF;
+
+// For EAX=0x80000001
+constexpr static u32 extendedFeatureInfoEax = 0x00A60F12;
+constexpr static u32 extendedFeatureInfoEbx = 0x00000000;
+constexpr static u32 extendedFeatureInfoEcx = 0x75C237FF;
+constexpr static u32 extendedFeatureInfoEdx = 0x2FD3FBFF;
 
 namespace Core {
 
@@ -58,6 +64,11 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
                 results[1] = additionalInfo;
                 results[2] = featureInfoEcx;
                 results[3] = featureInfoEdx;
+            } else if (rax == 0x80000001) {
+                results[0] = extendedFeatureInfoEax;
+                results[1] = extendedFeatureInfoEbx;
+                results[2] = extendedFeatureInfoEcx;
+                results[3] = extendedFeatureInfoEdx;
             } else {
                 __cpuidex(reinterpret_cast<int*>(results), static_cast<int>(rax),
                       static_cast<int>(rcx));
@@ -162,6 +173,11 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
                 results[1] = additionalInfo;
                 results[2] = featureInfoEcx;
                 results[3] = featureInfoEdx;
+            } else if (rax == 0x80000001) {
+                results[0] = extendedFeatureInfoEax;
+                results[1] = extendedFeatureInfoEbx;
+                results[2] = extendedFeatureInfoEcx;
+                results[3] = extendedFeatureInfoEdx;
             } else {
                 __cpuid_count(rax, rcx, results[0], results[1], results[2], results[3]);
                 if (rax == 0 || rax == 0x80000000) {
