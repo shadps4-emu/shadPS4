@@ -130,6 +130,7 @@ public:
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         updaterAct = new QAction(MainWindow);
         updaterAct->setObjectName("updaterAct");
+        updaterAct->setIcon(QIcon(":images/update_icon.png"));
         aboutAct = new QAction(MainWindow);
         aboutAct->setObjectName("aboutAct");
         aboutAct->setIcon(QIcon(":images/about_icon.png"));
