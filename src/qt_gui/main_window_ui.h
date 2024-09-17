@@ -304,7 +304,7 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
-        updaterAct->setText(QCoreApplication::translate("MainWindow", "Check Update", nullptr));
+        updaterAct->setText(QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)

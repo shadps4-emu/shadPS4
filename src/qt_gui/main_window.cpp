@@ -24,8 +24,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     SaveWindowState();
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::save(config_dir / "config.toml");
+    //const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    //Config::save(config_dir / "config.toml");
 }
 
 bool MainWindow::Init() {
@@ -169,7 +169,7 @@ void MainWindow::CheckUpdateMain(bool check) {
             return;
         }
     }
-    auto checkUpdate = new CheckUpdate(this);
+    auto checkUpdate = new CheckUpdate(false, this);
     checkUpdate->show();
 #endif
 }

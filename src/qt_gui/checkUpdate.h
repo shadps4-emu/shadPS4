@@ -6,26 +6,33 @@
 
 #include <QCheckBox>
 #include <QDialog>
+#include <QNetworkAccessManager>
+#include <QPushButton>
 
 class CheckUpdate : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CheckUpdate(QWidget* parent = nullptr);
+    explicit CheckUpdate(const bool showMessage, QWidget* parent = nullptr);
+    ~CheckUpdate();
 
 private slots:
-    void CheckForUpdates();
+    void CheckForUpdates(const bool showMessage);
     void DownloadAndInstallUpdate(const QString& url);
     void Unzip();
+    void Install();
 
 private:
-    void setupUI_NoUpdate();
-    void setupUI_UpdateAvailable(const QString& downloadUrl);
+    void setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
+                                 const QString& latestRev, const QString& currentDate,
+                                 const QString& currentRev, const QString& textChangeLog);
 
     QCheckBox* autoUpdateCheckBox;
     QPushButton* yesButton;
     QPushButton* noButton;
     QString updateDownloadUrl;
+
+    QNetworkAccessManager* networkManager;
 };
 
 #endif // CHECKUPDATE_H

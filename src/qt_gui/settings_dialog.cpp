@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QCheckBox>
+#include <QComboBox>
 #include <QCompleter>
 #include <QDirIterator>
+#include <QGroupBox>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
 
+#include "checkUpdate.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
@@ -115,6 +122,63 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setLogFilter(text.toStdString()); });
+
+        // Create the "Update" section and add it to the existing QGroupBox
+        QGroupBox* updateGroupBox = new QGroupBox("Update");
+        updateGroupBox->setMaximumWidth(265);
+
+        QVBoxLayout* updateLayout = new QVBoxLayout();
+        updateGroupBox->setLayout(updateLayout);
+
+        auto autoUpdateCheckBox = new QCheckBox("Auto Update (Check at Startup)");
+        QComboBox* updateComboBox = new QComboBox();
+        QPushButton* updateButton = new QPushButton("Check for Updates");
+
+        // Add items to the combobox
+        updateComboBox->addItem("stable");
+        updateComboBox->addItem("unstable");
+
+        // Add widgets to the layout
+        updateLayout->addWidget(autoUpdateCheckBox);
+        updateLayout->addWidget(updateComboBox);
+        updateLayout->addWidget(updateButton);
+
+        // Add the "Update" section to the general settings layout
+        ui->generalTab->layout()->addWidget(updateGroupBox);
+
+        // Connect the button signal to a slot
+        connect(updateButton, &QPushButton::clicked, this, []() {
+            auto checkUpdate = new CheckUpdate(true);
+            checkUpdate->show();
+        });
+
+        // Initialize checkbox state
+        autoUpdateCheckBox->setChecked(Config::autoUpdate());
+
+        // Connect checkbox state change to save configuration
+        connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+            const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+            Config::setAutoUpdate(state == Qt::Checked);
+        });
+
+        // Initialize combobox state
+        updateComboBox->setCurrentText(QString::fromStdString(Config::getUpdateChannel()));
+
+        // Connect combobox state change to save configuration
+        connect(updateComboBox, &QComboBox::currentTextChanged, this, [](const QString& channel) {
+            // Converter QString para std::string
+            std::string channelStr = channel.toStdString();
+            Config::setUpdateChannel(channelStr);
+        });
+
+        // Initialize checkbox state
+        autoUpdateCheckBox->setChecked(Config::autoUpdate());
+
+        // Connect checkbox state change to save configuration
+        connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+            const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+            Config::setAutoUpdate(state == Qt::Checked);
+        });
     }
 
     // GPU TAB

@@ -90,6 +90,7 @@ include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REF_SPEC GIT_REV)
 git_describe(GIT_DESC --always --long --dirty)
 git_branch_name(GIT_BRANCH)
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp" @ONLY)
 

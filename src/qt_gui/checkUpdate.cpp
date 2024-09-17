@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -14,115 +15,245 @@
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QProcess>
 #include <QPushButton>
 #include <QString>
+#include <QStringList>
+#include <QTextEdit>
+#include <QTextStream>
 #include <QVBoxLayout>
 #include <common/config.h>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
+#include <zlib-ng.h>
 #include "checkUpdate.h"
-// #include "externals/minizip-ng/mz.h"
-// #include "externals/minizip-ng/mz_strm.h"
-// #include "externals/minizip-ng/mz_strm_buf.h"
-// #include "externals/minizip-ng/mz_strm_mem.h"
-// #include "externals/minizip-ng/mz_strm_os.h"
-// #include "externals/minizip-ng/mz_zip.h"
 
 using namespace Common::FS;
 namespace fs = std::filesystem;
 
-CheckUpdate::CheckUpdate(QWidget* parent) : QDialog(parent) {
-    setWindowTitle("Update Check");
-    CheckForUpdates();
+CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
+    : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
+    setWindowTitle(tr("Auto Updater"));
+    setFixedSize(420, 380);
+    CheckForUpdates(showMessage);
 }
 
-void CheckUpdate::CheckForUpdates() {
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(
-        QUrl("https://api.github.com/repos/DanielSvoboda/teste/releases/latest"));
-    QNetworkReply* reply = manager->get(request);
+CheckUpdate::~CheckUpdate() {}
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+void CheckUpdate::CheckForUpdates(const bool showMessage) {
+    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    QUrl url;
+
+    if (updateChannel == "unstable") {
+        url = QUrl("https://api.github.com/repos/DanielSvoboda/shadPS4/releases?per_page=1");
+    } else if (updateChannel == "stable") {
+        url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases/latest");
+    } else {
+        QMessageBox::warning(
+            this, tr("Error"),
+            QString(tr("Invalid update channel:") + "\n%1\n" +
+                    tr("In updateChannel in config.tml file must contain 'stable' or 'unstable'")
+                        .arg(updateChannel)));
+        return;
+    }
+
+    QNetworkRequest request(url);
+    QNetworkReply* reply = networkManager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, showMessage, updateChannel]() {
         if (reply->error() != QNetworkReply::NoError) {
             QMessageBox::warning(this, tr("Error"),
-                                 QString(tr("Network error: ") + "\n%1").arg(reply->errorString()));
+                                 QString(tr("Network error:") + "\n%1").arg(reply->errorString()));
             reply->deleteLater();
             return;
         }
 
         QByteArray response = reply->readAll();
         QJsonDocument jsonDoc(QJsonDocument::fromJson(response));
-        QJsonObject jsonObj = jsonDoc.object();
 
-        QString downloadUrl =
-            jsonObj["assets"].toArray().first().toObject()["browser_download_url"].toString();
-        QString latestVersion = QFileInfo(downloadUrl).baseName();
-        QString latestRev = latestVersion.right(7);
-
-        QString currentRev = QString::fromStdString(Common::g_scm_rev).left(7);
-
-        if (latestRev == currentRev) {
-            setupUI_NoUpdate();
-        } else {
-            updateDownloadUrl = downloadUrl;
-            setupUI_UpdateAvailable(downloadUrl);
+        if (jsonDoc.isNull()) {
+            QMessageBox::warning(this, tr("Error"), tr("Failed to parse update information."));
+            reply->deleteLater();
+            return;
         }
 
+        QString downloadUrl;
+        QString latestVersion;
+        QString latestRev;
+        QString latestDate;
+
+        QJsonObject jsonObj;
+        if (jsonDoc.isArray()) {
+            QJsonArray jsonArray = jsonDoc.array();
+            if (!jsonArray.isEmpty()) {
+                jsonObj = jsonArray.first().toObject();
+            } else {
+                QMessageBox::warning(this, tr("Error"), tr("No releases found."));
+                reply->deleteLater();
+                return;
+            }
+        } else {
+            jsonObj = jsonDoc.object();
+        }
+
+        if (jsonObj.contains("tag_name")) {
+            latestVersion = jsonObj["tag_name"].toString();
+            latestRev = latestVersion.right(7);
+            latestDate = jsonObj["published_at"].toString();
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid release data."));
+            reply->deleteLater();
+            return;
+        }
+
+        QString currentRev = QString::fromStdString(Common::g_scm_rev).left(7);
+        QString currentDate = Common::g_scm_date;
+
+        QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
+        latestDate = dateTime.isValid() ? dateTime.toString("yyyy-MM-dd HH:mm:ss") : "Unknown date";
+
+        if (jsonObj.contains("assets")) {
+            QJsonArray assets = jsonObj["assets"].toArray();
+            bool found = false;
+            for (const QJsonValue& assetValue : assets) {
+                QJsonObject assetObj = assetValue.toObject();
+
+                QString platformString;
+#ifdef Q_OS_WIN
+                platformString = "win64-qt";
+#elif defined(Q_OS_LINUX)
+
+                QString executablePath = QCoreApplication::applicationDirPath();
+                QFileInfo fileInfo(executablePath);
+
+                if (QProcessEnvironment::systemEnvironment().contains("APPIMAGE")) {
+                    platformString = "linux-qt";
+                } else {
+                    platformString = "ubuntu64";
+                }
+#elif defined(Q_OS_MAC)
+                platformString = "macos-qt";
+#endif
+                if (assetObj["name"].toString().contains(platformString)) {
+                    downloadUrl = assetObj["browser_download_url"].toString();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                QMessageBox::warning(this, tr("Error"),
+                                     tr("No download URL found for the specified asset."));
+            }
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("No assets found in the response."));
+        }
+
+        if (latestRev == currentRev && showMessage) {
+            QMessageBox::information(this, tr("Auto Updater"),
+                                     tr("Your version is already up to date!"));
+        } else {
+            QString compareUrlString =
+                QString("https://api.github.com/repos/DanielSvoboda/shadPS4/compare/%1...%2")
+                    .arg(currentRev)
+                    .arg(latestRev);
+
+            QUrl compareUrl(compareUrlString);
+            QNetworkRequest compareRequest(compareUrl);
+            QNetworkReply* compareReply = networkManager->get(compareRequest);
+
+            connect(compareReply, &QNetworkReply::finished, this,
+                    [this, compareReply, downloadUrl, latestDate, latestRev, currentDate,
+                     currentRev]() {
+                        if (compareReply->error() != QNetworkReply::NoError) {
+                            QMessageBox::warning(this, tr("Error"),
+                                                 QString(tr("Network error:") + "\n%1")
+                                                     .arg(compareReply->errorString()));
+                            compareReply->deleteLater();
+                            return;
+                        }
+
+                        QByteArray compareResponse = compareReply->readAll();
+                        QJsonDocument compareJsonDoc(QJsonDocument::fromJson(compareResponse));
+                        QJsonObject compareJsonObj = compareJsonDoc.object();
+                        QJsonArray commits = compareJsonObj["commits"].toArray();
+
+                        QString changes;
+                        for (const QJsonValue& commitValue : commits) {
+                            QJsonObject commitObj = commitValue.toObject();
+                            QString message = commitObj["commit"].toObject()["message"].toString();
+
+                            // Remove texts after the first line break, if any
+                            int newlineIndex = message.indexOf('\n');
+                            if (newlineIndex != -1) {
+                                message = message.left(newlineIndex);
+                            }
+                            if (!changes.isEmpty()) {
+                                changes += "<br>";
+                            }
+                            changes += "&nbsp;&nbsp;&nbsp;&nbsp;• " + message;
+                        }
+                        setupUI_UpdateAvailable(downloadUrl, latestDate, latestRev, currentDate,
+                                                currentRev,
+                                                "<h2>" + tr("Changes") + ":</h2>" + changes);
+                        compareReply->deleteLater();
+                    });
+        }
         reply->deleteLater();
     });
 }
 
-void CheckUpdate::setupUI_NoUpdate() {
+void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
+                                          const QString& latestRev, const QString& currentDate,
+                                          const QString& currentRev, const QString& textChangeLog) {
     QVBoxLayout* layout = new QVBoxLayout(this);
+    QHBoxLayout* titleLayout = new QHBoxLayout();
 
-    QLabel* noUpdateLabel = new QLabel("Your version is already up to date!.", this);
-    layout->addWidget(noUpdateLabel);
+    QLabel* imageLabel = new QLabel(this);
+    QPixmap pixmap(":/images/shadps4.ico");
+    imageLabel->setPixmap(pixmap);
+    imageLabel->setScaledContents(true);
+    imageLabel->setFixedSize(40, 40);
 
-    autoUpdateCheckBox = new QCheckBox("Auto Update", this);
-    layout->addWidget(autoUpdateCheckBox);
+    QLabel* titleLabel = new QLabel("<h1>" + tr("Update Available") + "</h1>", this);
+    titleLayout->addWidget(imageLabel);
+    titleLayout->addWidget(titleLabel);
+    layout->addLayout(titleLayout);
 
-    autoUpdateCheckBox->setChecked(Config::autoUpdate());
-
-    connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
-        const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-        Config::setAutoUpdate(state == Qt::Checked);
-        Config::save(user_dir / "config.toml");
-    });
-
-    setLayout(layout);
-}
-
-void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl) {
-    QVBoxLayout* layout = new QVBoxLayout(this);
-
-    QLabel* updateLabel =
-        new QLabel("An update is available!\nDo you want to download and install it?", this);
-    updateLabel->setAlignment(Qt::AlignCenter);
+    QString updateText = QString("<p><b><br>Current Version:</b> %1 (%2)<br>"
+                                 "<b>Latest Version:</b> %3 (%4)</p>"
+                                 "<p>Do you want to update?</p>")
+                             .arg(currentRev, currentDate, latestRev, latestDate);
+    QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 
-    // Criar um layout horizontal para os botões
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QTextEdit* textField = new QTextEdit(this);
+    textField->setText(textChangeLog);
+    textField->setReadOnly(true);
+    textField->setFixedWidth(400);
+    textField->setFixedHeight(200);
+    layout->addWidget(textField);
 
-    yesButton = new QPushButton("Yes", this);
+    QHBoxLayout* bottomLayout = new QHBoxLayout();
+    autoUpdateCheckBox = new QCheckBox(tr("Auto Update (Check at Startup)"), this);
+    yesButton = new QPushButton("Update", this);
     noButton = new QPushButton("No", this);
+    yesButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+    noButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+    bottomLayout->addWidget(autoUpdateCheckBox);
 
-    // Adicionar os botões ao layout horizontal
-    buttonLayout->addWidget(yesButton);
-    buttonLayout->addWidget(noButton);
+    QSpacerItem* spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    bottomLayout->addItem(spacer);
 
-    // Adicionar o layout horizontal ao layout principal
-    layout->addLayout(buttonLayout);
+    bottomLayout->addWidget(yesButton);
+    bottomLayout->addWidget(noButton);
+    layout->addLayout(bottomLayout);
 
     connect(yesButton, &QPushButton::clicked, this,
-            [this]() { DownloadAndInstallUpdate(updateDownloadUrl); });
-
+            [this, downloadUrl]() { DownloadAndInstallUpdate(downloadUrl); });
     connect(noButton, &QPushButton::clicked, this, [this]() { close(); });
 
-    autoUpdateCheckBox = new QCheckBox("Auto Update (Check at Startup)", this);
-    layout->addWidget(autoUpdateCheckBox);
-
     autoUpdateCheckBox->setChecked(Config::autoUpdate());
-
     connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
         const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
         Config::setAutoUpdate(state == Qt::Checked);
@@ -133,14 +264,15 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl) {
 }
 
 void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request(url);
-    QNetworkReply* reply = manager->get(request);
+    QNetworkReply* reply = networkManager->get(request);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
         if (reply->error() != QNetworkReply::NoError) {
             QMessageBox::warning(this, tr("Error"),
-                                 QString(tr("Network error: ") + "\n%1").arg(reply->errorString()));
+                                 tr("Network error occurred while trying to access the URL:") +
+                                     "\n" + url + "\n" + tr("Error details:") + "\n" +
+                                     reply->errorString());
             reply->deleteLater();
             return;
         }
@@ -159,12 +291,13 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
             file.write(reply->readAll());
             file.close();
             QMessageBox::information(this, tr("Download Complete"),
-                                     tr("The update has been downloaded. Starting installation."));
+                                     tr("The update has been downloaded, press OK to install."));
             Unzip();
+            Install();
         } else {
             QMessageBox::warning(
                 this, tr("Error"),
-                QString(tr("Failed to save the update file at") + "\n%1").arg(downloadPath));
+                QString(tr("Failed to save the update file at:") + "\n" + downloadPath));
         }
 
         reply->deleteLater();
@@ -172,122 +305,281 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
 }
 
 void CheckUpdate::Unzip() {
-    // QString userPath =
-    //     QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
-    // QString tempDirPath = userPath + "/temp_download_update";
-    // QString zipFilePath = tempDirPath + "/temp_download_update.zip";
+    QString userPath =
+        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+    QString tempDirPath = userPath + "/temp_download_update";
+    QString zipFilePath = tempDirPath + "/temp_download_update.zip";
 
-    // if (!fs::exists(zipFilePath.toStdString())) {
-    //     QMessageBox::warning(this, tr("Error"),
-    //                          QString(tr("Arquivo zip não encontrado:") +
-    //                          "\n%1").arg(zipFilePath));
-    //     return;
-    // }
+    QFile zipFile(zipFilePath);
+    if (!zipFile.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Error"),
+                             tr("Failed to open the ZIP file:") + "\n" + zipFilePath);
+        return;
+    }
 
-    // void* zip_reader = NULL;
-    // void* stream = NULL;
+    QByteArray zipData = zipFile.readAll();
+    zipFile.close();
 
-    // mz_stream_os_create();
-    // if (mz_stream_os_open(stream, zipFilePath.toStdString().c_str(), MZ_OPEN_MODE_READ) != MZ_OK)
-    // {
+    const uint8_t* data = reinterpret_cast<const uint8_t*>(zipData.constData());
+    size_t size = zipData.size();
+    size_t offset = 0;
 
-    //    QMessageBox::warning(this, tr("Error"),
-    //                         QString(tr("Erro ao abrir o arquivo zip") +
-    //                         "\n%1").arg(zipFilePath));
-    //    mz_stream_os_delete(&stream);
-    //    return;
-    //}
+#pragma pack(push, 1)
+    struct ZipLocalFileHeader {
+        uint32_t signature;
+        uint16_t version;
+        uint16_t flags;
+        uint16_t method;
+        uint16_t time;
+        uint16_t date;
+        uint32_t crc32;
+        uint32_t compressedSize;
+        uint32_t uncompressedSize;
+        uint16_t filenameLength;
+        uint16_t extraFieldLength;
+    };
+#pragma pack(pop)
 
-    //// Criar o leitor do ZIP
-    // mz_zip_create();
-    // if (mz_zip_open(zip_reader, stream, MZ_OPEN_MODE_READ) != MZ_OK) {
+    auto readLocalFileHeader = [&](const uint8_t* data, size_t offset,
+                                   ZipLocalFileHeader& header) -> bool {
+        memcpy(&header, data + offset, sizeof(header));
+        return header.signature == 0x04034b50;
+    };
 
-    //    QMessageBox::warning(
-    //        this, tr("Error"),
-    //        QString(tr("Erro ao abrir o arquivo zip com mz_zip_open") + "\n%1").arg(zipFilePath));
+    auto decompressData = [&](const std::vector<uint8_t>& compressedData,
+                              std::vector<uint8_t>& decompressedData) -> bool {
+        zng_stream strm = {};
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        strm.opaque = Z_NULL;
+        strm.avail_in = compressedData.size();
+        strm.next_in = reinterpret_cast<Bytef*>(const_cast<uint8_t*>(compressedData.data()));
 
-    //    mz_zip_delete(&zip_reader);
-    //    mz_stream_os_delete(&stream);
-    //    return;
-    //}
+        if (zng_inflateInit2(&strm, -MAX_WBITS) != Z_OK) {
+            return false;
+        }
 
-    //// Passa por (arquivo ou diretório) no arquivo zip
-    // while (mz_zip_goto_next_entry(zip_reader) == MZ_OK) {
-    //     mz_zip_file* file_info = nullptr;
-    //     if (mz_zip_entry_get_info(zip_reader, &file_info) != MZ_OK) {
-    //         QMessageBox::warning(
-    //             this, tr("Error"),
-    //             QString(tr("Erro ao obter informações da entrada no zip.") + "\n%1")
-    //                 .arg(zipFilePath));
-    //         continue;
-    //     }
+        strm.avail_out = decompressedData.size();
+        strm.next_out = decompressedData.data();
 
-    //    QString caminho_arquivo = tempDirPath + "/" + file_info->filename;
+        int result = zng_inflate(&strm, Z_NO_FLUSH);
+        if (result != Z_STREAM_END) {
+            zng_inflateEnd(&strm);
+            return false;
+        }
 
-    //    // Verifique se a entrada do zip é um diretório
-    //    if (mz_zip_entry_is_dir(zip_reader) == MZ_OK) {
-    //        fs::create_directories(caminho_arquivo.toStdString());
-    //        QMessageBox::warning(this, tr("Error"),
-    //                             QString(tr("Diretório criado:") + "\n%1").arg(caminho_arquivo));
-    //    } else {
-    //        // Certifique-se de que o diretório pai do arquivo exista
-    //        fs::create_directories(fs::path(caminho_arquivo.toStdString()).parent_path());
+        zng_inflateEnd(&strm);
+        return true;
+    };
 
-    //        // Abra o arquivo de saída para gravação
-    //        std::ofstream arquivo_saida(caminho_arquivo.toStdString(), std::ios::binary);
-    //        if (!arquivo_saida) {
+    while (offset < size) {
+        ZipLocalFileHeader header;
+        if (readLocalFileHeader(data, offset, header)) {
+            uint16_t fileNameLength = header.filenameLength;
+            std::string fileName(reinterpret_cast<const char*>(data + offset + sizeof(header)),
+                                 fileNameLength);
 
-    //            QMessageBox::warning(
-    //                this, tr("Error"),
-    //                QString(tr("Erro ao abrir o arquivo de saída:") +
-    //                "\n%1").arg(caminho_arquivo));
+            if (fileName.empty()) {
+                QMessageBox::warning(this, tr("Error"),
+                                     tr("File name is empty. Possibly corrupted ZIP."));
+                break;
+            }
 
-    //            mz_zip_entry_close(zip_reader);
-    //            continue;
-    //        }
+            offset += sizeof(header) + fileNameLength + header.extraFieldLength;
 
-    //        // Buffer temporário para leitura dos dados
-    //        char buffer[4096];
-    //        int32_t bytes_lidos;
+            size_t compressedDataOffset = offset;
+            size_t compressedDataSize = header.compressedSize;
+            size_t uncompressedSize = header.uncompressedSize;
 
-    //        // Leia os dados do arquivo zip e escreva no arquivo de saída
-    //        while ((bytes_lidos = mz_zip_entry_read(zip_reader, buffer, sizeof(buffer))) > 0) {
-    //            arquivo_saida.write(buffer, bytes_lidos);
-    //        }
-    //        arquivo_saida.close();
-    //        QMessageBox::warning(this, tr("Error"),
-    //                             QString(tr("Arquivo extraído:") + "\n%1").arg(caminho_arquivo));
-    //    }
-    //    mz_zip_entry_close(zip_reader);
-    //}
+            if (header.method == 0) {
+                // 0 = No need to decompress, just copy the data
+                std::vector<uint8_t> decompressedData(
+                    data + compressedDataOffset, data + compressedDataOffset + compressedDataSize);
 
-    //// Fechar o arquivo zip
-    // mz_zip_close(zip_reader);
-    // mz_zip_delete(&zip_reader);
-    // mz_stream_os_close(stream);
-    // mz_stream_os_delete(&stream);
+                QString filePath = QString::fromUtf8(fileName.c_str());
+                QString fullPath = tempDirPath + "/" + filePath;
 
-    // QMessageBox::warning(this, tr("Error"),
-    //                      QString(tr("Descompactação concluída em:") + "\n%1").arg(tempDirPath));
+                QFileInfo fileInfo(fullPath);
+                QString dirPath = fileInfo.path();
+
+                QDir dir(dirPath);
+                if (!dir.exists()) {
+                    if (!dir.mkpath(dirPath)) {
+                        QMessageBox::warning(this, tr("Error"),
+                                             tr("Failed to create directory:") + "\n" + dirPath);
+                        continue;
+                    }
+                }
+
+                QFile outFile(fullPath);
+                outFile.write(reinterpret_cast<const char*>(decompressedData.data()),
+                              decompressedData.size());
+                outFile.close();
+
+                offset += compressedDataSize;
+            } else if (header.method == 8) {
+                // 8 = Decompression Deflate
+                std::vector<uint8_t> compressedData(
+                    data + compressedDataOffset, data + compressedDataOffset + compressedDataSize);
+                std::vector<uint8_t> decompressedData(uncompressedSize);
+
+                if (!decompressData(compressedData, decompressedData)) {
+                    QMessageBox::warning(this, tr("Error"),
+                                         tr("Error decompressing file") + "\n" +
+                                             QString::fromStdString(fileName));
+                    continue;
+                }
+
+                QString filePath = QString::fromUtf8(fileName.c_str());
+                QString fullPath = tempDirPath + "/" + filePath;
+
+                QFileInfo fileInfo(fullPath);
+                QString dirPath = fileInfo.path();
+
+                QDir dir(dirPath);
+                if (!dir.exists()) {
+                    if (!dir.mkpath(dirPath)) {
+                        QMessageBox::warning(this, tr("Error"),
+                                             tr("Failed to create directory:") + "\n" + dirPath);
+                        continue;
+                    }
+                }
+
+                QFile outFile(fullPath);
+                if (!outFile.open(QIODevice::WriteOnly)) { // remove this?
+                    QMessageBox::warning(this, tr("Error"),
+                                         tr("Failed to open output file:") + "\n" + fullPath);
+                    continue;
+                }
+                outFile.write(reinterpret_cast<const char*>(decompressedData.data()),
+                              decompressedData.size());
+                outFile.close();
+
+                offset += compressedDataSize;
+            } else {
+                QMessageBox::warning(this, tr("Error"),
+                                     tr("Unsupported compression method for file:") +
+                                         header.method + "\n" + QString::fromStdString(fileName));
+                break;
+            }
+#if defined(Q_OS_MAC)
+            if (filePath == "shadps4-macos-qt.tar.gz") {
+                // Unpack the tar.gz file
+                QString tarGzFilePath = tempDirPath + "/" + filePath;
+                QString tarExtractDirPath = tempDirPath + "/tar_extracted";
+                QDir tarExtractDir(tarExtractDirPath);
+                if (!tarExtractDir.exists()) {
+                    if (!tarExtractDir.mkpath(tarExtractDirPath)) {
+                        QMessageBox::warning(this, tr("Error"),
+                                             tr("Failed to create TAR extraction directory:") +
+                                                 "\n" + tarExtractDirPath);
+                        return;
+                    }
+                }
+
+                QString tarCommand =
+                    QString("tar -xzf %1 -C %2").arg(tarGzFilePath, tarExtractDirPath);
+                QProcess tarProcess;
+                tarProcess.start(tarCommand);
+                tarProcess.waitForFinished();
+
+                // Check if tar was successful
+                if (tarProcess.exitStatus() != QProcess::NormalExit || tarProcess.exitCode() != 0) {
+                    QMessageBox::warning(this, tr("Error"),
+                                         tr("Failed to extract the TAR file:") + "\n" +
+                                             tarProcess.errorString());
+                    return;
+                }
+                // Remove .tar.gz file after extraction
+                QFile::remove(tarGzFilePath);
+            }
+#endif
+        } else {
+            offset++;
+        }
+    }
 }
 
-//// Criar e executar o arquivo batch para atualizar
-// QFile batFile(tempDirPath + "/update.bat");
-// if (batFile.open(QIODevice::WriteOnly)) {
-//     QTextStream out(&batFile);
-//     out << "@echo off\n";
-//     out << "taskkill /IM shadps4.exe /F\n";
-//     out << "move /Y \"" << tempDirPath << "\\*\" \"" << userPath << "\"\n";
-//     out << "start \"\" \"" << userPath << "\\shadps4.exe\"\n";
-//     batFile.close();
+void CheckUpdate::Install() {
+    QString userPath =
+        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
+    QString tempDirPath = userPath + "/temp_download_update";
+    QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
 
-//    if (!QProcess::startDetached(batFile.fileName())) {
-//        QMessageBox::warning(
-//            this, tr("Error"),
-//            tr("Failed to start the update batch file:\n%1").arg(batFile.fileName()));
-//    }
-//} else {
-// QMessageBox::warning(
-//    this, tr("Error"),
-//    tr("Failed to create the update batch file:\n%1").arg(batFile.fileName()));
-//}
+    QString startingUpdate = tr("Iniciando atualização...");
+
+    QString scriptContent;
+    QString scriptFileName;
+    QStringList arguments;
+    QString processCommand;
+
+#ifdef Q_OS_WIN
+    // Windows Batch Script
+    scriptFileName = tempDirPath + "/update.bat";
+    scriptContent = QStringLiteral("@echo off\n"
+                                   "chcp 65001\n"
+                                   "echo %1\n"
+                                   "timeout /t 3 /nobreak\n"
+                                   "xcopy /E /I /Y \"%2\\*\" \"%3\\\"\n"
+                                   "timeout /t 3 /nobreak\n"
+                                   "del /Q \"%3\\update.bat\"\n"
+                                   "del /Q \"%3\\temp_download_update.zip\"\n"
+                                   "start \"\" \"%3\\shadps4.exe\"\n"
+                                   "rmdir /S /Q \"%2\"\n");
+    arguments << "/C" << scriptFileName;
+    processCommand = "cmd.exe";
+
+#elif defined(Q_OS_LINUX)
+    // Linux Shell Script
+    scriptFileName = tempDirPath + "/update.sh";
+    scriptContent = QStringLiteral("#!/bin/bash\n"
+                                   "echo \"%1\"\n"
+                                   "sleep 3\n"
+                                   "cp -r \"%2/\"* \"%3/\"\n"
+                                   "sleep 3\n"
+                                   "rm \"%3/update.sh\"\n"
+                                   "rm \"%3/Shadps4-qt.AppImage\"\n"
+                                   "chmod +x \"%3/Shadps4-qt.AppImage\"\n"
+                                   "cd \"%3\" && ./Shadps4-qt.AppImage\n"
+                                   "rm -r \"%2\"\n");
+    arguments << scriptFileName;
+    processCommand = "bash";
+
+#elif defined(Q_OS_MAC)
+    // macOS Shell Script
+    scriptFileName = tempDirPath + "/update.sh";
+    scriptContent = QStringLiteral("#!/bin/bash\n"
+                                   "echo \"%1\"\n"
+                                   "sleep 3\n"
+                                   "tar -xzf \"%2/temp_download_update.tar.gz\" -C \"%3\"\n"
+                                   "sleep 3\n"
+                                   "rm \"%3/update.sh\"\n"
+                                   "chmod +x \"%3/shadps4.app/Contents/MacOS/shadps4\"\n"
+                                   "open \"%3/shadps4.app\"\n"
+                                   "rm -r \"%2\"\n");
+    arguments << scriptFileName;
+    processCommand = "bash";
+#else
+    QMessageBox::warning(this, tr("Error"), tr("Unsupported operating system."));
+    return;
+#endif
+
+    QFile scriptFile(scriptFileName);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << scriptContent.arg(startingUpdate).arg(tempDirPath).arg(rootPath);
+        scriptFile.close();
+
+// Make the script executable on Unix-like systems
+#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+        std::filesystem::permissions(scriptFileName, std::filesystem::perms::owner_exec);
+#endif
+        QProcess::startDetached(processCommand, arguments);
+
+        exit(EXIT_SUCCESS);
+    } else {
+        QMessageBox::warning(
+            this, tr("Error"),
+            QString(tr("Failed to create the update script file:") + "\n" + scriptFileName));
+    }
+}

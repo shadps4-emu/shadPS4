@@ -16,6 +16,7 @@ bool isFullscreenMode();
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
+std::string getUpdateChannel();
 
 bool getUseSpecialPad();
 int getSpecialPadClass();
@@ -49,6 +50,7 @@ void setFullscreenMode(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
+void setUpdateChannel(const std::string& type);
 
 void setUseSpecialPad(bool use);
 void setSpecialPadClass(int type);
