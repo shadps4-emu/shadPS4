@@ -193,6 +193,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
         switch (type) {
         case 0:
+            const u32 count = header->type0.NumWords();
+            dcb = NextPacket(dcb, count);
+            continue;
         case 1:
             UNREACHABLE_MSG("Unsupported PM4 type {}", type);
             break;
