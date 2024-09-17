@@ -5,9 +5,12 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/types.h"
+#include "core/signals.h"
 #include "core/tls.h"
 
 #ifdef _WIN32
+#include <Zydis/Zydis.h>
+#include <immintrin.h>
 #include <windows.h>
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
 #include <architecture/i386/table.h>
@@ -25,14 +28,43 @@ namespace Core {
 // Windows
 
 static DWORD slot = 0;
+static ZydisDecoder tls_instr_decoder;
 static std::once_flag slot_alloc_flag;
 
-static void AllocTcbKey() {
-    slot = TlsAlloc();
+static bool TlsAccessViolationHandler(void* code_address, void* fault_address, bool is_write) {
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    const auto status =
+        ZydisDecoderDecodeFull(&tls_instr_decoder, code_address, 0x20, &instruction, operands);
+    if (!ZYAN_SUCCESS(status)) {
+        return false;
+    }
+
+    for (u32 i = 0; i < instruction.operand_count_visible; i++) {
+        if (operands[i].type == ZYDIS_OPERAND_TYPE_MEMORY &&
+            operands[i].mem.segment == ZYDIS_REGISTER_FS) {
+            // Set the FS register and try again.
+            const auto* tcb_base = GetTcbBase();
+            asm volatile("wrfsbase %0" ::"r"(tcb_base) : "memory");
+            return true;
+        }
+    }
+
+    return false;
 }
 
-u32 GetTcbKey() {
-    std::call_once(slot_alloc_flag, &AllocTcbKey);
+static void InitializeTls() {
+    slot = TlsAlloc();
+    ZydisDecoderInit(&tls_instr_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
+
+    auto* signals = Signals::Instance();
+    // Should be called last.
+    constexpr auto priority = std::numeric_limits<u32>::max();
+    signals->RegisterAccessViolationHandler(TlsAccessViolationHandler, priority);
+}
+
+static u32 GetTcbKey() {
+    std::call_once(slot_alloc_flag, &InitializeTls);
     return slot;
 }
 
