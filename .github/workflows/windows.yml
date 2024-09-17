@@ -31,8 +31,21 @@ jobs:
           restore-keys: |
             ${{ env.cache-name }}-
 
+    - name: Cache CMake dependency build objects
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-builds
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
+
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL
+      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
@@ -49,4 +62,4 @@ jobs:
       with:
         name: shadps4-win64-sdl-${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.shorthash }}
         path: |
-          ${{github.workspace}}/build/Release/shadPS4.exe
+          ${{github.workspace}}/build/shadPS4.exe
