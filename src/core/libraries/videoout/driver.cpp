@@ -291,8 +291,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 }
             } else {
                 delay = Flip(request);
+                FRAME_END;
             }
-            FRAME_END;
         }
 
         {
