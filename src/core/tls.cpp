@@ -28,26 +28,46 @@ namespace Core {
 // Windows
 
 static DWORD slot = 0;
+static std::set<void*> known_fs_accesses;
+static std::mutex known_fs_accesses_lock;
 static ZydisDecoder tls_instr_decoder;
 static std::once_flag slot_alloc_flag;
 
 static bool TlsAccessViolationHandler(void* code_address, void* fault_address, bool is_write) {
-    ZydisDecodedInstruction instruction;
-    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status =
-        ZydisDecoderDecodeFull(&tls_instr_decoder, code_address, 0x20, &instruction, operands);
-    if (!ZYAN_SUCCESS(status)) {
-        return false;
+    bool known;
+    {
+        std::unique_lock lock{known_fs_accesses_lock};
+        known = known_fs_accesses.contains(code_address);
     }
 
-    for (u32 i = 0; i < instruction.operand_count_visible; i++) {
-        if (operands[i].type == ZYDIS_OPERAND_TYPE_MEMORY &&
-            operands[i].mem.segment == ZYDIS_REGISTER_FS) {
-            // Set the FS register and try again.
-            const auto* tcb_base = GetTcbBase();
-            asm volatile("wrfsbase %0" ::"r"(tcb_base) : "memory");
-            return true;
+    if (!known) {
+        ZydisDecodedInstruction instruction;
+        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+        const auto status =
+            ZydisDecoderDecodeFull(&tls_instr_decoder, code_address, 0x20, &instruction, operands);
+        if (!ZYAN_SUCCESS(status)) {
+            return false;
         }
+
+        for (u32 i = 0; i < instruction.operand_count_visible; i++) {
+            if (operands[i].type == ZYDIS_OPERAND_TYPE_MEMORY &&
+                operands[i].mem.segment == ZYDIS_REGISTER_FS) {
+                known = true;
+                break;
+            }
+        }
+
+        if (known) {
+            std::unique_lock lock{known_fs_accesses_lock};
+            known_fs_accesses.insert(code_address);
+        }
+    }
+
+    if (known) {
+        // Set the FS register and try again.
+        const auto* tcb_base = GetTcbBase();
+        asm volatile("wrfsbase %0" ::"r"(tcb_base) : "memory");
+        return true;
     }
 
     return false;
