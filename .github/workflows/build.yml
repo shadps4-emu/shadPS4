@@ -141,6 +141,17 @@ jobs:
         arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         arch -x86_64 /usr/local/bin/brew install molten-vk
 
+    - name: Cache CMake dependency source code 
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources 
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
     - name: Cache CMake dependency build objects
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
@@ -192,6 +203,17 @@ jobs:
         target: desktop
         arch: clang_64
         archives: qtbase qttools
+        
+    - name: Cache CMake dependency source code 
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources 
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
 
     - name: Cache CMake dependency build objects
       uses: hendrikmuhs/ccache-action@v1.2.14
@@ -230,6 +252,17 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
+
+    - name: Cache CMake dependency source code 
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources 
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
 
     - name: Cache CMake dependency build objects
       uses: hendrikmuhs/ccache-action@v1.2.14
@@ -275,6 +308,17 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev
+
+    - name: Cache CMake dependency source code 
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources 
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
 
     - name: Cache CMake dependency build objects
       uses: hendrikmuhs/ccache-action@v1.2.14
