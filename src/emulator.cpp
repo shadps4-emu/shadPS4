@@ -42,9 +42,10 @@ Emulator::Emulator() {
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(config_dir / "config.toml");
 
-    // Initialize NT API functions
+    // Initialize NT API functions and set high priority
 #ifdef _WIN32
     Common::NtApi::Initialize();
+    SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
 
     // Start logger.
