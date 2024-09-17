@@ -9,6 +9,7 @@
 #include <xbyak/xbyak.h>
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/decoder.h"
 #include "common/types.h"
 #include "core/signals.h"
 #include "core/tls.h"
@@ -622,7 +623,6 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
 };
 
 static std::once_flag init_flag;
-static ZydisDecoder instr_decoder;
 
 struct PatchModule {
     /// Mutex controlling access to module code regions.
@@ -663,8 +663,8 @@ static PatchModule* GetModule(const void* ptr) {
 static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status =
-        ZydisDecoderDecodeFull(&instr_decoder, code, module->end - code, &instruction, operands);
+    const auto status = Common::Decoder::Instance().decodeInstruction(instruction, operands, code,
+                                                                      module->end - code);
     if (!ZYAN_SUCCESS(status)) {
         return std::make_pair(false, 1);
     }
@@ -755,8 +755,6 @@ static bool PatchesIllegalInstructionHandler(void* code_address) {
 }
 
 static void PatchesInit() {
-    ZydisDecoderInit(&instr_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
-
     if (!Patches.empty()) {
         auto* signals = Signals::Instance();
         // Should be called last.

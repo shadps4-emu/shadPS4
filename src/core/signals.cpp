@@ -3,6 +3,7 @@
 
 #include "common/arch.h"
 #include "common/assert.h"
+#include "common/decoder.h"
 #include "core/signals.h"
 
 #ifdef _WIN32
@@ -10,7 +11,6 @@
 #else
 #include <csignal>
 #ifdef ARCH_X86_64
-#include <Zydis/Decoder.h>
 #include <Zydis/Formatter.h>
 #endif
 #endif
@@ -66,14 +66,10 @@ static std::string DisassembleInstruction(void* code_address) {
     char buffer[256] = "<unable to decode>";
 
 #ifdef ARCH_X86_64
-    ZydisDecoder decoder;
-    ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
-
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    static constexpr u64 max_length = 0x20;
     const auto status =
-        ZydisDecoderDecodeFull(&decoder, code_address, max_length, &instruction, operands);
+        Common::Decoder::Instance().decodeInstruction(instruction, operands, code_address);
     if (ZYAN_SUCCESS(status)) {
         ZydisFormatter formatter;
         ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);

@@ -8,13 +8,20 @@
 
 namespace Common {
 
-class Disassembler {
+class Decoder {
 public:
-    Disassembler();
-    ~Disassembler();
+    Decoder();
+    ~Decoder();
 
     void printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands, u64 address);
     void printInstruction(void* code, u64 address);
+    ZyanStatus decodeInstruction(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,
+                                 void* data, u64 size = 15);
+
+    static Decoder& Instance() {
+        static Decoder instance;
+        return instance;
+    }
 
 private:
     ZydisDecoder m_decoder;
