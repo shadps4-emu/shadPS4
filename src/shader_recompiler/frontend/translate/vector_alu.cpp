@@ -179,6 +179,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_F32(inst);
     case Opcode::V_RCP_F32:
         return V_RCP_F32(inst);
+    case Opcode::V_RCP_F64:
+        return V_RCP_F64(inst);
     case Opcode::V_LDEXP_F32:
         return V_LDEXP_F32(inst);
     case Opcode::V_FRACT_F32:
@@ -196,8 +198,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_FMA_F32:
     case Opcode::V_MADAK_F32:
         return V_FMA_F32(inst);
+    case Opcode::V_FMA_F64:
+        return V_FMA_F64(inst);
     case Opcode::V_MAX_F32:
         return V_MAX_F32(inst);
+    case Opcode::V_MUL_F64:
+        return V_MUL_F64(inst);
     case Opcode::V_MAX_F64:
         return V_MAX_F64(inst);
     case Opcode::V_RSQ_F32:
@@ -537,6 +543,18 @@ void Translator::V_FMA_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
 }
 
+void Translator::V_RCP_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPRecip(src0));
+}
+
+void Translator::V_FMA_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    const IR::F64 src2{GetSrc64<IR::F64>(inst.src[2])};
+    SetDst64(inst.dst[0], ir.FPFma(src0, src1, src2));
+}
+
 void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
@@ -582,6 +600,12 @@ void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
+}
+
+void Translator::V_MUL_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    SetDst64(inst.dst[0], ir.FPMul(src0, src1));
 }
 
 void Translator::V_MAX_F64(const GcnInst& inst) {
