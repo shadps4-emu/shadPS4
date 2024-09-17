@@ -1272,8 +1272,12 @@ int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmResetVgtControl() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    if (cmdbuf == nullptr || size != 3) {
+        return -1;
+    }
+    PM4CmdSetData::SetContextReg(cmdbuf, 0x2aau, 0xffu); // IA_MULTI_VGT_PARAM
     return ORBIS_OK;
 }
 
