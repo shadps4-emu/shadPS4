@@ -142,7 +142,6 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             close();
             return;
         } else {
-            setFixedSize(420, 205);
             setupUI_UpdateAvailable(downloadUrl, latestDate, latestRev, currentDate, currentRev);
         }
         reply->deleteLater();
@@ -215,13 +214,13 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
                         if (!textField->isVisible()) {
                             requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
                                              currentDate);
-                            setFixedSize(420, 410);
                             textField->setVisible(true);
                             toggleButton->setText(tr("Hide Changelog"));
+                            adjustSize();
                         } else {
-                            setFixedSize(420, 205);
                             textField->setVisible(false);
                             toggleButton->setText(tr("Show Changelog"));
+                            adjustSize();
                         }
                     } else {
                         QMessageBox::information(
@@ -230,7 +229,7 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
                     }
                 });
     } else {
-        setFixedSize(420, 175);
+        adjustSize();
     }
 
     connect(yesButton, &QPushButton::clicked, this,
@@ -555,9 +554,9 @@ void CheckUpdate::Install() {
     scriptContent = QStringLiteral("@echo off\n"
                                    "chcp 65001\n"
                                    "echo %1\n"
-                                   "timeout /t 3 /nobreak\n"
+                                   "timeout /t 2 /nobreak\n"
                                    "xcopy /E /I /Y \"%2\\*\" \"%3\\\"\n"
-                                   "timeout /t 3 /nobreak\n"
+                                   "timeout /t 2 /nobreak\n"
                                    "del /Q \"%3\\update.bat\"\n"
                                    "del /Q \"%3\\temp_download_update.zip\"\n"
                                    "start \"\" \"%3\\shadps4.exe\"\n"
@@ -570,14 +569,14 @@ void CheckUpdate::Install() {
     scriptFileName = tempDirPath + "/update.sh";
     scriptContent = QStringLiteral("#!/bin/bash\n"
                                    "echo \"%1\"\n"
-                                   "sleep 3\n"
+                                   "sleep 2\n"
                                    "cp -r \"%2/\"* \"%3/\"\n"
-                                   "sleep 3\n"
+                                   "sleep 2\n"
                                    "rm \"%3/update.sh\"\n"
-                                   "rm \"%3/Shadps4-qt.AppImage\"\n"
+                                   "rm \"%3/temp_download_update.zip\"\n"
+                                   "rm -r \"%2\"\n"
                                    "chmod +x \"%3/Shadps4-qt.AppImage\"\n"
-                                   "cd \"%3\" && ./Shadps4-qt.AppImage\n"
-                                   "rm -r \"%2\"\n");
+                                   "cd \"%3\" && ./Shadps4-qt.AppImage\n");
     arguments << scriptFileName;
     processCommand = "bash";
 
@@ -586,9 +585,9 @@ void CheckUpdate::Install() {
     scriptFileName = tempDirPath + "/update.sh";
     scriptContent = QStringLiteral("#!/bin/bash\n"
                                    "echo \"%1\"\n"
-                                   "sleep 3\n"
+                                   "sleep 2\n"
                                    "tar -xzf \"%2/temp_download_update.tar.gz\" -C \"%3\"\n"
-                                   "sleep 3\n"
+                                   "sleep 2\n"
                                    "rm \"%3/update.sh\"\n"
                                    "chmod +x \"%3/shadps4.app/Contents/MacOS/shadps4\"\n"
                                    "open \"%3/shadps4.app\"\n"
@@ -608,8 +607,10 @@ void CheckUpdate::Install() {
 
 // Make the script executable on Unix-like systems
 #if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
-        std::filesystem::permissions(scriptFileName, std::filesystem::perms::owner_exec);
+        scriptFile.setPermissions(QFileDevice::ExeOwner | QFileDevice::ReadOwner |
+                                  QFileDevice::WriteOwner);
 #endif
+
         QProcess::startDetached(processCommand, arguments);
 
         exit(EXIT_SUCCESS);

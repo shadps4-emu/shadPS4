@@ -169,7 +169,7 @@ void MainWindow::CheckUpdateMain(bool checkSave) {
         }
     }
     auto checkUpdate = new CheckUpdate(false);
-    checkUpdate->show();
+    checkUpdate->exec();
 }
 
 void MainWindow::GetPhysicalDevices() {
@@ -235,7 +235,7 @@ void MainWindow::CreateConnects() {
 
     connect(ui->updaterAct, &QAction::triggered, this, [this]() {
         auto checkUpdate = new CheckUpdate(true);
-        checkUpdate->show();
+        checkUpdate->exec();
     });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {

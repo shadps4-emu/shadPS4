@@ -131,7 +131,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
             auto checkUpdate = new CheckUpdate(true);
-            checkUpdate->show();
+            checkUpdate->exec();
         });
     }
 
