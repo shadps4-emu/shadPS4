@@ -153,9 +153,9 @@ struct PageManager::Impl {
 #endif
     }
 
-    static bool GuestFaultSignalHandler(void* code_address, void* fault_address) {
+    static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
-        const bool is_write = Common::IsWriteError(code_address);
+        const bool is_write = Common::IsWriteError(context);
         if (is_write && owned_ranges.find(addr) != owned_ranges.end()) {
             const VAddr addr_aligned = Common::AlignDown(addr, PAGESIZE);
             rasterizer->InvalidateMemory(addr_aligned, PAGESIZE);

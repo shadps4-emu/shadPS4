@@ -54,20 +54,22 @@ void* GetXmmPointer(void* ctx, u8 index) {
 
 void* GetRip(void* ctx) {
 #if defined(_WIN32)
-    return &((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip;
+    return (void*)((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip;
 #elif defined(__APPLE__)
-    return &((ucontext_t*)ctx)->uc_mcontext->__ss.__rip;
+    return (void*)((ucontext_t*)ctx)->uc_mcontext->__ss.__rip;
 #else
-    return &((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP];
+    return (void*)((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP];
 #endif
 }
 
 void IncrementRip(void* ctx, u64 length) {
-    void* rip = GetRip(ctx);
-    u64 new_rip;
-    memcpy(&new_rip, rip, sizeof(u64));
-    new_rip += length;
-    memcpy(rip, &new_rip, sizeof(u64));
+#if defined(_WIN32)
+    ((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip += length;
+#elif defined(__APPLE__)
+    ((ucontext_t*)ctx)->uc_mcontext->__ss.__rip += length;
+#else
+    ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP] += length;
+#endif
 }
 
 bool IsWriteError(void* ctx) {
