@@ -189,41 +189,49 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     bottomLayout->addWidget(noButton);
     layout->addLayout(bottomLayout);
 
+    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
     // Create text field for changelog
-    QTextEdit* textField = new QTextEdit(this);
-    textField->setReadOnly(true);
-    textField->setFixedWidth(400);
-    textField->setFixedHeight(200);
-    textField->setVisible(false);
-    layout->addWidget(textField);
 
-    // Create toggle button for changelog
-    QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
-    layout->addWidget(toggleButton);
+    if (updateChannel == "unstable") {
 
-    // Connect the toggle button to the slot to show/hide changelog
-    connect(toggleButton, &QPushButton::clicked,
-            [this, textField, toggleButton, currentRev, latestRev, downloadUrl, latestDate,
-             currentDate]() {
-                QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
-                if (updateChannel == "unstable") {
-                    if (!textField->isVisible()) {
-                        requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
-                                         currentDate);
-                        setFixedSize(420, 410);
-                        textField->setVisible(true);
-                        toggleButton->setText(tr("Hide Changelog"));
+        QTextEdit* textField = new QTextEdit(this);
+
+        textField->setReadOnly(true);
+        textField->setFixedWidth(400);
+        textField->setFixedHeight(200);
+        textField->setVisible(false);
+        layout->addWidget(textField);
+
+        // Create toggle button for changelog
+        QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
+        layout->addWidget(toggleButton);
+
+        // Connect the toggle button to the slot to show/hide changelog
+        connect(toggleButton, &QPushButton::clicked,
+                [this, textField, toggleButton, currentRev, latestRev, downloadUrl, latestDate,
+                 currentDate]() {
+                    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+                    if (updateChannel == "unstable") {
+                        if (!textField->isVisible()) {
+                            requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
+                                             currentDate);
+                            setFixedSize(420, 410);
+                            textField->setVisible(true);
+                            toggleButton->setText(tr("Hide Changelog"));
+                        } else {
+                            setFixedSize(420, 205);
+                            textField->setVisible(false);
+                            toggleButton->setText(tr("Show Changelog"));
+                        }
                     } else {
-                        setFixedSize(420, 205);
-                        textField->setVisible(false);
-                        toggleButton->setText(tr("Show Changelog"));
+                        QMessageBox::information(
+                            this, tr("Changelog Unavailable"),
+                            tr("Viewing changelog is only available for the 'unstable' channel."));
                     }
-                } else {
-                    QMessageBox::information(
-                        this, tr("Changelog Unavailable"),
-                        tr("Viewing changelog is only available for the 'unstable' channel."));
-                }
-            });
+                });
+    } else {
+        setFixedSize(420, 175);
+    }
 
     connect(yesButton, &QPushButton::clicked, this,
             [this, downloadUrl]() { DownloadAndInstallUpdate(downloadUrl); });
