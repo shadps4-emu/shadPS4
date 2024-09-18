@@ -55,7 +55,7 @@ public:
     QMenu* menuSettings;
     QMenu* menuUtils;
     QMenu* menuThemes;
-    QMenu* menuAbout;
+    QMenu* menuHelp;
     QToolBar* toolBar;
 
     void setupUi(QMainWindow* MainWindow) {
@@ -247,8 +247,8 @@ public:
         menuThemes = new QMenu(menuView);
         menuThemes->setObjectName("menuThemes");
         menuThemes->setIcon(QIcon(":images/themes_icon.png"));
-        menuAbout = new QMenu(menuBar);
-        menuAbout->setObjectName("menuAbout");
+        menuHelp = new QMenu(menuBar);
+        menuHelp->setObjectName("menuHelp");
         MainWindow->setMenuBar(menuBar);
         toolBar = new QToolBar(MainWindow);
         toolBar->setObjectName("toolBar");
@@ -257,7 +257,7 @@ public:
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
-        menuBar->addAction(menuAbout->menuAction());
+        menuBar->addAction(menuHelp->menuAction());
         menuFile->addAction(bootInstallPkgAct);
         menuFile->addAction(bootGameAct);
         menuFile->addAction(addElfFolderAct);
@@ -289,8 +289,8 @@ public:
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
-        menuAbout->addAction(updaterAct);
-        menuAbout->addAction(aboutAct);
+        menuHelp->addAction(updaterAct);
+        menuHelp->addAction(aboutAct);
 
         retranslateUi(MainWindow);
 
@@ -304,7 +304,8 @@ public:
         bootInstallPkgAct->setText(
             QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
-        updaterAct->setText(QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
+        updaterAct->setText(
+            QCoreApplication::translate("MainWindow", "Check for Updates", nullptr));
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
@@ -351,7 +352,7 @@ public:
         menuSettings->setTitle(QCoreApplication::translate("MainWindow", "Settings", nullptr));
         menuUtils->setTitle(QCoreApplication::translate("MainWindow", "Utils", nullptr));
         menuThemes->setTitle(QCoreApplication::translate("MainWindow", "Themes", nullptr));
-        menuAbout->setTitle(QCoreApplication::translate("MainWindow", "About", nullptr));
+        menuHelp->setTitle(QCoreApplication::translate("MainWindow", "Help", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
         setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
         setThemeGreen->setText(QCoreApplication::translate("MainWindow", "Green", nullptr));

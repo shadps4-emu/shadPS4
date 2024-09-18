@@ -123,6 +123,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setLogFilter(text.toStdString()); });
 
+        // I believe all of this should go to settings_dialog.ui | and add translation in .ts
         // Create the "Update" section and add it to the existing QGroupBox
         QGroupBox* updateGroupBox = new QGroupBox("Update");
         updateGroupBox->setMaximumWidth(265);

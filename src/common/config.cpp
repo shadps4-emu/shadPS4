@@ -382,7 +382,7 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        updateChannel = toml::find_or<std::string>(general, "updateChannel", "unstable");        
+        updateChannel = toml::find_or<std::string>(general, "updateChannel", "unstable");
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", true);
     }
@@ -476,7 +476,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
-    data["General"]["updateChannel"] = updateChannel;    
+    data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["Input"]["useSpecialPad"] = useSpecialPad;

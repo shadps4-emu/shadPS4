@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -21,7 +19,6 @@
 #include <QString>
 #include <QStringList>
 #include <QTextEdit>
-#include <QTextStream>
 #include <QVBoxLayout>
 #include <common/config.h>
 #include <common/path_util.h>
@@ -35,7 +32,7 @@ namespace fs = std::filesystem;
 CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
     : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
     setWindowTitle(tr("Auto Updater"));
-    setFixedSize(420, 380);
+    setFixedSize(0, 0);
     CheckForUpdates(showMessage);
 }
 
@@ -52,7 +49,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
     } else {
         QMessageBox::warning(
             this, tr("Error"),
-            QString(tr("Invalid update channel:") + "\n%1\n" +
+            QString(tr("Invalid update channel: ") + updateChannel + "\n" +
                     tr("In updateChannel in config.tml file must contain 'stable' or 'unstable'")
                         .arg(updateChannel)));
         return;
@@ -64,7 +61,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
     connect(reply, &QNetworkReply::finished, this, [this, reply, showMessage, updateChannel]() {
         if (reply->error() != QNetworkReply::NoError) {
             QMessageBox::warning(this, tr("Error"),
-                                 QString(tr("Network error:") + "\n%1").arg(reply->errorString()));
+                                 QString(tr("Network error:") + "\n" + reply->errorString()));
             reply->deleteLater();
             return;
         }
@@ -113,15 +110,14 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
         latestDate = dateTime.isValid() ? dateTime.toString("yyyy-MM-dd HH:mm:ss") : "Unknown date";
 
-        if (jsonObj.contains("assets")) {
-            QJsonArray assets = jsonObj["assets"].toArray();
-            bool found = false;
-            for (const QJsonValue& assetValue : assets) {
-                QJsonObject assetObj = assetValue.toObject();
+        QJsonArray assets = jsonObj["assets"].toArray();
+        bool found = false;
+        for (const QJsonValue& assetValue : assets) {
+            QJsonObject assetObj = assetValue.toObject();
 
-                QString platformString;
+            QString platformString;
 #ifdef Q_OS_WIN
-                platformString = "win64-qt";
+            platformString = "win64-qt";
 #elif defined(Q_OS_LINUX)
 
                 QString executablePath = QCoreApplication::applicationDirPath();
@@ -135,69 +131,27 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 #elif defined(Q_OS_MAC)
                 platformString = "macos-qt";
 #endif
-                if (assetObj["name"].toString().contains(platformString)) {
-                    downloadUrl = assetObj["browser_download_url"].toString();
-                    found = true;
-                    break;
-                }
+            if (assetObj["name"].toString().contains(platformString)) {
+                downloadUrl = assetObj["browser_download_url"].toString();
+                found = true;
+                break;
             }
-            if (!found) {
-                QMessageBox::warning(this, tr("Error"),
-                                     tr("No download URL found for the specified asset."));
-            }
-        } else {
-            QMessageBox::warning(this, tr("Error"), tr("No assets found in the response."));
+        }
+        if (!found) {
+            QMessageBox::warning(this, tr("Error"),
+                                 tr("No download URL found for the specified asset."));
         }
 
-        if (latestRev == currentRev && showMessage) {
-            QMessageBox::information(this, tr("Auto Updater"),
-                                     tr("Your version is already up to date!"));
+        if (latestRev == currentRev) {
+            if (showMessage) {
+                QMessageBox::information(this, tr("Auto Updater"),
+                                         tr("Your version is already up to date!"));
+            }
+            close();
+            return;
         } else {
-            QString compareUrlString =
-                QString("https://api.github.com/repos/DanielSvoboda/shadPS4/compare/%1...%2")
-                    .arg(currentRev)
-                    .arg(latestRev);
-
-            QUrl compareUrl(compareUrlString);
-            QNetworkRequest compareRequest(compareUrl);
-            QNetworkReply* compareReply = networkManager->get(compareRequest);
-
-            connect(compareReply, &QNetworkReply::finished, this,
-                    [this, compareReply, downloadUrl, latestDate, latestRev, currentDate,
-                     currentRev]() {
-                        if (compareReply->error() != QNetworkReply::NoError) {
-                            QMessageBox::warning(this, tr("Error"),
-                                                 QString(tr("Network error:") + "\n%1")
-                                                     .arg(compareReply->errorString()));
-                            compareReply->deleteLater();
-                            return;
-                        }
-
-                        QByteArray compareResponse = compareReply->readAll();
-                        QJsonDocument compareJsonDoc(QJsonDocument::fromJson(compareResponse));
-                        QJsonObject compareJsonObj = compareJsonDoc.object();
-                        QJsonArray commits = compareJsonObj["commits"].toArray();
-
-                        QString changes;
-                        for (const QJsonValue& commitValue : commits) {
-                            QJsonObject commitObj = commitValue.toObject();
-                            QString message = commitObj["commit"].toObject()["message"].toString();
-
-                            // Remove texts after the first line break, if any
-                            int newlineIndex = message.indexOf('\n');
-                            if (newlineIndex != -1) {
-                                message = message.left(newlineIndex);
-                            }
-                            if (!changes.isEmpty()) {
-                                changes += "<br>";
-                            }
-                            changes += "&nbsp;&nbsp;&nbsp;&nbsp;• " + message;
-                        }
-                        setupUI_UpdateAvailable(downloadUrl, latestDate, latestRev, currentDate,
-                                                currentRev,
-                                                "<h2>" + tr("Changes") + ":</h2>" + changes);
-                        compareReply->deleteLater();
-                    });
+            setFixedSize(420, 205);
+            setupUI_UpdateAvailable(downloadUrl, latestDate, latestRev, currentDate, currentRev);
         }
         reply->deleteLater();
     });
@@ -205,7 +159,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 
 void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
                                           const QString& latestRev, const QString& currentDate,
-                                          const QString& currentRev, const QString& textChangeLog) {
+                                          const QString& currentRev) {
     QVBoxLayout* layout = new QVBoxLayout(this);
     QHBoxLayout* titleLayout = new QHBoxLayout();
 
@@ -220,24 +174,30 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     titleLayout->addWidget(titleLabel);
     layout->addLayout(titleLayout);
 
-    QString updateText = QString("<p><b><br>Current Version:</b> %1 (%2)<br>"
-                                 "<b>Latest Version:</b> %3 (%4)</p>"
-                                 "<p>Do you want to update?</p>")
+    QString updateText = QString("<p><b><br>" + tr("Current Version") + ":</b> %1 (%2)<br><b>" +
+                                 tr("Latest Version") + ":</b> %3 (%4)</p><p>" +
+                                 tr("Do you want to update?") + "</p>")
                              .arg(currentRev, currentDate, latestRev, latestDate);
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 
+    // Create text field for changelog
     QTextEdit* textField = new QTextEdit(this);
-    textField->setText(textChangeLog);
     textField->setReadOnly(true);
     textField->setFixedWidth(400);
     textField->setFixedHeight(200);
+    textField->setVisible(false);
     layout->addWidget(textField);
 
+    // Create toggle button
+    QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
+    layout->addWidget(toggleButton);
+
+    // Setup bottom layout with action buttons
     QHBoxLayout* bottomLayout = new QHBoxLayout();
     autoUpdateCheckBox = new QCheckBox(tr("Auto Update (Check at Startup)"), this);
-    yesButton = new QPushButton("Update", this);
-    noButton = new QPushButton("No", this);
+    yesButton = new QPushButton(tr("Update"), this);
+    noButton = new QPushButton(tr("No"), this);
     yesButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
     noButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
     bottomLayout->addWidget(autoUpdateCheckBox);
@@ -248,6 +208,30 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     bottomLayout->addWidget(yesButton);
     bottomLayout->addWidget(noButton);
     layout->addLayout(bottomLayout);
+
+    // Connect the toggle button to the slot to show/hide changelog
+    connect(toggleButton, &QPushButton::clicked,
+            [this, textField, toggleButton, currentRev, latestRev, downloadUrl, latestDate,
+             currentDate]() {
+                QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+                if (updateChannel == "unstable") {
+                    if (!textField->isVisible()) {
+                        requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
+                                         currentDate);
+                        setFixedSize(420, 410);
+                        textField->setVisible(true);
+                        toggleButton->setText(tr("Hide Changelog"));
+                    } else {
+                        setFixedSize(420, 205);
+                        textField->setVisible(false);
+                        toggleButton->setText(tr("Show Changelog"));
+                    }
+                } else {
+                    QMessageBox::information(
+                        this, tr("Changelog Unavailable"),
+                        tr("Viewing changelog is only available for the 'unstable' channel."));
+                }
+            });
 
     connect(yesButton, &QPushButton::clicked, this,
             [this, downloadUrl]() { DownloadAndInstallUpdate(downloadUrl); });
@@ -263,6 +247,59 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     setLayout(layout);
 }
 
+void CheckUpdate::requestChangelog(const QString& currentRev, const QString& latestRev,
+                                   const QString& downloadUrl, const QString& latestDate,
+                                   const QString& currentDate) {
+    QString compareUrlString =
+        QString("https://api.github.com/repos/DanielSvoboda/shadPS4/compare/%1...%2")
+            .arg(currentRev)
+            .arg(latestRev);
+
+    QUrl compareUrl(compareUrlString);
+    QNetworkRequest compareRequest(compareUrl);
+    QNetworkReply* compareReply = networkManager->get(compareRequest);
+
+    connect(compareReply, &QNetworkReply::finished, this,
+            [this, compareReply, downloadUrl, latestDate, latestRev, currentDate, currentRev]() {
+                if (compareReply->error() != QNetworkReply::NoError) {
+                    QMessageBox::warning(
+                        this, tr("Error"),
+                        QString(tr("Network error:") + "\n%1").arg(compareReply->errorString()));
+                    compareReply->deleteLater();
+                    return;
+                }
+
+                QByteArray compareResponse = compareReply->readAll();
+                QJsonDocument compareJsonDoc(QJsonDocument::fromJson(compareResponse));
+                QJsonObject compareJsonObj = compareJsonDoc.object();
+                QJsonArray commits = compareJsonObj["commits"].toArray();
+
+                QString changes;
+                for (const QJsonValue& commitValue : commits) {
+                    QJsonObject commitObj = commitValue.toObject();
+                    QString message = commitObj["commit"].toObject()["message"].toString();
+
+                    // Remove texts after the first line break, if any
+                    int newlineIndex = message.indexOf('\n');
+                    if (newlineIndex != -1) {
+                        message = message.left(newlineIndex);
+                    }
+                    if (!changes.isEmpty()) {
+                        changes += "<br>";
+                    }
+                    changes += "&nbsp;&nbsp;&nbsp;&nbsp;• " + message;
+                }
+
+                // Update the text field with the changelog
+                QTextEdit* textField = findChild<QTextEdit*>();
+                if (textField) {
+                    textField->setHtml("<h2>" + tr("Changes") + ":</h2>" + changes);
+                }
+
+                compareReply->deleteLater();
+            });
+}
+
 void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
     QNetworkRequest request(url);
     QNetworkReply* reply = networkManager->get(request);
@@ -270,9 +307,8 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
     connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
         if (reply->error() != QNetworkReply::NoError) {
             QMessageBox::warning(this, tr("Error"),
-                                 tr("Network error occurred while trying to access the URL:") +
-                                     "\n" + url + "\n" + tr("Error details:") + "\n" +
-                                     reply->errorString());
+                                 tr("Network error occurred while trying to access the URL") +
+                                     ":\n" + url + "\n" + reply->errorString());
             reply->deleteLater();
             return;
         }
@@ -297,7 +333,7 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
         } else {
             QMessageBox::warning(
                 this, tr("Error"),
-                QString(tr("Failed to save the update file at:") + "\n" + downloadPath));
+                QString(tr("Failed to save the update file at") + ":\n" + downloadPath));
         }
 
         reply->deleteLater();
@@ -313,7 +349,7 @@ void CheckUpdate::Unzip() {
     QFile zipFile(zipFilePath);
     if (!zipFile.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, tr("Error"),
-                             tr("Failed to open the ZIP file:") + "\n" + zipFilePath);
+                             tr("Failed to open the ZIP file") + ":\n" + zipFilePath);
         return;
     }
 
@@ -406,7 +442,7 @@ void CheckUpdate::Unzip() {
                 if (!dir.exists()) {
                     if (!dir.mkpath(dirPath)) {
                         QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create directory:") + "\n" + dirPath);
+                                             tr("Failed to create directory") + ":\n" + dirPath);
                         continue;
                     }
                 }
@@ -425,7 +461,7 @@ void CheckUpdate::Unzip() {
 
                 if (!decompressData(compressedData, decompressedData)) {
                     QMessageBox::warning(this, tr("Error"),
-                                         tr("Error decompressing file") + "\n" +
+                                         tr("Error decompressing file") + ":\n" +
                                              QString::fromStdString(fileName));
                     continue;
                 }
@@ -440,15 +476,15 @@ void CheckUpdate::Unzip() {
                 if (!dir.exists()) {
                     if (!dir.mkpath(dirPath)) {
                         QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create directory:") + "\n" + dirPath);
+                                             tr("Failed to create directory") + ":\n" + dirPath);
                         continue;
                     }
                 }
 
                 QFile outFile(fullPath);
-                if (!outFile.open(QIODevice::WriteOnly)) { // remove this?
+                if (!outFile.open(QIODevice::WriteOnly)) {
                     QMessageBox::warning(this, tr("Error"),
-                                         tr("Failed to open output file:") + "\n" + fullPath);
+                                         tr("Failed to open output file") + ":\n" + fullPath);
                     continue;
                 }
                 outFile.write(reinterpret_cast<const char*>(decompressedData.data()),
@@ -471,8 +507,8 @@ void CheckUpdate::Unzip() {
                 if (!tarExtractDir.exists()) {
                     if (!tarExtractDir.mkpath(tarExtractDirPath)) {
                         QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create TAR extraction directory:") +
-                                                 "\n" + tarExtractDirPath);
+                                             tr("Failed to create TAR extraction directory") +
+                                                 ":\n" + tarExtractDirPath);
                         return;
                     }
                 }
@@ -486,7 +522,7 @@ void CheckUpdate::Unzip() {
                 // Check if tar was successful
                 if (tarProcess.exitStatus() != QProcess::NormalExit || tarProcess.exitCode() != 0) {
                     QMessageBox::warning(this, tr("Error"),
-                                         tr("Failed to extract the TAR file:") + "\n" +
+                                         tr("Failed to extract the TAR file") + ":\n" +
                                              tarProcess.errorString());
                     return;
                 }
@@ -506,7 +542,7 @@ void CheckUpdate::Install() {
     QString tempDirPath = userPath + "/temp_download_update";
     QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
 
-    QString startingUpdate = tr("Iniciando atualização...");
+    QString startingUpdate = tr("Starting Update...");
 
     QString scriptContent;
     QString scriptFileName;
@@ -560,7 +596,7 @@ void CheckUpdate::Install() {
     arguments << scriptFileName;
     processCommand = "bash";
 #else
-    QMessageBox::warning(this, tr("Error"), tr("Unsupported operating system."));
+    QMessageBox::warning(this, tr("Error"), "Unsupported operating system.");
     return;
 #endif
 
@@ -580,6 +616,6 @@ void CheckUpdate::Install() {
     } else {
         QMessageBox::warning(
             this, tr("Error"),
-            QString(tr("Failed to create the update script file:") + "\n" + scriptFileName));
+            QString(tr("Failed to create the update script file") + ":\n" + scriptFileName));
     }
 }

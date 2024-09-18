@@ -24,8 +24,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     SaveWindowState();
-    //const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    //Config::save(config_dir / "config.toml");
 }
 
 bool MainWindow::Init() {
@@ -162,16 +160,14 @@ void MainWindow::LoadGameLists() {
     }
 }
 
-void MainWindow::CheckUpdateMain(bool check) {
-#ifdef _WIN64
-    if (check) {
+void MainWindow::CheckUpdateMain(bool checkSave) {
+    if (checkSave) {
         if (!Config::autoUpdate()) {
             return;
         }
     }
-    auto checkUpdate = new CheckUpdate(false, this);
+    auto checkUpdate = new CheckUpdate(false);
     checkUpdate->show();
-#endif
 }
 
 void MainWindow::GetPhysicalDevices() {
@@ -235,7 +231,10 @@ void MainWindow::CreateConnects() {
         settingsDialog->exec();
     });
 
-    connect(ui->updaterAct, &QAction::triggered, this, [this]() { CheckUpdateMain(false); });
+    connect(ui->updaterAct, &QAction::triggered, this, [this]() {
+        auto checkUpdate = new CheckUpdate(true);
+        checkUpdate->show();
+    });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
         auto aboutDialog = new AboutDialog(this);

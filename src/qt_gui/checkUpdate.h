@@ -25,7 +25,11 @@ private slots:
 private:
     void setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
                                  const QString& latestRev, const QString& currentDate,
-                                 const QString& currentRev, const QString& textChangeLog);
+                                 const QString& currentRev);
+
+    void requestChangelog(const QString& currentRev, const QString& latestRev,
+                          const QString& downloadUrl, const QString& latestDate,
+                          const QString& currentDate);
 
     QCheckBox* autoUpdateCheckBox;
     QPushButton* yesButton;
