@@ -123,8 +123,10 @@ public:
         gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
         downloadCheatsPatchesAct = new QAction(MainWindow);
         downloadCheatsPatchesAct->setObjectName("downloadCheatsPatchesAct");
+        downloadCheatsPatchesAct->setIcon(QIcon(":images/update_icon.png"));
         dumpGameListAct = new QAction(MainWindow);
         dumpGameListAct->setObjectName("dumpGameList");
+        dumpGameListAct->setIcon(QIcon(":images/dump_icon.png"));
         pkgViewerAct = new QAction(MainWindow);
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
