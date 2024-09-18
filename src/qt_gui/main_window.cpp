@@ -862,6 +862,9 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
     ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));
+    ui->downloadCheatsPatchesAct->setIcon(
+        RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
+    ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
