@@ -5,9 +5,9 @@ name: Build and Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "*" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "*" ]
 
 env:
   BUILD_TYPE: Release
@@ -346,7 +346,7 @@ jobs:
         path: Shadps4-qt.AppImage
 
   pre-release:
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [get-info, windows-sdl, windows-qt, macos-sdl, macos-qt, linux-sdl, linux-qt]
     runs-on: ubuntu-latest
     steps:
