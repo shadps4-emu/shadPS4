@@ -6,6 +6,7 @@
 #pragma once
 
 #define VULKAN_HPP_NO_EXCEPTIONS
+#include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 struct ImDrawData;
@@ -29,14 +30,33 @@ struct InitInfo {
     void (*check_vk_result_fn)(vk::Result err);
 };
 
-vk::DescriptorSet AddTexture(vk::Sampler sampler, vk::ImageView image_view,
-                             vk::ImageLayout image_layout);
+// Prepare all resources needed for uploading textures
+// Caller should clean up the returned data.
+struct UploadTextureData {
+    vk::Image image;
+    vk::ImageView image_view;
+    vk::DescriptorSet descriptor_set;
+    vk::DeviceMemory image_memory;
+
+    vk::CommandBuffer command_buffer; // Submit to the queue
+    vk::Buffer upload_buffer;
+    vk::DeviceMemory upload_buffer_memory;
+
+    void Upload();
+
+    void Destroy();
+};
+
+vk::DescriptorSet AddTexture(vk::ImageView image_view, vk::ImageLayout image_layout,
+                             vk::Sampler sampler = VK_NULL_HANDLE);
+
+UploadTextureData UploadTexture(const void* data, vk::Format format, u32 width, u32 height,
+                                size_t size);
 
 void RemoveTexture(vk::DescriptorSet descriptor_set);
 
 bool Init(InitInfo info);
 void Shutdown();
-void NewFrame();
 void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                     vk::Pipeline pipeline = VK_NULL_HANDLE);
 

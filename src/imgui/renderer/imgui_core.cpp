@@ -10,6 +10,7 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
 #include "sdl_window.h"
+#include "texture_manager.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 static void CheckVkResult(const vk::Result err) {
@@ -68,6 +69,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
         .check_vk_result_fn = &CheckVkResult,
     };
     Vulkan::Init(vk_info);
+
+    TextureManager::StartWorker();
 }
 
 void OnResize() {
@@ -76,6 +79,8 @@ void OnResize() {
 
 void Shutdown(const vk::Device& device) {
     device.waitIdle();
+
+    TextureManager::StopWorker();
 
     const ImGuiIO& io = GetIO();
     const auto ini_filename = (void*)io.IniFilename;
@@ -130,7 +135,6 @@ void NewFrame() {
         }
     }
 
-    Vulkan::NewFrame();
     Sdl::NewFrame();
     ImGui::NewFrame();
 

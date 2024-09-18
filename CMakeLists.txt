@@ -613,6 +613,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
 set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
+          src/imgui/imgui_texture.h
           src/imgui/layer/video_info.cpp
           src/imgui/layer/video_info.h
           src/imgui/renderer/imgui_core.cpp
@@ -621,6 +622,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/imgui_impl_sdl3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
+          src/imgui/renderer/texture_manager.cpp
+          src/imgui/renderer/texture_manager.h
 )
 
 set(INPUT src/input/controller.cpp
