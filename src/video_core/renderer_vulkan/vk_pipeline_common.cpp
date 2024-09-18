@@ -3,6 +3,7 @@
 
 #include <boost/container/static_vector.hpp>
 
+#include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -21,7 +22,7 @@ Pipeline::~Pipeline() = default;
 void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
                             u32& binding, DescriptorWrites& set_writes) const {
 
-    using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, bool>;
+    using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, Shader::ImageResource>;
     boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 
     for (const auto& image_desc : stage.images) {
@@ -31,9 +32,9 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
             const auto image_id = texture_cache.FindImage(image_info);
             auto& image = texture_cache.GetImage(image_id);
             image.flags |= VideoCore::ImageFlagBits::Bound;
-            image_bindings.emplace_back(image_id, tsharp, image_desc.is_storage);
+            image_bindings.emplace_back(image_id, tsharp, image_desc);
         } else {
-            image_bindings.emplace_back(VideoCore::ImageId{}, tsharp, image_desc.is_storage);
+            image_bindings.emplace_back(VideoCore::ImageId{}, tsharp, image_desc);
         }
 
         if (texture_cache.IsMeta(tsharp.Address())) {
@@ -42,7 +43,7 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
     }
 
     // Second pass to re-bind images that were updated after binding
-    for (auto [image_id, tsharp, is_storage] : image_bindings) {
+    for (auto [image_id, tsharp, desc] : image_bindings) {
         if (!image_id) {
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
@@ -56,7 +57,7 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
             if (True(image.flags & VideoCore::ImageFlagBits::NeedsRebind)) {
                 image_id = texture_cache.FindImage(image.info);
             }
-            VideoCore::ImageViewInfo view_info{tsharp, is_storage};
+            VideoCore::ImageViewInfo view_info{tsharp, desc};
             auto& image_view = texture_cache.FindTexture(image_id, view_info);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
                                      texture_cache.GetImage(image_id).last_state.layout);
@@ -69,8 +70,8 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
             .dstBinding = binding++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
-            .descriptorType =
-                is_storage ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage,
+            .descriptorType = desc.is_storage ? vk::DescriptorType::eStorageImage
+                                              : vk::DescriptorType::eSampledImage,
             .pImageInfo = &image_infos.back(),
         });
     }

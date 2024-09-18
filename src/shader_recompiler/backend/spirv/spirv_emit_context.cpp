@@ -510,7 +510,8 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     case AmdGpu::ImageType::Color3D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
     case AmdGpu::ImageType::Cube:
-        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, false, false, sampled, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, desc.is_array, false, sampled,
+                             format);
     default:
         break;
     }

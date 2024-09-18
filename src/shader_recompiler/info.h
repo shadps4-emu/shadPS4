@@ -64,9 +64,10 @@ struct ImageResource {
     u32 dword_offset;
     AmdGpu::ImageType type;
     AmdGpu::NumberFormat nfmt;
-    bool is_storage;
-    bool is_depth;
+    bool is_storage{};
+    bool is_depth{};
     bool is_atomic{};
+    bool is_array{};
 
     constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };

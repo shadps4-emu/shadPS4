@@ -491,6 +491,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
+        .is_array = bool(inst_info.is_array),
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
