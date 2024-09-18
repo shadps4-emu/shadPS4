@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>RenderDoc-Debugging aktivieren</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Aktualisieren</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Beim Start nach Updates suchen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Nach Updates suchen</translation>
+		</message>
 	</context>
     <context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Automatische Aktualisierung (Beim Start überprüfen)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Beim Start nach Updates suchen</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

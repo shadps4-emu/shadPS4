@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>RenderDocデバッグを有効にする</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>更新</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>起動時に更新確認</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>更新を確認</translation>
+		</message>
     </context>
 	<context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>自動アップデート（起動時に確認）</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>起動時に更新確認</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

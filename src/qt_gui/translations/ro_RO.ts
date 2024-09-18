@@ -502,14 +502,29 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Enable RenderDoc Debugging</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Actualizare</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Verifică actualizări la pornire</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Verifică actualizări</translation>
+		</message>
 	</context>
     <context>
+        <name>MainWindow</name>
 		<message>
 			<location filename="../main_window.cpp" line="106"/>
 			<source>Game List</source>
 			<translation>Lista jocurilor</translation>
 		</message>
-        <name>MainWindow</name>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Actualizare automată (Verificați la pornire)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Verifică actualizări la pornire</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

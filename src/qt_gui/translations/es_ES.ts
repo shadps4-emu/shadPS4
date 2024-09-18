@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Habilitar depuración de RenderDoc</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Actualización</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Buscar actualizaciones al iniciar</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Verificar actualizaciones</translation>
+		</message>
     </context>
 	<context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Actualización automática (Verificar al iniciar)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Buscar actualizaciones al iniciar</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

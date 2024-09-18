@@ -123,62 +123,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->logFilterLineEdit, &QLineEdit::textChanged, this,
                 [](const QString& text) { Config::setLogFilter(text.toStdString()); });
 
-        // I believe all of this should go to settings_dialog.ui | and add translation in .ts
-        // Create the "Update" section and add it to the existing QGroupBox
-        QGroupBox* updateGroupBox = new QGroupBox("Update");
-        updateGroupBox->setMaximumWidth(265);
+        connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
+                [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
 
-        QVBoxLayout* updateLayout = new QVBoxLayout();
-        updateGroupBox->setLayout(updateLayout);
+        connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
+                [](const QString& channel) { Config::setUpdateChannel(channel.toStdString()); });
 
-        auto autoUpdateCheckBox = new QCheckBox("Auto Update (Check at Startup)");
-        QComboBox* updateComboBox = new QComboBox();
-        QPushButton* updateButton = new QPushButton("Check for Updates");
-
-        // Add items to the combobox
-        updateComboBox->addItem("stable");
-        updateComboBox->addItem("unstable");
-
-        // Add widgets to the layout
-        updateLayout->addWidget(autoUpdateCheckBox);
-        updateLayout->addWidget(updateComboBox);
-        updateLayout->addWidget(updateButton);
-
-        // Add the "Update" section to the general settings layout
-        ui->generalTab->layout()->addWidget(updateGroupBox);
-
-        // Connect the button signal to a slot
-        connect(updateButton, &QPushButton::clicked, this, []() {
+        connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
             auto checkUpdate = new CheckUpdate(true);
             checkUpdate->show();
-        });
-
-        // Initialize checkbox state
-        autoUpdateCheckBox->setChecked(Config::autoUpdate());
-
-        // Connect checkbox state change to save configuration
-        connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
-            const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-            Config::setAutoUpdate(state == Qt::Checked);
-        });
-
-        // Initialize combobox state
-        updateComboBox->setCurrentText(QString::fromStdString(Config::getUpdateChannel()));
-
-        // Connect combobox state change to save configuration
-        connect(updateComboBox, &QComboBox::currentTextChanged, this, [](const QString& channel) {
-            // Converter QString para std::string
-            std::string channelStr = channel.toStdString();
-            Config::setUpdateChannel(channelStr);
-        });
-
-        // Initialize checkbox state
-        autoUpdateCheckBox->setChecked(Config::autoUpdate());
-
-        // Connect checkbox state change to save configuration
-        connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
-            const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-            Config::setAutoUpdate(state == Qt::Checked);
         });
     }
 
@@ -250,6 +203,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vkValidationCheckBox->setChecked(Config::vkValidationEnabled());
     ui->vkSyncValidationCheckBox->setChecked(Config::vkValidationSyncEnabled());
     ui->rdocCheckBox->setChecked(Config::isRdocEnabled());
+
+    ui->updateCheckBox->setChecked(Config::autoUpdate());
+    ui->updateComboBox->setCurrentText(QString::fromStdString(Config::getUpdateChannel()));
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {

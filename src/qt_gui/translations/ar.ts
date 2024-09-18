@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>RenderDoc تمكين تصحيح أخطاء</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>تحديث</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>تحقق من التحديثات عند بدء التشغيل</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>التحقق من التحديثات</translation>
+		</message>
     </context>
     <context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>تحديث تلقائي (تحقق عند بدء التشغيل)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>تحقق من التحديثات عند بدء التشغيل</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

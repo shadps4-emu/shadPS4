@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>启用 RenderDoc 调试</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>更新</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>启动时检查更新</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>检查更新</translation>
+		</message>
     </context>
     <context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>自动更新（启动时检查）</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>启动时检查更新</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

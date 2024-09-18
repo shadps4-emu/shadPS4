@@ -77,7 +77,10 @@ Emulator::Emulator() {
     VideoCore::LoadRenderDoc();
 }
 
-Emulator::~Emulator() {}
+Emulator::~Emulator() {
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::save(config_dir / "config.toml");
+}
 
 void Emulator::Run(const std::filesystem::path& file) {
     // Applications expect to be run from /app0 so mount the file's parent path as app0.

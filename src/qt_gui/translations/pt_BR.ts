@@ -171,7 +171,7 @@
         <message>
             <location filename="../main_window_ui.h" line="308"/>
             <source>Check for Updates</source>
-            <translation>Verificar atualização</translation>
+            <translation>Verificar atualizações</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
@@ -501,6 +501,21 @@
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
             <translation>Ativar Depuração por RenderDoc</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="274"/>
+            <source>Update</source>
+            <translation>Atualização</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="286"/>
+            <source>Check for Updates at Startup</source>
+            <translation>Verificar atualizações ao Iniciar</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="322"/>
+            <source>Check for Updates</source>
+            <translation>Verificar atualizações</translation>
         </message>
     </context>
 	<context>
@@ -1059,8 +1074,8 @@
         </message>
         <message>
             <location filename="../checkUpdate.cpp" line="198"/>
-            <source>Auto Update (Check at Startup)</source>
-            <translation>Atualização automática (Ao abrir)</translation>
+            <source>Check for Updates at Startup</source>
+            <translation>Verificar atualizações ao Iniciar</translation>
         </message>
         <message>
             <location filename="../checkUpdate.cpp" line="199"/>

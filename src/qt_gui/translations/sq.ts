@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Aktivizo Korrigjimin RenderDoc</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Përditëso</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Kontrollo për përditësime në fillim</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Kontrollo për përditësime</translation>
+		</message>
     </context>
 	<context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Përditësim automatik (Kontrolloni në fillim)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Kontrollo për përditësime në fillim</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

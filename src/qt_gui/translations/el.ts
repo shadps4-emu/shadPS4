@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Enable RenderDoc Debugging</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Ενημέρωση</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Έλεγχος για ενημερώσεις κατά την εκκίνηση</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Έλεγχος για ενημερώσεις</translation>
+		</message>
 	</context>
     <context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Αυτόματη Ενημέρωση (Έλεγχος κατά την εκκίνηση)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Έλεγχος για ενημερώσεις κατά την εκκίνηση</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

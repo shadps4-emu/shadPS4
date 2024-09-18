@@ -502,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Включить отладку RenderDoc</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Обновление</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Проверка обновлений при запуске</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Проверить обновления</translation>
+		</message>
     </context>
 	<context>
         <name>MainWindow</name>
@@ -1059,8 +1074,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
-			<source>Auto Update (Check at Startup)</source>
-			<translation>Автообновление (Проверять при запуске)</translation>
+			<source>Check for Updates at Startup</source>
+			<translation>Проверка обновлений при запуске</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>

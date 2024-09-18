@@ -119,17 +119,9 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 #ifdef Q_OS_WIN
             platformString = "win64-qt";
 #elif defined(Q_OS_LINUX)
-
-                QString executablePath = QCoreApplication::applicationDirPath();
-                QFileInfo fileInfo(executablePath);
-
-                if (QProcessEnvironment::systemEnvironment().contains("APPIMAGE")) {
-                    platformString = "linux-qt";
-                } else {
-                    platformString = "ubuntu64";
-                }
+            platformString = "linux-qt";
 #elif defined(Q_OS_MAC)
-                platformString = "macos-qt";
+            platformString = "macos-qt";
 #endif
             if (assetObj["name"].toString().contains(platformString)) {
                 downloadUrl = assetObj["browser_download_url"].toString();
@@ -181,21 +173,9 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 
-    // Create text field for changelog
-    QTextEdit* textField = new QTextEdit(this);
-    textField->setReadOnly(true);
-    textField->setFixedWidth(400);
-    textField->setFixedHeight(200);
-    textField->setVisible(false);
-    layout->addWidget(textField);
-
-    // Create toggle button
-    QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
-    layout->addWidget(toggleButton);
-
     // Setup bottom layout with action buttons
     QHBoxLayout* bottomLayout = new QHBoxLayout();
-    autoUpdateCheckBox = new QCheckBox(tr("Auto Update (Check at Startup)"), this);
+    autoUpdateCheckBox = new QCheckBox(tr("Check for Updates at Startup"), this);
     yesButton = new QPushButton(tr("Update"), this);
     noButton = new QPushButton(tr("No"), this);
     yesButton->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
@@ -208,6 +188,18 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     bottomLayout->addWidget(yesButton);
     bottomLayout->addWidget(noButton);
     layout->addLayout(bottomLayout);
+
+    // Create text field for changelog
+    QTextEdit* textField = new QTextEdit(this);
+    textField->setReadOnly(true);
+    textField->setFixedWidth(400);
+    textField->setFixedHeight(200);
+    textField->setVisible(false);
+    layout->addWidget(textField);
+
+    // Create toggle button for changelog
+    QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
+    layout->addWidget(toggleButton);
 
     // Connect the toggle button to the slot to show/hide changelog
     connect(toggleButton, &QPushButton::clicked,
