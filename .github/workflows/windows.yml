@@ -20,10 +20,10 @@ jobs:
       with:
           submodules: recursive
 
-    - name: Cache CMake dependency source code
+    - name: Cache CMake Configuration
       uses: actions/cache@v4
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources
+          cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
       with:
           path: | 
             ${{github.workspace}}/build
@@ -31,10 +31,10 @@ jobs:
           restore-keys: |
             ${{ env.cache-name }}-
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-builds
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
