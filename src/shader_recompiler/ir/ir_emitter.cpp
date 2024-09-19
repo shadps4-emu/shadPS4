@@ -1620,7 +1620,7 @@ void IREmitter::DebugPrint(std::string_view format, boost::container::small_vect
         arg_list = VaArg(arg, arg_list);
     }
 
-    Inst(Opcode::DebugPrint, info, arg_list);
+    Inst(Opcode::DebugPrint, Flags{info}, arg_list);
 }
 
 } // namespace Shader::IR
