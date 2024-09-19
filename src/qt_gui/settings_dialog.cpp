@@ -4,8 +4,8 @@
 #include <QCompleter>
 #include <QDirIterator>
 
-#include "common/logging/filter.h"
 #include "common/logging/backend.h"
+#include "common/logging/filter.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
