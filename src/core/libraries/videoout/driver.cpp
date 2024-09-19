@@ -261,8 +261,11 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::milliseconds VblankPeriod{16};
+    static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
+    const auto vblank_period = VblankPeriod / Config::vblankDiv();
+
     Common::SetCurrentThreadName("PresentThread");
+    Common::SetCurrentThreadRealtime(vblank_period);
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -274,7 +277,6 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return {};
     };
 
-    auto vblank_period = VblankPeriod / Config::vblankDiv();
     auto delay = std::chrono::microseconds{0};
     while (!token.stop_requested()) {
         // Sleep for most of the vblank duration.
