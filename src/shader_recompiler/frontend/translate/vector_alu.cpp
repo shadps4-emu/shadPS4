@@ -89,6 +89,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ADDC_U32(inst);
     case Opcode::V_LDEXP_F32:
         return V_LDEXP_F32(inst);
+    case Opcode::V_CVT_PKNORM_U16_F32:
+        return V_CVT_PKNORM_U16_F32(inst);
     case Opcode::V_CVT_PKRTZ_F16_F32:
         return V_CVT_PKRTZ_F16_F32(inst);
 
@@ -583,6 +585,15 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.FPLdexp(src0, src1));
+}
+
+void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::U32 dst0 = ir.ConvertFToU(32, ir.FPMul(src0, ir.Imm32(65535.f)));
+    const IR::U32 dst1 = ir.ConvertFToU(32, ir.FPMul(src1, ir.Imm32(65535.f)));
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.BitFieldInsert(dst0, dst1, ir.Imm32(16), ir.Imm32(16)));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
