@@ -6,6 +6,7 @@
 #include <bitset>
 
 #include "common/types.h"
+#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
 
 namespace Shader {
@@ -45,11 +46,11 @@ struct StageSpecialization {
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
-    u32 start_binding{};
+    Backend::Bindings start{};
 
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
-                                 u32 start_binding_)
-        : info{&info_}, runtime_info{runtime_info_}, start_binding{start_binding_} {
+                                 Backend::Bindings start_)
+        : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         u32 binding{};
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
@@ -82,7 +83,7 @@ struct StageSpecialization {
     }
 
     bool operator==(const StageSpecialization& other) const {
-        if (start_binding != other.start_binding) {
+        if (start != other.start) {
             return false;
         }
         if (runtime_info != other.runtime_info) {

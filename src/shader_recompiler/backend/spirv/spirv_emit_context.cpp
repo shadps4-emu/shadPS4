@@ -42,7 +42,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 } // Anonymous namespace
 
 EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
-                         const Info& info_, u32& binding_)
+                         const Info& info_, Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
@@ -173,7 +173,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 }
 
 void EmitContext::DefineBufferOffsets() {
-    for (auto& buffer : buffers) {
+    for (BufferDefinition& buffer : buffers) {
         const u32 binding = buffer.binding;
         const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
@@ -181,10 +181,11 @@ void EmitContext::DefineBufferOffsets() {
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
+        Name(value, fmt::format("buf{}_off", binding));
         buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
     }
-    for (auto& tex_buffer : texture_buffers) {
+    for (TextureBufferDefinition& tex_buffer : texture_buffers) {
         const u32 binding = tex_buffer.binding;
         const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
@@ -192,6 +193,7 @@ void EmitContext::DefineBufferOffsets() {
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
+        Name(value, fmt::format("texbuf{}_off", binding));
         tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
     }
 }
@@ -330,13 +332,15 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4]), "AuxData")};
+    const Id ud_array{TypeArray(U32[1], ConstU32(PushData::MaxUdRegs))};
+    Decorate(ud_array, spv::Decoration::ArrayStride, 4U);
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], ud_array), "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, 0, "sr0");
     MemberName(struct_type, 1, "sr1");
     MemberName(struct_type, 2, "buf_offsets0");
     MemberName(struct_type, 3, "buf_offsets1");
-    MemberName(struct_type, 4, "buf_offsets2");
+    MemberName(struct_type, 4, "ud_regs");
     MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
     MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
     MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
@@ -379,7 +383,7 @@ void EmitContext::DefineBuffers() {
         const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
         const Id pointer_type = TypePointer(storage_class, data_type);
         const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
         if (is_storage && !desc.is_written) {
             Decorate(id, spv::Decoration::NonWritable);
@@ -388,7 +392,7 @@ void EmitContext::DefineBuffers() {
 
         buffers.push_back({
             .id = id,
-            .binding = binding++,
+            .binding = binding.buffer++,
             .data_types = data_types,
             .pointer_type = pointer_type,
         });
@@ -406,12 +410,12 @@ void EmitContext::DefineTextureBuffers() {
                                       sampled, spv::ImageFormat::Unknown)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
         Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sgpr_base));
         texture_buffers.push_back({
             .id = id,
-            .binding = binding++,
+            .binding = binding.buffer++,
             .image_type = image_type,
             .result_type = sampled_type[4],
             .is_integer = is_integer,
@@ -525,7 +529,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
         Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
                              image_desc.dword_offset));
@@ -538,7 +542,6 @@ void EmitContext::DefineImagesAndSamplers() {
             .is_storage = image_desc.is_storage,
         });
         interfaces.push_back(id);
-        ++binding;
     }
     if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
@@ -550,13 +553,12 @@ void EmitContext::DefineImagesAndSamplers() {
     sampler_pointer_type = TypePointer(spv::StorageClass::UniformConstant, sampler_type);
     for (const auto& samp_desc : info.samplers) {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding);
+        Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
         Name(id, fmt::format("{}_{}{}_{:02x}", stage, "samp", samp_desc.sgpr_base,
                              samp_desc.dword_offset));
         samplers.push_back(id);
         interfaces.push_back(id);
-        ++binding;
     }
 }
 
