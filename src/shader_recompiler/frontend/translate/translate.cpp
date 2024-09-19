@@ -174,7 +174,7 @@ T Translator::GetSrc(const InstOperand& operand) {
             value = ir.IAbs(value);
         }
         if (operand.input_modifier.neg) {
-            UNREACHABLE();
+            value = ir.INeg(value);
         }
     }
     return value;
