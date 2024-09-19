@@ -4,7 +4,9 @@
 #pragma once
 
 #include <cstring>
+#include <string_view>
 #include <type_traits>
+#include <boost/container/small_vector.hpp>
 
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -43,6 +45,11 @@ public:
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
+
+    Value VaArg(Value arg, Value next);
+
+    void DebugPrint(std::string_view format, boost::container::small_vector<Value, 4> args,
+                    bool infer_specifiers = false);
 
     void Barrier();
     void WorkgroupMemoryBarrier();
@@ -312,6 +319,7 @@ public:
 
 private:
     IR::Block::iterator insertion_point;
+    boost::container::small_vector<std::string, 4> debug_print_strings;
 
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {

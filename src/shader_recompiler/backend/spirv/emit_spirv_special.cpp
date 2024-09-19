@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <boost/container/small_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/debug_print.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -47,6 +51,39 @@ void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
 
 void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
+}
+
+void EmitVaArg(EmitContext& ctx, IR::Inst* inst, Id arg, Id next) {
+    IR::Value next_val = inst->Arg(1);
+    u32 va_arglist_idx;
+    if (next_val.IsEmpty()) {
+        va_arglist_idx = ctx.va_arg_lists.size();
+        ctx.va_arg_lists.emplace_back();
+    } else {
+        va_arglist_idx = next_val.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
+    }
+
+    ctx.va_arg_lists[va_arglist_idx].push_back(arg);
+    VariadicArgInfo va_info;
+    va_info.va_arg_idx.Assign(va_arglist_idx);
+}
+
+void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst) {
+    const std::string& fmt =
+        ctx.info.debug_print_strings.at(inst->Flags<DebugPrintInfo>().string_idx);
+    Id fmt_id = ctx.String(fmt);
+
+    IR::Value va_arg_list_val = inst->Arg(0);
+    boost::container::small_vector<Id, 4> fmt_arg_operands;
+    if (!va_arg_list_val.IsEmpty()) {
+        u32 va_arglist_idx = va_arg_list_val.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
+        const auto& va_arglist = ctx.va_arg_lists[va_arglist_idx];
+        // reverse the order
+        std::copy(va_arglist.rbegin(), va_arglist.rend(), fmt_arg_operands.end());
+    }
+
+    ASSERT(fmt_arg_operands.size() == inst->Flags<DebugPrintInfo>().num_args);
+    ctx.OpDebugPrintf(fmt_id, fmt_arg_operands);
 }
 
 } // namespace Shader::Backend::SPIRV

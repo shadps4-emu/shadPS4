@@ -244,6 +244,8 @@ public:
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
+    boost::container::small_vector<boost::container::small_vector<Id, 4>, 4> va_arg_lists;
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();

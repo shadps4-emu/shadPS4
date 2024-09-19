@@ -2,9 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include <iterator>
 #include <source_location>
+#include <boost/container/small_vector.hpp>
+#include "common/assert.h"
 #include "shader_recompiler/exception.h"
+#include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -1551,6 +1556,71 @@ Value IREmitter::ImageRead(const Value& handle, const Value& coords, TextureInst
 void IREmitter::ImageWrite(const Value& handle, const Value& coords, const Value& color,
                            TextureInstInfo info) {
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, color);
+}
+
+Value IREmitter::VaArg(Value arg, Value next) {
+    return Inst(Opcode::VaArg, arg, next);
+}
+
+void IREmitter::DebugPrint(std::string_view format, boost::container::small_vector<Value, 4> args,
+                           bool infer_specifiers) {
+    auto infer_specifier = [&](IR::Value arg) -> const char* {
+        switch (arg.Type()) {
+        case Shader::IR::Type::U1:
+        case Shader::IR::Type::U8:
+        case Shader::IR::Type::U16:
+        case Shader::IR::Type::U32:
+            return "%u";
+        case Shader::IR::Type::U64:
+            return "%lu";
+        case Shader::IR::Type::F16:
+        case Shader::IR::Type::F32:
+        case Shader::IR::Type::F64:
+            return "%lf";
+        case Shader::IR::Type::U32x2:
+            return "%v2u";
+        case Shader::IR::Type::U32x3:
+            return "%v3u";
+        case Shader::IR::Type::U32x4:
+            return "%v4u";
+        case Shader::IR::Type::F16x2:
+        case Shader::IR::Type::F32x2:
+        case Shader::IR::Type::F64x2:
+            return "%v2f";
+        case Shader::IR::Type::F16x3:
+        case Shader::IR::Type::F32x3:
+        case Shader::IR::Type::F64x3:
+            return "%v3f";
+        case Shader::IR::Type::F16x4:
+        case Shader::IR::Type::F32x4:
+        case Shader::IR::Type::F64x4:
+            return "%v4f";
+        case Shader::IR::Type::Void:
+        case Shader::IR::Type::Opaque:
+        case Shader::IR::Type::ScalarReg:
+        case Shader::IR::Type::VectorReg:
+        case Shader::IR::Type::Attribute:
+        case Shader::IR::Type::SystemValue:
+            UNREACHABLE();
+        }
+    };
+
+    if (infer_specifiers) {
+        UNREACHABLE();
+        // need to fmt the format string with dynamic sized array of format spec strings
+        // could use param pack for this function, but less flexible
+    }
+
+    DebugPrintInfo info{};
+    info.string_idx.Assign(debug_print_strings.size());
+    info.num_args.Assign(args.size());
+
+    Value arg_list = Inst(Opcode::Void);
+    for (Value arg : args) {
+        arg_list = VaArg(arg, arg_list);
+    }
+
+    Inst(Opcode::DebugPrint, info, arg_list);
 }
 
 } // namespace Shader::IR

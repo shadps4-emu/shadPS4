@@ -179,6 +179,8 @@ struct Info {
     std::span<const u32> user_data;
     Stage stage;
 
+    boost::container::small_vector<std::string, 4> debug_print_strings;
+
     u64 pgm_hash{};
     VAddr pgm_base;
     bool has_storage_images{};
