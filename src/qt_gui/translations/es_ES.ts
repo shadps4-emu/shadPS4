@@ -21,7 +21,7 @@
         <message>
             <location filename="../about_dialog.ui" line="99"/>
             <source>This software should not be used to play games you have not legally obtained.</source>
-            <translation>Este software no debe utilizarse para jugar juegos que no hayas obtenido legalmente.</translation>
+            <translation>Este software no debe utilizarse para jugar juegos que hayas obtenido ilegalmente.</translation>
         </message>
     </context>
     <context>
@@ -118,7 +118,7 @@
         <message>
             <location filename="../gui_context_menus.h" line="61"/>
             <source>Copy Serial</source>
-            <translation>Copiar serial</translation>
+            <translation>Copiar número de serie</translation>
         </message>
         <message>
             <location filename="../gui_context_menus.h" line="62"/>
@@ -296,7 +296,7 @@
         <message>
             <location filename="../main_window_ui.h" line="355"/>
             <source>Settings</source>
-            <translation>Configuraciones</translation>
+            <translation>Configuración</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="356"/>
@@ -341,7 +341,7 @@
         <message>
             <location filename="../main_window_ui.h" line="364"/>
             <source>toolBar</source>
-            <translation>barra de herramientas</translation>
+            <translation>Barra de herramientas</translation>
         </message>
     </context>
     <context>
@@ -365,7 +365,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="29"/>
             <source>Settings</source>
-            <translation>Configuraciones</translation>
+            <translation>Configuración</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="67"/>
@@ -538,7 +538,7 @@
         <message>
         	<location filename="../main_window.cpp" line="392"/>
         	<source>All Patches available for all games have been downloaded.</source>
-        	<translation>Todos los parches disponibles para todos los juegos han sido descargados.</translation>
+        	<translation>Todos los parches disponibles han sido descargados para todos los juegos.</translation>
         </message>
         <message>
         	<location filename="../main_window.cpp" line="549"/>
@@ -648,7 +648,7 @@
         <message>
         	<location filename="../main_window.cpp" line="725"/>
         	<source>File doesn't appear to be a valid PKG file</source>
-        	<translation>El archivo no parece ser un archivo PKG válido</translation>
+        	<translation>El archivo parece no ser un archivo PKG válido</translation>
         </message>
 	</context>
 	<context>
@@ -671,7 +671,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="79"/>
         	<source>Serial: </source>
-        	<translation>Serie: </translation>
+        	<translation>Número de serie: </translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="83"/>
@@ -711,7 +711,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="170"/>
         	<source>You can delete the cheats you don't want after downloading them.</source>
-        	<translation>Puedes eliminar los trucos que no quieras después de descargarlos.</translation>
+        	<translation>Puedes eliminar los trucos que no quieras una vez descargados.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="178"/>
@@ -741,7 +741,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="257"/>
         	<source>Patches</source>
-        	<translation>Parche</translation>
+        	<translation>Parches</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="278"/>
@@ -761,7 +761,7 @@
         <message>
         	<location filename="../cheats_patches.cpp" line="316"/>
         	<source>No patch file found for the current serial.</source>
-        	<translation>No se encontró ningún archivo de parche para la serie actual.</translation>
+        	<translation>No se encontró ningún archivo de parche para el número de serie actual.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="323"/>
@@ -937,7 +937,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Icon</source>
-			<translation>Ícono</translation>
+			<translation>Icono</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
@@ -947,7 +947,7 @@
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
 			<source>Serial</source>
-			<translation>Serie</translation>
+			<translation>Numero de serie</translation>
 		</message>
 		<message>
 			<location filename="../game_list_frame.cpp" line="34"/>
