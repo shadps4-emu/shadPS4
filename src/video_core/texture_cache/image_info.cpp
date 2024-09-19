@@ -205,13 +205,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, bool force_depth /*= false*/) n
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     // Override format if image is forced to be a depth target
     if (force_depth) {
-        if (pixel_format == vk::Format::eR32Sfloat || pixel_format == vk::Format::eR8Unorm) {
-            pixel_format = vk::Format::eD32SfloatS8Uint;
-        } else if (pixel_format == vk::Format::eR16Unorm) {
-            pixel_format = vk::Format::eD16UnormS8Uint;
-        } else {
-            UNREACHABLE();
-        }
+        pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();

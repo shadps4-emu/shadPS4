@@ -75,6 +75,9 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         nfmt = AmdGpu::NumberFormat::Unorm;
     }
     format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
+    if (desc.is_depth) {
+        format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
+    }
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
     range.extent.levels = image.last_level - image.base_level + 1;
