@@ -61,15 +61,32 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Cache CMake dependency source code
+    - name: Cache CMake Configuration
       uses: actions/cache@v4
+      env:
+          cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
       with:
-        path: ${{github.workspace}}/build
-        key: ${{ runner.os }}-sdl-cache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-        restore-keys: ${{ runner.os }}-sdl-cache-
+          path: | 
+            ${{github.workspace}}/build
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            ${{ env.cache-name }}-
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL
+      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
@@ -78,7 +95,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: ${{github.workspace}}/build/Release/shadPS4.exe
+        path: ${{github.workspace}}/build/shadPS4.exe
 
   windows-qt:
     runs-on: windows-latest
@@ -97,15 +114,32 @@ jobs:
         arch: win64_msvc2019_64
         archives: qtbase qttools
 
-    - name: Cache CMake dependency source code
+    - name: Cache CMake Configuration
       uses: actions/cache@v4
+      env:
+          cache-name: ${{ runner.os }}-qt-ninja-cache-cmake-configuration
       with:
-        path: ${{github.workspace}}/build
-        key: ${{ runner.os }}-qt-cache-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-        restore-keys: ${{ runner.os }}-qt-cache-
+          path: | 
+            ${{github.workspace}}/build
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            ${{ env.cache-name }}-
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-qt-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
+      run: cmake -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
@@ -113,8 +147,8 @@ jobs:
     - name: Deploy and Package
       run: |
         mkdir upload
-        move build/Release/shadPS4.exe upload
-        windeployqt --dir upload upload/shadPS4.exe
+        move build/shadPS4.exe upload
+        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
     - name: Upload Windows Qt artifact
@@ -141,10 +175,10 @@ jobs:
         arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         arch -x86_64 /usr/local/bin/brew install molten-vk
 
-    - name: Cache CMake dependency source code 
+    - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -152,10 +186,10 @@ jobs:
           restore-keys: | 
             ${{ env.cache-name }}- 
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{runner.os}}-sdl-cache-cmake-dependency-builds
+          cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         create-symlink: true
@@ -204,10 +238,10 @@ jobs:
         arch: clang_64
         archives: qtbase qttools
         
-    - name: Cache CMake dependency source code 
+    - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -215,10 +249,10 @@ jobs:
           restore-keys: | 
             ${{ env.cache-name }}- 
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{runner.os}}-qt-cache-cmake-dependency-builds
+          cache-name: ${{runner.os}}-qt-cache-cmake-build
       with:
         append-timestamp: false
         create-symlink: true
@@ -253,10 +287,10 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
 
-    - name: Cache CMake dependency source code 
+    - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -264,10 +298,10 @@ jobs:
           restore-keys: | 
             ${{ env.cache-name }}- 
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-builds
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
@@ -296,7 +330,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: Shadps4-sdl.AppImage        
+        path: Shadps4-sdl.AppImage
 
   linux-qt:
     runs-on: ubuntu-24.04
@@ -309,10 +343,10 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev
 
-    - name: Cache CMake dependency source code 
+    - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
-          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
       with: 
           path: |  
             ${{github.workspace}}/build 
@@ -320,10 +354,10 @@ jobs:
           restore-keys: | 
             ${{ env.cache-name }}- 
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-builds
+          cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
