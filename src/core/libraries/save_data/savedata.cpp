@@ -730,12 +730,13 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(const u32 userId, const void* buf,
                                               const size_t bufSize, const int64_t offset) {
     LOG_INFO(Lib_SaveData, "called");
     const auto& mount_dir = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) /
-                            std::to_string(userId) / game_serial / "sdmemory/save_mem1.sav";
+                            std::to_string(userId) / game_serial / "sdmemory";
 
-    Common::FS::IOFile file(mount_dir, Common::FS::FileAccessMode::Write);
+    Common::FS::IOFile file(mount_dir / "save_mem1.sav", Common::FS::FileAccessMode::Write);
+    if (!file.IsOpen())
+        return -1;
     file.Seek(offset);
     file.WriteRaw<u8>(buf, bufSize);
-
     return ORBIS_OK;
 }
 
