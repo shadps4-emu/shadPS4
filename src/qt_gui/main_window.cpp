@@ -614,7 +614,7 @@ void MainWindow::BootGame() {
             path = std::filesystem::path(fileNames[0].toStdWString());
 #endif
             Core::Emulator emulator;
-            if (!std::filesystem::exists(path) {
+            if (!std::filesystem::exists(path)) {
                 QMessageBox::critical(nullptr, tr("Run Game"),
                                       QString(tr("Eboot.bin file not found")));
                 return;
