@@ -34,6 +34,7 @@ public:
     std::filesystem::path GetHostPath(std::string_view guest_directory);
 
     const MntPair* GetMount(const std::string& guest_path) {
+        std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(
             m_mnt_pairs, [&](const auto& mount) { return guest_path.starts_with(mount.mount); });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
