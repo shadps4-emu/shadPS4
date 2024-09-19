@@ -374,6 +374,10 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eR8Unorm;
         case AmdGpu::NumberFormat::Snorm:
             return vk::Format::eR8Snorm;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eR8Uscaled;
+        case AmdGpu::NumberFormat::Sscaled:
+            return vk::Format::eR8Sscaled;
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR8Uint;
         case AmdGpu::NumberFormat::Sint:
@@ -388,8 +392,16 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         switch (num_format) {
         case AmdGpu::NumberFormat::Unorm:
             return vk::Format::eR16Unorm;
+        case AmdGpu::NumberFormat::Snorm:
+            return vk::Format::eR16Snorm;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eR16Uscaled;
+        case AmdGpu::NumberFormat::Sscaled:
+            return vk::Format::eR16Sscaled;
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR16Uint;
+        case AmdGpu::NumberFormat::Sint:
+            return vk::Format::eR16Sint;
         case AmdGpu::NumberFormat::Float:
             return vk::Format::eR16Sfloat;
         default:
@@ -402,8 +414,16 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eR8G8Unorm;
         case AmdGpu::NumberFormat::Snorm:
             return vk::Format::eR8G8Snorm;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eR8G8Uscaled;
+        case AmdGpu::NumberFormat::Sscaled:
+            return vk::Format::eR8G8Sscaled;
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR8G8Uint;
+        case AmdGpu::NumberFormat::Sint:
+            return vk::Format::eR8G8Sint;
+        case AmdGpu::NumberFormat::Srgb:
+            return vk::Format::eR8G8Srgb;
         default:
             break;
         }
@@ -426,6 +446,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eR16G16Unorm;
         case AmdGpu::NumberFormat::Snorm:
             return vk::Format::eR16G16Snorm;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eR16G16Uscaled;
         case AmdGpu::NumberFormat::Sscaled:
             return vk::Format::eR16G16Sscaled;
         case AmdGpu::NumberFormat::Uint:
@@ -462,6 +484,14 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eA2B10G10R10UnormPack32;
         case AmdGpu::NumberFormat::Snorm:
             return vk::Format::eA2B10G10R10SnormPack32;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eA2B10G10R10UscaledPack32;
+        case AmdGpu::NumberFormat::Sscaled:
+            return vk::Format::eA2B10G10R10SscaledPack32;
+        case AmdGpu::NumberFormat::Uint:
+            return vk::Format::eA2B10G10R10UintPack32;
+        case AmdGpu::NumberFormat::Sint:
+            return vk::Format::eA2B10G10R10SintPack32;
         default:
             break;
         }
@@ -474,6 +504,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eR8G8B8A8Snorm;
         case AmdGpu::NumberFormat::Uscaled:
             return vk::Format::eR8G8B8A8Uscaled;
+        case AmdGpu::NumberFormat::Sscaled:
+            return vk::Format::eR8G8B8A8Sscaled;
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR8G8B8A8Uint;
         case AmdGpu::NumberFormat::Sint:
@@ -488,6 +520,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         switch (num_format) {
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR32G32Uint;
+        case AmdGpu::NumberFormat::Sint:
+            return vk::Format::eR32G32Sint;
         case AmdGpu::NumberFormat::Float:
             return vk::Format::eR32G32Sfloat;
         default:
@@ -500,6 +534,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
             return vk::Format::eR16G16B16A16Unorm;
         case AmdGpu::NumberFormat::Snorm:
             return vk::Format::eR16G16B16A16Snorm;
+        case AmdGpu::NumberFormat::Uscaled:
+            return vk::Format::eR16G16B16A16Uscaled;
         case AmdGpu::NumberFormat::Sscaled:
             return vk::Format::eR16G16B16A16Sscaled;
         case AmdGpu::NumberFormat::Uint:
@@ -518,6 +554,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         switch (num_format) {
         case AmdGpu::NumberFormat::Uint:
             return vk::Format::eR32G32B32Uint;
+        case AmdGpu::NumberFormat::Sint:
+            return vk::Format::eR32G32B32Sint;
         case AmdGpu::NumberFormat::Float:
             return vk::Format::eR32G32B32Sfloat;
         default:
@@ -614,6 +652,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         switch (num_format) {
         case AmdGpu::NumberFormat::Unorm:
             return vk::Format::eBc4UnormBlock;
+        case AmdGpu::NumberFormat::Snorm:
+            return vk::Format::eBc4SnormBlock;
         default:
             break;
         }
@@ -647,6 +687,8 @@ vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat nu
         default:
             break;
         }
+        break;
+    default:
         break;
     }
 
