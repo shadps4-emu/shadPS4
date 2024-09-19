@@ -33,6 +33,7 @@ struct GraphicsPipelineKey {
     Liverpool::DepthControl depth_stencil;
     u32 depth_bias_enable;
     u32 num_samples;
+    u32 mrt_mask;
     Liverpool::StencilControl stencil;
     Liverpool::PrimitiveType prim_type;
     u32 enable_primitive_restart;
@@ -72,6 +73,10 @@ public:
 
     auto GetWriteMasks() const {
         return key.write_masks;
+    }
+
+    auto GetMrtMask() const {
+        return key.mrt_mask;
     }
 
     bool IsDepthEnabled() const {

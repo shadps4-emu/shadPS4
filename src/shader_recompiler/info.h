@@ -172,6 +172,7 @@ struct Info {
     bool uses_fp64{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
+    u8 mrt_mask{0u};
 
     explicit Info(Stage stage_, ShaderParams params)
         : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
