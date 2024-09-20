@@ -1562,6 +1562,12 @@ Value IREmitter::VaArg(Value arg, Value next) {
     return Inst(Opcode::VaArg, arg, next);
 }
 
+Value IREmitter::StringLiteral(std::string_view s) {
+    Value val = Inst(Opcode::StringLiteral);
+    val.Inst()->SetStringLiteral(s);
+    return val;
+}
+
 void IREmitter::DebugPrint(std::string_view format, boost::container::small_vector<Value, 4> args,
                            bool infer_specifiers) {
     auto infer_specifier = [&](IR::Value arg) -> const char* {
@@ -1611,16 +1617,13 @@ void IREmitter::DebugPrint(std::string_view format, boost::container::small_vect
         // could use param pack for this function, but less flexible
     }
 
-    DebugPrintInfo info{};
-    info.string_idx.Assign(debug_print_strings.size());
-    info.num_args.Assign(args.size());
-
     Value arg_list = Inst(Opcode::Void);
     for (Value arg : args) {
         arg_list = VaArg(arg, arg_list);
     }
 
-    Inst(Opcode::DebugPrint, Flags{info}, arg_list);
+    Value string_val = StringLiteral(format);
+    Inst(Opcode::DebugPrint, string_val, arg_list);
 }
 
 } // namespace Shader::IR

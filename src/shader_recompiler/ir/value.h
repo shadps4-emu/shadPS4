@@ -6,9 +6,11 @@
 #include <array>
 #include <bit>
 #include <cstring>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <boost/container/small_vector.hpp>
+#include <boost/container/string.hpp>
 #include <boost/intrusive/list.hpp>
 
 #include "common/assert.h"
@@ -146,6 +148,7 @@ public:
         if (op == IR::Opcode::Phi) {
             return phi_args[index].second;
         } else {
+            ASSERT(op != IR::Opcode::StringLiteral);
             return args[index];
         }
     }
@@ -157,6 +160,16 @@ public:
     [[nodiscard]] Block* PhiBlock(size_t index) const;
     /// Add phi operand to a phi instruction.
     void AddPhiOperand(Block* predecessor, const Value& value);
+
+    [[nodiscard]] std::string_view StringLiteral() const {
+        ASSERT(op == IR::Opcode::StringLiteral);
+        return string_literal;
+    }
+
+    void SetStringLiteral(std::string_view s) noexcept {
+        ASSERT(op == IR::Opcode::StringLiteral);
+        string_literal = s;
+    }
 
     void Invalidate();
     void ClearArgs();
@@ -207,6 +220,7 @@ private:
         NonTriviallyDummy dummy{};
         boost::container::small_vector<std::pair<Block*, Value>, 2> phi_args;
         std::array<Value, 5> args;
+        boost::container::string string_literal;
     };
 };
 static_assert(sizeof(Inst) <= 128, "Inst size unintentionally increased");

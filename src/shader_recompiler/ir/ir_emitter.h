@@ -47,6 +47,7 @@ public:
     void Discard(const U1& cond);
 
     Value VaArg(Value arg, Value next);
+    Value StringLiteral(std::string_view s);
 
     void DebugPrint(std::string_view format, boost::container::small_vector<Value, 4> args,
                     bool infer_specifiers = false);
@@ -319,7 +320,6 @@ public:
 
 private:
     IR::Block::iterator insertion_point;
-    boost::container::small_vector<std::string, 4> debug_print_strings;
 
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {

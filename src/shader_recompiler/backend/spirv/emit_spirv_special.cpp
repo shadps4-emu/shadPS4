@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <iterator>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/debug_print.h"
+#include "shader_recompiler/ir/opcodes.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -53,10 +55,17 @@ void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }
 
+static bool isEmptyInst(IR::Value val) {
+    if (auto* inst = val.TryInstRecursive()) {
+        return inst->GetOpcode() == IR::Opcode::Void;
+    }
+    return false;
+}
+
 void EmitVaArg(EmitContext& ctx, IR::Inst* inst, Id arg, Id next) {
     IR::Value next_val = inst->Arg(1);
     u32 va_arglist_idx;
-    if (next_val.IsEmpty()) {
+    if (isEmptyInst(next_val)) {
         va_arglist_idx = ctx.va_arg_lists.size();
         ctx.va_arg_lists.emplace_back();
     } else {
@@ -64,26 +73,27 @@ void EmitVaArg(EmitContext& ctx, IR::Inst* inst, Id arg, Id next) {
     }
 
     ctx.va_arg_lists[va_arglist_idx].push_back(arg);
-    VariadicArgInfo va_info;
+    auto va_info = inst->Flags<VariadicArgInfo>();
     va_info.va_arg_idx.Assign(va_arglist_idx);
+    inst->SetFlags(va_info);
 }
 
-void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst) {
-    const std::string& fmt =
-        ctx.info.debug_print_strings.at(inst->Flags<DebugPrintInfo>().string_idx);
-    Id fmt_id = ctx.String(fmt);
+Id EmitStringLiteral(EmitContext& ctx, IR::Inst* inst) {
+    // ctx.
+    return ctx.String(inst->StringLiteral());
+}
 
-    IR::Value va_arg_list_val = inst->Arg(0);
+void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt) {
+    IR::Value arglist = inst->Arg(1);
     boost::container::small_vector<Id, 4> fmt_arg_operands;
-    if (!va_arg_list_val.IsEmpty()) {
-        u32 va_arglist_idx = va_arg_list_val.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
+    if (!isEmptyInst(arglist)) {
+        u32 va_arglist_idx = arglist.Inst()->Flags<VariadicArgInfo>().va_arg_idx;
         const auto& va_arglist = ctx.va_arg_lists[va_arglist_idx];
         // reverse the order
-        std::copy(va_arglist.rbegin(), va_arglist.rend(), fmt_arg_operands.end());
+        std::copy(va_arglist.rbegin(), va_arglist.rend(), std::back_inserter(fmt_arg_operands));
     }
 
-    ASSERT(fmt_arg_operands.size() == inst->Flags<DebugPrintInfo>().num_args);
-    ctx.OpDebugPrintf(fmt_id, fmt_arg_operands);
+    ctx.OpDebugPrintf(fmt, fmt_arg_operands);
 }
 
 } // namespace Shader::Backend::SPIRV
