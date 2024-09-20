@@ -95,7 +95,7 @@ public:
                         new QTableWidgetItem(QString::fromStdString(entry.key));
                     QTableWidgetItem* valueItem;
                     switch (entry.param_fmt) {
-                    case Binary: {
+                    case PSFEntryFmt::Binary: {
 
                         const auto bin = *psf.GetBinary(entry.key);
                         std::string text;
@@ -107,11 +107,11 @@ public:
                         }
                         valueItem = new QTableWidgetItem(QString::fromStdString(text));
                     } break;
-                    case Text: {
+                    case PSFEntryFmt::Text: {
                         auto text = *psf.GetString(entry.key);
                         valueItem = new QTableWidgetItem(QString::fromStdString(std::string{text}));
                     } break;
-                    case Integer: {
+                    case PSFEntryFmt::Integer: {
                         auto integer = *psf.GetInteger(entry.key);
                         valueItem =
                             new QTableWidgetItem(QString("0x") + QString::number(integer, 16));

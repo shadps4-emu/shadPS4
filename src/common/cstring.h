@@ -18,12 +18,11 @@ namespace Common {
  */
 template <size_t N, typename T = char>
 class CString {
-public:
-    class Iterator;
-
     T data[N]{};
 
 public:
+    class Iterator;
+
     CString() = default;
 
     template <size_t M>
@@ -42,21 +41,36 @@ public:
         std::ranges::fill(data, 0);
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
     explicit(false) operator std::basic_string_view<T>() const {
+        if (this == nullptr) {
+            return {};
+        }
         return std::basic_string_view<T>{data};
     }
 
     explicit operator std::basic_string<T>() const {
+        if (this == nullptr) {
+            return {};
+        }
         return std::basic_string<T>{data};
     }
 
     std::basic_string<T> to_string() const {
+        if (this == nullptr) {
+            return {};
+        }
         return std::basic_string<T>{data};
     }
 
     std::basic_string_view<T> to_view() const {
+        if (this == nullptr) {
+            return {};
+        }
         return std::basic_string_view<T>{data};
     }
+#pragma clang diagnostic pop
 
     char* begin() {
         return data;

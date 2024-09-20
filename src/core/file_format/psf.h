@@ -33,7 +33,7 @@ struct PSFRawEntry {
 };
 static_assert(sizeof(PSFRawEntry) == 0x10);
 
-enum PSFEntryFmt : u16 {
+enum class PSFEntryFmt : u16 {
     Binary = 0x0004,  // Binary data
     Text = 0x0204,    // String in UTF-8 format and NULL terminated
     Integer = 0x0404, // Signed 32-bit integer
@@ -47,14 +47,13 @@ class PSF {
     };
 
 public:
-    PSF();
-    ~PSF();
+    PSF() = default;
+    ~PSF() = default;
 
-    PSF(const PSF& other);
-    PSF(PSF&& other) noexcept;
-
-    PSF& operator=(const PSF& other);
-    PSF& operator=(PSF&& other) noexcept;
+    PSF(const PSF& other) = default;
+    PSF(PSF&& other) noexcept = default;
+    PSF& operator=(const PSF& other) = default;
+    PSF& operator=(PSF&& other) noexcept = default;
 
     bool Open(const std::filesystem::path& filepath);
     bool Open(const std::vector<u8>& psf_buffer);
