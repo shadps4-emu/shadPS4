@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <thread>
+
 #include <imgui.h>
 #include "common/assert.h"
 #include "imgui/imgui_std.h"
@@ -30,18 +32,6 @@ struct {
     {0xFF},                // 9 TWO_BUTTONS
 };
 static_assert(std::size(user_button_texts) == static_cast<int>(ButtonType::TWO_BUTTONS) + 1);
-
-static void DrawCenteredText(const char* text) {
-    const auto ws = GetWindowSize();
-    const auto text_size = CalcTextSize(text, nullptr, false, ws.x - 40.0f);
-    PushTextWrapPos(ws.x - 30.0f);
-    SetCursorPos({
-        (ws.x - text_size.x) / 2.0f,
-        (ws.y - text_size.y) / 2.0f - 50.0f,
-    });
-    Text("%s", text);
-    PopTextWrapPos();
-}
 
 MsgDialogState::MsgDialogState(const OrbisParam& param) {
     this->mode = param.mode;
@@ -81,11 +71,29 @@ MsgDialogState::MsgDialogState(const OrbisParam& param) {
     }
 }
 
+MsgDialogState::MsgDialogState(UserState mode) {
+    this->mode = MsgDialogMode::USER_MSG;
+    this->state = mode;
+}
+
+MsgDialogState::MsgDialogState(ProgressState mode) {
+    this->mode = MsgDialogMode::PROGRESS_BAR;
+    this->state = mode;
+}
+
+MsgDialogState::MsgDialogState(SystemState mode) {
+    this->mode = MsgDialogMode::SYSTEM_MSG;
+    this->state = mode;
+}
+
 void MsgDialogUi::DrawUser() {
     const auto& [button_type, msg, btn_param1, btn_param2] =
         state->GetState<MsgDialogState::UserState>();
     const auto ws = GetWindowSize();
-    DrawCenteredText(msg.c_str());
+    if (!msg.empty()) {
+        DrawCenteredText(&msg.front(), &msg.back() + 1,
+                         GetContentRegionAvail() - ImVec2{0.0f, 15.0f + BUTTON_SIZE.y});
+    }
     ASSERT(button_type <= ButtonType::TWO_BUTTONS);
     auto [count, text1, text2] = user_button_texts[static_cast<u32>(button_type)];
     if (count == 0xFF) { // TWO_BUTTONS -> User defined message
@@ -115,7 +123,7 @@ void MsgDialogUi::DrawUser() {
                     break;
                 }
             }
-            if (first_render && !focus_first) {
+            if ((first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) && !focus_first) {
                 SetItemCurrentNavFocus();
             }
             PopID();
@@ -125,7 +133,7 @@ void MsgDialogUi::DrawUser() {
         if (Button(text1, BUTTON_SIZE)) {
             Finish(ButtonId::BUTTON1);
         }
-        if (first_render && focus_first) {
+        if ((first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) && focus_first) {
             SetItemCurrentNavFocus();
         }
         PopID();
@@ -249,11 +257,13 @@ void MsgDialogUi::Draw() {
 
     CentralizeWindow();
     SetNextWindowSize(window_size);
-    SetNextWindowFocus();
     SetNextWindowCollapsed(false);
+    if (first_render || !io.NavActive) {
+        SetNextWindowFocus();
+    }
     KeepNavHighlight();
-    // Hack to allow every dialog to have a unique window
-    if (Begin("Message Dialog##MessageDialog", nullptr, ImGuiWindowFlags_NoSavedSettings)) {
+    if (Begin("Message Dialog##MessageDialog", nullptr,
+              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         switch (state->GetMode()) {
         case MsgDialogMode::USER_MSG:
             DrawUser();
@@ -269,4 +279,16 @@ void MsgDialogUi::Draw() {
     End();
 
     first_render = false;
+}
+
+DialogResult Libraries::MsgDialog::ShowMsgDialog(MsgDialogState state, bool block) {
+    DialogResult result{};
+    Status status = Status::RUNNING;
+    MsgDialogUi dialog(&state, &status, &result);
+    if (block) {
+        while (status == Status::RUNNING) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+    return result;
 }

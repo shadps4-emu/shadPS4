@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include "common/types.h"
 
 namespace Common {
@@ -15,6 +16,8 @@ enum class ThreadPriority : u32 {
     VeryHigh = 3,
     Critical = 4,
 };
+
+void SetCurrentThreadRealtime(std::chrono::nanoseconds period_ns);
 
 void SetCurrentThreadPriority(ThreadPriority new_priority);
 

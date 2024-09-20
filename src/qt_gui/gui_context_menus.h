@@ -80,8 +80,8 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
-            if (psf.open(m_games[itemID].path + "/sce_sys/param.sfo", {})) {
-                int rows = psf.map_strings.size() + psf.map_integers.size();
+            if (psf.Open(std::filesystem::path(m_games[itemID].path) / "sce_sys" / "param.sfo")) {
+                int rows = psf.GetEntries().size();
                 QTableWidget* tableWidget = new QTableWidget(rows, 2);
                 tableWidget->setAttribute(Qt::WA_DeleteOnClose);
                 connect(widget->parent(), &QWidget::destroyed, tableWidget,
@@ -90,23 +90,33 @@ public:
                 tableWidget->verticalHeader()->setVisible(false); // Hide vertical header
                 int row = 0;
 
-                for (const auto& pair : psf.map_strings) {
+                for (const auto& entry : psf.GetEntries()) {
                     QTableWidgetItem* keyItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.first));
-                    QTableWidgetItem* valueItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.second));
+                        new QTableWidgetItem(QString::fromStdString(entry.key));
+                    QTableWidgetItem* valueItem;
+                    switch (entry.param_fmt) {
+                    case PSFEntryFmt::Binary: {
 
-                    tableWidget->setItem(row, 0, keyItem);
-                    tableWidget->setItem(row, 1, valueItem);
-                    keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
-                    valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
-                    row++;
-                }
-                for (const auto& pair : psf.map_integers) {
-                    QTableWidgetItem* keyItem =
-                        new QTableWidgetItem(QString::fromStdString(pair.first));
-                    QTableWidgetItem* valueItem = new QTableWidgetItem(
-                        QString("0x").append(QString::number(pair.second, 16)));
+                        const auto bin = *psf.GetBinary(entry.key);
+                        std::string text;
+                        text.reserve(bin.size() * 2);
+                        for (const auto& c : bin) {
+                            static constexpr char hex[] = "0123456789ABCDEF";
+                            text.push_back(hex[c >> 4 & 0xF]);
+                            text.push_back(hex[c & 0xF]);
+                        }
+                        valueItem = new QTableWidgetItem(QString::fromStdString(text));
+                    } break;
+                    case PSFEntryFmt::Text: {
+                        auto text = *psf.GetString(entry.key);
+                        valueItem = new QTableWidgetItem(QString::fromStdString(std::string{text}));
+                    } break;
+                    case PSFEntryFmt::Integer: {
+                        auto integer = *psf.GetInteger(entry.key);
+                        valueItem =
+                            new QTableWidgetItem(QString("0x") + QString::number(integer, 16));
+                    } break;
+                    }
 
                     tableWidget->setItem(row, 0, keyItem);
                     tableWidget->setItem(row, 1, valueItem);

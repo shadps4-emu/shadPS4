@@ -9,6 +9,7 @@
 #include "common/thread.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <mach/mach_time.h>
 #include <pthread.h>
 #elif defined(_WIN32)
 #include <windows.h>
@@ -30,6 +31,48 @@
 #endif
 
 namespace Common {
+
+#ifdef __APPLE__
+
+void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
+    // CPU time to grant.
+    const std::chrono::nanoseconds computation_ns = period_ns / 2;
+
+    // Determine the timebase for converting time to ticks.
+    struct mach_timebase_info timebase {};
+    mach_timebase_info(&timebase);
+    const auto ticks_per_ns =
+        static_cast<double>(timebase.denom) / static_cast<double>(timebase.numer);
+
+    const auto period_ticks =
+        static_cast<u32>(static_cast<double>(period_ns.count()) * ticks_per_ns);
+    const auto computation_ticks =
+        static_cast<u32>(static_cast<double>(computation_ns.count()) * ticks_per_ns);
+
+    thread_time_constraint_policy policy = {
+        .period = period_ticks,
+        .computation = computation_ticks,
+        // Should not matter since preemptible is false, but needs to be >= computation regardless.
+        .constraint = computation_ticks,
+        .preemptible = false,
+    };
+
+    int ret = thread_policy_set(
+        pthread_mach_thread_np(pthread_self()), THREAD_TIME_CONSTRAINT_POLICY,
+        reinterpret_cast<thread_policy_t>(&policy), THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+    if (ret != KERN_SUCCESS) {
+        LOG_ERROR(Common, "Could not set thread to real-time with period {} ns: {}",
+                  period_ns.count(), ret);
+    }
+}
+
+#else
+
+void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
+    // Not implemented
+}
+
+#endif
 
 #ifdef _WIN32
 

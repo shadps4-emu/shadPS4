@@ -66,7 +66,7 @@ struct Buffer {
     }
 
     u32 GetStride() const noexcept {
-        return stride == 0 ? 1U : stride;
+        return stride;
     }
 
     u32 NumDwords() const noexcept {
@@ -74,7 +74,7 @@ struct Buffer {
     }
 
     u32 GetSize() const noexcept {
-        return GetStride() * num_records;
+        return stride == 0 ? num_records : (stride * num_records);
     }
 };
 static_assert(sizeof(Buffer) == 16); // 128bits

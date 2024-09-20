@@ -4,6 +4,7 @@
 #include <mutex>
 #include "common/assert.h"
 #include "common/debug.h"
+#include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
@@ -190,6 +191,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     };
 
     try {
+        ImGui::Core::TextureManager::Submit();
         instance.GetGraphicsQueue().submit(submit_info, info.fence);
     } catch (vk::DeviceLostError& err) {
         UNREACHABLE_MSG("Device lost during submit: {}", err.what());

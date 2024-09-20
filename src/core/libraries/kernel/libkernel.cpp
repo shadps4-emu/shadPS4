@@ -244,7 +244,7 @@ int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
 
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
     auto* param_sfo = Common::Singleton<PSF>::Instance();
-    int version = param_sfo->GetInteger("SYSTEM_VER");
+    int version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
     LOG_INFO(Kernel, "returned system version = {:#x}", version);
     *ver = version;
     return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
