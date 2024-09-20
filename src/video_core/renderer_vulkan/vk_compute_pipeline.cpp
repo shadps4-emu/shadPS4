@@ -221,8 +221,12 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             const auto& image_view = texture_cache.FindTexture(image_info, view_info);
             const auto& image = texture_cache.GetImage(image_view.image_id);
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
-        } else {
+        } else if (instance.IsNullDescriptorSupported()) {
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+        } else {
+            auto& null_image = texture_cache.GetImageView(VideoCore::NULL_IMAGE_VIEW_ID);
+            image_infos.emplace_back(VK_NULL_HANDLE, *null_image.image_view,
+                                     vk::ImageLayout::eGeneral);
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
