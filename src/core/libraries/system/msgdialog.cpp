@@ -39,11 +39,6 @@ Error PS4_SYSV_ABI sceMsgDialogGetResult(DialogResult* result) {
     if (result == nullptr) {
         return Error::ARG_NULL;
     }
-    for (const auto v : result->reserved) {
-        if (v != 0) {
-            return Error::PARAM_INVALID;
-        }
-    }
     *result = g_result;
     return Error::OK;
 }

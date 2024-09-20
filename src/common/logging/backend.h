@@ -13,6 +13,8 @@ class Filter;
 /// Initializes the logging system. This should be the first thing called in main.
 void Initialize(std::string_view log_file = "");
 
+bool IsActive();
+
 /// Starts the logging threads.
 void Start();
 

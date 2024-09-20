@@ -509,6 +509,10 @@ void MainWindow::StartGame() {
     if (gamePath != "") {
         AddRecentFiles(gamePath);
         Core::Emulator emulator;
+        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+            QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
+            return;
+        }
         emulator.Run(gamePath.toUtf8().constData());
     }
 }
@@ -610,6 +614,11 @@ void MainWindow::BootGame() {
             path = std::filesystem::path(fileNames[0].toStdWString());
 #endif
             Core::Emulator emulator;
+            if (!std::filesystem::exists(path)) {
+                QMessageBox::critical(nullptr, tr("Run Game"),
+                                      QString(tr("Eboot.bin file not found")));
+                return;
+            }
             emulator.Run(path);
         }
     }
@@ -627,9 +636,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
 
-            psf.open("", pkg.sfo);
+            psf.Open(pkg.sfo);
 
-            std::string content_id = psf.GetString("CONTENT_ID");
+            std::string content_id{*psf.GetString("CONTENT_ID")};
             std::string entitlement_label = Common::SplitString(content_id, '-')[2];
 
             auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
@@ -638,9 +647,11 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             auto category = psf.GetString("CATEGORY");
 
             if (pkgType.contains("PATCH")) {
-                QString pkg_app_version = QString::fromStdString(psf.GetString("APP_VER"));
-                psf.open(extract_path.string() + "/sce_sys/param.sfo", {});
-                QString game_app_version = QString::fromStdString(psf.GetString("APP_VER"));
+                QString pkg_app_version =
+                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                psf.Open(extract_path / "sce_sys" / "param.sfo");
+                QString game_app_version =
+                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
@@ -915,6 +926,10 @@ void MainWindow::CreateRecentGameActions() {
         QString gamePath = action->text();
         AddRecentFiles(gamePath); // Update the list.
         Core::Emulator emulator;
+        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+            QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
+            return;
+        }
         emulator.Run(gamePath.toUtf8().constData());
     });
 }

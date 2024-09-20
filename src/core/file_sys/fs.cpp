@@ -9,12 +9,14 @@ namespace Core::FileSys {
 
 constexpr int RESERVED_HANDLES = 3; // First 3 handles are stdin,stdout,stderr
 
-void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
+void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
+                      bool read_only) {
     std::scoped_lock lock{m_mutex};
-    m_mnt_pairs.emplace_back(host_folder, guest_folder);
+    m_mnt_pairs.emplace_back(host_folder, guest_folder, read_only);
 }
 
 void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
+    std::scoped_lock lock{m_mutex};
     auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(),
                              [&](const MntPair& pair) { return pair.mount == guest_folder; });
     m_mnt_pairs.erase(it, m_mnt_pairs.end());
@@ -25,7 +27,7 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory) {
+std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory, bool* is_read_only) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
     std::string corrected_path(guest_directory);
     size_t pos = corrected_path.find("//");
@@ -37,6 +39,10 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view guest_directory) {
     const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
         return "";
+    }
+
+    if (is_read_only) {
+        *is_read_only = mount->read_only;
     }
 
     // Nothing to do if getting the mount itself.

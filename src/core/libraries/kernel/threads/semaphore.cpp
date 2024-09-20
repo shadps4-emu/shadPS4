@@ -32,6 +32,10 @@ public:
             return ORBIS_KERNEL_ERROR_EBUSY;
         }
 
+        if (timeout && *timeout == 0) {
+            return SCE_KERNEL_ERROR_ETIMEDOUT;
+        }
+
         // Create waiting thread object and add it into the list of waiters.
         WaitingThread waiter{need_count, is_fifo};
         const auto it = AddWaiter(&waiter);

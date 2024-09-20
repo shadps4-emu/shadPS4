@@ -396,4 +396,18 @@ s64 IOFile::Tell() const {
     return ftello(file);
 }
 
+u64 GetDirectorySize(const std::filesystem::path& path) {
+    if (!fs::exists(path)) {
+        return 0;
+    }
+
+    u64 total = 0;
+    for (const auto& entry : fs::recursive_directory_iterator(path)) {
+        if (fs::is_regular_file(entry.path())) {
+            total += fs::file_size(entry.path());
+        }
+    }
+    return total;
+}
+
 } // namespace Common::FS

@@ -30,10 +30,10 @@ jobs:
         arch: win64_msvc2019_64
         archives: qtbase qttools
 
-    - name: Cache CMake dependency source code
+    - name: Cache CMake Configuration
       uses: actions/cache@v4
       env:
-          cache-name: ${{ runner.os }}-qt-cache-cmake-dependency-sources
+          cache-name: ${{ runner.os }}-qt-ninja-cache-cmake-configuration
       with:
           path: | 
             ${{github.workspace}}/build
@@ -41,8 +41,21 @@ jobs:
           restore-keys: |
             ${{ env.cache-name }}-
 
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-qt-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
+
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -T ClangCL -DENABLE_QT_GUI=ON
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
@@ -50,8 +63,8 @@ jobs:
     - name: Deploy
       run: |
         mkdir upload
-        move build/Release/shadPS4.exe upload
-        windeployqt --dir upload upload/shadPS4.exe
+        move build/shadPS4.exe upload
+        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         
     - name: Get date and git hash
       id: vars

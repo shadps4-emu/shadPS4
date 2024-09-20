@@ -144,6 +144,10 @@ public:
         initialization_in_progress_suppress_logging = false;
     }
 
+    static bool IsActive() {
+        return instance != nullptr;
+    }
+
     static void Start() {
         instance->StartBackendThread();
     }
@@ -273,6 +277,10 @@ private:
 
 void Initialize(std::string_view log_file) {
     Impl::Initialize(log_file.empty() ? LOG_FILE : log_file);
+}
+
+bool IsActive() {
+    return Impl::IsActive();
 }
 
 void Start() {

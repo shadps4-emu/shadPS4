@@ -179,9 +179,14 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    const auto host_path = mnt->GetHostPath(path);
+    bool ro = false;
+    const auto host_path = mnt->GetHostPath(path, &ro);
     if (host_path.empty()) {
         return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    if (ro) {
+        return SCE_KERNEL_ERROR_EROFS;
     }
 
     if (std::filesystem::is_directory(host_path)) {
@@ -270,9 +275,16 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
         return SCE_KERNEL_ERROR_EINVAL;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto dir_name = mnt->GetHostPath(path);
+
+    bool ro = false;
+    const auto dir_name = mnt->GetHostPath(path, &ro);
+
     if (std::filesystem::exists(dir_name)) {
         return SCE_KERNEL_ERROR_EEXIST;
+    }
+
+    if (ro) {
+        return SCE_KERNEL_ERROR_EROFS;
     }
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
@@ -299,7 +311,8 @@ int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    bool ro = false;
+    const auto path_name = mnt->GetHostPath(path, &ro);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
     const bool is_dir = std::filesystem::is_directory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
@@ -319,6 +332,10 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
     }
+    if (ro) {
+        sb->st_mode &= ~0000555u;
+    }
+
     return ORBIS_OK;
 }
 
@@ -500,11 +517,18 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
 
 s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto src_path = mnt->GetHostPath(from);
+    bool ro = false;
+    const auto src_path = mnt->GetHostPath(from, &ro);
     if (!std::filesystem::exists(src_path)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
-    const auto dst_path = mnt->GetHostPath(to);
+    if (ro) {
+        return SCE_KERNEL_ERROR_EROFS;
+    }
+    const auto dst_path = mnt->GetHostPath(to, &ro);
+    if (ro) {
+        return SCE_KERNEL_ERROR_EROFS;
+    }
     const bool src_is_dir = std::filesystem::is_directory(src_path);
     const bool dst_is_dir = std::filesystem::is_directory(dst_path);
     if (src_is_dir && !dst_is_dir) {
