@@ -33,11 +33,16 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
     return supported_extensions;
 }
 
-std::unordered_map<vk::Format, vk::FormatProperties> GetFormatProperties(
+std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     vk::PhysicalDevice physical) {
-    std::unordered_map<vk::Format, vk::FormatProperties> format_properties;
+    std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     for (const auto& format : LiverpoolToVK::GetAllFormats()) {
-        format_properties.emplace(format, physical.getFormatProperties(format));
+        vk::FormatProperties3 properties3{};
+        vk::FormatProperties2 properties2 = {
+            .pNext = &properties3,
+        };
+        physical.getFormatProperties2(format, &properties2);
+        format_properties.emplace(format, properties3);
     }
     return format_properties;
 }
@@ -496,9 +501,9 @@ bool Instance::IsImageFormatSupported(const vk::Format format) const {
         UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
     }
 
-    constexpr vk::FormatFeatureFlags optimal_flags = vk::FormatFeatureFlagBits::eTransferSrc |
-                                                     vk::FormatFeatureFlagBits::eTransferDst |
-                                                     vk::FormatFeatureFlagBits::eSampledImage;
+    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eTransferSrc |
+                                                      vk::FormatFeatureFlagBits2::eTransferDst |
+                                                      vk::FormatFeatureFlagBits2::eSampledImage;
     return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
 }
 
@@ -512,7 +517,7 @@ bool Instance::IsVertexFormatSupported(const vk::Format format) const {
         UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
     }
 
-    constexpr vk::FormatFeatureFlags optimal_flags = vk::FormatFeatureFlagBits::eVertexBuffer;
+    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eVertexBuffer;
     return (it->second.bufferFeatures & optimal_flags) == optimal_flags;
 }
 
