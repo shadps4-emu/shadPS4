@@ -38,7 +38,7 @@ static void DrawAdvanced() {
     const auto& window = *ctx.CurrentWindow;
     auto& draw_list = *window.DrawList;
 
-    Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    Text("Frame time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, io.Framerate);
 
     SeparatorText("Frame graph");
     const float full_width = GetContentRegionAvail().x;
@@ -69,7 +69,7 @@ static void DrawAdvanced() {
                 std::min(std::log2(BAR_HEIGHT_MULT / dt_factor) / 3.0f, 1.0f) * frame_graph_height;
 
             ImU32 color;
-            if (dt_factor >= 0.992f) { // BLUE
+            if (dt_factor >= 0.95f) { // BLUE
                 color = IM_COL32(0x33, 0x33, 0xFF, 0xFF);
             } else if (dt_factor >= 0.5f) { // GREEN <> YELLOW
                 float t = 1.0f - (dt_factor - 0.5f) * 2.0f;
