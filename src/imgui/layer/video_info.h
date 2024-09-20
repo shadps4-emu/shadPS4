@@ -11,7 +11,6 @@ class RendererVulkan;
 namespace ImGui::Layers {
 
 class VideoInfo : public Layer {
-    bool m_show = false;
     ::Vulkan::RendererVulkan* renderer{};
 
 public:

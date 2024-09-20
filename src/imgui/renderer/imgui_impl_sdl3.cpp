@@ -703,8 +703,8 @@ static void UpdateGamepads() {
     const int thumb_dead_zone = 8000; // SDL_gamepad.h suggests using this value.
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadStart, SDL_GAMEPAD_BUTTON_START);
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadBack, SDL_GAMEPAD_BUTTON_BACK);
-    UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceLeft,
-                        SDL_GAMEPAD_BUTTON_WEST); // Xbox X, PS Square
+    /*UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceLeft,
+                        SDL_GAMEPAD_BUTTON_WEST); // Xbox X, PS Square*/ // Disable to avoid menu toggle
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceRight,
                         SDL_GAMEPAD_BUTTON_EAST); // Xbox B, PS Circle
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceUp,
