@@ -10,6 +10,7 @@
 #ifdef ENABLE_QT_GUI
 #include "common/memory_patcher.h"
 #endif
+#include "common/assert.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -99,8 +100,9 @@ void Emulator::Run(const std::filesystem::path& file) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
             if (entry.path().filename() == "param.sfo") {
                 auto* param_sfo = Common::Singleton<PSF>::Instance();
-                param_sfo->open(sce_sys_folder.string() + "/param.sfo", {});
-                id = std::string(param_sfo->GetString("CONTENT_ID"), 7, 9);
+                const bool success = param_sfo->Open(sce_sys_folder / "param.sfo");
+                ASSERT_MSG(success, "Failed to open param.sfo");
+                id = std::string(*param_sfo->GetString("CONTENT_ID"), 7, 9);
                 Libraries::NpTrophy::game_serial = id;
                 const auto trophyDir =
                     Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
@@ -113,10 +115,10 @@ void Emulator::Run(const std::filesystem::path& file) {
 #ifdef ENABLE_QT_GUI
                 MemoryPatcher::g_game_serial = id;
 #endif
-                title = param_sfo->GetString("TITLE");
+                title = *param_sfo->GetString("TITLE");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-                u32 fw_version = param_sfo->GetInteger("SYSTEM_VER");
-                app_version = param_sfo->GetString("APP_VER");
+                u32 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+                app_version = *param_sfo->GetString("APP_VER");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
                 auto* playgo = Common::Singleton<PlaygoFile>::Instance();
