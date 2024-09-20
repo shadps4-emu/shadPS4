@@ -620,7 +620,7 @@ void SaveDialogUi::DrawList() {
         SetCursorPosX(GetContentRegionAvail().x - button_size.x);
         if (Button(back, button_size)) {
             result->dir_name.clear();
-            Finish(ButtonId::INVALID);
+            Finish(ButtonId::INVALID, Result::USER_CANCELED);
         }
         if (IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
             SetItemCurrentNavFocus();
