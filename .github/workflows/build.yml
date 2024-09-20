@@ -410,3 +410,29 @@ jobs:
         prerelease: true
         artifacts: |
           ./artifacts/*.zip
+
+    - name: Delete old pre-releases and tags
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        current_date="${{ needs.get-info.outputs.date }}"
+        api_url="https://api.github.com/repos/${{ github.repository }}/releases"
+        
+        # Get current pre-releases
+        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url?per_page=100")
+        
+        # Parse and delete old pre-releases
+        echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
+          release_date=$(echo "$release" | jq -r '.created_at' | cut -d'T' -f1)
+          release_id=$(echo "$release" | jq -r '.id')
+          release_tag=$(echo "$release" | jq -r '.tag_name')
+
+          # Compare dates
+          if [[ "$release_date" < "$current_date" ]]; then
+            echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
+            # Delete the pre-release
+            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
+            # Delete the tag
+            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
+          fi
+        done
