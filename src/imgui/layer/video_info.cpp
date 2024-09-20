@@ -10,7 +10,7 @@ void ImGui::Layers::VideoInfo::Draw() {
     m_show = IsKeyPressed(ImGuiKey_F10, false) ^ m_show;
 
     if (m_show) {
-        if (Begin("Video Info")) {
+        if (Begin("Video Info", 0, ImGuiWindowFlags_NoNav)) {
             Text("Frame time: %.3f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         }
         End();

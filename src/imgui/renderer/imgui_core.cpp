@@ -9,6 +9,7 @@
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
 #include "sdl_window.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
@@ -97,24 +98,19 @@ void Shutdown(const vk::Device& device) {
 bool ProcessEvent(SDL_Event* event) {
     Sdl::ProcessEvent(event);
     switch (event->type) {
+    // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-    case SDL_EVENT_MOUSE_BUTTON_UP:
         return GetIO().WantCaptureMouse;
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN:
-    case SDL_EVENT_KEY_UP:
         return GetIO().WantCaptureKeyboard;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-    case SDL_EVENT_GAMEPAD_ADDED:
-    case SDL_EVENT_GAMEPAD_REMOVED:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        return (GetIO().BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
+        return GetIO().NavActive;
     default:
         return false;
     }
@@ -138,17 +134,8 @@ void NewFrame() {
     Sdl::NewFrame();
     ImGui::NewFrame();
 
-    bool capture_gamepad = false;
     for (auto* layer : layers) {
         layer->Draw();
-        if (layer->ShouldGrabGamepad()) {
-            capture_gamepad = true;
-        }
-    }
-    if (capture_gamepad) {
-        GetIO().BackendFlags |= ImGuiBackendFlags_HasGamepad;
-    } else {
-        GetIO().BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
     }
 }
 

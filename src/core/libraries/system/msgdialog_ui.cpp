@@ -266,11 +266,13 @@ void MsgDialogUi::Draw() {
 
     CentralizeWindow();
     SetNextWindowSize(window_size);
-    SetNextWindowFocus();
     SetNextWindowCollapsed(false);
+    if (first_render || !io.NavActive) {
+        SetNextWindowFocus();
+    }
     KeepNavHighlight();
-    // Hack to allow every dialog to have a unique window
-    if (Begin("Message Dialog##MessageDialog", nullptr, ImGuiWindowFlags_NoSavedSettings)) {
+    if (Begin("Message Dialog##MessageDialog", nullptr,
+              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         switch (state->GetMode()) {
         case MsgDialogMode::USER_MSG:
             DrawUser();

@@ -174,10 +174,6 @@ public:
     void SetProgressBarValue(u32 value, bool increment);
 
     void Draw() override;
-
-    bool ShouldGrabGamepad() override {
-        return true;
-    }
 };
 
 // Utility function to show a message dialog
