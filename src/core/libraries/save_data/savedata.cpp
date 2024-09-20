@@ -67,13 +67,7 @@ constexpr u32 OrbisSaveDataBlocksMax = 32768; // 1 GiB
 
 // Maximum size for a mount point "/savedataN", where N is a number
 constexpr size_t OrbisSaveDataMountPointDataMaxsize = 16;
-// Maximum size for a title ID (4 uppercase letters + 5 digits)
-constexpr int OrbisSaveDataTitleIdDataSize = 10;
 
-constexpr int OrbisSaveDataDirnameDataMaxsize = 32;     // Maximum save directory name size
-constexpr size_t OrbisSaveDataTitleMaxsize = 128;       // Maximum title name size
-constexpr size_t OrbisSaveDataSubtitleMaxsize = 128;    // Maximum subtitle name size
-constexpr size_t OrbisSaveDataDetailMaxsize = 1024;     // Maximum detail name size
 constexpr size_t OrbisSaveDataFingerprintDataSize = 65; // Maximum fingerprint size
 
 enum class OrbisSaveDataMountMode : u32 {
@@ -111,43 +105,6 @@ enum class OrbisSaveDataSortKey : u32 {
 enum class OrbisSaveDataSortOrder : u32 {
     ASCENT = 0,
     DESCENT = 1,
-};
-
-struct OrbisSaveDataTitleId {
-    CString<OrbisSaveDataTitleIdDataSize> data;
-    std::array<char, 6> _pad;
-};
-
-struct OrbisSaveDataDirName {
-    CString<OrbisSaveDataDirnameDataMaxsize> data;
-};
-
-struct OrbisSaveDataParam {
-    CString<OrbisSaveDataTitleMaxsize> title;
-    CString<OrbisSaveDataSubtitleMaxsize> subTitle;
-    CString<OrbisSaveDataDetailMaxsize> detail;
-    u32 userParam;
-    int : 32;
-    time_t mtime;
-    std::array<u8, 32> _reserved;
-
-    void FromSFO(const PSF& sfo) {
-        memset(this, 0, sizeof(OrbisSaveDataParam));
-        title.FromString(*sfo.GetString(SaveParams::MAINTITLE));
-        subTitle.FromString(*sfo.GetString(SaveParams::SUBTITLE));
-        detail.FromString(*sfo.GetString(SaveParams::DETAIL));
-        userParam = sfo.GetInteger(SaveParams::SAVEDATA_LIST_PARAM).value_or(0);
-        const auto time_since_epoch = sfo.GetLastWrite().time_since_epoch();
-        mtime = chrono::duration_cast<chrono::seconds>(time_since_epoch).count();
-    }
-
-    void ToSFO(PSF& sfo) const {
-        sfo.AddString(std::string{SaveParams::MAINTITLE}, std::string{title}, true);
-        sfo.AddString(std::string{SaveParams::SUBTITLE}, std::string{subTitle}, true);
-        sfo.AddString(std::string{SaveParams::DETAIL}, std::string{detail}, true);
-        sfo.AddInteger(std::string{SaveParams::SAVEDATA_LIST_PARAM}, static_cast<s32>(userParam),
-                       true);
-    }
 };
 
 struct OrbisSaveDataFingerprint {
@@ -359,9 +316,9 @@ static void initialize() {
 static bool match(std::string_view str, std::string_view pattern) {
     auto str_it = str.begin();
     auto pat_it = pattern.begin();
-    while (str_it != str.end() || pat_it != pattern.end()) {
+    while (str_it != str.end() && pat_it != pattern.end()) {
         if (*pat_it == '%') { // 0 or more wildcard
-            for (auto str_wild_it = str_it; str_wild_it != str.end(); ++str_wild_it) {
+            for (auto str_wild_it = str_it; str_wild_it <= str.end(); ++str_wild_it) {
                 if (match({str_wild_it, str.end()}, {pat_it + 1, pattern.end()})) {
                     return true;
                 }
@@ -377,7 +334,7 @@ static bool match(std::string_view str, std::string_view pattern) {
         ++str_it;
         ++pat_it;
     }
-    return pat_it == pattern.end();
+    return str_it == str.end() && pat_it == pattern.end();
 }
 
 static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
@@ -386,9 +343,8 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
     if (mount_info->userId < 0) {
         return Error::INVALID_LOGIN_USER;
     }
-    if (mount_info->blocks < OrbisSaveDataBlocksMin2 ||
-        mount_info->blocks > OrbisSaveDataBlocksMax || mount_info->dirName == nullptr) {
-        LOG_INFO(Lib_SaveData, "called with invalid parameter");
+    if (mount_info->dirName == nullptr) {
+        LOG_INFO(Lib_SaveData, "called without dirName");
         return Error::PARAMETER;
     }
 
@@ -434,6 +390,10 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
     SaveInstance save_instance{slot_num, mount_info->userId, g_game_serial, dir_name,
                                (int)mount_info->blocks};
 
+    if (save_instance.Mounted()) {
+        UNREACHABLE_MSG("Save instance should not be mounted");
+    }
+
     if (!create && !create_if_not_exist && !save_instance.Exists()) {
         return Error::NOT_FOUND;
     }
@@ -444,6 +404,12 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
     bool to_be_created = !save_instance.Exists();
 
     if (to_be_created) { // Check size
+
+        if (mount_info->blocks < OrbisSaveDataBlocksMin2 ||
+            mount_info->blocks > OrbisSaveDataBlocksMax) {
+            LOG_INFO(Lib_SaveData, "called with invalid block size");
+        }
+
         const auto root_save = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;
@@ -509,6 +475,23 @@ static Error Umount(const OrbisSaveDataMountPoint* mountPoint, bool call_backup 
         }
     }
     return Error::NOT_FOUND;
+}
+
+void OrbisSaveDataParam::FromSFO(const PSF& sfo) {
+    memset(this, 0, sizeof(OrbisSaveDataParam));
+    title.FromString(*sfo.GetString(SaveParams::MAINTITLE));
+    subTitle.FromString(*sfo.GetString(SaveParams::SUBTITLE));
+    detail.FromString(*sfo.GetString(SaveParams::DETAIL));
+    userParam = sfo.GetInteger(SaveParams::SAVEDATA_LIST_PARAM).value_or(0);
+    const auto time_since_epoch = sfo.GetLastWrite().time_since_epoch();
+    mtime = chrono::duration_cast<chrono::seconds>(time_since_epoch).count();
+}
+
+void OrbisSaveDataParam::ToSFO(PSF& sfo) const {
+    sfo.AddString(std::string{SaveParams::MAINTITLE}, std::string{title}, true);
+    sfo.AddString(std::string{SaveParams::SUBTITLE}, std::string{subTitle}, true);
+    sfo.AddString(std::string{SaveParams::DETAIL}, std::string{detail}, true);
+    sfo.AddInteger(std::string{SaveParams::SAVEDATA_LIST_PARAM}, static_cast<s32>(userParam), true);
 }
 
 int PS4_SYSV_ABI sceSaveDataAbort() {
@@ -716,6 +699,9 @@ Error PS4_SYSV_ABI sceSaveDataDelete(const OrbisSaveDataDelete* del) {
     }
     const std::string_view dirName{del->dirName->data};
     LOG_DEBUG(Lib_SaveData, "called dirName: {}", dirName);
+    if (dirName.empty()) {
+        return Error::PARAMETER;
+    }
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetDirName() == dirName) {
             return Error::BUSY;

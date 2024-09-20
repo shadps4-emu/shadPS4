@@ -21,7 +21,9 @@ static inline u32 get_max_size(std::string_view key, u32 default_value) {
 }
 
 bool PSF::Open(const std::filesystem::path& filepath) {
-    last_write = std::filesystem::last_write_time(filepath);
+    if (std::filesystem::exists(filepath)) {
+        last_write = std::filesystem::last_write_time(filepath);
+    }
 
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {

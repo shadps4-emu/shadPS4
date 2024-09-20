@@ -240,8 +240,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/save_memory.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
-                src/core/libraries/system/savedatadialog.cpp
-                src/core/libraries/system/savedatadialog.h
+                src/core/libraries/save_data/dialog/savedatadialog.cpp
+                src/core/libraries/save_data/dialog/savedatadialog.h
+                src/core/libraries/save_data/dialog/savedatadialog_ui.cpp
+                src/core/libraries/save_data/dialog/savedatadialog_ui.h
                 src/core/libraries/system/sysmodule.cpp
                 src/core/libraries/system/sysmodule.h
                 src/core/libraries/system/systemservice.cpp

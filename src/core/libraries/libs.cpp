@@ -27,12 +27,12 @@
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/random/random.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
-#include "core/libraries/system/savedatadialog.h"
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
@@ -57,11 +57,11 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Net::RegisterlibSceNet(sym);
     Libraries::NetCtl::RegisterlibSceNetCtl(sym);
     Libraries::SaveData::RegisterlibSceSaveData(sym);
+    Libraries::SaveData::Dialog::RegisterlibSceSaveDataDialog(sym);
     Libraries::Ssl::RegisterlibSceSsl(sym);
     Libraries::SysModule::RegisterlibSceSysmodule(sym);
     Libraries::Posix::Registerlibsceposix(sym);
     Libraries::AudioIn::RegisterlibSceAudioIn(sym);
-    Libraries::SaveDataDialog::RegisterlibSceSaveDataDialog(sym);
     Libraries::NpManager::RegisterlibSceNpManager(sym);
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);

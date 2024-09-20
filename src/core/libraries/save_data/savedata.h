@@ -3,17 +3,53 @@
 
 #pragma once
 
+#include "common/cstring.h"
 #include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
+class PSF;
+
 namespace Libraries::SaveData {
+
+constexpr size_t OrbisSaveDataTitleMaxsize = 128;    // Maximum title name size
+constexpr size_t OrbisSaveDataSubtitleMaxsize = 128; // Maximum subtitle name size
+constexpr size_t OrbisSaveDataDetailMaxsize = 1024;  // Maximum detail name size
+
 enum class Error : u32;
 enum class OrbisSaveDataParamType : u32;
 
 using OrbisUserServiceUserId = s32;
+
+// Maximum size for a title ID (4 uppercase letters + 5 digits)
+constexpr int OrbisSaveDataTitleIdDataSize = 10;
+// Maximum save directory name size
+constexpr int OrbisSaveDataDirnameDataMaxsize = 32;
+
+struct OrbisSaveDataTitleId {
+    Common::CString<OrbisSaveDataTitleIdDataSize> data;
+    std::array<char, 6> _pad;
+};
+
+struct OrbisSaveDataDirName {
+    Common::CString<OrbisSaveDataDirnameDataMaxsize> data;
+};
+
+struct OrbisSaveDataParam {
+    Common::CString<OrbisSaveDataTitleMaxsize> title;
+    Common::CString<OrbisSaveDataSubtitleMaxsize> subTitle;
+    Common::CString<OrbisSaveDataDetailMaxsize> detail;
+    u32 userParam;
+    int : 32;
+    time_t mtime;
+    std::array<u8, 32> _reserved;
+
+    void FromSFO(const PSF& sfo);
+
+    void ToSFO(PSF& sfo) const;
+};
 
 struct OrbisSaveDataBackup;
 struct OrbisSaveDataCheckBackupData;

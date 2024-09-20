@@ -107,8 +107,10 @@ SaveInstance::SaveInstance(int slot_num, OrbisUserServiceUserId user_id, std::st
     param_sfo_path = sce_sys_path / "param.sfo";
     corrupt_file_path = sce_sys_path / "corrupted";
 
+    mount_point = "/savedata" + std::to_string(slot_num);
+
     this->exists = fs::exists(param_sfo_path);
-    this->mounted = false;
+    this->mounted = g_mnt->GetMount(mount_point) != nullptr;
 }
 
 SaveInstance::~SaveInstance() {
@@ -183,7 +185,6 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
 
     max_blocks = GetMaxBlocks(save_path);
 
-    mount_point = "/savedata" + std::to_string(slot_num);
     g_mnt->Mount(save_path, mount_point, read_only);
     mounted = true;
     this->read_only = read_only;
@@ -204,6 +205,7 @@ void SaveInstance::Umount() {
 
     corrupt_file.Close();
     fs::remove(corrupt_file_path);
+    g_mnt->Unmount(save_path, mount_point);
 }
 
 void SaveInstance::CreateFiles() {

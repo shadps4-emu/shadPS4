@@ -112,17 +112,10 @@ int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, 
         value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
         break;
     default:
-        LOG_ERROR(Lib_AppContent, " paramId = {}, value = {} paramId is not valid", paramId,
-                  *value);
+        LOG_ERROR(Lib_AppContent, " paramId = {} paramId is not valid", paramId);
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
-    if (!value.has_value()) {
-        LOG_ERROR(Lib_AppContent,
-                  " paramId = {}, value = {} value is not valid can't read param.sfo?", paramId,
-                  *value);
-        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    }
-    *out_value = *value;
+    *out_value = value.value_or(0);
     return ORBIS_OK;
 }
 

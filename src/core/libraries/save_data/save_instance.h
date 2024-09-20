@@ -124,6 +124,10 @@ public:
         return max_blocks;
     }
 
+    [[nodiscard]] bool Mounted() const noexcept {
+        return mounted;
+    }
+
     [[nodiscard]] bool IsReadOnly() const noexcept {
         return read_only;
     }

@@ -33,18 +33,6 @@ struct {
 };
 static_assert(std::size(user_button_texts) == static_cast<int>(ButtonType::TWO_BUTTONS) + 1);
 
-static void DrawCenteredText(const char* text) {
-    const auto ws = GetWindowSize();
-    const auto text_size = CalcTextSize(text, nullptr, false, ws.x - 40.0f);
-    PushTextWrapPos(ws.x - 30.0f);
-    SetCursorPos({
-        (ws.x - text_size.x) / 2.0f,
-        (ws.y - text_size.y) / 2.0f - 50.0f,
-    });
-    Text("%s", text);
-    PopTextWrapPos();
-}
-
 MsgDialogState::MsgDialogState(const OrbisParam& param) {
     this->mode = param.mode;
     switch (mode) {
@@ -102,7 +90,10 @@ void MsgDialogUi::DrawUser() {
     const auto& [button_type, msg, btn_param1, btn_param2] =
         state->GetState<MsgDialogState::UserState>();
     const auto ws = GetWindowSize();
-    DrawCenteredText(msg.c_str());
+    if (!msg.empty()) {
+        DrawCenteredText(&msg.front(), &msg.back() + 1,
+                         GetContentRegionAvail() - ImVec2{0.0f, 15.0f + BUTTON_SIZE.y});
+    }
     ASSERT(button_type <= ButtonType::TWO_BUTTONS);
     auto [count, text1, text2] = user_button_texts[static_cast<u32>(button_type)];
     if (count == 0xFF) { // TWO_BUTTONS -> User defined message
@@ -132,7 +123,7 @@ void MsgDialogUi::DrawUser() {
                     break;
                 }
             }
-            if (first_render && !focus_first) {
+            if ((first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) && !focus_first) {
                 SetItemCurrentNavFocus();
             }
             PopID();
@@ -142,7 +133,7 @@ void MsgDialogUi::DrawUser() {
         if (Button(text1, BUTTON_SIZE)) {
             Finish(ButtonId::BUTTON1);
         }
-        if (first_render && focus_first) {
+        if ((first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) && focus_first) {
             SetItemCurrentNavFocus();
         }
         PopID();

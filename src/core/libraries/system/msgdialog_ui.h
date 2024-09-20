@@ -171,8 +171,6 @@ public:
 
     void Finish(ButtonId buttonId, CommonDialog::Result r = CommonDialog::Result::OK);
 
-    void SetProgressBarValue(u32 value, bool increment);
-
     void Draw() override;
 };
 
