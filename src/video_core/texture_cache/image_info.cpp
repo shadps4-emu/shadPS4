@@ -200,11 +200,11 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     mips_layout.emplace_back(depth_slice_sz, pitch, 0);
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Image& image, bool force_depth /*= false*/) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     // Override format if image is forced to be a depth target
-    if (force_depth) {
+    if (desc.is_depth) {
         pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
     }
     type = ConvertImageType(image.GetType());
@@ -218,7 +218,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, bool force_depth /*= false*/) n
     size.depth = props.is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
     resources.levels = image.NumLevels();
-    resources.layers = image.NumLayers();
+    resources.layers = image.NumLayers(desc.is_array);
     num_bits = NumBits(image.GetDataFmt());
     usage.texture = true;
 

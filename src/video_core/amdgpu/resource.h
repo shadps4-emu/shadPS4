@@ -238,10 +238,15 @@ struct Image {
         return pitch + 1;
     }
 
-    u32 NumLayers() const {
+    u32 NumLayers(bool is_array) const {
         u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
         if (GetType() == ImageType::Cube) {
-            slices = std::max(last_array + 1, 6);
+            if (is_array) {
+                slices = last_array + 1;
+                ASSERT(slices % 6 == 0);
+            } else {
+                slices = 6;
+            }
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);

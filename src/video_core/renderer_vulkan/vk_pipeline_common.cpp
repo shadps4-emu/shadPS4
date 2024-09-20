@@ -28,7 +28,7 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
         if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-            VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
+            VideoCore::ImageInfo image_info{tsharp, image_desc};
             const auto image_id = texture_cache.FindImage(image_info);
             auto& image = texture_cache.GetImage(image_id);
             image.flags |= VideoCore::ImageFlagBits::Bound;

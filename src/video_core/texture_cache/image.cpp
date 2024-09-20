@@ -125,7 +125,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     // the texture cache should re-create the resource with the usage requested
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
-    if (info.props.is_cube) {
+    if (info.props.is_cube || (info.type == vk::ImageType::e2D && info.resources.layers >= 6)) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;
     } else if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
