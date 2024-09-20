@@ -24,7 +24,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
-    wfi_event = instance.GetDevice().createEventUnique({});
 }
 
 Rasterizer::~Rasterizer() = default;

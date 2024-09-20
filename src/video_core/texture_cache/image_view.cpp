@@ -175,7 +175,10 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .layerCount = info.range.extent.layers,
         },
     };
-    image_view = instance.GetDevice().createImageViewUnique(image_view_ci);
+    auto result = instance.GetDevice().createImageViewUnique(image_view_ci);
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create image view: {}",
+               vk::to_string(result.result));
+    image_view = std::move(result.value);
 }
 
 ImageView::~ImageView() = default;

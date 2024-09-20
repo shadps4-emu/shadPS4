@@ -136,7 +136,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .subgroup_size = instance.SubgroupSize(),
         .support_explicit_workgroup_layout = true,
     };
-    pipeline_cache = instance.GetDevice().createPipelineCacheUnique({});
+    auto cache_result = instance.GetDevice().createPipelineCacheUnique({});
+    ASSERT_MSG(cache_result.result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
+               vk::to_string(cache_result.result));
+    pipeline_cache = std::move(cache_result.value);
 }
 
 PipelineCache::~PipelineCache() = default;

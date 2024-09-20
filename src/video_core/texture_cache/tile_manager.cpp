@@ -298,8 +298,11 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .bindingCount = static_cast<u32>(bindings.size()),
             .pBindings = bindings.data(),
         };
-        static auto desc_layout =
+        static auto desc_layout_result =
             instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+        ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
+                   "Failed to create descriptor set layout: {}",
+                   vk::to_string(desc_layout_result.result));
 
         const vk::PushConstantRange push_constants = {
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
@@ -307,14 +310,17 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .size = sizeof(DetilerParams),
         };
 
-        const vk::DescriptorSetLayout set_layout = *desc_layout;
+        const vk::DescriptorSetLayout set_layout = *desc_layout_result.value;
         const vk::PipelineLayoutCreateInfo layout_info = {
             .setLayoutCount = 1U,
             .pSetLayouts = &set_layout,
             .pushConstantRangeCount = 1,
             .pPushConstantRanges = &push_constants,
         };
-        ctx.pl_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+        auto layout_result = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+        ASSERT_MSG(layout_result.result == vk::Result::eSuccess,
+                   "Failed to create pipeline layout: {}", vk::to_string(layout_result.result));
+        ctx.pl_layout = std::move(layout_result.value);
 
         const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
             .stage = shader_ci,

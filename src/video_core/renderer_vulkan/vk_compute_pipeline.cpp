@@ -78,7 +78,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    auto descriptor_set_result =
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(descriptor_set_result.result == vk::Result::eSuccess,
+               "Failed to create compute descriptor set layout: {}",
+               vk::to_string(descriptor_set_result.result));
+    desc_layout = std::move(descriptor_set_result.value);
 
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
@@ -87,19 +92,20 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pushConstantRangeCount = 1U,
         .pPushConstantRanges = &push_constants,
     };
-    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    auto layout_result = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result.result == vk::Result::eSuccess,
+               "Failed to create compute pipeline layout: {}", vk::to_string(layout_result.result));
+    pipeline_layout = std::move(layout_result.value);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
         .layout = *pipeline_layout,
     };
-    auto result =
+    auto pipeline_result =
         instance.GetDevice().createComputePipelineUnique(pipeline_cache, compute_pipeline_ci);
-    if (result.result == vk::Result::eSuccess) {
-        pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Graphics pipeline creation failed!");
-    }
+    ASSERT_MSG(pipeline_result.result == vk::Result::eSuccess,
+               "Failed to create compute pipeline: {}", vk::to_string(pipeline_result.result));
+    pipeline = std::move(pipeline_result.value);
 }
 
 ComputePipeline::~ComputePipeline() = default;

@@ -69,7 +69,10 @@ CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semap
         .queueFamilyIndex = instance.GetGraphicsQueueFamilyIndex(),
     };
     const vk::Device device = instance.GetDevice();
-    cmd_pool = device.createCommandPoolUnique(pool_create_info);
+    auto result = device.createCommandPoolUnique(pool_create_info);
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create command pool: {}",
+               vk::to_string(result.result));
+    cmd_pool = std::move(result.value);
     if (instance.HasDebuggingToolAttached()) {
         SetObjectName(device, *cmd_pool, "CommandPool");
     }
@@ -182,7 +185,10 @@ void DescriptorHeap::CreateDescriptorPool() {
         .poolSizeCount = static_cast<u32>(pool_sizes.size()),
         .pPoolSizes = pool_sizes.data(),
     };
-    curr_pool = device.createDescriptorPool(pool_info);
+    auto result = device.createDescriptorPool(pool_info);
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create descriptor pool: {}",
+               vk::to_string(result.result));
+    curr_pool = result.value;
 }
 
 } // namespace Vulkan

@@ -5,6 +5,8 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 
+#include "common/assert.h"
+
 namespace Vulkan {
 
 constexpr u64 WAIT_TIMEOUT = std::numeric_limits<u64>::max();
@@ -17,7 +19,10 @@ MasterSemaphore::MasterSemaphore(const Instance& instance_) : instance{instance_
             .initialValue = 0,
         },
     };
-    semaphore = instance.GetDevice().createSemaphoreUnique(semaphore_chain.get());
+    auto result = instance.GetDevice().createSemaphoreUnique(semaphore_chain.get());
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create master semaphore: {}",
+               vk::to_string(result.result));
+    semaphore = std::move(result.value);
 }
 
 MasterSemaphore::~MasterSemaphore() = default;
@@ -27,7 +32,11 @@ void MasterSemaphore::Refresh() {
     u64 counter{};
     do {
         this_tick = gpu_tick.load(std::memory_order_acquire);
-        counter = instance.GetDevice().getSemaphoreCounterValue(*semaphore);
+        auto counter_result = instance.GetDevice().getSemaphoreCounterValue(*semaphore);
+        ASSERT_MSG(counter_result.result == vk::Result::eSuccess,
+                   "Failed to get master semaphore value: {}",
+                   vk::to_string(counter_result.result));
+        counter = counter_result.value;
         if (counter < this_tick) {
             return;
         }

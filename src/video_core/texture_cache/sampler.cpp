@@ -24,7 +24,10 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         .borderColor = LiverpoolToVK::BorderColor(sampler.border_color_type),
         .unnormalizedCoordinates = bool(sampler.force_unnormalized),
     };
-    handle = instance.GetDevice().createSamplerUnique(sampler_ci);
+    auto result = instance.GetDevice().createSamplerUnique(sampler_ci);
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create sampler: {}",
+               vk::to_string(result.result));
+    handle = std::move(result.value);
 }
 
 Sampler::~Sampler() = default;

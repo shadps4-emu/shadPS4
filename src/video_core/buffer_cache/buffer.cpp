@@ -129,9 +129,11 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
         .range = size,
     };
     const auto view = instance->GetDevice().createBufferView(view_ci);
+    ASSERT_MSG(view.result == vk::Result::eSuccess, "Failed to create buffer view: {}",
+               vk::to_string(view.result));
     scheduler->DeferOperation(
-        [view, device = instance->GetDevice()] { device.destroyBufferView(view); });
-    return view;
+        [view, device = instance->GetDevice()] { device.destroyBufferView(view.value); });
+    return view.value;
 }
 
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
