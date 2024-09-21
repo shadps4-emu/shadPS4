@@ -333,7 +333,8 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4]), "AuxData")};
+    const Id struct_type{
+        Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4]), "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, 0, "sr0");
     MemberName(struct_type, 1, "sr1");
