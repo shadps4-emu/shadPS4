@@ -579,6 +579,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_master_semaphore.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
+               src/video_core/renderer_vulkan/vk_pipeline_common.cpp
+               src/video_core/renderer_vulkan/vk_pipeline_common.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp

@@ -202,7 +202,8 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead, cmdbuf);
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {},
+                  cmdbuf);
 
     const std::array pre_barrier{
         vk::ImageMemoryBarrier{
@@ -228,7 +229,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
     cmdbuf.blitImage(
-        image.image, image.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
+        image.image, image.last_state.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
         MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
         vk::Filter::eLinear);
 
@@ -269,6 +270,9 @@ void RendererVulkan::Present(Frame* frame) {
 
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    ImGui::Core::Render(cmdbuf, frame);
+
     {
         auto* profiler_ctx = instance.GetProfilerContext();
         TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
@@ -325,8 +329,6 @@ void RendererVulkan::Present(Frame* frame) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-
-        ImGui::Core::Render(cmdbuf, frame);
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                vk::PipelineStageFlagBits::eTransfer,

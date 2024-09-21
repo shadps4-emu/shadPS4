@@ -282,6 +282,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceFeatures2{
             .features{
                 .robustBufferAccess = features.robustBufferAccess,
+                .imageCubeArray = features.imageCubeArray,
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .logicOp = features.logicOp,

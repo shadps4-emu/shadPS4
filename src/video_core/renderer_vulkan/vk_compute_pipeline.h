@@ -3,9 +3,8 @@
 
 #pragma once
 
-#include <boost/container/small_vector.hpp>
-#include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/renderer_vulkan/vk_pipeline_common.h"
 
 namespace VideoCore {
 class BufferCache;
@@ -18,27 +17,17 @@ class Instance;
 class Scheduler;
 class DescriptorHeap;
 
-class ComputePipeline {
+class ComputePipeline : public Pipeline {
 public:
-    explicit ComputePipeline(const Instance& instance, Scheduler& scheduler,
-                             DescriptorHeap& desc_heap, vk::PipelineCache pipeline_cache,
-                             u64 compute_key, const Shader::Info& info, vk::ShaderModule module);
+    ComputePipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
+                    vk::PipelineCache pipeline_cache, u64 compute_key, const Shader::Info& info,
+                    vk::ShaderModule module);
     ~ComputePipeline();
-
-    [[nodiscard]] vk::Pipeline Handle() const noexcept {
-        return *pipeline;
-    }
 
     bool BindResources(VideoCore::BufferCache& buffer_cache,
                        VideoCore::TextureCache& texture_cache) const;
 
 private:
-    const Instance& instance;
-    Scheduler& scheduler;
-    DescriptorHeap& desc_heap;
-    vk::UniquePipeline pipeline;
-    vk::UniquePipelineLayout pipeline_layout;
-    vk::UniqueDescriptorSetLayout desc_layout;
     u64 compute_key;
     const Shader::Info* info;
     bool uses_push_descriptors{};

@@ -581,15 +581,23 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
+    ASSERT_MSG(device_addr == image.info.guest_address,
+               "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
+               image.info.guest_address);
     boost::container::small_vector<vk::BufferImageCopy, 8> copies;
     u32 offset = buffer.Offset(image.cpu_addr);
     const u32 num_layers = image.info.resources.layers;
+    u32 total_size = 0;
     for (u32 m = 0; m < image.info.resources.levels; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
+        offset += mip_ofs * num_layers;
+        if (offset + (mip_size * num_layers) > buffer.SizeBytes()) {
+            break;
+        }
         copies.push_back({
             .bufferOffset = offset,
             .bufferRowLength = static_cast<u32>(mip_pitch),
@@ -603,11 +611,11 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, depth},
         });
-        offset += mip_ofs * num_layers;
+        total_size += mip_size * num_layers;
     }
     if (!copies.empty()) {
         scheduler.EndRendering();
-        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits::eTransferRead);
+        image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
         const auto cmdbuf = scheduler.CommandBuffer();
         cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.buffer,
                                  copies);

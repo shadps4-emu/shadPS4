@@ -64,9 +64,10 @@ struct ImageResource {
     u32 dword_offset;
     AmdGpu::ImageType type;
     AmdGpu::NumberFormat nfmt;
-    bool is_storage;
-    bool is_depth;
+    bool is_storage{};
+    bool is_depth{};
     bool is_atomic{};
+    bool is_array{};
 
     constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
@@ -171,6 +172,7 @@ struct Info {
     bool uses_fp64{};
     bool uses_step_rates{};
     bool translation_failed{}; // indicates that shader has unsupported instructions
+    u8 mrt_mask{0u};
 
     explicit Info(Stage stage_, ShaderParams params)
         : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},

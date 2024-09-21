@@ -546,6 +546,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     info.explicit_lod.Assign(explicit_lod);
     info.has_derivatives.Assign(has_derivatives);
+    info.is_array.Assign(mimg.da);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
@@ -630,6 +631,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     info.has_offset.Assign(flags.test(MimgModifier::Offset));
     // info.explicit_lod.Assign(explicit_lod);
     info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
+    info.is_array.Assign(mimg.da);
 
     // Issue IR instruction, leaving unknown fields blank to patch later.
     const IR::Value texel = [&]() -> IR::Value {
