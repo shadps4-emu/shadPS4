@@ -132,6 +132,11 @@ public:
         return vertex_input_dynamic_state;
     }
 
+    /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
+    bool IsNullDescriptorSupported() const {
+        return null_descriptor;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -279,6 +284,7 @@ private:
     bool workgroup_memory_explicit_layout{};
     bool color_write_en{};
     bool vertex_input_dynamic_state{};
+    bool null_descriptor{};
     u64 min_imported_host_pointer_alignment{};
     u32 subgroup_size{};
     bool tooling_info{};

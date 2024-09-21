@@ -381,9 +381,12 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     }
     if (robustness) {
-        device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =
+        null_descriptor =
             feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor;
+        device_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor =
+            null_descriptor;
     } else {
+        null_descriptor = false;
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
     if (!vertex_input_dynamic_state) {

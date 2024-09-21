@@ -386,8 +386,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     push_data.AddOffset(binding, adjust);
                 }
                 buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            } else {
+            } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+            } else {
+                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
+                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -451,8 +454,12 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 const auto& image_view = texture_cache.FindTexture(image_info, view_info);
                 const auto& image = texture_cache.GetImage(image_view.image_id);
                 image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
-            } else {
+            } else if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+            } else {
+                auto& null_image = texture_cache.GetImageView(VideoCore::NULL_IMAGE_VIEW_ID);
+                image_infos.emplace_back(VK_NULL_HANDLE, *null_image.image_view,
+                                         vk::ImageLayout::eGeneral);
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,

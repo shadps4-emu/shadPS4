@@ -98,6 +98,11 @@ public:
         return slot_images[id];
     }
 
+    /// Retrieves the image view with the specified id.
+    [[nodiscard]] ImageView& GetImageView(ImageId id) {
+        return slot_image_views[id];
+    }
+
     bool IsMeta(VAddr address) const {
         return surface_metas.contains(address);
     }

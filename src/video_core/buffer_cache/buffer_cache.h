@@ -62,6 +62,11 @@ public:
         return &gds_buffer;
     }
 
+    /// Retrieves the buffer with the specified id.
+    [[nodiscard]] Buffer& GetBuffer(BufferId id) {
+        return slot_buffers[id];
+    }
+
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
 
