@@ -581,6 +581,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return false;
+    }
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
