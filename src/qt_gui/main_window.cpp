@@ -636,9 +636,19 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
 
-            psf.Open(pkg.sfo);
+            if (!psf.Open(pkg.sfo)) {
+                QMessageBox::critical(this, tr("PKG ERROR"),
+                                      "Could not read SFO. Check log for details");
+                return;
+            }
 
-            std::string content_id{*psf.GetString("CONTENT_ID")};
+            std::string content_id;
+            if (auto value = psf.GetString("CONTENT_ID"); value.has_value()) {
+                content_id = std::string{*value};
+            } else {
+                QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no CONTENT_ID");
+                return;
+            }
             std::string entitlement_label = Common::SplitString(content_id, '-')[2];
 
             auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
@@ -647,11 +657,21 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
             auto category = psf.GetString("CATEGORY");
 
             if (pkgType.contains("PATCH")) {
-                QString pkg_app_version =
-                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                QString pkg_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    pkg_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
                 psf.Open(extract_path / "sce_sys" / "param.sfo");
-                QString game_app_version =
-                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                QString game_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    game_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {

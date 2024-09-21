@@ -63,8 +63,9 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
     }
 
-    static std::string game_serial{*Common::Singleton<PSF>::Instance()->GetString("CONTENT_ID"), 7,
-                                   9};
+    const auto content_id = Common::Singleton<PSF>::Instance()->GetString("CONTENT_ID");
+    ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
+    static std::string game_serial{*content_id, 7, 9};
 
     const auto item = param.items;
     this->user_id = item->userId;
@@ -115,9 +116,9 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             .dir_name = std::string{dir_name},
             .icon = icon,
 
-            .title = std::string{*param_sfo.GetString(SaveParams::MAINTITLE)},
-            .subtitle = std::string{*param_sfo.GetString(SaveParams::SUBTITLE)},
-            .details = std::string{*param_sfo.GetString(SaveParams::DETAIL)},
+            .title = std::string{param_sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown")},
+            .subtitle = std::string{param_sfo.GetString(SaveParams::SUBTITLE).value_or("")},
+            .details = std::string{param_sfo.GetString(SaveParams::DETAIL).value_or("")},
             .date = date_str,
             .size = size_str,
             .last_write = param_sfo.GetLastWrite(),
