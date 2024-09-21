@@ -584,7 +584,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }
     if (inst_info.has_derivatives) {
-        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D,
+        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D ||
+                       image.GetType() == AmdGpu::ImageType::Color2DArray,
                    "User derivatives only supported for 2D images");
     }
     if (inst_info.has_lod_clamp) {
