@@ -86,10 +86,11 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
 } // Anonymous namespace
 
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
+    const u32 index = ctx.binding.user_data + ctx.info.ud_mask.Index(reg);
+    const u32 half = PushData::UdRegsIndex + (index >> 2);
     const Id ud_ptr{
         ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                          ctx.push_data_block, ctx.ConstU32(PushData::UdRegsIndex),
-                          ctx.ConstU32(ctx.binding.user_data + ctx.info.ud_mask.Index(reg)))};
+                          ctx.push_data_block, ctx.ConstU32(half), ctx.ConstU32(index & 3))};
     const Id ud_reg{ctx.OpLoad(ctx.U32[1], ud_ptr)};
     ctx.Name(ud_reg, fmt::format("ud_{}", u32(reg)));
     return ud_reg;

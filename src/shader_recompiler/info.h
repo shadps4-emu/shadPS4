@@ -88,7 +88,7 @@ using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 struct PushData {
     static constexpr u32 BufOffsetIndex = 2;
     static constexpr u32 UdRegsIndex = 4;
-    static constexpr u32 MaxUdRegs = 16;
+    static constexpr u32 MaxUdRegs = 8;
 
     u32 step0;
     u32 step1;

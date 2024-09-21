@@ -181,9 +181,10 @@ void EmitContext::DefineBufferOffsets() {
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
-        Name(value, fmt::format("buf{}_off", binding));
         buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+        Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
+        Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
     }
     for (TextureBufferDefinition& tex_buffer : texture_buffers) {
         const u32 binding = tex_buffer.binding;
@@ -193,8 +194,8 @@ void EmitContext::DefineBufferOffsets() {
         const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
                                    push_data_block, ConstU32(half), ConstU32(comp))};
         const Id value{OpLoad(U32[1], ptr)};
-        Name(value, fmt::format("texbuf{}_off", binding));
-        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
+        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
+        Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
     }
 }
 
@@ -332,20 +333,20 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id ud_array{TypeArray(U32[1], ConstU32(PushData::MaxUdRegs))};
-    Decorate(ud_array, spv::Decoration::ArrayStride, 4U);
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], ud_array), "AuxData")};
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4]), "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, 0, "sr0");
     MemberName(struct_type, 1, "sr1");
     MemberName(struct_type, 2, "buf_offsets0");
     MemberName(struct_type, 3, "buf_offsets1");
-    MemberName(struct_type, 4, "ud_regs");
+    MemberName(struct_type, 4, "ud_regs0");
+    MemberName(struct_type, 5, "ud_regs1");
     MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
     MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
     MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
     MemberDecorate(struct_type, 3, spv::Decoration::Offset, 24U);
     MemberDecorate(struct_type, 4, spv::Decoration::Offset, 40U);
+    MemberDecorate(struct_type, 5, spv::Decoration::Offset, 56U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
