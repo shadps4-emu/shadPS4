@@ -87,8 +87,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Image
         auto new_image_id = slot_images.insert(instance, scheduler, requested_info);
         RegisterImage(new_image_id);
 
-        // auto& new_image = slot_images[new_image_id];
-        // TODO: need to run a helper for depth copy here
+        // TODO: perform a depth copy here
 
         FreeImage(cache_image_id);
         return new_image_id;
@@ -98,7 +97,11 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Image
         !requested_info.usage.depth_target &&
         (requested_info.usage.texture || requested_info.usage.storage);
     if (cache_info.usage.depth_target && should_bind_as_texture) {
-        return cache_image_id;
+        if (cache_info.resources == requested_info.resources) {
+            return cache_image_id;
+        } else {
+            UNREACHABLE();
+        }
     }
 
     return {};

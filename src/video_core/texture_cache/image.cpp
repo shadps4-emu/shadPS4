@@ -213,7 +213,9 @@ boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
             for (u32 layer : layers) {
                 // NOTE: these loops may produce a lot of small barriers.
                 // If this becomes a problem, we can optimize it by merging adjacent barriers.
-                auto& state = subresource_states[mip * info.resources.layers + layer];
+                const auto subres_idx = mip * info.resources.layers + layer;
+                ASSERT(subres_idx < subresource_states.size());
+                auto& state = subresource_states[subres_idx];
 
                 if (state.layout != dst_layout || state.access_mask != dst_mask) {
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
