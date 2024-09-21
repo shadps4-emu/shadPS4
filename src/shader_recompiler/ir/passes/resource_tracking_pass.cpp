@@ -442,18 +442,29 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_storage) {
+                         const IR::Value& z, bool is_storage, bool is_array) {
     // When cubemap is written with imageStore it is treated like 2DArray.
     if (is_storage) {
         return ir.CompositeConstruct(s, t, z);
     }
+
+    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
+
     // We need to fix x and y coordinate,
     // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
     // We already force the scale value to be 1.0 when handling v_cubema_f32,
     // here we subtract 1.5 to recover the original value.
     const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
     const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    return ir.CompositeConstruct(x, y, z);
+    if (is_array) {
+        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
+        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
+        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
+        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
+                                     ir.ConvertIToF(32, 32, false, slice_id));
+    } else {
+        return ir.CompositeConstruct(x, y, z);
+    }
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -548,7 +559,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage),
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
+                                   inst_info.is_array),
                     body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
