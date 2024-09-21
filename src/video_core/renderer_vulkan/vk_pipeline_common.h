@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/backend/bindings.h"
+#include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace VideoCore {

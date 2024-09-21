@@ -20,7 +20,8 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
 Pipeline::~Pipeline() = default;
 
 void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                            Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const {
+                            Shader::Backend::Bindings& binding,
+                            DescriptorWrites& set_writes) const {
 
     using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, Shader::ImageResource>;
     boost::container::static_vector<ImageBindingInfo, 32> image_bindings;

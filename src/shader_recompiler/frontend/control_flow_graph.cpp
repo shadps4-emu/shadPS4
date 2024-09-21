@@ -138,7 +138,13 @@ void CFG::EmitDivergenceLabels() {
                 const auto& save_inst = inst_list[curr_begin];
                 const Label label = index_to_pc[curr_begin] + save_inst.length;
                 AddLabel(label);
-                // Add a label to the close scope instruction as well.
+                // Add a label to the close scope instruction.
+                // There are 3 cases where we need to close a scope.
+                // * Close scope instruction inside the block
+                // * Close scope instruction at the end of the block (cbranch or endpgm)
+                // * Normal instruction at the end of the block
+                // For the last case we must NOT add a label as that would cause
+                // the instruction to be separated into its own basic block.
                 if (is_close) {
                     AddLabel(index_to_pc[index]);
                 }
