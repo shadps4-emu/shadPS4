@@ -359,14 +359,13 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 // VOP2
 
 void Translator::V_CNDMASK_B32(const GcnInst& inst) {
-    const IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::ScalarReg flag_reg{inst.src[2].code};
     const IR::U1 flag = inst.src[2].field == OperandField::ScalarGPR
                             ? ir.GetThreadBitScalarReg(flag_reg)
                             : ir.GetVcc();
     const IR::Value result =
         ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
-    ir.SetVectorReg(dst_reg, IR::U32F32{result});
+    SetDst(inst.dst[0], IR::U32F32{result});
 }
 
 void Translator::V_ADD_F32(const GcnInst& inst) {
@@ -460,23 +459,19 @@ void Translator::V_LSHL_B32(const GcnInst& inst) {
 void Translator::V_LSHLREV_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.ShiftLeftLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
+    SetDst(inst.dst[0], ir.ShiftLeftLogical(src1, ir.BitwiseAnd(src0, ir.Imm32(0x1F))));
 }
 
 void Translator::V_AND_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.BitwiseAnd(src0, src1));
+    SetDst(inst.dst[0], ir.BitwiseAnd(src0, src1));
 }
 
 void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg,
-                    is_xor ? ir.BitwiseXor(src0, src1) : IR::U32(ir.BitwiseOr(src0, src1)));
+    SetDst(inst.dst[0], is_xor ? ir.BitwiseXor(src0, src1) : IR::U32(ir.BitwiseOr(src0, src1)));
 }
 
 void Translator::V_BFM_B32(const GcnInst& inst) {
@@ -535,8 +530,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
 void Translator::V_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.IAdd(src0, src1));
+    SetDst(inst.dst[0], ir.IAdd(src0, src1));
     // TODO: Carry
 }
 
@@ -573,8 +567,7 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
     const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, result);
+    SetDst(inst.dst[0], result);
 
     const IR::U1 less_src0 = ir.ILessThan(result, src0, false);
     const IR::U1 less_src1 = ir.ILessThan(result, src1, false);
@@ -589,10 +582,9 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
-    const IR::VectorReg dst_reg{inst.dst[0].code};
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    ir.SetVectorReg(dst_reg, ir.PackHalf2x16(vec_f32));
+    SetDst(inst.dst[0], ir.PackHalf2x16(vec_f32));
 }
 
 // VOP1
@@ -603,14 +595,12 @@ void Translator::V_MOV(const GcnInst& inst) {
 
 void Translator::V_CVT_F32_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.ConvertSToF(32, 32, src0));
+    SetDst(inst.dst[0], ir.ConvertSToF(32, 32, src0));
 }
 
 void Translator::V_CVT_F32_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.ConvertUToF(32, 32, src0));
+    SetDst(inst.dst[0], ir.ConvertUToF(32, 32, src0));
 }
 
 void Translator::V_CVT_U32_F32(const GcnInst& inst) {
@@ -642,12 +632,11 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 
 void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
     ASSERT(src0.IsImmediate());
     static constexpr std::array IntToFloat = {
         0.0f,     0.0625f,  0.1250f,  0.1875f,  0.2500f,  0.3125f,  0.3750f,  0.4375f,
         -0.5000f, -0.4375f, -0.3750f, -0.3125f, -0.2500f, -0.1875f, -0.1250f, -0.0625f};
-    ir.SetVectorReg(dst_reg, ir.Imm32(IntToFloat[src0.U32() & 0xF]));
+    SetDst(inst.dst[0], ir.Imm32(IntToFloat[src0.U32() & 0xF]));
 }
 
 void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
@@ -658,8 +647,7 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.Fract(src0));
+    SetDst(inst.dst[0], ir.Fract(src0));
 }
 
 void Translator::V_TRUNC_F32(const GcnInst& inst) {
@@ -679,8 +667,7 @@ void Translator::V_RNDNE_F32(const GcnInst& inst) {
 
 void Translator::V_FLOOR_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.FPFloor(src0));
+    SetDst(inst.dst[0], ir.FPFloor(src0));
 }
 
 void Translator::V_EXP_F32(const GcnInst& inst) {
