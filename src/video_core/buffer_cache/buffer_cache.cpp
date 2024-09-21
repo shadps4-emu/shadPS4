@@ -584,6 +584,8 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return false;
     }
+    LOG_INFO(Render_Vulkan, "Copying image with size {:#x}, max_size {:#x}",
+             image.info.guest_size_bytes, size);
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
