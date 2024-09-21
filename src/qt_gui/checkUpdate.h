@@ -18,12 +18,11 @@ public:
 
 private slots:
     void CheckForUpdates(const bool showMessage);
-    void DownloadAndInstallUpdate(const QString& url);
-    void Unzip();
+    void DownloadUpdate(const QString& url);
     void Install();
 
 private:
-    void setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
+    void setupUI(const QString& downloadUrl, const QString& latestDate,
                                  const QString& latestRev, const QString& currentDate,
                                  const QString& currentRev);
 

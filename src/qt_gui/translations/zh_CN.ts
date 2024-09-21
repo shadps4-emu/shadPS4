@@ -1093,16 +1093,6 @@
 			<translation>隐藏变更日志</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>变更日志不可用</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>查看变更日志仅适用于“unstable”通道。</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>变更</translation>

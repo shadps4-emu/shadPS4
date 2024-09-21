@@ -1093,16 +1093,6 @@
 			<translation>Ẩn nhật ký thay đổi</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Nhật ký thay đổi không có sẵn</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Việc xem nhật ký thay đổi chỉ khả dụng cho kênh 'unstable'.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Thay đổi</translation>

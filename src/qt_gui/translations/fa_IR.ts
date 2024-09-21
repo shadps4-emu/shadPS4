@@ -1093,16 +1093,6 @@
 			<translation>مخفی کردن تغییرات</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>تغییرات در دسترس نیست</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>نمایش تغییرات فقط برای کانال 'unstable' در دسترس است.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>تغییرات</translation>

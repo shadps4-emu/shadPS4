@@ -1093,16 +1093,6 @@
 			<translation>Ascunde jurnalul de modificări</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Jurnal de modificări indisponibil</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Vizualizarea jurnalului de modificări este disponibilă doar pentru canalul 'unstable'.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Modificări</translation>

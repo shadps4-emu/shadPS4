@@ -1093,16 +1093,6 @@
 			<translation>Änderungsprotokoll ausblenden</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Änderungsprotokoll nicht verfügbar</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Die Ansicht des Änderungsprotokolls ist nur für den 'unstabilen' Kanal verfügbar.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Änderungen</translation>

@@ -510,7 +510,7 @@
         <message>
             <location filename="../settings_dialog.ui" line="286"/>
             <source>Check for Updates at Startup</source>
-            <translation>Verificar atualizações ao Iniciar</translation>
+            <translation>Verificar Atualizações ao Iniciar</translation>
         </message>
         <message>
             <location filename="../settings_dialog.ui" line="322"/>
@@ -1075,7 +1075,7 @@
         <message>
             <location filename="../checkUpdate.cpp" line="198"/>
             <source>Check for Updates at Startup</source>
-            <translation>Verificar atualizações ao Iniciar</translation>
+            <translation>Verificar Atualizações ao Iniciar</translation>
         </message>
         <message>
             <location filename="../checkUpdate.cpp" line="199"/>
@@ -1091,16 +1091,6 @@
             <location filename="../checkUpdate.cpp" line="223"/>
             <source>Hide Changelog</source>
             <translation>Ocultar Changelog</translation>
-        </message>
-        <message>
-            <location filename="../checkUpdate.cpp" line="231"/>
-            <source>Changelog Unavailable</source>
-            <translation>Changelog indisponível</translation>
-        </message>
-        <message>
-            <location filename="../checkUpdate.cpp" line="232"/>
-            <source>Viewing changelog is only available for the 'unstable' channel.</source>
-            <translation>A visualização do changelog está disponível apenas para o canal 'unstable'.</translation>
         </message>
         <message>
             <location filename="../checkUpdate.cpp" line="296"/>

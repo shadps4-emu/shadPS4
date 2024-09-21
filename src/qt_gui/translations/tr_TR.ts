@@ -1093,16 +1093,6 @@
 			<translation>Değişiklik Günlüğünü Gizle</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Değişiklik Günlüğü Mevcut Değil</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Değişiklik günlüğünü görüntüleme yalnızca 'unstable' kanalı için mevcuttur.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Değişiklikler</translation>

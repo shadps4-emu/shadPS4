@@ -1093,16 +1093,6 @@
 			<translation>Slėpti pakeitimų sąrašą</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Pakeitimų sąrašas neprieinamas</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Žiūrėjimas pakeitimų sąrašo galimas tik 'unstable' kanalui.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Pokyčiai</translation>

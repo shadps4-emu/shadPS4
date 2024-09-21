@@ -5,7 +5,6 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
-#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -23,7 +22,6 @@
 #include <common/config.h>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
-#include <zlib-ng.h>
 #include "checkUpdate.h"
 
 using namespace Common::FS;
@@ -142,15 +140,15 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             close();
             return;
         } else {
-            setupUI_UpdateAvailable(downloadUrl, latestDate, latestRev, currentDate, currentRev);
+            setupUI(downloadUrl, latestDate, latestRev, currentDate, currentRev);
         }
         reply->deleteLater();
     });
 }
 
-void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QString& latestDate,
-                                          const QString& latestRev, const QString& currentDate,
-                                          const QString& currentRev) {
+void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
+                          const QString& latestRev, const QString& currentDate,
+                          const QString& currentRev) {
     QVBoxLayout* layout = new QVBoxLayout(this);
     QHBoxLayout* titleLayout = new QHBoxLayout();
 
@@ -158,7 +156,7 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     QPixmap pixmap(":/images/shadps4.ico");
     imageLabel->setPixmap(pixmap);
     imageLabel->setScaledContents(true);
-    imageLabel->setFixedSize(40, 40);
+    imageLabel->setFixedSize(50, 50);
 
     QLabel* titleLabel = new QLabel("<h1>" + tr("Update Available") + "</h1>", this);
     titleLayout->addWidget(imageLabel);
@@ -189,51 +187,47 @@ void CheckUpdate::setupUI_UpdateAvailable(const QString& downloadUrl, const QStr
     layout->addLayout(bottomLayout);
 
     QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
-    // Create text field for changelog
 
-    if (updateChannel == "unstable") {
-
+    // Don't show changelog button if:
+    // The current version is a pre-release and the version to be downloaded is a release.
+    bool current_isRelease = currentRev.startsWith('v', Qt::CaseInsensitive);
+    bool latest_isRelease = latestRev.startsWith('v', Qt::CaseInsensitive);
+    if (!current_isRelease && latest_isRelease) {
+    } else {
         QTextEdit* textField = new QTextEdit(this);
-
         textField->setReadOnly(true);
         textField->setFixedWidth(400);
         textField->setFixedHeight(200);
         textField->setVisible(false);
         layout->addWidget(textField);
 
-        // Create toggle button for changelog
         QPushButton* toggleButton = new QPushButton(tr("Show Changelog"), this);
         layout->addWidget(toggleButton);
 
-        // Connect the toggle button to the slot to show/hide changelog
         connect(toggleButton, &QPushButton::clicked,
                 [this, textField, toggleButton, currentRev, latestRev, downloadUrl, latestDate,
                  currentDate]() {
                     QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
-                    if (updateChannel == "unstable") {
-                        if (!textField->isVisible()) {
-                            requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
-                                             currentDate);
-                            textField->setVisible(true);
-                            toggleButton->setText(tr("Hide Changelog"));
-                            adjustSize();
-                        } else {
-                            textField->setVisible(false);
-                            toggleButton->setText(tr("Show Changelog"));
-                            adjustSize();
-                        }
+                    if (!textField->isVisible()) {
+                        requestChangelog(currentRev, latestRev, downloadUrl, latestDate,
+                                         currentDate);
+                        textField->setVisible(true);
+                        toggleButton->setText(tr("Hide Changelog"));
+                        adjustSize();
                     } else {
-                        QMessageBox::information(
-                            this, tr("Changelog Unavailable"),
-                            tr("Viewing changelog is only available for the 'unstable' channel."));
+                        textField->setVisible(false);
+                        toggleButton->setText(tr("Show Changelog"));
+                        adjustSize();
                     }
                 });
-    } else {
-        adjustSize();
     }
 
-    connect(yesButton, &QPushButton::clicked, this,
-            [this, downloadUrl]() { DownloadAndInstallUpdate(downloadUrl); });
+    connect(yesButton, &QPushButton::clicked, this, [this, downloadUrl]() {
+        yesButton->setEnabled(false);
+        noButton->setEnabled(false);
+        DownloadUpdate(downloadUrl);
+    });
+
     connect(noButton, &QPushButton::clicked, this, [this]() { close(); });
 
     autoUpdateCheckBox->setChecked(Config::autoUpdate());
@@ -278,7 +272,7 @@ void CheckUpdate::requestChangelog(const QString& currentRev, const QString& lat
                     QJsonObject commitObj = commitValue.toObject();
                     QString message = commitObj["commit"].toObject()["message"].toString();
 
-                    // Remove texts after the first line break, if any
+                    // Remove texts after first line break, if any, to make it cleaner
                     int newlineIndex = message.indexOf('\n');
                     if (newlineIndex != -1) {
                         message = message.left(newlineIndex);
@@ -299,7 +293,7 @@ void CheckUpdate::requestChangelog(const QString& currentRev, const QString& lat
             });
 }
 
-void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
+void CheckUpdate::DownloadUpdate(const QString& url) {
     QNetworkRequest request(url);
     QNetworkReply* reply = networkManager->get(request);
 
@@ -327,7 +321,6 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
             file.close();
             QMessageBox::information(this, tr("Download Complete"),
                                      tr("The update has been downloaded, press OK to install."));
-            Unzip();
             Install();
         } else {
             QMessageBox::warning(
@@ -339,209 +332,13 @@ void CheckUpdate::DownloadAndInstallUpdate(const QString& url) {
     });
 }
 
-void CheckUpdate::Unzip() {
-    QString userPath =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
-    QString tempDirPath = userPath + "/temp_download_update";
-    QString zipFilePath = tempDirPath + "/temp_download_update.zip";
-
-    QFile zipFile(zipFilePath);
-    if (!zipFile.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, tr("Error"),
-                             tr("Failed to open the ZIP file") + ":\n" + zipFilePath);
-        return;
-    }
-
-    QByteArray zipData = zipFile.readAll();
-    zipFile.close();
-
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(zipData.constData());
-    size_t size = zipData.size();
-    size_t offset = 0;
-
-#pragma pack(push, 1)
-    struct ZipLocalFileHeader {
-        uint32_t signature;
-        uint16_t version;
-        uint16_t flags;
-        uint16_t method;
-        uint16_t time;
-        uint16_t date;
-        uint32_t crc32;
-        uint32_t compressedSize;
-        uint32_t uncompressedSize;
-        uint16_t filenameLength;
-        uint16_t extraFieldLength;
-    };
-#pragma pack(pop)
-
-    auto readLocalFileHeader = [&](const uint8_t* data, size_t offset,
-                                   ZipLocalFileHeader& header) -> bool {
-        memcpy(&header, data + offset, sizeof(header));
-        return header.signature == 0x04034b50;
-    };
-
-    auto decompressData = [&](const std::vector<uint8_t>& compressedData,
-                              std::vector<uint8_t>& decompressedData) -> bool {
-        zng_stream strm = {};
-        strm.zalloc = Z_NULL;
-        strm.zfree = Z_NULL;
-        strm.opaque = Z_NULL;
-        strm.avail_in = compressedData.size();
-        strm.next_in = reinterpret_cast<Bytef*>(const_cast<uint8_t*>(compressedData.data()));
-
-        if (zng_inflateInit2(&strm, -MAX_WBITS) != Z_OK) {
-            return false;
-        }
-
-        strm.avail_out = decompressedData.size();
-        strm.next_out = decompressedData.data();
-
-        int result = zng_inflate(&strm, Z_NO_FLUSH);
-        if (result != Z_STREAM_END) {
-            zng_inflateEnd(&strm);
-            return false;
-        }
-
-        zng_inflateEnd(&strm);
-        return true;
-    };
-
-    while (offset < size) {
-        ZipLocalFileHeader header;
-        if (readLocalFileHeader(data, offset, header)) {
-            uint16_t fileNameLength = header.filenameLength;
-            std::string fileName(reinterpret_cast<const char*>(data + offset + sizeof(header)),
-                                 fileNameLength);
-
-            if (fileName.empty()) {
-                QMessageBox::warning(this, tr("Error"),
-                                     tr("File name is empty. Possibly corrupted ZIP."));
-                break;
-            }
-
-            offset += sizeof(header) + fileNameLength + header.extraFieldLength;
-
-            size_t compressedDataOffset = offset;
-            size_t compressedDataSize = header.compressedSize;
-            size_t uncompressedSize = header.uncompressedSize;
-
-            if (header.method == 0) {
-                // 0 = No need to decompress, just copy the data
-                std::vector<uint8_t> decompressedData(
-                    data + compressedDataOffset, data + compressedDataOffset + compressedDataSize);
-
-                QString filePath = QString::fromUtf8(fileName.c_str());
-                QString fullPath = tempDirPath + "/" + filePath;
-
-                QFileInfo fileInfo(fullPath);
-                QString dirPath = fileInfo.path();
-
-                QDir dir(dirPath);
-                if (!dir.exists()) {
-                    if (!dir.mkpath(dirPath)) {
-                        QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create directory") + ":\n" + dirPath);
-                        continue;
-                    }
-                }
-
-                QFile outFile(fullPath);
-                outFile.write(reinterpret_cast<const char*>(decompressedData.data()),
-                              decompressedData.size());
-                outFile.close();
-
-                offset += compressedDataSize;
-            } else if (header.method == 8) {
-                // 8 = Decompression Deflate
-                std::vector<uint8_t> compressedData(
-                    data + compressedDataOffset, data + compressedDataOffset + compressedDataSize);
-                std::vector<uint8_t> decompressedData(uncompressedSize);
-
-                if (!decompressData(compressedData, decompressedData)) {
-                    QMessageBox::warning(this, tr("Error"),
-                                         tr("Error decompressing file") + ":\n" +
-                                             QString::fromStdString(fileName));
-                    continue;
-                }
-
-                QString filePath = QString::fromUtf8(fileName.c_str());
-                QString fullPath = tempDirPath + "/" + filePath;
-
-                QFileInfo fileInfo(fullPath);
-                QString dirPath = fileInfo.path();
-
-                QDir dir(dirPath);
-                if (!dir.exists()) {
-                    if (!dir.mkpath(dirPath)) {
-                        QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create directory") + ":\n" + dirPath);
-                        continue;
-                    }
-                }
-
-                QFile outFile(fullPath);
-                if (!outFile.open(QIODevice::WriteOnly)) {
-                    QMessageBox::warning(this, tr("Error"),
-                                         tr("Failed to open output file") + ":\n" + fullPath);
-                    continue;
-                }
-                outFile.write(reinterpret_cast<const char*>(decompressedData.data()),
-                              decompressedData.size());
-                outFile.close();
-
-                offset += compressedDataSize;
-            } else {
-                QMessageBox::warning(this, tr("Error"),
-                                     tr("Unsupported compression method for file:") +
-                                         header.method + "\n" + QString::fromStdString(fileName));
-                break;
-            }
-#if defined(Q_OS_MAC)
-            if (filePath == "shadps4-macos-qt.tar.gz") {
-                // Unpack the tar.gz file
-                QString tarGzFilePath = tempDirPath + "/" + filePath;
-                QString tarExtractDirPath = tempDirPath + "/tar_extracted";
-                QDir tarExtractDir(tarExtractDirPath);
-                if (!tarExtractDir.exists()) {
-                    if (!tarExtractDir.mkpath(tarExtractDirPath)) {
-                        QMessageBox::warning(this, tr("Error"),
-                                             tr("Failed to create TAR extraction directory") +
-                                                 ":\n" + tarExtractDirPath);
-                        return;
-                    }
-                }
-
-                QString tarCommand =
-                    QString("tar -xzf %1 -C %2").arg(tarGzFilePath, tarExtractDirPath);
-                QProcess tarProcess;
-                tarProcess.start(tarCommand);
-                tarProcess.waitForFinished();
-
-                // Check if tar was successful
-                if (tarProcess.exitStatus() != QProcess::NormalExit || tarProcess.exitCode() != 0) {
-                    QMessageBox::warning(this, tr("Error"),
-                                         tr("Failed to extract the TAR file") + ":\n" +
-                                             tarProcess.errorString());
-                    return;
-                }
-                // Remove .tar.gz file after extraction
-                QFile::remove(tarGzFilePath);
-            }
-#endif
-        } else {
-            offset++;
-        }
-    }
-}
-
 void CheckUpdate::Install() {
     QString userPath =
         QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::UserDir).string());
-    QString tempDirPath = userPath + "/temp_download_update";
-    QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
 
     QString startingUpdate = tr("Starting Update...");
+    QString tempDirPath = userPath + "/temp_download_update";
+    QString rootPath = QString::fromStdString(std::filesystem::current_path().string());
 
     QString scriptContent;
     QString scriptFileName;
@@ -550,50 +347,120 @@ void CheckUpdate::Install() {
 
 #ifdef Q_OS_WIN
     // Windows Batch Script
-    scriptFileName = tempDirPath + "/update.bat";
-    scriptContent = QStringLiteral("@echo off\n"
-                                   "chcp 65001\n"
-                                   "echo %1\n"
-                                   "timeout /t 2 /nobreak\n"
-                                   "xcopy /E /I /Y \"%2\\*\" \"%3\\\"\n"
-                                   "timeout /t 2 /nobreak\n"
-                                   "del /Q \"%3\\update.bat\"\n"
-                                   "del /Q \"%3\\temp_download_update.zip\"\n"
-                                   "start \"\" \"%3\\shadps4.exe\"\n"
-                                   "rmdir /S /Q \"%2\"\n");
-    arguments << "/C" << scriptFileName;
-    processCommand = "cmd.exe";
+    scriptFileName = tempDirPath + "/update.ps1";
+    scriptContent = QStringLiteral(
+        "Set-ExecutionPolicy Bypass -Scope Process -Force\n"
+        "Write-Output '%1'\n"
+        "Expand-Archive -Path '%2\\temp_download_update.zip' -DestinationPath '%2' -Force\n"
+        "Start-Sleep -Seconds 3\n"
+        "Copy-Item -Recurse -Force '%2\\*' '%3\\'\n"
+        "Start-Sleep -Seconds 2\n"
+        "Remove-Item -Force '%3\\update.ps1'\n"
+        "Remove-Item -Force '%3\\temp_download_update.zip'\n"
+        "Start-Process '%3\\shadps4.exe'\n"
+        "Remove-Item -Recurse -Force '%2'\n");
+    arguments << "-ExecutionPolicy"
+              << "Bypass"
+              << "-File" << scriptFileName;
+    processCommand = "powershell.exe";
 
 #elif defined(Q_OS_LINUX)
     // Linux Shell Script
     scriptFileName = tempDirPath + "/update.sh";
-    scriptContent = QStringLiteral("#!/bin/bash\n"
-                                   "echo \"%1\"\n"
-                                   "sleep 2\n"
-                                   "cp -r \"%2/\"* \"%3/\"\n"
-                                   "sleep 2\n"
-                                   "rm \"%3/update.sh\"\n"
-                                   "rm \"%3/temp_download_update.zip\"\n"
-                                   "rm -r \"%2\"\n"
-                                   "chmod +x \"%3/Shadps4-qt.AppImage\"\n"
-                                   "cd \"%3\" && ./Shadps4-qt.AppImage\n");
+    scriptContent = QStringLiteral(
+        "#!/bin/bash\n"
+        "check_unzip() {\n"
+        "    if ! command -v unzip &> /dev/null && ! command -v 7z &> /dev/null; then\n"
+        "        echo \"Neither 'unzip' nor '7z' is installed.\"\n"
+        "        read -p \"Would you like to install 'unzip'? (y/n): \" response\n"
+        "        if [[ \"$response\" == \"y\" || \"$response\" == \"Y\" ]]; then\n"
+        "            if [[ -f /etc/os-release ]]; then\n"
+        "                . /etc/os-release\n"
+        "                case \"$ID\" in\n"
+        "                    ubuntu|debian)\n"
+        "                        sudo apt-get install unzip -y\n"
+        "                        ;;\n"
+        "                    fedora|redhat)\n"
+        "                        sudo dnf install unzip -y\n"
+        "                        ;;\n"
+        "                    *)\n"
+        "                        echo \"Unsupported distribution for automatic installation.\"\n"
+        "                        exit 1\n"
+        "                        ;;\n"
+        "                esac\n"
+        "            else\n"
+        "                echo \"Could not identify the distribution.\"\n"
+        "                exit 1\n"
+        "            fi\n"
+        "        else\n"
+        "            echo \"At least one of 'unzip' or '7z' is required to continue. The process "
+        "will be terminated.\"\n"
+        "            exit 1\n"
+        "        fi\n"
+        "    fi\n"
+        "}\n"
+        "extract_file() {\n"
+        "    if command -v unzip &> /dev/null; then\n"
+        "        unzip -o \"%2/temp_download_update.zip\" -d \"%2/\"\n"
+        "    elif command -v 7z &> /dev/null; then\n"
+        "        7z x \"%2/temp_download_update.zip\" -o\"%2/\" -y\n"
+        "    else\n"
+        "        echo \"No suitable extraction tool found.\"\n"
+        "        exit 1\n"
+        "    fi\n"
+        "}\n"
+        "main() {\n"
+        "    check_unzip\n"
+        "    echo \"%1\"\n"
+        "    sleep 2\n"
+        "    extract_file\n"
+        "    sleep 2\n"
+        "    cp -r \"%2/\"* \"%3/\"\n"
+        "    sleep 2\n"
+        "    rm \"%3/update.sh\"\n"
+        "    rm \"%3/temp_download_update.zip\"\n"
+        "    chmod +x \"%3/Shadps4-qt.AppImage\"\n"
+        "    rm -r \"%2\"\n"
+        "    cd \"%3\" && ./Shadps4-qt.AppImage\n"
+        "}\n"
+        "main\n");
     arguments << scriptFileName;
     processCommand = "bash";
 
 #elif defined(Q_OS_MAC)
     // macOS Shell Script
     scriptFileName = tempDirPath + "/update.sh";
-    scriptContent = QStringLiteral("#!/bin/bash\n"
-                                   "echo \"%1\"\n"
-                                   "sleep 2\n"
-                                   "tar -xzf \"%2/temp_download_update.tar.gz\" -C \"%3\"\n"
-                                   "sleep 2\n"
-                                   "rm \"%3/update.sh\"\n"
-                                   "chmod +x \"%3/shadps4.app/Contents/MacOS/shadps4\"\n"
-                                   "open \"%3/shadps4.app\"\n"
-                                   "rm -r \"%2\"\n");
+    scriptContent = QStringLiteral(
+        "#!/bin/bash\n"
+        "check_tools() {\n"
+        "    if ! command -v unzip &> /dev/null && ! command -v tar &> /dev/null; then\n"
+        "        echo \"Neither 'unzip' nor 'tar' is installed.\"\n"
+        "        read -p \"Would you like to install 'unzip'? (y/n): \" response\n"
+        "        if [[ \"$response\" == \"y\" || \"$response\" == \"Y\" ]]; then\n"
+        "            echo \"Please install 'unzip' using Homebrew or another package manager.\"\n"
+        "            exit 1\n"
+        "        else\n"
+        "            echo \"At least one of 'unzip' or 'tar' is required to continue. The process "
+        "will be terminated.\"\n"
+        "            exit 1\n"
+        "        fi\n"
+        "    fi\n"
+        "}\n"
+        "check_tools\n"
+        "echo \"%1\"\n"
+        "sleep 2\n"
+        "unzip -o \"%2/temp_download_update.zip\" -d \"%2/\"\n"
+        "sleep 2\n"
+        "tar -xzf \"%2/shadps4-macos-qt.tar.gz\" -C \"%3\"\n"
+        "sleep 2\n"
+        "rm \"%3/update.sh\"\n"
+        "chmod +x \"%3/shadps4.app/Contents/MacOS/shadps4\"\n"
+        "open \"%3/shadps4.app\"\n"
+        "rm -r \"%2\"\n");
+
     arguments << scriptFileName;
     processCommand = "bash";
+
 #else
     QMessageBox::warning(this, tr("Error"), "Unsupported operating system.");
     return;

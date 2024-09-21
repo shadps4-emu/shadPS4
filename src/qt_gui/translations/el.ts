@@ -1093,16 +1093,6 @@
 			<translation>Απόκρυψη Ιστορικού Αλλαγών</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>Το Ιστορικό Αλλαγών δεν είναι διαθέσιμο</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>Η προβολή του ιστορικού αλλαγών είναι διαθέσιμη μόνο για το 'unstable' κανάλι.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>Αλλαγές</translation>

@@ -1093,16 +1093,6 @@
 			<translation>إخفاء سجل التغييرات</translation>
 		</message>
 		<message>
-			<location filename="../checkUpdate.cpp" line="231"/>
-			<source>Changelog Unavailable</source>
-			<translation>سجل التغييرات غير متوفر</translation>
-		</message>
-		<message>
-			<location filename="../checkUpdate.cpp" line="232"/>
-			<source>Viewing changelog is only available for the 'unstable' channel.</source>
-			<translation>عرض سجل التغييرات متاح فقط للقناة 'غير المستقرة'.</translation>
-		</message>
-		<message>
 			<location filename="../checkUpdate.cpp" line="296"/>
 			<source>Changes</source>
 			<translation>تغييرات</translation>
