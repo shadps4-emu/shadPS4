@@ -22,9 +22,8 @@ private slots:
     void Install();
 
 private:
-    void setupUI(const QString& downloadUrl, const QString& latestDate,
-                                 const QString& latestRev, const QString& currentDate,
-                                 const QString& currentRev);
+    void setupUI(const QString& downloadUrl, const QString& latestDate, const QString& latestRev,
+                 const QString& currentDate, const QString& currentRev);
 
     void requestChangelog(const QString& currentRev, const QString& latestRev,
                           const QString& downloadUrl, const QString& latestDate,
