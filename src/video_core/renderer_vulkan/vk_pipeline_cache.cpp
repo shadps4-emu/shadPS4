@@ -234,6 +234,49 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.front_face = regs.polygon_control.front_face;
     key.num_samples = regs.aa_config.NumSamples();
 
+    const bool skip_cb_binding =
+        regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
+
+    const auto& BindColorBuffers = [&](u32 mrt_mask) {
+        // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
+        // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
+        // order. We need to do some arrays compaction at this stage
+        key.color_formats.fill(vk::Format::eUndefined);
+        key.blend_controls.fill({});
+        key.write_masks.fill({});
+        key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
+
+        int remapped_cb{};
+        for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+            auto const& col_buf = regs.color_buffers[cb];
+            if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
+                continue;
+            }
+            if ((mrt_mask & (1u << cb)) == 0) {
+                continue;
+            }
+            const auto base_format =
+                LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
+            const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
+            key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
+                base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
+            if (base_format == key.color_formats[remapped_cb]) {
+                key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
+            }
+            key.blend_controls[remapped_cb] = regs.blend_control[cb];
+            key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
+                                                          !col_buf.info.blend_bypass);
+            key.write_masks[remapped_cb] =
+                vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
+            key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
+
+            ++remapped_cb;
+        }
+    };
+
+    // We need to run CB binding twice as actual MRT exports are unknown before FS is compiled.
+    BindColorBuffers(0xff);
+
     u32 binding{};
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!regs.stage_enable.IsStageEnabled(i)) {
@@ -279,42 +322,7 @@ bool PipelineCache::RefreshGraphicsKey() {
 
     const auto* fs_info = infos[u32(Shader::Stage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
-
-    const auto skip_cb_binding =
-        regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
-
-    // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
-    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
-    // We need to do some arrays compaction at this stage
-    key.color_formats.fill(vk::Format::eUndefined);
-    key.blend_controls.fill({});
-    key.write_masks.fill({});
-    key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
-    int remapped_cb{};
-    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
-        auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
-            continue;
-        }
-        if ((key.mrt_mask & (1u << cb)) == 0) {
-            continue;
-        }
-        const auto base_format =
-            LiverpoolToVK::SurfaceFormat(col_buf.info.format, col_buf.NumFormat());
-        const bool is_vo_surface = renderer->IsVideoOutSurface(col_buf);
-        key.color_formats[remapped_cb] = LiverpoolToVK::AdjustColorBufferFormat(
-            base_format, col_buf.info.comp_swap.Value(), false /*is_vo_surface*/);
-        if (base_format == key.color_formats[remapped_cb]) {
-            key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
-        }
-        key.blend_controls[remapped_cb] = regs.blend_control[cb];
-        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
-                                                      !col_buf.info.blend_bypass);
-        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
-        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
-
-        ++remapped_cb;
-    }
+    BindColorBuffers(key.mrt_mask);
 
     return true;
 }
