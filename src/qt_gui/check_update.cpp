@@ -22,7 +22,7 @@
 #include <common/config.h>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
-#include "checkUpdate.h"
+#include "check_update.h"
 
 using namespace Common::FS;
 namespace fs = std::filesystem;

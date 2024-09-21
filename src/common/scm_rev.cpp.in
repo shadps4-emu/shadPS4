@@ -6,7 +6,7 @@
 #define GIT_REV      "@GIT_REV@"
 #define GIT_BRANCH   "@GIT_BRANCH@"
 #define GIT_DESC     "@GIT_DESC@"
-#define BUILD_DATE "@BUILD_DATE@"
+#define BUILD_DATE   "@BUILD_DATE@"
 
 namespace Common {
 

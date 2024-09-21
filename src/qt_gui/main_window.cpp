@@ -6,7 +6,7 @@
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
-#include "checkUpdate.h"
+#include "check_update.h"
 #include "common/io_file.h"
 #include "common/string_util.h"
 #include "common/version.h"

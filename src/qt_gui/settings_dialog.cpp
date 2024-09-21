@@ -4,7 +4,7 @@
 #include <QCompleter>
 #include <QDirIterator>
 
-#include "checkUpdate.h"
+#include "check_update.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "main_window.h"
