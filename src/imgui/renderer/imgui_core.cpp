@@ -9,7 +9,9 @@
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
 #include "sdl_window.h"
+#include "texture_manager.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 static void CheckVkResult(const vk::Result err) {
@@ -21,7 +23,12 @@ static std::vector<ImGui::Layer*> layers;
 // Update layers before rendering to allow layer changes to be applied during rendering.
 // Using deque to keep the order of changes in case a Layer is removed then added again between
 // frames.
-static std::deque<std::pair<bool, ImGui::Layer*>> change_layers;
+std::deque<std::pair<bool, ImGui::Layer*>>& GetChangeLayers() {
+    static std::deque<std::pair<bool, ImGui::Layer*>>* change_layers =
+        new std::deque<std::pair<bool, ImGui::Layer*>>;
+    return *change_layers;
+}
+
 static std::mutex change_layers_mutex{};
 
 namespace ImGui {
@@ -63,6 +70,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
         .check_vk_result_fn = &CheckVkResult,
     };
     Vulkan::Init(vk_info);
+
+    TextureManager::StartWorker();
 }
 
 void OnResize() {
@@ -71,6 +80,8 @@ void OnResize() {
 
 void Shutdown(const vk::Device& device) {
     device.waitIdle();
+
+    TextureManager::StopWorker();
 
     const ImGuiIO& io = GetIO();
     const auto ini_filename = (void*)io.IniFilename;
@@ -87,24 +98,19 @@ void Shutdown(const vk::Device& device) {
 bool ProcessEvent(SDL_Event* event) {
     Sdl::ProcessEvent(event);
     switch (event->type) {
+    // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-    case SDL_EVENT_MOUSE_BUTTON_UP:
         return GetIO().WantCaptureMouse;
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN:
-    case SDL_EVENT_KEY_UP:
         return GetIO().WantCaptureKeyboard;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-    case SDL_EVENT_GAMEPAD_ADDED:
-    case SDL_EVENT_GAMEPAD_REMOVED:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        return (GetIO().BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
+        return GetIO().NavActive;
     default:
         return false;
     }
@@ -113,33 +119,23 @@ bool ProcessEvent(SDL_Event* event) {
 void NewFrame() {
     {
         std::scoped_lock lock{change_layers_mutex};
-        while (!change_layers.empty()) {
-            const auto [to_be_added, layer] = change_layers.front();
+        while (!GetChangeLayers().empty()) {
+            const auto [to_be_added, layer] = GetChangeLayers().front();
             if (to_be_added) {
                 layers.push_back(layer);
             } else {
                 const auto [begin, end] = std::ranges::remove(layers, layer);
                 layers.erase(begin, end);
             }
-            change_layers.pop_front();
+            GetChangeLayers().pop_front();
         }
     }
 
-    Vulkan::NewFrame();
     Sdl::NewFrame();
     ImGui::NewFrame();
 
-    bool capture_gamepad = false;
     for (auto* layer : layers) {
         layer->Draw();
-        if (layer->ShouldGrabGamepad()) {
-            capture_gamepad = true;
-        }
-    }
-    if (capture_gamepad) {
-        GetIO().BackendFlags |= ImGuiBackendFlags_HasGamepad;
-    } else {
-        GetIO().BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
     }
 }
 
@@ -184,12 +180,12 @@ void Render(const vk::CommandBuffer& cmdbuf, ::Vulkan::Frame* frame) {
 
 void Layer::AddLayer(Layer* layer) {
     std::scoped_lock lock{change_layers_mutex};
-    change_layers.emplace_back(true, layer);
+    GetChangeLayers().emplace_back(true, layer);
 }
 
 void Layer::RemoveLayer(Layer* layer) {
     std::scoped_lock lock{change_layers_mutex};
-    change_layers.emplace_back(false, layer);
+    GetChangeLayers().emplace_back(false, layer);
 }
 
 } // namespace ImGui

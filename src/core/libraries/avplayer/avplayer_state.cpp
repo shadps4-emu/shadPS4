@@ -5,6 +5,8 @@
 #include "avplayer_source.h"
 #include "avplayer_state.h"
 
+#include "common/thread.h"
+
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time_management.h"
 
@@ -178,6 +180,7 @@ bool AvPlayerState::Start() {
 
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
     using std::chrono::milliseconds;
+    Common::SetCurrentThreadName("shadPS4:AvController");
 
     while (!stop.stop_requested()) {
         if (m_event_queue.Size() != 0) {

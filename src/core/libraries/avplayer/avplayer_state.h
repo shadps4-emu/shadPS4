@@ -38,9 +38,6 @@ public:
     bool SetLooping(bool is_looping);
 
 private:
-    using ScePthreadMutex = Kernel::ScePthreadMutex;
-    using ScePthread = Kernel::ScePthread;
-
     // Event Replacement
     static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, s32 event_id, s32 source_id,
                                                    void* event_data);

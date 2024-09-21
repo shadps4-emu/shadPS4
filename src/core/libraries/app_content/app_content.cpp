@@ -90,37 +90,32 @@ int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* value) {
-    if (value == nullptr)
+int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* out_value) {
+    if (out_value == nullptr)
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     auto* param_sfo = Common::Singleton<PSF>::Instance();
+    std::optional<s32> value;
     switch (paramId) {
     case ORBIS_APP_CONTENT_APPPARAM_ID_SKU_FLAG:
-        *value = ORBIS_APP_CONTENT_APPPARAM_SKU_FLAG_FULL;
+        value = ORBIS_APP_CONTENT_APPPARAM_SKU_FLAG_FULL;
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_1:
-        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_1");
+        value = param_sfo->GetInteger("USER_DEFINED_PARAM_1");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_2:
-        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_2");
+        value = param_sfo->GetInteger("USER_DEFINED_PARAM_2");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_3:
-        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_3");
+        value = param_sfo->GetInteger("USER_DEFINED_PARAM_3");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_4:
-        *value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
+        value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
         break;
     default:
-        LOG_ERROR(Lib_AppContent, " paramId = {}, value = {} paramId is not valid", paramId,
-                  *value);
+        LOG_ERROR(Lib_AppContent, " paramId = {} paramId is not valid", paramId);
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
-    if (*value == -1) {
-        LOG_ERROR(Lib_AppContent,
-                  " paramId = {}, value = {} value is not valid can't read param.sfo?", paramId,
-                  *value);
-        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    }
+    *out_value = value.value_or(0);
     return ORBIS_OK;
 }
 
@@ -251,7 +246,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
     const auto addons_dir = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir);
-    title_id = param_sfo->GetString("TITLE_ID");
+    title_id = *param_sfo->GetString("TITLE_ID");
     auto addon_path = addons_dir / title_id;
     if (std::filesystem::exists(addon_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {

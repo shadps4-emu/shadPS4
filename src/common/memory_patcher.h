@@ -5,13 +5,13 @@
 #include <cstring>
 #include <string>
 #include <vector>
-#include <QString>
 
 namespace MemoryPatcher {
 
 extern uintptr_t g_eboot_address;
-extern u64 g_eboot_image_size;
+extern uint64_t g_eboot_image_size;
 extern std::string g_game_serial;
+extern std::string patchFile;
 
 enum PatchMask : uint8_t {
     None,
@@ -32,7 +32,7 @@ struct patchInfo {
 
 extern std::vector<patchInfo> pending_patches;
 
-QString convertValueToHex(const QString& type, const QString& valueStr);
+std::string convertValueToHex(const std::string type, const std::string valueStr);
 
 void OnGameLoaded();
 void AddPatchToQueue(patchInfo patchToAdd);

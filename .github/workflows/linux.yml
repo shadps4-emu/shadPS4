@@ -25,10 +25,10 @@ jobs:
       run: >
        sudo apt-get update && sudo apt install libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
 
-    - name: Cache CMake dependency source code
+    - name: Cache CMake Configuration
       uses: actions/cache@v4
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-sources
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
       with:
           path: | 
             ${{github.workspace}}/build
@@ -36,16 +36,16 @@ jobs:
           restore-keys: |
             ${{ env.cache-name }}-
 
-    - name: Cache CMake dependency build objects
+    - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.14
       env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-dependency-builds
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel

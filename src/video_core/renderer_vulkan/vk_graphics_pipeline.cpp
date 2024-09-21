@@ -95,9 +95,6 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = bool(key.depth_bias_enable),
-        .depthBiasConstantFactor = key.depth_bias_const_factor,
-        .depthBiasClamp = key.depth_bias_clamp,
-        .depthBiasSlopeFactor = key.depth_bias_slope_factor,
         .lineWidth = 1.0f,
     };
 
@@ -134,9 +131,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eScissor,
-        vk::DynamicState::eBlendConstants,
+        vk::DynamicState::eViewport,           vk::DynamicState::eScissor,
+        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthBounds,
+        vk::DynamicState::eDepthBias,          vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
     };
 
     if (instance.IsColorWriteEnableSupported()) {
@@ -153,39 +151,31 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
 
     const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth.depth_enable,
-        .depthWriteEnable = key.depth.depth_write_enable,
-        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth.depth_func),
-        .depthBoundsTestEnable = key.depth.depth_bounds_enable,
-        .stencilTestEnable = key.depth.stencil_enable,
+        .depthTestEnable = key.depth_stencil.depth_enable,
+        .depthWriteEnable = key.depth_stencil.depth_write_enable,
+        .depthCompareOp = LiverpoolToVK::CompareOp(key.depth_stencil.depth_func),
+        .depthBoundsTestEnable = key.depth_stencil.depth_bounds_enable,
+        .stencilTestEnable = key.depth_stencil.stencil_enable,
         .front{
             .failOp = LiverpoolToVK::StencilOp(key.stencil.stencil_fail_front),
             .passOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zpass_front),
             .depthFailOp = LiverpoolToVK::StencilOp(key.stencil.stencil_zfail_front),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth.stencil_ref_func),
-            .compareMask = key.stencil_ref_front.stencil_mask,
-            .writeMask = key.stencil_ref_front.stencil_write_mask,
-            .reference = key.stencil_ref_front.stencil_test_val,
+            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.stencil_ref_func),
         },
         .back{
-            .failOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .failOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                    ? key.stencil.stencil_fail_back.Value()
                                                    : key.stencil.stencil_fail_front.Value()),
-            .passOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .passOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                    ? key.stencil.stencil_zpass_back.Value()
                                                    : key.stencil.stencil_zpass_front.Value()),
-            .depthFailOp = LiverpoolToVK::StencilOp(key.depth.backface_enable
+            .depthFailOp = LiverpoolToVK::StencilOp(key.depth_stencil.backface_enable
                                                         ? key.stencil.stencil_zfail_back.Value()
                                                         : key.stencil.stencil_zfail_front.Value()),
-            .compareOp = LiverpoolToVK::CompareOp(key.depth.backface_enable
-                                                      ? key.depth.stencil_bf_func.Value()
-                                                      : key.depth.stencil_ref_func.Value()),
-            .compareMask = key.stencil_ref_back.stencil_mask,
-            .writeMask = key.stencil_ref_back.stencil_write_mask,
-            .reference = key.stencil_ref_back.stencil_test_val,
+            .compareOp = LiverpoolToVK::CompareOp(key.depth_stencil.backface_enable
+                                                      ? key.depth_stencil.stencil_bf_func.Value()
+                                                      : key.depth_stencil.stencil_ref_func.Value()),
         },
-        .minDepthBounds = key.depth_bounds_min,
-        .maxDepthBounds = key.depth_bounds_max,
     };
 
     auto stage = u32(Shader::Stage::Vertex);
@@ -302,6 +292,7 @@ GraphicsPipeline::~GraphicsPipeline() = default;
 
 void GraphicsPipeline::BuildDescSetLayout() {
     u32 binding{};
+    boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
@@ -395,8 +386,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     push_data.AddOffset(binding, adjust);
                 }
                 buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            } else {
+            } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+            } else {
+                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
+                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
@@ -460,8 +454,12 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                 const auto& image_view = texture_cache.FindTexture(image_info, view_info);
                 const auto& image = texture_cache.GetImage(image_view.image_id);
                 image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
-            } else {
+            } else if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+            } else {
+                auto& null_image = texture_cache.GetImageView(VideoCore::NULL_IMAGE_VIEW_ID);
+                image_infos.emplace_back(VK_NULL_HANDLE, *null_image.image_view,
+                                         vk::ImageLayout::eGeneral);
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,

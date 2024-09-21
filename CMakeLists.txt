@@ -47,6 +47,11 @@ else()
     message(FATAL_ERROR "Unsupported CPU architecture: ${BASE_ARCHITECTURE}")
 endif()
 
+if (APPLE AND ARCHITECTURE STREQUAL "x86_64")
+    # Exclude ARM homebrew path to avoid conflicts when cross compiling.
+    list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
+endif()
+
 # This function should be passed a list of all files in a target. It will automatically generate file groups
 # following the directory hierarchy, so that the layout of the files in IDEs matches the one in the filesystem.
 function(create_target_directory_groups target_name)
@@ -228,11 +233,18 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog_ui.cpp
                 src/core/libraries/system/posix.cpp
                 src/core/libraries/system/posix.h
-                src/core/libraries/save_data/error_codes.h
+                src/core/libraries/save_data/save_backup.cpp
+                src/core/libraries/save_data/save_backup.h
+                src/core/libraries/save_data/save_instance.cpp
+                src/core/libraries/save_data/save_instance.h
+                src/core/libraries/save_data/save_memory.cpp
+                src/core/libraries/save_data/save_memory.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
-                src/core/libraries/system/savedatadialog.cpp
-                src/core/libraries/system/savedatadialog.h
+                src/core/libraries/save_data/dialog/savedatadialog.cpp
+                src/core/libraries/save_data/dialog/savedatadialog.h
+                src/core/libraries/save_data/dialog/savedatadialog_ui.cpp
+                src/core/libraries/save_data/dialog/savedatadialog_ui.h
                 src/core/libraries/system/sysmodule.cpp
                 src/core/libraries/system/sysmodule.h
                 src/core/libraries/system/systemservice.cpp
@@ -345,6 +357,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/concepts.h
            src/common/config.cpp
            src/common/config.h
+           src/common/cstring.h
            src/common/debug.h
            src/common/disassembler.cpp
            src/common/disassembler.h
@@ -377,6 +390,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
+           src/common/memory_patcher.h
+           src/common/memory_patcher.cpp
            src/common/scm_rev.cpp
            src/common/scm_rev.h
 )
@@ -438,6 +453,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/module.cpp
          src/core/module.h
          src/core/platform.h
+         src/core/signals.cpp
+         src/core/signals.h
          src/core/tls.cpp
          src/core/tls.h
          src/core/virtual_memory.cpp
@@ -599,6 +616,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
 set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
+          src/imgui/imgui_texture.h
           src/imgui/layer/video_info.cpp
           src/imgui/layer/video_info.h
           src/imgui/renderer/imgui_core.cpp
@@ -607,6 +625,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/imgui_impl_sdl3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
+          src/imgui/renderer/texture_manager.cpp
+          src/imgui/renderer/texture_manager.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -631,8 +651,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/checkUpdate.cpp
            src/qt_gui/checkUpdate.h
-           src/qt_gui/memory_patcher.cpp
-           src/qt_gui/memory_patcher.h
            src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h

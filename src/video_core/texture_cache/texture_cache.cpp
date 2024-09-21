@@ -29,10 +29,16 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     info.UpdateSize();
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
     ASSERT(null_id.index == 0);
+    const vk::Image& null_image = slot_images[null_id].image;
+    Vulkan::SetObjectName(instance.GetDevice(), null_image, "Null Image");
     slot_images[null_id].flags = ImageFlagBits::Tracked;
 
     ImageViewInfo view_info;
-    void(slot_image_views.insert(instance, view_info, slot_images[null_id], null_id));
+    const auto null_view_id =
+        slot_image_views.insert(instance, view_info, slot_images[null_id], null_id);
+    ASSERT(null_view_id.index == 0);
+    const vk::ImageView& null_image_view = slot_image_views[null_view_id].image_view.get();
+    Vulkan::SetObjectName(instance.GetDevice(), null_image_view, "Null Image View");
 }
 
 TextureCache::~TextureCache() = default;

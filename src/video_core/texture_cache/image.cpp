@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#define VULKAN_HPP_NO_EXCEPTIONS
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -150,6 +151,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     const auto supported_format = instance->GetSupportedFormat(info.pixel_format);
     const auto properties = instance->GetPhysicalDevice().getImageFormatProperties(
         supported_format, info.type, tiling, usage, flags);
+    const auto supported_samples = properties.result == vk::Result::eSuccess
+                                       ? properties.value.sampleCounts
+                                       : vk::SampleCountFlagBits::e1;
 
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
@@ -162,7 +166,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         },
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
-        .samples = LiverpoolToVK::NumSamples(info.num_samples, properties.sampleCounts),
+        .samples = LiverpoolToVK::NumSamples(info.num_samples, supported_samples),
         .tiling = tiling,
         .usage = usage,
         .initialLayout = vk::ImageLayout::eUndefined,

@@ -12,10 +12,6 @@ public:
     static void RemoveLayer(Layer* layer);
 
     virtual void Draw() = 0;
-
-    virtual bool ShouldGrabGamepad() {
-        return false;
-    }
 };
 
 } // namespace ImGui

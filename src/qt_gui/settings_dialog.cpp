@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QCompleter>
 #include <QDirIterator>
-#include <QGroupBox>
-#include <QLabel>
-#include <QPushButton>
-#include <QVBoxLayout>
 
 #include "checkUpdate.h"
+#include "common/logging/backend.h"
+#include "common/logging/filter.h"
 #include "main_window.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
@@ -84,6 +80,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     Config::setDefaultValues();
                     LoadValuesFromConfig();
+                }
+                if (Common::Log::IsActive()) {
+                    Common::Log::Filter filter;
+                    filter.ParseFilterString(Config::getLogFilter());
+                    Common::Log::SetGlobalFilter(filter);
                 }
             });
 

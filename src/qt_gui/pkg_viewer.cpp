@@ -109,12 +109,12 @@ void PKGViewer::ProcessPKGInfo() {
         path = std::filesystem::path(m_pkg_list[i].toStdWString());
 #endif
         package.Open(path);
-        psf.open("", package.sfo);
-        QString title_name = QString::fromStdString(psf.GetString("TITLE"));
-        QString title_id = QString::fromStdString(psf.GetString("TITLE_ID"));
-        QString app_type = game_list_util.GetAppType(psf.GetInteger("APP_TYPE"));
-        QString app_version = QString::fromStdString(psf.GetString("APP_VER"));
-        QString title_category = QString::fromStdString(psf.GetString("CATEGORY"));
+        psf.Open(package.sfo);
+        QString title_name = QString::fromStdString(std::string{*psf.GetString("TITLE")});
+        QString title_id = QString::fromStdString(std::string{*psf.GetString("TITLE_ID")});
+        QString app_type = game_list_util.GetAppType(*psf.GetInteger("APP_TYPE"));
+        QString app_version = QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+        QString title_category = QString::fromStdString(std::string{*psf.GetString("CATEGORY")});
         QString pkg_size = game_list_util.FormatSize(package.GetPkgHeader().pkg_size);
         pkg_content_flag = package.GetPkgHeader().pkg_content_flags;
         QString flagss = "";
@@ -126,7 +126,7 @@ void PKGViewer::ProcessPKGInfo() {
             }
         }
 
-        u32 fw_int = psf.GetInteger("SYSTEM_VER");
+        u32 fw_int = *psf.GetInteger("SYSTEM_VER");
         QString fw = QString::number(fw_int, 16);
         QString fw_ = fw.length() > 7 ? QString::number(fw_int, 16).left(3).insert(2, '.')
                                       : fw.left(3).insert(1, '.');
