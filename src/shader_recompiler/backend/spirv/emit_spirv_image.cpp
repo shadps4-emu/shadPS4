@@ -164,13 +164,13 @@ Id EmitImageFetch(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, const
     return ctx.OpBitcast(ctx.F32[4], texel);
 }
 
-Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool skip_mips) {
+Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod, bool has_mips) {
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const auto type = ctx.info.images[handle & 0xFFFF].type;
     const Id zero = ctx.u32_zero_value;
-    const auto mips{[&] { return skip_mips ? zero : ctx.OpImageQueryLevels(ctx.U32[1], image); }};
-    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa};
+    const auto mips{[&] { return has_mips ? ctx.OpImageQueryLevels(ctx.U32[1], image) : zero; }};
+    const bool uses_lod{type != AmdGpu::ImageType::Color2DMsaa && !texture.is_storage};
     const auto query{[&](Id type) {
         return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
                         : ctx.OpImageQuerySize(type, image);
