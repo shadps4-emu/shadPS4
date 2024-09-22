@@ -28,11 +28,13 @@ namespace fs = std::filesystem;
 namespace chrono = std::chrono;
 
 using Common::CString;
+using Common::ElfInfo;
 
 namespace Libraries::SaveData {
 
 enum class Error : u32 {
     OK = 0,
+    USER_SERVICE_NOT_INITIALIZED = 0x80960002,
     PARAMETER = 0x809F0000,
     NOT_INITIALIZED = 0x809F0001,
     OUT_OF_MEMORY = 0x809F0002,
@@ -191,7 +193,9 @@ struct OrbisSaveDataMemorySetup2 {
     OrbisUserServiceUserId userId;
     size_t memorySize;
     size_t iconMemorySize;
+    // +4.5
     const OrbisSaveDataParam* initParam;
+    // +4.5
     const OrbisSaveDataIcon* initIcon;
     std::array<u8, 24> _reserved;
 };
@@ -241,6 +245,7 @@ struct OrbisSaveDataMountResult {
     OrbisSaveDataMountPoint mount_point;
     OrbisSaveDataBlocks required_blocks;
     u32 _unused;
+    // +4.5
     OrbisSaveDataMountStatus mount_status;
     std::array<u8, 28> _reserved;
     s32 : 32;
@@ -278,8 +283,11 @@ struct OrbisSaveDataDirNameSearchResult {
     int : 32;
     OrbisSaveDataDirName* dirNames;
     u32 dirNamesNum;
+    // +1.7
     u32 setNum;
+    // +1.7
     OrbisSaveDataParam* params;
+    // +2.5
     OrbisSaveDataSearchInfo* infos;
     std::array<u8, 12> _reserved;
     int : 32;
@@ -303,11 +311,13 @@ struct OrbisSaveDataEvent {
 
 static bool g_initialized = false;
 static std::string g_game_serial;
+static u32 g_fw_ver;
 static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 
 static void initialize() {
     g_initialized = true;
-    g_game_serial = Common::ElfInfo::Instance().GameSerial();
+    g_game_serial = ElfInfo::Instance().GameSerial();
+    g_fw_ver = ElfInfo::Instance().FirmwareVer();
 }
 
 // game_00other | game*other
@@ -336,6 +346,16 @@ static bool match(std::string_view str, std::string_view pattern) {
     return str_it == str.end() && pat_it == pattern.end();
 }
 
+static Error setNotInitializedError() {
+    if (g_fw_ver < ElfInfo::FW_20) {
+        return Error::INTERNAL;
+    }
+    if (g_fw_ver < ElfInfo::FW_25) {
+        return Error::USER_SERVICE_NOT_INITIALIZED;
+    }
+    return Error::NOT_INITIALIZED;
+}
+
 static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
                            OrbisSaveDataMountResult* mount_result) {
 
@@ -351,7 +371,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
     {
         const auto save_path = SaveInstance::MakeDirSavePath(mount_info->userId, g_game_serial,
                                                              mount_info->dirName->data);
-        if (Backup::IsBackupExecutingFor(save_path)) {
+        if (Backup::IsBackupExecutingFor(save_path) && g_fw_ver) {
             return Error::BACKUP_BUSY;
         }
     }
@@ -360,11 +380,14 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
     const bool is_ro = True(mount_mode & OrbisSaveDataMountMode::RDONLY);
 
     const bool create = True(mount_mode & OrbisSaveDataMountMode::CREATE);
-    const bool create_if_not_exist = True(mount_mode & OrbisSaveDataMountMode::CREATE2);
+    const bool create_if_not_exist =
+        True(mount_mode & OrbisSaveDataMountMode::CREATE2) && g_fw_ver >= ElfInfo::FW_45;
     ASSERT(!create || !create_if_not_exist); // Can't have both
 
     const bool copy_icon = True(mount_mode & OrbisSaveDataMountMode::COPY_ICON);
-    const bool ignore_corrupt = True(mount_mode & OrbisSaveDataMountMode::DESTRUCT_OFF);
+
+    const bool ignore_corrupt =
+        True(mount_mode & OrbisSaveDataMountMode::DESTRUCT_OFF) || g_fw_ver < ElfInfo::FW_16;
 
     const std::string_view dir_name{mount_info->dirName->data};
 
@@ -436,9 +459,11 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
 
     mount_result->mount_point.data.FromString(save_instance.GetMountPoint());
 
-    mount_result->mount_status = create_if_not_exist && to_be_created
-                                     ? OrbisSaveDataMountStatus::CREATED
-                                     : OrbisSaveDataMountStatus::NOTHING;
+    if (g_fw_ver >= ElfInfo::FW_45) {
+        mount_result->mount_status = create_if_not_exist && to_be_created
+                                         ? OrbisSaveDataMountStatus::CREATED
+                                         : OrbisSaveDataMountStatus::NOTHING;
+    }
 
     g_mount_slots[slot_num].emplace(std::move(save_instance));
 
@@ -448,7 +473,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
 static Error Umount(const OrbisSaveDataMountPoint* mountPoint, bool call_backup = false) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mountPoint == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -501,7 +526,7 @@ int PS4_SYSV_ABI sceSaveDataAbort() {
 Error PS4_SYSV_ABI sceSaveDataBackup(const OrbisSaveDataBackup* backup) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (backup == nullptr || backup->dirName == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -550,7 +575,7 @@ int PS4_SYSV_ABI sceSaveDataChangeInternal() {
 Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData* check) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (check == nullptr || check->dirName == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -635,7 +660,7 @@ int PS4_SYSV_ABI sceSaveDataCheckSaveDataVersionLatest() {
 Error PS4_SYSV_ABI sceSaveDataClearProgress() {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     LOG_DEBUG(Lib_SaveData, "called");
     Backup::ClearProgress();
@@ -690,7 +715,7 @@ int PS4_SYSV_ABI sceSaveDataDebugTarget() {
 Error PS4_SYSV_ABI sceSaveDataDelete(const OrbisSaveDataDelete* del) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (del == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -742,7 +767,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
                                             OrbisSaveDataDirNameSearchResult* result) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (cond == nullptr || result == nullptr || cond->key > OrbisSaveDataSortKey::FREE_BLOCKS ||
         cond->order > OrbisSaveDataSortOrder::DESCENT) {
@@ -757,7 +782,9 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
 
     if (!fs::exists(save_path)) {
         result->hitNum = 0;
-        result->setNum = 0;
+        if (g_fw_ver >= ElfInfo::FW_17) {
+            result->setNum = 0;
+        }
         return Error::OK;
     }
 
@@ -825,21 +852,25 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
         std::ranges::reverse(dir_list);
     }
 
-    result->hitNum = dir_list.size();
     size_t max_count = std::min(static_cast<size_t>(result->dirNamesNum), dir_list.size());
-    result->setNum = max_count;
+    if (g_fw_ver >= ElfInfo::FW_17) {
+        result->hitNum = dir_list.size();
+        result->setNum = max_count;
+    } else {
+        result->hitNum = max_count;
+    }
 
     for (size_t i = 0; i < max_count; i++) {
         auto& name_data = result->dirNames[i].data;
         name_data.FromString(dir_list[i]);
 
-        if (result->params != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_17 && result->params != nullptr) {
             auto& sfo = map_dir_sfo.at(dir_list[i]);
             auto& param_data = result->params[i];
             param_data.FromSFO(sfo);
         }
 
-        if (result->infos != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_25 && result->infos != nullptr) {
             auto& info = result->infos[i];
             info.blocks = map_max_blocks.at(dir_list[i]);
             info.freeBlocks = map_free_size.at(dir_list[i]);
@@ -913,7 +944,7 @@ Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
                                              OrbisSaveDataEvent* event) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (event == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -949,7 +980,7 @@ Error PS4_SYSV_ABI sceSaveDataGetMountInfo(const OrbisSaveDataMountPoint* mountP
                                            OrbisSaveDataMountInfo* info) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mountPoint == nullptr || info == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -974,7 +1005,7 @@ Error PS4_SYSV_ABI sceSaveDataGetParam(const OrbisSaveDataMountPoint* mountPoint
                                        size_t paramBufSize, size_t* gotSize) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (paramType > OrbisSaveDataParamType::MTIME || paramBuf == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1049,7 +1080,7 @@ Error PS4_SYSV_ABI sceSaveDataGetParam(const OrbisSaveDataMountPoint* mountPoint
 Error PS4_SYSV_ABI sceSaveDataGetProgress(float* progress) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (progress == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1083,7 +1114,7 @@ Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const OrbisUserServiceUserId use
 Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getParam) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (getParam == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1179,7 +1210,7 @@ Error PS4_SYSV_ABI sceSaveDataLoadIcon(const OrbisSaveDataMountPoint* mountPoint
                                        OrbisSaveDataIcon* icon) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mountPoint == nullptr || icon == nullptr || icon->buf == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1208,7 +1239,7 @@ Error PS4_SYSV_ABI sceSaveDataMount(const OrbisSaveDataMount* mount,
                                     OrbisSaveDataMountResult* mount_result) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mount == nullptr && mount->dirName != nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1229,7 +1260,7 @@ Error PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
                                      OrbisSaveDataMountResult* mount_result) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mount == nullptr && mount->dirName != nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1273,7 +1304,7 @@ int PS4_SYSV_ABI sceSaveDataRegisterEventCallback() {
 Error PS4_SYSV_ABI sceSaveDataRestoreBackupData(const OrbisSaveDataRestoreBackupData* restore) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (restore == nullptr || restore->dirName == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1324,7 +1355,7 @@ Error PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint
                                        const OrbisSaveDataIcon* icon) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (mountPoint == nullptr || icon == nullptr || icon->buf == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1372,7 +1403,7 @@ Error PS4_SYSV_ABI sceSaveDataSetParam(const OrbisSaveDataMountPoint* mountPoint
                                        size_t paramBufSize) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (paramType > OrbisSaveDataParamType::USER_PARAM || mountPoint == nullptr ||
         paramBuf == nullptr) {
@@ -1437,13 +1468,15 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(OrbisUserServiceUserId userId, v
     OrbisSaveDataMemorySet2 setParam{};
     setParam.userId = userId;
     setParam.data = &data;
+    setParam.param = nullptr;
+    setParam.icon = nullptr;
     return sceSaveDataSetSaveDataMemory2(&setParam);
 }
 
 Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* setParam) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (setParam == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1476,17 +1509,35 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* 
     return Error::OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(/*u32 userId, size_t memorySize,
-                                                OrbisSaveDataParam* param*/) {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(OrbisUserServiceUserId userId, size_t memorySize,
+                                                  OrbisSaveDataParam* param) {
+    LOG_DEBUG(Lib_SaveData, "called: userId = {}, memorySize = {}", userId, memorySize);
+    OrbisSaveDataMemorySetup2 setupParam{};
+    setupParam.userId = userId;
+    setupParam.memorySize = memorySize;
+    setupParam.initParam = nullptr;
+    setupParam.initIcon = nullptr;
+    OrbisSaveDataMemorySetupResult result{};
+    const auto res = sceSaveDataSetupSaveDataMemory2(&setupParam, &result);
+    if (res != Error::OK) {
+        return res;
+    }
+    if (param != nullptr) {
+        OrbisSaveDataMemorySet2 setParam{};
+        setParam.userId = userId;
+        setParam.data = nullptr;
+        setParam.param = param;
+        setParam.icon = nullptr;
+        sceSaveDataSetSaveDataMemory2(&setParam);
+    }
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetup2* setupParam,
                                                    OrbisSaveDataMemorySetupResult* result) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (setupParam == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1506,20 +1557,20 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     try {
         size_t existed_size = SaveMemory::CreateSaveMemory(setupParam->memorySize);
         if (existed_size == 0) { // Just created
-            if (setupParam->initParam != nullptr) {
+            if (g_fw_ver >= ElfInfo::FW_45 && setupParam->initParam != nullptr) {
                 auto& sfo = SaveMemory::GetParamSFO();
                 setupParam->initParam->ToSFO(sfo);
             }
             SaveMemory::SaveSFO();
 
             auto init_icon = setupParam->initIcon;
-            if (init_icon != nullptr) {
+            if (g_fw_ver >= ElfInfo::FW_45 && init_icon != nullptr) {
                 SaveMemory::SetIcon(init_icon->buf, init_icon->bufSize);
             } else {
                 SaveMemory::SetIcon(nullptr, 0);
             }
         }
-        if (result != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
             result->existedMemorySize = existed_size;
         }
     } catch (const fs::filesystem_error& e) {
@@ -1555,7 +1606,7 @@ int PS4_SYSV_ABI sceSaveDataSyncCloudList() {
 Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncParam) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
     if (syncParam == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
@@ -1576,11 +1627,15 @@ Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncPa
 Error PS4_SYSV_ABI sceSaveDataTerminate() {
     LOG_DEBUG(Lib_SaveData, "called");
     if (!g_initialized) {
-        return Error::NOT_INITIALIZED;
+        return setNotInitializedError();
     }
-    for (const auto& instance : g_mount_slots) {
+    for (auto& instance : g_mount_slots) {
         if (instance.has_value()) {
-            return Error::BUSY;
+            if (g_fw_ver >= ElfInfo::FW_40) {
+                return Error::BUSY;
+            }
+            instance->Umount();
+            instance.reset();
         }
     }
     g_initialized = false;
