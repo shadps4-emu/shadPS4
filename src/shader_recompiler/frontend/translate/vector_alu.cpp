@@ -569,8 +569,7 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
     const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, result);
+    SetDst(inst.dst[0], result);
 
     const IR::U1 less_src0 = ir.ILessThan(result, src0, false);
     const IR::U1 less_src1 = ir.ILessThan(result, src1, false);
