@@ -147,13 +147,20 @@ int PS4_SYSV_ABI sceKernelGettimeofday(OrbisKernelTimeval* tp) {
     }
 
 #ifdef _WIN64
-    auto now = std::chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    auto microsecs = std::chrono::duration_cast<std::chrono::microseconds>(duration - seconds);
+    FILETIME filetime;
+    GetSystemTimeAsFileTime(&filetime);
 
-    tp->tv_sec = seconds.count();
-    tp->tv_usec = microsecs.count();
+    constexpr u64 UNIX_TIME_START = 0x295E9648864000;
+    constexpr u64 TICKS_PER_SECOND = 1000000;
+
+    u64 ticks = filetime.dwHighDateTime;
+    ticks <<= 32;
+    ticks |= filetime.dwLowDateTime;
+    ticks /= 10;
+    ticks -= UNIX_TIME_START;
+
+    tp->tv_sec = ticks / TICKS_PER_SECOND;
+    tp->tv_usec = ticks % TICKS_PER_SECOND;
 #else
     timeval tv;
     gettimeofday(&tv, nullptr);
