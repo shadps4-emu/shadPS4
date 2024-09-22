@@ -335,6 +335,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MED3_I32(inst);
     case Opcode::V_SAD_U32:
         return V_SAD_U32(inst);
+    case Opcode::V_CVT_PK_U8_F32:
+        return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
         return V_LSHL_B64(inst);
     case Opcode::V_MUL_F64:
@@ -1029,6 +1031,16 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
         result = ir.ISub(max, min);
     }
     SetDst(inst.dst[0], ir.IAdd(result, src2));
+}
+
+void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+
+    const IR::U32 value_uint = ir.ConvertFToU(32, src0);
+    const IR::U32 offset = ir.ShiftLeftLogical(src1, ir.Imm32(3));
+    SetDst(inst.dst[0], ir.BitFieldInsert(src2, value_uint, offset, ir.Imm32(8)));
 }
 
 void Translator::V_LSHL_B64(const GcnInst& inst) {
