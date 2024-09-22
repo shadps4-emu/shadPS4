@@ -308,7 +308,9 @@ static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 static void initialize() {
     g_initialized = true;
     static auto* param_sfo = Common::Singleton<PSF>::Instance();
-    g_game_serial = std::string(*param_sfo->GetString("CONTENT_ID"), 7, 9);
+    const auto content_id = param_sfo->GetString("CONTENT_ID");
+    ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
+    g_game_serial = std::string(*content_id, 7, 9);
 }
 
 // game_00other | game*other
@@ -479,9 +481,9 @@ static Error Umount(const OrbisSaveDataMountPoint* mountPoint, bool call_backup 
 
 void OrbisSaveDataParam::FromSFO(const PSF& sfo) {
     memset(this, 0, sizeof(OrbisSaveDataParam));
-    title.FromString(*sfo.GetString(SaveParams::MAINTITLE));
-    subTitle.FromString(*sfo.GetString(SaveParams::SUBTITLE));
-    detail.FromString(*sfo.GetString(SaveParams::DETAIL));
+    title.FromString(sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown"));
+    subTitle.FromString(sfo.GetString(SaveParams::SUBTITLE).value_or(""));
+    detail.FromString(sfo.GetString(SaveParams::DETAIL).value_or(""));
     userParam = sfo.GetInteger(SaveParams::SAVEDATA_LIST_PARAM).value_or(0);
     const auto time_since_epoch = sfo.GetLastWrite().time_since_epoch();
     mtime = chrono::duration_cast<chrono::seconds>(time_since_epoch).count();
@@ -1019,7 +1021,7 @@ Error PS4_SYSV_ABI sceSaveDataGetParam(const OrbisSaveDataMountPoint* mountPoint
         } else {
             UNREACHABLE();
         }
-        const size_t s = param_sfo->GetString(key)->copy(param, paramBufSize - 1);
+        const size_t s = param_sfo->GetString(key).value_or("").copy(param, paramBufSize - 1);
         param[s] = '\0'; // null terminate
         if (gotSize != nullptr) {
             *gotSize = s + 1;

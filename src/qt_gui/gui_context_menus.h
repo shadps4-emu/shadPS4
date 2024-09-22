@@ -96,25 +96,37 @@ public:
                     QTableWidgetItem* valueItem;
                     switch (entry.param_fmt) {
                     case PSFEntryFmt::Binary: {
-
-                        const auto bin = *psf.GetBinary(entry.key);
-                        std::string text;
-                        text.reserve(bin.size() * 2);
-                        for (const auto& c : bin) {
-                            static constexpr char hex[] = "0123456789ABCDEF";
-                            text.push_back(hex[c >> 4 & 0xF]);
-                            text.push_back(hex[c & 0xF]);
+                        const auto bin = psf.GetBinary(entry.key);
+                        if (!bin.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            std::string text;
+                            text.reserve(bin->size() * 2);
+                            for (const auto& c : *bin) {
+                                static constexpr char hex[] = "0123456789ABCDEF";
+                                text.push_back(hex[c >> 4 & 0xF]);
+                                text.push_back(hex[c & 0xF]);
+                            }
+                            valueItem = new QTableWidgetItem(QString::fromStdString(text));
                         }
-                        valueItem = new QTableWidgetItem(QString::fromStdString(text));
                     } break;
                     case PSFEntryFmt::Text: {
-                        auto text = *psf.GetString(entry.key);
-                        valueItem = new QTableWidgetItem(QString::fromStdString(std::string{text}));
+                        auto text = psf.GetString(entry.key);
+                        if (!text.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            valueItem =
+                                new QTableWidgetItem(QString::fromStdString(std::string{*text}));
+                        }
                     } break;
                     case PSFEntryFmt::Integer: {
-                        auto integer = *psf.GetInteger(entry.key);
-                        valueItem =
-                            new QTableWidgetItem(QString("0x") + QString::number(integer, 16));
+                        auto integer = psf.GetInteger(entry.key);
+                        if (!integer.has_value()) {
+                            valueItem = new QTableWidgetItem(QString("Unknown"));
+                        } else {
+                            valueItem =
+                                new QTableWidgetItem(QString("0x") + QString::number(*integer, 16));
+                        }
                     } break;
                     }
 

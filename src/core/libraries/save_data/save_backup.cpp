@@ -18,6 +18,7 @@
 constexpr std::string_view sce_sys = "sce_sys";               // system folder inside save
 constexpr std::string_view backup_dir = "sce_backup";         // backup folder
 constexpr std::string_view backup_dir_tmp = "sce_backup_tmp"; // in-progress backup folder
+constexpr std::string_view backup_dir_old = "sce_backup_old"; // previous backup folder
 
 namespace fs = std::filesystem;
 
@@ -25,6 +26,8 @@ namespace Libraries::SaveData::Backup {
 
 static std::jthread g_backup_thread;
 static std::counting_semaphore g_backup_thread_semaphore{0};
+
+static std::mutex g_backup_running_mutex;
 
 static std::mutex g_backup_queue_mutex;
 static std::deque<BackupRequest> g_backup_queue;
@@ -34,38 +37,44 @@ static std::atomic_int g_backup_progress = 0;
 static std::atomic g_backup_status = WorkerStatus::NotStarted;
 
 static void backup(const std::filesystem::path& dir_name) {
+    std::unique_lock lk{g_backup_running_mutex};
     if (!fs::exists(dir_name)) {
         return;
     }
+
+    const auto backup_dir = dir_name / ::backup_dir;
+    const auto backup_dir_tmp = dir_name / ::backup_dir_tmp;
+    const auto backup_dir_old = dir_name / ::backup_dir_old;
+
+    fs::remove_all(backup_dir_tmp);
+    fs::remove_all(backup_dir_old);
+
     std::vector<std::filesystem::path> backup_files;
     for (const auto& entry : fs::directory_iterator(dir_name)) {
         const auto filename = entry.path().filename();
-        if (filename != backup_dir && filename != backup_dir_tmp) {
+        if (filename != backup_dir) {
             backup_files.push_back(entry.path());
         }
     }
-    const auto backup_dir = dir_name / ::backup_dir;
-    const auto backup_dir_tmp = dir_name / ::backup_dir_tmp;
 
     g_backup_progress = 0;
 
     int total_count = static_cast<int>(backup_files.size());
     int current_count = 0;
 
-    fs::remove_all(backup_dir_tmp);
     fs::create_directory(backup_dir_tmp);
     for (const auto& file : backup_files) {
         fs::copy(file, backup_dir_tmp / file.filename(), fs::copy_options::recursive);
         current_count++;
         g_backup_progress = current_count * 100 / total_count;
     }
-    bool has_existing = fs::exists(backup_dir);
-    if (has_existing) {
-        fs::rename(backup_dir, dir_name / "sce_backup_old");
+    bool has_existing_backup = fs::exists(backup_dir);
+    if (has_existing_backup) {
+        fs::rename(backup_dir, backup_dir_old);
     }
     fs::rename(backup_dir_tmp, backup_dir);
-    if (has_existing) {
-        fs::remove_all(dir_name / "sce_backup_old");
+    if (has_existing_backup) {
+        fs::remove_all(backup_dir_old);
     }
 }
 
@@ -84,7 +93,11 @@ static void BackupThreadBody() {
         }
         g_backup_status = WorkerStatus::Running;
         LOG_INFO(Lib_SaveData, "Backing up the following directory: {}", req.save_path.string());
-        backup(req.save_path);
+        try {
+            backup(req.save_path);
+        } catch (const std::filesystem::filesystem_error& err) {
+            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", req.save_path.string(), err.what());
+        }
         LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
                   req.save_path.string());
         {
@@ -146,6 +159,7 @@ bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
 
 bool Restore(const std::filesystem::path& save_path) {
     LOG_INFO(Lib_SaveData, "Restoring backup for {}", save_path.string());
+    std::unique_lock lk{g_backup_running_mutex};
     if (!fs::exists(save_path) || !fs::exists(save_path / backup_dir)) {
         return false;
     }

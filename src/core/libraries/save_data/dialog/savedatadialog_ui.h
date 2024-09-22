@@ -201,6 +201,7 @@ struct SaveDialogResult {
     std::string dir_name{};
     PSF param{};
     void* user_data{};
+    bool has_item{false};
 
     void CopyTo(OrbisSaveDataDialogResult& result) const;
 };
