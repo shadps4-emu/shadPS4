@@ -8,6 +8,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
@@ -243,8 +244,7 @@ int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
 }
 
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
-    int version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+    int version = Common::ElfInfo::Instance().RawFirmwareVer();
     LOG_INFO(Kernel, "returned system version = {:#x}", version);
     *ver = version;
     return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;

@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <magic_enum.hpp>
 
+#include "common/elf_info.h"
 #include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_sys/fs.h"
@@ -66,9 +67,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
     }
 
-    const auto content_id = Common::Singleton<PSF>::Instance()->GetString("CONTENT_ID");
-    ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
-    static std::string game_serial{*content_id, 7, 9};
+    const auto& game_serial = Common::ElfInfo::Instance().GameSerial();
 
     const auto item = param.items;
     this->user_id = item->userId;

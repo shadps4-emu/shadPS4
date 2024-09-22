@@ -9,10 +9,10 @@
 
 #include "common/assert.h"
 #include "common/cstring.h"
+#include "common/elf_info.h"
 #include "common/enum.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -307,10 +307,7 @@ static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 
 static void initialize() {
     g_initialized = true;
-    static auto* param_sfo = Common::Singleton<PSF>::Instance();
-    const auto content_id = param_sfo->GetString("CONTENT_ID");
-    ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
-    g_game_serial = std::string(*content_id, 7, 9);
+    g_game_serial = Common::ElfInfo::Instance().GameSerial();
 }
 
 // game_00other | game*other
