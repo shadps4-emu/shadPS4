@@ -138,12 +138,8 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
 
         const auto& buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        bool live_input = vs_info.loads.GetAny(Shader::IR::Attribute::Param0 + input.binding);
-        if (buffer.GetSize() == 0 || !live_input) {
-            if (buffer.GetSize() == 0 && live_input) {
-                LOG_WARNING(Render_Vulkan,
-                            "Vertex input looks live but has no corresponding vertex buffer");
-            }
+        if (buffer.GetSize() == 0 ||
+            !vs_info.loads.GetAny(Shader::IR::Attribute::Param0 + input.binding)) {
             continue;
         }
         guest_buffers.emplace_back(buffer);
