@@ -310,6 +310,7 @@ bool Instance::CreateDevice() {
             .separateDepthStencilLayouts = vk12_features.separateDepthStencilLayouts,
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
+            .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
         },
         vk::PhysicalDeviceMaintenance4FeaturesKHR{
             .maintenance4 = true,
