@@ -353,7 +353,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return;
     case IR::Opcode::INotEqual:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a != b; });
-        FoldBooleanConvert(inst);
         return;
     case IR::Opcode::BitwiseAnd32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a & b; });
