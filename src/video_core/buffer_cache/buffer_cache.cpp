@@ -138,7 +138,12 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         }
 
         const auto& buffer = vs_info.ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        if (buffer.GetSize() == 0) {
+        bool live_input = vs_info.loads.GetAny(Shader::IR::Attribute::Param0 + input.binding);
+        if (buffer.GetSize() == 0 || !live_input) {
+            if (buffer.GetSize() == 0 && live_input) {
+                LOG_WARNING(Render_Vulkan,
+                            "Vertex input looks live but has no corresponding vertex buffer");
+            }
             continue;
         }
         guest_buffers.emplace_back(buffer);
@@ -164,13 +169,16 @@ bool BufferCache::BindVertexBuffers(const Shader::Info& vs_info) {
         return lhv.base_address < rhv.base_address;
     });
 
-    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges_merged{ranges[0]};
-    for (auto range : ranges) {
-        auto& prev_range = ranges_merged.back();
-        if (prev_range.end_address < range.base_address) {
-            ranges_merged.emplace_back(range);
-        } else {
-            prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+    boost::container::static_vector<BufferRange, NumVertexBuffers> ranges_merged;
+    if (!ranges.empty()) {
+        ranges_merged.emplace_back(ranges[0]);
+        for (auto range : ranges) {
+            auto& prev_range = ranges_merged.back();
+            if (prev_range.end_address < range.base_address) {
+                ranges_merged.emplace_back(range);
+            } else {
+                prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+            }
         }
     }
 

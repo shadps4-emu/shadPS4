@@ -238,6 +238,10 @@ void EmitContext::DefineInputs() {
                     false,    input.instance_data_buf,
                 };
             } else {
+                if (!info.loads.GetAny(IR::Attribute::Param0 + input.binding)) {
+                    continue;
+                }
+
                 Id id{DefineInput(type, input.binding)};
                 if (input.instance_step_rate == Info::VsInput::InstanceIdType::Plain) {
                     Name(id, fmt::format("vs_instance_attr{}", input.binding));
