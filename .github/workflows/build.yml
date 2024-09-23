@@ -403,7 +403,7 @@ jobs:
     - name: Create Pre-Release on GitHub
       uses: ncipollo/release-action@v1
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.SHADPS4_TOKEN_REPO }}
         name: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         draft: false
@@ -413,7 +413,7 @@ jobs:
 
     - name: Delete old pre-releases and tags
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
       run: |
         current_date="${{ needs.get-info.outputs.date }}"
         api_url="https://api.github.com/repos/${{ github.repository }}/releases"
