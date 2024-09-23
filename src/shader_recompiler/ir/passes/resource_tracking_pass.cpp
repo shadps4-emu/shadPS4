@@ -200,9 +200,10 @@ public:
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
             return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset && desc.type == existing.type &&
-                   desc.is_storage == existing.is_storage;
+                   desc.dword_offset == existing.dword_offset;
         })};
+        auto& image = image_resources[index];
+        image.is_storage |= desc.is_storage;
         return index;
     }
 
@@ -441,18 +442,29 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value& t,
-                         const IR::Value& z, bool is_storage) {
+                         const IR::Value& z, bool is_storage, bool is_array) {
     // When cubemap is written with imageStore it is treated like 2DArray.
     if (is_storage) {
         return ir.CompositeConstruct(s, t, z);
     }
+
+    ASSERT(s.Type() == IR::Type::F32); // in case of fetched image need to adjust the code below
+
     // We need to fix x and y coordinate,
     // because the s and t coordinate will be scaled and plus 1.5 by v_madak_f32.
     // We already force the scale value to be 1.0 when handling v_cubema_f32,
     // here we subtract 1.5 to recover the original value.
     const IR::Value x = ir.FPSub(IR::F32{s}, ir.Imm32(1.5f));
     const IR::Value y = ir.FPSub(IR::F32{t}, ir.Imm32(1.5f));
-    return ir.CompositeConstruct(x, y, z);
+    if (is_array) {
+        const IR::U32 array_index = ir.ConvertFToU(32, IR::F32{z});
+        const IR::U32 face_id = ir.BitwiseAnd(array_index, ir.Imm32(7u));
+        const IR::U32 slice_id = ir.ShiftRightLogical(array_index, ir.Imm32(3u));
+        return ir.CompositeConstruct(x, y, ir.ConvertIToF(32, 32, false, face_id),
+                                     ir.ConvertIToF(32, 32, false, slice_id));
+    } else {
+        return ir.CompositeConstruct(x, y, z);
+    }
 }
 
 void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
@@ -481,14 +493,16 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_storage = IsImageStorageInstruction(inst);
+    const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
         .sgpr_base = tsharp.sgpr_base,
         .dword_offset = tsharp.dword_offset,
-        .type = image.GetType(),
+        .type = type,
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
         .is_storage = is_storage,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = IsImageAtomicInstruction(inst),
+        .is_array = bool(inst_info.is_array),
     });
 
     // Read sampler sharp. This doesn't exist for IMAGE_LOAD/IMAGE_STORE instructions
@@ -545,7 +559,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         case AmdGpu::ImageType::Color3D: // x, y, z
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         case AmdGpu::ImageType::Cube: // x, y, face
-            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage),
+            return {PatchCubeCoord(ir, body->Arg(0), body->Arg(1), body->Arg(2), is_storage,
+                                   inst_info.is_array),
                     body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", image.GetType());
@@ -584,7 +599,8 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         }
     }
     if (inst_info.has_derivatives) {
-        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D,
+        ASSERT_MSG(image.GetType() == AmdGpu::ImageType::Color2D ||
+                       image.GetType() == AmdGpu::ImageType::Color2DArray,
                    "User derivatives only supported for 2D images");
     }
     if (inst_info.has_lod_clamp) {

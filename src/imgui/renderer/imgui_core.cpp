@@ -3,14 +3,19 @@
 
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
+
 #include "common/config.h"
 #include "common/path_util.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
 #include "sdl_window.h"
+#include "texture_manager.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
+
+#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -48,6 +53,22 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
     io.IniFilename = SDL_strdup(config_path.string().c_str());
     io.LogFilename = SDL_strdup(log_path.string().c_str());
+
+    ImFontGlyphRangesBuilder rb{};
+    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
+    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
+    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
+    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+    ImVector<ImWchar> ranges{};
+    rb.BuildRanges(&ranges);
+    ImFontConfig font_cfg{};
+    font_cfg.OversampleH = 2;
+    font_cfg.OversampleV = 1;
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
+                                             imgui_font_notosansjp_regular_compressed_size, 16.0f,
+                                             &font_cfg, ranges.Data);
+
     StyleColorsDark();
 
     Sdl::Init(window.GetSdlWindow());
@@ -68,6 +89,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
         .check_vk_result_fn = &CheckVkResult,
     };
     Vulkan::Init(vk_info);
+
+    TextureManager::StartWorker();
 }
 
 void OnResize() {
@@ -76,6 +99,8 @@ void OnResize() {
 
 void Shutdown(const vk::Device& device) {
     device.waitIdle();
+
+    TextureManager::StopWorker();
 
     const ImGuiIO& io = GetIO();
     const auto ini_filename = (void*)io.IniFilename;
@@ -92,24 +117,19 @@ void Shutdown(const vk::Device& device) {
 bool ProcessEvent(SDL_Event* event) {
     Sdl::ProcessEvent(event);
     switch (event->type) {
+    // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-    case SDL_EVENT_MOUSE_BUTTON_UP:
         return GetIO().WantCaptureMouse;
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN:
-    case SDL_EVENT_KEY_UP:
         return GetIO().WantCaptureKeyboard;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-    case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-    case SDL_EVENT_GAMEPAD_ADDED:
-    case SDL_EVENT_GAMEPAD_REMOVED:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        return (GetIO().BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
+        return GetIO().NavActive;
     default:
         return false;
     }
@@ -130,21 +150,11 @@ void NewFrame() {
         }
     }
 
-    Vulkan::NewFrame();
     Sdl::NewFrame();
     ImGui::NewFrame();
 
-    bool capture_gamepad = false;
     for (auto* layer : layers) {
         layer->Draw();
-        if (layer->ShouldGrabGamepad()) {
-            capture_gamepad = true;
-        }
-    }
-    if (capture_gamepad) {
-        GetIO().BackendFlags |= ImGuiBackendFlags_HasGamepad;
-    } else {
-        GetIO().BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
     }
 }
 

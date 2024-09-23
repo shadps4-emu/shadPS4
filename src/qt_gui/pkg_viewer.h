@@ -33,7 +33,6 @@ private:
     PKGHeader pkgheader;
     PKGEntry entry;
     PSFHeader header;
-    PSFEntry psfentry;
     char pkgTitleID[9];
     std::vector<u8> pkg;
     u64 pkgSize = 0;

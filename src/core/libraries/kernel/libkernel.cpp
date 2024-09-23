@@ -8,6 +8,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/singleton.h"
@@ -243,8 +244,7 @@ int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
 }
 
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
-    int version = param_sfo->GetInteger("SYSTEM_VER");
+    int version = Common::ElfInfo::Instance().RawFirmwareVer();
     LOG_INFO(Kernel, "returned system version = {:#x}", version);
     *ver = version;
     return (version > 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
@@ -425,6 +425,7 @@ void LibKernel_Register(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
     LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", 1, 1, sceKernelDirectMemoryQuery);
     LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
+    LIB_FUNCTION("PGhQHd-dzv8", "libkernel", 1, "libkernel", 1, 1, sceKernelMmap);
     LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", 1, 1, sceKernelMunmap);
     LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
     LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", 1, 1,

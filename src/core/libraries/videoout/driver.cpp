@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <imgui.h>
 #include <pthread.h>
 
 #include "common/assert.h"
@@ -160,9 +161,7 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
-    const auto start = std::chrono::high_resolution_clock::now();
-
+void VideoOutDriver::Flip(const Request& req) {
     // Whatever the game is rendering show splash if it is active
     if (!renderer->ShowSplash(req.frame)) {
         // Present the frame.
@@ -198,9 +197,6 @@ std::chrono::microseconds VideoOutDriver::Flip(const Request& req) {
         port->buffer_labels[req.index] = 0;
         port->SignalVoLabel();
     }
-
-    const auto end = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 }
 
 void VideoOutDriver::DrawBlankFrame() {
@@ -261,8 +257,13 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::milliseconds VblankPeriod{16};
+    static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
+    const auto vblank_period = VblankPeriod / Config::vblankDiv();
+
     Common::SetCurrentThreadName("PresentThread");
+    Common::SetCurrentThreadRealtime(vblank_period);
+
+    Common::AccurateTimer timer{vblank_period};
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -274,23 +275,20 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         return {};
     };
 
-    auto vblank_period = VblankPeriod / Config::vblankDiv();
     auto delay = std::chrono::microseconds{0};
     while (!token.stop_requested()) {
-        // Sleep for most of the vblank duration.
-        std::this_thread::sleep_for(vblank_period - delay);
+        timer.Start();
 
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (!request) {
-                delay = std::chrono::microseconds{0};
                 if (!main_port.is_open) {
                     DrawBlankFrame();
                 }
             } else {
-                delay = Flip(request);
+                Flip(request);
                 FRAME_END;
             }
         }
@@ -311,6 +309,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                                     Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
             }
         }
+
+        timer.End();
     }
 }
 

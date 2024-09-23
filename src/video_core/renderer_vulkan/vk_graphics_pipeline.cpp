@@ -21,7 +21,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
                                    vk::PipelineCache pipeline_cache,
                                    std::span<const Shader::Info*, MaxShaderStages> infos,
                                    std::span<const vk::ShaderModule> modules)
-    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, key{key_} {
+    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, key{key_} {
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout();
@@ -41,8 +41,8 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     };
     pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
 
-    boost::container::static_vector<vk::VertexInputBindingDescription, 32> bindings;
-    boost::container::static_vector<vk::VertexInputAttributeDescription, 32> attributes;
+    boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
+    boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
     const auto& vs_info = stages[u32(Shader::Stage::Vertex)];
     for (const auto& input : vs_info->vs_inputs) {
         if (input.instance_step_rate == Shader::Info::VsInput::InstanceIdType::OverStepRate0 ||
@@ -52,13 +52,13 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         }
 
         const auto buffer = vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
-        attributes.push_back({
+        vertex_attributes.push_back({
             .location = input.binding,
             .binding = input.binding,
             .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
-        bindings.push_back({
+        vertex_bindings.push_back({
             .binding = input.binding,
             .stride = buffer.GetStride(),
             .inputRate = input.instance_step_rate == Shader::Info::VsInput::None
@@ -68,10 +68,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     }
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
-        .vertexBindingDescriptionCount = static_cast<u32>(bindings.size()),
-        .pVertexBindingDescriptions = bindings.data(),
-        .vertexAttributeDescriptionCount = static_cast<u32>(attributes.size()),
-        .pVertexAttributeDescriptions = attributes.data(),
+        .vertexBindingDescriptionCount = static_cast<u32>(vertex_bindings.size()),
+        .pVertexBindingDescriptions = vertex_bindings.data(),
+        .vertexAttributeDescriptionCount = static_cast<u32>(vertex_attributes.size()),
+        .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
     if (key.prim_type == Liverpool::PrimitiveType::RectList && !IsEmbeddedVs()) {
@@ -83,8 +83,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
         .primitiveRestartEnable = key.enable_primitive_restart != 0,
     };
-    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF,
-               "Primitive restart index other than 0xFFFF is not supported yet");
+    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF ||
+                   key.primitive_restart_index == 0xFFFFFFFF,
+               "Primitive restart index other than -1 is not supported yet");
 
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
         .depthClampEnable = false,
@@ -291,8 +292,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
 GraphicsPipeline::~GraphicsPipeline() = default;
 
 void GraphicsPipeline::BuildDescSetLayout() {
-    u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
+    u32 binding{};
+
     for (const auto* stage : stages) {
         if (!stage) {
             continue;
@@ -352,11 +354,12 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     // Bind resource buffers and textures.
     boost::container::static_vector<vk::BufferView, 8> buffer_views;
     boost::container::static_vector<vk::DescriptorBufferInfo, 32> buffer_infos;
-    boost::container::static_vector<vk::DescriptorImageInfo, 32> image_infos;
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
+
+    image_infos.clear();
 
     for (const auto* stage : stages) {
         if (!stage) {
@@ -366,6 +369,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
+        stage->PushUd(binding, push_data);
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
@@ -381,23 +385,25 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     buffer_cache.ObtainBuffer(address, size, buffer.is_written);
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
                 const u32 adjust = offset - offset_aligned;
-                if (adjust != 0) {
-                    ASSERT(adjust % 4 == 0);
-                    push_data.AddOffset(binding, adjust);
-                }
+                ASSERT(adjust % 4 == 0);
+                push_data.AddOffset(binding.buffer, adjust);
                 buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            } else {
+            } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+            } else {
+                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
+                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
                                              : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
+            ++binding.buffer;
         }
 
         for (const auto& desc : stage->texture_buffers) {
@@ -414,10 +420,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                            "Texel buffer stride must match format stride");
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
                 const u32 adjust = offset - offset_aligned;
-                if (adjust != 0) {
-                    ASSERT(adjust % fmt_stride == 0);
-                    push_data.AddOffset(binding, adjust / fmt_stride);
-                }
+                ASSERT(adjust % fmt_stride == 0);
+                push_data.AddOffset(binding.buffer, adjust / fmt_stride);
                 buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
                 const auto dst_access = desc.is_written ? vk::AccessFlagBits2::eShaderWrite
@@ -427,54 +431,30 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     buffer_barriers.emplace_back(*barrier);
                 }
                 if (desc.is_written) {
-                    texture_cache.MarkWritten(address, size);
+                    texture_cache.InvalidateMemoryFromGPU(address, size);
                 }
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                                   : vk::DescriptorType::eUniformTexelBuffer,
                 .pTexelBufferView = &buffer_view,
             });
+            ++binding.buffer;
         }
 
-        boost::container::static_vector<AmdGpu::Image, 32> tsharps;
-        for (const auto& image_desc : stage->images) {
-            const auto tsharp = image_desc.GetSharp(*stage);
-            if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
-                tsharps.emplace_back(tsharp);
-                VideoCore::ImageInfo image_info{tsharp, image_desc.is_depth};
-                VideoCore::ImageViewInfo view_info{tsharp, image_desc.is_storage};
-                const auto& image_view = texture_cache.FindTexture(image_info, view_info);
-                const auto& image = texture_cache.GetImage(image_view.image_id);
-                image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view, image.layout);
-            } else {
-                image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-            }
-            set_writes.push_back({
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = image_desc.is_storage ? vk::DescriptorType::eStorageImage
-                                                        : vk::DescriptorType::eSampledImage,
-                .pImageInfo = &image_infos.back(),
-            });
+        BindTextures(texture_cache, *stage, binding, set_writes);
 
-            if (texture_cache.IsMeta(tsharp.Address())) {
-                LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (texture)");
-            }
-        }
         for (const auto& sampler : stage->samplers) {
             auto ssharp = sampler.GetSharp(*stage);
             if (ssharp.force_degamma) {
                 LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
             }
             if (sampler.disable_aniso) {
-                const auto& tsharp = tsharps[sampler.associated_image];
+                const auto& tsharp = stage->images[sampler.associated_image].GetSharp(*stage);
                 if (tsharp.base_level == 0 && tsharp.last_level == 0) {
                     ssharp.max_aniso.Assign(AmdGpu::AnisoRatio::One);
                 }
@@ -483,7 +463,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = vk::DescriptorType::eSampler,

@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 #include "core/libraries/videoout/buffer.h"
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/texture_cache/types.h"
 
@@ -19,7 +20,7 @@ struct ImageInfo {
               const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
     ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices, VAddr htile_address,
               const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    ImageInfo(const AmdGpu::Image& image, bool force_depth = false) noexcept;
+    ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
 
     bool IsTiled() const {
         return tiling_mode != AmdGpu::TilingMode::Display_Linear;

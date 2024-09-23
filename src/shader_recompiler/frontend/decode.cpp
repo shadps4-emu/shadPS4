@@ -1032,6 +1032,7 @@ void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction) {
 
     m_instruction.control.mimg = *reinterpret_cast<InstControlMIMG*>(&hexInstruction);
     m_instruction.control.mimg.mod = getMimgModifier(m_instruction.opcode);
+    ASSERT(m_instruction.control.mimg.r128 == 0);
 }
 
 void GcnDecodeContext::decodeInstructionDS(uint64_t hexInstruction) {

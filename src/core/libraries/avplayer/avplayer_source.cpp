@@ -7,6 +7,8 @@
 
 #include "common/alignment.h"
 #include "common/singleton.h"
+#include "common/thread.h"
+
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/time_management.h"
 
@@ -432,6 +434,8 @@ void AvPlayerSource::ReleaseAVFormatContext(AVFormatContext* context) {
 
 void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvDemuxer");
+
     if (!m_audio_stream_index.has_value() && !m_video_stream_index.has_value()) {
         LOG_WARNING(Lib_AvPlayer, "Could not start DEMUXER thread. No streams enabled.");
         return;
@@ -499,7 +503,7 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     }
     m_state.OnEOF();
 
-    LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& frame) {
@@ -598,6 +602,8 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvVideoDecoder");
+
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread started");
     while ((!m_is_eof || m_video_packets.Size() != 0) && !stop.stop_requested()) {
         if (!m_video_packets_cv.Wait(stop,
@@ -653,7 +659,7 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
         }
     }
 
-    LOG_INFO(Lib_AvPlayer, "Video Decoder Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Video Decoder Thread exited normally");
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertAudioFrame(const AVFrame& frame) {
@@ -718,6 +724,8 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
+    Common::SetCurrentThreadName("shadPS4:AvAudioDecoder");
+
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread started");
     while ((!m_is_eof || m_audio_packets.Size() != 0) && !stop.stop_requested()) {
         if (!m_audio_packets_cv.Wait(stop,
@@ -773,7 +781,7 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
         }
     }
 
-    LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread exited normaly");
+    LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread exited normally");
 }
 
 bool AvPlayerSource::HasRunningThreads() const {

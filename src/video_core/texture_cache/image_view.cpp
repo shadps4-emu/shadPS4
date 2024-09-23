@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -66,19 +67,40 @@ vk::Format TrySwizzleFormat(vk::Format format, u32 dst_sel) {
     return format;
 }
 
-ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, bool is_storage_) noexcept
-    : is_storage{is_storage_} {
-    type = ConvertImageViewType(image.GetType());
+ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
+    : is_storage{desc.is_storage} {
     const auto dfmt = image.GetDataFmt();
     auto nfmt = image.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
         nfmt = AmdGpu::NumberFormat::Unorm;
     }
     format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
+    if (desc.is_depth) {
+        format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
+    }
     range.base.level = image.base_level;
     range.base.layer = image.base_array;
-    range.extent.levels = image.last_level + 1;
-    range.extent.layers = image.last_array + 1;
+    range.extent.levels = image.last_level - image.base_level + 1;
+    range.extent.layers = image.last_array - image.base_array + 1;
+    type = ConvertImageViewType(image.GetType());
+
+    // Adjust view type for partial cubemaps and arrays
+    if (image.IsPartialCubemap()) {
+        type = vk::ImageViewType::e2DArray;
+    }
+    if (type == vk::ImageViewType::eCube) {
+        if (desc.is_array) {
+            type = vk::ImageViewType::eCubeArray;
+        } else {
+            // Some games try to bind an array of cubemaps while shader reads only single one.
+            range.extent.layers = std::min(range.extent.layers, 6u);
+        }
+    }
+    if (type == vk::ImageViewType::e3D && range.extent.layers > 1) {
+        // Some games pass incorrect layer count for 3D textures so we need to fixup it.
+        range.extent.layers = 1;
+    }
+
     if (!is_storage) {
         mapping.r = ConvertComponentSwizzle(image.dst_sel_x);
         mapping.g = ConvertComponentSwizzle(image.dst_sel_y);
@@ -103,7 +125,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer,
     const auto base_format =
         Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.info.format, col_buffer.NumFormat());
     range.base.layer = col_buffer.view.slice_start;
-    range.extent.layers = col_buffer.NumSlices();
+    range.extent.layers = col_buffer.NumSlices() - range.base.layer;
     format = Vulkan::LiverpoolToVK::AdjustColorBufferFormat(
         base_format, col_buffer.info.comp_swap.Value(), is_vo_surface);
 }
@@ -115,7 +137,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
                                                 depth_buffer.stencil_info.format);
     is_storage = ctl.depth_write_enable;
     range.base.layer = view.slice_start;
-    range.extent.layers = view.NumSlices();
+    range.extent.layers = view.NumSlices() - range.base.layer;
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
@@ -147,9 +169,9 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
-            .levelCount = info.range.extent.levels - info.range.base.level,
+            .levelCount = info.range.extent.levels,
             .baseArrayLayer = info.range.base.layer,
-            .layerCount = info.range.extent.layers - info.range.base.layer,
+            .layerCount = info.range.extent.layers,
         },
     };
     image_view = instance.GetDevice().createImageViewUnique(image_view_ci);

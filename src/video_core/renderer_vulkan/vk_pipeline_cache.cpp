@@ -234,18 +234,20 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.front_face = regs.polygon_control.front_face;
     key.num_samples = regs.aa_config.NumSamples();
 
-    const auto skip_cb_binding =
+    const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
 
     // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
-    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary order.
-    // We need to do some arrays compaction at this stage
+    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
+    // order. We need to do some arrays compaction at this stage
     key.color_formats.fill(vk::Format::eUndefined);
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.mrt_swizzles.fill(Liverpool::ColorBuffer::SwapMode::Standard);
-    int remapped_cb{};
-    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+
+    // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
+    // recompiler.
+    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
         auto const& col_buf = regs.color_buffers[cb];
         if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb)) {
             continue;
@@ -258,16 +260,11 @@ bool PipelineCache::RefreshGraphicsKey() {
         if (base_format == key.color_formats[remapped_cb]) {
             key.mrt_swizzles[remapped_cb] = col_buf.info.comp_swap.Value();
         }
-        key.blend_controls[remapped_cb] = regs.blend_control[cb];
-        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
-                                                      !col_buf.info.blend_bypass);
-        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
-        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
 
         ++remapped_cb;
     }
 
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!regs.stage_enable.IsStageEnabled(i)) {
             key.stage_hashes[i] = 0;
@@ -309,11 +306,33 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         std::tie(infos[i], modules[i], key.stage_hashes[i]) = GetProgram(stage, params, binding);
     }
+
+    const auto* fs_info = infos[u32(Shader::Stage::Fragment)];
+    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+
+    // Second pass to fill remain CB pipeline key data
+    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+        auto const& col_buf = regs.color_buffers[cb];
+        if (skip_cb_binding || !col_buf || !regs.color_target_mask.GetMask(cb) ||
+            (key.mrt_mask & (1u << cb)) == 0) {
+            key.color_formats[cb] = vk::Format::eUndefined;
+            key.mrt_swizzles[cb] = Liverpool::ColorBuffer::SwapMode::Standard;
+            continue;
+        }
+
+        key.blend_controls[remapped_cb] = regs.blend_control[cb];
+        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
+                                                      !col_buf.info.blend_bypass);
+        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
+        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
+
+        ++remapped_cb;
+    }
     return true;
 }
 
 bool PipelineCache::RefreshComputeKey() {
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
     const auto* cs_pgm = &liverpool->regs.cs_program;
     const auto cs_params = Liverpool::GetParams(*cs_pgm);
     if (ShouldSkipShader(cs_params.hash, "compute")) {
@@ -327,7 +346,7 @@ bool PipelineCache::RefreshComputeKey() {
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
                                               const Shader::RuntimeInfo& runtime_info,
                                               std::span<const u32> code, size_t perm_idx,
-                                              u32& binding) {
+                                              Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
     if (Config::dumpShaders()) {
@@ -347,14 +366,14 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info,
 }
 
 std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram(
-    Shader::Stage stage, Shader::ShaderParams params, u32& binding) {
+    Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding) {
     const auto runtime_info = BuildRuntimeInfo(stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
     if (new_program) {
         Program* program = program_pool.Create(stage, params);
-        u32 start_binding = binding;
+        auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start_binding);
+        const auto spec = Shader::StageSpecialization(program->info, runtime_info, start);
         program->AddPermut(module, std::move(spec));
         it_pgm.value() = program;
         return std::make_tuple(&program->info, module, HashCombine(params.hash, 0));
@@ -372,7 +391,7 @@ std::tuple<const Shader::Info*, vk::ShaderModule, u64> PipelineCache::GetProgram
         module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding);
         program->AddPermut(module, std::move(spec));
     } else {
-        binding += info.NumBindings();
+        info.AddBindings(binding);
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
     }

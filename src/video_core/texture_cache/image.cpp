@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #define VULKAN_HPP_NO_EXCEPTIONS
+#include <ranges>
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -124,7 +125,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     // the texture cache should re-create the resource with the usage requested
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
-    if (info.props.is_cube) {
+    if (info.props.is_cube || (info.type == vk::ImageType::e2D && info.resources.layers >= 6)) {
         flags |= vk::ImageCreateFlagBits::eCubeCompatible;
     } else if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
@@ -179,52 +180,132 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                           info.guest_size_bytes);
 }
 
-void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits> dst_mask,
-                    vk::CommandBuffer cmdbuf) {
-    if (dst_layout == layout && dst_mask == access_mask) {
-        return;
+boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
+    vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+    vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range) {
+    const bool needs_partial_transition =
+        subres_range &&
+        (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
+    const bool partially_transited = !subresource_states.empty();
+
+    boost::container::small_vector<vk::ImageMemoryBarrier2, 32> barriers{};
+    if (needs_partial_transition || partially_transited) {
+        if (!partially_transited) {
+            subresource_states.resize(info.resources.levels * info.resources.layers);
+            std::fill(subresource_states.begin(), subresource_states.end(), last_state);
+        }
+
+        // In case of partial transition, we need to change the specified subresources only.
+        // Otherwise all subresources need to be set to the same state so we can use a full
+        // resource transition for the next time.
+        const auto mips =
+            needs_partial_transition
+                ? std::ranges::views::iota(subres_range->base.level,
+                                           subres_range->base.level + subres_range->extent.levels)
+                : std::views::iota(0u, info.resources.levels);
+        const auto layers =
+            needs_partial_transition
+                ? std::ranges::views::iota(subres_range->base.layer,
+                                           subres_range->base.layer + subres_range->extent.layers)
+                : std::views::iota(0u, info.resources.layers);
+
+        for (u32 mip : mips) {
+            for (u32 layer : layers) {
+                // NOTE: these loops may produce a lot of small barriers.
+                // If this becomes a problem, we can optimize it by merging adjacent barriers.
+                const auto subres_idx = mip * info.resources.layers + layer;
+                ASSERT(subres_idx < subresource_states.size());
+                auto& state = subresource_states[subres_idx];
+
+                if (state.layout != dst_layout || state.access_mask != dst_mask) {
+                    barriers.emplace_back(vk::ImageMemoryBarrier2{
+                        .srcStageMask = state.pl_stage,
+                        .srcAccessMask = state.access_mask,
+                        .dstStageMask = dst_stage,
+                        .dstAccessMask = dst_mask,
+                        .oldLayout = state.layout,
+                        .newLayout = dst_layout,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = image,
+                        .subresourceRange{
+                            .aspectMask = aspect_mask,
+                            .baseMipLevel = mip,
+                            .levelCount = 1,
+                            .baseArrayLayer = layer,
+                            .layerCount = 1,
+                        },
+                    });
+                    state.layout = dst_layout;
+                    state.access_mask = dst_mask;
+                    state.pl_stage = dst_stage;
+                }
+            }
+        }
+
+        if (!needs_partial_transition) {
+            subresource_states.clear();
+        }
+    } else { // Full resource transition
+        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask) {
+            return {};
+        }
+
+        barriers.emplace_back(vk::ImageMemoryBarrier2{
+            .srcStageMask = last_state.pl_stage,
+            .srcAccessMask = last_state.access_mask,
+            .dstStageMask = dst_stage,
+            .dstAccessMask = dst_mask,
+            .oldLayout = last_state.layout,
+            .newLayout = dst_layout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        });
     }
 
-    const vk::ImageMemoryBarrier barrier = {
-        .srcAccessMask = access_mask,
-        .dstAccessMask = dst_mask,
-        .oldLayout = layout,
-        .newLayout = dst_layout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image,
-        .subresourceRange{
-            .aspectMask = aspect_mask,
-            .baseMipLevel = 0,
-            .levelCount = VK_REMAINING_MIP_LEVELS,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        },
-    };
+    last_state.layout = dst_layout;
+    last_state.access_mask = dst_mask;
+    last_state.pl_stage = dst_stage;
 
+    return barriers;
+}
+
+void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+                    std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf /*= {}*/) {
     // Adjust pipieline stage
-    const vk::PipelineStageFlags dst_pl_stage =
-        (dst_mask == vk::AccessFlagBits::eTransferRead ||
-         dst_mask == vk::AccessFlagBits::eTransferWrite)
-            ? vk::PipelineStageFlagBits::eTransfer
-            : vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eComputeShader;
+    const vk::PipelineStageFlags2 dst_pl_stage =
+        (dst_mask == vk::AccessFlagBits2::eTransferRead ||
+         dst_mask == vk::AccessFlagBits2::eTransferWrite)
+            ? vk::PipelineStageFlagBits2::eTransfer
+            : vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader;
+
+    const auto barriers = GetBarriers(dst_layout, dst_mask, dst_pl_stage, range);
+    if (barriers.empty()) {
+        return;
+    }
 
     if (!cmdbuf) {
         // When using external cmdbuf you are responsible for ending rp.
         scheduler->EndRendering();
         cmdbuf = scheduler->CommandBuffer();
     }
-    cmdbuf.pipelineBarrier(pl_stage, dst_pl_stage, vk::DependencyFlagBits::eByRegion, {}, {},
-                           barrier);
-
-    layout = dst_layout;
-    access_mask = dst_mask;
-    pl_stage = dst_pl_stage;
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+    });
 }
 
 void Image::Upload(vk::Buffer buffer, u64 offset) {
     scheduler->EndRendering();
-    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     // Copy to the image.
     const auto aspect = aspect_mask & vk::ImageAspectFlagBits::eStencil
@@ -248,12 +329,12 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
     cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
-            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 void Image::CopyImage(const Image& image) {
     scheduler->EndRendering();
-    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
 
@@ -279,15 +360,16 @@ void Image::CopyImage(const Image& image) {
             .extent = {mip_w, mip_h, mip_d},
         });
     }
-    cmdbuf.copyImage(image.image, image.layout, this->image, this->layout, image_copy);
+    cmdbuf.copyImage(image.image, image.last_state.layout, this->image, this->last_state.layout,
+                     image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
-            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 void Image::CopyMip(const Image& image, u32 mip) {
     scheduler->EndRendering();
-    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eTransferWrite);
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
 
@@ -313,10 +395,11 @@ void Image::CopyMip(const Image& image, u32 mip) {
         },
         .extent = {mip_w, mip_h, mip_d},
     };
-    cmdbuf.copyImage(image.image, image.layout, this->image, this->layout, image_copy);
+    cmdbuf.copyImage(image.image, image.last_state.layout, this->image, this->last_state.layout,
+                     image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
-            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead);
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 Image::~Image() = default;

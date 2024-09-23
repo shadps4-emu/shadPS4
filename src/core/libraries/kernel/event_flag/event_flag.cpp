@@ -137,7 +137,7 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 
     auto result = ef->Poll(bitPattern, wait, clear, pResultPat);
 
-    if (result != ORBIS_OK) {
+    if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_EBUSY) {
         LOG_ERROR(Kernel_Event, "returned {}", result);
     }
 
