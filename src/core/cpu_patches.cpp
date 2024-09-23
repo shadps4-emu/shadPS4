@@ -1118,7 +1118,6 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 
             return true;
         }
-
         break;
     }
     default: {
