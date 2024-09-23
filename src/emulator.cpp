@@ -11,6 +11,7 @@
 #include "common/memory_patcher.h"
 #endif
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -91,10 +92,14 @@ void Emulator::Run(const std::filesystem::path& file) {
     // Certain games may use /hostapp as well such as CUSA001100
     mnt->Mount(file.parent_path(), "/hostapp");
 
+    auto& game_info = Common::ElfInfo::Instance();
+
     // Loading param.sfo file if exists
     std::string id;
     std::string title;
     std::string app_version;
+    u32 fw_version;
+
     std::filesystem::path sce_sys_folder = file.parent_path() / "sce_sys";
     if (std::filesystem::is_directory(sce_sys_folder)) {
         for (const auto& entry : std::filesystem::directory_iterator(sce_sys_folder)) {
@@ -119,7 +124,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 #endif
                 title = param_sfo->GetString("TITLE").value_or("Unknown title");
                 LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-                u32 fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+                fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
                 app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
                 LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
             } else if (entry.path().filename() == "playgo-chunk.dat") {
@@ -140,6 +145,13 @@ void Emulator::Run(const std::filesystem::path& file) {
             }
         }
     }
+
+    game_info.initialized = true;
+    game_info.game_serial = id;
+    game_info.title = title;
+    game_info.app_ver = app_version;
+    game_info.firmware_ver = fw_version & 0xFFF00000;
+    game_info.raw_firmware_ver = fw_version;
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";

@@ -58,3 +58,7 @@ License: MIT
 Files: externals/tracy/*
 Copyright: 2017-2024 Bartosz Taudul <wolf@nereid.pl>
 License: BSD-3-Clause
+
+Files: src/imgui/renderer/fonts/NotoSansJP-Regular.ttf
+Copyright: 2012 Google Inc. All Rights Reserved.
+License: OFL-1.1

@@ -28,6 +28,8 @@ enum class OrbisSaveDataEventType : u32 {
 };
 
 struct BackupRequest {
+    bool done{};
+
     OrbisUserServiceUserId user_id{};
     std::string title_id{};
     std::string dir_name{};

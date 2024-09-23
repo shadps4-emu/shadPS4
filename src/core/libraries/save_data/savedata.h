@@ -165,8 +165,8 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataLibraryUser();
 Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(OrbisUserServiceUserId userId, void* buf,
                                                 size_t bufSize, int64_t offset);
 Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* setParam);
-int PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(/*u32 userId, size_t memorySize,
-                                                  OrbisSaveDataParam* param*/);
+Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(OrbisUserServiceUserId userId, size_t memorySize,
+                                                  OrbisSaveDataParam* param);
 Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetup2* setupParam,
                                                    OrbisSaveDataMemorySetupResult* result);
 int PS4_SYSV_ABI sceSaveDataShutdownStart();
