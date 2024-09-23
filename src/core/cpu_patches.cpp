@@ -842,7 +842,7 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         MAYBE_AVX(movq, scratch1, xmm_src);
         c.and_(scratch1, mask);
 
-        // dst &= ~(mask << index)
+        // mask = ~(mask << index)
         c.mov(cl, index.cvt8());
         c.shl(mask, cl);
         c.not_(mask);
@@ -850,17 +850,13 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         // src <<= index
         c.shl(scratch1, cl);
 
+        // dst = (dst & mask) | src
         MAYBE_AVX(movq, scratch2, xmm_dst);
         c.and_(scratch2, mask);
         c.or_(scratch2, scratch1);
 
-        // Insert scratch2 into low 64 bits of dst, upper 64 bits are unaffected
-        Cpu cpu;
-        if (cpu.has(Cpu::tAVX)) {
-            c.vpinsrq(xmm_dst, xmm_dst, scratch2, 0);
-        } else {
-            c.pinsrq(xmm_dst, scratch2, 0);
-        }
+        // Upper 64 bits are undefined in insertq
+        MAYBE_AVX(movq, xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(index);
