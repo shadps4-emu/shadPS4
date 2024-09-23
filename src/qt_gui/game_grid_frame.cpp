@@ -39,6 +39,15 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     });
 }
 
+void GameGridFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
+    if (!item) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    QString snd0path = QString::fromStdString(m_game_info->m_games[item->row()].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
+}
+
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
     QVector<GameInfo> m_games_;
     this->clearContents();

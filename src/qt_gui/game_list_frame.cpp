@@ -68,6 +68,15 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     });
 }
 
+void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
+    if (!item) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    QString snd0path = QString::fromStdString(m_game_info->m_games[item->row()].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
+}
+
 void GameListFrame::PopulateGameList() {
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);

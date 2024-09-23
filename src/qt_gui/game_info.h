@@ -32,6 +32,7 @@ public:
             QString iconpath = QString::fromStdString(game.icon_path);
             game.icon = QImage(iconpath);
             game.pic_path = game.path + "/sce_sys/pic1.png";
+            game.snd0_path = game.path + "/sce_sys/snd0.at9";
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
             }
