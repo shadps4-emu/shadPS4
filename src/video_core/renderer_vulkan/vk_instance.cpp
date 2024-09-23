@@ -304,13 +304,13 @@ bool Instance::CreateDevice() {
             .shaderDrawParameters = true,
         },
         vk::PhysicalDeviceVulkan12Features{
+            .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
             .shaderFloat16 = vk12_features.shaderFloat16,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
             .uniformBufferStandardLayout = vk12_features.uniformBufferStandardLayout,
             .separateDepthStencilLayouts = vk12_features.separateDepthStencilLayouts,
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
-            .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
         },
         vk::PhysicalDeviceMaintenance4FeaturesKHR{
             .maintenance4 = true,
