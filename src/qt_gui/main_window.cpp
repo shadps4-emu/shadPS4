@@ -508,7 +508,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::PlayBackgroundMusic);
 }
 
-void MainWindow::PlayBackgroundMusic () {
+void MainWindow::PlayBackgroundMusic() {
     if (isGameRunning || !Config::getPlayBGM()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
@@ -517,7 +517,7 @@ void MainWindow::PlayBackgroundMusic () {
     int itemID = isTableList ? m_game_list_frame->currentItem()->row()
                              : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
                                    m_game_grid_frame->crtColumn;
-    
+
     snd0path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }

@@ -21,7 +21,7 @@ void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
     }
     QUrl newMusic = QUrl::fromLocalFile(snd0path);
     if (m_mediaPlayer->playbackState() == QMediaPlayer::PlayingState &&
-            m_currentMusic == newMusic) {
+        m_currentMusic == newMusic) {
         // already playing the correct music
         return;
     }

@@ -19,7 +19,6 @@ public:
     void playMusic(const QString& snd0path);
     void stopMusic();
 
-
 private:
     BackgroundMusicPlayer(QObject* parent = nullptr);
     ~BackgroundMusicPlayer();
