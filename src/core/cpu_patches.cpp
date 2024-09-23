@@ -565,11 +565,6 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
-    Cpu cpu;
-    return !cpu.has(Cpu::tSSE4a);
-}
-
 static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
@@ -625,9 +620,6 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     if (immediateForm) {
         u8 length = operands[1].imm.value.u & 0x3F;
         u8 index = operands[2].imm.value.u & 0x3F;
-        if (length == 0) {
-            length = 64;
-        }
 
         LOG_DEBUG(Core, "Patching immediate form EXTRQ, length: {}, index: {}", length, index);
 
@@ -640,7 +632,15 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
         c.push(scratch1);
         c.push(scratch2);
 
-        u64 mask = (1ULL << length) - 1;
+        u64 mask;
+        if (length == 0) {
+            length = 64; // for the check below
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
+        } else {
+            mask = (1ULL << length) - 1;
+        }
+
+        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
 
         // Get lower qword from xmm register
         MAYBE_AVX(movq, scratch1, xmm_dst);
@@ -681,6 +681,8 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
         const Xbyak::Reg64 scratch2 = rcx;
         const Xbyak::Reg64 mask = rdx;
 
+        Xbyak::Label length_zero, end;
+
         c.lea(rsp, ptr[rsp - 128]);
         c.pushfq();
         c.push(scratch1);
@@ -691,9 +693,18 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
         MAYBE_AVX(movq, scratch1, xmm_src);
         c.mov(scratch2, scratch1);
         c.and_(scratch2, 0x3F);
+        c.jz(length_zero);
+
+        // mask = (1ULL << length) - 1
         c.mov(mask, 1);
         c.shl(mask, cl);
         c.dec(mask);
+        c.jmp(end);
+
+        c.L(length_zero);
+        c.mov(mask, 0xFFFF'FFFF'FFFF'FFFF);
+
+        c.L(end);
 
         // Get the shift amount and store it in scratch2
         c.shr(scratch1, 8);
@@ -714,31 +725,6 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 }
 
 static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    // INSERTQ Instruction Reference
-    // Inserts bits from the lower 64 bits of the source operand into the lower 64 bits of the
-    // destination operand No other bits in the lower 64 bits of the destination are modified. The
-    // upper 64 bits of the destination are undefined.
-
-    // There's two forms of the instruction:
-    // INSERTQ xmm1, xmm2, imm8, imm8
-    // INSERTQ xmm1, xmm2
-
-    // For the immediate form:
-    // Insert field starting at bit 0 of xmm2 with the length
-    // specified by [5:0] of the first immediate byte. This
-    // field is inserted into xmm1 starting at the bit position
-    // specified by [5:0] of the second immediate byte.
-
-    // For the register form:
-    // Insert field starting at bit 0 of xmm2 with the length
-    // specified by xmm2[69:64]. This field is inserted into
-    // xmm1 starting at the bit position specified by
-    // xmm2[77:72].
-
-    // A value of zero in the field length is defined as a length of 64. If the length field is 0
-    // and the bit index is 0, bits 63:0 of the source operand are inserted. For any other value of
-    // the bit index, the results are undefined.
-
     bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -757,11 +743,6 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
     if (immediateForm) {
         u8 length = operands[2].imm.value.u & 0x3F;
         u8 index = operands[3].imm.value.u & 0x3F;
-        if (length == 0) {
-            length = 64;
-        }
-
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
 
         const Xbyak::Reg64 scratch1 = rax;
         const Xbyak::Reg64 scratch2 = rcx;
@@ -774,11 +755,19 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.push(scratch2);
         c.push(mask);
 
-        u64 maskValue = (1ULL << length) - 1;
+        u64 mask_value;
+        if (length == 0) {
+            length = 64; // for the check below
+            mask_value = 0xFFFF'FFFF'FFFF'FFFF;
+        } else {
+            mask_value = (1ULL << length) - 1;
+        }
+
+        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
 
         MAYBE_AVX(movq, scratch1, xmm_src);
         MAYBE_AVX(movq, scratch2, xmm_dst);
-        c.mov(mask, maskValue);
+        c.mov(mask, mask_value);
 
         // src &= mask
         c.and_(scratch1, mask);
@@ -787,8 +776,8 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.shl(scratch1, index);
 
         // dst &= ~(mask << index)
-        maskValue = ~(maskValue << index);
-        c.mov(mask, maskValue);
+        mask_value = ~(mask_value << index);
+        c.mov(mask, mask_value);
         c.and_(scratch2, mask);
 
         // dst |= src
@@ -817,6 +806,8 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         const Xbyak::Reg64 index = rdx;
         const Xbyak::Reg64 mask = rbx;
 
+        Xbyak::Label length_zero, end;
+
         c.lea(rsp, ptr[rsp - 128]);
         c.pushfq();
         c.push(scratch1);
@@ -829,19 +820,23 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.mov(mask, index);
 
         // When length is 0, set it to 64
-        c.mov(scratch1, 64);     // for the cmovz below
-        c.and_(mask, 0x3F);      // mask now holds the length
-        c.cmovz(mask, scratch1); // Check if length is 0, if so, set to 64
-
-        // Get index to insert at
-        c.shr(index, 8);
-        c.and_(index, 0x3F);
+        c.and_(mask, 0x3F); // mask now holds the length
+        c.jz(length_zero);  // Check if length is 0 and set mask to all 1s if it is
 
         // Create a mask out of the length
         c.mov(cl, mask.cvt8());
         c.mov(mask, 1);
         c.shl(mask, cl);
         c.dec(mask);
+        c.jmp(end);
+
+        c.L(length_zero);
+        c.mov(mask, 0xFFFF'FFFF'FFFF'FFFF);
+
+        c.L(end);
+        // Get index to insert at
+        c.shr(index, 8);
+        c.and_(index, 0x3F);
 
         // src &= mask
         MAYBE_AVX(movq, scratch1, xmm_src);
@@ -1028,8 +1023,8 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                              operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
         if (immediateForm) {
-            LOG_ERROR(Core, "EXTRQ immediate form should have been patched at code address: {}",
-                      fmt::ptr(code_address));
+            LOG_CRITICAL(Core, "EXTRQ immediate form should have been patched at code address: {}",
+                         fmt::ptr(code_address));
             return false;
         } else {
             ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
@@ -1052,12 +1047,19 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             u64 lowQWordDst;
             memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
 
-            u64 mask = lowQWordSrc & 0x3F;
-            mask = (1ULL << mask) - 1;
+            u64 length = lowQWordSrc & 0x3F;
+            u64 mask;
+            if (length == 0) {
+                length = 64; // for the check below
+                mask = 0xFFFF'FFFF'FFFF'FFFF;
+            } else {
+                mask = (1ULL << length) - 1;
+            }
 
-            u64 shift = (lowQWordSrc >> 8) & 0x3F;
+            u64 index = (lowQWordSrc >> 8) & 0x3F;
+            ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
 
-            lowQWordDst >>= shift;
+            lowQWordDst >>= index;
             lowQWordDst &= mask;
 
             memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
@@ -1066,6 +1068,61 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 
             return true;
         }
+        break;
+    }
+    case ZYDIS_MNEMONIC_INSERTQ: {
+        bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
+                             operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
+        if (immediateForm) {
+            LOG_CRITICAL(Core,
+                         "INSERTQ immediate form should have been patched at code address: {}",
+                         fmt::ptr(code_address));
+            return false;
+        } else {
+            ASSERT_MSG(operands[2].type == ZYDIS_OPERAND_TYPE_UNUSED &&
+                           operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
+                       "operands 2 and 3 must be unused for register form.");
+
+            ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+                           operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER,
+                       "operands 0 and 1 must be registers.");
+
+            const auto dstIndex = operands[0].reg.value - ZYDIS_REGISTER_XMM0;
+            const auto srcIndex = operands[1].reg.value - ZYDIS_REGISTER_XMM0;
+
+            const auto dst = Common::GetXmmPointer(ctx, dstIndex);
+            const auto src = Common::GetXmmPointer(ctx, srcIndex);
+
+            u64 lowQWordSrc, highQWordSrc;
+            memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
+            memcpy(&highQWordSrc, (u8*)src + 8, sizeof(highQWordSrc));
+
+            u64 lowQWordDst;
+            memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
+
+            u64 length = highQWordSrc & 0x3F;
+            u64 mask;
+            if (length == 0) {
+                length = 64; // for the check below
+                mask = 0xFFFF'FFFF'FFFF'FFFF;
+            } else {
+                mask = (1ULL << length) - 1;
+            }
+
+            u64 index = (highQWordSrc >> 8) & 0x3F;
+            ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+
+            lowQWordSrc &= mask;
+            lowQWordDst &= ~(mask << index);
+            lowQWordDst |= lowQWordSrc << index;
+
+            memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
+
+            Common::IncrementRip(ctx, instruction.length);
+
+            return true;
+        }
+
         break;
     }
     default: {
