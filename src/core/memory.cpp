@@ -348,7 +348,7 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     return ORBIS_OK;
 }
 
-int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryProt prot) {
+int MemoryManager::MTypeProtect(VAddr addr, size_t size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
 
     // Find the virtual memory area that contains the specified address range.
@@ -377,8 +377,7 @@ int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryPr
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // Change type and protection
-    vma.type = mtype;
+    // Change protection
     vma.prot = prot;
 
     // Set permissions
