@@ -7,6 +7,7 @@
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
+#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
@@ -85,11 +86,14 @@ struct SamplerResource {
 using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
 struct PushData {
-    static constexpr size_t BufOffsetIndex = 2;
+    static constexpr u32 BufOffsetIndex = 2;
+    static constexpr u32 UdRegsIndex = 4;
+    static constexpr u32 MaxUdRegs = 8;
 
     u32 step0;
     u32 step1;
-    std::array<u8, 48> buf_offsets;
+    std::array<u8, 32> buf_offsets;
+    std::array<u32, MaxUdRegs> ud_regs;
 
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());
@@ -145,6 +149,24 @@ struct Info {
     AttributeFlags loads{};
     AttributeFlags stores{};
 
+    struct UserDataMask {
+        void Set(IR::ScalarReg reg) noexcept {
+            mask |= 1 << static_cast<u32>(reg);
+        }
+
+        u32 Index(IR::ScalarReg reg) const noexcept {
+            const u32 reg_mask = (1 << static_cast<u32>(reg)) - 1;
+            return std::popcount(mask & reg_mask);
+        }
+
+        u32 NumRegs() const noexcept {
+            return std::popcount(mask);
+        }
+
+        u32 mask;
+    };
+    UserDataMask ud_mask{};
+
     s8 vertex_offset_sgpr = -1;
     s8 instance_offset_sgpr = -1;
 
@@ -190,11 +212,22 @@ struct Info {
         return data;
     }
 
-    size_t NumBindings() const noexcept {
-        return buffers.size() + texture_buffers.size() + images.size() + samplers.size();
+    void PushUd(Backend::Bindings& bnd, PushData& push) const {
+        u32 mask = ud_mask.mask;
+        while (mask) {
+            const u32 index = std::countr_zero(mask);
+            mask &= ~(1U << index);
+            push.ud_regs[bnd.user_data++] = user_data[index];
+        }
     }
 
-    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const noexcept {
+    void AddBindings(Backend::Bindings& bnd) const {
+        bnd.buffer += buffers.size() + texture_buffers.size();
+        bnd.unified += bnd.buffer + images.size() + samplers.size();
+        bnd.user_data += ud_mask.NumRegs();
+    }
+
+    [[nodiscard]] std::pair<u32, u32> GetDrawOffsets() const {
         u32 vertex_offset = 0;
         u32 instance_offset = 0;
         if (vertex_offset_sgpr != -1) {

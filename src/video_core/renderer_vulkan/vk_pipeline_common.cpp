@@ -20,7 +20,8 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
 Pipeline::~Pipeline() = default;
 
 void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                            u32& binding, DescriptorWrites& set_writes) const {
+                            Shader::Backend::Bindings& binding,
+                            DescriptorWrites& set_writes) const {
 
     using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, Shader::ImageResource>;
     boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
@@ -67,7 +68,7 @@ void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader
 
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = desc.is_storage ? vk::DescriptorType::eStorageImage

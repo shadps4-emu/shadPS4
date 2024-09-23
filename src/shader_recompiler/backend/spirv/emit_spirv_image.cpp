@@ -181,6 +181,7 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Cube:
+    case AmdGpu::ImageType::Color2DMsaa:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     case AmdGpu::ImageType::Color2DArray:
     case AmdGpu::ImageType::Color3D:

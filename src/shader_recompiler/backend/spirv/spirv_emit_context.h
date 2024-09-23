@@ -6,6 +6,7 @@
 #include <array>
 #include <sirit/sirit.h>
 
+#include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
@@ -37,7 +38,7 @@ struct VectorIds {
 class EmitContext final : public Sirit::Module {
 public:
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
-                         u32& binding);
+                         Bindings& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
@@ -221,7 +222,7 @@ public:
         bool is_storage = false;
     };
 
-    u32& binding;
+    Bindings& binding;
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
     boost::container::small_vector<TextureDefinition, 8> images;

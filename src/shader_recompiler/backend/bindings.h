@@ -9,10 +9,10 @@ namespace Shader::Backend {
 
 struct Bindings {
     u32 unified{};
-    u32 uniform_buffer{};
-    u32 storage_buffer{};
-    u32 texture{};
-    u32 image{};
+    u32 buffer{};
+    u32 user_data{};
+
+    auto operator<=>(const Bindings&) const = default;
 };
 
 } // namespace Shader::Backend

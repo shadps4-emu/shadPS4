@@ -155,6 +155,7 @@ public:
     void V_SUBREV_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_LDEXP_F32(const GcnInst& inst);
+    void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
 
     // VOP1
