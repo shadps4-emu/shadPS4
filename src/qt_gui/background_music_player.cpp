@@ -9,17 +9,12 @@ BackgroundMusicPlayer::BackgroundMusicPlayer(QObject* parent) : QObject(parent) 
     m_mediaPlayer->setAudioOutput(m_audioOutput);
 }
 
-BackgroundMusicPlayer::~BackgroundMusicPlayer() {
-    delete m_mediaPlayer;
-    delete m_audioOutput;
-}
-
 void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
     if (snd0path.isEmpty()) {
         stopMusic();
         return;
     }
-    QUrl newMusic = QUrl::fromLocalFile(snd0path);
+    const auto newMusic = QUrl::fromLocalFile(snd0path);
     if (m_mediaPlayer->playbackState() == QMediaPlayer::PlayingState &&
         m_currentMusic == newMusic) {
         // already playing the correct music

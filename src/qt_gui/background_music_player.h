@@ -21,7 +21,6 @@ public:
 
 private:
     BackgroundMusicPlayer(QObject* parent = nullptr);
-    ~BackgroundMusicPlayer();
 
     QMediaPlayer* m_mediaPlayer;
     QAudioOutput* m_audioOutput;

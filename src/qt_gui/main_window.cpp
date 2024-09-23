@@ -513,12 +513,11 @@ void MainWindow::PlayBackgroundMusic() {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
-    QString snd0path = "";
     int itemID = isTableList ? m_game_list_frame->currentItem()->row()
                              : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
                                    m_game_grid_frame->crtColumn;
 
-    snd0path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path);
+    const auto snd0path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
