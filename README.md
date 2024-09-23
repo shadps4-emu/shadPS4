@@ -44,6 +44,8 @@ To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Di
 
 To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
 
+For those who'd like to donate to the project, we now have a [Kofi page!](https://ko-fi.com/shadps4)
+
 # Status
 
 > [!IMPORTANT]
