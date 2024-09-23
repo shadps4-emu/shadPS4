@@ -6,13 +6,11 @@
 #include <thread>
 
 #include "common/alignment.h"
-#include "common/arch.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-#include "core/cpu_patches.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/libkernel.h"
 #include "core/libraries/kernel/thread_management.h"
@@ -991,16 +989,12 @@ static void cleanup_thread(void* arg) {
 static void* run_thread(void* arg) {
     auto* thread = static_cast<ScePthread>(arg);
     Common::SetCurrentThreadName(thread->name.c_str());
-#ifdef ARCH_X86_64
-    Core::InitializeThreadPatchStack();
-#endif
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    linker->InitTlsForThread(false);
     void* ret = nullptr;
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
     thread->is_started = true;
-    ret = thread->entry(thread->arg);
+    ret = linker->ExecuteGuest(thread->entry, thread->arg);
     pthread_cleanup_pop(1);
     return ret;
 }

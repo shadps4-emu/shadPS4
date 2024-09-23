@@ -98,7 +98,6 @@ public:
     }
 
     void* TlsGetAddr(u64 module_index, u64 offset);
-    void InitTlsForThread(bool is_primary = false);
 
     s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
     Module* FindByAddress(VAddr address);
@@ -109,8 +108,17 @@ public:
     void Execute();
     void DebugDump();
 
+    template <class ReturnType, class... FuncArgs, class... CallArgs>
+    ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
+        // Make sure TLS is initialized for the thread before entering guest.
+        EnsureThreadInitialized();
+        return func(std::forward<CallArgs>(args)...);
+    }
+
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
+    void EnsureThreadInitialized(bool is_primary = false);
+    void InitTlsForThread(bool is_primary);
 
     MemoryManager* memory;
     std::mutex mutex;
