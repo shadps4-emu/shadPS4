@@ -431,7 +431,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     buffer_barriers.emplace_back(*barrier);
                 }
                 if (desc.is_written) {
-                    texture_cache.MarkWritten(address, size);
+                    texture_cache.InvalidateMemoryFromGPU(address, size);
                 }
             }
             set_writes.push_back({

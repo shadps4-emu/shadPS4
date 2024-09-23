@@ -17,7 +17,7 @@ namespace VideoCore {
 static constexpr size_t NumVertexBuffers = 32;
 static constexpr size_t GdsBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 1_GB;
-static constexpr size_t UboStreamBufferSize = 128_MB;
+static constexpr size_t UboStreamBufferSize = 64_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,

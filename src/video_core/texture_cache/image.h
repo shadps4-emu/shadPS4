@@ -5,13 +5,9 @@
 
 #include "common/enum.h"
 #include "common/types.h"
-#include "core/libraries/videoout/buffer.h"
-#include "video_core/amdgpu/liverpool.h"
-#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
-#include "video_core/texture_cache/types.h"
 
 #include <optional>
 
@@ -26,7 +22,9 @@ VK_DEFINE_HANDLE(VmaAllocator)
 namespace VideoCore {
 
 enum ImageFlagBits : u32 {
-    CpuModified = 1 << 2,    ///< Contents have been modified from the CPU
+    CpuDirty = 1 << 1, ///< Contents have been modified from the CPU
+    GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
+    Dirty = CpuDirty | GpuDirty,
     GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
     Tracked = 1 << 4,        ///< Writes and reads are being hooked from the CPU
     Registered = 1 << 6,     ///< True when the image is registered
@@ -108,7 +106,7 @@ struct Image {
     ImageInfo info;
     UniqueImage image;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
-    ImageFlagBits flags = ImageFlagBits::CpuModified;
+    ImageFlagBits flags = ImageFlagBits::Dirty;
     VAddr cpu_addr = 0;
     VAddr cpu_addr_end = 0;
     std::vector<ImageViewInfo> image_view_infos;
