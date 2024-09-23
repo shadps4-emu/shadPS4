@@ -23,6 +23,7 @@ void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
 
     m_currentMusic = newMusic;
     m_mediaPlayer->setSource(newMusic);
+    m_mediaPlayer->setLoops(QMediaPlayer::Infinite);
     m_mediaPlayer->play();
 }
 
