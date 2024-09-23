@@ -228,8 +228,7 @@ int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
 int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
-    return memory_manager->MTypeProtect(std::bit_cast<VAddr>(addr), size,
-                                        static_cast<Core::VMAType>(mtype), protection_flags);
+    return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
 }
 
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
