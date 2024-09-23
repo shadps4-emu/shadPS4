@@ -203,6 +203,9 @@ struct Info {
     bool translation_failed{}; // indicates that shader has unsupported instructions
     u8 mrt_mask{0u};
 
+    // just for logging, TODO delete
+    size_t perm_idx;
+
     explicit Info(Stage stage_, ShaderParams params)
         : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
           user_data{params.user_data} {}
