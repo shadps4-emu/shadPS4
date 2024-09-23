@@ -247,23 +247,29 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         },
-    };
+    };  
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, {}, pre_barrier);
 
+    // Clear the frame image before blitting to avoid artifacts.
+    const vk::ClearColorValue clear_color{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
+    const vk::ImageSubresourceRange clear_range{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+    cmdbuf.clearColorImage(frame->image, vk::ImageLayout::eTransferDstOptimal, clear_color,
+                           clear_range);    
+
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-<<<<<<< HEAD
-    cmdbuf.blitImage(
-        image.image, image.last_state.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
-        MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width, frame->height),
-        vk::Filter::eLinear);
-=======
-    cmdbuf.blitImage(image.image, image.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
+    cmdbuf.blitImage(image.image, image.last_state.layout, frame->image,
+                     vk::ImageLayout::eTransferDstOptimal,
                      MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width,
                                       frame->height),
                      vk::Filter::eLinear);
->>>>>>> 228571f9 (clang-format)
 
     const vk::ImageMemoryBarrier post_barrier{
         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
