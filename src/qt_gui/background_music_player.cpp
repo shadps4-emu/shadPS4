@@ -7,6 +7,7 @@ BackgroundMusicPlayer::BackgroundMusicPlayer(QObject* parent) : QObject(parent) 
     m_mediaPlayer = new QMediaPlayer(this);
     m_audioOutput = new QAudioOutput(this);
     m_mediaPlayer->setAudioOutput(m_audioOutput);
+    m_mediaPlayer->setLoops(QMediaPlayer::Infinite);
 }
 
 void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
@@ -23,7 +24,6 @@ void BackgroundMusicPlayer::playMusic(const QString& snd0path) {
 
     m_currentMusic = newMusic;
     m_mediaPlayer->setSource(newMusic);
-    m_mediaPlayer->setLoops(QMediaPlayer::Infinite);
     m_mediaPlayer->play();
 }
 
