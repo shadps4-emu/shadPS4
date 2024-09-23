@@ -1,0 +1,438 @@
+# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+name: Build and Release
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  reuse:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+    - uses: fsfe/reuse-action@v4
+
+  clang-format:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main'
+        sudo apt update
+        sudo apt install clang-format-17
+    - name: Build
+      env:
+        COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+      run: ./.ci/clang-format.sh
+      
+  get-info:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.vars.outputs.date }}
+      shorthash: ${{ steps.vars.outputs.shorthash }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Get date and git hash
+      id: vars
+      run: |
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  windows-sdl:
+    runs-on: windows-latest
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4
+      env:
+          cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
+      with:
+          path: | 
+            ${{github.workspace}}/build
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            ${{ env.cache-name }}-
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
+
+    - name: Configure CMake
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Upload Windows SDL artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: ${{github.workspace}}/build/shadPS4.exe
+
+  windows-qt:
+    runs-on: windows-latest
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.7.2
+        host: windows
+        target: desktop
+        arch: win64_msvc2019_64
+        archives: qtbase qttools
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4
+      env:
+          cache-name: ${{ runner.os }}-qt-ninja-cache-cmake-configuration
+      with:
+          path: | 
+            ${{github.workspace}}/build
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            ${{ env.cache-name }}-
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-qt-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Setup VS Environment
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+      with:
+        arch: amd64
+
+    - name: Configure CMake
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Deploy and Package
+      run: |
+        mkdir upload
+        move build/shadPS4.exe upload
+        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
+        Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
+
+    - name: Upload Windows Qt artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: upload/
+
+  macos-sdl:
+    runs-on: macos-latest
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup latest Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest
+
+    - name: Install MoltenVK
+      run: |
+        arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        arch -x86_64 /usr/local/bin/brew install molten-vk
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{runner.os}}-sdl-cache-cmake-build
+      with:
+        append-timestamp: false
+        create-symlink: true
+        key: ${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        variant: sccache
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
+
+    - name: Package and Upload macOS SDL artifact
+      run: |
+        mkdir upload
+        mv ${{github.workspace}}/build/shadps4 upload
+        cp $(arch -x86_64 /usr/local/bin/brew --prefix)/opt/molten-vk/lib/libMoltenVK.dylib upload
+        tar cf shadps4-macos-sdl.tar.gz -C upload .
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-macos-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: shadps4-macos-sdl.tar.gz
+
+  macos-qt:
+    runs-on: macos-latest
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup latest Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest
+
+    - name: Install MoltenVK and Setup Qt
+      run: |
+        arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        arch -x86_64 /usr/local/bin/brew install molten-vk
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: 6.7.2
+        host: mac
+        target: desktop
+        arch: clang_64
+        archives: qtbase qttools
+        
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{runner.os}}-qt-cache-cmake-build
+      with:
+        append-timestamp: false
+        create-symlink: true
+        key: ${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        variant: sccache
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=x86_64 -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
+
+    - name: Package and Upload macOS Qt artifact
+      run: |
+        mkdir upload
+        mv ${{github.workspace}}/build/shadps4.app upload
+        macdeployqt upload/shadps4.app
+        tar cf shadps4-macos-qt.tar.gz -C upload .
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-macos-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: shadps4-macos-qt.tar.gz
+
+  linux-sdl:
+    runs-on: ubuntu-24.04
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-sdl-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+  
+    - name: Package and Upload Linux(ubuntu64) SDL artifact 
+      run: |
+        ls -la ${{ github.workspace }}/build/shadps4
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: ${{ github.workspace }}/build/shadps4
+
+    - name: Run AppImage packaging script
+      run:  ./.github/linux-appimage-sdl.sh
+      
+    - name: Package and Upload Linux SDL artifact
+      run: |
+        tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: Shadps4-sdl.AppImage
+
+  linux-qt:
+    runs-on: ubuntu-24.04
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-qt-cache-cmake-configuration
+      with: 
+          path: |  
+            ${{github.workspace}}/build 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.14
+      env:
+          cache-name: ${{ runner.os }}-qt-cache-cmake-build
+      with:
+        append-timestamp: false
+        key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Run AppImage packaging script
+      run:  ./.github/linux-appimage-qt.sh
+
+    - name: Package and Upload Linux Qt artifact
+      run: |
+        tar cf shadps4-linux-qt.tar.gz -C ${{github.workspace}}/build shadps4
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-linux-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: Shadps4-qt.AppImage
+
+  pre-release:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [get-info, windows-sdl, windows-qt, macos-sdl, macos-qt, linux-sdl, linux-qt]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+  
+    - name: Compress individual directories (without parent directory)
+      run: |
+        cd ./artifacts
+        for dir in */; do
+          if [ -d "$dir" ]; then
+            dir_name=${dir%/}
+            echo "Creating zip for $dir_name"
+            (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
+          fi
+        done
+  
+    - name: Create Pre-Release on GitHub
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        name: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
+        tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
+        draft: false
+        prerelease: true
+        artifacts: |
+          ./artifacts/*.zip
+
+    - name: Delete old pre-releases and tags
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        current_date="${{ needs.get-info.outputs.date }}"
+        api_url="https://api.github.com/repos/${{ github.repository }}/releases"
+        
+        # Get current pre-releases
+        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url?per_page=100")
+        
+        # Parse and delete old pre-releases
+        echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
+          release_date=$(echo "$release" | jq -r '.created_at' | cut -d'T' -f1)
+          release_id=$(echo "$release" | jq -r '.id')
+          release_tag=$(echo "$release" | jq -r '.tag_name')
+
+          # Compare dates
+          if [[ "$release_date" < "$current_date" ]]; then
+            echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
+            # Delete the pre-release
+            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
+            # Delete the tag
+            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
+          fi
+        done
