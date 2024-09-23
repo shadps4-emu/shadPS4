@@ -360,8 +360,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/debug.h
            src/common/decoder.cpp
            src/common/decoder.h
-           src/common/disassembler.cpp
-           src/common/disassembler.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
