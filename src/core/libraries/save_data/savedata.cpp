@@ -581,6 +581,7 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
+    LOG_DEBUG(Lib_SaveData, "called with titleId={}", check->titleId->data.to_view());
 
     const std::string_view title{check->titleId != nullptr ? std::string_view{check->titleId->data}
                                                            : std::string_view{g_game_serial}};
@@ -801,9 +802,11 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
     if (cond->dirName != nullptr) {
         // Filter names
         const auto pat = Common::ToLower(std::string_view{cond->dirName->data});
-        std::erase_if(dir_list, [&](const std::string& dir_name) {
-            return !match(Common::ToLower(dir_name), pat);
-        });
+        if (!pat.empty()) {
+            std::erase_if(dir_list, [&](const std::string& dir_name) {
+                return !match(Common::ToLower(dir_name), pat);
+            });
+        }
     }
 
     std::unordered_map<std::string, PSF> map_dir_sfo;
