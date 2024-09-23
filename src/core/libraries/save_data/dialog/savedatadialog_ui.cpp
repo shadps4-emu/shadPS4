@@ -394,7 +394,7 @@ void SaveDialogUi::Draw() {
         };
     } else {
         window_size = ImVec2{
-            std::min(io.DisplaySize.x, 500.0f),
+            std::min(io.DisplaySize.x, 600.0f),
             std::min(io.DisplaySize.y, 300.0f),
         };
     }
@@ -462,7 +462,7 @@ void SaveDialogUi::Draw() {
 }
 
 void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool clickable) {
-    constexpr auto text_spacing = 1.2f;
+    constexpr auto text_spacing = 0.95f;
 
     auto& ctx = *GetCurrentContext();
     auto& window = *ctx.CurrentWindow;
@@ -511,18 +511,20 @@ void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool cli
     if (!item.title.empty()) {
         const char* begin = &item.title.front();
         const char* end = &item.title.back() + 1;
-        SetWindowFontScale(2.0f);
+        SetWindowFontScale(1.5f);
         RenderText(pos + ImVec2{pos_x, pos_y}, begin, end, false);
-        if (item.is_corrupted) {
-            float width = CalcTextSize(begin, end).x + 10.0f;
-            PushStyleColor(ImGuiCol_Text, 0xFF0000FF);
-            RenderText(pos + ImVec2{pos_x + width, pos_y}, "- Corrupted", nullptr, false);
-            PopStyleColor();
-        }
         pos_y += ctx.FontSize * text_spacing;
     }
+    SetWindowFontScale(1.1f);
 
-    SetWindowFontScale(1.3f);
+    if (item.is_corrupted) {
+        pos_y -= ctx.FontSize * text_spacing * 0.3f;
+        const auto bright = (int)std::abs(std::sin(ctx.Time) * 0.15f * 255.0f);
+        PushStyleColor(ImGuiCol_Text, IM_COL32(bright + 216, bright, bright, 0xFF));
+        RenderText(pos + ImVec2{pos_x, pos_y}, "Corrupted", nullptr, false);
+        PopStyleColor();
+        pos_y += ctx.FontSize * text_spacing * 0.8f;
+    }
 
     if (state->style == ItemStyle::TITLE_SUBTITLE_DATESIZE) {
         if (!item.subtitle.empty()) {

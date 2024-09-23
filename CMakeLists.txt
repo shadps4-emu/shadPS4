@@ -810,6 +810,11 @@ add_subdirectory(${HOST_SHADERS_INCLUDE})
 add_dependencies(shadps4 host_shaders)
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
+# ImGui resources
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
+add_dependencies(shadps4 ImGui_Resources)
+target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
+
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
 #       WIN32_EXECUTABLE ON
