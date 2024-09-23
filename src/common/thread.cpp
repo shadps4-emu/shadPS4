@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <string>
+#include <thread>
 
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
+#include "ntapi.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -102,6 +104,16 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     SetThreadPriority(handle, windows_priority);
 }
 
+static void AccurateSleep(std::chrono::nanoseconds duration) {
+    LARGE_INTEGER interval{
+        .QuadPart = -1 * (duration.count() / 100u),
+    };
+    HANDLE timer = ::CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &interval, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    ::CloseHandle(timer);
+}
+
 #else
 
 void SetCurrentThreadPriority(ThreadPriority new_priority) {
@@ -120,6 +132,10 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     }
 
     pthread_setschedparam(this_thread, scheduling_type, &params);
+}
+
+static void AccurateSleep(std::chrono::nanoseconds duration) {
+    std::this_thread::sleep_for(duration);
 }
 
 #endif
@@ -163,5 +179,23 @@ void SetCurrentThreadName(const char*) {
 #endif
 
 #endif
+
+AccurateTimer::AccurateTimer(std::chrono::nanoseconds target_interval)
+    : target_interval(target_interval) {}
+
+void AccurateTimer::Start() {
+    auto begin_sleep = std::chrono::high_resolution_clock::now();
+    if (total_wait.count() > 0) {
+        AccurateSleep(total_wait);
+    }
+    start_time = std::chrono::high_resolution_clock::now();
+    total_wait -= std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - begin_sleep);
+}
+
+void AccurateTimer::End() {
+    auto now = std::chrono::high_resolution_clock::now();
+    total_wait +=
+        target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+}
 
 } // namespace Common
