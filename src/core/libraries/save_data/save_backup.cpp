@@ -52,7 +52,7 @@ static void backup(const std::filesystem::path& dir_name) {
     std::vector<std::filesystem::path> backup_files;
     for (const auto& entry : fs::directory_iterator(dir_name)) {
         const auto filename = entry.path().filename();
-        if (filename != backup_dir) {
+        if (filename != ::backup_dir) {
             backup_files.push_back(entry.path());
         }
     }
