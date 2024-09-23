@@ -80,18 +80,33 @@ static void backup(const std::filesystem::path& dir_name) {
 
 static void BackupThreadBody() {
     Common::SetCurrentThreadName("SaveData_BackupThread");
-    while (true) {
+    while (g_backup_status != WorkerStatus::Stopping) {
         g_backup_status = WorkerStatus::Waiting;
-        g_backup_thread_semaphore.acquire();
+
+        bool wait;
         BackupRequest req;
         {
             std::scoped_lock lk{g_backup_queue_mutex};
-            req = g_backup_queue.front();
+            wait = g_backup_queue.empty();
+            if (!wait) {
+                req = g_backup_queue.front();
+            }
+        }
+        if (wait) {
+            g_backup_thread_semaphore.acquire();
+            {
+                std::scoped_lock lk{g_backup_queue_mutex};
+                if (g_backup_queue.empty()) {
+                    continue;
+                }
+                req = g_backup_queue.front();
+            }
         }
         if (req.save_path.empty()) {
             break;
         }
         g_backup_status = WorkerStatus::Running;
+
         LOG_INFO(Lib_SaveData, "Backing up the following directory: {}", req.save_path.string());
         try {
             backup(req.save_path);
@@ -100,6 +115,7 @@ static void BackupThreadBody() {
         }
         LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
                   req.save_path.string());
+        std::this_thread::sleep_for(std::chrono::seconds(10)); // Don't backup too often
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.pop_front();
@@ -117,8 +133,8 @@ void StartThread() {
         return;
     }
     LOG_DEBUG(Lib_SaveData, "Starting backup thread");
-    g_backup_thread = std::jthread{BackupThreadBody};
     g_backup_status = WorkerStatus::Waiting;
+    g_backup_thread = std::jthread{BackupThreadBody};
 }
 
 void StopThread() {
@@ -145,6 +161,12 @@ bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
     }
     {
         std::scoped_lock lk{g_backup_queue_mutex};
+        for (const auto& it : g_backup_queue) {
+            if (it.dir_name == dir_name) {
+                LOG_TRACE(Lib_SaveData, "Backup request to {} ignored. Already queued", dir_name);
+                return false;
+            }
+        }
         g_backup_queue.push_back(BackupRequest{
             .user_id = user_id,
             .title_id = std::string{title_id},
