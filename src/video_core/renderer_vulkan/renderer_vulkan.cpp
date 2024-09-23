@@ -247,7 +247,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         },
-    };  
+    };
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, {}, pre_barrier);
@@ -262,7 +262,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
         .layerCount = VK_REMAINING_ARRAY_LAYERS,
     };
     cmdbuf.clearColorImage(frame->image, vk::ImageLayout::eTransferDstOptimal, clear_color,
-                           clear_range);    
+                           clear_range);
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
     cmdbuf.blitImage(image.image, image.last_state.layout, frame->image,
