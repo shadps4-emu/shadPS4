@@ -102,7 +102,12 @@ bool PSF::Encode(const std::filesystem::path& filepath) const {
     last_write = std::filesystem::file_time_type::clock::now();
 
     const auto psf_buffer = Encode();
-    return file.Write(psf_buffer) == psf_buffer.size();
+    const size_t written = file.Write(psf_buffer);
+    if (written != psf_buffer.size()) {
+        LOG_ERROR(Core, "Failed to write PSF file. Written {} Expected {}", written,
+                  psf_buffer.size());
+    }
+    return written == psf_buffer.size();
 }
 
 std::vector<u8> PSF::Encode() const {

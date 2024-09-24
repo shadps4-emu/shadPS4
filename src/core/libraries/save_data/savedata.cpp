@@ -485,14 +485,14 @@ static Error Umount(const OrbisSaveDataMountPoint* mountPoint, bool call_backup 
         if (instance.has_value()) {
             const auto& slot_name = instance->GetMountPoint();
             if (slot_name == mount_point_str) {
+                // TODO: check if is busy
+                instance->Umount();
                 if (call_backup) {
                     Backup::StartThread();
                     Backup::NewRequest(instance->GetUserId(), instance->GetTitleId(),
                                        instance->GetDirName(),
                                        OrbisSaveDataEventType::UMOUNT_BACKUP);
                 }
-                // TODO: check if is busy
-                instance->Umount();
                 instance.reset();
                 return Error::OK;
             }
@@ -581,10 +581,10 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
-    LOG_DEBUG(Lib_SaveData, "called with titleId={}", check->titleId->data.to_view());
 
     const std::string_view title{check->titleId != nullptr ? std::string_view{check->titleId->data}
                                                            : std::string_view{g_game_serial}};
+    LOG_DEBUG(Lib_SaveData, "called with titleId={}", title);
 
     const auto save_path =
         SaveInstance::MakeDirSavePath(check->userId, title, check->dirName->data);

@@ -119,7 +119,7 @@ static void BackupThreadBody() {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(10)); // Don't backup too often
+        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.pop_front();
