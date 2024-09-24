@@ -64,7 +64,6 @@ void Translator::S_BARRIER() {
 // VOP2
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
-    const IR::ScalarReg dst{inst.dst[0].code};
     const IR::U32 value{GetSrc(inst.src[0])};
 
     if (info.stage != Stage::Compute) {
