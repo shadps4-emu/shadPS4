@@ -401,6 +401,7 @@ jobs:
         done
   
     - name: Create Pre-Release on GitHub
+      id: create_release
       uses: ncipollo/release-action@v1
       with:
         token: ${{ secrets.SHADPS4_TOKEN_REPO }}
@@ -410,29 +411,60 @@ jobs:
         prerelease: true
         artifacts: |
           ./artifacts/*.zip
-
+    
+    - name: Get current pre-release information
+      env:
+        GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
+      run: |
+        api_url="https://api.github.com/repos/${{ github.repository }}/releases"
+        
+        # Get all releases (sorted by date)
+        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
+        
+        # Capture the most recent pre-release (assuming the first one is the latest)
+        current_release=$(echo "$releases" | jq -c '.[] | select(.prerelease == true) | .published_at' | sort -r | head -n 1)
+        
+        # Remove extra quotes from captured date
+        current_release=$(echo $current_release | tr -d '"')
+                
+        # Export the current published_at to be available for the next step
+        echo "CURRENT_PUBLISHED_AT=$current_release" >> $GITHUB_ENV
+    
     - name: Delete old pre-releases and tags
       env:
         GITHUB_TOKEN: ${{ secrets.SHADPS4_TOKEN_REPO }}
       run: |
-        current_date="${{ needs.get-info.outputs.date }}"
         api_url="https://api.github.com/repos/${{ github.repository }}/releases"
         
         # Get current pre-releases
-        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url?per_page=100")
+        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
+                
+        # Remove extra quotes from captured date
+        CURRENT_PUBLISHED_AT=$(echo $CURRENT_PUBLISHED_AT | tr -d '"')
         
-        # Parse and delete old pre-releases
+        # Convert CURRENT_PUBLISHED_AT para timestamp Unix
+        current_published_ts=$(date -d "$CURRENT_PUBLISHED_AT" +%s)
+        
+        # Identify pre-releases
         echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
-          release_date=$(echo "$release" | jq -r '.created_at' | cut -d'T' -f1)
+          release_date=$(echo "$release" | jq -r '.published_at')
           release_id=$(echo "$release" | jq -r '.id')
           release_tag=$(echo "$release" | jq -r '.tag_name')
-
-          # Compare dates
-          if [[ "$release_date" < "$current_date" ]]; then
+          
+          # Remove extra quotes from captured date
+          release_date=$(echo $release_date | tr -d '"')
+          
+          # Convert release_date para timestamp Unix
+          release_date_ts=$(date -d "$release_date" +%s)
+                    
+          # Compare timestamps and delete old pre-releases
+          if [[ "$release_date_ts" -lt "$current_published_ts" ]]; then
             echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
             # Delete the pre-release
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
             # Delete the tag
             curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
+          else
+            echo "Skipping pre-release: $release_id (newer or same date)"
           fi
         done
