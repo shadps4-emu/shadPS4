@@ -57,14 +57,16 @@ vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags support
 void EmitQuadToTriangleListIndices(u8* out_indices, u32 num_vertices);
 
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
-    if (fmt == vk::Format::eR32Sfloat) {
+    switch (fmt) {
+    case vk::Format::eR32Sfloat:
         return vk::Format::eD32Sfloat;
-    } else if (fmt == vk::Format::eR16Unorm) {
+    case vk::Format::eR16Unorm:
         return vk::Format::eD16Unorm;
-    } else if (fmt == vk::Format::eR8G8B8A8Unorm) {
+    case vk::Format::eR8G8B8A8Unorm:
         return fmt;
+    default:
+        UNREACHABLE();
     }
-    UNREACHABLE();
 }
 
 } // namespace Vulkan::LiverpoolToVK
