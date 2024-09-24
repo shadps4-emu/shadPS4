@@ -28,4 +28,16 @@ template <typename T>
     return (value & 0x3FFF) == 0;
 }
 
+template <typename T>
+    requires std::is_integral_v<T>
+[[nodiscard]] constexpr bool Is64KBAligned(T value) {
+    return (value & 0xFFFF) == 0;
+}
+
+template <typename T>
+    requires std::is_integral_v<T>
+[[nodiscard]] constexpr bool Is2MBAligned(T value) {
+    return (value & 0x1FFFFF) == 0;
+}
+
 } // namespace Common

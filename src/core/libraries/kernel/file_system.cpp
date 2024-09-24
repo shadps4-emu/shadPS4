@@ -290,7 +290,8 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     }
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
-    if (dir_name.empty() || !std::filesystem::create_directory(dir_name)) {
+    std::error_code ec;
+    if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
         return SCE_KERNEL_ERROR_EIO;
     }
 

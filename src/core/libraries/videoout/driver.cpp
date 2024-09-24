@@ -260,7 +260,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
     const auto vblank_period = VblankPeriod / Config::vblankDiv();
 
-    Common::SetCurrentThreadName("PresentThread");
+    Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);
 
     Common::AccurateTimer timer{vblank_period};

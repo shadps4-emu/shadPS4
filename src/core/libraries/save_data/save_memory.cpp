@@ -66,7 +66,7 @@ static void SaveFileSafe(void* buf, size_t count, const std::filesystem::path& p
 }
 
 [[noreturn]] void SaveThreadLoop() {
-    Common::SetCurrentThreadName("SaveData_SaveDataMemoryThread");
+    Common::SetCurrentThreadName("shadPS4:SaveData_SaveDataMemoryThread");
     std::mutex mtx;
     while (true) {
         {
