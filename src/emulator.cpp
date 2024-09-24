@@ -139,7 +139,7 @@ void Emulator::Run(const std::filesystem::path& file) {
                 if (splash->IsLoaded()) {
                     continue;
                 }
-                if (!splash->Open(entry.path().string())) {
+                if (!splash->Open(entry.path())) {
                     LOG_ERROR(Loader, "Game splash: unable to open file");
                 }
             }

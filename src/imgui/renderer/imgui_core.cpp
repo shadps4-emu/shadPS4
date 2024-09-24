@@ -51,8 +51,14 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
-    io.IniFilename = SDL_strdup(config_path.string().c_str());
-    io.LogFilename = SDL_strdup(log_path.string().c_str());
+
+    using native_char = std::filesystem::path::value_type;
+    io.IniFilename = new char[config_path.native().size() * sizeof(native_char)];
+    io.LogFilename = new char[log_path.native().size() * sizeof(native_char)];
+    std::memcpy((void*)io.IniFilename, config_path.native().c_str(),
+                config_path.native().size() * sizeof(native_char));
+    std::memcpy((void*)io.LogFilename, log_path.native().c_str(),
+                log_path.native().size() * sizeof(native_char));
 
     ImFontGlyphRangesBuilder rb{};
     rb.AddRanges(io.Fonts->GetGlyphRangesDefault());

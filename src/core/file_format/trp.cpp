@@ -29,7 +29,7 @@ static void removePadding(std::vector<u8>& vec) {
 }
 
 bool TRP::Extract(const std::filesystem::path& trophyPath) {
-    std::string title = trophyPath.filename().string();
+    std::filesystem::path title = trophyPath.filename();
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
     if (!std::filesystem::exists(gameSysDir)) {
         return false;

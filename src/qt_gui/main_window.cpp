@@ -631,7 +631,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         std::string failreason;
         auto extract_path = std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        QDir game_dir(QString::fromStdString(extract_path.string()));
+        QString gameDirPath;
+        Common::FS::PathToQString(gameDirPath, extract_path);
+        QDir game_dir(gameDirPath);
         if (game_dir.exists()) {
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
@@ -653,7 +655,9 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
 
             auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
                                       pkg.GetTitleID() / entitlement_label;
-            QDir addon_dir(QString::fromStdString(addon_extract_path.string()));
+            QString addonDirPath;
+            Common::FS::PathToQString(addonDirPath, addon_extract_path);
+            QDir addon_dir(addonDirPath);
             auto category = psf.GetString("CATEGORY");
 
             if (pkgType.contains("PATCH")) {
@@ -718,8 +722,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                         return;
                     }
                 } else {
-                    msgBox.setText(QString(tr("DLC already installed:") + "\n" +
-                                           QString::fromStdString(addon_extract_path.string()) +
+                    msgBox.setText(QString(tr("DLC already installed:") + "\n" + addonDirPath +
                                            "\n\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
@@ -731,8 +734,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                msgBox.setText(QString(tr("Game already installed") + "\n" +
-                                       QString::fromStdString(extract_path.string()) + "\n" +
+                msgBox.setText(QString(tr("Game already installed") + "\n" + addonDirPath + "\n" +
                                        tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);

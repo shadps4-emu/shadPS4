@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <fmt/core.h>
+#include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 #include "config.h"
 
@@ -444,11 +445,18 @@ void save(const std::filesystem::path& path) {
             return;
         }
     } else {
+#ifdef _WIN32
+#define PREFIX(str) L##str
+#else
+#define PREFIX(str) str
+#endif
         if (error) {
-            fmt::print("Filesystem error accessing {} (error: {})\n", path.string(),
-                       error.message().c_str());
+            fmt::print(PREFIX("Filesystem error accessing {}"), path.native());
+            // can't mix wstring and string in fmt
+            fmt::print(" (error: {})\n", error.message());
         }
-        fmt::print("Saving new configuration file {}\n", path.string());
+        fmt::print(PREFIX("Saving new configuration file {}\n"), path.native());
+#undef PREFIX
     }
 
     data["General"]["isPS4Pro"] = isNeo;

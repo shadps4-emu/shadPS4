@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/path_util.h"
+#include "common/string_util.h"
 #include "game_list_frame.h"
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -92,11 +93,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     QString pic1Path = QString::fromStdString(m_game_info->m_games[item->row()].pic_path);
     const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                  m_game_info->m_games[item->row()].serial / "pic1.png";
-#ifdef _WIN32
-    const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
-#else
-    const auto blurredPic1PathQt = QString::fromStdString(blurredPic1Path.string());
-#endif
+    QString blurredPic1PathQt;
+    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
 
     backgroundImage = QImage(blurredPic1PathQt);
     if (backgroundImage.isNull()) {
