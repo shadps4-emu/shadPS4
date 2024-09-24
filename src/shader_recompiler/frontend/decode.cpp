@@ -503,9 +503,8 @@ void GcnDecodeContext::decodeInstructionVOP1(u32 hexInstruction) {
 
     OpcodeVOP1 vop1Op = static_cast<OpcodeVOP1>(op);
     if (vop1Op == OpcodeVOP1::V_READFIRSTLANE_B32) {
-        m_instruction.dst[1].field = getOperandField(vdst);
-        m_instruction.dst[1].type = ScalarType::Uint32;
-        m_instruction.dst[1].code = vdst;
+        m_instruction.dst[0].field = getOperandField(vdst);
+        m_instruction.dst[0].type = ScalarType::Uint32;
     }
 }
 
@@ -547,13 +546,15 @@ void GcnDecodeContext::decodeInstructionVOP2(u32 hexInstruction) {
     m_instruction.dst_count = 1;
 
     OpcodeVOP2 vop2Op = static_cast<OpcodeVOP2>(op);
-    if (vop2Op == OpcodeVOP2::V_READLANE_B32 || vop2Op == OpcodeVOP2::V_WRITELANE_B32) {
+    if (vop2Op == OpcodeVOP2::V_READLANE_B32) {
         // vsrc1 is scalar for lane instructions
         m_instruction.src[1].field = getOperandField(vsrc1);
         // dst is sgpr
-        m_instruction.dst[1].field = OperandField::ScalarGPR;
-        m_instruction.dst[1].type = ScalarType::Uint32;
-        m_instruction.dst[1].code = vdst;
+        m_instruction.dst[0].field = getOperandField(vdst);
+        m_instruction.dst[0].type = ScalarType::Uint32;
+    } else if (vop2Op == OpcodeVOP2::V_WRITELANE_B32) {
+        m_instruction.src[1].field = getOperandField(vsrc1);
+        // dst is vgpr, as normal
     } else if (IsVop3BEncoding(m_instruction.opcode)) {
         m_instruction.dst[1].field = OperandField::VccLo;
         m_instruction.dst[1].type = ScalarType::Uint64;
@@ -660,13 +661,11 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
             m_instruction.dst[1].field = getOperandField(vdst);
             m_instruction.dst[1].type = ScalarType::Uint64;
             m_instruction.dst[1].code = vdst;
-        } else if (vop3Op >= OpcodeVOP3::V_READLANE_B32 && vop3Op <= OpcodeVOP3::V_WRITELANE_B32) {
-            // vsrc1 is scalar for lane instructions
-            m_instruction.src[1].field = getOperandField(src1);
-            // dst is sgpr for lane instruction
-            m_instruction.dst[1].field = OperandField::ScalarGPR;
-            m_instruction.dst[1].type = ScalarType::Uint32;
-            m_instruction.dst[1].code = vdst;
+        } else if (vop3Op == OpcodeVOP3::V_READLANE_B32 ||
+                   vop3Op == OpcodeVOP3::V_READFIRSTLANE_B32) {
+            m_instruction.dst[0].field = getOperandField(vdst);
+            m_instruction.dst[0].type = ScalarType::Uint32;
+            // WRITELANE can be decoded like other VOP3's
         }
     }
 
