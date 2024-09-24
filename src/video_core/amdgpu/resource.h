@@ -238,10 +238,15 @@ struct Image {
         return pitch + 1;
     }
 
-    u32 NumLayers() const {
+    u32 NumLayers(bool is_array) const {
         u32 slices = GetType() == ImageType::Color3D ? 1 : depth + 1;
         if (GetType() == ImageType::Cube) {
-            slices *= 6;
+            if (is_array) {
+                slices = last_array + 1;
+                ASSERT(slices % 6 == 0);
+            } else {
+                slices = 6;
+            }
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
@@ -281,6 +286,11 @@ struct Image {
 
     bool IsTiled() const {
         return GetTilingMode() != TilingMode::Display_Linear;
+    }
+
+    bool IsPartialCubemap() const {
+        const auto viewed_slice = last_array - base_array + 1;
+        return GetType() == ImageType::Cube && viewed_slice < 6;
     }
 };
 static_assert(sizeof(Image) == 32); // 256bits

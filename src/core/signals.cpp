@@ -3,6 +3,8 @@
 
 #include "common/arch.h"
 #include "common/assert.h"
+#include "common/decoder.h"
+#include "common/signal_context.h"
 #include "core/signals.h"
 
 #ifdef _WIN32
@@ -10,7 +12,6 @@
 #else
 #include <csignal>
 #ifdef ARCH_X86_64
-#include <Zydis/Decoder.h>
 #include <Zydis/Formatter.h>
 #endif
 #endif
@@ -22,17 +23,14 @@ namespace Core {
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
 
-    auto* code_address = reinterpret_cast<void*>(pExp->ContextRecord->Rip);
-
     bool handled = false;
     switch (pExp->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_ACCESS_VIOLATION:
         handled = signals->DispatchAccessViolation(
-            code_address, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]),
-            pExp->ExceptionRecord->ExceptionInformation[0] == 1);
+            pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
-        handled = signals->DispatchIllegalInstruction(code_address);
+        handled = signals->DispatchIllegalInstruction(pExp);
         break;
     default:
         break;
@@ -43,37 +41,14 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 
 #else
 
-#ifdef __APPLE__
-#if defined(ARCH_X86_64)
-#define CODE_ADDRESS(ctx) reinterpret_cast<void*>((ctx)->uc_mcontext->__ss.__rip)
-#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext->__es.__err & 0x2)
-#elif defined(ARCH_ARM64)
-#define CODE_ADDRESS(ctx) reinterpret_cast<void*>((ctx)->uc_mcontext->__ss.__pc)
-#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext->__es.__esr & 0x40)
-#endif
-#else
-#if defined(ARCH_X86_64)
-#define CODE_ADDRESS(ctx) reinterpret_cast<void*>((ctx)->uc_mcontext.gregs[REG_RIP])
-#define IS_WRITE_ERROR(ctx) ((ctx)->uc_mcontext.gregs[REG_ERR] & 0x2)
-#endif
-#endif
-
-#ifndef IS_WRITE_ERROR
-#error "Missing IS_WRITE_ERROR() implementation for target OS and CPU architecture."
-#endif
-
 static std::string DisassembleInstruction(void* code_address) {
     char buffer[256] = "<unable to decode>";
 
 #ifdef ARCH_X86_64
-    ZydisDecoder decoder;
-    ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
-
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    static constexpr u64 max_length = 0x20;
     const auto status =
-        ZydisDecoderDecodeFull(&decoder, code_address, max_length, &instruction, operands);
+        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
     if (ZYAN_SUCCESS(status)) {
         ZydisFormatter formatter;
         ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
@@ -87,23 +62,23 @@ static std::string DisassembleInstruction(void* code_address) {
 }
 
 static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
-    const auto* ctx = static_cast<ucontext_t*>(raw_context);
     const auto* signals = Signals::Instance();
 
-    auto* code_address = CODE_ADDRESS(ctx);
+    auto* code_address = Common::GetRip(raw_context);
 
     switch (sig) {
     case SIGSEGV:
-    case SIGBUS:
-        if (const bool is_write = IS_WRITE_ERROR(ctx);
-            !signals->DispatchAccessViolation(code_address, info->si_addr, is_write)) {
+    case SIGBUS: {
+        const bool is_write = Common::IsWriteError(raw_context);
+        if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
                             fmt::ptr(code_address), is_write ? "Write to" : "Read from",
                             fmt::ptr(info->si_addr));
         }
         break;
+    }
     case SIGILL:
-        if (!signals->DispatchIllegalInstruction(code_address)) {
+        if (!signals->DispatchIllegalInstruction(raw_context)) {
             UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
                             fmt::ptr(code_address), DisassembleInstruction(code_address));
         }
@@ -150,19 +125,18 @@ SignalDispatch::~SignalDispatch() {
 #endif
 }
 
-bool SignalDispatch::DispatchAccessViolation(void* code_address, void* fault_address,
-                                             bool is_write) const {
+bool SignalDispatch::DispatchAccessViolation(void* context, void* fault_address) const {
     for (const auto& [handler, _] : access_violation_handlers) {
-        if (handler(code_address, fault_address, is_write)) {
+        if (handler(context, fault_address)) {
             return true;
         }
     }
     return false;
 }
 
-bool SignalDispatch::DispatchIllegalInstruction(void* code_address) const {
+bool SignalDispatch::DispatchIllegalInstruction(void* context) const {
     for (const auto& [handler, _] : illegal_instruction_handlers) {
-        if (handler(code_address)) {
+        if (handler(context)) {
             return true;
         }
     }

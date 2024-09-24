@@ -71,6 +71,9 @@ void Translator::EmitExport(const GcnInst& inst) {
             ir.SetAttribute(attrib, comp, swizzle(i));
         }
     }
+    if (IR::IsMrt(attrib)) {
+        info.mrt_mask |= 1u << u8(attrib);
+    }
 }
 
 } // namespace Shader::Gcn

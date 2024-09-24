@@ -59,6 +59,7 @@ union TextureInstInfo {
     BitField<5, 1, u32> has_offset;
     BitField<6, 2, u32> gather_comp;
     BitField<8, 1, u32> has_derivatives;
+    BitField<9, 1, u32> is_array;
 };
 
 union BufferInstInfo {

@@ -80,10 +80,10 @@ struct DefTable {
     }
 
     const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
-        return block->ssa_sreg_values[RegIndex(variable.sgpr)];
+        return block->ssa_sbit_values[RegIndex(variable.sgpr)];
     }
     void SetDef(IR::Block* block, ThreadBitScalar variable, const IR::Value& value) {
-        block->ssa_sreg_values[RegIndex(variable.sgpr)] = value;
+        block->ssa_sbit_values[RegIndex(variable.sgpr)] = value;
     }
 
     const IR::Value& Def(IR::Block* block, SccFlagTag) {

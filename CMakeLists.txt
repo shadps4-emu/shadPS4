@@ -359,8 +359,9 @@ set(COMMON src/common/logging/backend.cpp
            src/common/config.h
            src/common/cstring.h
            src/common/debug.h
-           src/common/disassembler.cpp
-           src/common/disassembler.h
+           src/common/decoder.cpp
+           src/common/decoder.h
+           src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
            src/common/io_file.cpp
@@ -378,6 +379,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/signal_context.h
+           src/common/signal_context.cpp
            src/common/singleton.h
            src/common/slot_vector.h
            src/common/string_util.cpp
@@ -475,6 +478,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
                       src/shader_recompiler/specialization.h
+                      src/shader_recompiler/backend/bindings.h
                       src/shader_recompiler/backend/spirv/emit_spirv.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv.h
                       src/shader_recompiler/backend/spirv/emit_spirv_atomic.cpp
@@ -580,6 +584,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_master_semaphore.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
+               src/video_core/renderer_vulkan/vk_pipeline_common.cpp
+               src/video_core/renderer_vulkan/vk_pipeline_common.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp
@@ -809,6 +815,11 @@ set(HOST_SHADERS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/video_core/host_shaders
 add_subdirectory(${HOST_SHADERS_INCLUDE})
 add_dependencies(shadps4 host_shaders)
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
+
+# ImGui resources
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
+add_dependencies(shadps4 ImGui_Resources)
+target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "shader_recompiler/info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -17,7 +18,7 @@ namespace VideoCore {
 
 struct ImageViewInfo {
     ImageViewInfo() = default;
-    ImageViewInfo(const AmdGpu::Image& image, bool is_storage) noexcept;
+    ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
     ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer, bool is_vo_surface) noexcept;
     ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
                   AmdGpu::Liverpool::DepthView view, AmdGpu::Liverpool::DepthControl ctl);

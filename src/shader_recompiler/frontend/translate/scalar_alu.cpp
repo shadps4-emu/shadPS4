@@ -281,6 +281,12 @@ void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
             return ir.GetExec();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
+        case OperandField::SignedConstIntNeg:
+            ASSERT_MSG(-s32(operand.code) + SignedConstIntNegMin - 1 == -1,
+                       "SignedConstIntNeg must be -1");
+            return ir.Imm1(true);
         default:
             UNREACHABLE();
         }
@@ -506,6 +512,8 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
             return ir.GetExec();
         case OperandField::ScalarGPR:
             return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
         default:
             UNREACHABLE();
         }
@@ -519,6 +527,9 @@ void Translator::S_NOT_B64(const GcnInst& inst) {
         break;
     case OperandField::ScalarGPR:
         ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(result);
         break;
     default:
         UNREACHABLE();
