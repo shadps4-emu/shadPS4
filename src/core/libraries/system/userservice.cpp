@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "common/config.h"
+
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
@@ -1071,7 +1073,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    std::string name = "shadps4"; // TODO onfigurable username
+    std::string name = Config::getUserName();
     if (size < name.length()) {
         LOG_ERROR(Lib_UserService, "buffer is too short");
         return ORBIS_USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
