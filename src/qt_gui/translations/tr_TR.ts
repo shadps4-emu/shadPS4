@@ -168,6 +168,11 @@
             <source>Boot Game</source>
             <translation>Oyunu Başlat</translation>
         </message>
+		<message>
+			<location filename="../main_window_ui.h" line="308"/>
+			<source>Check for Updates</source>
+			<translation>Güncellemeleri kontrol et</translation>
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
@@ -308,11 +313,11 @@
             <source>Themes</source>
             <translation>Temalar</translation>
         </message>
-        <message>
-            <location filename="../main_window_ui.h" line="358"/>
-            <source>About</source>
-            <translation>Hakkında</translation>
-        </message>
+		<message> 
+			<location filename="../main_window_ui.h" line="358"/>
+			<source>Help</source> 
+			<translation>Yardım</translation> 
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
@@ -497,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>RenderDoc Hata Ayıklamayı Etkinleştir</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Güncelle</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Başlangıçta güncellemeleri kontrol et</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Güncellemeleri kontrol et</translation>
+		</message>
     </context>
 	<context>
         <name>MainWindow</name>
@@ -700,13 +720,13 @@
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="155"/>
-        	<source>Confirm Delete</source>
-        	<translation>Silme Onayı</translation>
+        	<source>Delete File</source>
+        	<translation>Dosyayı Sil</translation>
         </message>
         <message>
-        	<location filename="../cheats_patches.cpp" line="156"/>
-        	<source>Are you sure you want to delete the selected cheat?\n%1</source>
-        	<translation>Seçilen hileyi silmek istediğinizden emin misiniz?\n%1</translation>
+        	<location filename="../cheats_patches.cpp" line="169"/>
+        	<source>No files selected.</source>
+        	<translation>Hiçbir dosya seçilmedi.</translation>
         </message>
         <message>
         	<location filename="../cheats_patches.cpp" line="170"/>
@@ -903,85 +923,14 @@
         	<source>Name:</source>
         	<translation>İsim:</translation>
         </message>
-        <message>
-        	<location filename="../cheats_patches.cpp" line="1007"/>
-        	<source>Version:</source>
-        	<translation>Sürüm:</translation>
-        </message>
-        <message>
-        	<location filename="../cheats_patches.cpp" line="1008"/>
-        	<source>Size:</source>
-        	<translation>Boyut:</translation>
-        </message>
-	</context>
-	<context>
-        <name>LangDialog</name>
-        <message>
-        	<location filename="../lang_dialog.cpp" line="23"/>
-        	<source>Language Settings</source>
-        	<translation>Dil Ayarları</translation>
-        </message>
-        <message>
-        	<location filename="../lang_dialog.cpp" line="30"/>
-        	<source>Select Language:</source>
-        	<translation>Dil Seçin:</translation>
-        </message>
-        <message>
-        	<location filename="../lang_dialog.cpp" line="50"/>
-        	<source>Restart Required</source>
-        	<translation>Yeniden Başlatma Gerekiyor</translation>
-        </message>
-        <message>
-        	<location filename="../lang_dialog.cpp" line="51"/>
-        	<source>Changes will take effect after restarting the application.</source>
-        	<translation>Değişiklikler uygulama yeniden başlatıldığında geçerli olacaktır.</translation>
-        </message>
-	</context>
-	<context>
-        <name>SettingsDialog</name>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="40"/>
-        	<source>Settings</source>
-        	<translation>Ayarlar</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="45"/>
-        	<source>General</source>
-        	<translation>Genel</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="49"/>
-        	<source>Cheats</source>
-        	<translation>Hileler</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="52"/>
-        	<source>Update</source>
-        	<translation>Güncelleme</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="55"/>
-        	<source>Save</source>
-        	<translation>Kaydet</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="66"/>
-        	<source>Reset to Default</source>
-        	<translation>Varsayılana Sıfırla</translation>
-        </message>
-        <message>
-        	<location filename="../settings_dialog.cpp" line="73"/>
-        	<source>Apply Changes</source>
-        	<translation>Değişiklikleri Uygula</translation>
-        </message>
 		<message>
 			<location filename="../cheats_patches.cpp" line="1163"/>
 			<source>Can't apply cheats before the game is started</source>
 			<translation>Hileleri oyuna başlamadan önce uygulayamazsınız.</translation>
 		</message>
-	</context>	
+	</context>
 	<context>
-		<name>SettingsDialog</name>
+        <name>SettingsDialog</name>
 		<message>
 			<location filename="../settings_dialog.cpp" line="83"/>
 			<source>Save</source>
@@ -1044,6 +993,179 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Yol</translation>
+		</message>
+	</context>
+	<context>
+		<name>CheckUpdate</name>
+		<message>
+			<location filename="../checkUpdate.cpp" line="34"/>
+			<source>Auto Updater</source>
+			<translation>Otomatik Güncelleyici</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="51"/>
+			<source>Error</source>
+			<translation>Hata</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="52"/>
+			<source>Invalid update channel: </source>
+			<translation>Geçersiz güncelleme kanalı: </translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="53"/>
+			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
+			<translation>config.tml dosyasındaki updateChannel 'stable' veya 'unstable' içermelidir</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="64"/>
+			<source>Network error:</source>
+			<translation>Ağ hatası:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="73"/>
+			<source>Failed to parse update information.</source>
+			<translation>Güncelleme bilgilerini ayrıştırma başarısız oldu.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="89"/>
+			<source>No pre-releases found.</source>
+			<translation>Ön sürüm bulunamadı.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="102"/>
+			<source>Invalid release data.</source>
+			<translation>Geçersiz sürüm verisi.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="142"/>
+			<source>No download URL found for the specified asset.</source>
+			<translation>Belirtilen varlık için hiçbir indirme URL'si bulunamadı.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="148"/>
+			<source>Your version is already up to date!</source>
+			<translation>Versiyonunuz zaten güncel!</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="172"/>
+			<source>Update Available</source>
+			<translation>Güncelleme Mevcut</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="177"/>
+			<source>Current Version</source>
+			<translation>Mevcut Versiyon</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="178"/>
+			<source>Latest Version</source>
+			<translation>Son Versiyon</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="179"/>
+			<source>Do you want to update?</source>
+			<translation>Güncellemek istiyor musunuz?</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="193"/>
+			<source>Show Changelog</source>
+			<translation>Değişiklik Günlüğünü Göster</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="198"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Başlangıçta güncellemeleri kontrol et</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="199"/>
+			<source>Update</source>
+			<translation>Güncelle</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="200"/>
+			<source>No</source>
+			<translation>Hayır</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="223"/>
+			<source>Hide Changelog</source>
+			<translation>Değişiklik Günlüğünü Gizle</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="296"/>
+			<source>Changes</source>
+			<translation>Değişiklikler</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="310"/>
+			<source>Network error occurred while trying to access the URL</source>
+			<translation>URL'ye erişmeye çalışırken bir ağ hatası oluştu</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="330"/>
+			<source>Download Complete</source>
+			<translation>İndirme Tamamlandı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="331"/>
+			<source>The update has been downloaded, press OK to install.</source>
+			<translation>Güncelleme indirildi, yüklemek için Tamam'a basın.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="336"/>
+			<source>Failed to save the update file at</source>
+			<translation>Güncelleme dosyası kaydedilemedi</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="352"/>
+			<source>Failed to open the ZIP file</source>
+			<translation>ZIP dosyası açılamadı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="420"/>
+			<source>File name is empty. Possibly corrupted ZIP.</source>
+			<translation>Dosya adı boş. Muhtemelen ZIP bozuk.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="445"/>
+			<source>Failed to create directory</source>
+			<translation>Direktör oluşturulamadı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="464"/>
+			<source>Error decompressing file</source>
+			<translation>Dosyayı açarken hata</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="487"/>
+			<source>Failed to open output file</source>
+			<translation>Çıktı dosyası açılamadı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="497"/>
+			<source>Unsupported compression method for file:</source>
+			<translation>Dosya için desteklenmeyen sıkıştırma yöntemi:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="510"/>
+			<source>Failed to create TAR extraction directory</source>
+			<translation>TAR çıkartma dizini oluşturulamadı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="525"/>
+			<source>Failed to extract the TAR file</source>
+			<translation>TAR dosyası çıkarılamadı</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="545"/>
+			<source>Starting Update...</source>
+			<translation>Güncelleme Başlatılıyor...</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="619"/>
+			<source>Failed to create the update script file</source>
+			<translation>Güncelleme betiği dosyası oluşturulamadı</translation>
 		</message>
 	</context>
 </TS>

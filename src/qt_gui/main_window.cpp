@@ -6,6 +6,7 @@
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
+#include "check_update.h"
 #include "common/io_file.h"
 #include "common/string_util.h"
 #include "common/version.h"
@@ -46,6 +47,7 @@ bool MainWindow::Init() {
     this->show();
     // load game list
     LoadGameLists();
+    CheckUpdateMain(true);
 
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -160,6 +162,16 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::CheckUpdateMain(bool checkSave) {
+    if (checkSave) {
+        if (!Config::autoUpdate()) {
+            return;
+        }
+    }
+    auto checkUpdate = new CheckUpdate(false);
+    checkUpdate->exec();
+}
+
 void MainWindow::GetPhysicalDevices() {
     Vulkan::Instance instance(false, false);
     auto physical_devices = instance.GetPhysicalDevices();
@@ -219,6 +231,11 @@ void MainWindow::CreateConnects() {
                 &MainWindow::OnLanguageChanged);
 
         settingsDialog->exec();
+    });
+
+    connect(ui->updaterAct, &QAction::triggered, this, [this]() {
+        auto checkUpdate = new CheckUpdate(true);
+        checkUpdate->exec();
     });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
@@ -876,6 +893,10 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
+    ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));
+    ui->downloadCheatsPatchesAct->setIcon(
+        RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
+    ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));

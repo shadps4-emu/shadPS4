@@ -17,10 +17,12 @@ static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto
 static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
+static std::string updateChannel = "stable";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
 static bool isShowSplash = false;
+static bool isAutoUpdate = false;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool shouldDumpShaders = false;
@@ -86,6 +88,10 @@ std::string getUserName() {
     return userName;
 }
 
+std::string getUpdateChannel() {
+    return updateChannel;
+}
+
 bool getUseSpecialPad() {
     return useSpecialPad;
 }
@@ -100,6 +106,10 @@ bool debugDump() {
 
 bool showSplash() {
     return isShowSplash;
+}
+
+bool autoUpdate() {
+    return isAutoUpdate;
 }
 
 bool nullGpu() {
@@ -170,6 +180,10 @@ void setShowSplash(bool enable) {
     isShowSplash = enable;
 }
 
+void setAutoUpdate(bool enable) {
+    isAutoUpdate = enable;
+}
+
 void setNullGpu(bool enable) {
     isNullGpu = enable;
 }
@@ -224,6 +238,10 @@ void setLogFilter(const std::string& type) {
 
 void setUserName(const std::string& type) {
     userName = type;
+}
+
+void setUpdateChannel(const std::string& type) {
+    updateChannel = type;
 }
 
 void setUseSpecialPad(bool use) {
@@ -364,7 +382,9 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
+        updateChannel = toml::find_or<std::string>(general, "updateChannel", "stable");
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
+        isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
     }
 
     if (data.contains("Input")) {
@@ -456,7 +476,9 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
+    data["General"]["updateChannel"] = updateChannel;
     data["General"]["showSplash"] = isShowSplash;
+    data["General"]["autoUpdate"] = isAutoUpdate;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["GPU"]["screenWidth"] = screenWidth;
@@ -507,10 +529,12 @@ void setDefaultValues() {
     logFilter = "";
     logType = "async";
     userName = "shadPS4";
+    updateChannel = "stable";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
     isShowSplash = false;
+    isAutoUpdate = false;
     isNullGpu = false;
     shouldDumpShaders = false;
     shouldDumpPM4 = false;

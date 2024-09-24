@@ -169,6 +169,11 @@
             <translation>Iniciar Jogo</translation>
         </message>
         <message>
+            <location filename="../main_window_ui.h" line="308"/>
+            <source>Check for Updates</source>
+            <translation>Verificar atualizações</translation>
+        </message>
+        <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
             <translation>Sobre o shadPS4</translation>
@@ -310,8 +315,8 @@
         </message>
         <message>
             <location filename="../main_window_ui.h" line="358"/>
-            <source>About</source>
-            <translation>Sobre</translation>
+            <source>Help</source>
+            <translation>Ajuda</translation>
         </message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
@@ -496,6 +501,21 @@
             <location filename="../settings_dialog.ui" line="574"/>
             <source>Enable RenderDoc Debugging</source>
             <translation>Ativar Depuração por RenderDoc</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="274"/>
+            <source>Update</source>
+            <translation>Atualização</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="286"/>
+            <source>Check for Updates at Startup</source>
+            <translation>Verificar Atualizações ao Iniciar</translation>
+        </message>
+        <message>
+            <location filename="../settings_dialog.ui" line="322"/>
+            <source>Check for Updates</source>
+            <translation>Verificar atualizações</translation>
         </message>
     </context>
 	<context>
@@ -975,4 +995,177 @@
         	<translation>Diretório</translation>
         </message>
 	</context>
+    <context>
+        <name>CheckUpdate</name>
+        <message>
+            <location filename="../checkUpdate.cpp" line="34"/>
+            <source>Auto Updater</source>
+            <translation>Atualizador automático</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="51"/>
+            <source>Error</source>
+            <translation>Erro</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="52"/>
+            <source>Invalid update channel: </source>
+            <translation>Canal de atualização inválido: </translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="53"/>
+            <source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
+            <translation>No arquivo config.tml, updateChannel deve conter apenas 'stable' ou 'unstable'</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="64"/>
+            <source>Network error:</source>
+            <translation>Erro de rede:</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="73"/>
+            <source>Failed to parse update information.</source>
+            <translation>Falha ao analisar as informações de atualização.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="89"/>
+            <source>No pre-releases found.</source>
+            <translation>Nenhuma pre-release encontrada.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="102"/>
+            <source>Invalid release data.</source>
+            <translation>Dados da release inválidos.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="142"/>
+            <source>No download URL found for the specified asset.</source>
+            <translation>Nenhuma URL de download encontrada para o asset especificado.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="148"/>
+            <source>Your version is already up to date!</source>
+            <translation>Sua versão já está atualizada!</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="172"/>
+            <source>Update Available</source>
+            <translation>Atualização disponível</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="177"/>
+            <source>Current Version</source>
+            <translation>Versão atual</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="178"/>
+            <source>Latest Version</source>
+            <translation>Última versão</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="179"/>
+            <source>Do you want to update?</source>
+            <translation>Você quer atualizar?</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="193"/>
+            <source>Show Changelog</source>
+            <translation>Mostrar Changelog</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="198"/>
+            <source>Check for Updates at Startup</source>
+            <translation>Verificar Atualizações ao Iniciar</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="199"/>
+            <source>Update</source>
+            <translation>Atualizar</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="200"/>
+            <source>No</source>
+            <translation>Não</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="223"/>
+            <source>Hide Changelog</source>
+            <translation>Ocultar Changelog</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="296"/>
+            <source>Changes</source>
+            <translation>Alterações</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="310"/>
+            <source>Network error occurred while trying to access the URL</source>
+            <translation>Ocorreu um erro de rede ao tentar acessar o URL</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="330"/>
+            <source>Download Complete</source>
+            <translation>Download Completo</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="331"/>
+            <source>The update has been downloaded, press OK to install.</source>
+            <translation>A atualização foi baixada, pressione OK para instalar.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="336"/>
+            <source>Failed to save the update file at</source>
+            <translation>Falha ao salvar o arquivo de atualização em</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="352"/>
+            <source>Failed to open the ZIP file</source>
+            <translation>Falha ao abrir o arquivo ZIP</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="420"/>
+            <source>File name is empty. Possibly corrupted ZIP.</source>
+            <translation>O nome do arquivo está vazio. Possivelmente ZIP corrompido.</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="445"/>
+            <source>Failed to create directory</source>
+            <translation>Falha ao criar o diretório</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="464"/>
+            <source>Error decompressing file</source>
+            <translation>Erro ao descompactar arquivo</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="487"/>
+            <source>Failed to open output file</source>
+            <translation>Falha ao abrir o arquivo de saída</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="497"/>
+            <source>Unsupported compression method for file:</source>
+            <translation>Método de compactação não suportado para arquivo:</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="510"/>
+            <source>Failed to create TAR extraction directory</source>
+            <translation>Falha ao criar diretório de extração TAR</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="525"/>
+            <source>Failed to extract the TAR file</source>
+            <translation>Falha ao extrair o arquivo TAR</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="545"/>
+            <source>Starting Update...</source>
+            <translation>Iniciando atualização...</translation>
+        </message>
+        <message>
+            <location filename="../checkUpdate.cpp" line="619"/>
+            <source>Failed to create the update script file</source>
+            <translation>Falha ao criar o arquivo de script de atualização</translation>
+        </message>
+    </context>
 </TS>

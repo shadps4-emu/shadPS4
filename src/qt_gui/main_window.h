@@ -54,6 +54,7 @@ private:
     void CreateDockWindows();
     void GetPhysicalDevices();
     void LoadGameLists();
+    void CheckUpdateMain(bool checkSave);
     void CreateConnects();
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
