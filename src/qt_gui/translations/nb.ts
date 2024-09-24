@@ -1029,8 +1029,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="89"/>
-			<source>No releases found.</source>
-			<translation>Ingen utgivelser funnet.</translation>
+			<source>No pre-releases found.</source>
+			<translation>Fant ingen forhåndsutgivelser.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="102"/>

@@ -1029,8 +1029,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="89"/>
-			<source>No releases found.</source>
-			<translation>Không tìm thấy bản phát hành nào.</translation>
+			<source>No pre-releases found.</source>
+			<translation>Không tìm thấy bản phát hành trước.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="102"/>

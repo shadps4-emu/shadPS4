@@ -1029,8 +1029,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="89"/>
-			<source>No releases found.</source>
-			<translation>Nincs kiadás található.</translation>
+			<source>No pre-releases found.</source>
+			<translation>Nem található előzetes kiadás.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="102"/>

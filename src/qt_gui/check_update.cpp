@@ -41,7 +41,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
     QUrl url;
 
     if (updateChannel == "unstable") {
-        url = QUrl("https://api.github.com/repos/DanielSvoboda/shadPS4/releases?per_page=1");
+        url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases");
     } else if (updateChannel == "stable") {
         url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases/latest");
     } else {
@@ -77,27 +77,61 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
         QString latestVersion;
         QString latestRev;
         QString latestDate;
+        QString platformString;
+
+#ifdef Q_OS_WIN
+        platformString = "win64-qt";
+#elif defined(Q_OS_LINUX)
+        platformString = "linux-qt";
+#elif defined(Q_OS_MAC)
+        platformString = "macos-qt";
+#endif
 
         QJsonObject jsonObj;
-        if (jsonDoc.isArray()) {
+        if (updateChannel == "unstable") {
             QJsonArray jsonArray = jsonDoc.array();
-            if (!jsonArray.isEmpty()) {
-                jsonObj = jsonArray.first().toObject();
+            for (const QJsonValue& value : jsonArray) {
+                jsonObj = value.toObject();
+                if (jsonObj.contains("prerelease") && jsonObj["prerelease"].toBool()) {
+                    break;
+                }
+            }
+            if (!jsonObj.isEmpty()) {
+                latestVersion = jsonObj["tag_name"].toString();
             } else {
-                QMessageBox::warning(this, tr("Error"), tr("No releases found."));
+                QMessageBox::warning(this, tr("Error"), tr("No pre-releases found."));
                 reply->deleteLater();
                 return;
             }
         } else {
             jsonObj = jsonDoc.object();
+            if (jsonObj.contains("tag_name")) {
+                latestVersion = jsonObj["tag_name"].toString();
+            } else {
+                QMessageBox::warning(this, tr("Error"), tr("Invalid release data."));
+                reply->deleteLater();
+                return;
+            }
         }
 
-        if (jsonObj.contains("tag_name")) {
-            latestVersion = jsonObj["tag_name"].toString();
-            latestRev = latestVersion.right(7);
-            latestDate = jsonObj["published_at"].toString();
-        } else {
-            QMessageBox::warning(this, tr("Error"), tr("Invalid release data."));
+        latestRev = latestVersion.right(7);
+        latestDate = jsonObj["published_at"].toString();
+
+        QJsonArray assets = jsonObj["assets"].toArray();
+        bool found = false;
+
+        for (const QJsonValue& assetValue : assets) {
+            QJsonObject assetObj = assetValue.toObject();
+            if (assetObj["name"].toString().contains(platformString)) {
+                downloadUrl = assetObj["browser_download_url"].toString();
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            QMessageBox::warning(this, tr("Error"),
+                                 tr("No download URL found for the specified asset."));
             reply->deleteLater();
             return;
         }
@@ -107,30 +141,6 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
         latestDate = dateTime.isValid() ? dateTime.toString("yyyy-MM-dd HH:mm:ss") : "Unknown date";
-
-        QJsonArray assets = jsonObj["assets"].toArray();
-        bool found = false;
-        for (const QJsonValue& assetValue : assets) {
-            QJsonObject assetObj = assetValue.toObject();
-
-            QString platformString;
-#ifdef Q_OS_WIN
-            platformString = "win64-qt";
-#elif defined(Q_OS_LINUX)
-            platformString = "linux-qt";
-#elif defined(Q_OS_MAC)
-            platformString = "macos-qt";
-#endif
-            if (assetObj["name"].toString().contains(platformString)) {
-                downloadUrl = assetObj["browser_download_url"].toString();
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            QMessageBox::warning(this, tr("Error"),
-                                 tr("No download URL found for the specified asset."));
-        }
 
         if (latestRev == currentRev) {
             if (showMessage) {
@@ -196,7 +206,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     } else {
         QTextEdit* textField = new QTextEdit(this);
         textField->setReadOnly(true);
-        textField->setFixedWidth(400);
+        textField->setFixedWidth(500);
         textField->setFixedHeight(200);
         textField->setVisible(false);
         layout->addWidget(textField);
@@ -244,7 +254,7 @@ void CheckUpdate::requestChangelog(const QString& currentRev, const QString& lat
                                    const QString& downloadUrl, const QString& latestDate,
                                    const QString& currentDate) {
     QString compareUrlString =
-        QString("https://api.github.com/repos/DanielSvoboda/shadPS4/compare/%1...%2")
+        QString("https://api.github.com/repos/shadps4-emu/shadPS4/compare/%1...%2")
             .arg(currentRev)
             .arg(latestRev);
 

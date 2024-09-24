@@ -1029,8 +1029,8 @@
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="89"/>
-			<source>No releases found.</source>
-			<translation>Δεν βρέθηκαν εκδόσεις.</translation>
+			<source>No pre-releases found.</source>
+			<translation>Δεν βρέθηκαν προ-κυκλοφορίες.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="102"/>
