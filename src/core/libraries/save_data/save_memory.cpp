@@ -190,14 +190,19 @@ void SetIcon(void* buf, size_t buf_size) {
     if (buf == nullptr) {
         const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
         if (fs::exists(src_icon)) {
+            if (fs::exists(g_icon_path)) {
+                fs::remove(g_icon_path);
+            }
             fs::copy_file(src_icon, g_icon_path);
         }
-        IOFile file(g_icon_path, Common::FS::FileAccessMode::Read);
-        size_t size = file.GetSize();
-        file.Seek(0);
-        g_icon_memory.resize(size);
-        file.ReadRaw<u8>(g_icon_memory.data(), size);
-        file.Close();
+        if (fs::exists(g_icon_path)) {
+            IOFile file(g_icon_path, Common::FS::FileAccessMode::Read);
+            size_t size = file.GetSize();
+            file.Seek(0);
+            g_icon_memory.resize(size);
+            file.ReadRaw<u8>(g_icon_memory.data(), size);
+            file.Close();
+        }
     } else {
         g_icon_memory.resize(buf_size);
         std::memcpy(g_icon_memory.data(), buf, buf_size);
