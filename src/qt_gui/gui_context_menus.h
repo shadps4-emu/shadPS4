@@ -68,7 +68,7 @@ public:
 
         menu.addMenu(copyMenu);
 
-        // "Delete" submenu.
+        // "Delete..." submenu.
         QMenu* deleteMenu = new QMenu(tr("Delete..."), widget);
         QAction* deleteGame = new QAction(tr("Delete Game"), widget);
         QAction* deleteUpdate = new QAction(tr("Delete Update"), widget);
