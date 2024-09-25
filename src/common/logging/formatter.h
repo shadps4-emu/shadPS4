@@ -29,15 +29,12 @@ struct UTF {
         data = T{(const char*)&view.front(), (const char*)&view.back()};
     }
 
-    explicit UTF(const std::u8string& str)
-        : UTF(std::u8string_view{str}) {
-    }
+    explicit UTF(const std::u8string& str) : UTF(std::u8string_view{str}) {}
 };
-}
+} // namespace fmt
 
 template <>
-struct fmt::formatter<fmt::UTF<std::string_view>, char>
-    : formatter<std::string_view> {
+struct fmt::formatter<fmt::UTF<std::string_view>, char> : formatter<std::string_view> {
     template <typename FormatContext>
     auto format(const UTF<std::string_view>& wrapper, FormatContext& ctx) const {
         return formatter<std::string_view>::format(wrapper.data, ctx);

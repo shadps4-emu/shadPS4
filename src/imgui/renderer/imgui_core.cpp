@@ -52,13 +52,15 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
 
-    using native_char = std::filesystem::path::value_type;
-    io.IniFilename = new char[config_path.native().size() * sizeof(native_char)];
-    io.LogFilename = new char[log_path.native().size() * sizeof(native_char)];
-    std::memcpy((void*)io.IniFilename, config_path.native().c_str(),
-                config_path.native().size() * sizeof(native_char));
-    std::memcpy((void*)io.LogFilename, log_path.native().c_str(),
-                log_path.native().size() * sizeof(native_char));
+    auto path = config_path.u8string();
+    char* config_file_buf = new char[path.size() + 1]();
+    std::memcpy(config_file_buf, path.c_str(), path.size());
+    io.IniFilename = config_file_buf;
+
+    path = log_path.u8string();
+    char* log_file_buf = new char[path.size() + 1]();
+    std::memcpy(log_file_buf, path.c_str(), path.size());
+    io.LogFilename = log_file_buf;
 
     ImFontGlyphRangesBuilder rb{};
     rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
@@ -116,8 +118,8 @@ void Shutdown(const vk::Device& device) {
     Sdl::Shutdown();
     DestroyContext();
 
-    SDL_free(ini_filename);
-    SDL_free(log_filename);
+    delete[] (char*)ini_filename;
+    delete[] (char*)log_filename;
 }
 
 bool ProcessEvent(SDL_Event* event) {
