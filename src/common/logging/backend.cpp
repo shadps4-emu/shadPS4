@@ -142,6 +142,10 @@ public:
         instance = std::unique_ptr<Impl, decltype(&Deleter)>(new Impl(log_dir / LOG_FILE, filter),
                                                              Deleter);
         initialization_in_progress_suppress_logging = false;
+#ifdef WIN32
+        // set console codepage to UTF-8
+        SetConsoleOutputCP(65001);
+#endif
     }
 
     static bool IsActive() {
