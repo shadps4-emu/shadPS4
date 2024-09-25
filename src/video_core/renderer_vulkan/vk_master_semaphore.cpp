@@ -19,10 +19,11 @@ MasterSemaphore::MasterSemaphore(const Instance& instance_) : instance{instance_
             .initialValue = 0,
         },
     };
-    auto result = instance.GetDevice().createSemaphoreUnique(semaphore_chain.get());
-    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to create master semaphore: {}",
-               vk::to_string(result.result));
-    semaphore = std::move(result.value);
+    auto [semaphore_result, sem] =
+        instance.GetDevice().createSemaphoreUnique(semaphore_chain.get());
+    ASSERT_MSG(semaphore_result == vk::Result::eSuccess, "Failed to create master semaphore: {}",
+               vk::to_string(semaphore_result));
+    semaphore = std::move(sem);
 }
 
 MasterSemaphore::~MasterSemaphore() = default;
@@ -32,11 +33,10 @@ void MasterSemaphore::Refresh() {
     u64 counter{};
     do {
         this_tick = gpu_tick.load(std::memory_order_acquire);
-        auto counter_result = instance.GetDevice().getSemaphoreCounterValue(*semaphore);
-        ASSERT_MSG(counter_result.result == vk::Result::eSuccess,
-                   "Failed to get master semaphore value: {}",
-                   vk::to_string(counter_result.result));
-        counter = counter_result.value;
+        auto [counter_result, cntr] = instance.GetDevice().getSemaphoreCounterValue(*semaphore);
+        ASSERT_MSG(counter_result == vk::Result::eSuccess,
+                   "Failed to get master semaphore value: {}", vk::to_string(counter_result));
+        counter = cntr;
         if (counter < this_tick) {
             return;
         }

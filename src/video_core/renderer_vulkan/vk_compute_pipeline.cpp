@@ -78,12 +78,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    auto descriptor_set_result =
+    auto [descriptor_set_result, descriptor_set] =
         instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-    ASSERT_MSG(descriptor_set_result.result == vk::Result::eSuccess,
+    ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
                "Failed to create compute descriptor set layout: {}",
-               vk::to_string(descriptor_set_result.result));
-    desc_layout = std::move(descriptor_set_result.value);
+               vk::to_string(descriptor_set_result));
+    desc_layout = std::move(descriptor_set);
 
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
@@ -92,20 +92,20 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pushConstantRangeCount = 1U,
         .pPushConstantRanges = &push_constants,
     };
-    auto layout_result = instance.GetDevice().createPipelineLayoutUnique(layout_info);
-    ASSERT_MSG(layout_result.result == vk::Result::eSuccess,
-               "Failed to create compute pipeline layout: {}", vk::to_string(layout_result.result));
-    pipeline_layout = std::move(layout_result.value);
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
+    pipeline_layout = std::move(layout);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
         .layout = *pipeline_layout,
     };
-    auto pipeline_result =
+    auto [pipeline_result, pipe] =
         instance.GetDevice().createComputePipelineUnique(pipeline_cache, compute_pipeline_ci);
-    ASSERT_MSG(pipeline_result.result == vk::Result::eSuccess,
-               "Failed to create compute pipeline: {}", vk::to_string(pipeline_result.result));
-    pipeline = std::move(pipeline_result.value);
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
+               vk::to_string(pipeline_result));
+    pipeline = std::move(pipe);
 }
 
 ComputePipeline::~ComputePipeline() = default;

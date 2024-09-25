@@ -24,22 +24,22 @@ namespace Vulkan {
 namespace {
 
 std::vector<vk::PhysicalDevice> EnumeratePhysicalDevices(vk::UniqueInstance& instance) {
-    auto devices_result = instance->enumeratePhysicalDevices();
-    ASSERT_MSG(devices_result.result == vk::Result::eSuccess,
-               "Failed to enumerate physical devices: {}", vk::to_string(devices_result.result));
-    return std::move(devices_result.value);
+    auto [devices_result, devices] = instance->enumeratePhysicalDevices();
+    ASSERT_MSG(devices_result == vk::Result::eSuccess, "Failed to enumerate physical devices: {}",
+               vk::to_string(devices_result));
+    return std::move(devices);
 }
 
 std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
-    const auto extensions = physical.enumerateDeviceExtensionProperties();
-    if (extensions.result != vk::Result::eSuccess) {
+    const auto [extensions_result, extensions] = physical.enumerateDeviceExtensionProperties();
+    if (extensions_result != vk::Result::eSuccess) {
         LOG_ERROR(Render_Vulkan, "Could not query supported extensions: {}",
-                  vk::to_string(extensions.result));
+                  vk::to_string(extensions_result));
         return {};
     }
     std::vector<std::string> supported_extensions;
-    supported_extensions.reserve(extensions.value.size());
-    for (const auto& extension : extensions.value) {
+    supported_extensions.reserve(extensions.size());
+    for (const auto& extension : extensions) {
         supported_extensions.emplace_back(extension.extensionName.data());
     }
     return supported_extensions;
@@ -433,13 +433,12 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
     }
 
-    auto device_result = physical_device.createDeviceUnique(device_chain.get());
-    if (device_result.result != vk::Result::eSuccess) {
-        LOG_CRITICAL(Render_Vulkan, "Failed to create device: {}",
-                     vk::to_string(device_result.result));
+    auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
+    if (device_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan, "Failed to create device: {}", vk::to_string(device_result));
         return false;
     }
-    device = std::move(device_result.value);
+    device = std::move(dev);
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
 
@@ -447,9 +446,9 @@ bool Instance::CreateDevice() {
     present_queue = device->getQueue(queue_family_index, 0);
 
     if (calibrated_timestamps) {
-        const auto& time_domains_result = physical_device.getCalibrateableTimeDomainsEXT();
-        if (time_domains_result.result == vk::Result::eSuccess) {
-            const auto& time_domains = time_domains_result.value;
+        const auto [time_domains_result, time_domains] =
+            physical_device.getCalibrateableTimeDomainsEXT();
+        if (time_domains_result == vk::Result::eSuccess) {
 #if _WIN64
             const bool has_host_time_domain =
                 std::find(time_domains.cbegin(), time_domains.cend(),
@@ -473,7 +472,7 @@ bool Instance::CreateDevice() {
             }
         } else {
             LOG_WARNING(Render_Vulkan, "Could not query calibrated time domains for profiling: {}",
-                        vk::to_string(time_domains_result.result));
+                        vk::to_string(time_domains_result));
         }
     }
 
@@ -529,13 +528,13 @@ void Instance::CollectToolingInfo() {
     if (!tooling_info) {
         return;
     }
-    const auto tools = physical_device.getToolPropertiesEXT();
-    if (tools.result != vk::Result::eSuccess) {
+    const auto [tools_result, tools] = physical_device.getToolPropertiesEXT();
+    if (tools_result != vk::Result::eSuccess) {
         LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",
-                  vk::to_string(tools.result));
+                  vk::to_string(tools_result));
         return;
     }
-    for (const vk::PhysicalDeviceToolProperties& tool : tools.value) {
+    for (const vk::PhysicalDeviceToolProperties& tool : tools) {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
         has_renderdoc = has_renderdoc || name == "RenderDoc";
