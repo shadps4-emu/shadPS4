@@ -22,12 +22,12 @@ public:
         return a.name < b.name;
     }
 
-    static GameInfo readGameInfo(const std::string& filePath) {
+    static GameInfo readGameInfo(const std::filesystem::path& filePath) {
         GameInfo game;
         game.path = filePath;
 
         PSF psf;
-        if (psf.Open(std::filesystem::path(game.path) / "sce_sys" / "param.sfo")) {
+        if (psf.Open(game.path / "sce_sys" / "param.sfo")) {
             game.icon_path = game.path / "sce_sys" / "icon0.png";
             QString iconpath;
             Common::FS::PathToQString(iconpath, game.icon_path);

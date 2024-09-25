@@ -107,14 +107,16 @@ static void BackupThreadBody() {
         }
         g_backup_status = WorkerStatus::Running;
 
-        LOG_INFO(Lib_SaveData, "Backing up the following directory: {}", req.save_path.string());
+        LOG_INFO(Lib_SaveData, "Backing up the following directory: {}",
+                 fmt::UTF(req.save_path.u8string()));
         try {
             backup(req.save_path);
         } catch (const std::filesystem::filesystem_error& err) {
-            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", req.save_path.string(), err.what());
+            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", fmt::UTF(req.save_path.u8string()),
+                      err.what());
         }
         LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
-                  req.save_path.string());
+                  fmt::UTF(req.save_path.u8string()));
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
@@ -160,7 +162,7 @@ bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
 
     if (g_backup_status != WorkerStatus::Waiting && g_backup_status != WorkerStatus::Running) {
         LOG_ERROR(Lib_SaveData, "Called backup while status is {}. Backup request to {} ignored",
-                  magic_enum::enum_name(g_backup_status.load()), save_path.string());
+                  magic_enum::enum_name(g_backup_status.load()), fmt::UTF(save_path.u8string()));
         return false;
     }
     {
@@ -184,7 +186,7 @@ bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
 }
 
 bool Restore(const std::filesystem::path& save_path) {
-    LOG_INFO(Lib_SaveData, "Restoring backup for {}", save_path.string());
+    LOG_INFO(Lib_SaveData, "Restoring backup for {}", fmt::UTF(save_path.u8string()));
     std::unique_lock lk{g_backup_running_mutex};
     if (!fs::exists(save_path) || !fs::exists(save_path / backup_dir)) {
         return false;

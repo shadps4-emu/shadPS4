@@ -77,7 +77,7 @@ static void SaveFileSafe(void* buf, size_t count, const std::filesystem::path& p
         g_saving_memory = true;
         std::scoped_lock lk{g_saving_memory_mutex};
         try {
-            LOG_DEBUG(Lib_SaveData, "Saving save data memory {}", g_save_path.string());
+            LOG_DEBUG(Lib_SaveData, "Saving save data memory {}", fmt::UTF(g_save_path.u8string()));
 
             if (g_memory_dirty) {
                 g_memory_dirty = false;
@@ -163,7 +163,8 @@ size_t CreateSaveMemory(size_t memory_size) {
 
         bool ok = g_param_sfo.Open(g_param_sfo_path);
         if (!ok) {
-            LOG_ERROR(Lib_SaveData, "Failed to open SFO at {}", g_param_sfo_path.string());
+            LOG_ERROR(Lib_SaveData, "Failed to open SFO at {}",
+                      fmt::UTF(g_param_sfo_path.u8string()));
             throw std::filesystem::filesystem_error(
                 "failed to open SFO", g_param_sfo_path,
                 std::make_error_code(std::errc::illegal_byte_sequence));

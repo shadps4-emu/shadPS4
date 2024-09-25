@@ -21,7 +21,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
         }
     }
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
-                  return readGameInfo(path.toStdString());
+                  return readGameInfo(Common::FS::PathFromQString(path));
               }).results();
 
     // Progress bar, please be patient :)
