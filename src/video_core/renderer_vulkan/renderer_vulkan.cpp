@@ -33,8 +33,8 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
     };
 }
 
-[[nodiscard]] vk::ImageBlit MakeImageBlit(s32 frame_width, s32 frame_height, s32 swapchain_width,
-                                          s32 swapchain_height) {
+[[nodiscard]] vk::ImageBlit MakeImageBlit(s32 frame_width, s32 frame_height, s32 dst_width,
+                                          s32 dst_height, s32 offset_x, s32 offset_y) {
     return vk::ImageBlit{
         .srcSubresource = MakeImageSubresourceLayers(),
         .srcOffsets =
@@ -54,17 +54,42 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice physical_device, vk::Format for
         .dstOffsets =
             std::array{
                 vk::Offset3D{
-                    .x = 0,
-                    .y = 0,
+                    .x = offset_x,
+                    .y = offset_y,
                     .z = 0,
                 },
                 vk::Offset3D{
-                    .x = swapchain_width,
-                    .y = swapchain_height,
+                    .x = offset_x + dst_width,
+                    .y = offset_y + dst_height,
                     .z = 1,
                 },
             },
     };
+}
+
+[[nodiscard]] vk::ImageBlit MakeImageBlitStretch(s32 frame_width, s32 frame_height,
+                                                 s32 swapchain_width, s32 swapchain_height) {
+    return MakeImageBlit(frame_width, frame_height, swapchain_width, swapchain_height, 0, 0);
+}
+
+[[nodiscard]] vk::ImageBlit MakeImageBlitFit(s32 frame_width, s32 frame_height, s32 swapchain_width,
+                                             s32 swapchain_height) {
+    float frame_aspect = static_cast<float>(frame_width) / frame_height;
+    float swapchain_aspect = static_cast<float>(swapchain_width) / swapchain_height;
+
+    s32 dst_width = swapchain_width;
+    s32 dst_height = swapchain_height;
+
+    if (frame_aspect > swapchain_aspect) {
+        dst_height = static_cast<s32>(swapchain_width / frame_aspect);
+    } else {
+        dst_width = static_cast<s32>(swapchain_height * frame_aspect);
+    }
+
+    s32 offset_x = (swapchain_width - dst_width) / 2;
+    s32 offset_y = (swapchain_height - dst_height) / 2;
+
+    return MakeImageBlit(frame_width, frame_height, dst_width, dst_height, offset_x, offset_y);
 }
 
 RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
@@ -234,11 +259,24 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
                            vk::PipelineStageFlagBits::eTransfer, vk::DependencyFlagBits::eByRegion,
                            {}, {}, pre_barrier);
 
+    // Clear the frame image before blitting to avoid artifacts.
+    const vk::ClearColorValue clear_color{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
+    const vk::ImageSubresourceRange clear_range{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+    cmdbuf.clearColorImage(frame->image, vk::ImageLayout::eTransferDstOptimal, clear_color,
+                           clear_range);
+
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
-    cmdbuf.blitImage(
-        image.image, image.last_state.layout, frame->image, vk::ImageLayout::eTransferDstOptimal,
-        MakeImageBlit(image.info.size.width, image.info.size.height, frame->width, frame->height),
-        vk::Filter::eLinear);
+    cmdbuf.blitImage(image.image, image.last_state.layout, frame->image,
+                     vk::ImageLayout::eTransferDstOptimal,
+                     MakeImageBlitFit(image.info.size.width, image.info.size.height, frame->width,
+                                      frame->height),
+                     vk::Filter::eLinear);
 
     const vk::ImageMemoryBarrier post_barrier{
         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
@@ -269,6 +307,12 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 }
 
 void RendererVulkan::Present(Frame* frame) {
+    // Recreate the swapchain if the window was resized.
+    if (window.getWidth() != swapchain.GetExtent().width ||
+        window.getHeight() != swapchain.GetExtent().height) {
+        swapchain.Recreate(window.getWidth(), window.getHeight());
+    }
+
     ImGui::Core::NewFrame();
 
     swapchain.AcquireNextImage();
@@ -341,10 +385,11 @@ void RendererVulkan::Present(Frame* frame) {
                                vk::PipelineStageFlagBits::eTransfer,
                                vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
-        cmdbuf.blitImage(frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
-                         vk::ImageLayout::eTransferDstOptimal,
-                         MakeImageBlit(frame->width, frame->height, extent.width, extent.height),
-                         vk::Filter::eLinear);
+        cmdbuf.blitImage(
+            frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
+            vk::ImageLayout::eTransferDstOptimal,
+            MakeImageBlitStretch(frame->width, frame->height, extent.width, extent.height),
+            vk::Filter::eLinear);
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                                vk::PipelineStageFlagBits::eAllCommands,
