@@ -366,7 +366,7 @@ void Linker::InitTlsForThread(bool is_primary) {
                 // TODO: Properly log thread handle on assert.
                 auto pth_id = pthread_self();
                 ASSERT_MSG(addr_out, "Cannot allocate TLS block of size = {:#x} for thread {}", 
-                                                                    total_tls_size, pth_id);
+                           total_tls_size, pth_id);
             }
 #endif
         } else {
