@@ -134,6 +134,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             auto checkUpdate = new CheckUpdate(true);
             checkUpdate->exec();
         });
+
         connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setPlayBGM(val); });
     }
