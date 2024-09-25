@@ -30,11 +30,12 @@ public:
     std::string GetDriverVersionName();
 
     /// Gets a compatibility format if the format is not supported.
-    [[nodiscard]] vk::Format GetSupportedFormat(vk::Format format) const;
+    [[nodiscard]] vk::Format GetSupportedFormat(vk::Format format,
+                                                vk::FormatFeatureFlags2 flags) const;
 
     /// Re-orders a component swizzle for format compatibility, if needed.
     [[nodiscard]] vk::ComponentMapping GetSupportedComponentSwizzle(
-        vk::Format format, vk::ComponentMapping swizzle) const;
+        vk::Format format, vk::ComponentMapping swizzle, vk::FormatFeatureFlags2 flags) const;
 
     /// Returns the Vulkan instance
     vk::Instance GetInstance() const {
@@ -245,14 +246,8 @@ private:
     void CollectDeviceParameters();
     void CollectToolingInfo();
 
-    /// Determines if a format is supported for images.
-    [[nodiscard]] bool IsImageFormatSupported(vk::Format format) const;
-
-    /// Determines if a format is supported for vertex buffers.
-    [[nodiscard]] bool IsVertexFormatSupported(vk::Format format) const;
-
-    /// Gets a commonly available alternative for an unsupported pixel format.
-    vk::Format GetAlternativeFormat(const vk::Format format) const;
+    /// Determines if a format is supported for a set of feature flags.
+    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
 private:
     vk::UniqueInstance instance;

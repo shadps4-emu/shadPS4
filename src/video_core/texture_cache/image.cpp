@@ -86,6 +86,28 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     return usage;
 }
 
+static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usage_flags) {
+    vk::FormatFeatureFlags2 feature_flags{};
+    if (usage_flags & vk::ImageUsageFlagBits::eTransferSrc) {
+        feature_flags |= vk::FormatFeatureFlagBits2::eTransferSrc;
+    }
+    if (usage_flags & vk::ImageUsageFlagBits::eTransferDst) {
+        feature_flags |= vk::FormatFeatureFlagBits2::eTransferDst;
+    }
+    if (usage_flags & vk::ImageUsageFlagBits::eSampled) {
+        feature_flags |= vk::FormatFeatureFlagBits2::eSampledImage;
+    }
+    if (usage_flags & vk::ImageUsageFlagBits::eColorAttachment) {
+        feature_flags |= vk::FormatFeatureFlagBits2::eColorAttachment;
+    }
+    if (usage_flags & vk::ImageUsageFlagBits::eDepthStencilAttachment) {
+        feature_flags |= vk::FormatFeatureFlagBits2::eDepthStencilAttachment;
+    }
+    // Note: StorageImage is intentionally ignored for now since it is always set, and can mess up
+    // compatibility checks.
+    return feature_flags;
+}
+
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
     : device{device_}, allocator{allocator_} {}
 
@@ -132,6 +154,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
 
     usage = ImageUsageFlags(info);
+    format_features = FormatFeatureFlags(usage);
 
     switch (info.pixel_format) {
     case vk::Format::eD16Unorm:
@@ -149,7 +172,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
 
     constexpr auto tiling = vk::ImageTiling::eOptimal;
-    const auto supported_format = instance->GetSupportedFormat(info.pixel_format);
+    const auto supported_format = instance->GetSupportedFormat(info.pixel_format, format_features);
     const auto properties = instance->GetPhysicalDevice().getImageFormatProperties(
         supported_format, info.type, tiling, usage, flags);
     const auto supported_samples = properties.result == vk::Result::eSuccess
