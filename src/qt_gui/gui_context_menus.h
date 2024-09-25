@@ -20,6 +20,7 @@
 #include <objbase.h>
 #include <shlguid.h>
 #include <shobjidl.h>
+#include <wrl/client.h>
 #endif
 #include "common/path_util.h"
 
@@ -342,9 +343,9 @@ private:
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
         // Create the ShellLink object
-        IShellLink* pShellLink = nullptr;
+        Microsoft::WRL::ComPtr<IShellLink> pShellLink;
         HRESULT hres = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                        IID_IShellLink, (LPVOID*)&pShellLink);
+                                        IID_PPV_ARGS(&pShellLink));
         if (SUCCEEDED(hres)) {
             // Defines the path to the program executable
             pShellLink->SetPath((LPCWSTR)exePath.utf16());
@@ -360,13 +361,11 @@ private:
             pShellLink->SetIconLocation((LPCWSTR)iconPath.utf16(), 0);
 
             // Save the shortcut
-            IPersistFile* pPersistFile = nullptr;
-            hres = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&pPersistFile);
+            Microsoft::WRL::ComPtr<IPersistFile> pPersistFile;
+            hres = pShellLink.As(&pPersistFile);
             if (SUCCEEDED(hres)) {
                 hres = pPersistFile->Save((LPCWSTR)linkPath.utf16(), TRUE);
-                pPersistFile->Release();
             }
-            pShellLink->Release();
         }
 
         CoUninitialize();
