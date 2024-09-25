@@ -35,7 +35,7 @@ static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
 
 // Gui
-std::string settings_install_dir = "";
+std::filesystem::path settings_install_dir = "";
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -415,7 +415,8 @@ void load(const std::filesystem::path& path) {
         mw_themes = toml::find_or<int>(gui, "theme", 0);
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
-        settings_install_dir = toml::find_or<std::string>(gui, "installDir", "");
+        settings_install_dir =
+            toml::find_or<std::filesystem::path::string_type>(gui, "installDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);

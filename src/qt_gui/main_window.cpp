@@ -416,12 +416,14 @@ void MainWindow::CreateConnects() {
                    .arg(" APP VERSION", -11)
                    .arg("                Path");
         for (const GameInfo& game : m_game_info->m_games) {
+            QString game_path;
+            Common::FS::PathToQString(game_path, game.path);
             out << QString("%1 %2 %3     %4 %5\n")
                        .arg(QString::fromStdString(game.name), -50)
                        .arg(QString::fromStdString(game.serial), -10)
                        .arg(QString::fromStdString(game.fw), -4)
                        .arg(QString::fromStdString(game.version), -11)
-                       .arg(QString::fromStdString(game.path));
+                       .arg(game_path);
         }
     });
 
@@ -492,18 +494,18 @@ void MainWindow::StartGame() {
     if (table_mode == 0) {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else {
         if (m_elf_viewer->currentItem()) {
             int itemID = m_elf_viewer->currentItem()->row();
-            gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
+            gamePath = m_elf_viewer->m_elf_list[itemID];
         }
     }
     if (gamePath != "") {

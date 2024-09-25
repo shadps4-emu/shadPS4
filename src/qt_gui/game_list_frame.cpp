@@ -80,7 +80,9 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
-        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].path));
+        QString path;
+        Common::FS::PathToQString(path, m_game_info->m_games[i].path);
+        SetTableItem(i, 7, path);
     }
 }
 
@@ -90,7 +92,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path = QString::fromStdString(m_game_info->m_games[item->row()].pic_path);
+    QString pic1Path;
+    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
     const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                  m_game_info->m_games[item->row()].serial / "pic1.png";
     QString blurredPic1PathQt;

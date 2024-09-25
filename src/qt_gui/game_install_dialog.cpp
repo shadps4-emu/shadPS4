@@ -41,7 +41,9 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
 
     // Input.
     m_gamesDirectory = new QLineEdit();
-    m_gamesDirectory->setText(QString::fromStdString(Config::getGameInstallDir()));
+    QString install_dir;
+    Common::FS::PathToQString(install_dir, Config::getGameInstallDir());
+    m_gamesDirectory->setText(install_dir);
     m_gamesDirectory->setMinimumWidth(400);
 
     layout->addWidget(m_gamesDirectory);

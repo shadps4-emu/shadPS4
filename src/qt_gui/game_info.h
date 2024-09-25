@@ -28,10 +28,11 @@ public:
 
         PSF psf;
         if (psf.Open(std::filesystem::path(game.path) / "sce_sys" / "param.sfo")) {
-            game.icon_path = game.path + "/sce_sys/icon0.png";
-            QString iconpath = QString::fromStdString(game.icon_path);
+            game.icon_path = game.path / "sce_sys" / "icon0.png";
+            QString iconpath;
+            Common::FS::PathToQString(iconpath, game.icon_path);
             game.icon = QImage(iconpath);
-            game.pic_path = game.path + "/sce_sys/pic1.png";
+            game.pic_path = game.path / "sce_sys" / "pic1.png";
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
             }
