@@ -268,9 +268,6 @@ bool TriggerSave() {
 
 void ReadMemory(void* buf, size_t buf_size, int64_t offset) {
     std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset > g_save_memory.size()) {
-        UNREACHABLE_MSG("ReadMemory out of bounds");
-    }
     if (offset + buf_size > g_save_memory.size()) {
         UNREACHABLE_MSG("ReadMemory out of bounds");
     }
@@ -279,11 +276,8 @@ void ReadMemory(void* buf, size_t buf_size, int64_t offset) {
 
 void WriteMemory(void* buf, size_t buf_size, int64_t offset) {
     std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset > g_save_memory.size()) {
-        UNREACHABLE_MSG("WriteMemory out of bounds");
-    }
     if (offset + buf_size > g_save_memory.size()) {
-        UNREACHABLE_MSG("WriteMemory out of bounds");
+        g_save_memory.resize(offset + buf_size);
     }
     std::memcpy(g_save_memory.data() + offset, buf, buf_size);
     g_memory_dirty = true;
