@@ -511,11 +511,12 @@ void MainWindow::StartGame() {
     if (gamePath != "") {
         AddRecentFiles(gamePath);
         Core::Emulator emulator;
-        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+        const auto path = Common::FS::PathFromQString(gamePath);
+        if (!std::filesystem::exists(path)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(gamePath.toUtf8().constData());
+        emulator.Run(path);
     }
 }
 
@@ -948,14 +949,14 @@ void MainWindow::CreateRecentGameActions() {
     }
 
     connect(m_recent_files_group, &QActionGroup::triggered, this, [this](QAction* action) {
-        QString gamePath = action->text();
-        AddRecentFiles(gamePath); // Update the list.
+        auto gamePath = Common::FS::PathFromQString(action->text());
+        AddRecentFiles(action->text()); // Update the list.
         Core::Emulator emulator;
-        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+        if (!std::filesystem::exists(gamePath)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(gamePath.toUtf8().constData());
+        emulator.Run(gamePath);
     });
 }
 
