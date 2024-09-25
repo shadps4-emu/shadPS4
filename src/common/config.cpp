@@ -21,7 +21,7 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
         return opt;
     }
 }
-}
+} // namespace toml
 
 namespace Config {
 
