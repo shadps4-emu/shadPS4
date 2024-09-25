@@ -79,55 +79,58 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->title_id = item->titleId->data.to_string();
     }
 
-    for (u32 i = 0; i < item->dirNameNum; i++) {
-        const auto dir_name = item->dirName[i].data.to_view();
+    if (item->dirName != nullptr) {
+        for (u32 i = 0; i < item->dirNameNum; i++) {
+            const auto dir_name = item->dirName[i].data.to_view();
 
-        if (dir_name.empty()) {
-            continue;
-        }
+            if (dir_name.empty()) {
+                continue;
+            }
 
-        auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
+            auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
 
-        auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
-        if (!std::filesystem::exists(param_sfo_path)) {
-            continue;
-        }
+            auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
+            if (!std::filesystem::exists(param_sfo_path)) {
+                continue;
+            }
 
-        PSF param_sfo;
-        param_sfo.Open(param_sfo_path);
+            PSF param_sfo;
+            param_sfo.Open(param_sfo_path);
 
-        auto last_write = param_sfo.GetLastWrite();
+            auto last_write = param_sfo.GetLastWrite();
 #ifdef _WIN32
-        auto utc_time = std::chrono::file_clock::to_utc(last_write);
+            auto utc_time = std::chrono::file_clock::to_utc(last_write);
 #else
-        auto utc_time = std::chrono::file_clock::to_sys(last_write);
+            auto utc_time = std::chrono::file_clock::to_sys(last_write);
 #endif
-        std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
 
-        size_t size = Common::FS::GetDirectorySize(dir_path);
-        std::string size_str = SpaceSizeToString(size);
+            size_t size = Common::FS::GetDirectorySize(dir_path);
+            std::string size_str = SpaceSizeToString(size);
 
-        auto icon_path = dir_path / "sce_sys" / "icon0.png";
-        RefCountedTexture icon;
-        if (std::filesystem::exists(icon_path)) {
-            icon = RefCountedTexture::DecodePngFile(icon_path);
+            auto icon_path = dir_path / "sce_sys" / "icon0.png";
+            RefCountedTexture icon;
+            if (std::filesystem::exists(icon_path)) {
+                icon = RefCountedTexture::DecodePngFile(icon_path);
+            }
+
+            bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
+
+            this->save_list.emplace_back(Item{
+                .dir_name = std::string{dir_name},
+                .icon = icon,
+
+                .title =
+                    std::string{param_sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown")},
+                .subtitle = std::string{param_sfo.GetString(SaveParams::SUBTITLE).value_or("")},
+                .details = std::string{param_sfo.GetString(SaveParams::DETAIL).value_or("")},
+                .date = date_str,
+                .size = size_str,
+                .last_write = param_sfo.GetLastWrite(),
+                .pfo = param_sfo,
+                .is_corrupted = is_corrupted,
+            });
         }
-
-        bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
-
-        this->save_list.emplace_back(Item{
-            .dir_name = std::string{dir_name},
-            .icon = icon,
-
-            .title = std::string{param_sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown")},
-            .subtitle = std::string{param_sfo.GetString(SaveParams::SUBTITLE).value_or("")},
-            .details = std::string{param_sfo.GetString(SaveParams::DETAIL).value_or("")},
-            .date = date_str,
-            .size = size_str,
-            .last_write = param_sfo.GetLastWrite(),
-            .pfo = param_sfo,
-            .is_corrupted = is_corrupted,
-        });
     }
 
     if (type == DialogType::SAVE && item->newItem != nullptr) {
@@ -299,7 +302,7 @@ SaveDialogState::ProgressBarState::ProgressBarState(const SaveDialogState& state
     } else {
         switch (bar.sysMsgType) {
         case ProgressSystemMessageType::INVALID:
-            this->msg = "INVALID";
+            this->msg = "";
             break;
         case ProgressSystemMessageType::PROGRESS:
             switch (state.type) {
