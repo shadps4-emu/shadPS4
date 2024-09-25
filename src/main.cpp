@@ -5,7 +5,15 @@
 #include "common/memory_patcher.h"
 #include "emulator.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     if (argc == 1) {
         fmt::print("Usage: {} <elf or eboot.bin path>\n", argv[0]);
         return -1;
