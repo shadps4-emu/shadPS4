@@ -1506,6 +1506,10 @@ int PS4_SYSV_ABI scePthreadGetprio(ScePthread thread, int* prio) {
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI scePthreadSetprio(ScePthread thread, int prio) {
+    if (thread == nullptr) {
+        LOG_ERROR(Kernel_Pthread, "scePthreadSetprio: thread is nullptr");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     thread->prio = prio;
     return ORBIS_OK;
 }
