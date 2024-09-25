@@ -532,6 +532,8 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
 
 void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
+        const bool is_integer = image_desc.nfmt == AmdGpu::NumberFormat::Uint ||
+                                image_desc.nfmt == AmdGpu::NumberFormat::Sint;
         const VectorIds& data_types = GetAttributeType(*this, image_desc.nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
@@ -547,6 +549,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = image_desc.is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
+            .is_integer = is_integer,
             .is_storage = image_desc.is_storage,
         });
         interfaces.push_back(id);
