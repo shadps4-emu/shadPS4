@@ -33,16 +33,41 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
     return supported_extensions;
 }
 
+vk::FormatProperties3 GetFormatProperties(vk::PhysicalDevice physical, vk::Format format) {
+    vk::FormatProperties3 properties3{};
+    vk::FormatProperties2 properties2 = {
+        .pNext = &properties3,
+    };
+    physical.getFormatProperties2(format, &properties2);
+    return properties3;
+}
+
 std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     vk::PhysicalDevice physical) {
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
-    for (const auto& format : LiverpoolToVK::GetAllFormats()) {
-        vk::FormatProperties3 properties3{};
-        vk::FormatProperties2 properties2 = {
-            .pNext = &properties3,
-        };
-        physical.getFormatProperties2(format, &properties2);
-        format_properties.emplace(format, properties3);
+    for (const auto& format_info : LiverpoolToVK::SurfaceFormats()) {
+        const auto format = format_info.vk_format;
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
+    }
+    for (const auto& format_info : LiverpoolToVK::DepthFormats()) {
+        const auto format = format_info.vk_format;
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
+    }
+    // Other miscellaneous formats, e.g. for color buffers, swizzles, or compatibility
+    static constexpr std::array misc_formats = {
+        vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
+        vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
+        vk::Format::eB8G8R8A8Srgb,           vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eD24UnormS8Uint,
+    };
+    for (const auto& format : misc_formats) {
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
     }
     return format_properties;
 }
@@ -125,22 +150,23 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     CollectToolingInfo();
 
     // Check and log format support details.
-    for (const auto& key : format_properties | std::views::keys) {
-        const auto format = key;
-        if (!IsImageFormatSupported(format)) {
-            const auto alternative = GetAlternativeFormat(format);
-            if (IsImageFormatSupported(alternative)) {
-                LOG_WARNING(Render_Vulkan,
-                            "Format {} is not supported for images, falling back to {}.",
-                            vk::to_string(format), vk::to_string(alternative));
-            } else if (IsVertexFormatSupported(format)) {
-                LOG_WARNING(Render_Vulkan, "Format {} is only supported for vertex buffers.",
-                            vk::to_string(format));
-            } else {
-                LOG_ERROR(Render_Vulkan,
-                          "Format {} is not supported and no suitable alternative is supported.",
-                          vk::to_string(format));
-            }
+    for (const auto& format : LiverpoolToVK::SurfaceFormats()) {
+        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Surface format data_format={}, number_format={} is not fully supported "
+                        "(vk_format={}, requested flags={})",
+                        static_cast<u32>(format.data_format),
+                        static_cast<u32>(format.number_format), vk::to_string(format.vk_format),
+                        vk::to_string(format.flags));
+        }
+    }
+    for (const auto& format : LiverpoolToVK::DepthFormats()) {
+        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Depth format z_format={}, stencil_format={} is not fully supported "
+                        "(vk_format={}, requested flags={})",
+                        static_cast<u32>(format.z_format), static_cast<u32>(format.stencil_format),
+                        vk::to_string(format.vk_format), vk::to_string(format.flags));
         }
     }
 }
@@ -496,7 +522,8 @@ void Instance::CollectToolingInfo() {
     }
 }
 
-bool Instance::IsImageFormatSupported(const vk::Format format) const {
+bool Instance::IsFormatSupported(const vk::Format format,
+                                 const vk::FormatFeatureFlags2 flags) const {
     if (format == vk::Format::eUndefined) [[unlikely]] {
         return true;
     }
@@ -506,49 +533,36 @@ bool Instance::IsImageFormatSupported(const vk::Format format) const {
         UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
     }
 
-    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eTransferSrc |
-                                                      vk::FormatFeatureFlagBits2::eTransferDst |
-                                                      vk::FormatFeatureFlagBits2::eSampledImage;
-    return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
+    return ((it->second.optimalTilingFeatures | it->second.bufferFeatures) & flags) == flags;
 }
 
-bool Instance::IsVertexFormatSupported(const vk::Format format) const {
-    if (format == vk::Format::eUndefined) [[unlikely]] {
-        return true;
-    }
-
-    const auto it = format_properties.find(format);
-    if (it == format_properties.end()) {
-        UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
-    }
-
-    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eVertexBuffer;
-    return (it->second.bufferFeatures & optimal_flags) == optimal_flags;
-}
-
-vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
-    if (format == vk::Format::eB5G6R5UnormPack16) {
+static vk::Format GetAlternativeFormat(const vk::Format format) {
+    switch (format) {
+    case vk::Format::eB5G6R5UnormPack16:
         return vk::Format::eR5G6B5UnormPack16;
-    } else if (format == vk::Format::eD16UnormS8Uint) {
+    case vk::Format::eD16UnormS8Uint:
         return vk::Format::eD24UnormS8Uint;
+    default:
+        return format;
     }
-    return format;
 }
 
-vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
-    if (IsImageFormatSupported(format)) [[likely]] {
+vk::Format Instance::GetSupportedFormat(const vk::Format format,
+                                        const vk::FormatFeatureFlags2 flags) const {
+    if (IsFormatSupported(format, flags)) [[likely]] {
         return format;
     }
     const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsImageFormatSupported(alternative)) [[likely]] {
+    if (IsFormatSupported(alternative, flags)) [[likely]] {
         return alternative;
     }
     return format;
 }
 
-vk::ComponentMapping Instance::GetSupportedComponentSwizzle(vk::Format format,
-                                                            vk::ComponentMapping swizzle) const {
-    if (IsImageFormatSupported(format)) [[likely]] {
+vk::ComponentMapping Instance::GetSupportedComponentSwizzle(
+    const vk::Format format, const vk::ComponentMapping swizzle,
+    const vk::FormatFeatureFlags2 flags) const {
+    if (IsFormatSupported(format, flags)) [[likely]] {
         return swizzle;
     }
 

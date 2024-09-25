@@ -149,7 +149,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
 
     constexpr auto tiling = vk::ImageTiling::eOptimal;
-    const auto supported_format = instance->GetSupportedFormat(info.pixel_format);
+    const auto supported_format =
+        instance->GetSupportedFormat(info.pixel_format, vk::FormatFeatureFlagBits2::eSampledImage);
     const auto properties = instance->GetPhysicalDevice().getImageFormatProperties(
         supported_format, info.type, tiling, usage, flags);
     const auto supported_samples = properties.result == vk::Result::eSuccess
