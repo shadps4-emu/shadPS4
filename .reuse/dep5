@@ -3,6 +3,7 @@ Comment: It is best to use this file to record copyright information about
          generated, binary and third party files
 
 Files: CMakeSettings.json
+       .github/FUNDING.yml
        .github/shadps4.desktop
        .github/shadps4.png
        .gitmodules
