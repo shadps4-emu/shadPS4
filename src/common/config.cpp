@@ -35,7 +35,7 @@ static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
 
 // Gui
-std::filesystem::path settings_install_dir = "";
+std::filesystem::path settings_install_dir = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -241,7 +241,7 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
-void setGameInstallDir(const std::string& dir) {
+void setGameInstallDir(const std::filesystem::path& dir) {
     settings_install_dir = dir;
 }
 void setMainWindowTheme(u32 theme) {
@@ -297,7 +297,7 @@ u32 getMainWindowGeometryW() {
 u32 getMainWindowGeometryH() {
     return main_window_geometry_h;
 }
-std::string getGameInstallDir() {
+std::filesystem::path getGameInstallDir() {
     return settings_install_dir;
 }
 u32 getMainWindowTheme() {
@@ -415,8 +415,7 @@ void load(const std::filesystem::path& path) {
         mw_themes = toml::find_or<int>(gui, "theme", 0);
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
-        settings_install_dir =
-            toml::find_or<std::filesystem::path::string_type>(gui, "installDir", {});
+        settings_install_dir = toml::find_or<std::u8string>(gui, "installDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);

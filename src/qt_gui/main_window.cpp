@@ -631,7 +631,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         pkg = PKG();
         pkg.Open(file);
         std::string failreason;
-        auto extract_path = std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
+        auto extract_path = Config::getGameInstallDir() / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
         QString gameDirPath;
         Common::FS::PathToQString(gameDirPath, extract_path);
@@ -779,7 +779,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 QFutureWatcher<void> futureWatcher;
                 connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
                     if (pkgNum == nPkg) {
-                        QString path = QString::fromStdString(Config::getGameInstallDir());
+                        QString path;
+                        Common::FS::PathToQString(path, Config::getGameInstallDir());
                         QMessageBox extractMsgBox(this);
                         extractMsgBox.setWindowTitle(tr("Extraction Finished"));
                         extractMsgBox.setText(

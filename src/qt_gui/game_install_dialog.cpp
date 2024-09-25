@@ -78,7 +78,7 @@ void GameInstallDialog::Save() {
         return;
     }
 
-    Config::setGameInstallDir(gamesDirectory.toStdString());
+    Config::setGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
     accept();
