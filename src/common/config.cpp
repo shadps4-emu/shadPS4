@@ -450,7 +450,18 @@ void save(const std::filesystem::path& path) {
             fmt::print("Filesystem error: {}\n", error.message());
         }
 
-        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
+        try {
+#ifdef _WIN32
+            fmt::print(L"Saving new configuration file {}\n", path.wstring());
+#else
+            fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
+#endif
+        } catch (...) {
+            // Path to string conversion particularily on Windows is quite the mess. Just to make
+            // sure the emulator doesn't somehow crash due to a bad string conversion
+            // we catch the exception and print a generic message.
+            fmt::print("Saving new configuration file\n");
+        }
     }
 
     data["General"]["isPS4Pro"] = isNeo;
