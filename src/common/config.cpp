@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
+#include "common/logging/formatter.h"
 #include "config.h"
 
 namespace Config {
@@ -449,15 +450,7 @@ void save(const std::filesystem::path& path) {
             fmt::print("Filesystem error: {}\n", error.message());
         }
 
-        try {
-            // Printing wstring (which a path is natively on Windows) to console is generally shaky.
-            // There's an open issue on fmtlib (#3491) where doing so can cause a crash, and it has
-            // happened to us too. We're going to assume the path can be converted to a string and
-            // printed safely, not printing the path if it can't.
-            fmt::print("Saving new configuration file {}\n", path.string());
-        } catch (...) {
-            fmt::print("Saving new configuration file\n");
-        }
+        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
     data["General"]["isPS4Pro"] = isNeo;

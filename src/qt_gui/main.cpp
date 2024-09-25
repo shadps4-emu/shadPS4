@@ -8,10 +8,18 @@
 #include "game_install_dialog.h"
 #include "main_window.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     QApplication a(argc, argv);
 
     // Load configurations and initialize Qt application
