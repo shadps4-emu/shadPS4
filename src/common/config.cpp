@@ -9,6 +9,20 @@
 #include "common/logging/formatter.h"
 #include "config.h"
 
+namespace toml {
+template <typename TC, typename K>
+std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
+                                      std::filesystem::path opt) {
+    try {
+        auto str = find<std::string>(v, ky);
+        std::u8string u8str{(char8_t*)&str.front(), (char8_t*)&str.back() + 1};
+        return std::filesystem::path{u8str};
+    } catch (...) {
+        return opt;
+    }
+}
+}
+
 namespace Config {
 
 static bool isNeo = false;
@@ -353,7 +367,10 @@ void load(const std::filesystem::path& path) {
     toml::value data;
 
     try {
-        data = toml::parse(path);
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifs.open(path, std::ios_base::binary);
+        data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
@@ -416,7 +433,7 @@ void load(const std::filesystem::path& path) {
         mw_themes = toml::find_or<int>(gui, "theme", 0);
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
-        settings_install_dir = toml::find_or<std::u8string>(gui, "installDir", {});
+        settings_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
@@ -440,7 +457,10 @@ void save(const std::filesystem::path& path) {
     std::error_code error;
     if (std::filesystem::exists(path, error)) {
         try {
-            data = toml::parse(path);
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifs.open(path, std::ios_base::binary);
+            data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -449,19 +469,7 @@ void save(const std::filesystem::path& path) {
         if (error) {
             fmt::print("Filesystem error: {}\n", error.message());
         }
-
-        try {
-#ifdef _WIN32
-            fmt::print(L"Saving new configuration file {}\n", path.wstring());
-#else
-            fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
-#endif
-        } catch (...) {
-            // Path to string conversion particularily on Windows is quite the mess. Just to make
-            // sure the emulator doesn't somehow crash due to a bad string conversion
-            // we catch the exception and print a generic message.
-            fmt::print("Saving new configuration file\n");
-        }
+        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
     data["General"]["isPS4Pro"] = isNeo;
@@ -495,7 +503,7 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["gameTableMode"] = m_table_mode;
     data["GUI"]["mw_width"] = m_window_size_W;
     data["GUI"]["mw_height"] = m_window_size_H;
-    data["GUI"]["installDir"] = settings_install_dir;
+    data["GUI"]["installDir"] = std::string{fmt::UTF(settings_install_dir.u8string()).data};
     data["GUI"]["geometry_x"] = main_window_geometry_x;
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;
