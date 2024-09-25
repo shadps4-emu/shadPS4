@@ -82,7 +82,11 @@ RendererVulkan::RendererVulkan(Frontend::WindowSDL& window_, AmdGpu::Liverpool* 
     present_frames.resize(num_images);
     for (u32 i = 0; i < num_images; i++) {
         Frame& frame = present_frames[i];
-        frame.present_done = device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
+        auto [fence_result, fence] =
+            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
+        ASSERT_MSG(fence_result == vk::Result::eSuccess, "Failed to create present done fence: {}",
+                   vk::to_string(fence_result));
+        frame.present_done = fence;
         free_queue.push(&frame);
     }
 
@@ -157,7 +161,10 @@ void RendererVulkan::RecreateFrame(Frame* frame, u32 width, u32 height) {
             .layerCount = 1,
         },
     };
-    frame->image_view = device.createImageView(view_info);
+    auto [view_result, view] = device.createImageView(view_info);
+    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create frame image view: {}",
+               vk::to_string(view_result));
+    frame->image_view = view;
     frame->width = width;
     frame->height = height;
 }

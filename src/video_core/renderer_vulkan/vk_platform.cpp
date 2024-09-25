@@ -134,9 +134,10 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
 
 std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window_type,
                                                bool enable_debug_utils) {
-    const auto properties = vk::enumerateInstanceExtensionProperties();
-    if (properties.empty()) {
-        LOG_ERROR(Render_Vulkan, "Failed to query extension properties");
+    const auto [properties_result, properties] = vk::enumerateInstanceExtensionProperties();
+    if (properties_result != vk::Result::eSuccess || properties.empty()) {
+        LOG_ERROR(Render_Vulkan, "Failed to query extension properties: {}",
+                  vk::to_string(properties_result));
         return {};
     }
 
@@ -207,10 +208,12 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
 #endif
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-    const u32 available_version = VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
-                                      ? vk::enumerateInstanceVersion()
-                                      : VK_API_VERSION_1_0;
-
+    const auto [available_version_result, available_version] =
+        VULKAN_HPP_DEFAULT_DISPATCHER.vkEnumerateInstanceVersion
+            ? vk::enumerateInstanceVersion()
+            : vk::ResultValue(vk::Result::eSuccess, VK_API_VERSION_1_0);
+    ASSERT_MSG(available_version_result == vk::Result::eSuccess,
+               "Failed to query Vulkan API version: {}", vk::to_string(available_version_result));
     ASSERT_MSG(available_version >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by instance!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
@@ -341,11 +344,13 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         },
     };
 
-    auto instance = vk::createInstanceUnique(instance_ci_chain.get());
+    auto [instance_result, instance] = vk::createInstanceUnique(instance_ci_chain.get());
+    ASSERT_MSG(instance_result == vk::Result::eSuccess, "Failed to create instance: {}",
+               vk::to_string(instance_result));
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*instance);
 
-    return instance;
+    return std::move(instance);
 }
 
 vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
@@ -359,7 +364,10 @@ vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
                        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
         .pfnUserCallback = DebugUtilsCallback,
     };
-    return instance.createDebugUtilsMessengerEXTUnique(msg_ci);
+    auto [messenger_result, messenger] = instance.createDebugUtilsMessengerEXTUnique(msg_ci);
+    ASSERT_MSG(messenger_result == vk::Result::eSuccess, "Failed to create debug callback: {}",
+               vk::to_string(messenger_result));
+    return std::move(messenger);
 }
 
 } // namespace Vulkan

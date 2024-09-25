@@ -23,8 +23,20 @@ namespace Vulkan {
 
 namespace {
 
+std::vector<vk::PhysicalDevice> EnumeratePhysicalDevices(vk::UniqueInstance& instance) {
+    auto [devices_result, devices] = instance->enumeratePhysicalDevices();
+    ASSERT_MSG(devices_result == vk::Result::eSuccess, "Failed to enumerate physical devices: {}",
+               vk::to_string(devices_result));
+    return std::move(devices);
+}
+
 std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
-    const std::vector extensions = physical.enumerateDeviceExtensionProperties();
+    const auto [extensions_result, extensions] = physical.enumerateDeviceExtensionProperties();
+    if (extensions_result != vk::Result::eSuccess) {
+        LOG_ERROR(Render_Vulkan, "Could not query supported extensions: {}",
+                  vk::to_string(extensions_result));
+        return {};
+    }
     std::vector<std::string> supported_extensions;
     supported_extensions.reserve(extensions.size());
     for (const auto& extension : extensions) {
@@ -82,13 +94,13 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{instance->enumeratePhysicalDevices()} {}
+      physical_devices{EnumeratePhysicalDevices(instance)} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{instance->enumeratePhysicalDevices()} {
+      physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -421,15 +433,12 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
     }
 
-    try {
-        device = physical_device.createDeviceUnique(device_chain.get());
-    } catch (vk::ExtensionNotPresentError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Some required extensions are not available {}", err.what());
-        return false;
-    } catch (vk::FeatureNotPresentError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Some required features are not available {}", err.what());
+    auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
+    if (device_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan, "Failed to create device: {}", vk::to_string(device_result));
         return false;
     }
+    device = std::move(dev);
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
 
@@ -437,27 +446,33 @@ bool Instance::CreateDevice() {
     present_queue = device->getQueue(queue_family_index, 0);
 
     if (calibrated_timestamps) {
-        const auto& time_domains = physical_device.getCalibrateableTimeDomainsEXT();
+        const auto [time_domains_result, time_domains] =
+            physical_device.getCalibrateableTimeDomainsEXT();
+        if (time_domains_result == vk::Result::eSuccess) {
 #if _WIN64
-        const bool has_host_time_domain =
-            std::find(time_domains.cbegin(), time_domains.cend(),
-                      vk::TimeDomainEXT::eQueryPerformanceCounter) != time_domains.cend();
+            const bool has_host_time_domain =
+                std::find(time_domains.cbegin(), time_domains.cend(),
+                          vk::TimeDomainEXT::eQueryPerformanceCounter) != time_domains.cend();
 #elif __linux__
-        const bool has_host_time_domain =
-            std::find(time_domains.cbegin(), time_domains.cend(),
-                      vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
+            const bool has_host_time_domain =
+                std::find(time_domains.cbegin(), time_domains.cend(),
+                          vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
 #else
-        // Tracy limitation means only Windows and Linux can use host time domain.
-        // https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
-        const bool has_host_time_domain = false;
+            // Tracy limitation means only Windows and Linux can use host time domain.
+            // https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
+            const bool has_host_time_domain = false;
 #endif
-        if (has_host_time_domain) {
-            static constexpr std::string_view context_name{"vk_rasterizer"};
-            profiler_context =
-                TracyVkContextHostCalibrated(*instance, physical_device, *device,
-                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
-                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr);
-            TracyVkContextName(profiler_context, context_name.data(), context_name.size());
+            if (has_host_time_domain) {
+                static constexpr std::string_view context_name{"vk_rasterizer"};
+                profiler_context = TracyVkContextHostCalibrated(
+                    *instance, physical_device, *device,
+                    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
+                    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr);
+                TracyVkContextName(profiler_context, context_name.data(), context_name.size());
+            }
+        } else {
+            LOG_WARNING(Render_Vulkan, "Could not query calibrated time domains for profiling: {}",
+                        vk::to_string(time_domains_result));
         }
     }
 
@@ -513,7 +528,12 @@ void Instance::CollectToolingInfo() {
     if (!tooling_info) {
         return;
     }
-    const auto tools = physical_device.getToolPropertiesEXT();
+    const auto [tools_result, tools] = physical_device.getToolPropertiesEXT();
+    if (tools_result != vk::Result::eSuccess) {
+        LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",
+                  vk::to_string(tools_result));
+        return;
+    }
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
