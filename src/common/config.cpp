@@ -445,18 +445,19 @@ void save(const std::filesystem::path& path) {
             return;
         }
     } else {
-#ifdef _WIN32
-#define PREFIX(str) L##str
-#else
-#define PREFIX(str) str
-#endif
         if (error) {
-            fmt::print(PREFIX("Filesystem error accessing {}"), path.native());
-            // can't mix wstring and string in fmt
-            fmt::print(" (error: {})\n", error.message());
+            fmt::print("Filesystem error: {}\n", error.message());
         }
-        fmt::print(PREFIX("Saving new configuration file {}\n"), path.native());
-#undef PREFIX
+
+        try {
+            // Printing wstring (which a path is natively on Windows) to console is generally shaky.
+            // There's an open issue on fmtlib (#3491) where doing so can cause a crash, and it has
+            // happened to us too. We're going to assume the path can be converted to a string and
+            // printed safely, not printing the path if it can't.
+            fmt::print("Saving new configuration file {}\n", path.string());
+        } catch (...) {
+            fmt::print("Saving new configuration file\n");
+        }
     }
 
     data["General"]["isPS4Pro"] = isNeo;
