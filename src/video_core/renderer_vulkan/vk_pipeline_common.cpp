@@ -57,6 +57,23 @@ void Pipeline::BindBuffers(VideoCore::BufferCache& buffer_cache,
         }
     }
 
+    // Bind the flattened user data buffer as a UBO so it's accessible to the shader
+    if (stage.has_readconst) {
+        const auto [vk_buffer, offset] =
+            buffer_cache.ObtainHostUBO(reinterpret_cast<VAddr>(stage.flattened_ud_buf.data()),
+                                       stage.flattened_ud_buf.size_bytes());
+        buffer_infos.emplace_back(vk_buffer->Handle(), offset, stage.flattened_ud_buf.size_bytes());
+        set_writes.push_back({
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = binding.unified++,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &buffer_infos.back(),
+        });
+        ++binding.buffer;
+    }
+
     // Second pass to re-bind buffers that were updated after binding
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
         const auto& [buffer_id, vsharp] = buffer_bindings[i];

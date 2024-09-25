@@ -14,6 +14,8 @@ public:
     DecoderImpl();
     ~DecoderImpl();
 
+    std::string disassembleInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,
+                                u64 address);
     void printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands, u64 address);
     void printInstruction(void* code, u64 address);
     ZyanStatus decodeInstruction(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,
