@@ -234,6 +234,13 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {},
                   cmdbuf);
 
+    const auto frame_subresources = vk::ImageSubresourceRange{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
     const std::array pre_barrier{
         vk::ImageMemoryBarrier{
             .srcAccessMask = vk::AccessFlagBits::eTransferRead,
@@ -243,13 +250,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = frame->image,
-            .subresourceRange{
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-            },
+            .subresourceRange{frame_subresources},
         },
     };
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
@@ -258,15 +259,23 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
 
     // Clear the frame image before blitting to avoid artifacts.
     const vk::ClearColorValue clear_color{std::array{0.0f, 0.0f, 0.0f, 1.0f}};
-    const vk::ImageSubresourceRange clear_range{
-        .aspectMask = vk::ImageAspectFlagBits::eColor,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-    };
     cmdbuf.clearColorImage(frame->image, vk::ImageLayout::eTransferDstOptimal, clear_color,
-                           clear_range);
+                           frame_subresources);
+
+    const auto blitBarrier =
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                                .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                                .image = frame->image,
+                                .subresourceRange{frame_subresources}};
+
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &blitBarrier,
+    });
 
     // Post-processing (Anti-aliasing, FSR etc) goes here. For now just blit to the frame image.
     cmdbuf.blitImage(image.image, image.last_state.layout, frame->image,
@@ -283,13 +292,7 @@ Frame* RendererVulkan::PrepareFrameInternal(VideoCore::Image& image, bool is_eop
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = frame->image,
-        .subresourceRange{
-            .aspectMask = vk::ImageAspectFlagBits::eColor,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        },
+        .subresourceRange{frame_subresources},
     };
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                            vk::PipelineStageFlagBits::eAllCommands,
