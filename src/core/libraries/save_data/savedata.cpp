@@ -1573,6 +1573,7 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
                 SaveMemory::SetIcon(nullptr, 0);
             }
         }
+        SaveMemory::TriggerSaveWithoutEvent();
         if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
             result->existedMemorySize = existed_size;
         }
