@@ -13,6 +13,9 @@ namespace toml {
 template <typename TC, typename K>
 std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
                                       std::filesystem::path opt) {
+    if (opt.empty()) {
+        return opt;
+    }
     try {
         auto str = find<std::string>(v, ky);
         std::u8string u8str{(char8_t*)&str.front(), (char8_t*)&str.back() + 1};
