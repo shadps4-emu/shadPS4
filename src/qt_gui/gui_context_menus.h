@@ -75,7 +75,8 @@ public:
         }
 
         if (selected == &openFolder) {
-            QString folderPath = QString::fromStdString(m_games[itemID].path);
+            QString folderPath;
+            Common::FS::PathToQString(folderPath, m_games[itemID].path);
             QDesktopServices::openUrl(QUrl::fromLocalFile(folderPath));
         }
 
@@ -158,7 +159,9 @@ public:
             QString gameSerial = QString::fromStdString(m_games[itemID].serial);
             QString gameVersion = QString::fromStdString(m_games[itemID].version);
             QString gameSize = QString::fromStdString(m_games[itemID].size);
-            QPixmap gameImage(QString::fromStdString(m_games[itemID].icon_path));
+            QString iconPath;
+            Common::FS::PathToQString(iconPath, m_games[itemID].icon_path);
+            QPixmap gameImage(iconPath);
             CheatsPatches* cheatsPatches =
                 new CheatsPatches(gameName, gameSerial, gameVersion, gameSize, gameImage);
             cheatsPatches->show();
@@ -167,8 +170,9 @@ public:
         }
 
         if (selected == &openTrophyViewer) {
-            QString trophyPath = QString::fromStdString(m_games[itemID].serial);
-            QString gameTrpPath = QString::fromStdString(m_games[itemID].path);
+            QString trophyPath, gameTrpPath;
+            Common::FS::PathToQString(trophyPath, m_games[itemID].serial);
+            Common::FS::PathToQString(gameTrpPath, m_games[itemID].path);
             TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
@@ -176,11 +180,13 @@ public:
         }
 
         if (selected == &createShortcut) {
-            QString targetPath = QString::fromStdString(m_games[itemID].path);
+            QString targetPath;
+            Common::FS::PathToQString(targetPath, m_games[itemID].path);
             QString ebootPath = targetPath + "/eboot.bin";
 
             // Get the full path to the icon
-            QString iconPath = QString::fromStdString(m_games[itemID].icon_path);
+            QString iconPath;
+            Common::FS::PathToQString(iconPath, m_games[itemID].icon_path);
             QFileInfo iconFileInfo(iconPath);
             QString icoPath = iconFileInfo.absolutePath() + "/" + iconFileInfo.baseName() + ".ico";
 

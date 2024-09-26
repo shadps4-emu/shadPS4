@@ -21,15 +21,10 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
-#ifdef _WIN32
     const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                           title.toStdWString() / "TrophyFiles";
-    const auto trophyDirQt = QString::fromStdWString(trophyDir.wstring());
-#else
-    const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                           title.toStdString() / "TrophyFiles";
-    const auto trophyDirQt = QString::fromStdString(trophyDir.string());
-#endif
+                           Common::FS::PathFromQString(title) / "TrophyFiles";
+    QString trophyDirQt;
+    Common::FS::PathToQString(trophyDirQt, trophyDir);
 
     QDir dir(trophyDirQt);
     if (!dir.exists()) {

@@ -20,6 +20,6 @@ void EndCapture();
 void TriggerCapture();
 
 /// Sets output directory for captures
-void SetOutputDir(const std::string& path, const std::string& prefix);
+void SetOutputDir(const std::filesystem::path& path, const std::string& prefix);
 
 } // namespace VideoCore

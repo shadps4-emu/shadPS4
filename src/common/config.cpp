@@ -4,8 +4,24 @@
 #include <fstream>
 #include <string>
 #include <fmt/core.h>
+#include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
+#include "common/logging/formatter.h"
 #include "config.h"
+
+namespace toml {
+template <typename TC, typename K>
+std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
+                                      std::filesystem::path opt) {
+    try {
+        auto str = find<std::string>(v, ky);
+        std::u8string u8str{(char8_t*)&str.front(), (char8_t*)&str.back() + 1};
+        return std::filesystem::path{u8str};
+    } catch (...) {
+        return opt;
+    }
+}
+} // namespace toml
 
 namespace Config {
 
@@ -37,7 +53,7 @@ static bool vkMarkers = false;
 static bool vkCrashDiagnostic = false;
 
 // Gui
-std::string settings_install_dir = "";
+std::filesystem::path settings_install_dir = {};
 u32 main_window_geometry_x = 400;
 u32 main_window_geometry_y = 400;
 u32 main_window_geometry_w = 1280;
@@ -267,7 +283,7 @@ void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
     main_window_geometry_w = w;
     main_window_geometry_h = h;
 }
-void setGameInstallDir(const std::string& dir) {
+void setGameInstallDir(const std::filesystem::path& dir) {
     settings_install_dir = dir;
 }
 void setMainWindowTheme(u32 theme) {
@@ -323,7 +339,7 @@ u32 getMainWindowGeometryW() {
 u32 getMainWindowGeometryH() {
     return main_window_geometry_h;
 }
-std::string getGameInstallDir() {
+std::filesystem::path getGameInstallDir() {
     return settings_install_dir;
 }
 u32 getMainWindowTheme() {
@@ -378,7 +394,10 @@ void load(const std::filesystem::path& path) {
     toml::value data;
 
     try {
-        data = toml::parse(path);
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifs.open(path, std::ios_base::binary);
+        data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
@@ -444,7 +463,7 @@ void load(const std::filesystem::path& path) {
         mw_themes = toml::find_or<int>(gui, "theme", 0);
         m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
-        settings_install_dir = toml::find_or<std::string>(gui, "installDir", "");
+        settings_install_dir = toml::find_fs_path_or(gui, "installDir", {});
         main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
@@ -468,17 +487,19 @@ void save(const std::filesystem::path& path) {
     std::error_code error;
     if (std::filesystem::exists(path, error)) {
         try {
-            data = toml::parse(path);
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+            ifs.open(path, std::ios_base::binary);
+            data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
         }
     } else {
         if (error) {
-            fmt::print("Filesystem error accessing {} (error: {})\n", path.string(),
-                       error.message().c_str());
+            fmt::print("Filesystem error: {}\n", error.message());
         }
-        fmt::print("Saving new configuration file {}\n", path.string());
+        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
     data["General"]["isPS4Pro"] = isNeo;
@@ -515,7 +536,7 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["gameTableMode"] = m_table_mode;
     data["GUI"]["mw_width"] = m_window_size_W;
     data["GUI"]["mw_height"] = m_window_size_H;
-    data["GUI"]["installDir"] = settings_install_dir;
+    data["GUI"]["installDir"] = std::string{fmt::UTF(settings_install_dir.u8string()).data};
     data["GUI"]["geometry_x"] = main_window_geometry_x;
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;

@@ -22,17 +22,19 @@ public:
         return a.name < b.name;
     }
 
-    static GameInfo readGameInfo(const std::string& filePath) {
+    static GameInfo readGameInfo(const std::filesystem::path& filePath) {
         GameInfo game;
         game.path = filePath;
 
         PSF psf;
-        if (psf.Open(std::filesystem::path(game.path) / "sce_sys" / "param.sfo")) {
-            game.icon_path = game.path + "/sce_sys/icon0.png";
-            QString iconpath = QString::fromStdString(game.icon_path);
+        if (psf.Open(game.path / "sce_sys" / "param.sfo")) {
+            game.icon_path = game.path / "sce_sys" / "icon0.png";
+            QString iconpath;
+            Common::FS::PathToQString(iconpath, game.icon_path);
             game.icon = QImage(iconpath);
-            game.pic_path = game.path + "/sce_sys/pic1.png";
-            game.snd0_path = game.path + "/sce_sys/snd0.at9";
+            game.pic_path = game.path / "sce_sys" / "pic1.png";
+            game.snd0_path = game.path / "sce_sys" / "snd0.at9";
+
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
             }

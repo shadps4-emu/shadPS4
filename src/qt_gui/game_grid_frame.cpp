@@ -44,7 +44,8 @@ void GameGridFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
-    const auto snd0path = QString::fromStdString(m_game_info->m_games[item->row()].snd0_path);
+    QString snd0path;
+    Common::FS::PathToQString(snd0path, m_game_info->m_games[item->row()].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
@@ -122,14 +123,12 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     int itemID = (row * this->columnCount()) + column;
     QWidget* item = this->cellWidget(row, column);
     if (item) {
-        QString pic1Path = QString::fromStdString((*m_games_shared)[itemID].pic_path);
+        QString pic1Path;
+        Common::FS::PathToQString(pic1Path, (*m_games_shared)[itemID].pic_path);
         const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                      (*m_games_shared)[itemID].serial / "pic1.png";
-#ifdef _WIN32
-        const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
-#else
-        const auto blurredPic1PathQt = QString::fromStdString(blurredPic1Path.string());
-#endif
+        QString blurredPic1PathQt;
+        Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
 
         backgroundImage = QImage(blurredPic1PathQt);
         if (backgroundImage.isNull()) {
