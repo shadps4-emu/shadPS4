@@ -292,9 +292,8 @@ public:
             QString message_type = tr("Game");
             if (selected == deleteUpdate) {
                 if (!std::filesystem::exists(m_games[itemID].path + "-UPDATE")) {
-                    QMessageBox::critical(
-                        nullptr, tr("Error"),
-                        QString(tr("This game has no update to delete!")));
+                    QMessageBox::critical(nullptr, tr("Error"),
+                                          QString(tr("This game has no update to delete!")));
                     error = true;
                 } else {
                     folder_path = QString::fromStdString(m_games[itemID].path + "-UPDATE");

@@ -723,8 +723,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 }
                 std::filesystem::path sce_folder_path =
                     std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")
-                    ? game_update_path / "sce_sys" / "param.sfo"
-                    : game_folder_path / "sce_sys" / "param.sfo";
+                        ? game_update_path / "sce_sys" / "param.sfo"
+                        : game_folder_path / "sce_sys" / "param.sfo";
                 psf.Open(sce_folder_path);
                 QString game_app_version;
                 if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
