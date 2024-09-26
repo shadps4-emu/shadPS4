@@ -26,7 +26,7 @@ struct UTF {
     T data;
 
     explicit UTF(const std::u8string_view view) {
-        data = T{(const char*)&view.front(), (const char*)&view.back() + 1};
+        data = view.empty() ? T{} : T{(const char*)&view.front(), (const char*)&view.back() + 1};
     }
 
     explicit UTF(const std::u8string& str) : UTF(std::u8string_view{str}) {}
