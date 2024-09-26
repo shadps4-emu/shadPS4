@@ -295,10 +295,12 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .bindingCount = static_cast<u32>(bindings.size()),
             .pBindings = bindings.data(),
         };
-        auto [desc_layout_result, desc_layout] =
+        auto desc_layout_result =
             instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-        ASSERT_MSG(desc_layout_result == vk::Result::eSuccess,
-                   "Failed to create descriptor set layout: {}", vk::to_string(desc_layout_result));
+        ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
+                   "Failed to create descriptor set layout: {}",
+                   vk::to_string(desc_layout_result.result));
+        desc_layout = std::move(desc_layout_result.value);
 
         const vk::PushConstantRange push_constants = {
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
