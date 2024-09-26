@@ -501,9 +501,29 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+
+    connect(m_game_grid_frame.get(), &QTableWidget::cellClicked, this,
+            &MainWindow::PlayBackgroundMusic);
+    connect(m_game_list_frame.get(), &QTableWidget::cellClicked, this,
+            &MainWindow::PlayBackgroundMusic);
+}
+
+void MainWindow::PlayBackgroundMusic() {
+    if (isGameRunning || !Config::getPlayBGM()) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    int itemID = isTableList ? m_game_list_frame->currentItem()->row()
+                             : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
+                                   m_game_grid_frame->crtColumn;
+
+    const auto snd0path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
 void MainWindow::StartGame() {
+    isGameRunning = true;
+    BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = Config::getTableMode();
     if (table_mode == 0) {
