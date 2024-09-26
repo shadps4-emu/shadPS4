@@ -381,12 +381,13 @@ static constexpr vk::FormatFeatureFlags2 GetNumberFormatFeatureFlags(
     case AmdGpu::NumberFormat::Uint:
     case AmdGpu::NumberFormat::Sint:
     case AmdGpu::NumberFormat::Float:
-        return BufferRead | BufferWrite | ImageRead | ImageWrite;
+        return BufferRead | BufferWrite | ImageRead | ImageWrite | Mrt;
     case AmdGpu::NumberFormat::Uscaled:
     case AmdGpu::NumberFormat::Sscaled:
     case AmdGpu::NumberFormat::SnormNz:
         return BufferRead | ImageRead;
     case AmdGpu::NumberFormat::Srgb:
+        return ImageRead | Mrt;
     case AmdGpu::NumberFormat::Ubnorm:
     case AmdGpu::NumberFormat::UbnromNz:
     case AmdGpu::NumberFormat::Ubint:
