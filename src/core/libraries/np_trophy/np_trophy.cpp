@@ -223,6 +223,14 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
     return ORBIS_OK;
 }
 
+struct GameTrophyInfo {
+    uint32_t numGroups;
+    uint32_t numTrophies;
+    uint32_t numTrophiesByRarity[5];
+    uint32_t unlockedTrophies;
+    uint32_t unlockedTrophiesByRarity[5];
+};
+
 int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         OrbisNpTrophyGameDetails* details,
                                         OrbisNpTrophyGameData* data) {
@@ -249,19 +257,8 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
 
     if (result) {
 
-        uint32_t numGroups = 0;
-        uint32_t numTrophies = 0;
-        uint32_t numTrophiesByRarity[5];
-        numTrophiesByRarity[1] = 0;
-        numTrophiesByRarity[2] = 0;
-        numTrophiesByRarity[3] = 0;
-        numTrophiesByRarity[4] = 0;
-        uint32_t unlockedTrophies = 0;
-        uint32_t unlockedTrophiesByRarity[5];
-        unlockedTrophiesByRarity[1] = 0;
-        unlockedTrophiesByRarity[2] = 0;
-        unlockedTrophiesByRarity[3] = 0;
-        unlockedTrophiesByRarity[4] = 0;
+        GameTrophyInfo gameInfo;
+        memset(&gameInfo, 0, sizeof(GameTrophyInfo));
 
         auto trophyconf = doc.child("trophyconf");
         for (pugi::xml_node_iterator it = trophyconf.children().begin();
@@ -278,35 +275,35 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
             }
 
             if (std::string(it->name()) == "group")
-                numGroups++;
+                gameInfo.numGroups++;
 
             if (std::string(it->name()) == "trophy") {
                 std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
                 std::string currentTrophyGrade = it->attribute("ttype").value();
 
-                numTrophies++;
+                gameInfo.numTrophies++;
                 if (!currentTrophyGrade.empty()) {
                     int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
-                    numTrophiesByRarity[trophyGrade]++;
+                    gameInfo.numTrophiesByRarity[trophyGrade]++;
                     if (currentTrophyUnlockState == "unlocked") {
-                        unlockedTrophies++;
-                        unlockedTrophiesByRarity[trophyGrade]++;
+                        gameInfo.unlockedTrophies++;
+                        gameInfo.unlockedTrophiesByRarity[trophyGrade]++;
                     }
                 }
             }
         }
 
-        details->numGroups = numGroups;
-        details->numTrophies = numTrophies;
-        details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
-        details->numGold = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
-        details->numSilver = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
-        details->numBronze = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
-        data->unlockedTrophies = unlockedTrophies;
-        data->unlockedPlatinum = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
-        data->unlockedGold = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
-        data->unlockedSilver = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
-        data->unlockedBronze = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        details->numGroups = gameInfo.numGroups;
+        details->numTrophies = gameInfo.numTrophies;
+        details->numPlatinum = gameInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        details->numGold = gameInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        details->numSilver = gameInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        details->numBronze = gameInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        data->unlockedTrophies = gameInfo.unlockedTrophies;
+        data->unlockedPlatinum = gameInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        data->unlockedGold = gameInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        data->unlockedSilver = gameInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        data->unlockedBronze = gameInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
 
         // maybe this should be 1 instead of 100?
         data->progressPercentage = 100;
@@ -322,6 +319,13 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupIcon(OrbisNpTrophyContext context, OrbisNpTr
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
+
+struct GroupTrophyInfo {
+    uint32_t numTrophies;
+    uint32_t numTrophiesByRarity[5];
+    uint32_t unlockedTrophies;
+    uint32_t unlockedTrophiesByRarity[5];
+};
 
 int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                          OrbisNpTrophyGroupId groupId,
@@ -350,26 +354,14 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
 
     if (result) {
 
-        uint32_t numGroups = 0;
-        uint32_t numTrophies = 0;
-        uint32_t numTrophiesByRarity[5];
-        numTrophiesByRarity[1] = 0;
-        numTrophiesByRarity[2] = 0;
-        numTrophiesByRarity[3] = 0;
-        numTrophiesByRarity[4] = 0;
-        uint32_t unlockedTrophies = 0;
-        uint32_t unlockedTrophiesByRarity[5];
-        unlockedTrophiesByRarity[1] = 0;
-        unlockedTrophiesByRarity[2] = 0;
-        unlockedTrophiesByRarity[3] = 0;
-        unlockedTrophiesByRarity[4] = 0;
+        GroupTrophyInfo groupInfo;
+        memset(&groupInfo, 0, sizeof(GroupTrophyInfo));
 
         auto trophyconf = doc.child("trophyconf");
         for (pugi::xml_node_iterator it = trophyconf.children().begin();
              it != trophyconf.children().end(); ++it) {
 
             if (std::string(it->name()) == "group") {
-                numGroups++;
                 std::string currentGroupId = it->attribute("id").value();
                 if (!currentGroupId.empty()) {
                     if (std::stoi(currentGroupId) == groupId) {
@@ -385,6 +377,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
                 }
             }
 
+            details->groupId = groupId;
             data->groupId = groupId;
 
             if (std::string(it->name()) == "trophy") {
@@ -394,30 +387,31 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
 
                 if (!currentTrophyGroupID.empty()) {
                     if (std::stoi(currentTrophyGroupID) == groupId) {
-                        numTrophies++;
+                        groupInfo.numTrophies++;
                         if (!currentTrophyGrade.empty()) {
                             int trophyGrade = GetTrophyGradeFromChar(currentTrophyGrade.at(0));
-                            numTrophiesByRarity[trophyGrade]++;
+                            groupInfo.numTrophiesByRarity[trophyGrade]++;
                             if (currentTrophyUnlockState == "unlocked") {
-                                unlockedTrophies++;
-                                unlockedTrophiesByRarity[trophyGrade]++;
+                                groupInfo.unlockedTrophies++;
+                                groupInfo.unlockedTrophiesByRarity[trophyGrade]++;
                             }
                         }
                     }
                 }
             }
         }
-
-        details->numTrophies = numTrophies;
-        details->numPlatinum = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
-        details->numGold = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
-        details->numSilver = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
-        details->numBronze = numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
-        data->unlockedTrophies = unlockedTrophies;
-        data->unlockedPlatinum = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
-        data->unlockedGold = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
-        data->unlockedSilver = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
-        data->unlockedBronze = unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        
+        details->numTrophies = groupInfo.numTrophies;
+        details->numPlatinum = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        details->numGold = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        details->numSilver = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        details->numBronze = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
+        data->unlockedTrophies = groupInfo.unlockedTrophies;
+        data->unlockedPlatinum =
+            groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        data->unlockedGold = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
+        data->unlockedSilver = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
+        data->unlockedBronze = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
 
         // maybe this should be 1 instead of 100?
         data->progressPercentage = 100;
@@ -925,7 +919,6 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     int numTrophiesUnlocked = 0;
 
     pugi::xml_node_iterator platinumIt;
-    int platinumTrophyGroup = -1;
 
     if (result) {
         auto trophyconf = doc.child("trophyconf");
@@ -937,38 +930,23 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             std::string currentTrophyDescription = it->child("detail").text().as_string();
             std::string currentTrophyType = it->attribute("ttype").value();
             std::string currentTrophyUnlockState = it->attribute("unlockstate").value();
+            std::string currentIconPath =
+                trophyDir.string() + "/trophy00/Icons/TROP" + currentTrophyId + ".PNG";
 
             if (currentTrophyType == "P") {
                 platinumIt = it;
-
-                if (std::string(platinumIt->attribute("gid").value()).empty()) {
-                    platinumTrophyGroup = -1;
-                } else {
-                    platinumTrophyGroup =
-                        std::stoi(std::string(platinumIt->attribute("gid").value()));
-                }
-
                 if (trophyId == std::stoi(currentTrophyId)) {
                     return ORBIS_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK;
                 }
             }
 
             if (std::string(it->name()) == "trophy") {
-                if (platinumTrophyGroup == -1) {
-                    if (std::string(it->attribute("gid").value()).empty()) {
+                if (!std::string(it->attribute("pid").value()).empty()) {
+                    if (std::stoi(std::string(it->attribute("pid").value())) !=
+                        ORBIS_NP_TROPHY_INVALID_TROPHY_ID) {
                         numTrophies++;
                         if (currentTrophyUnlockState == "unlocked") {
                             numTrophiesUnlocked++;
-                        }
-                    }
-                } else {
-                    if (!std::string(it->attribute("gid").value()).empty()) {
-                        if (std::stoi(std::string(it->attribute("gid").value())) ==
-                            platinumTrophyGroup) {
-                            numTrophies++;
-                            if (currentTrophyUnlockState == "unlocked") {
-                                numTrophiesUnlocked++;
-                            }
                         }
                     }
                 }
@@ -998,14 +976,14 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                                 .set_value(std::to_string(trophyTimestamp.tick).c_str());
                         }
 
-                        g_trophy_ui.AddTrophyToQueue(trophyId, currentTrophyName);
+                        g_trophy_ui.AddTrophyToQueue(currentIconPath, currentTrophyName);
                     }
                 }
             }
         }
 
         if (std::string(platinumIt->attribute("unlockstate").value()).empty()) {
-            if ((numTrophies - 2) == numTrophiesUnlocked) {
+            if ((numTrophies - 1) == numTrophiesUnlocked) {
 
                 platinumIt->append_attribute("unlockstate") = "unlocked";
 
@@ -1022,12 +1000,14 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();
+                std::string platinumIconPath =
+                    trophyDir.string() + "/trophy00/Icons/TROP" + platinumTrophyId + ".PNG";
 
                 *platinumId = std::stoi(platinumTrophyId);
-                g_trophy_ui.AddTrophyToQueue(*platinumId, platinumTrophyName);
+                g_trophy_ui.AddTrophyToQueue(platinumIconPath, platinumTrophyName);
             }
         } else if (std::string(platinumIt->attribute("unlockstate").value()) == "locked") {
-            if ((numTrophies - 2) == numTrophiesUnlocked) {
+            if ((numTrophies - 1) == numTrophiesUnlocked) {
 
                 platinumIt->attribute("unlockstate").set_value("unlocked");
 
@@ -1044,9 +1024,11 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
                 std::string platinumTrophyId = platinumIt->attribute("id").value();
                 std::string platinumTrophyName = platinumIt->child("name").text().as_string();
+                std::string platinumIconPath =
+                    trophyDir.string() + "/trophy00/Icons/TROP" + platinumTrophyId + ".PNG";
 
                 *platinumId = std::stoi(platinumTrophyId);
-                g_trophy_ui.AddTrophyToQueue(*platinumId, platinumTrophyName);
+                g_trophy_ui.AddTrophyToQueue(platinumIconPath, platinumTrophyName);
             }
         }
 

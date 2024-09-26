@@ -15,7 +15,7 @@
 namespace Libraries::NpTrophy {
 
 struct TrophyInfo {
-    int trophyId = -1;
+    std::string trophyIconPath;
     std::string trophyName;
 };
 
@@ -26,7 +26,7 @@ public:
     TrophyUI();
     ~TrophyUI() override;
 
-    void AddTrophyToQueue(int trophyId, std::string trophyName);
+    void AddTrophyToQueue(std::string trophyIconPath, std::string trophyName);
 
     void Finish();
 
