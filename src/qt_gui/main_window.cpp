@@ -520,7 +520,8 @@ void MainWindow::PlayBackgroundMusic() {
                              : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
                                    m_game_grid_frame->crtColumn;
 
-    QString snd0path = Common::FS::PathToQString(m_game_info->m_games[itemID].snd0_path);
+    QString snd0path;
+    Common::FS::PathToQString(snd0path, m_game_info->m_games[itemID].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
