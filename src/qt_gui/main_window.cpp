@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include <QProgressDialog>
 
+#include <common/scm_rev.h>
 #include "about_dialog.h"
 #include "cheats_patches.h"
 #include "check_update.h"
@@ -44,7 +45,14 @@ bool MainWindow::Init() {
     GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
-    setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
+    std::string window_title = "";
+    if (Common::isRelease) {
+        window_title = fmt::format("shadPS4 v{}", Common::VERSION);
+    } else {
+        window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
+                                   Common::g_scm_desc);
+    }
+    setWindowTitle(QString::fromStdString(window_title));
     this->show();
     // load game list
     LoadGameLists();
