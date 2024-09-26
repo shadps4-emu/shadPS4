@@ -149,15 +149,14 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     switch (code) {
     case ORBIS_NET_CTL_INFO_DEVICE:
-        info->device = 0;
+        info->device = ORBIS_NET_CTL_DEVICE_WIRED;
         break;
     case ORBIS_NET_CTL_INFO_LINK:
-        info->link = 0; // disconnected
+        info->link = ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
     return ORBIS_OK;
 }
 
@@ -187,7 +186,10 @@ int PS4_SYSV_ABI sceNetCtlGetNetEvConfigInfoIpcInt() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetResult(int eventType, int* errorCode) {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called eventType = {} ", eventType);
+    if (!errorCode) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called eventType = {} ", eventType);
     *errorCode = 0;
     return ORBIS_OK;
 }

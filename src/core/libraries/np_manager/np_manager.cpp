@@ -1010,8 +1010,9 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetState() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state) {
+    *state = ORBIS_NP_STATE_SIGNED_OUT;
+    LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
 }
 

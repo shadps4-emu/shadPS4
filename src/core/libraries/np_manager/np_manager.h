@@ -234,7 +234,7 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState();
 int PS4_SYSV_ABI sceNpGetOnlineId();
 int PS4_SYSV_ABI sceNpGetParentalControlInfo();
 int PS4_SYSV_ABI sceNpGetParentalControlInfoA();
-int PS4_SYSV_ABI sceNpGetState();
+int PS4_SYSV_ABI sceNpGetState(s32 userId, OrbisNpState* state);
 int PS4_SYSV_ABI sceNpGetUserIdByAccountId();
 int PS4_SYSV_ABI sceNpGetUserIdByOnlineId();
 int PS4_SYSV_ABI sceNpHasSignedUp();
