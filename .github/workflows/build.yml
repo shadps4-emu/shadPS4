@@ -411,8 +411,8 @@ jobs:
         tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         draft: false
         prerelease: true
-        artifacts: |
-          ./artifacts/*.zip
+        body: ${{ github.event.head_commit.message }}
+        artifacts: ./artifacts/*.zip
     
     - name: Get current pre-release information
       env:
