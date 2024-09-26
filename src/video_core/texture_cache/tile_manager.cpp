@@ -298,7 +298,8 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
         static auto desc_layout_pair =
             instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
         ASSERT_MSG(desc_layout_pair.result == vk::Result::eSuccess,
-                   "Failed to create descriptor set layout: {}", vk::to_string(desc_layout_pair.result));
+                   "Failed to create descriptor set layout: {}",
+                   vk::to_string(desc_layout_pair.result));
 
         const vk::PushConstantRange push_constants = {
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
