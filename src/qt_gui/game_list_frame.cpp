@@ -74,7 +74,7 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
-    const auto snd0path = QString::fromStdString(m_game_info->m_games[item->row()].snd0_path);
+    QString snd0path = Common::FS::PathToQString(m_game_info->m_games[item->row()].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
