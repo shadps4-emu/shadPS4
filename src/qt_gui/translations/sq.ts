@@ -171,7 +171,7 @@
 		<message>
 			<location filename="../main_window_ui.h" line="308"/>
 			<source>Check for Updates</source>
-			<translation>Kontrolloni për përditësime</translation>
+			<translation>Kontrollo për përditësime</translation>
 		</message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
@@ -510,7 +510,7 @@
 		<message>
 			<location filename="../settings_dialog.ui" line="286"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Kontrollo për përditësime në fillim</translation>
+			<translation>Kontrollo për përditësime në nisje</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
@@ -1025,37 +1025,37 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="73"/>
 			<source>Failed to parse update information.</source>
-			<translation>Deshtoi të analizojë informacionin e përditësimit.</translation>
+			<translation>Analizimi i informacionit të përditësimit deshtoi.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="89"/>
 			<source>No pre-releases found.</source>
-			<translation>Nuk u gjetën publikime paraprake.</translation>
+			<translation>Nuk u gjetën botime paraprake.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="102"/>
 			<source>Invalid release data.</source>
-			<translation> të dhënat e lëshimit janë të pavlefshme.</translation>
+			<translation>Të dhënat e lëshimit janë të pavlefshme.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="142"/>
 			<source>No download URL found for the specified asset.</source>
-			<translation>Nuk u gjet URL për shkarkim për burimin e specifikuar.</translation>
+			<translation>Nuk u gjet URL-ja e shkarkimit për burimin e specifikuar.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="148"/>
 			<source>Your version is already up to date!</source>
-			<translation>Versioni juaj është tashmë i përditësuar!</translation>
+			<translation>Versioni jotë është i përditësuar tashmë!</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="172"/>
 			<source>Update Available</source>
-			<translation>Përditësim i disponueshëm</translation>
+			<translation>Ofrohet një përditësim</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="177"/>
 			<source>Current Version</source>
-			<translation>Versioni aktual</translation>
+			<translation>Versioni i tanishëm</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="178"/>
@@ -1065,7 +1065,7 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="179"/>
 			<source>Do you want to update?</source>
-			<translation>Donëi të përditësoni?</translation>
+			<translation>Do të përditësosh?</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="193"/>
@@ -1075,7 +1075,7 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="198"/>
 			<source>Check for Updates at Startup</source>
-			<translation>Kontrollo për përditësime në fillim</translation>
+			<translation>Kontrollo për përditësime në nisje</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="199"/>
@@ -1100,27 +1100,27 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="310"/>
 			<source>Network error occurred while trying to access the URL</source>
-			<translation>Ka ndodhur një gabim rrjeti gjatë përpjekjes për të aksesuar URL-në</translation>
+			<translation>Ka ndodhur një gabim rrjeti gjatë përpjekjes për të qasur në URL-në</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="330"/>
 			<source>Download Complete</source>
-			<translation>Shkarkimi i përfunduar</translation>
+			<translation>Shkarkimi përfundoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="331"/>
 			<source>The update has been downloaded, press OK to install.</source>
-			<translation>Përditësimi është shkarkuar, shtypni OK për ta instaluar.</translation>
+			<translation>Përditësimi është shkarkuar, shtyp OK për ta instaluar.</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="336"/>
 			<source>Failed to save the update file at</source>
-			<translation>Deshtoi të ruajë skedarin e përditësimit në</translation>
+			<translation>Dështoi ruajtja e skedarit të përditësimit në</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="352"/>
 			<source>Failed to open the ZIP file</source>
-			<translation>Deshtoi të hapë skedarin ZIP</translation>
+			<translation>Hapja e skedarit ZIP dështoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="420"/>
@@ -1130,32 +1130,32 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="445"/>
 			<source>Failed to create directory</source>
-			<translation>Deshtoi të krijojë direktorinë</translation>
+			<translation>Krijimi i dosjes dështoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="464"/>
 			<source>Error decompressing file</source>
-			<translation>Gabim gjatë dekompresimit të skedarit</translation>
+			<translation>Gabim gjatë shpaketimit të skedarit</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="487"/>
 			<source>Failed to open output file</source>
-			<translation>Deshtoi të hapë skedarin e daljes</translation>
+			<translation>Hapja e skedarit dalës dështoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="497"/>
 			<source>Unsupported compression method for file:</source>
-			<translation>Metodë kompresimi e mbështetur për skedarin:</translation>
+			<translation>Mënyra e ngjeshjes nuk mbështetet për skedarin:</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="510"/>
 			<source>Failed to create TAR extraction directory</source>
-			<translation>Deshtoi të krijojë direktorinë e ekstraktimit TAR</translation>
+			<translation>Krijimi i dosjes për shpaketimin TAR dështoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="525"/>
 			<source>Failed to extract the TAR file</source>
-			<translation>Deshtoi të nxjerrë skedarin TAR</translation>
+			<translation>Shpaketimi i skedarit TAR dështoi</translation>
 		</message>
 		<message>
 			<location filename="../checkUpdate.cpp" line="545"/>
@@ -1165,7 +1165,7 @@
 		<message>
 			<location filename="../checkUpdate.cpp" line="619"/>
 			<source>Failed to create the update script file</source>
-			<translation>Deshtoi të krijojë skedarin e skriptit të përditësimit</translation>
+			<translation>Krijimi i skedarit skript të përditësimit dështoi</translation>
 		</message>
 	</context>
 </TS>
