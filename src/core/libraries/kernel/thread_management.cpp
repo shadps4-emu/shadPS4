@@ -17,6 +17,7 @@
 #include "core/libraries/kernel/threads/threads.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
+#include "core/system.h"
 #include "core/tls.h"
 #ifdef _WIN64
 #include <windows.h>
@@ -988,6 +989,7 @@ static void cleanup_thread(void* arg) {
     }
     Core::SetTcbBase(nullptr);
     thread->is_almost_done = true;
+    Common::Singleton<SystemState>::Instance()->RemoveCurrentThreadFromGuestList();
 }
 
 static void* run_thread(void* arg) {
@@ -998,6 +1000,7 @@ static void* run_thread(void* arg) {
     g_pthread_self = thread;
     pthread_cleanup_push(cleanup_thread, thread);
     thread->is_started = true;
+    Common::Singleton<SystemState>::Instance()->AddCurrentThreadToGuestList();
     ret = linker->ExecuteGuest(thread->entry, thread->arg);
     pthread_cleanup_pop(1);
     return ret;

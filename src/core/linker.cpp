@@ -18,6 +18,7 @@
 #include "core/memory.h"
 #include "core/tls.h"
 #include "core/virtual_memory.h"
+#include "system.h"
 
 namespace Core {
 
@@ -88,6 +89,7 @@ void Linker::Execute() {
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
+    Common::Singleton<SystemState>::Instance()->AddCurrentThreadToGuestList();
     Libraries::Kernel::pthreadInitSelfMainThread();
     EnsureThreadInitialized(true);
 

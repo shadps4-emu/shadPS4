@@ -12,6 +12,7 @@
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/platform.h"
+#include "core/system.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
@@ -265,6 +266,8 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
     Common::AccurateTimer timer{vblank_period};
 
+    auto systemState = Common::Singleton<SystemState>::Instance();
+
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
         if (!requests.empty()) {
@@ -284,7 +287,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
             const auto request = receive_request();
             if (!request) {
-                if (!main_port.is_open) {
+                if (!main_port.is_open || systemState->IsGuestThreadsPaused()) {
                     DrawBlankFrame();
                 }
             } else {
