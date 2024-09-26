@@ -1063,15 +1063,25 @@ ScePthread PThreadPool::Create(const char* name) {
         }
     }
 
-    auto* ret = new PthreadInternal{};
-    ret->is_free = false;
-    ret->is_detached = false;
-    ret->is_almost_done = false;
-    ret->attr = nullptr;
+    
+    #ifdef _WIN64
+        auto* ret = new PthreadInternal{};
+    #else
+        // TODO: Linux specific hack
+        static u8* hint_address = reinterpret_cast<u8*>(0x7FFFFC000ULL);
+        auto* ret = reinterpret_cast<PthreadInternal*>(
+            mmap(hint_address, sizeof(PthreadInternal), PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0));
+        hint_address += Common::AlignUp(sizeof(PthreadInternal), 4_KB);
+    #endif
+        ret->is_free = false;
+        ret->is_detached = false;
+        ret->is_almost_done = false;
+        ret->attr = nullptr;
 
-    m_threads.push_back(ret);
+        m_threads.push_back(ret);
 
-    return ret;
+        return ret;
 }
 
 void PS4_SYSV_ABI scePthreadYield() {
