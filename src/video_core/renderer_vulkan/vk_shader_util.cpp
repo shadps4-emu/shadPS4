@@ -218,13 +218,10 @@ vk::ShaderModule CompileSPV(std::span<const u32> code, vk::Device device) {
         .pCode = code.data(),
     };
 
-    try {
-        return device.createShaderModule(shader_info);
-    } catch (vk::SystemError& err) {
-        UNREACHABLE_MSG("{}", err.what());
-    }
-
-    return {};
+    auto [module_result, module] = device.createShaderModule(shader_info);
+    ASSERT_MSG(module_result == vk::Result::eSuccess, "Failed to compile SPIR-V shader: {}",
+               vk::to_string(module_result));
+    return module;
 }
 
 } // namespace Vulkan

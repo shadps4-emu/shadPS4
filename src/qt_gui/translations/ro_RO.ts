@@ -168,6 +168,11 @@
             <source>Boot Game</source>
             <translation>Boot Game</translation>
         </message>
+		<message>
+			<location filename="../main_window_ui.h" line="308"/>
+			<source>Check for Updates</source>
+			<translation>Verifică actualizările</translation>
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
@@ -308,11 +313,11 @@
             <source>Themes</source>
             <translation>Themes</translation>
         </message>
-        <message>
-            <location filename="../main_window_ui.h" line="358"/>
-            <source>About</source>
-            <translation>About</translation>
-        </message>
+		<message> 
+			<location filename="../main_window_ui.h" line="358"/>
+			<source>Help</source> 
+			<translation>Ajutor</translation> 
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
@@ -497,14 +502,29 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Enable RenderDoc Debugging</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Actualizare</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Verifică actualizări la pornire</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Verifică actualizări</translation>
+		</message>
 	</context>
     <context>
+        <name>MainWindow</name>
 		<message>
 			<location filename="../main_window.cpp" line="106"/>
 			<source>Game List</source>
 			<translation>Lista jocurilor</translation>
 		</message>
-        <name>MainWindow</name>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -973,6 +993,179 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Drum</translation>
+		</message>
+	</context>
+	<context>
+		<name>CheckUpdate</name>
+		<message>
+			<location filename="../checkUpdate.cpp" line="34"/>
+			<source>Auto Updater</source>
+			<translation>Actualizator automat</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="51"/>
+			<source>Error</source>
+			<translation>Eroare</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="52"/>
+			<source>Invalid update channel: </source>
+			<translation>Canal de actualizare invalid: </translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="53"/>
+			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
+			<translation>În fișierul config.tml, updateChannel trebuie să conțină 'stable' sau 'unstable'</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="64"/>
+			<source>Network error:</source>
+			<translation>Eroare de rețea:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="73"/>
+			<source>Failed to parse update information.</source>
+			<translation>Nu s-au putut analiza informațiile de actualizare.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="89"/>
+			<source>No pre-releases found.</source>
+			<translation>Nu au fost găsite pre-lansări.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="102"/>
+			<source>Invalid release data.</source>
+			<translation>Datele versiunii sunt invalide.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="142"/>
+			<source>No download URL found for the specified asset.</source>
+			<translation>Nu s-a găsit URL de descărcare pentru resursa specificată.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="148"/>
+			<source>Your version is already up to date!</source>
+			<translation>Versiunea ta este deja actualizată!</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="172"/>
+			<source>Update Available</source>
+			<translation>Actualizare disponibilă</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="177"/>
+			<source>Current Version</source>
+			<translation>Versiunea curentă</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="178"/>
+			<source>Latest Version</source>
+			<translation>Ultima versiune</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="179"/>
+			<source>Do you want to update?</source>
+			<translation>Doriți să actualizați?</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="193"/>
+			<source>Show Changelog</source>
+			<translation>Afișați jurnalul de modificări</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="198"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Verifică actualizări la pornire</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="199"/>
+			<source>Update</source>
+			<translation>Actualizare</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="200"/>
+			<source>No</source>
+			<translation>Nu</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="223"/>
+			<source>Hide Changelog</source>
+			<translation>Ascunde jurnalul de modificări</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="296"/>
+			<source>Changes</source>
+			<translation>Modificări</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="310"/>
+			<source>Network error occurred while trying to access the URL</source>
+			<translation>A apărut o eroare de rețea în timpul încercării de a accesa URL-ul</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="330"/>
+			<source>Download Complete</source>
+			<translation>Descărcare completă</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="331"/>
+			<source>The update has been downloaded, press OK to install.</source>
+			<translation>Actualizarea a fost descărcată, apăsați OK pentru a instala.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="336"/>
+			<source>Failed to save the update file at</source>
+			<translation>Nu s-a putut salva fișierul de actualizare la</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="352"/>
+			<source>Failed to open the ZIP file</source>
+			<translation>Nu s-a putut deschide fișierul ZIP</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="420"/>
+			<source>File name is empty. Possibly corrupted ZIP.</source>
+			<translation>Numele fișierului este gol. Posibil ZIP corupt.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="445"/>
+			<source>Failed to create directory</source>
+			<translation>Nu s-a putut crea directorul</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="464"/>
+			<source>Error decompressing file</source>
+			<translation>Eroare la decompresarea fișierului</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="487"/>
+			<source>Failed to open output file</source>
+			<translation>Nu s-a putut deschide fișierul de ieșire</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="497"/>
+			<source>Unsupported compression method for file:</source>
+			<translation>Metodă de compresie nesuportată pentru fișier:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="510"/>
+			<source>Failed to create TAR extraction directory</source>
+			<translation>Nu s-a putut crea directorul de extragere TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="525"/>
+			<source>Failed to extract the TAR file</source>
+			<translation>Nu s-a putut extrage fișierul TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="545"/>
+			<source>Starting Update...</source>
+			<translation>Încep actualizarea...</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="619"/>
+			<source>Failed to create the update script file</source>
+			<translation>Nu s-a putut crea fișierul script de actualizare</translation>
 		</message>
 	</context>
 </TS>

@@ -10,6 +10,7 @@ struct GameInfo {
                                      // (normally directory that contains eboot.bin)
     std::filesystem::path icon_path; // path of icon0.png
     std::filesystem::path pic_path;  // path of pic1.png
+    std::filesystem::path snd0_path; // path of snd0.at9
     QImage icon;
     std::string size;
     // variables extracted from param.sfo

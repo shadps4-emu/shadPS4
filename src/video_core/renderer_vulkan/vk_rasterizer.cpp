@@ -24,7 +24,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
-    wfi_event = instance.GetDevice().createEventUnique({});
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -350,7 +349,10 @@ void Rasterizer::UpdateViewportScissorState() {
     boost::container::static_vector<vk::Rect2D, Liverpool::NumViewports> scissors;
 
     const float reduce_z =
-        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
+        instance.IsDepthClipControlSupported() &&
+                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
+            ? 1.0f
+            : 0.0f;
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];

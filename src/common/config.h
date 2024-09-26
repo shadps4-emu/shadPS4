@@ -13,9 +13,11 @@ void save(const std::filesystem::path& path);
 
 bool isNeoMode();
 bool isFullscreenMode();
+bool getPlayBGM();
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
+std::string getUpdateChannel();
 
 bool getUseSpecialPad();
 int getSpecialPadClass();
@@ -26,6 +28,7 @@ s32 getGpuId();
 
 bool debugDump();
 bool showSplash();
+bool autoUpdate();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
@@ -35,6 +38,7 @@ u32 vblankDiv();
 
 void setDebugDump(bool enable);
 void setShowSplash(bool enable);
+void setAutoUpdate(bool enable);
 void setNullGpu(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);
@@ -44,9 +48,11 @@ void setGpuId(s32 selectedGpuId);
 void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
+void setPlayBGM(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
+void setUpdateChannel(const std::string& type);
 
 void setUseSpecialPad(bool use);
 void setSpecialPadClass(int type);

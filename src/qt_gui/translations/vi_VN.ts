@@ -168,6 +168,11 @@
             <source>Boot Game</source>
             <translation>Boot Game</translation>
         </message>
+		<message>
+			<location filename="../main_window_ui.h" line="308"/>
+			<source>Check for Updates</source>
+			<translation>Kiểm tra bản cập nhật</translation>
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="314"/>
             <source>About shadPS4</source>
@@ -308,11 +313,11 @@
             <source>Themes</source>
             <translation>Themes</translation>
         </message>
-        <message>
-            <location filename="../main_window_ui.h" line="358"/>
-            <source>About</source>
-            <translation>About</translation>
-        </message>
+		<message> 
+			<location filename="../main_window_ui.h" line="358"/>
+			<source>Help</source> 
+			<translation>Giúp đỡ</translation> 
+		</message>
         <message>
             <location filename="../main_window_ui.h" line="359"/>
             <source>Dark</source>
@@ -497,6 +502,21 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>Enable RenderDoc Debugging</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>Cập nhật</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Kiểm tra cập nhật khi khởi động</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>Kiểm tra cập nhật</translation>
+		</message>
     </context>
     <context>
         <name>MainWindow</name>
@@ -973,6 +993,179 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>Đường dẫn</translation>
+		</message>
+	</context>
+	<context>
+		<name>CheckUpdate</name>
+		<message>
+			<location filename="../checkUpdate.cpp" line="34"/>
+			<source>Auto Updater</source>
+			<translation>Trình cập nhật tự động</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="51"/>
+			<source>Error</source>
+			<translation>Lỗi</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="52"/>
+			<source>Invalid update channel: </source>
+			<translation>Kênh cập nhật không hợp lệ: </translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="53"/>
+			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
+			<translation>Trong updateChannel trong tệp config.tml phải chứa 'stable' hoặc 'unstable'</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="64"/>
+			<source>Network error:</source>
+			<translation>Lỗi mạng:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="73"/>
+			<source>Failed to parse update information.</source>
+			<translation>Không thể phân tích thông tin cập nhật.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="89"/>
+			<source>No pre-releases found.</source>
+			<translation>Không tìm thấy bản phát hành trước.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="102"/>
+			<source>Invalid release data.</source>
+			<translation>Dữ liệu bản phát hành không hợp lệ.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="142"/>
+			<source>No download URL found for the specified asset.</source>
+			<translation>Không tìm thấy URL tải xuống cho tài sản đã chỉ định.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="148"/>
+			<source>Your version is already up to date!</source>
+			<translation>Phiên bản của bạn đã được cập nhật!</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="172"/>
+			<source>Update Available</source>
+			<translation>Có bản cập nhật</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="177"/>
+			<source>Current Version</source>
+			<translation>Phiên bản hiện tại</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="178"/>
+			<source>Latest Version</source>
+			<translation>Phiên bản mới nhất</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="179"/>
+			<source>Do you want to update?</source>
+			<translation>Bạn có muốn cập nhật không?</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="193"/>
+			<source>Show Changelog</source>
+			<translation>Hiện nhật ký thay đổi</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="198"/>
+			<source>Check for Updates at Startup</source>
+			<translation>Kiểm tra cập nhật khi khởi động</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="199"/>
+			<source>Update</source>
+			<translation>Cập nhật</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="200"/>
+			<source>No</source>
+			<translation>Không</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="223"/>
+			<source>Hide Changelog</source>
+			<translation>Ẩn nhật ký thay đổi</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="296"/>
+			<source>Changes</source>
+			<translation>Thay đổi</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="310"/>
+			<source>Network error occurred while trying to access the URL</source>
+			<translation>Xảy ra lỗi mạng khi cố gắng truy cập URL</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="330"/>
+			<source>Download Complete</source>
+			<translation>Tải xuống hoàn tất</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="331"/>
+			<source>The update has been downloaded, press OK to install.</source>
+			<translation>Bản cập nhật đã được tải xuống, nhấn OK để cài đặt.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="336"/>
+			<source>Failed to save the update file at</source>
+			<translation>Không thể lưu tệp cập nhật tại</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="352"/>
+			<source>Failed to open the ZIP file</source>
+			<translation>Không thể mở tệp ZIP</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="420"/>
+			<source>File name is empty. Possibly corrupted ZIP.</source>
+			<translation>Tên tệp trống. Có thể ZIP bị hỏng.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="445"/>
+			<source>Failed to create directory</source>
+			<translation>Không thể tạo thư mục</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="464"/>
+			<source>Error decompressing file</source>
+			<translation>Lỗi khi giải nén tệp</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="487"/>
+			<source>Failed to open output file</source>
+			<translation>Không thể mở tệp đầu ra</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="497"/>
+			<source>Unsupported compression method for file:</source>
+			<translation>Phương pháp nén không được hỗ trợ cho tệp:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="510"/>
+			<source>Failed to create TAR extraction directory</source>
+			<translation>Không thể tạo thư mục giải nén TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="525"/>
+			<source>Failed to extract the TAR file</source>
+			<translation>Không thể giải nén tệp TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="545"/>
+			<source>Starting Update...</source>
+			<translation>Đang bắt đầu cập nhật...</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="619"/>
+			<source>Failed to create the update script file</source>
+			<translation>Không thể tạo tệp kịch bản cập nhật</translation>
 		</message>
 	</context>
 </TS>

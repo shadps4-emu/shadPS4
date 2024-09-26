@@ -39,7 +39,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push_constants,
     };
-    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create graphics pipeline layout: {}", vk::to_string(layout_result));
+    pipeline_layout = std::move(layout);
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
@@ -281,12 +284,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .layout = *pipeline_layout,
     };
 
-    auto result = device.createGraphicsPipelineUnique(pipeline_cache, pipeline_info);
-    if (result.result == vk::Result::eSuccess) {
-        pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Graphics pipeline creation failed!");
-    }
+    auto [pipeline_result, pipe] =
+        device.createGraphicsPipelineUnique(pipeline_cache, pipeline_info);
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
+               vk::to_string(pipeline_result));
+    pipeline = std::move(pipe);
 }
 
 GraphicsPipeline::~GraphicsPipeline() = default;
@@ -345,7 +347,11 @@ void GraphicsPipeline::BuildDescSetLayout() {
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    auto [layout_result, layout] =
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create graphics descriptor set layout: {}", vk::to_string(layout_result));
+    desc_layout = std::move(layout);
 }
 
 void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,

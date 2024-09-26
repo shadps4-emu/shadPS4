@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE TS>
-<TS version="2.1" language="ar_AR">
+<?xml version="1.0" ?><!DOCTYPE TS><TS version="2.1" language="ar_AR">
     <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
          SPDX-License-Identifier: GPL-2.0-or-later -->
     <context>
@@ -171,6 +169,11 @@
          <translation>تشغيل اللعبة</translation>
      </message>
      <message>
+         <location filename="../main_window_ui.h" line="308"/>
+         <source>Check for Updates</source>
+         <translation>تحقق من التحديثات</translation>
+	</message>
+     <message>
          <location filename="../main_window_ui.h" line="314"/>
          <source>About shadPS4</source>
          <translation>shadPS4 حول</translation>
@@ -310,10 +313,10 @@
          <source>Themes</source>
          <translation>السمات</translation>
      </message>
-     <message>
+     <message> 
          <location filename="../main_window_ui.h" line="358"/>
-         <source>About</source>
-         <translation>حول</translation>
+         <source>Help</source> 
+         <translation>مساعدة</translation> 
      </message>
      <message>
          <location filename="../main_window_ui.h" line="359"/>
@@ -499,14 +502,29 @@
             <source>Enable RenderDoc Debugging</source>
             <translation>RenderDoc تمكين تصحيح أخطاء</translation>
         </message>
+		<message>
+			<location filename="../settings_dialog.ui" line="274"/>
+			<source>Update</source>
+			<translation>تحديث</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="286"/>
+			<source>Check for Updates at Startup</source>
+			<translation>تحقق من التحديثات عند بدء التشغيل</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="322"/>
+			<source>Check for Updates</source>
+			<translation>التحقق من التحديثات</translation>
+		</message>
     </context>
     <context>
         <name>MainWindow</name>
-		<message>
-			<location filename="../main_window.cpp" line="106"/>
-			<source>Game List</source>
-			<translation>ققائمة الألعاب</translation>
-		</message>
+        <message>
+            <location filename="../main_window.cpp" line="106"/>
+            <source>Game List</source>
+            <translation>ققائمة الألعاب</translation>
+        </message>
         <message>
             <location filename="../main_window.cpp" line="168"/>
             <source> * Unsupported Vulkan Version</source>
@@ -663,17 +681,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="50"/>
             <source>defaultTextEdit_MSG</source>
-            <translation>الغش والتصحيحات هي ميزات تجريبية.
-            استخدمها بحذر.
-
-            قم بتنزيل الغش بشكل فردي عن طريق اختيار المستودع والنقر على زر التنزيل.
-            في علامة تبويب التصحيحات، يمكنك تنزيل جميع التصحيحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.
-
-            نظرًا لأننا لا نقوم بتطوير الغش/التصحيحات،
-            يرجى الإبلاغ عن أي مشاكل إلى مؤلف الغش.
-
-            هل قمت بإنشاء غش جديد؟ قم بزيارة:
-            https://github.com/shadps4-emu/ps4_cheats</translation>
+            <translation>الغش والتصحيحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الغش بشكل فردي عن طريق اختيار المستودع والنقر على زر التنزيل.\nفي علامة تبويب التصحيحات، يمكنك تنزيل جميع التصحيحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الغش/التصحيحات،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الغش.\n\nهل قمت بإنشاء غش جديد؟ قم بزيارة:\nhttps://github.com/shadps4-emu/ps4_cheats</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="69"/>
@@ -728,8 +736,7 @@
         <message>
             <location filename="../cheats_patches.cpp" line="178"/>
             <source>Do you want to delete the selected file?\n%1</source>
-            <translation>هل تريد حذف الملف المحدد؟
-    %1</translation>
+            <translation>هل تريد حذف الملف المحدد؟\n%1</translation>
         </message>
         <message>
             <location filename="../cheats_patches.cpp" line="213"/>
@@ -986,6 +993,179 @@
 			<location filename="../game_list_frame.cpp" line="35"/>
 			<source>Path</source>
 			<translation>مسار</translation>
+		</message>
+	</context>
+	<context>
+		<name>CheckUpdate</name>
+		<message>
+			<location filename="../checkUpdate.cpp" line="34"/>
+			<source>Auto Updater</source>
+			<translation>محدث تلقائي</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="51"/>
+			<source>Error</source>
+			<translation>خطأ</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="52"/>
+			<source>Invalid update channel: </source>
+			<translation>قناة تحديث غير صالحة: </translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="53"/>
+			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
+			<translation>يجب أن يحتوي updateChannel في ملف config.tml على 'stable' أو 'unstable'</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="64"/>
+			<source>Network error:</source>
+			<translation>خطأ في الشبكة:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="73"/>
+			<source>Failed to parse update information.</source>
+			<translation>فشل في تحليل معلومات التحديث.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="89"/>
+			<source>No pre-releases found.</source>
+			<translation>لم يتم العثور على أي إصدارات مسبقة.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="102"/>
+			<source>Invalid release data.</source>
+			<translation>بيانات الإصدار غير صالحة.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="142"/>
+			<source>No download URL found for the specified asset.</source>
+			<translation>لم يتم العثور على عنوان URL للتنزيل للأصل المحدد.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="148"/>
+			<source>Your version is already up to date!</source>
+			<translation>نسختك محدثة بالفعل!</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="172"/>
+			<source>Update Available</source>
+			<translation>تحديث متاح</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="177"/>
+			<source>Current Version</source>
+			<translation>الإصدار الحالي</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="178"/>
+			<source>Latest Version</source>
+			<translation>آخر إصدار</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="179"/>
+			<source>Do you want to update?</source>
+			<translation>هل تريد التحديث؟</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="193"/>
+			<source>Show Changelog</source>
+			<translation>عرض سجل التغييرات</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="198"/>
+			<source>Check for Updates at Startup</source>
+			<translation>تحقق من التحديثات عند بدء التشغيل</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="199"/>
+			<source>Update</source>
+			<translation>تحديث</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="200"/>
+			<source>No</source>
+			<translation>لا</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="223"/>
+			<source>Hide Changelog</source>
+			<translation>إخفاء سجل التغييرات</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="296"/>
+			<source>Changes</source>
+			<translation>تغييرات</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="310"/>
+			<source>Network error occurred while trying to access the URL</source>
+			<translation>حدث خطأ في الشبكة أثناء محاولة الوصول إلى عنوان URL</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="330"/>
+			<source>Download Complete</source>
+			<translation>اكتمل التنزيل</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="331"/>
+			<source>The update has been downloaded, press OK to install.</source>
+			<translation>تم تنزيل التحديث، اضغط على OK للتثبيت.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="336"/>
+			<source>Failed to save the update file at</source>
+			<translation>فشل في حفظ ملف التحديث في</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="352"/>
+			<source>Failed to open the ZIP file</source>
+			<translation>فشل في فتح ملف ZIP</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="420"/>
+			<source>File name is empty. Possibly corrupted ZIP.</source>
+			<translation>اسم الملف فارغ. قد يكون ZIP تالفًا.</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="445"/>
+			<source>Failed to create directory</source>
+			<translation>فشل في إنشاء الدليل</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="464"/>
+			<source>Error decompressing file</source>
+			<translation>خطأ أثناء فك ضغط الملف</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="487"/>
+			<source>Failed to open output file</source>
+			<translation>فشل في فتح ملف الإخراج</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="497"/>
+			<source>Unsupported compression method for file:</source>
+			<translation>طريقة الضغط غير مدعومة للملف:</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="510"/>
+			<source>Failed to create TAR extraction directory</source>
+			<translation>فشل في إنشاء دليل استخراج TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="525"/>
+			<source>Failed to extract the TAR file</source>
+			<translation>فشل في استخراج ملف TAR</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="545"/>
+			<source>Starting Update...</source>
+			<translation>بدء التحديث...</translation>
+		</message>
+		<message>
+			<location filename="../checkUpdate.cpp" line="619"/>
+			<source>Failed to create the update script file</source>
+			<translation>فشل في إنشاء ملف سكريبت التحديث</translation>
 		</message>
 	</context>
 </TS>

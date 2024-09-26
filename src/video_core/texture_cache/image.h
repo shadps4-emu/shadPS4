@@ -114,6 +114,7 @@ struct Image {
 
     // Resource state tracking
     vk::ImageUsageFlags usage;
+    vk::FormatFeatureFlags2 format_features;
     struct State {
         vk::Flags<vk::PipelineStageFlagBits2> pl_stage = vk::PipelineStageFlagBits2::eAllCommands;
         vk::Flags<vk::AccessFlagBits2> access_mask = vk::AccessFlagBits2::eNone;

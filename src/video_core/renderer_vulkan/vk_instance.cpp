@@ -14,17 +14,26 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
-#pragma GCC diagnostic pop
 
 namespace Vulkan {
 
 namespace {
 
+std::vector<vk::PhysicalDevice> EnumeratePhysicalDevices(vk::UniqueInstance& instance) {
+    auto [devices_result, devices] = instance->enumeratePhysicalDevices();
+    ASSERT_MSG(devices_result == vk::Result::eSuccess, "Failed to enumerate physical devices: {}",
+               vk::to_string(devices_result));
+    return std::move(devices);
+}
+
 std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
-    const std::vector extensions = physical.enumerateDeviceExtensionProperties();
+    const auto [extensions_result, extensions] = physical.enumerateDeviceExtensionProperties();
+    if (extensions_result != vk::Result::eSuccess) {
+        LOG_ERROR(Render_Vulkan, "Could not query supported extensions: {}",
+                  vk::to_string(extensions_result));
+        return {};
+    }
     std::vector<std::string> supported_extensions;
     supported_extensions.reserve(extensions.size());
     for (const auto& extension : extensions) {
@@ -33,16 +42,41 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
     return supported_extensions;
 }
 
+vk::FormatProperties3 GetFormatProperties(vk::PhysicalDevice physical, vk::Format format) {
+    vk::FormatProperties3 properties3{};
+    vk::FormatProperties2 properties2 = {
+        .pNext = &properties3,
+    };
+    physical.getFormatProperties2(format, &properties2);
+    return properties3;
+}
+
 std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     vk::PhysicalDevice physical) {
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
-    for (const auto& format : LiverpoolToVK::GetAllFormats()) {
-        vk::FormatProperties3 properties3{};
-        vk::FormatProperties2 properties2 = {
-            .pNext = &properties3,
-        };
-        physical.getFormatProperties2(format, &properties2);
-        format_properties.emplace(format, properties3);
+    for (const auto& format_info : LiverpoolToVK::SurfaceFormats()) {
+        const auto format = format_info.vk_format;
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
+    }
+    for (const auto& format_info : LiverpoolToVK::DepthFormats()) {
+        const auto format = format_info.vk_format;
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
+    }
+    // Other miscellaneous formats, e.g. for color buffers, swizzles, or compatibility
+    static constexpr std::array misc_formats = {
+        vk::Format::eA2R10G10B10UnormPack32, vk::Format::eA8B8G8R8UnormPack32,
+        vk::Format::eA8B8G8R8SrgbPack32,     vk::Format::eB8G8R8A8Unorm,
+        vk::Format::eB8G8R8A8Srgb,           vk::Format::eR5G6B5UnormPack16,
+        vk::Format::eD24UnormS8Uint,
+    };
+    for (const auto& format : misc_formats) {
+        if (!format_properties.contains(format)) {
+            format_properties.emplace(format, GetFormatProperties(physical, format));
+        }
     }
     return format_properties;
 }
@@ -57,13 +91,13 @@ std::string GetReadableVersion(u32 version) {
 Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
     : instance{CreateInstance(Frontend::WindowSystemType::Headless, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{instance->enumeratePhysicalDevices()} {}
+      physical_devices{EnumeratePhysicalDevices(instance)} {}
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
     : instance{CreateInstance(window.getWindowInfo().type, enable_validation,
                               enable_crash_diagnostic)},
-      physical_devices{instance->enumeratePhysicalDevices()} {
+      physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
     }
@@ -125,22 +159,23 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     CollectToolingInfo();
 
     // Check and log format support details.
-    for (const auto& key : format_properties | std::views::keys) {
-        const auto format = key;
-        if (!IsImageFormatSupported(format)) {
-            const auto alternative = GetAlternativeFormat(format);
-            if (IsImageFormatSupported(alternative)) {
-                LOG_WARNING(Render_Vulkan,
-                            "Format {} is not supported for images, falling back to {}.",
-                            vk::to_string(format), vk::to_string(alternative));
-            } else if (IsVertexFormatSupported(format)) {
-                LOG_WARNING(Render_Vulkan, "Format {} is only supported for vertex buffers.",
-                            vk::to_string(format));
-            } else {
-                LOG_ERROR(Render_Vulkan,
-                          "Format {} is not supported and no suitable alternative is supported.",
-                          vk::to_string(format));
-            }
+    for (const auto& format : LiverpoolToVK::SurfaceFormats()) {
+        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Surface format data_format={}, number_format={} is not fully supported "
+                        "(vk_format={}, requested flags={})",
+                        static_cast<u32>(format.data_format),
+                        static_cast<u32>(format.number_format), vk::to_string(format.vk_format),
+                        vk::to_string(format.flags));
+        }
+    }
+    for (const auto& format : LiverpoolToVK::DepthFormats()) {
+        if (!IsFormatSupported(GetSupportedFormat(format.vk_format, format.flags), format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Depth format z_format={}, stencil_format={} is not fully supported "
+                        "(vk_format={}, requested flags={})",
+                        static_cast<u32>(format.z_format), static_cast<u32>(format.stencil_format),
+                        vk::to_string(format.vk_format), vk::to_string(format.flags));
         }
     }
 }
@@ -395,15 +430,12 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();
     }
 
-    try {
-        device = physical_device.createDeviceUnique(device_chain.get());
-    } catch (vk::ExtensionNotPresentError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Some required extensions are not available {}", err.what());
-        return false;
-    } catch (vk::FeatureNotPresentError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Some required features are not available {}", err.what());
+    auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
+    if (device_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan, "Failed to create device: {}", vk::to_string(device_result));
         return false;
     }
+    device = std::move(dev);
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(*device);
 
@@ -411,27 +443,33 @@ bool Instance::CreateDevice() {
     present_queue = device->getQueue(queue_family_index, 0);
 
     if (calibrated_timestamps) {
-        const auto& time_domains = physical_device.getCalibrateableTimeDomainsEXT();
+        const auto [time_domains_result, time_domains] =
+            physical_device.getCalibrateableTimeDomainsEXT();
+        if (time_domains_result == vk::Result::eSuccess) {
 #if _WIN64
-        const bool has_host_time_domain =
-            std::find(time_domains.cbegin(), time_domains.cend(),
-                      vk::TimeDomainEXT::eQueryPerformanceCounter) != time_domains.cend();
+            const bool has_host_time_domain =
+                std::find(time_domains.cbegin(), time_domains.cend(),
+                          vk::TimeDomainEXT::eQueryPerformanceCounter) != time_domains.cend();
 #elif __linux__
-        const bool has_host_time_domain =
-            std::find(time_domains.cbegin(), time_domains.cend(),
-                      vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
+            const bool has_host_time_domain =
+                std::find(time_domains.cbegin(), time_domains.cend(),
+                          vk::TimeDomainEXT::eClockMonotonicRaw) != time_domains.cend();
 #else
-        // Tracy limitation means only Windows and Linux can use host time domain.
-        // https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
-        const bool has_host_time_domain = false;
+            // Tracy limitation means only Windows and Linux can use host time domain.
+            // https://github.com/shadps4-emu/tracy/blob/c6d779d78508514102fbe1b8eb28bda10d95bb2a/public/tracy/TracyVulkan.hpp#L384-L389
+            const bool has_host_time_domain = false;
 #endif
-        if (has_host_time_domain) {
-            static constexpr std::string_view context_name{"vk_rasterizer"};
-            profiler_context =
-                TracyVkContextHostCalibrated(*instance, physical_device, *device,
-                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
-                                             VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr);
-            TracyVkContextName(profiler_context, context_name.data(), context_name.size());
+            if (has_host_time_domain) {
+                static constexpr std::string_view context_name{"vk_rasterizer"};
+                profiler_context = TracyVkContextHostCalibrated(
+                    *instance, physical_device, *device,
+                    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
+                    VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr);
+                TracyVkContextName(profiler_context, context_name.data(), context_name.size());
+            }
+        } else {
+            LOG_WARNING(Render_Vulkan, "Could not query calibrated time domains for profiling: {}",
+                        vk::to_string(time_domains_result));
         }
     }
 
@@ -487,7 +525,12 @@ void Instance::CollectToolingInfo() {
     if (!tooling_info) {
         return;
     }
-    const auto tools = physical_device.getToolPropertiesEXT();
+    const auto [tools_result, tools] = physical_device.getToolPropertiesEXT();
+    if (tools_result != vk::Result::eSuccess) {
+        LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",
+                  vk::to_string(tools_result));
+        return;
+    }
     for (const vk::PhysicalDeviceToolProperties& tool : tools) {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
@@ -496,7 +539,8 @@ void Instance::CollectToolingInfo() {
     }
 }
 
-bool Instance::IsImageFormatSupported(const vk::Format format) const {
+bool Instance::IsFormatSupported(const vk::Format format,
+                                 const vk::FormatFeatureFlags2 flags) const {
     if (format == vk::Format::eUndefined) [[unlikely]] {
         return true;
     }
@@ -506,49 +550,36 @@ bool Instance::IsImageFormatSupported(const vk::Format format) const {
         UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
     }
 
-    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eTransferSrc |
-                                                      vk::FormatFeatureFlagBits2::eTransferDst |
-                                                      vk::FormatFeatureFlagBits2::eSampledImage;
-    return (it->second.optimalTilingFeatures & optimal_flags) == optimal_flags;
+    return ((it->second.optimalTilingFeatures | it->second.bufferFeatures) & flags) == flags;
 }
 
-bool Instance::IsVertexFormatSupported(const vk::Format format) const {
-    if (format == vk::Format::eUndefined) [[unlikely]] {
-        return true;
-    }
-
-    const auto it = format_properties.find(format);
-    if (it == format_properties.end()) {
-        UNIMPLEMENTED_MSG("Properties of format {} have not been queried.", vk::to_string(format));
-    }
-
-    constexpr vk::FormatFeatureFlags2 optimal_flags = vk::FormatFeatureFlagBits2::eVertexBuffer;
-    return (it->second.bufferFeatures & optimal_flags) == optimal_flags;
-}
-
-vk::Format Instance::GetAlternativeFormat(const vk::Format format) const {
-    if (format == vk::Format::eB5G6R5UnormPack16) {
+static vk::Format GetAlternativeFormat(const vk::Format format) {
+    switch (format) {
+    case vk::Format::eB5G6R5UnormPack16:
         return vk::Format::eR5G6B5UnormPack16;
-    } else if (format == vk::Format::eD16UnormS8Uint) {
+    case vk::Format::eD16UnormS8Uint:
         return vk::Format::eD24UnormS8Uint;
+    default:
+        return format;
     }
-    return format;
 }
 
-vk::Format Instance::GetSupportedFormat(const vk::Format format) const {
-    if (IsImageFormatSupported(format)) [[likely]] {
+vk::Format Instance::GetSupportedFormat(const vk::Format format,
+                                        const vk::FormatFeatureFlags2 flags) const {
+    if (IsFormatSupported(format, flags)) [[likely]] {
         return format;
     }
     const vk::Format alternative = GetAlternativeFormat(format);
-    if (IsImageFormatSupported(alternative)) [[likely]] {
+    if (IsFormatSupported(alternative, flags)) [[likely]] {
         return alternative;
     }
     return format;
 }
 
-vk::ComponentMapping Instance::GetSupportedComponentSwizzle(vk::Format format,
-                                                            vk::ComponentMapping swizzle) const {
-    if (IsImageFormatSupported(format)) [[likely]] {
+vk::ComponentMapping Instance::GetSupportedComponentSwizzle(
+    const vk::Format format, const vk::ComponentMapping swizzle,
+    const vk::FormatFeatureFlags2 flags) const {
+    if (IsFormatSupported(format, flags)) [[likely]] {
         return swizzle;
     }
 

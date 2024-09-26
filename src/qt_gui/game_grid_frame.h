@@ -5,6 +5,7 @@
 
 #include <QScrollBar>
 
+#include "background_music_player.h"
 #include "common/config.h"
 #include "game_info.h"
 #include "game_list_utils.h"
@@ -19,6 +20,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void SetGridBackgroundImage(int row, int column);
     void RefreshGridBackgroundImage();
+    void PlayBackgroundMusic(QTableWidgetItem* item);
 
 private:
     QImage backgroundImage;

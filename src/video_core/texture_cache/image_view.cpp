@@ -164,8 +164,9 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .pNext = &usage_ci,
         .image = image.image,
         .viewType = info.type,
-        .format = instance.GetSupportedFormat(format),
-        .components = instance.GetSupportedComponentSwizzle(format, info.mapping),
+        .format = instance.GetSupportedFormat(format, image.format_features),
+        .components =
+            instance.GetSupportedComponentSwizzle(format, info.mapping, image.format_features),
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
@@ -174,7 +175,10 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .layerCount = info.range.extent.layers,
         },
     };
-    image_view = instance.GetDevice().createImageViewUnique(image_view_ci);
+    auto [view_result, view] = instance.GetDevice().createImageViewUnique(image_view_ci);
+    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create image view: {}",
+               vk::to_string(view_result));
+    image_view = std::move(view);
 }
 
 ImageView::~ImageView() = default;

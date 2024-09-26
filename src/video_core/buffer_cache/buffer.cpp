@@ -9,10 +9,7 @@
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
-#pragma GCC diagnostic pop
 
 namespace VideoCore {
 
@@ -128,7 +125,9 @@ vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataF
         .offset = offset,
         .range = size,
     };
-    const auto view = instance->GetDevice().createBufferView(view_ci);
+    const auto [view_result, view] = instance->GetDevice().createBufferView(view_ci);
+    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create buffer view: {}",
+               vk::to_string(view_result));
     scheduler->DeferOperation(
         [view, device = instance->GetDevice()] { device.destroyBufferView(view); });
     return view;

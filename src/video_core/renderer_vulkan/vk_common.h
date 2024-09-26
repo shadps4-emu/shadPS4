@@ -14,6 +14,9 @@
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #define VULKAN_HPP_NO_STRUCT_SETTERS
 #define VULKAN_HPP_HAS_SPACESHIP_OPERATOR
+#define VULKAN_HPP_NO_EXCEPTIONS
+// Define assert-on-result to nothing to instead return the result for our handling.
+#define VULKAN_HPP_ASSERT_ON_RESULT
 #include <vulkan/vulkan.hpp>
 
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
