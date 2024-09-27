@@ -49,12 +49,13 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
         if (info.num_components == 1) {
             return info.id;
         } else {
-            return ctx.OpAccessChain(ctx.output_f32, info.id, ctx.ConstU32(element));
+            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
         }
     }
     switch (attr) {
     case IR::Attribute::Position0: {
         return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
+    }
     case IR::Attribute::Position1:
     case IR::Attribute::Position2:
     case IR::Attribute::Position3: {
@@ -70,17 +71,47 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::RenderTarget6:
     case IR::Attribute::RenderTarget7: {
         const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
-        if (ctx.frag_num_comp[index] > 1) {
-            return ctx.OpAccessChain(ctx.output_f32, ctx.frag_color[index], ctx.ConstU32(element));
+        const auto& info{ctx.frag_outputs.at(index)};
+        if (info.num_components > 1) {
+            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
         } else {
-            return ctx.frag_color[index];
+            return info.id;
         }
     }
     case IR::Attribute::Depth:
         return ctx.frag_depth;
     default:
-        throw NotImplementedException("Read attribute {}", attr);
+        throw NotImplementedException("Write attribute {}", attr);
     }
+}
+
+Id OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
+    if (IR::IsParam(attr)) {
+        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto& info{ctx.output_params.at(index)};
+        return info.component_type;
+    }
+    switch (attr) {
+    case IR::Attribute::Position0:
+    case IR::Attribute::Position1:
+    case IR::Attribute::Position2:
+    case IR::Attribute::Position3:
+    case IR::Attribute::Depth:
+        return ctx.F32[1];
+    case IR::Attribute::RenderTarget0:
+    case IR::Attribute::RenderTarget1:
+    case IR::Attribute::RenderTarget2:
+    case IR::Attribute::RenderTarget3:
+    case IR::Attribute::RenderTarget4:
+    case IR::Attribute::RenderTarget5:
+    case IR::Attribute::RenderTarget6:
+    case IR::Attribute::RenderTarget7: {
+        const u32 index = u32(attr) - u32(IR::Attribute::RenderTarget0);
+        const auto& info{ctx.frag_outputs.at(index)};
+        return info.component_type;
+    }
+    default:
+        throw NotImplementedException("Write attribute {}", attr);
     }
 }
 } // Anonymous namespace
@@ -222,7 +253,8 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return;
     }
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    ctx.OpStore(pointer, ctx.OpBitcast(ctx.F32[1], value));
+    const Id component_type{OutputAttrComponentType(ctx, attr)};
+    ctx.OpStore(pointer, ctx.OpBitcast(component_type, value));
 }
 
 template <u32 N>
