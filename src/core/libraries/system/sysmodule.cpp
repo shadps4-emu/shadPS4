@@ -9,6 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/sysmodule.h"
+#include "core/libraries//kernel/libkernel.h"
 
 namespace Libraries::SysModule {
 
@@ -45,6 +46,13 @@ int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal() {
 int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     auto color_name = magic_enum::enum_name(id);
     LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
+    //const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    switch (id) {
+    case OrbisSysModule::ORBIS_SYSMODULE_NGS2:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceNgs2.sprx", 0, NULL, 0,
+                                                  NULL, NULL);
+        break;
+    }
     return ORBIS_OK;
 }
 

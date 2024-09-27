@@ -36,6 +36,8 @@ int* PS4_SYSV_ABI __Error();
 int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
                                                 struct OrbisTimesec* st, unsigned long* dst_sec);
 int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t args, const void* argp,
+                                          u32 flags, const void* pOpt, int* pRes);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);
 

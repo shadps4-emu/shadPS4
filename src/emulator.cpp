@@ -191,6 +191,9 @@ void Emulator::Run(const std::filesystem::path& file) {
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
+    const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    mnt->Mount(sys_module_path, "/system/common/lib");
+
     // Initialize kernel and library facilities.
     Libraries::Kernel::init_pthreads();
     Libraries::InitHLELibs(&linker->GetHLESymbols());
@@ -222,8 +225,8 @@ void Emulator::Run(const std::filesystem::path& file) {
 }
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
-    constexpr std::array<SysModules, 13> ModulesToLoad{
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+    constexpr std::array<SysModules, 12> ModulesToLoad{
+        {/* {"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},*/
          {"libSceFiber.sprx", nullptr},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
@@ -247,7 +250,10 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
             found_modules, [&](const auto& path) { return path.filename() == module_name; });
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
-            linker->LoadModule(*it);
+            if (!(it->string() == "libSceNgs2.sprx")) {
+                linker->LoadModule(*it);
+            }
+
             continue;
         }
         if (init_func) {
