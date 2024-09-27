@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>Kontrollo për përditësime</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>Luaj muzikën e titullit</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>GUI Settings</source>
+			<translation>Parametrat e GUI</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>Kiểm tra cập nhật</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>Phát nhạc tiêu đề</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>GUI Settings</source>
+			<translation>Cài đặt GUI</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

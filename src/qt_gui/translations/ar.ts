@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>التحقق من التحديثات</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>تشغيل موسيقى العنوان</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>GUI Settings</source>
+			<translation>إعدادات الواجهة</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
