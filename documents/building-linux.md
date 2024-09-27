@@ -9,22 +9,22 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 #### Debian & Ubuntu
 ```
-sudo apt install build-essential clang cmake libasound2-dev libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev libvulkan-dev libudev-dev git libevdev-dev libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev qt6-multimedia-dev
+sudo apt install build-essential clang git cmake libasound2-dev libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev qt6-multimedia-dev libvulkan-dev vulkan-validationlayers
 ```
 
 #### Fedora
 ```
-sudo dnf install alsa-lib-devel cmake libatomic libevdev-devel libudev-devel openal-devel openssl-devel qt6-qtbase-devel qt6-qtbase-private-devel vulkan-devel pipewire-jack-audio-connection-kit-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-validation-layers
+sudo dnf install clang cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers
 ```
 
 #### Arch Linux
 ```
-sudo pacman -S clang openal cmake vulkan-validation-layers qt6-base qt6-declarative qt6-multimedia sdl2 sndio jack2 base-devel
+sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declarative qt6-multimedia sdl2 vulkan-validation-layers
 ```
 
 #### OpenSUSE
 ```
-sudo zypper install clang git cmake libasound2 libpulse-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel vulkan-devel systemd-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel libevdev-devel libsndio7 libjack-devel
+sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel systemd-devel libevdev-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel vulkan-devel vulkan-validationlayers
 ```
 ### Cloning and compiling:
 
