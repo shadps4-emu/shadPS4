@@ -226,7 +226,7 @@ void Emulator::Run(const std::filesystem::path& file) {
 
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     constexpr std::array<SysModules, 13> ModulesToLoad{
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2,false},
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2, false},
          {"libSceFiber.sprx", nullptr, true},
          {"libSceUlt.sprx", nullptr, true},
          {"libSceJson.sprx", nullptr, true},
@@ -245,16 +245,17 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
         found_modules.push_back(entry.path());
     }
-    for (const auto& [module_name, init_func , load_at_startup] : ModulesToLoad) {
+    for (const auto& [module_name, init_func, load_at_startup] : ModulesToLoad) {
         const auto it = std::ranges::find_if(
             found_modules, [&](const auto& path) { return path.filename() == module_name; });
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
             if (load_at_startup) {
-                linker->LoadModule(*it);
+                int result = linker->LoadModule(*it);
+                if (result == 0) {
+                    continue;
+                }
             }
-
-            continue;
         }
         if (init_func) {
             LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);

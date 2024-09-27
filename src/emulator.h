@@ -18,6 +18,7 @@ using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 struct SysModules {
     std::string_view module_name;
     HLEInitDef callback;
+    bool loadAtStartup;
 };
 
 class Emulator {
