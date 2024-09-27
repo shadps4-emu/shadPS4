@@ -186,6 +186,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
     // Descriptions
     {
+        // General
         ui->consoleLanguageGroupBox->installEventFilter(this);
         ui->emulatorLanguageGroupBox->installEventFilter(this);
         ui->fullscreenCheckBox->installEventFilter(this);
@@ -196,12 +197,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         ui->logFilter->installEventFilter(this);
         ui->updaterGroupBox->installEventFilter(this);
         ui->GUIgroupBox->installEventFilter(this);
+
+        // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
-        ui->layoutResolution->installEventFilter(this);
+        ui->widthGroupBox->installEventFilter(this);
+        ui->heightGroupBox->installEventFilter(this);        
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
         ui->dumpPM4CheckBox->installEventFilter(this);
+
+        // Debug
         ui->debugDump->installEventFilter(this);
         ui->vkValidationCheckBox->installEventFilter(this);
         ui->vkSyncValidationCheckBox->installEventFilter(this);
@@ -276,64 +282,60 @@ int SettingsDialog::exec() {
 SettingsDialog::~SettingsDialog() {}
 
 void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
-    QString text;
+    QString text; // texts are only in .ts translation files for better formatting
 
     // General
     if (elementName == "consoleLanguageGroupBox") {
-        text = tr("Console Language:\nIt's the language of ps4");
+        text = tr("consoleLanguageGroupBox");
     } else if (elementName == "emulatorLanguageGroupBox") {
-        text = tr("Emulator Language:\nThe language of the emulator interface.");
+        text = tr("emulatorLanguageGroupBox");
     } else if (elementName == "fullscreenCheckBox") {
-        text = tr("Enable Fullscreen:\nMakes the emulator take up the entire screen during "
-                  "gameplay, offering a more immersive experience.\nThis can be changed by "
-                  "pressing F10 during gameplay..");
+        text = tr("fullscreenCheckBox");
     } else if (elementName == "showSplashCheckBox") {
-        text = tr("Show splash screen:\nShows a game image (Splash) before starting emulation");
+        text = tr("showSplashCheckBox");
     } else if (elementName == "ps4proCheckBox") {
-        text = tr("Is PS4 Pro:\nSetting the console as the PRO model may influence some games.");
+        text = tr("ps4proCheckBox");
     } else if (elementName == "userName") {
-        text = tr("userName:\nIt is your console username, it can be used during some games");
+        text = tr("userName");
     } else if (elementName == "logTypeGroupBox") {
-        text = tr("Log Type:\nsyn e async");
+        text = tr("logTypeGroupBox");
     } else if (elementName == "logFilter") {
-        text = tr("Log Filter:\n *:Critical");
+        text = tr("logFilter");
     } else if (elementName == "updaterGroupBox") {
-        text = tr(
-            "Update:\nStable: These versions are more reliable and tested\nUnstable: pre-releases "
-            "with updates almost daily (These may contain bugs and are less stable)");
+        text = tr("updaterGroupBox");
     } else if (elementName == "GUIgroupBox") {
-        text = tr("Play title music:\nPlays music when selecting a game from the list that has "
-                  "this feature.");
+        text = tr("GUIgroupBox");
     }
 
     // Graphics
     if (elementName == "graphicsAdapterGroupBox") {
-        text = tr("Graphics Device:\nChoose your gpu or -1 for automatic.");
-    } else if (elementName == "layoutResolution") { // It's not working?
-        text = tr("width/height:\nChange emulator resolution.");
+        text = tr("graphicsAdapterGroupBox");
+    } else if (elementName == "widthGroupBox") {
+        text = tr("resolutionLayout");
+    } else if (elementName == "heightGroupBox") {
+        text = tr("resolutionLayout");
     } else if (elementName == "heightDivider") {
-        text = tr("Vblank Divider:\nEmulator speed, default is 1, if you use 2 it will be twice as "
-                  "fast.");
+        text = tr("heightDivider");
     } else if (elementName == "dumpShadersCheckBox") {
-        text = tr("Shaders Dumping:\nDump shaders, should improve speed.");
+        text = tr("dumpShadersCheckBox");
     } else if (elementName == "nullGpuCheckBox") {
-        text = tr("nullGpu:\nStart the emulator without the video.");
+        text = tr("nullGpuCheckBox");
     } else if (elementName == "dumpPM4CheckBox") {
-        text = tr("PM4 Dumping:\nPM4 Dumping");
+        text = tr("dumpPM4CheckBox");
     }
 
     // Debug
     if (elementName == "debugDump") {
-        text = tr("Debug Dumping:\n");
+        text = tr("debugDump");
     } else if (elementName == "vkValidationCheckBox") {
-        text = tr("Vulkan Validation Layers:\n");
+        text = tr("vkValidationCheckBox");
     } else if (elementName == "vkSyncValidationCheckBox") {
-        text = tr("Vulkan Synchronization Validation:\n");
+        text = tr("vkSyncValidationCheckBox");
     } else if (elementName == "rdocCheckBox") {
-        text = tr("RenderDoc Debugging:\n");
+        text = tr("rdocCheckBox");
     }
 
-    ui->descriptionText->setText(text);
+    ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
 
 bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
