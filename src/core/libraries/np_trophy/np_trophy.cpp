@@ -400,15 +400,14 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
                 }
             }
         }
-        
+
         details->numTrophies = groupInfo.numTrophies;
         details->numPlatinum = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
         details->numGold = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
         details->numSilver = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
         details->numBronze = groupInfo.numTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];
         data->unlockedTrophies = groupInfo.unlockedTrophies;
-        data->unlockedPlatinum =
-            groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
+        data->unlockedPlatinum = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_PLATINUM];
         data->unlockedGold = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_GOLD];
         data->unlockedSilver = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_SILVER];
         data->unlockedBronze = groupInfo.unlockedTrophiesByRarity[ORBIS_NP_TROPHY_GRADE_BRONZE];

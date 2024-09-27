@@ -19,7 +19,8 @@ TrophyUI::~TrophyUI() {
     Finish();
 }
 
-void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(std::string trophyIconPath, std::string trophyName) {
+void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(std::string trophyIconPath,
+                                                     std::string trophyName) {
     TrophyInfo newInfo;
     newInfo.trophyIconPath = trophyIconPath;
     newInfo.trophyName = trophyName;
