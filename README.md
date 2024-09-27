@@ -26,10 +26,10 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <p align="center">
   <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Sonic Mania.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Bloodborne.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/Undertale.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/We are DOOMED.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/1.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/2.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/3.png" width="400">
+  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/4.png" width="400">
 </p>
 
 # General information
@@ -173,12 +173,6 @@ A few noteworthy teams/projects who've helped us along the way are:
 
 - **yuzu**: Our shader compiler has been designed with yuzu's Hades compiler as a blueprint. This allowed us to focus on the challenges of emulating a modern AMD GPU while having a high-quality optimizing shader compiler implementation as a base.
 
-- [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
-
-
-# Sister Projects
-
-- [**Panda3DS**](https://github.com/wheremyfoodat/Panda3DS): A multiplatform 3DS emulator from our co-author wheremyfoodat.
 - [**hydra**](https://github.com/hydra-emu/hydra): A multisystem, multiplatform emulator (chip-8, GB, NES, N64) from Paris.
 
 # License
