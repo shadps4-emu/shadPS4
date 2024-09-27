@@ -252,7 +252,7 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
             LOG_INFO(Loader, "Loading {}", it->string());
             if (load_at_startup) {
                 int result = linker->LoadModule(*it);
-                if (result == 0) {
+                if (result >= 0) {
                     continue;
                 }
             } else {

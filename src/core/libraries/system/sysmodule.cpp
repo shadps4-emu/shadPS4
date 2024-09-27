@@ -50,7 +50,8 @@ int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     case OrbisSysModule::ORBIS_SYSMODULE_NGS2:
         Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceNgs2.sprx", 0, NULL,
                                                     0, NULL, NULL);
-        break;;
+        break;
+        ;
     case OrbisSysModule::ORBIS_SYSMODULE_ULT:
         Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceUlt.sprx", 0, NULL, 0,
                                                     NULL, NULL);
@@ -72,14 +73,23 @@ int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
                                                     0, NULL, NULL);
         break;
     case OrbisSysModule::ORBIS_SYSMODULE_JPEG_ENC:
-        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceJpegEnc.sprx", 0, NULL,
-                                                    0, NULL, NULL);
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceJpegEnc.sprx", 0,
+                                                    NULL, 0, NULL, NULL);
         break;
     case OrbisSysModule::ORBIS_SYSMODULE_DISC_MAP:
         Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceDiscMap.sprx", 0,
                                                     NULL, 0, NULL, NULL);
         break;
+    /* case OrbisSysModule::ORBIS_SYSMODULE_FONT_FT:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceFontFt.sprx", 0,
+                                                    NULL, 0, NULL, NULL);
+        break;*/
+    case OrbisSysModule::ORBIS_SYSMODULE_FREETYPE_OT:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceFreeTypeOt.sprx", 0,
+                                                    NULL, 0, NULL, NULL);
+        break;
     }
+
     return ORBIS_OK;
 }
 
