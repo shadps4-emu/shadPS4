@@ -520,14 +520,14 @@
 			<translation>به روز رسانی را بررسی کنید</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>پخش موسیقی عنوان</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>تنظیمات رابط کاربری</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>تنظیمات رابط کاربری</translation>
+			<source>Play title music</source>
+			<translation>پخش موسیقی عنوان</translation>
 		</message>
 	</context>
 	<context>

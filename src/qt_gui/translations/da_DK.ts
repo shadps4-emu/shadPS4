@@ -520,14 +520,14 @@
 			<translation>Tjek for opdateringer</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Afspil titelsang</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI-Indstillinger</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>GUI-Indstillinger</translation>
+			<source>Play title music</source>
+			<translation>Afspil titelsang</translation>
 		</message>
 	</context>
 	<context>

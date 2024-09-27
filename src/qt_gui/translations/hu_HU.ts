@@ -520,14 +520,14 @@
 			<translation>Frissítések keresése</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Címzene lejátszása</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI Beállítások</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>GUI Beállítások</translation>
+			<source>Play title music</source>
+			<translation>Címzene lejátszása</translation>
 		</message>
 	</context>
 	<context>

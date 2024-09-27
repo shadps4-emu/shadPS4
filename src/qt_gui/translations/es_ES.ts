@@ -520,14 +520,14 @@
 			<translation>Verificar actualizaciones</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Reproducir música del título</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>Configuraciones de la Interfaz</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>Configuraciones de la Interfaz</translation>
+			<source>Play title music</source>
+			<translation>Reproducir la música de apertura</translation>
 		</message>
 	</context>
 	<context>

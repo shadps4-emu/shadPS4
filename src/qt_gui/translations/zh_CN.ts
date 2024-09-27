@@ -520,14 +520,14 @@
 			<translation>检查更新</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>播放标题音乐</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>界面设置</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>界面设置</translation>
+			<source>Play title music</source>
+			<translation>播放标题音乐</translation>
 		</message>
 	</context>
 	<context>

@@ -520,14 +520,14 @@
 			<translation>Verifică actualizări</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Redă muzica titlului</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>Setări GUI</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>Setări GUI</translation>
+			<source>Play title music</source>
+			<translation>Redă muzica titlului</translation>
 		</message>
 	</context>
 	<context>

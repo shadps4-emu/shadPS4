@@ -520,14 +520,14 @@
 			<translation>Patikrinkite atnaujinimus</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Groti antraštės muziką</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI Nustatymai</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>GUI Nustatymai</translation>
+			<source>Play title music</source>
+			<translation>Groti antraštės muziką</translation>
 		</message>
 	</context>
 	<context>

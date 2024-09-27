@@ -520,14 +520,14 @@
 			<translation>Periksa pembaruan</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Putar musik judul</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>Pengaturan GUI</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>Pengaturan GUI</translation>
+			<source>Play title music</source>
+			<translation>Putar musik judul</translation>
 		</message>
 	</context>
 	<context>

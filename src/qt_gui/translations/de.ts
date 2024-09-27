@@ -520,14 +520,14 @@
 			<translation>Nach Updates suchen</translation>
 		</message>
 		<message>
-			<location filename="../settings_dialog.ui" line="375"/>
-			<source>Play title music</source>
-			<translation>Titelmusik abspielen</translation>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI-Einstellungen</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.ui" line="375"/>
-			<source>GUI Settings</source>
-			<translation>GUI-Einstellungen</translation>
+			<source>Play title music</source>
+			<translation>Titelmusik abspielen</translation>
 		</message>
 	</context>
 	<context>
