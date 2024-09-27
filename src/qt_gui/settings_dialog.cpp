@@ -3,6 +3,7 @@
 
 #include <QCompleter>
 #include <QDirIterator>
+#include <QHoverEvent>
 
 #include "check_update.h"
 #include "common/logging/backend.h"
@@ -67,6 +68,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
+
+    defaultTextEdit = tr("Point your mouse at an options to display a description in here");
+    ui->descriptionText->setText(defaultTextEdit);
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
 
@@ -179,6 +183,30 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         connect(ui->rdocCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setRdocEnabled(val); });
     }
+
+    // Descriptions
+    {
+        ui->consoleLanguageGroupBox->installEventFilter(this);
+        ui->emulatorLanguageGroupBox->installEventFilter(this);
+        ui->fullscreenCheckBox->installEventFilter(this);
+        ui->showSplashCheckBox->installEventFilter(this);
+        ui->ps4proCheckBox->installEventFilter(this);
+        ui->userName->installEventFilter(this);
+        ui->logTypeGroupBox->installEventFilter(this);
+        ui->logFilter->installEventFilter(this);
+        ui->updaterGroupBox->installEventFilter(this);
+        ui->GUIgroupBox->installEventFilter(this);
+        ui->graphicsAdapterGroupBox->installEventFilter(this);
+        ui->layoutResolution->installEventFilter(this);
+        ui->heightDivider->installEventFilter(this);
+        ui->dumpShadersCheckBox->installEventFilter(this);
+        ui->nullGpuCheckBox->installEventFilter(this);
+        ui->dumpPM4CheckBox->installEventFilter(this);
+        ui->debugDump->installEventFilter(this);
+        ui->vkValidationCheckBox->installEventFilter(this);
+        ui->vkSyncValidationCheckBox->installEventFilter(this);
+        ui->rdocCheckBox->installEventFilter(this);
+    }
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
@@ -246,3 +274,81 @@ int SettingsDialog::exec() {
 }
 
 SettingsDialog::~SettingsDialog() {}
+
+void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
+    QString text;
+
+    // General
+    if (elementName == "consoleLanguageGroupBox") {
+        text = tr("Console Language:\nIt's the language of ps4");
+    } else if (elementName == "emulatorLanguageGroupBox") {
+        text = tr("Emulator Language:\nThe language of the emulator interface.");
+    } else if (elementName == "fullscreenCheckBox") {
+        text = tr("Enable Fullscreen:\nMakes the emulator take up the entire screen during "
+                  "gameplay, offering a more immersive experience.\nThis can be changed by "
+                  "pressing F10 during gameplay..");
+    } else if (elementName == "showSplashCheckBox") {
+        text = tr("Show splash screen:\nShows a game image (Splash) before starting emulation");
+    } else if (elementName == "ps4proCheckBox") {
+        text = tr("Is PS4 Pro:\nSetting the console as the PRO model may influence some games.");
+    } else if (elementName == "userName") {
+        text = tr("userName:\nIt is your console username, it can be used during some games");
+    } else if (elementName == "logTypeGroupBox") {
+        text = tr("Log Type:\nsyn e async");
+    } else if (elementName == "logFilter") {
+        text = tr("Log Filter:\n *:Critical");
+    } else if (elementName == "updaterGroupBox") {
+        text = tr(
+            "Update:\nStable: These versions are more reliable and tested\nUnstable: pre-releases "
+            "with updates almost daily (These may contain bugs and are less stable)");
+    } else if (elementName == "GUIgroupBox") {
+        text = tr("Play title music:\nPlays music when selecting a game from the list that has "
+                  "this feature.");
+    }
+
+    // Graphics
+    if (elementName == "graphicsAdapterGroupBox") {
+        text = tr("Graphics Device:\nChoose your gpu or -1 for automatic.");
+    } else if (elementName == "layoutResolution") { // It's not working?
+        text = tr("width/height:\nChange emulator resolution.");
+    } else if (elementName == "heightDivider") {
+        text = tr("Vblank Divider:\nEmulator speed, default is 1, if you use 2 it will be twice as "
+                  "fast.");
+    } else if (elementName == "dumpShadersCheckBox") {
+        text = tr("Shaders Dumping:\nDump shaders, should improve speed.");
+    } else if (elementName == "nullGpuCheckBox") {
+        text = tr("nullGpu:\nStart the emulator without the video.");
+    } else if (elementName == "dumpPM4CheckBox") {
+        text = tr("PM4 Dumping:\nPM4 Dumping");
+    }
+
+    // Debug
+    if (elementName == "debugDump") {
+        text = tr("Debug Dumping:\n");
+    } else if (elementName == "vkValidationCheckBox") {
+        text = tr("Vulkan Validation Layers:\n");
+    } else if (elementName == "vkSyncValidationCheckBox") {
+        text = tr("Vulkan Synchronization Validation:\n");
+    } else if (elementName == "rdocCheckBox") {
+        text = tr("RenderDoc Debugging:\n");
+    }
+
+    ui->descriptionText->setText(text);
+}
+
+bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::Enter || event->type() == QEvent::Leave) {
+        if (qobject_cast<QWidget*>(obj)) {
+            bool hovered = (event->type() == QEvent::Enter);
+            QString elementName = obj->objectName();
+
+            if (hovered) {
+                updateNoteTextEdit(elementName);
+            } else {
+                ui->descriptionText->setText(defaultTextEdit);
+            }
+            return true;
+        }
+    }
+    return QDialog::eventFilter(obj, event);
+}
