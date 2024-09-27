@@ -72,7 +72,8 @@ struct AddressSpace::Impl {
             }
             reduction += ReductionOnFail;
         }
-        ASSERT_MSG(virtual_base, "Unable to reserve virtual address space!");
+        ASSERT_MSG(virtual_base, "Unable to reserve virtual address space: {}",
+                   Common::GetLastErrorMsg());
 
         // Take the reduction off of the system managed area, and leave the others unchanged.
         system_managed_base = virtual_base;

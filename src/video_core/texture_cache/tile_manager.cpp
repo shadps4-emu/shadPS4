@@ -259,6 +259,38 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
         HostShaders::DETILE_M32X4_COMP,
     };
 
+    boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
+        {
+            .binding = 0,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        },
+        {
+            .binding = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        },
+    };
+
+    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
+        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
+        .bindingCount = static_cast<u32>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+    auto desc_layout_result = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
+               "Failed to create descriptor set layout: {}",
+               vk::to_string(desc_layout_result.result));
+    desc_layout = std::move(desc_layout_result.value);
+
+    const vk::PushConstantRange push_constants = {
+        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        .offset = 0,
+        .size = sizeof(DetilerParams),
+    };
+
     for (int pl_id = 0; pl_id < DetilerType::Max; ++pl_id) {
         auto& ctx = detilers[pl_id];
 
@@ -273,37 +305,6 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
             .stage = vk::ShaderStageFlagBits::eCompute,
             .module = module,
             .pName = "main",
-        };
-
-        boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
-            {
-                .binding = 0,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            },
-            {
-                .binding = 1,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .descriptorCount = 1,
-                .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            },
-        };
-
-        const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-            .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
-            .bindingCount = static_cast<u32>(bindings.size()),
-            .pBindings = bindings.data(),
-        };
-        auto [desc_layout_result, desc_layout] =
-            instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-        ASSERT_MSG(desc_layout_result == vk::Result::eSuccess,
-                   "Failed to create descriptor set layout: {}", vk::to_string(desc_layout_result));
-
-        const vk::PushConstantRange push_constants = {
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-            .offset = 0,
-            .size = sizeof(DetilerParams),
         };
 
         const vk::DescriptorSetLayout set_layout = *desc_layout;

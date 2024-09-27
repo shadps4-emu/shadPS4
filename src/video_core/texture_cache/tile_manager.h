@@ -51,6 +51,7 @@ private:
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    vk::UniqueDescriptorSetLayout desc_layout;
     std::array<DetilerContext, DetilerType::Max> detilers;
 };
 
