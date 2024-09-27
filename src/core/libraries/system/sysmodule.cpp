@@ -50,6 +50,34 @@ int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     case OrbisSysModule::ORBIS_SYSMODULE_NGS2:
         Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceNgs2.sprx", 0, NULL,
                                                     0, NULL, NULL);
+        break;;
+    case OrbisSysModule::ORBIS_SYSMODULE_ULT:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceUlt.sprx", 0, NULL, 0,
+                                                    NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_FIBER:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceFiber.sprx", 0, NULL,
+                                                    0, NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_JSON:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceJson.sprx", 0, NULL,
+                                                    0, NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_JSON2:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceJson2.sprx", 0, NULL,
+                                                    0, NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_FONT:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceFont.sprx", 0, NULL,
+                                                    0, NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_JPEG_ENC:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceJpegEnc.sprx", 0, NULL,
+                                                    0, NULL, NULL);
+        break;
+    case OrbisSysModule::ORBIS_SYSMODULE_DISC_MAP:
+        Libraries::Kernel::sceKernelLoadStartModule("/system/common/lib/libSceDiscMap.sprx", 0,
+                                                    NULL, 0, NULL, NULL);
         break;
     }
     return ORBIS_OK;

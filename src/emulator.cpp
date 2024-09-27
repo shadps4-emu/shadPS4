@@ -227,18 +227,18 @@ void Emulator::Run(const std::filesystem::path& file) {
 void Emulator::LoadSystemModules(const std::filesystem::path& file) {
     constexpr std::array<SysModules, 13> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2, false},
-         {"libSceFiber.sprx", nullptr, true},
-         {"libSceUlt.sprx", nullptr, true},
-         {"libSceJson.sprx", nullptr, true},
-         {"libSceJson2.sprx", nullptr, true},
+         {"libSceFiber.sprx", nullptr, false},
+         {"libSceUlt.sprx", nullptr, false},
+         {"libSceJson.sprx", nullptr, false},
+         {"libSceJson2.sprx", nullptr, false},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal, true},
-         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap, true},
+         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap, false},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc, true},
-         {"libSceJpegEnc.sprx", nullptr, true},
-         {"libSceFont.sprx", nullptr, true},
+         {"libSceJpegEnc.sprx", nullptr, false},
+         {"libSceFont.sprx", nullptr, false},
          {"libSceRazorCpu.sprx", nullptr, true},
          {"libSceCesCs.sprx", nullptr, true},
-         {"libSceRudp.sprx", nullptr, true}}};
+         {"libSceRudp.sprx", nullptr, false}}};
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
@@ -255,6 +255,8 @@ void Emulator::LoadSystemModules(const std::filesystem::path& file) {
                 if (result == 0) {
                     continue;
                 }
+            } else {
+                continue;
             }
         }
         if (init_func) {
