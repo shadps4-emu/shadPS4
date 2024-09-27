@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>Έλεγχος για ενημερώσεις</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>Ρυθμίσεις GUI</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>Αναπαραγωγή μουσικής τίτλου</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

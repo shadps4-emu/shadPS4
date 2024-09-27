@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>Güncellemeleri kontrol et</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI Ayarları</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>Başlık müziğini çal</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

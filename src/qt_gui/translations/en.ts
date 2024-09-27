@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>Check for Updates</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>GUI Settings</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>Play title music</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

@@ -519,6 +519,16 @@
 			<source>Check for Updates</source>
 			<translation>檢查更新</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="354"/>
+			<source>GUI Settings</source>
+			<translation>介面設置</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="375"/>
+			<source>Play title music</source>
+			<translation>播放標題音樂</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
