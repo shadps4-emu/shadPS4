@@ -94,6 +94,8 @@ private:
     QTranslator* translator;
 
 protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
     void dragEnterEvent(QDragEnterEvent* event1) override {
         if (event1->mimeData()->hasUrls()) {
             event1->acceptProposedAction();

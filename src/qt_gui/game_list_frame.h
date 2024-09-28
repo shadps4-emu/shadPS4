@@ -23,6 +23,8 @@ public Q_SLOTS:
     void SortNameAscending(int columnIndex);
     void SortNameDescending(int columnIndex);
     void PlayBackgroundMusic(QTableWidgetItem* item);
+    void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                              int previousColumn);
 
 private:
     void SetTableItem(int row, int column, QString itemStr);
