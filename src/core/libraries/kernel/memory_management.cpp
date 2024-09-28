@@ -25,8 +25,8 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
                                                u64 alignment, int memoryType, s64* physAddrOut) {
     LOG_INFO(Kernel_Vmm,
              "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, "
-             "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
-             searchStart, searchEnd, len, alignment, memoryType, phys_addr);
+             "alignment = {:#x}, memoryType = {:#x}",
+             searchStart, searchEnd, len, alignment, memoryType);
 
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
