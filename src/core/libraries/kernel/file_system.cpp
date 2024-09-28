@@ -310,35 +310,49 @@ int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelRmdir(const char* path, u16 mode) {
+int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     bool ro = false;
 
     const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
 
     if (dir_name.empty()) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, permission denied", path);
         return SCE_KERNEL_ERROR_EACCES;
     }
 
     if (ro) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, directory is read only", path);
         return SCE_KERNEL_ERROR_EROFS;
     }
 
     if (!std::filesystem::is_directory(dir_name)) {
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, path is not a directory", path);
         return ORBIS_KERNEL_ERROR_ENOTDIR;
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        return ORBIS_OK;
+        LOG_INFO(Kernel_Fs, "Failed to remove directory: {}, no such file or directory", path);
+        return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
     int result = std::filesystem::remove_all(dir_name);
-    const int error = errno;
 
-    if (error == 0) {
+    if (result > 0) {
+        LOG_DEBUG(Kernel_Fs, "Removed directory: {}", path);
         return ORBIS_OK;
     }
-    return ErrnoToSceKernelError(error); // error - 0x7ffe0000;
+    return result;
+}
+
+int PS4_SYSV_ABI posix_rmdir(const char* path) {
+    int result = sceKernelRmdir(path);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "posix_rmdir: error = {}", result);
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
@@ -596,6 +610,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
     LIB_FUNCTION("JGMio+21L4c", "libScePosix", 1, "libkernel", 1, 1, posix_mkdir);
     LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", 1, 1, sceKernelRmdir);
+    LIB_FUNCTION("c7ZnT7V1B98", "libScePosix", 1, "libkernel", 1, 1, posix_rmdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
