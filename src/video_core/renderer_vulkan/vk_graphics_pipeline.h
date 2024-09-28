@@ -100,7 +100,7 @@ private:
 
 private:
     // TODO find out how to keep const
-    std::array<Shader::Info*, MaxShaderStages> stages{};
+    std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
     bool uses_push_descriptors{};
 };

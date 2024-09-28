@@ -14,7 +14,8 @@ namespace Vulkan {
 
 ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
                                  DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 u64 compute_key_, Shader::Info& info_, vk::ShaderModule module)
+                                 u64 compute_key_, const Shader::Info& info_,
+                                 vk::ShaderModule module)
     : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache}, compute_key{compute_key_},
       info{&info_} {
     const vk::PipelineShaderStageCreateInfo shader_ci = {
@@ -121,7 +122,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
 
     image_infos.clear();
 
-    info->RunSrtWalker();
+    // info->RunSrtWalker();
     info->PushUd(binding, push_data);
     for (const auto& desc : info->buffers) {
         bool is_storage = true;

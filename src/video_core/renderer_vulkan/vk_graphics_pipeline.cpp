@@ -393,11 +393,11 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
 
     image_infos.clear();
 
-    for (auto* stage : stages) {
+    for (const auto* stage : stages) {
         if (!stage) {
             continue;
         }
-        stage->RunSrtWalker();
+        // stage->RunSrtWalker();
         if (stage->uses_step_rates) {
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;

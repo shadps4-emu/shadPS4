@@ -20,7 +20,7 @@ class DescriptorHeap;
 class ComputePipeline : public Pipeline {
 public:
     ComputePipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
-                    vk::PipelineCache pipeline_cache, u64 compute_key, Shader::Info& info,
+                    vk::PipelineCache pipeline_cache, u64 compute_key, const Shader::Info& info,
                     vk::ShaderModule module);
     ~ComputePipeline();
 
@@ -30,7 +30,7 @@ public:
 private:
     u64 compute_key;
     // TODO keep const
-    Shader::Info* info;
+    const Shader::Info* info;
     bool uses_push_descriptors{};
 };
 
