@@ -60,7 +60,7 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
             }
 
             const auto buffer =
-                vs_info->ReadUd<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
+                vs_info->ReadUdReg<AmdGpu::Buffer>(input.sgpr_base, input.dword_offset);
             if (buffer.GetSize() == 0) {
                 continue;
             }

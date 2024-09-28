@@ -1,0 +1,76 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#include <vector>
+#include <boost/container/flat_map.hpp>
+#include <boost/container/small_vector.hpp>
+
+#include <memory>
+#include <unordered_map>
+#include "common/assert.h"
+#include "common/bit_field.h"
+#include "common/types.h"
+#include "shader_recompiler/ir/reg.h"
+#include "shader_recompiler/ir/value.h"
+
+namespace Shader {
+
+// TODO: GVN for readconst instructions to dedup them before SRT pass?
+
+using FlatSharpBuffer = std::vector<u32>;
+
+struct SrtNode {
+    const IR::Inst* inst; // Readconst inst
+    u32 flattened_sharp_off_dw;
+    u32 flattened_cbuf_off_dw;
+    // How the readconst is used
+    union {
+        u32 raw;
+        BitField<0, 1, u32> pointer_lo;
+        // Ignore pointer_hi. Use LO for tracking, which corresponds to lower SGPR
+        BitField<1, 1, u32> pointer_hi;
+        // Unused for now, assumed that readconst is sharp if not pointer
+        BitField<2, 1, u32> sharp;
+        // Arbitrary use, e.g. in ALU
+        BitField<3, 1, u32> cbuffer;
+
+    } use_kind;
+
+    SrtNode(const IR::Inst* inst_)
+        : inst(inst_), flattened_sharp_off_dw(0), flattened_cbuf_off_dw(0), use_kind(0) {}
+};
+
+// Only put the Inst corresponding to the LO dword (the sgpr base) of the pointer in the node
+// -> children map (as a key)
+struct SrtInfo {
+    // keys are the offset operand to the ReadConst
+    using UserList = boost::container::flat_map<u32, const IR::Inst*>;
+
+    std::unordered_map<const IR::Inst*, std::unique_ptr<SrtNode>> srt_nodes;
+    // keys are GetUserData or ReadConst instructions that are used as pointers
+    std::unordered_map<const IR::Inst*, UserList> pointer_uses;
+    // GetUserData instructions corresponding to sgpr_base of SRT roots
+    boost::container::small_vector<const IR::Inst*, 4> srt_roots;
+
+    u32 flattened_sharp_bufsize_dw{0};
+    u32 flattened_cbuf_bufsize_dw{0};
+
+    SrtNode* getOrInsertNode(const IR::Inst* inst) {
+        auto it = srt_nodes.find(inst);
+        if (it != srt_nodes.end()) {
+            return it->second.get();
+        }
+
+        auto ref = srt_nodes.insert(std::make_pair(inst, std::make_unique<SrtNode>(inst)));
+        return ref.first->second.get();
+    }
+
+    SrtNode* getNode(const IR::Inst* inst) {
+        ASSERT(srt_nodes.contains(inst));
+        return srt_nodes[inst].get();
+    }
+};
+
+} // namespace Shader

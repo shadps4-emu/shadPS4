@@ -583,7 +583,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUd<AmdGpu::Image>(desc.sgpr_base, desc.dword_offset);
+    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.flat_idx);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
@@ -619,8 +619,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "img", image_desc.sgpr_base,
-                             image_desc.dword_offset));
+        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sgpr_base));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -644,8 +643,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}_{:02x}", stage, "samp", samp_desc.sgpr_base,
-                             samp_desc.dword_offset));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sgpr_base));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

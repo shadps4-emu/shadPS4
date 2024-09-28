@@ -14,8 +14,7 @@ namespace Shader::Optimization {
 namespace {
 
 struct SharpLocation {
-    u32 sgpr_base;
-    u32 dword_offset;
+    u32 flat_idx;
 
     auto operator<=>(const SharpLocation&) const = default;
 };
@@ -177,9 +176,8 @@ public:
             if (desc.is_gds_buffer && existing.is_gds_buffer) {
                 return true;
             }
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset &&
-                   desc.inline_cbuf == existing.inline_cbuf;
+            // need to learn about inline_cbug TODO
+            return desc.flat_idx == existing.flat_idx && desc.inline_cbuf == existing.inline_cbuf;
         })};
         auto& buffer = buffer_resources[index];
         buffer.used_types |= desc.used_types;
@@ -189,8 +187,7 @@ public:
 
     u32 Add(const TextureBufferResource& desc) {
         const u32 index{Add(texture_buffer_resources, desc, [&desc](const auto& existing) {
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+            return desc.flat_idx == existing.flat_idx;
         })};
         auto& buffer = texture_buffer_resources[index];
         buffer.is_written |= desc.is_written;
@@ -199,8 +196,7 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+            return desc.flat_idx == existing.flat_idx;
         })};
         auto& image = image_resources[index];
         image.is_storage |= desc.is_storage;
@@ -209,8 +205,7 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            return desc.sgpr_base == existing.sgpr_base &&
-                   desc.dword_offset == existing.dword_offset;
+            return desc.flat_idx == existing.flat_idx;
         })};
         return index;
     }
@@ -295,10 +290,8 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
     inst = result.value();
     // If its from user data not much else to do.
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-        return SharpLocation{
-            .sgpr_base = u32(IR::ScalarReg::Max),
-            .dword_offset = u32(inst->Arg(0).ScalarReg()),
-        };
+        // TODO
+        return SharpLocation{.flat_idx = -1U};
     }
     ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst, "Sharp load not from constant memory");
 
@@ -320,8 +313,8 @@ SharpLocation TrackSharp(const IR::Inst* inst) {
 
     // Return retrieved location.
     return SharpLocation{
-        .sgpr_base = u32(base0.value()),
-        .dword_offset = dword_offset,
+        //.sgpr_base = u32(base0.value()),
+        .flat_idx = -1U // TODO
     };
 }
 
@@ -364,10 +357,9 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         const auto sharp = TrackSharp(producer);
-        buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+        buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp.flat_idx);
         binding = descriptors.Add(BufferResource{
-            .sgpr_base = sharp.sgpr_base,
-            .dword_offset = sharp.dword_offset,
+            .flat_idx = -1U,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
             .is_written = IsBufferStore(inst),
         });
@@ -427,10 +419,9 @@ void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
     const IR::Inst* handle = inst.Arg(0).InstRecursive();
     const IR::Inst* producer = handle->Arg(0).InstRecursive();
     const auto sharp = TrackSharp(producer);
-    const auto buffer = info.ReadUd<AmdGpu::Buffer>(sharp.sgpr_base, sharp.dword_offset);
+    const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp.flat_idx);
     const s32 binding = descriptors.Add(TextureBufferResource{
-        .sgpr_base = sharp.sgpr_base,
-        .dword_offset = sharp.dword_offset,
+        .flat_idx = -1U,
         .nfmt = buffer.GetNumberFmt(),
         .is_written = inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
     });
@@ -486,7 +477,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    auto image = info.ReadUd<AmdGpu::Image>(tsharp.sgpr_base, tsharp.dword_offset);
+    auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp.flat_idx);
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
         image = AmdGpu::Image::Null();
@@ -495,8 +486,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     const bool is_storage = IsImageStorageInstruction(inst);
     const auto type = image.IsPartialCubemap() ? AmdGpu::ImageType::Color2DArray : image.GetType();
     u32 image_binding = descriptors.Add(ImageResource{
-        .sgpr_base = tsharp.sgpr_base,
-        .dword_offset = tsharp.dword_offset,
+        .flat_idx = tsharp.flat_idx,
         .type = type,
         .nfmt = static_cast<AmdGpu::NumberFormat>(image.GetNumberFmt()),
         .is_storage = is_storage,
@@ -515,8 +505,9 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         if (handle.IsImmediate()) {
             LOG_WARNING(Render_Vulkan, "Inline sampler detected");
             return descriptors.Add(SamplerResource{
+                // TODO handle this after SRT changes
+                .flat_idx = -1U,
                 .sgpr_base = std::numeric_limits<u32>::max(),
-                .dword_offset = 0,
                 .inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()},
             });
         }
@@ -525,8 +516,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
         const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
         const auto ssharp = TrackSharp(ssharp_ud);
         return descriptors.Add(SamplerResource{
-            .sgpr_base = ssharp.sgpr_base,
-            .dword_offset = ssharp.dword_offset,
+            .flat_idx = ssharp.flat_idx,
             .associated_image = image_binding,
             .disable_aniso = disable_aniso,
         });

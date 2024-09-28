@@ -10,6 +10,7 @@
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/params.h"
@@ -36,6 +37,7 @@ constexpr u32 NUM_TEXTURE_TYPES = 7;
 struct Info;
 
 struct BufferResource {
+    u32 flat_idx;
     u32 sgpr_base;
     u32 dword_offset;
     IR::Type used_types;
@@ -53,8 +55,8 @@ struct BufferResource {
 using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
 struct TextureBufferResource {
+    u32 flat_idx;
     u32 sgpr_base;
-    u32 dword_offset;
     AmdGpu::NumberFormat nfmt;
     bool is_written{};
 
@@ -63,8 +65,8 @@ struct TextureBufferResource {
 using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
+    u32 flat_idx;
     u32 sgpr_base;
-    u32 dword_offset;
     AmdGpu::ImageType type;
     AmdGpu::NumberFormat nfmt;
     bool is_storage{};
@@ -77,8 +79,8 @@ struct ImageResource {
 using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 
 struct SamplerResource {
+    u32 flat_idx;
     u32 sgpr_base;
-    u32 dword_offset;
     AmdGpu::Sampler inline_sampler{};
     u32 associated_image : 4;
     u32 disable_aniso : 1;
@@ -178,6 +180,9 @@ struct Info {
     ImageResourceList images;
     SamplerResourceList samplers;
 
+    SrtInfo srt_info;
+    FlatSharpBuffer flat_sharp_buf;
+
     std::span<const u32> user_data;
     Stage stage;
 
@@ -204,7 +209,13 @@ struct Info {
           user_data{params.user_data} {}
 
     template <typename T>
-    T ReadUd(u32 ptr_index, u32 dword_offset) const noexcept {
+    T ReadUdSharp(u32 dword_offset) const noexcept {
+        return *reinterpret_cast<const T*>(&flat_sharp_buf[dword_offset]);
+    }
+
+    // TODO rename or remove
+    template <typename T>
+    T ReadUdReg(u32 ptr_index, u32 dword_offset) const noexcept {
         T data;
         const u32* base = user_data.data();
         if (ptr_index != IR::NumScalarRegs) {
@@ -221,6 +232,7 @@ struct Info {
             const u32 index = std::countr_zero(mask);
             ASSERT(bnd.user_data < NumUserDataRegs && index < NumUserDataRegs);
             mask &= ~(1U << index);
+            // Need to understand this TODO
             push.ud_regs[bnd.user_data++] = user_data[index];
         }
     }
@@ -246,19 +258,19 @@ struct Info {
 };
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    return inline_cbuf ? inline_cbuf : info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(flat_idx);
 }
 
 constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUd<AmdGpu::Buffer>(sgpr_base, dword_offset);
+    return info.ReadUdSharp<AmdGpu::Buffer>(flat_idx);
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUd<AmdGpu::Image>(sgpr_base, dword_offset);
+    return info.ReadUdSharp<AmdGpu::Image>(flat_idx);
 }
 
 constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
-    return inline_sampler ? inline_sampler : info.ReadUd<AmdGpu::Sampler>(sgpr_base, dword_offset);
+    return inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(flat_idx);
 }
 
 } // namespace Shader
