@@ -515,6 +515,11 @@
 			<translation>Frissítések keresése indításkor</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Frissítési Csatorna</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Frissítések keresése</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Bezárás</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Mutassa a kurzort a lehetőségeken, hogy itt leírást láthasson</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Konzol nyelve:\nBeállítja a PS4 játék nyelvét.\nAjánlott a játék által támogatott nyelvre állítani, amely régiónként változhat.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Emulátor nyelve:\nBeállítja az emulátor felhasználói felületének nyelvét.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Teljes képernyő engedélyezése:\nAutomatikusan teljes képernyőre állítja a játék ablakát.\nEz a F11 billentyű megnyomásával kapcsolható ki/be.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Indító képernyő megjelenítése:\nMegjeleníti a játék indító képernyőjét (különleges képet) a játék elindításakor.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>PS4 Pro:\nAz emulátort PS4 PRO-ként kezeli, ami engedélyezheti a speciális funkciókat olyan játékokban, amelyek támogatják.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Felhasználónév:\nBeállítja a PS4 fiók felhasználónevét, amelyet egyes játékok megjeleníthetnek.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Napló típusa:\nBeállítja, hogy szinkronizálja-e a naplóablak kimenetét a teljesítmény érdekében. Ennek kedvezőtlen hatásai lehetnek az emulációra.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Napló szűrő: Csak bizonyos információk megjelenítésére szűri a naplót. Példák: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Szintek: Trace, Debug, Info, Warning, Error, Critical - ebben a sorrendben, egy konkrét szint elnémítja az előtte lévő összes szintet, és naplózza az utána következő szinteket.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Frissítés:\nStabil: Hivatalos verziók, amelyeket havonta adnak ki, és amelyek nagyon elavultak lehetnek, de megbízhatóbbak és teszteltek.\nInstabil: Fejlesztési verziók, amelyek az összes legújabb funkciót és javítást tartalmazzák, de hibákat tartalmazhatnak és kevésbé stabilak.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Játék címzene lejátszása:\nHa a játék támogatja, engedélyezze a speciális zene lejátszását, amikor a játékot kiválasztja a GUI-ban.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Grafikus eszköz:\nTöbb GPU-s rendszereken válassza ki a GPU-t, amelyet az emulátor használ a legördülő listából,\nvagy válassza az "Auto Select" lehetőséget, hogy automatikusan meghatározza azt.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Szélesség/Magasság:\nBeállítja az emulátor ablakának méretét induláskor, amely a játék során átméretezhető.\nEz különbözik a játékbeli felbontástól.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblank osztó:\nAz emulátor frissítési sebessége e számot megszorozva működik. Ennek megváltoztatása kedvezőtlen hatásokat okozhat, például növelheti a játék sebességét, vagy megszakíthat kritikus játékfunkciókat, amelyek nem számítanak arra, hogy ez megváltozik!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Shader dumping engedélyezése:\nMűszaki hibaelhárítás céljából a játékok shaderjeit elmenti egy mappába, ahogy renderelődnek.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Null GPU engedélyezése:\nMűszaki hibaelhárítás céljából letiltja a játék renderelését, mintha nem lenne grafikus kártya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>PM4 dumpolás engedélyezése:\nMűszaki hibaelhárítás céljából a nyers GPU utasítási adatokat elmenti egy mappába, ahogy az emulátor feldolgozza őket.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Debug dumpolás engedélyezése:\nElmenti a futó PS4 program import- és exportszimbólumait, valamint a fájl fejlécinformációit egy könyvtárba</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Vulkan validációs rétegek engedélyezése:\nEngedélyezi a Vulkan renderelő állapotának validálását és információk naplózását annak belső állapotáról. Ez csökkenti a teljesítményt és valószínűleg megváltoztatja az emuláció viselkedését.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Vulkan szinkronizációs validáció engedélyezése:\nEngedélyezi a Vulkan renderelési feladatok időzítésének validálását. Ez csökkenti a teljesítményt és valószínűleg megváltoztatja az emuláció viselkedését.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>RenderDoc hibakeresés engedélyezése:\nHa engedélyezve van, az emulátor kompatibilitást biztosít a Renderdoc számára, hogy lehetővé tegye a jelenleg renderelt keret rögzítését és elemzését.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Hiba</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Érvénytelen frissítési csatorna: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>A config.tml fájlban az updateChannel-nek 'stable' vagy 'unstable' értéket kell tartalmaznia</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Hálózati hiba:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Frissítés elérhető</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Frissítési Csatorna</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

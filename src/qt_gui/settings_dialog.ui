@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>854</width>
-    <height>480</height>
+    <height>570</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -52,7 +52,7 @@
         <x>0</x>
         <y>0</y>
         <width>836</width>
-        <height>432</height>
+        <height>442</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -290,9 +290,9 @@
               <widget class="QCheckBox" name="updateCheckBox">
                <property name="geometry">
                 <rect>
-                 <x>12</x>
-                 <y>115</y>
-                 <width>251</width>
+                 <x>10</x>
+                 <y>130</y>
+                 <width>261</width>
                  <height>22</height>
                 </rect>
                </property>
@@ -300,35 +300,45 @@
                 <string>Check for Updates at Startup</string>
                </property>
               </widget>
-              <widget class="QComboBox" name="updateComboBox">
+              <widget class="QGroupBox" name="updaterComboBox">
                <property name="geometry">
                 <rect>
                  <x>12</x>
-                 <y>35</y>
+                 <y>30</y>
                  <width>241</width>
-                 <height>28</height>
+                 <height>65</height>
                 </rect>
                </property>
-               <property name="currentText">
-                <string>stable</string>
+               <property name="title">
+                <string>Update Channel</string>
                </property>
-               <item>
-                <property name="text">
-                 <string>stable</string>
+               <widget class="QComboBox" name="updateComboBox">
+                <property name="geometry">
+                 <rect>
+                  <x>12</x>
+                  <y>30</y>
+                  <width>217</width>
+                  <height>28</height>
+                 </rect>
                 </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>unstable</string>
-                </property>
-               </item>
+                <item>
+                 <property name="text">
+                  <string>Release</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Nightly</string>
+                 </property>
+                </item>
+               </widget>
               </widget>
               <widget class="QPushButton" name="checkUpdateButton">
                <property name="geometry">
                 <rect>
-                 <x>12</x>
-                 <y>70</y>
-                 <width>241</width>
+                 <x>25</x>
+                 <y>100</y>
+                 <width>215</width>
                  <height>24</height>
                 </rect>
                </property>
@@ -389,6 +399,12 @@
             </property>
             <property name="sizeType">
              <enum>QSizePolicy::Policy::Expanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
             </property>
            </spacer>
           </item>
@@ -734,6 +750,19 @@
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="standardButtons">
       <set>QDialogButtonBox::StandardButton::Apply|QDialogButtonBox::StandardButton::Close|QDialogButtonBox::StandardButton::RestoreDefaults|QDialogButtonBox::StandardButton::Save</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTextEdit" name="descriptionText">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>70</height>
+      </size>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

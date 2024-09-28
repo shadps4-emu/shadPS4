@@ -515,6 +515,11 @@
 			<translation>Bij opstart op updates controleren</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Updatekanaal</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Controleren op updates</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Sluiten</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Beweeg je muis over een optie om hier een beschrijving weer te geven</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Console Taal:\nStelt de taal in die het PS4-spel gebruikt.\nHet wordt aanbevolen om dit in te stellen op een taal die het spel ondersteunt, wat kan variëren per regio.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Emulator Taal:\nStelt de taal van de gebruikersinterface van de emulator in.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Volledig scherm inschakelen:\nZet het gamevenster automatisch in de volledig scherm modus.\nDit kan worden omgeschakeld door op de F11-toets te drukken.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Opstartscherm weergeven:\nToont het opstartscherm van het spel (een speciale afbeelding) tijdens het starten van het spel.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Is PS4 Pro:\nLaat de emulator zich gedragen als een PS4 PRO, wat speciale functies kan inschakelen in games die dit ondersteunen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Gebruikersnaam:\nStelt de gebruikersnaam van het PS4-account in, die door sommige games kan worden weergegeven.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Logtype:\nStelt in of de uitvoer van het logvenster moet worden gesynchroniseerd voor prestaties. Kan nadelige effecten hebben op emulatie.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Logfilter: Filtert het logboek om alleen specifieke informatie af te drukken. Voorbeelden: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveaus: Trace, Debug, Info, Waarschuwing, Fout, Kritiek - in deze volgorde, een specifiek niveau dempt alle voorgaande niveaus in de lijst en logt alle niveaus daarna.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Updateren:\nStabiel: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nOnstabiel: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Speel titelsong:\nAls een game dit ondersteunt, wordt speciale muziek afgespeeld wanneer je het spel in de GUI selecteert.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Grafische adapter:\nIn systemen met meerdere GPU's, kies de GPU die de emulator uit de vervolgkeuzelijst moet gebruiken,\nof kies "Auto Select" om dit automatisch in te stellen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Breedte/Hoogte:\nStelt de grootte van het emulatorvenster bij het opstarten in, wat tijdens het spelen kan worden gewijzigd.\nDit is anders dan de resolutie in de game.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblank deler:\nDe frame-rate waartegen de emulator wordt vernieuwd, vermenigvuldigd met dit getal. Dit veranderen kan nadelige effecten hebben, zoals het versnellen van het spel of het verpesten van kritieke gamefunctionaliteiten die niet verwachtten dat dit zou veranderen!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Shaderdump inschakelen:\nVoor technische foutopsporing slaat het de shaders van de game op in een map terwijl ze worden gerenderd.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Null GPU inschakelen:\nVoor technische foutopsporing schakelt de game-rendering uit alsof er geen grafische kaart is.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>PM4 dumpen inschakelen:\nVoor technische foutopsporing slaat het ruwe GPU-instructiegegevens op in een map terwijl de emulator ze verwerkt.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Foutopsporing dump inschakelen:\nSlaat de import- en export-symbolen en de bestandsheaderinformatie van de momenteel draaiende PS4-toepassing op in een map.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Vulkan validatielaag inschakelen:\nSchakelt een systeem in dat de status van de Vulkan-renderer valideert en informatie over de interne status ervan logt. Dit zal de prestaties verlagen en waarschijnlijk het emulatiegedrag veranderen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Vulkan synchronisatievalidatie inschakelen:\nSchakelt een systeem in dat de timing van Vulkan-renderingtaken valideert. Dit zal de prestaties verlagen en waarschijnlijk het emulatiegedrag veranderen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>RenderDoc foutopsporing inschakelen:\nAls ingeschakeld, biedt de emulator compatibiliteit met Renderdoc om de momenteel gerenderde frame vast te leggen en te analyseren.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Fout</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Ongeldig updatekanaal: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>In updateChannel in het config.tml-bestand moet 'stable' of 'unstable' staan</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Netwerkfout:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Update beschikbaar</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Updatekanaal</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

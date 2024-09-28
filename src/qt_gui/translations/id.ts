@@ -515,6 +515,11 @@
 			<translation>Periksa pembaruan saat mulai</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Saluran Pembaruan</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Periksa pembaruan</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Tutup</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Letakkan mouse Anda di atas opsi untuk menampilkan deskripsi di sini</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Bahasa Konsol:\nMenetapkan bahasa yang digunakan oleh permainan PS4.\nDisarankan untuk mengatur ini ke bahasa yang didukung oleh permainan, yang dapat bervariasi berdasarkan wilayah.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Bahasa Emulator:\nMenetapkan bahasa antarmuka pengguna emulator.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Aktifkan Mode Layar Penuh:\nSecara otomatis menempatkan jendela permainan dalam mode layar penuh.\nIni dapat dinonaktifkan dengan menekan tombol F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Tampilkan Layar Pembuka:\nMenampilkan layar pembuka permainan (gambar khusus) saat permainan dimulai.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Adalah PS4 Pro:\nMembuat emulator berfungsi sebagai PS4 PRO, yang mungkin mengaktifkan fitur khusus dalam permainan yang mendukungnya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Nama Pengguna:\nMenetapkan nama pengguna akun PS4, yang mungkin ditampilkan oleh beberapa permainan.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Jenis Log:\nMenetapkan apakah untuk menyinkronkan output jendela log untuk kinerja. Dapat memiliki efek buruk pada emulasi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Filter Log: Menyaring log untuk hanya mencetak informasi tertentu. Contoh: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Tingkatan: Trace, Debug, Info, Warning, Error, Critical - dalam urutan ini, tingkat tertentu membungkam semua tingkat sebelumnya dalam daftar dan mencatat setiap tingkat setelahnya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Pembaruan:\nStabil: Versi resmi yang dirilis setiap bulan yang mungkin sangat ketinggalan zaman, tetapi lebih dapat diandalkan dan teruji.\nTidak Stabil: Versi pengembangan yang memiliki semua fitur dan perbaikan terbaru, tetapi mungkin mengandung bug dan kurang stabil.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Putar Musik Judul Permainan:\nJika permainan mendukungnya, aktifkan pemutaran musik khusus saat memilih permainan di GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Perangkat Grafis:\nPada sistem GPU ganda, pilih GPU yang akan digunakan emulator dari daftar dropdown,\natau pilih "Auto Select" untuk menentukan secara otomatis.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Lebar/Tinggi:\nMenetapkan ukuran jendela emulator saat diluncurkan, yang dapat diubah ukurannya selama permainan.\nIni berbeda dari resolusi dalam permainan.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Pembagi Vblank:\nKecepatan bingkai di mana emulator menyegarkan dikalikan dengan angka ini. Mengubah ini dapat memiliki efek buruk, seperti meningkatkan kecepatan permainan, atau merusak fungsi kritis permainan yang tidak mengharapkan ini berubah!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Aktifkan Pembuangan Shader:\nUntuk tujuan debugging teknis, menyimpan shader permainan ke folder saat mereka dirender.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Aktifkan GPU Null:\nUntuk tujuan debugging teknis, menonaktifkan rendering permainan seolah-olah tidak ada kartu grafis.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Aktifkan Pembuangan PM4:\nUntuk tujuan debugging teknis, menyimpan data instruksi GPU mentah ke folder saat emulator memprosesnya.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Aktifkan Pembuangan Debug:\nMenyimpan simbol impor dan ekspor serta informasi header file dari program PS4 yang sedang berjalan ke direktori</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Aktifkan Vulkan Validation Layers:\nMengaktifkan sistem yang memvalidasi status penggambaran Vulkan dan mencatat informasi tentang status internalnya. Ini akan mengurangi kinerja dan kemungkinan mengubah perilaku emulasi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Aktifkan Vulkan Synchronization Validation:\nMengaktifkan sistem yang memvalidasi waktu tugas penggambaran Vulkan. Ini akan mengurangi kinerja dan kemungkinan mengubah perilaku emulasi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Aktifkan Debugging RenderDoc:\nJika diaktifkan, emulator akan menyediakan kompatibilitas dengan Renderdoc untuk memungkinkan pengambilan dan analisis bingkai yang sedang dirender.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Kesalahan</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Saluran pembaruan tidak valid: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Di updateChannel dalam file config.tml harus berisi 'stable' atau 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Kesalahan jaringan:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Pembaruan Tersedia</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Saluran Pembaruan</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

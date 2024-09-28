@@ -515,6 +515,11 @@
 			<translation>Kontrollo për përditësime në nisje</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Kanali i Përditësimit</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Kontrollo për përditësime</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Mbyll</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Vendosni miun në një opsion për të shfaqur një përshkrim këtu</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Gjuha e konsolës:\nPërcakton gjuhën që përdor loja PS4.\nRrekomandohet të vendosni këtë në një gjuhë që loja mbështet, e cila do të ndryshojë sipas rajonit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Gjuha e emulatorit:\nPërcakton gjuhën e ndërfaqes së përdoruesit të emulatorit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Aktivizo ekranin e plotë:\nAutomatikisht vendos dritaren e lojës në modalitetin e ekranit të plotë.\nKjo mund të aktivizohet duke shtypur çelësin F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Shfaq ekranin e ngarkesës:\nShfaq ekranin e ngarkesës së lojës (një imazh special) gjatë fillimit të lojës.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Është PS4 Pro:\nBën që emulatori të veprojë si një PS4 PRO, i cili mund të aktivizojë karakteristika speciale në lojrat që e mbështesin atë.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Përdoruesi:\nPërcakton emrin e përdoruesit të llogarisë PS4, i cili mund të shfaqet nga disa lojra.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Tipi i logut:\nPërcakton nëse të sinkronizoni daljen e dritares së logut për performancën. Mund të ketë efekte të këqija në emulim.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Filtri i logut: Filtron logun për të printuar vetëm informacione specifike. Shembuj: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivelet: Trace, Debug, Info, Warning, Error, Critical - në këtë rend, një nivel specifik hesht të gjitha nivelet përpara në listë dhe regjistron çdo nivel pas saj.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Aktualizimi:\nStabil: Versionet zyrtare të lëshuara çdo muaj që mund të jenë shumë të vjetra, por janë më të besueshme dhe të testuara.\nPanshkuar: Versionet e zhvillimit që kanë të gjitha veçoritë dhe rregullimet më të fundit, por mund të përmbajnë gabime dhe janë më pak të qëndrueshme.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Lojë muzikë titulli:\nNëse një lojë e mbështet, aktivizoja luajtjen e muzikës speciale kur të zgjidhni lojën në GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Dispositivi grafik:\nNë sistemet me GPU të shumëfishta, zgjidhni GPU-në që do të përdorë emulatori nga lista e rënies,\nor zgjidhni "Auto Select" për ta përcaktuar automatikisht.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Gjerësia/ Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Pjesëtari Vblank:\nShpejtësia e kuadrit me të cilën refreshohet emulatori është shumëzuar me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose shkatërrimi i funksionalitetit kritik të lojës që nuk e pret këtë të ndryshojë!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Aktivizo dump-in e shaders:\nPër qëllime të debugimit teknik, ruan shaders e lojës në një folder ndërsa ato renditen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Aktivizo GPU Null:\nPër qëllime të debugimit teknik, deaktivizon renditjen e lojës sikur nuk do të kishte një kartë grafike.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Aktivizo dump-in e PM4:\nPër qëllime të debugimit teknik, ruan të dhënat e instruksioneve të GPU-së në një folder ndërsa emulatori i përpunon ato.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Aktivizo dump-in e debugimit:\nRuani simbolet e importit dhe eksportit dhe informacionin e titullit të skedarit për aplikacionin aktual PS4 që po punon në një katalog.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Aktivizo stratet e validimit Vulkan:\nAktivizon një sistem që validon gjendjen e renderizuesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Aktivizo validimin e sinkronizimit Vulkan:\nAktivizon një sistem që validon kohën e detyrave të renderizimit Vulkan. Kjo do të ulet performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Aktivizo debugimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e kornizës aktuale të renderizuar.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Gabim</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Kanal përditësimi i pavlefshëm: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Në skedarin config.tml, updateChannel duhet të përmbajë 'stable' ose 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Gabim rrjeti:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Ofrohet një përditësim</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Kanali i Përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

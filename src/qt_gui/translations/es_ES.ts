@@ -515,6 +515,11 @@
 			<translation>Buscar actualizaciones al iniciar</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Canal de Actualización</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Verificar actualizaciones</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Cerrar</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Apunta con el ratón a una opción para mostrar una descripción aquí</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Idioma de la Consola:\nEstablece el idioma que utiliza el juego de PS4.\nSe recomienda configurarlo a un idioma que el juego soporte, lo cual varía por región.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Idioma del Emulador:\nConfigura el idioma de la interfaz de usuario del emulador.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Habilitar Pantalla Completa:\nColoca automáticamente la ventana del juego en modo de pantalla completa.\nEsto se puede alternar presionando la tecla F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Mostrar Pantalla de Inicio:\nMuestra la pantalla de inicio del juego (una imagen especial) mientras el juego se está iniciando.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Es PS4 Pro:\nHace que el emulador actúe como una PS4 PRO, lo que puede habilitar funciones especiales en los juegos que lo admitan.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Nombre de Usuario:\nEstablece el nombre de usuario de la cuenta de PS4, que puede ser mostrado por algunos juegos.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Tipo de Registro:\nEstablece si sincronizar la salida de la ventana de registro para mejorar el rendimiento. Puede tener efectos adversos en la emulación.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Filtro de Registro: Filtra el registro para imprimir solo información específica. Ejemplos: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveles: Trace, Debug, Info, Warning, Error, Critical - en este orden, un nivel específico silencia todos los niveles anteriores en la lista y registra cada nivel posterior.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Actualización:\nEstable: Versiones oficiales lanzadas cada mes que pueden estar muy desactualizadas, pero son más confiables y están probadas.\nInestable: Versiones de desarrollo que tienen todas las últimas funciones y correcciones, pero pueden contener errores y son menos estables.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Reproducir Música del Título:\nSi un juego lo admite, habilita la reproducción de música especial al seleccionar el juego en la interfaz gráfica.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Dispositivo Gráfico:\nEn sistemas con múltiples GPU, selecciona la GPU que el emulador utilizará de la lista desplegable,\o selecciona "Auto Select" para determinarla automáticamente.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Anchura/Altura:\nEstablece el tamaño de la ventana del emulador al iniciar, que se puede redimensionar durante el juego.\nEsto es diferente de la resolución en el juego.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Divisor de Vblank:\nLa tasa de cuadros a la que se refresca el emulador se multiplica por este número. Cambiar esto puede tener efectos adversos, como aumentar la velocidad del juego, o romper la funcionalidad crítica del juego que no espera que esto cambie.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Habilitar la Volcadura de Sombras:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Habilitar GPU Nula:\nPor el bien de la depuración técnica, desactiva el renderizado del juego como si no hubiera tarjeta gráfica.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Habilitar la Volcadura de PM4:\nPor el bien de la depuración técnica, guarda los datos de instrucciones crudas de GPU en una carpeta a medida que el emulador los procesa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Habilitar la Volcadura de Depuración:\nGuarda los símbolos de importación y exportación y la información del encabezado del archivo del programa de PS4 que se está ejecutando actualmente en un directorio.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Habilitar Capas de Validación de Vulkan:\nHabilita un sistema que valida el estado del renderizador de Vulkan y registra información sobre su estado interno. Esto reducirá el rendimiento y probablemente cambiará el comportamiento de la emulación.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Habilitar Validación de Sincronización de Vulkan:\nHabilita un sistema que valida el tiempo de las tareas de renderizado de Vulkan. Esto reducirá el rendimiento y probablemente cambiará el comportamiento de la emulación.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Habilitar Depuración de RenderDoc:\nSi se habilita, el emulador proporcionará compatibilidad con Renderdoc para permitir la captura y análisis del fotograma actualmente renderizado.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Error</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Canal de actualización no válido: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>En updateChannel en el archivo config.tml debe contener 'stable' o 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Error de red:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Actualización disponible</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Canal de Actualización</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

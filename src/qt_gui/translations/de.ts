@@ -515,6 +515,11 @@
 			<translation>Beim Start nach Updates suchen</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Update-Kanal</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Nach Updates suchen</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Schließen</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Zeigen Sie mit der Maus auf eine Option, um hier eine Beschreibung anzuzeigen</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Konsolensprache:\nLegt die Sprache fest, die das PS4-Spiel verwendet.\nEs wird empfohlen, diese auf eine vom Spiel unterstützte Sprache einzustellen, die je nach Region unterschiedlich sein kann.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Emulatorsprache:\nLegt die Sprache der Emulator-Benutzeroberfläche fest.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Vollbildmodus aktivieren:\nSchaltet das Spielfenster automatisch in den Vollbildmodus.\nKann durch Drücken der F11-Taste umgeschaltet werden.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Startbildschirm anzeigen:\nZeigt beim Start einen speziellen Bildschirm (Splash) des Spiels an.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Ist es eine PS4 Pro:\nErmöglicht es dem Emulator, als PS4 PRO zu arbeiten, was in Spielen, die dies unterstützen, spezielle Funktionen aktivieren kann.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Benutzername:\nLegt den Namen des PS4-Kontos fest, der in einigen Spielen angezeigt werden kann.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Protokolltyp:\nLegt fest, ob die Ausgabe des Protokollfensters synchronisiert wird, um die Leistung zu verbessern. Dies kann sich negativ auf die Emulation auswirken.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Protokollfilter: Filtert das Protokoll so, dass nur bestimmte Informationen ausgegeben werden. Beispiele: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Ebenen: Trace, Debug, Info, Warning, Error, Critical - in dieser Reihenfolge, ein ausgewähltes Level blendet alle vorherigen Ebenen aus und zeigt alle nachfolgenden an.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Update:\nStabil: Offizielle Builds, die monatlich veröffentlicht werden, können viel älter sein, aber stabiler und getestet.\nUnstabil: Entwickler-Builds, die die neuesten Funktionen und Fehlerbehebungen enthalten, aber Fehler enthalten und weniger stabil sein können.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Wiedergabe der Titelmusik:\nWenn das Spiel dies unterstützt, wird beim Auswählen des Spiels in der Benutzeroberfläche spezielle Musik abgespielt.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Grafikkarte:\nAuf Systemen mit mehreren GPUs wählen Sie aus einem Dropdown-Menü die GPU aus, die der Emulator verwenden wird,\noder wählen Sie "Auto Select", um sie automatisch auszuwählen.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Auflösung:\nLegt die Größe des Emulator-Fensters während der Wiedergabe fest, die während der Wiedergabe geändert werden kann.\nDies unterscheidet sich von der tatsächlichen Spielauflösung.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Framerate-Teiler:\nMultipliziert die Bildrate, mit der der Emulator aktualisiert wird, mit diesem Wert. Dies kann sich negativ auswirken, wie z.B. beschleunigtes Gameplay oder Funktionsstörungen!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Shader-Dumping aktivieren:\nZum technischen Debuggen speichert es die Shaders des Spiels in einem Ordner während der Wiedergabe.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Virtuelle GPU aktivieren:\nFür das technische Debugging deaktiviert es die Spielanzeige, als ob keine Grafikkarte vorhanden wäre.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>PM4-Dumping aktivieren:\nZum technischen Debuggen speichert es rohe GPU-Befehlsdaten in einem Ordner während der Verarbeitung.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Debug-Dump aktivieren:\nSpeichert Import-/Exportsymbole und Headerinformationen des aktuellen PS4-Programms in einem Verzeichnis.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Vulkan-Validierungsebenen aktivieren:\nAktiviert ein System, das den Zustand des Vulkan-Treibers validiert und Informationen über dessen internen Zustand protokolliert. Dies verringert die Leistung und kann möglicherweise das Verhalten der Emulation ändern.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Vulkan-Synchronisationsvalidierung aktivieren:\nAktiviert ein System, das die Zeitplanung der Rendering-Aufgaben von Vulkan validiert. Dies wird die Leistung verringern und kann möglicherweise das Verhalten der Emulation ändern.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>RenderDoc-Debugging aktivieren:\nWenn aktiviert, bietet der Emulator Kompatibilität mit Renderdoc zur Erfassung und Analyse des aktuell gerenderten Frames.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Fehler</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Ungültiger Aktualisierungskanal: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Im updateChannel in der config.tml-Datei muss 'stable' oder 'unstable' enthalten sein</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Netzwerkfehler:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Aktualisierung verfügbar</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Update-Kanal</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

@@ -515,6 +515,11 @@
 			<translation>Kiểm tra cập nhật khi khởi động</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Kênh Cập Nhật</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Kiểm tra cập nhật</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Đóng</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Di chuột vào tùy chọn để hiển thị mô tả ở đây</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Ngôn ngữ console:\nChọn ngôn ngữ mà trò chơi PS4 sẽ sử dụng.\nKhuyên bạn nên đặt tùy chọn này thành một ngôn ngữ mà trò chơi hỗ trợ, có thể thay đổi tùy theo vùng.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Ngôn ngữ của trình giả lập:\nChọn ngôn ngữ của giao diện người dùng của trình giả lập.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Bật chế độ toàn màn hình:\nTự động đặt cửa sổ trò chơi ở chế độ toàn màn hình.\nĐiều này có thể bị vô hiệu hóa bằng cách nhấn phím F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Hiển thị màn hình khởi động:\nHiển thị màn hình khởi động của trò chơi (một hình ảnh đặc biệt) trong khi trò chơi khởi động.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Là PS4 Pro:\nKhiến trình giả lập hoạt động như một PS4 PRO, điều này có thể kích hoạt các tính năng đặc biệt trong các trò chơi hỗ trợ điều này.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Tên người dùng:\nChọn tên người dùng của tài khoản PS4, có thể được một số trò chơi hiển thị.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Loại nhật ký:\nChọn xem có đồng bộ hóa đầu ra cửa sổ nhật ký cho hiệu suất hay không. Điều này có thể có tác động tiêu cực đến việc giả lập.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Bộ lọc nhật ký: Lọc nhật ký để in chỉ thông tin cụ thể. Ví dụ: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Các mức: Trace, Debug, Info, Warning, Error, Critical - theo thứ tự này, một mức cụ thể làm tắt tất cả các mức trước trong danh sách và ghi lại tất cả các mức sau đó.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Cập nhật:\nỔn định: Các phiên bản chính thức được phát hành hàng tháng; có thể khá cũ nhưng đáng tin cậy hơn và đã được thử nghiệm.\nKhông ổn định: Các phiên bản phát triển có tất cả các tính năng và sửa lỗi mới nhất; có thể có lỗi và ít ổn định hơn.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Phát nhạc tiêu đề trò chơi:\nNếu một trò chơi hỗ trợ điều này, hãy kích hoạt phát nhạc đặc biệt khi bạn chọn trò chơi trong GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Thiết bị đồ họa:\nTrên các hệ thống có GPU đa năng, hãy chọn GPU mà trình giả lập sẽ sử dụng từ danh sách thả xuống,\hoặc chọn "Auto Select" để tự động xác định.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Chiều rộng/Cao:\nChọn kích thước cửa sổ của trình giả lập khi khởi động, có thể điều chỉnh trong quá trình chơi.\nĐiều này khác với độ phân giải trong trò chơi.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Bộ chia Vblank:\nTốc độ khung hình mà trình giả lập làm mới được nhân với số này. Thay đổi này có thể có tác động tiêu cực như tăng tốc độ trò chơi hoặc làm hỏng chức năng quan trọng mà trò chơi không mong đợi thay đổi điều này!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Bật xuất shader:\nĐể mục đích gỡ lỗi kỹ thuật, lưu shader của trò chơi vào một thư mục khi chúng được kết xuất.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Bật GPU Null:\nĐể mục đích gỡ lỗi kỹ thuật, vô hiệu hóa việc kết xuất trò chơi như thể không có card đồ họa.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Bật xuất PM4:\nĐể mục đích gỡ lỗi kỹ thuật, lưu dữ liệu lệnh GPU vào một thư mục khi trình giả lập xử lý chúng.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Bật xuất gỡ lỗi:\nLưu biểu tượng nhập và xuất và thông tin tiêu đề tệp cho ứng dụng PS4 hiện đang chạy vào một thư mục.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Bật lớp xác thực Vulkan:\nKích hoạt một hệ thống xác thực trạng thái của bộ kết xuất Vulkan và ghi lại thông tin về trạng thái nội bộ của nó. Điều này sẽ giảm hiệu suất và có thể thay đổi hành vi của việc giả lập.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Bật xác thực đồng bộ Vulkan:\nKích hoạt một hệ thống xác thực thời gian của nhiệm vụ kết xuất Vulkan. Điều này sẽ giảm hiệu suất và có thể thay đổi hành vi của việc giả lập.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Bật gỡ lỗi RenderDoc:\nNếu được kích hoạt, trình giả lập sẽ cung cấp tính tương thích với Renderdoc để cho phép bắt và phân tích khung hình hiện tại đang được kết xuất.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Lỗi</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Kênh cập nhật không hợp lệ: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Trong updateChannel trong tệp config.tml phải chứa 'stable' hoặc 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Lỗi mạng:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Có bản cập nhật</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Kênh Cập Nhật</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

@@ -515,6 +515,11 @@
 			<translation>Sjekk etter oppdateringer ved oppstart</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Oppdateringskanal</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Sjekk for oppdateringer</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Lukk</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Hold musen over et alternativ for å vise en beskrivelse her</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Konsollspråk:\nAngir språket som PS4-spillet bruker.\nDet anbefales å sette dette til et språk som spillet støtter, noe som kan variere avhengig av region.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Emulatorspråk:\nAngir språket for emulatorens brukergrensesnitt.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Aktiver fullskjerm:\nSetter automatisk spillvinduet i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Vis startskjerm:\nViser spillets startskjerm (et spesialbilde) når spillet starter.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Er PS4 Pro:\nFår emulatoren til å fungere som en PS4 PRO, noe som kan aktivere spesielle funksjoner i spill som støtter det.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Brukernavn:\nAngir brukernavnet for PS4-kontoen, som kan vises av enkelte spill.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Logtype:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter på emulering.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Loggfilter: Filtrerer loggen for å kun skrive ut spesifikk informasjon. Eksempler: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Oppdatering:\nStabil: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nUstabil: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Spille tittelmusikk:\nHvis et spill støtter det, aktiverer det å spille spesiell musikk når du velger spillet i GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Grafikkdevice:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller velg "Auto Select" for å bestemme det automatisk.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Bredde/Høyde:\nAngir størrelsen på emulatorkvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblank divider:\nBilderaten som emulatoren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten på spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Aktiver shaderdumping:\nFor teknisk feilsøking lagrer shaderne fra spillet i en mappe mens de gjengis.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Aktiver Null GPU:\nFor teknisk feilsøking deaktiverer spillrendering som om det ikke var noe grafikkort.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Aktiver PM4 dumping:\nFor teknisk feilsøking lagrer rå GPU-instruksjonsdata i en mappe mens emulatoren behandler dem.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Aktiver feilsøking dumping:\nLagrer import- og eksport-symbolene og filoverskriftsinformasjonen til det nåværende kjørende PS4-programmet i en katalog.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Aktiver Vulkan valideringslag:\nAktiverer et system som validerer tilstanden til Vulkan-rendereren og logger informasjon om dens indre tilstand. Dette vil redusere ytelsen og sannsynligvis endre emuleringens oppførsel.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Aktiver Vulkan synkronisering validering:\nAktiverer et system som validerer timingen av Vulkan-renderingsoppgaver. Dette vil redusere ytelsen og sannsynligvis endre emuleringens oppførsel.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Aktiver RenderDoc feilsøking:\nHvis aktivert, vil emulatoren gi kompatibilitet med Renderdoc for å tillate opptak og analyse av det nåværende renderte bildet.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Feil</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Ugyldig oppdateringskanal: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>I updateChannel i config.tml-filen må inneholde 'stable' eller 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Nettverksfeil:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Oppdatering tilgjengelig</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Oppdateringskanal</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

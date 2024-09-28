@@ -515,6 +515,11 @@
 			<translation>啟動時檢查更新</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>更新頻道</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>檢查更新</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>關閉</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>將鼠標懸停在選項上以在此顯示描述</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>主機語言:\n設定PS4遊戲使用的語言。\n建議將其設置為遊戲支持的語言，這會因地區而異。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>模擬器語言:\n設定模擬器的用戶介面的語言。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>啟用全螢幕:\n自動將遊戲視窗設置為全螢幕模式。\n可以按F11鍵進行切換。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>顯示啟動畫面:\n在遊戲啟動時顯示遊戲的啟動畫面（特殊圖片）。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>為PS4 Pro:\n讓模擬器像PS4 PRO一樣運作，這可能啟用支持此功能的遊戲中的特殊功能。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>用戶名:\n設定PS4帳號的用戶名，某些遊戲中可能會顯示。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>日誌類型:\n設定是否同步日誌窗口的輸出以提高性能。可能對模擬產生不良影響。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>日誌過濾器: 過濾日誌以僅打印特定信息。範例："Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" 等級: Trace, Debug, Info, Warning, Error, Critical - 以此順序，特定級別靜音所有前面的級別，並記錄其後的每個級別。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>更新:\n穩定版: 每月發布的官方版本，可能非常舊，但更可靠且經過測試。\n不穩定: 開發版本，擁有所有最新的功能和修復，但可能包含錯誤，穩定性較差。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>播放標題音樂:\n如果遊戲支持，啟用在GUI中選擇遊戲時播放特殊音樂。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>圖形設備:\n在多GPU系統中，從下拉列表中選擇模擬器將使用的GPU，\n或選擇「自動選擇」以自動確定。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>寬度/高度:\n設定模擬器啟動時的窗口大小，可以在遊戲過程中調整。\n這與遊戲內解析度不同。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblank分隔符:\n模擬器的幀速率將乘以這個數字。更改此數字可能會有不良影響，例如增加遊戲速度，或破壞不預期此變化的關鍵遊戲功能！</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>啟用著色器轉儲:\n為了技術調試，將遊戲的著色器在渲染時保存到文件夾中。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>啟用空GPU:\n為了技術調試，禁用遊戲渲染，彷彿沒有顯示卡。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>啟用PM4轉儲:\n為了技術調試，將原始GPU指令數據在模擬器處理時保存到文件夾中。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>啟用調試轉儲:\n將當前運行的PS4程序的輸入和輸出符號及文件頭信息保存到目錄中。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>啟用Vulkan驗證層:\n啟用一個系統來驗證Vulkan渲染器的狀態並記錄其內部狀態的信息。這將降低性能並可能改變模擬行為。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>啟用Vulkan同步驗證:\n啟用一個系統來驗證Vulkan渲染任務的時間。這將降低性能並可能改變模擬行為。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>啟用RenderDoc調試:\n如果啟用，模擬器將提供與Renderdoc的兼容性，以允許捕獲和分析當前渲染的幀。</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>錯誤</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>無效的更新通道：</translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>在 config.tml 文件的 updateChannel 中必須包含 'stable' 或 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>網路錯誤：</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>可用更新</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>更新頻道</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

@@ -515,6 +515,11 @@
 			<translation>起動時に更新確認</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>アップデートチャネル</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>更新を確認</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>閉じる</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>ここに説明を表示するには、オプションにマウスをポイントしてください</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>コンソール言語:\nPS4ゲームが使用する言語を設定します。\nこれはゲームがサポートする言語に設定することをお勧めしますが、地域によって異なる場合があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>エミュレーター言語:\nエミュレーターのユーザーインターフェースの言語を設定します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>全画面モードを有効にする:\nゲームウィンドウを自動的に全画面モードにします。\nF11キーを押すことで切り替えることができます。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>スプラッシュスクリーンを表示:\nゲーム起動中にゲームのスプラッシュスクリーン（特別な画像）を表示します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>PS4 Proです:\nエミュレーターがPS4 PROとして動作するようにし、これをサポートするゲームで特別な機能を有効にする場合があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>ユーザー名:\nPS4のアカウントユーザー名を設定します。これは、一部のゲームで表示される場合があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>ログタイプ:\nパフォーマンスのためにログウィンドウの出力を同期させるかどうかを設定します。エミュレーションに悪影響を及ぼす可能性があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>ログフィルター: 特定の情報のみを印刷するようにログをフィルタリングします。例: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" レベル: Trace, Debug, Info, Warning, Error, Critical - この順序で、特定のレベルはリスト内のすべての前のレベルをサイレンスし、その後のすべてのレベルをログに記録します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>更新:\n安定版: 非常に古いかもしれないが、より信頼性が高くテスト済みの公式バージョンを毎月リリースします。\n不安定版: 最新の機能と修正がすべて含まれていますが、バグが含まれている可能性があり、安定性は低いです。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>タイトルミュージックを再生:\nゲームがそれをサポートしている場合、GUIでゲームを選択したときに特別な音楽を再生することを有効にします。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>グラフィックデバイス:\n複数のGPUシステムで、ドロップダウンリストからエミュレーターで使用するGPUを選択するか、\n「自動選択」を選択して自動的に決定します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>幅/高さ:\n起動時にエミュレーターウィンドウのサイズを設定します。ゲーム中にサイズ変更できます。\nこれはゲーム内の解像度とは異なります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblankディバイダー:\nエミュレーターが更新されるフレームレートにこの数を掛けます。これを変更すると、ゲームの速度が上がったり、想定外の変更がある場合、ゲームの重要な機能が壊れる可能性があります！</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>シェーダーダンプを有効にする:\n技術的なデバッグの目的で、レンダリング中にゲームのシェーダーをフォルダーに保存します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Null GPUを有効にする:\n技術的なデバッグの目的で、グラフィックスカードがないかのようにゲームのレンダリングを無効にします。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>PM4ダンプを有効にする:\n技術的なデバッグの目的で、エミュレーターが処理している間に生のGPU命令データをフォルダーに保存します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>デバッグダンプを有効にする:\n現在実行中のPS4プログラムのインポートおよびエクスポートシンボルとファイルヘッダー情報をディレクトリに保存します。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Vulkanバリデーションレイヤーを有効にする:\nVulkanのレンダリングステータスを検証し、内部状態に関する情報をログに記録するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Vulkan同期バリデーションを有効にする:\nVulkanのレンダリングタスクのタイミングを検証するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>RenderDocデバッグを有効にする:\n有効にすると、エミュレーターはRenderdocとの互換性を提供し、現在レンダリング中のフレームのキャプチャと分析を可能にします。</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>エラー</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>無効なアップデートチャネル: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>config.tmlファイルのupdateChannelには「stable」または「unstable」を含める必要があります</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>ネットワークエラー:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>アップデートがあります</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>アップデートチャネル</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

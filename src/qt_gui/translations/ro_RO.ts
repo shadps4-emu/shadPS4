@@ -515,6 +515,11 @@
 			<translation>Verifică actualizări la pornire</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Canal de Actualizare</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Verifică actualizări</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Închide</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Pune mouse-ul pe o opțiune pentru a afișa o descriere aici</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Limba consolei:\nSetează limba pe care o folosește jocul PS4.\nSe recomandă să setezi această opțiune pe o limbă pe care jocul o suportă, ceea ce poate varia în funcție de regiune.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Limba emulatorului:\nSetează limba interfeței utilizatorului a emulatorului.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Activează modul pe ecran complet:\nPune automat fereastra jocului în modul pe ecran complet.\nAceasta poate fi dezactivată apăsând tasta F11.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Afișează ecranul de încărcare:\nAfișează ecranul de încărcare al jocului (o imagine specială) în timp ce jocul pornește.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Este PS4 Pro:\nFace ca emulatorul să se comporte ca un PS4 PRO, ceea ce poate activa funcții speciale în jocurile care o suportă.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Nume utilizator:\nSetează numele de utilizator al contului PS4, care poate fi afișat de unele jocuri.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Tip jurnal:\nSetează dacă să sincronizezi ieșirea ferestrei de jurnal pentru performanță. Aceasta poate avea efecte adverse asupra emulării.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Filtrul jurnalului: Filtrează jurnalul pentru a imprima doar informații specifice. Exemple: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Niveluri: Trace, Debug, Info, Warning, Error, Critical - în această ordine, un nivel specific reduce toate nivelurile anterioare din listă și înregistrează toate nivelurile ulterioare.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Actualizare:\nStabil: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nInstabil: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Redă muzica titlului:\nDacă un joc o suportă, activează redarea muzicii speciale când selectezi jocul în GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Dispozitiv grafic:\nPe sistemele cu mai multe GPU-uri, alege GPU-ul pe care emulatorul îl va folosi din lista derulantă,\nsau selectează "Auto Select" pentru a-l determina automat.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Lățime/Înălțime:\nSetează dimensiunea ferestrei emulatorului la lansare, care poate fi redimensionată în timpul jocului.\nAceasta este diferită de rezoluția din joc.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Împărțitor Vblank:\nRata de cadre cu care emulatorul se reîmprospătează este multiplicată cu acest număr. Schimbarea acestuia poate avea efecte adverse, cum ar fi creșterea vitezei jocului sau distrugerea funcționalității critice a jocului care nu se așteaptă ca aceasta să se schimbe!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Activează salvarea shaderelor:\nÎn scopuri de depanare tehnică, salvează shader-urile jocului într-un folder pe măsură ce sunt randate.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Activează GPU Null:\nÎn scopuri de depanare tehnică, dezactivează redarea jocului ca și cum nu ar exista o placă grafică.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Activează salvarea PM4:\nÎn scopuri de depanare tehnică, salvează datele brute ale instrucțiunilor GPU într-un folder pe măsură ce emulatorul le procesează.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Activează salvarea pentru depanare:\nSalvează simbolurile de import și export și informațiile din antetul fișierului pentru aplicația PS4 care rulează în prezent într-un director.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Activează straturile de validare Vulkan:\nActivează un sistem care validează starea renderer-ului Vulkan și înregistrează informații despre starea sa internă. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Activează validarea sincronizării Vulkan:\nActivează un sistem care validează sincronizarea sarcinilor de redare Vulkan. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Activează depanarea RenderDoc:\nDacă este activat, emulatorul va oferi compatibilitate cu Renderdoc pentru a permite capturarea și analiza cadrului redat în prezent.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Eroare</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Canal de actualizare invalid: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>În fișierul config.tml, updateChannel trebuie să conțină 'stable' sau 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Eroare de rețea:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Actualizare disponibilă</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Canal de Actualizare</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

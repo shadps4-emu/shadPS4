@@ -515,6 +515,11 @@
 			<translation>Tikrinti naujinimus paleidus</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Atnaujinimo Kanalas</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Patikrinkite atnaujinimus</translation>
@@ -963,6 +968,111 @@
 			<source>Close</source>
 			<translation>Uždaryti</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="72"/>
+			<source>Point your mouse at an options to display a description in here</source>
+			<translation>Rodykite pelę ant pasirinkimo, kad čia būtų rodoma aprašymas</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="289"/>
+			<source>consoleLanguageGroupBox</source>
+			<translation>Konsole kalba:\nNustato kalbą, kurią naudoja PS4 žaidimai.\nRekomenduojama nustatyti kalbą, kurią palaiko žaidimas, priklausomai nuo regiono.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="291"/>
+			<source>emulatorLanguageGroupBox</source>
+			<translation>Emuliatoriaus kalba:\nNustato emuliatoriaus vartotojo sąsajos kalbą.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="293"/>
+			<source>fullscreenCheckBox</source>
+			<translation>Įjungti visą ekraną:\nAutomatiškai perjungia žaidimo langą į viso ekrano režimą.\nTai galima išjungti paspaudus F11 klavišą.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="295"/>
+			<source>showSplashCheckBox</source>
+			<translation>Rodyti paleidimo ekraną:\nPaleidimo metu rodo žaidimo paleidimo ekraną (ypatingą vaizdą).</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="297"/>
+			<source>ps4proCheckBox</source>
+			<translation>Ar PS4 Pro:\nPadaro, kad emuliatorius veiktų kaip PS4 PRO, kas gali įjungti specialias funkcijas žaidimuose, kurie tai palaiko.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="299"/>
+			<source>userName</source>
+			<translation>Vartotojo vardas:\nNustato PS4 paskyros vartotojo vardą, kuris gali būti rodomas kai kuriuose žaidimuose.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="301"/>
+			<source>logTypeGroupBox</source>
+			<translation>Žurnalo tipas:\nNustato, ar sinchronizuoti žurnalo lango išvestį našumui. Tai gali turėti neigiamą poveikį emuliacijai.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="303"/>
+			<source>logFilter</source>
+			<translation>Žurnalo filtras: Filtruojamas žurnalas, kad būtų spausdinama tik konkreti informacija. Pavyzdžiai: "Core:Trace" "Lib.Pad:Debug Common.Filesystem:Error" "*:Critical" Lygiai: Trace, Debug, Info, Warning, Error, Critical - šia tvarka, konkretus lygis nutildo visus ankstesnius lygius sąraše ir registruoja visus vėlesnius.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="305"/>
+			<source>updaterGroupBox</source>
+			<translation>Atnaujinti:\nStabilus: Oficialios versijos, išleidžiamos kiekvieną mėnesį, kurios gali būti labai pasenusios, tačiau yra patikimos ir išbandytos.\nNestabilus: Vystymo versijos, kuriose yra visos naujausios funkcijos ir taisymai, tačiau gali turėti klaidų ir būti mažiau stabilios.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="306"/>
+			<source>GUIgroupBox</source>
+			<translation>Groti antraščių muziką:\nJei žaidimas tai palaiko, įjungia specialios muzikos grojimą, kai pasirinkite žaidimą GUI.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="312"/>
+			<source>graphicsAdapterGroupBox</source>
+			<translation>Grafikos įrenginys:\nDaugiagrafikėse sistemose pasirinkite GPU, kurį emuliatorius naudos iš išskleidžiamojo sąrašo,\n arba pasirinkite "Auto Select", kad jis būtų nustatytas automatiškai.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="314"/>
+			<source>resolutionLayout</source>
+			<translation>Plotis/Aukštis:\nNustato emuliatoriaus lango dydį paleidimo metu, kurį galima keisti žaidimo metu.\nTai skiriasi nuo žaidimo rezoliucijos.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="318"/>
+			<source>heightDivider</source>
+			<translation>Vblank daliklis:\nKadrų dažnis, kuriuo emuliatorius atnaujinamas, dauginamas iš šio skaičiaus. Pakeitus tai gali turėti neigiamą poveikį, pvz., padidinti žaidimo greitį arba sukelti kritinių žaidimo funkcijų sugadinimą, kurios to nesitikėjo!</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="320"/>
+			<source>dumpShadersCheckBox</source>
+			<translation>Įjungti šešėlių išmetimą:\nTechninio derinimo tikslais saugo žaidimo šešėlius į aplanką juos renderuojant.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="322"/>
+			<source>nullGpuCheckBox</source>
+			<translation>Įjungti tuščią GPU:\nTechninio derinimo tikslais išjungia žaidimo renderiavimą, tarsi nebūtų grafikos plokštės.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="323"/>
+			<source>dumpPM4CheckBox</source>
+			<translation>Įjungti PM4 išmetimą:\nTechninio derinimo tikslais saugo žalius GPU nurodymų duomenis į aplanką, kai emuliatorius juos apdoroja.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="329"/>
+			<source>debugDump</source>
+			<translation>Įjungti derinimo išmetimą:\nIšsaugo importo ir eksporto simbolius bei failo antraštės informaciją apie šiuo metu vykdomą PS4 programą į katalogą.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="331"/>
+			<source>vkValidationCheckBox</source>
+			<translation>Įjungti Vulkan patvirtinimo sluoksnius:\nĮjungia sistemą, kuri patvirtina Vulkan renderio būseną ir registruoja informaciją apie jo vidinę būseną. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="333"/>
+			<source>vkSyncValidationCheckBox</source>
+			<translation>Įjungti Vulkan sinchronizacijos patvirtinimą:\nĮjungia sistemą, kuri patvirtina Vulkan renderavimo užduočių laiką. Tai sumažins našumą ir tikriausiai pakeis emuliacijos elgesį.</translation>
+		</message>
+		<message>
+			<location filename="../settings_dialog.cpp" line="335"/>
+			<source>rdocCheckBox</source>
+			<translation>Įjungti RenderDoc derinimą:\nJei įjungta, emuliatorius suteiks suderinamumą su Renderdoc, kad būtų galima užfiksuoti ir analizuoti šiuo metu renderuojamą kadrą.</translation>
+		</message>
 	</context>
 	<context>
 		<name>GameListFrame</name>
@@ -1020,16 +1130,6 @@
 			<translation>Klaida</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Neteisingas atnaujinimo kanalas: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>config.tml faile updateChannel turi būti 'stable' arba 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Tinklo klaida:</translation>
@@ -1063,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Prieinama atnaujinimas</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Atnaujinimo Kanalas</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>
