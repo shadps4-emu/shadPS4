@@ -145,8 +145,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
                 [](float val) { Config::setBGMvolume(val); });
+
         connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
                 [](float val) { BackgroundMusicPlayer::getInstance().setVolume(val); });
+
+        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            if (state == Qt::Unchecked) {
+                BackgroundMusicPlayer::getInstance().stopMusic();
+            }
+        });
     }
 
     // GPU TAB
