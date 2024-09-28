@@ -8,6 +8,7 @@
 #include "common/types.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 
 namespace Shader {
 
@@ -47,10 +48,11 @@ struct StageSpecialization {
     boost::container::small_vector<TextureBufferSpecialization, 8> tex_buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     Backend::Bindings start{};
+    FlatSharpBuffer sharp_buf;
 
     explicit StageSpecialization(const Shader::Info& info_, RuntimeInfo runtime_info_,
                                  Backend::Bindings start_)
-        : info{&info_}, runtime_info{runtime_info_}, start{start_} {
+        : info{&info_}, runtime_info{runtime_info_}, start{start_}, sharp_buf(*info) {
         u32 binding{};
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
@@ -72,7 +74,7 @@ struct StageSpecialization {
     void ForEachSharp(u32& binding, auto& spec_list, auto& desc_list, auto&& func) {
         for (const auto& desc : desc_list) {
             auto& spec = spec_list.emplace_back();
-            const auto sharp = desc.GetSharp(*info);
+            const auto sharp = desc.GetSharp(sharp_buf);
             if (!sharp) {
                 binding++;
                 continue;

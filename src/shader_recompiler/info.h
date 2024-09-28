@@ -50,7 +50,7 @@ struct BufferResource {
         return buffer.GetSize() > MaxUboSize || is_written || is_gds_buffer;
     }
 
-    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Buffer GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept;
 };
 using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
@@ -59,7 +59,7 @@ struct TextureBufferResource {
     AmdGpu::NumberFormat nfmt;
     bool is_written{};
 
-    constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Buffer GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept;
 };
 using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
@@ -72,7 +72,7 @@ struct ImageResource {
     bool is_atomic{};
     bool is_array{};
 
-    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Image GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept;
 };
 using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 
@@ -82,7 +82,7 @@ struct SamplerResource {
     u32 associated_image : 4;
     u32 disable_aniso : 1;
 
-    constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
+    constexpr AmdGpu::Sampler GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept;
 };
 using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
 
@@ -181,7 +181,6 @@ struct Info {
     SrtInfo srt_info;
     // TODO maybe move
     Xbyak::CodeGenerator srt_codegen;
-    FlatSharpBuffer flat_sharp_buf;
 
     std::span<const u32> user_data;
     Stage stage;
@@ -207,11 +206,6 @@ struct Info {
     explicit Info(Stage stage_, ShaderParams params)
         : stage{stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
           user_data{params.user_data} {}
-
-    template <typename T>
-    T ReadUdSharp(u32 dword_offset) const noexcept {
-        return *reinterpret_cast<const T*>(&flat_sharp_buf[dword_offset]);
-    }
 
     // TODO rename or remove
     template <typename T>
@@ -256,31 +250,33 @@ struct Info {
         return {vertex_offset, instance_offset};
     }
 
-    void RunSrtWalker(FlatSharpBuffer& flat_sharp_buf) {
-        flat_sharp_buf.resize(srt_info.flattened_sharp_bufsize_dw);
+    void RunSrtWalker(FlatSharpBuffer& sharp_buf) const {
+        sharp_buf.buf.resize(srt_info.flattened_sharp_bufsize_dw);
         ASSERT(user_data.size() <= NumUserDataRegs);
-        std::memcpy(flat_sharp_buf.data(), user_data.data(), user_data.size_bytes());
+        std::memcpy(sharp_buf.buf.data(), user_data.data(), user_data.size_bytes());
         // not necessary
-        std::fill(flat_sharp_buf.begin() + user_data.size(), flat_sharp_buf.end(), 0);
+        std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), flat_sharp_buf.data());
+        srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), sharp_buf.buf.data());
     }
 };
 
-constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+constexpr AmdGpu::Buffer BufferResource::GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept {
+    return inline_cbuf ? inline_cbuf : sharp_buf.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
-constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(
+    const FlatSharpBuffer& sharp_buf) const noexcept {
+    return sharp_buf.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
-constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+constexpr AmdGpu::Image ImageResource::GetSharp(const FlatSharpBuffer& sharp_buf) const noexcept {
+    return sharp_buf.ReadUdSharp<AmdGpu::Image>(sharp_idx);
 }
 
-constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
-    return inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
+constexpr AmdGpu::Sampler SamplerResource::GetSharp(
+    const FlatSharpBuffer& sharp_buf) const noexcept {
+    return inline_sampler ? inline_sampler : sharp_buf.ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
 }
 
 } // namespace Shader

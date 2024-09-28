@@ -4,6 +4,7 @@
 #include <boost/container/static_vector.hpp>
 
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -20,14 +21,14 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
 Pipeline::~Pipeline() = default;
 
 void Pipeline::BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                            Shader::Backend::Bindings& binding,
-                            DescriptorWrites& set_writes) const {
+                            Shader::Backend::Bindings& binding, DescriptorWrites& set_writes,
+                            const Shader::FlatSharpBuffer& sharp_buf) const {
 
     using ImageBindingInfo = std::tuple<VideoCore::ImageId, AmdGpu::Image, Shader::ImageResource>;
     boost::container::static_vector<ImageBindingInfo, 32> image_bindings;
 
     for (const auto& image_desc : stage.images) {
-        const auto tsharp = image_desc.GetSharp(stage);
+        const auto tsharp = image_desc.GetSharp(sharp_buf);
         if (tsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid) {
             VideoCore::ImageInfo image_info{tsharp, image_desc};
             const auto image_id = texture_cache.FindImage(image_info);

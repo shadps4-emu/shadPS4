@@ -17,6 +17,14 @@
 
 using namespace Xbyak::util;
 
+namespace Shader {
+// Hacky. TODO refactor info RuntimeInfo or smtn
+FlatSharpBuffer::FlatSharpBuffer(const Info& info) {
+    info.RunSrtWalker(*this);
+}
+
+} // namespace Shader
+
 namespace Shader::Optimization {
 
 class AssignOffsetsVisitor {
@@ -198,14 +206,6 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 
     CodegenVisitor codegen_vis(srt_info, info.srt_codegen);
     codegen_vis.VisitRoots();
-
-    // Probably not necessary
-    info.flat_sharp_buf.resize(srt_info.flattened_sharp_bufsize_dw);
-    std::fill(info.flat_sharp_buf.begin(), info.flat_sharp_buf.end(), 0);
-
-    // TODO store program in Info
-    // TODO run program
-    info.srt_codegen.getCode<PFN_SrtWalker>()(info.user_data.data(), info.flat_sharp_buf.data());
 }
 
 } // namespace Shader::Optimization

@@ -327,15 +327,15 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
     });
 }
 
-void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                            Descriptors& descriptors) {
+void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+                            Shader::FlatSharpBuffer sharp_buf) {
     s32 binding{};
     AmdGpu::Buffer buffer;
     if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         const auto sharp = TrackSharp(producer, info);
-        buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp);
+        buffer = sharp_buf.ReadUdSharp<AmdGpu::Buffer>(sharp);
         binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
@@ -393,11 +393,11 @@ void PatchBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 }
 
 void PatchTextureBufferInstruction(IR::Block& block, IR::Inst& inst, Info& info,
-                                   Descriptors& descriptors) {
+                                   Descriptors& descriptors, Shader::FlatSharpBuffer sharp_buf) {
     const IR::Inst* handle = inst.Arg(0).InstRecursive();
     const IR::Inst* producer = handle->Arg(0).InstRecursive();
     const auto sharp = TrackSharp(producer, info);
-    const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp);
+    const auto buffer = sharp_buf.ReadUdSharp<AmdGpu::Buffer>(sharp);
     const s32 binding = descriptors.Add(TextureBufferResource{
         .sharp_idx = sharp,
         .nfmt = buffer.GetNumberFmt(),
@@ -436,7 +436,8 @@ IR::Value PatchCubeCoord(IR::IREmitter& ir, const IR::Value& s, const IR::Value&
     }
 }
 
-void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+                           Shader::FlatSharpBuffer sharp_buf) {
     const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
         const auto opcode = inst->GetOpcode();
         if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
@@ -455,7 +456,7 @@ void PatchImageInstruction(IR::Block& block, IR::Inst& inst, Info& info, Descrip
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle, info);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
+    auto image = sharp_buf.ReadUdSharp<AmdGpu::Image>(tsharp);
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
         image = AmdGpu::Image::Null();
@@ -642,19 +643,21 @@ void PatchDataRingInstruction(IR::Block& block, IR::Inst& inst, Info& info,
 void ResourceTrackingPass(IR::Program& program) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
+    Shader::FlatSharpBuffer sharp_buf(info);
+
     Descriptors descriptors{info};
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
-                PatchBufferInstruction(*block, inst, info, descriptors);
+                PatchBufferInstruction(*block, inst, info, descriptors, sharp_buf);
                 continue;
             }
             if (IsTextureBufferInstruction(inst)) {
-                PatchTextureBufferInstruction(*block, inst, info, descriptors);
+                PatchTextureBufferInstruction(*block, inst, info, descriptors, sharp_buf);
                 continue;
             }
             if (IsImageInstruction(inst)) {
-                PatchImageInstruction(*block, inst, info, descriptors);
+                PatchImageInstruction(*block, inst, info, descriptors, sharp_buf);
                 continue;
             }
             if (IsDataRingInstruction(inst)) {

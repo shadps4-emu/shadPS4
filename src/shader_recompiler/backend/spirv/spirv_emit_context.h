@@ -126,6 +126,10 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    const Shader::FlatSharpBuffer& getSharpBuf() const {
+        return sharp_buf;
+    }
+
     const Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
@@ -260,6 +264,7 @@ private:
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+    Shader::FlatSharpBuffer sharp_buf;
 };
 
 } // namespace Shader::Backend::SPIRV

@@ -4,6 +4,7 @@
 #include <boost/container/small_vector.hpp>
 
 #include "common/alignment.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -24,10 +25,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pName = "main",
     };
 
+    Shader::FlatSharpBuffer sharp_buf(*info);
+
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto& buffer : info->buffers) {
-        const auto sharp = buffer.GetSharp(*info);
+        const auto sharp = buffer.GetSharp(sharp_buf);
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
@@ -122,7 +125,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
 
     image_infos.clear();
 
-    // info->RunSrtWalker();
+    Shader::FlatSharpBuffer sharp_buf(*info);
+
     info->PushUd(binding, push_data);
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
@@ -130,7 +134,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
             auto* vk_buffer = buffer_cache.GetGdsBuffer();
             buffer_infos.emplace_back(vk_buffer->Handle(), 0, vk_buffer->SizeBytes());
         } else {
-            const auto vsharp = desc.GetSharp(*info);
+            const auto vsharp = desc.GetSharp(sharp_buf);
             is_storage = desc.IsStorage(vsharp);
             const VAddr address = vsharp.base_address;
             // Most of the time when a metadata is updated with a shader it gets cleared. It means
@@ -174,7 +178,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     const auto null_buffer_view =
         instance.IsNullDescriptorSupported() ? VK_NULL_HANDLE : buffer_cache.NullBufferView();
     for (const auto& desc : info->texture_buffers) {
-        const auto vsharp = desc.GetSharp(*info);
+        const auto vsharp = desc.GetSharp();
         vk::BufferView& buffer_view = buffer_views.emplace_back(null_buffer_view);
         const u32 size = vsharp.GetSize();
         if (vsharp.GetDataFmt() != AmdGpu::DataFormat::FormatInvalid && size != 0) {
@@ -223,10 +227,10 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         ++binding.buffer;
     }
 
-    BindTextures(texture_cache, *info, binding, set_writes);
+    BindTextures(texture_cache, *info, binding, set_writes, sharp_buf);
 
     for (const auto& sampler : info->samplers) {
-        const auto ssharp = sampler.GetSharp(*info);
+        const auto ssharp = sampler.GetSharp(sharp_buf);
         if (ssharp.force_degamma) {
             LOG_WARNING(Render_Vulkan, "Texture requires gamma correction");
         }

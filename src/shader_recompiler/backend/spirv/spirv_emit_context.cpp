@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/amdgpu/types.h"
 
 #include <boost/container/static_vector.hpp>
@@ -62,7 +63,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
                          const Info& info_, Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
-      profile{profile_}, stage{info.stage}, binding{binding_} {
+      profile{profile_}, stage{info.stage}, binding{binding_}, sharp_buf(info) {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -453,7 +454,7 @@ void EmitContext::DefineBuffers() {
     };
 
     for (const auto& desc : info.buffers) {
-        const auto sharp = desc.GetSharp(info);
+        const auto sharp = desc.GetSharp(sharp_buf);
         const bool is_storage = desc.IsStorage(sharp);
         const u32 array_size = sharp.NumDwords() != 0 ? sharp.NumDwords() : MaxUboDwords;
         const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
@@ -583,7 +584,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
+    const auto image = ctx.getSharpBuf().ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {

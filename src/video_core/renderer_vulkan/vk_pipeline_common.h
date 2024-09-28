@@ -5,6 +5,7 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/passes/srt_info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace VideoCore {
@@ -34,7 +35,8 @@ public:
 
     using DescriptorWrites = boost::container::small_vector<vk::WriteDescriptorSet, 16>;
     void BindTextures(VideoCore::TextureCache& texture_cache, const Shader::Info& stage,
-                      Shader::Backend::Bindings& binding, DescriptorWrites& set_writes) const;
+                      Shader::Backend::Bindings& binding, DescriptorWrites& set_writes,
+                      const Shader::FlatSharpBuffer& sharp_buf) const;
 
 protected:
     const Instance& instance;
