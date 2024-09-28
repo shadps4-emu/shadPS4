@@ -20,7 +20,9 @@ Q_SIGNALS:
 public Q_SLOTS:
     void SetGridBackgroundImage(int row, int column);
     void RefreshGridBackgroundImage();
-    void PlayBackgroundMusic(QTableWidgetItem* item);
+    void PlayBackgroundMusic(QString path);
+    void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                              int previousColumn);
 
 private:
     QImage backgroundImage;
