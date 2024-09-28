@@ -329,7 +329,7 @@ int PS4_SYSV_ABI sceKernelRmdir(const char* path, u16 mode) {
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        return 0;
+        return ORBIS_OK;
     }
 
     int result = std::filesystem::remove_all(dir_name);
@@ -338,11 +338,7 @@ int PS4_SYSV_ABI sceKernelRmdir(const char* path, u16 mode) {
     if (error == 0) {
         return ORBIS_OK;
     }
-
-    if (result < 0) {
-        return ErrnoToSceKernelError(error); // error - 0x7ffe0000;
-    }
-    return result;
+    return ErrnoToSceKernelError(error); // error - 0x7ffe0000;
 }
 
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
