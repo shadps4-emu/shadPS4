@@ -140,19 +140,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
             checkUpdate->exec();
         });
 
-        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this,
-                [](int val) { Config::setPlayBGM(val); });
-
-        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
-                [](float val) { Config::setBGMvolume(val); });
-
-        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
-                [](float val) { BackgroundMusicPlayer::getInstance().setVolume(val); });
-
-        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
-            if (state == Qt::Unchecked) {
+        connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this, [](int val) {
+            Config::setPlayBGM(val);
+            if (val == Qt::Unchecked) {
                 BackgroundMusicPlayer::getInstance().stopMusic();
             }
+        });
+
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this, [](float val) {
+            Config::setBGMvolume(val);
+            BackgroundMusicPlayer::getInstance().setVolume(val);
         });
     }
 
