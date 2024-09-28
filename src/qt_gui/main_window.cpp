@@ -1034,8 +1034,11 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return) {
-            MainWindow::StartGame();
-            return true;
+            auto tblMode = Config::getTableMode();
+            if (tblMode != 2 && (tblMode != 1 || m_game_grid_frame->IsValidCellSelected())) {
+                StartGame();
+                return true;
+            }
         }
         return QMainWindow::eventFilter(obj, event);
     }

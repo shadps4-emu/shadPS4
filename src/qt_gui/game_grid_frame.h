@@ -30,10 +30,12 @@ private:
     GuiContextMenus m_gui_context_menus;
     std::shared_ptr<GameInfoClass> m_game_info;
     std::shared_ptr<QVector<GameInfo>> m_games_shared;
+    bool validCellSelected = false;
 
 public:
     explicit GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
     void PopulateGameGrid(QVector<GameInfo> m_games, bool fromSearch);
+    bool IsValidCellSelected();
 
     bool cellClicked = false;
     int icon_size;

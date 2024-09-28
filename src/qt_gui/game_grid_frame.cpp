@@ -42,9 +42,11 @@ void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 
     auto itemID = (crtRow * columnCnt) + currentColumn;
     if (itemID > m_game_info->m_games.count() - 1) {
+        validCellSelected = false;
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
+    validCellSelected = true;
     SetGridBackgroundImage(crtRow, crtColumn);
     auto snd0Path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path.string());
     PlayBackgroundMusic(snd0Path);
@@ -165,4 +167,8 @@ void GameGridFrame::RefreshGridBackgroundImage() {
         palette.setColor(QPalette::Highlight, transparentColor);
         this->setPalette(palette);
     }
+}
+
+bool GameGridFrame::IsValidCellSelected() {
+    return validCellSelected;
 }
