@@ -310,6 +310,41 @@ int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     return result;
 }
 
+int PS4_SYSV_ABI sceKernelRmdir(const char* path, u16 mode) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    bool ro = false;
+
+    const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
+
+    if (dir_name.empty()) {
+        return SCE_KERNEL_ERROR_EACCES;
+    }
+
+    if (ro) {
+        return SCE_KERNEL_ERROR_EROFS;
+    }
+
+    if (!std::filesystem::is_directory(dir_name)) {
+        return ORBIS_KERNEL_ERROR_ENOTDIR;
+    }
+
+    if (!std::filesystem::exists(dir_name)) {
+        return 0;
+    }
+
+    int result = std::filesystem::remove_all(dir_name);
+    const int error = errno;
+
+    if (error == 0) {
+        return ORBIS_OK;
+    }
+
+    if (result < 0) {
+        return ErrnoToSceKernelError(error); // error - 0x7ffe0000;
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -564,6 +599,7 @@ void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AqBioC2vF3I", "libScePosix", 1, "libkernel", 1, 1, posix_read);
     LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
     LIB_FUNCTION("JGMio+21L4c", "libScePosix", 1, "libkernel", 1, 1, posix_mkdir);
+    LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", 1, 1, sceKernelRmdir);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
