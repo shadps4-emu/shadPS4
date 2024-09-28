@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Reproducir la música de apertura</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Volumen</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Αναπαραγωγή μουσικής τίτλου</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>ένταση</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

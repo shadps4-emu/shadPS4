@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Phát nhạc tiêu đề</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Âm lượng</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
