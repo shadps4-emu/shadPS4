@@ -201,7 +201,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
         ui->widthGroupBox->installEventFilter(this);
-        ui->heightGroupBox->installEventFilter(this);        
+        ui->heightGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
@@ -348,6 +348,15 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
                 updateNoteTextEdit(elementName);
             } else {
                 ui->descriptionText->setText(defaultTextEdit);
+            }
+
+            // if the text exceeds the size of the box, it will increase the size
+            int documentHeight = ui->descriptionText->document()->size().height();
+            int visibleHeight = ui->descriptionText->viewport()->height();
+            if (documentHeight > visibleHeight) {
+                ui->descriptionText->setMinimumHeight(90);
+            } else {
+                ui->descriptionText->setMinimumHeight(70);
             }
             return true;
         }
