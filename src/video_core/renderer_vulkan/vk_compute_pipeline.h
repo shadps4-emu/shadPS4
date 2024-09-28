@@ -29,7 +29,6 @@ public:
 
 private:
     u64 compute_key;
-    // TODO keep const
     const Shader::Info* info;
     bool uses_push_descriptors{};
 };

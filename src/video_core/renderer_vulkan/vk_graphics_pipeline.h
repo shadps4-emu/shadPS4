@@ -99,7 +99,6 @@ private:
     void BuildDescSetLayout();
 
 private:
-    // TODO find out how to keep const
     std::array<const Shader::Info*, MaxShaderStages> stages{};
     GraphicsPipelineKey key;
     bool uses_push_descriptors{};
