@@ -7,6 +7,7 @@
 #include <variant>
 #include <fmt/format.h>
 
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -36,7 +37,10 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
         .objectHandle = reinterpret_cast<u64>(static_cast<typename HandleType::NativeType>(handle)),
         .pObjectName = debug_name.data(),
     };
-    device.setDebugUtilsObjectNameEXT(name_info);
+    auto result = device.setDebugUtilsObjectNameEXT(name_info);
+    if (result != vk::Result::eSuccess) {
+        LOG_DEBUG(Render_Vulkan, "Could not set object debug name: {}", vk::to_string(result));
+    }
 }
 
 template <VulkanHandleType HandleType, typename... Args>

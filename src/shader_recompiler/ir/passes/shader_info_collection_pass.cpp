@@ -8,14 +8,15 @@ namespace Shader::Optimization {
 void Visit(Info& info, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
-    case IR::Opcode::GetAttributeU32: {
+    case IR::Opcode::GetAttributeU32:
         info.loads.Set(inst.Arg(0).Attribute(), inst.Arg(1).U32());
         break;
-    }
-    case IR::Opcode::SetAttribute: {
+    case IR::Opcode::SetAttribute:
         info.stores.Set(inst.Arg(0).Attribute(), inst.Arg(2).U32());
         break;
-    }
+    case IR::Opcode::GetUserData:
+        info.ud_mask.Set(inst.Arg(0).ScalarReg());
+        break;
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU32:

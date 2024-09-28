@@ -5,7 +5,6 @@
 
 #pragma once
 
-#define VULKAN_HPP_NO_EXCEPTIONS
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 

@@ -5,10 +5,10 @@
 
 // Implement vma functions
 #define VMA_IMPLEMENTATION
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnullability-completeness"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
 #include <vk_mem_alloc.h>
-#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
 
 // Store the dispatch loader here
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

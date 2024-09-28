@@ -49,9 +49,8 @@ public:
 
     const ComputePipeline* GetComputePipeline();
 
-    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(Shader::Stage stage,
-                                                                      Shader::ShaderParams params,
-                                                                      u32& binding);
+    std::tuple<const Shader::Info*, vk::ShaderModule, u64> GetProgram(
+        Shader::Stage stage, Shader::ShaderParams params, Shader::Backend::Bindings& binding);
 
 private:
     bool RefreshGraphicsKey();
@@ -60,7 +59,8 @@ private:
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
                     std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, const Shader::RuntimeInfo& runtime_info,
-                                   std::span<const u32> code, size_t perm_idx, u32& binding);
+                                   std::span<const u32> code, size_t perm_idx,
+                                   Shader::Backend::Bindings& binding);
     Shader::RuntimeInfo BuildRuntimeInfo(Shader::Stage stage);
 
 private:

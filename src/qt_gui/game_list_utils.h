@@ -3,10 +3,14 @@
 
 #pragma once
 
+#include "common/path_util.h"
+
 struct GameInfo {
-    std::string path; // root path of game directory (normally directory that contains eboot.bin)
-    std::string icon_path; // path of icon0.png
-    std::string pic_path;  // path of pic1.png
+    std::filesystem::path path;      // root path of game directory
+                                     // (normally directory that contains eboot.bin)
+    std::filesystem::path icon_path; // path of icon0.png
+    std::filesystem::path pic_path;  // path of pic1.png
+    std::filesystem::path snd0_path; // path of snd0.at9
     QImage icon;
     std::string size;
     // variables extracted from param.sfo
@@ -43,7 +47,9 @@ public:
     }
 
     static void GetFolderSize(GameInfo& game) {
-        QDir dir(QString::fromStdString(game.path));
+        QString dirPath;
+        Common::FS::PathToQString(dirPath, game.path);
+        QDir dir(dirPath);
         QDirIterator it(dir.absolutePath(), QDirIterator::Subdirectories);
         qint64 total = 0;
         while (it.hasNext()) {

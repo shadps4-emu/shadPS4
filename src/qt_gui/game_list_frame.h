@@ -5,6 +5,7 @@
 
 #include <QScrollBar>
 
+#include "background_music_player.h"
 #include "game_info.h"
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
@@ -21,6 +22,7 @@ public Q_SLOTS:
     void RefreshListBackgroundImage();
     void SortNameAscending(int columnIndex);
     void SortNameDescending(int columnIndex);
+    void PlayBackgroundMusic(QTableWidgetItem* item);
 
 private:
     void SetTableItem(int row, int column, QString itemStr);

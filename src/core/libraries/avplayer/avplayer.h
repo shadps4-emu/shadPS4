@@ -161,7 +161,20 @@ struct SceAvPlayerFileReplacement {
     SceAvPlayerSizeFile size;
 };
 
-typedef void PS4_SYSV_ABI (*SceAvPlayerEventCallback)(void* p, s32 event, s32 src_id, void* data);
+enum SceAvPlayerEvents {
+    SCE_AVPLAYER_STATE_STOP = 0x01,
+    SCE_AVPLAYER_STATE_READY = 0x02,
+    SCE_AVPLAYER_STATE_PLAY = 0x03,
+    SCE_AVPLAYER_STATE_PAUSE = 0x04,
+    SCE_AVPLAYER_STATE_BUFFERING = 0x05,
+    SCE_AVPLAYER_TIMED_TEXT_DELIVERY = 0x10,
+    SCE_AVPLAYER_WARNING_ID = 0x20,
+    SCE_AVPLAYER_ENCRYPTION = 0x30,
+    SCE_AVPLAYER_DRM_ERROR = 0x40
+};
+
+typedef void PS4_SYSV_ABI (*SceAvPlayerEventCallback)(void* p, SceAvPlayerEvents event, s32 src_id,
+                                                      void* data);
 
 struct SceAvPlayerEventReplacement {
     void* object_ptr;
@@ -274,18 +287,6 @@ enum SceAvPlayerAvSyncMode {
 };
 
 typedef int PS4_SYSV_ABI (*SceAvPlayerLogCallback)(void* p, const char* format, va_list args);
-
-enum SceAvPlayerEvents {
-    SCE_AVPLAYER_STATE_STOP = 0x01,
-    SCE_AVPLAYER_STATE_READY = 0x02,
-    SCE_AVPLAYER_STATE_PLAY = 0x03,
-    SCE_AVPLAYER_STATE_PAUSE = 0x04,
-    SCE_AVPLAYER_STATE_BUFFERING = 0x05,
-    SCE_AVPLAYER_TIMED_TEXT_DELIVERY = 0x10,
-    SCE_AVPLAYER_WARNING_ID = 0x20,
-    SCE_AVPLAYER_ENCRYPTION = 0x30,
-    SCE_AVPLAYER_DRM_ERROR = 0x40
-};
 
 void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym);
 

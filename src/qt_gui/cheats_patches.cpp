@@ -50,8 +50,9 @@ void CheatsPatches::setupUI() {
     defaultTextEdit = tr("defaultTextEdit_MSG");
     defaultTextEdit.replace("\\n", "\n");
 
-    QString CHEATS_DIR_QString =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
+    QString CHEATS_DIR_QString;
+    Common::FS::PathToQString(CHEATS_DIR_QString,
+                              Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
     QString NameCheatJson = m_gameSerial + "_" + m_gameVersion + ".json";
     m_cheatFilePath = CHEATS_DIR_QString + "/" + NameCheatJson;
 
@@ -275,9 +276,9 @@ void CheatsPatches::onSaveButtonClicked() {
     int separatorIndex = selectedPatchName.indexOf(" | ");
     selectedPatchName = selectedPatchName.mid(separatorIndex + 3);
 
-    QString patchDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string()) +
-        "/" + selectedPatchName;
+    QString patchDir;
+    Common::FS::PathToQString(patchDir, Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
+    patchDir += "/" + selectedPatchName;
 
     QString filesJsonPath = patchDir + "/files.json";
     QFile jsonFile(filesJsonPath);
@@ -555,10 +556,10 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
                 if (dotIndex != -1) {
                     baseFileName.insert(dotIndex, "_wolf2022");
                 }
-                QString filePath =
-                    QString::fromStdString(
-                        Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string()) +
-                    "/" + baseFileName;
+                QString filePath;
+                Common::FS::PathToQString(filePath,
+                                          Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
+                filePath += "/" + baseFileName;
                 if (QFile::exists(filePath) && showMessageBox) {
                     QMessageBox::StandardButton reply2;
                     reply2 =
@@ -612,8 +613,9 @@ void CheatsPatches::populateFileListPatches() {
     }
     m_patchInfos.clear();
 
-    QString patchesDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
+    QString patchesDir;
+    Common::FS::PathToQString(patchesDir,
+                              Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
     QDir dir(patchesDir);
 
     QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -679,7 +681,7 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
     request.setRawHeader("Accept", "application/vnd.github.v3+json");
     QNetworkReply* reply = manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, [=]() {
+    connect(reply, &QNetworkReply::finished, [=, this]() {
         if (reply->error() == QNetworkReply::NoError) {
             QByteArray jsonData = reply->readAll();
             reply->deleteLater();
@@ -712,7 +714,7 @@ void CheatsPatches::downloadPatches(const QString repository, const bool showMes
                     QNetworkRequest fileRequest(downloadUrl);
                     QNetworkReply* fileReply = manager->get(fileRequest);
 
-                    connect(fileReply, &QNetworkReply::finished, [=]() {
+                    connect(fileReply, &QNetworkReply::finished, [=, this]() {
                         if (fileReply->error() == QNetworkReply::NoError) {
                             QByteArray fileData = fileReply->readAll();
                             QFile localFile(dir.filePath(fileName));
@@ -906,8 +908,8 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
 }
 
 void CheatsPatches::populateFileListCheats() {
-    QString cheatsDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
+    QString cheatsDir;
+    Common::FS::PathToQString(cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
     QString pattern = m_gameSerial + "_" + m_gameVersion + "*.json";
 
     QDir dir(cheatsDir);
@@ -932,8 +934,9 @@ void CheatsPatches::populateFileListCheats() {
                 if (!selectedIndexes.isEmpty()) {
 
                     QString selectedFileName = selectedIndexes.first().data().toString();
-                    QString cheatsDir = QString::fromStdString(
-                        Common::FS::GetUserPath(Common::FS::PathType::CheatsDir).string());
+                    QString cheatsDir;
+                    Common::FS::PathToQString(
+                        cheatsDir, Common::FS::GetUserPath(Common::FS::PathType::CheatsDir));
 
                     QFile file(cheatsDir + "/" + selectedFileName);
                     if (file.open(QIODevice::ReadOnly)) {

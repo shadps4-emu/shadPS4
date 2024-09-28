@@ -48,7 +48,7 @@ enum class ButtonType : u32 {
     OK = 0,
     YESNO = 1,
     NONE = 2,
-    ONCANCEL = 3,
+    OKCANCEL = 3,
 };
 
 enum class UserMessageType : u32 {
@@ -221,6 +221,8 @@ public:
         bool hide_ok{};
         bool show_no{}; // Yes instead of OK
         bool show_cancel{};
+
+        bool return_cancel{};
 
         SystemState(const SaveDialogState& state, const OrbisSaveDataDialogParam& param);
     };

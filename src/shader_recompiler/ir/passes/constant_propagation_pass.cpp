@@ -278,6 +278,12 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::FPCmpClass32:
         FoldCmpClass(inst);
         return;
+    case IR::Opcode::ShiftLeftLogical32:
+        FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return static_cast<u32>(a << b); });
+        return;
+    case IR::Opcode::ShiftRightLogical32:
+        FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return static_cast<u32>(a >> b); });
+        return;
     case IR::Opcode::ShiftRightArithmetic32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return static_cast<u32>(a >> b); });
         return;
@@ -347,7 +353,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return;
     case IR::Opcode::INotEqual:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a != b; });
-        FoldBooleanConvert(inst);
         return;
     case IR::Opcode::BitwiseAnd32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a & b; });

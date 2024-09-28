@@ -155,6 +155,7 @@ public:
     void V_SUBREV_I32(const GcnInst& inst);
     void V_ADDC_U32(const GcnInst& inst);
     void V_LDEXP_F32(const GcnInst& inst);
+    void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
 
     // VOP1
@@ -216,6 +217,7 @@ public:
     void V_MED3_I32(const GcnInst& inst);
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
+    void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
     void V_MAX_F64(const GcnInst& inst);

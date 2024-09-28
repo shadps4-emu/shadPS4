@@ -1717,7 +1717,7 @@ int PS4_SYSV_ABI sceSystemServiceGetAppType() {
 
 s32 PS4_SYSV_ABI
 sceSystemServiceGetDisplaySafeAreaInfo(OrbisSystemServiceDisplaySafeAreaInfo* info) {
-    LOG_INFO(Lib_SystemService, "called");
+    LOG_DEBUG(Lib_SystemService, "called");
     if (info == nullptr) {
         LOG_ERROR(Lib_SystemService, "OrbisSystemServiceDisplaySafeAreaInfo is null");
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
