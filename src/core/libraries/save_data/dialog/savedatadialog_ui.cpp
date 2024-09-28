@@ -5,7 +5,9 @@
 #include <imgui.h>
 #include <magic_enum.hpp>
 
+#include "common/elf_info.h"
 #include "common/singleton.h"
+#include "common/string_util.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/save_data/save_instance.h"
 #include "imgui/imgui_std.h"
@@ -13,6 +15,7 @@
 
 using namespace ImGui;
 using namespace Libraries::CommonDialog;
+using Common::ElfInfo;
 
 constexpr u32 OrbisSaveDataBlockSize = 32768; // 32 KiB
 
@@ -46,11 +49,13 @@ void SaveDialogResult::CopyTo(OrbisSaveDataDialogResult& result) const {
     result.mode = this->mode;
     result.result = this->result;
     result.buttonId = this->button_id;
-    if (result.dirName != nullptr) {
-        result.dirName->data.FromString(this->dir_name);
-    }
-    if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
-        result.param->FromSFO(this->param);
+    if (mode == SaveDataDialogMode::LIST || ElfInfo::Instance().FirmwareVer() >= ElfInfo::FW_45) {
+        if (result.dirName != nullptr) {
+            result.dirName->data.FromString(this->dir_name);
+        }
+        if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
+            result.param->FromSFO(this->param);
+        }
     }
     result.userData = this->user_data;
 }
@@ -63,8 +68,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
     }
 
-    static std::string game_serial{*Common::Singleton<PSF>::Instance()->GetString("CONTENT_ID"), 7,
-                                   9};
+    const auto& game_serial = Common::ElfInfo::Instance().GameSerial();
 
     const auto item = param.items;
     this->user_id = item->userId;
@@ -75,63 +79,66 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->title_id = item->titleId->data.to_string();
     }
 
-    for (u32 i = 0; i < item->dirNameNum; i++) {
-        const auto dir_name = item->dirName[i].data.to_view();
+    if (item->dirName != nullptr) {
+        for (u32 i = 0; i < item->dirNameNum; i++) {
+            const auto dir_name = item->dirName[i].data.to_view();
 
-        if (dir_name.empty()) {
-            continue;
-        }
+            if (dir_name.empty()) {
+                continue;
+            }
 
-        auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
+            auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
 
-        auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
-        if (!std::filesystem::exists(param_sfo_path)) {
-            continue;
-        }
+            auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
+            if (!std::filesystem::exists(param_sfo_path)) {
+                continue;
+            }
 
-        PSF param_sfo;
-        param_sfo.Open(param_sfo_path);
+            PSF param_sfo;
+            param_sfo.Open(param_sfo_path);
 
-        auto last_write = param_sfo.GetLastWrite();
+            auto last_write = param_sfo.GetLastWrite();
 #ifdef _WIN32
-        auto utc_time = std::chrono::file_clock::to_utc(last_write);
+            auto utc_time = std::chrono::file_clock::to_utc(last_write);
 #else
-        auto utc_time = std::chrono::file_clock::to_sys(last_write);
+            auto utc_time = std::chrono::file_clock::to_sys(last_write);
 #endif
-        std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", utc_time);
 
-        size_t size = Common::FS::GetDirectorySize(dir_path);
-        std::string size_str = SpaceSizeToString(size);
+            size_t size = Common::FS::GetDirectorySize(dir_path);
+            std::string size_str = SpaceSizeToString(size);
 
-        auto icon_path = dir_path / "sce_sys" / "icon0.png";
-        RefCountedTexture icon;
-        if (std::filesystem::exists(icon_path)) {
-            icon = RefCountedTexture::DecodePngFile(icon_path);
+            auto icon_path = dir_path / "sce_sys" / "icon0.png";
+            RefCountedTexture icon;
+            if (std::filesystem::exists(icon_path)) {
+                icon = RefCountedTexture::DecodePngFile(icon_path);
+            }
+
+            bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
+
+            this->save_list.emplace_back(Item{
+                .dir_name = std::string{dir_name},
+                .icon = icon,
+
+                .title =
+                    std::string{param_sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown")},
+                .subtitle = std::string{param_sfo.GetString(SaveParams::SUBTITLE).value_or("")},
+                .details = std::string{param_sfo.GetString(SaveParams::DETAIL).value_or("")},
+                .date = date_str,
+                .size = size_str,
+                .last_write = param_sfo.GetLastWrite(),
+                .pfo = param_sfo,
+                .is_corrupted = is_corrupted,
+            });
         }
-
-        bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
-
-        this->save_list.emplace_back(Item{
-            .dir_name = std::string{dir_name},
-            .icon = icon,
-
-            .title = std::string{*param_sfo.GetString(SaveParams::MAINTITLE)},
-            .subtitle = std::string{*param_sfo.GetString(SaveParams::SUBTITLE)},
-            .details = std::string{*param_sfo.GetString(SaveParams::DETAIL)},
-            .date = date_str,
-            .size = size_str,
-            .last_write = param_sfo.GetLastWrite(),
-            .pfo = param_sfo,
-            .is_corrupted = is_corrupted,
-        });
     }
 
-    if (type == DialogType::SAVE) {
+    if (type == DialogType::SAVE && item->newItem != nullptr) {
         RefCountedTexture icon;
         std::string title{"New Save"};
 
         const auto new_item = item->newItem;
-        if (new_item != nullptr && new_item->iconBuf && new_item->iconSize) {
+        if (new_item->iconBuf && new_item->iconSize) {
             auto buf = (u8*)new_item->iconBuf;
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
@@ -140,7 +147,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
                 icon = RefCountedTexture::DecodePngFile(src_icon);
             }
         }
-        if (new_item != nullptr && new_item->title != nullptr) {
+        if (new_item->title != nullptr) {
             title = std::string{new_item->title};
         }
 
@@ -199,6 +206,7 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
     auto& sys = *param.sysMsgParam;
     switch (sys.msgType) {
     case SystemMessageType::NODATA: {
+        return_cancel = true;
         this->msg = "There is no saved data";
     } break;
     case SystemMessageType::CONFIRM:
@@ -211,6 +219,7 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
         M("Do you want to overwrite the existing saved data?", "##UNKNOWN##", "##UNKNOWN##");
         break;
     case SystemMessageType::NOSPACE:
+        return_cancel = true;
         M(fmt::format(
               "There is not enough space to save the data. To continue {} free space is required.",
               SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
@@ -222,12 +231,15 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
         M("Saving...", "Loading...", "Deleting...");
         break;
     case SystemMessageType::FILE_CORRUPTED:
+        return_cancel = true;
         this->msg = "The saved data is corrupted.";
         break;
     case SystemMessageType::FINISHED:
+        return_cancel = true;
         M("Saved successfully.", "Loading complete.", "Deletion complete.");
         break;
     case SystemMessageType::NOSPACE_CONTINUABLE:
+        return_cancel = true;
         M(fmt::format("There is not enough space to save the data. {} free space is required.",
                       SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
           "##UNKNOWN##", "##UNKNOWN##");
@@ -279,29 +291,36 @@ SaveDialogState::ErrorCodeState::ErrorCodeState(const OrbisSaveDataDialogParam& 
 }
 SaveDialogState::ProgressBarState::ProgressBarState(const SaveDialogState& state,
                                                     const OrbisSaveDataDialogParam& param) {
+    static auto fw_ver = ElfInfo::Instance().FirmwareVer();
+
     this->progress = 0;
 
     auto& bar = *param.progressBarParam;
-    switch (bar.sysMsgType) {
-    case ProgressSystemMessageType::INVALID:
-        this->msg = bar.msg != nullptr ? std::string{bar.msg} : std::string{};
-        break;
-    case ProgressSystemMessageType::PROGRESS:
-        switch (state.type) {
-        case DialogType::SAVE:
-            this->msg = "Saving...";
+
+    if (bar.msg != nullptr) {
+        this->msg = std::string{bar.msg};
+    } else {
+        switch (bar.sysMsgType) {
+        case ProgressSystemMessageType::INVALID:
+            this->msg = "";
             break;
-        case DialogType::LOAD:
-            this->msg = "Loading...";
+        case ProgressSystemMessageType::PROGRESS:
+            switch (state.type) {
+            case DialogType::SAVE:
+                this->msg = "Saving...";
+                break;
+            case DialogType::LOAD:
+                this->msg = "Loading...";
+                break;
+            case DialogType::DELETE:
+                this->msg = "Deleting...";
+                break;
+            }
             break;
-        case DialogType::DELETE:
-            this->msg = "Deleting...";
+        case ProgressSystemMessageType::RESTORE:
+            this->msg = "Restoring saved data...";
             break;
         }
-        break;
-    case ProgressSystemMessageType::RESTORE:
-        this->msg = "Restoring saved data...";
-        break;
     }
 }
 
@@ -378,7 +397,7 @@ void SaveDialogUi::Draw() {
         };
     } else {
         window_size = ImVec2{
-            std::min(io.DisplaySize.x, 500.0f),
+            std::min(io.DisplaySize.x, 600.0f),
             std::min(io.DisplaySize.y, 300.0f),
         };
     }
@@ -446,7 +465,7 @@ void SaveDialogUi::Draw() {
 }
 
 void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool clickable) {
-    constexpr auto text_spacing = 1.2f;
+    constexpr auto text_spacing = 0.95f;
 
     auto& ctx = *GetCurrentContext();
     auto& window = *ctx.CurrentWindow;
@@ -495,18 +514,20 @@ void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool cli
     if (!item.title.empty()) {
         const char* begin = &item.title.front();
         const char* end = &item.title.back() + 1;
-        SetWindowFontScale(2.0f);
+        SetWindowFontScale(1.5f);
         RenderText(pos + ImVec2{pos_x, pos_y}, begin, end, false);
-        if (item.is_corrupted) {
-            float width = CalcTextSize(begin, end).x + 10.0f;
-            PushStyleColor(ImGuiCol_Text, 0xFF0000FF);
-            RenderText(pos + ImVec2{pos_x + width, pos_y}, "- Corrupted", nullptr, false);
-            PopStyleColor();
-        }
         pos_y += ctx.FontSize * text_spacing;
     }
+    SetWindowFontScale(1.1f);
 
-    SetWindowFontScale(1.3f);
+    if (item.is_corrupted) {
+        pos_y -= ctx.FontSize * text_spacing * 0.3f;
+        const auto bright = (int)std::abs(std::sin(ctx.Time) * 0.15f * 255.0f);
+        PushStyleColor(ImGuiCol_Text, IM_COL32(bright + 216, bright, bright, 0xFF));
+        RenderText(pos + ImVec2{pos_x, pos_y}, "Corrupted", nullptr, false);
+        PopStyleColor();
+        pos_y += ctx.FontSize * text_spacing * 0.8f;
+    }
 
     if (state->style == ItemStyle::TITLE_SUBTITLE_DATESIZE) {
         if (!item.subtitle.empty()) {
@@ -636,6 +657,8 @@ void SaveDialogUi::DrawUser() {
 
     if (!state->save_list.empty()) {
         DrawItem(0, state->save_list.front(), false);
+    } else if (state->new_item) {
+        DrawItem(0, *state->new_item, false);
     }
 
     auto has_btn = btn_type != ButtonType::NONE;
@@ -660,7 +683,7 @@ void SaveDialogUi::DrawUser() {
 
     if (has_btn) {
         int count = 1;
-        if (btn_type == ButtonType::YESNO || btn_type == ButtonType::ONCANCEL) {
+        if (btn_type == ButtonType::YESNO || btn_type == ButtonType::OKCANCEL) {
             ++count;
         }
 
@@ -676,19 +699,28 @@ void SaveDialogUi::DrawUser() {
             }
             SameLine();
             if (Button("No", BUTTON_SIZE)) {
-                Finish(ButtonId::NO);
+                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                } else {
+                    Finish(ButtonId::NO);
+                }
             }
             if (first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
                 SetItemCurrentNavFocus();
             }
         } else {
             if (Button("OK", BUTTON_SIZE)) {
-                Finish(ButtonId::OK);
+                if (btn_type == ButtonType::OK &&
+                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                } else {
+                    Finish(ButtonId::OK);
+                }
             }
             if (first_render) {
                 SetItemCurrentNavFocus();
             }
-            if (btn_type == ButtonType::ONCANCEL) {
+            if (btn_type == ButtonType::OKCANCEL) {
                 SameLine();
                 if (Button("Cancel", BUTTON_SIZE)) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
@@ -707,6 +739,8 @@ void SaveDialogUi::DrawSystemMessage() {
 
     if (!state->save_list.empty()) {
         DrawItem(0, state->save_list.front(), false);
+    } else if (state->new_item) {
+        DrawItem(0, *state->new_item, false);
     }
 
     const auto ws = GetWindowSize();
@@ -730,12 +764,20 @@ void SaveDialogUi::DrawSystemMessage() {
     });
     BeginGroup();
     if (Button(sys_state.show_no ? "Yes" : "OK", BUTTON_SIZE)) {
-        Finish(ButtonId::YES);
+        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+        } else {
+            Finish(ButtonId::YES);
+        }
     }
     SameLine();
     if (sys_state.show_no) {
         if (Button("No", BUTTON_SIZE)) {
-            Finish(ButtonId::NO);
+            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                Finish(ButtonId::INVALID, Result::USER_CANCELED);
+            } else {
+                Finish(ButtonId::NO);
+            }
         }
     } else if (sys_state.show_cancel) {
         if (Button("Cancel", BUTTON_SIZE)) {
@@ -753,6 +795,8 @@ void SaveDialogUi::DrawErrorCode() {
 
     if (!state->save_list.empty()) {
         DrawItem(0, state->save_list.front(), false);
+    } else if (state->new_item) {
+        DrawItem(0, *state->new_item, false);
     }
 
     const auto ws = GetWindowSize();
@@ -768,7 +812,11 @@ void SaveDialogUi::DrawErrorCode() {
         ws.y - FOOTER_HEIGHT + 5.0f,
     });
     if (Button("OK", BUTTON_SIZE)) {
-        Finish(ButtonId::OK);
+        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+        } else {
+            Finish(ButtonId::OK);
+        }
     }
     if (first_render) {
         SetItemCurrentNavFocus();
@@ -782,6 +830,8 @@ void SaveDialogUi::DrawProgressBar() {
 
     if (!state->save_list.empty()) {
         DrawItem(0, state->save_list.front(), false);
+    } else if (state->new_item) {
+        DrawItem(0, *state->new_item, false);
     }
 
     const auto& msg = bar_state.msg;

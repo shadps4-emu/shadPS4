@@ -22,6 +22,10 @@
 #endif
 #endif
 
+#ifdef ENABLE_QT_GUI
+#include <QString>
+#endif
+
 namespace Common::FS {
 
 namespace fs = std::filesystem;
@@ -164,5 +168,23 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
 
     UserPaths.insert_or_assign(shad_path, new_path);
 }
+
+#ifdef ENABLE_QT_GUI
+void PathToQString(QString& result, const std::filesystem::path& path) {
+#ifdef _WIN32
+    result = QString::fromStdWString(path.wstring());
+#else
+    result = QString::fromStdString(path.string());
+#endif
+}
+
+std::filesystem::path PathFromQString(const QString& path) {
+#ifdef _WIN32
+    return std::filesystem::path(path.toStdWString());
+#else
+    return std::filesystem::path(path.toStdString());
+#endif
+}
+#endif
 
 } // namespace Common::FS

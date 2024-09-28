@@ -12,8 +12,8 @@
 #define STBI_NO_STDIO
 #include "externals/stb_image.h"
 
-bool Splash::Open(const std::string& filepath) {
-    ASSERT_MSG(filepath.ends_with(".png"), "Unexpected file format passed");
+bool Splash::Open(const std::filesystem::path& filepath) {
+    ASSERT_MSG(filepath.stem().string() != "png", "Unexpected file format passed");
 
     Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {

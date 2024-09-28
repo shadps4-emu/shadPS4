@@ -119,9 +119,9 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
 void OnGameLoaded() {
 
     if (!patchFile.empty()) {
-        std::string patchDir = Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string();
+        std::filesystem::path patchDir = Common::FS::GetUserPath(Common::FS::PathType::PatchesDir);
 
-        std::string filePath = patchDir + "/" + patchFile;
+        auto filePath = (patchDir / patchFile).native();
 
         pugi::xml_document doc;
         pugi::xml_parse_result result = doc.load_file(filePath.c_str());
@@ -187,8 +187,8 @@ void OnGameLoaded() {
 
 #ifdef ENABLE_QT_GUI
     // We use the QT headers for the xml and json parsing, this define is only true on QT builds
-    QString patchDir =
-        QString::fromStdString(Common::FS::GetUserPath(Common::FS::PathType::PatchesDir).string());
+    QString patchDir;
+    Common::FS::PathToQString(patchDir, Common::FS::GetUserPath(Common::FS::PathType::PatchesDir));
     QString repositories[] = {"GoldHEN", "shadPS4"};
 
     for (const QString& repository : repositories) {

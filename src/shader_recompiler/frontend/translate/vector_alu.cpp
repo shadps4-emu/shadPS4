@@ -89,6 +89,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ADDC_U32(inst);
     case Opcode::V_LDEXP_F32:
         return V_LDEXP_F32(inst);
+    case Opcode::V_CVT_PKNORM_U16_F32:
+        return V_CVT_PKNORM_U16_F32(inst);
     case Opcode::V_CVT_PKRTZ_F16_F32:
         return V_CVT_PKRTZ_F16_F32(inst);
 
@@ -240,10 +242,14 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::LG, true, false, inst);
     case Opcode::V_CMP_GE_I32:
         return V_CMP_U32(ConditionOp::GE, true, false, inst);
+    case Opcode::V_CMPX_LE_I32:
+        return V_CMP_U32(ConditionOp::LE, true, true, inst);
 
         //     V_CMPX_{OP8}_I32
     case Opcode::V_CMPX_LT_I32:
         return V_CMP_U32(ConditionOp::LT, true, true, inst);
+    case Opcode::V_CMPX_EQ_I32:
+        return V_CMP_U32(ConditionOp::EQ, true, true, inst);
     case Opcode::V_CMPX_GT_I32:
         return V_CMP_U32(ConditionOp::GT, true, true, inst);
     case Opcode::V_CMPX_LG_I32:
@@ -335,6 +341,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MED3_I32(inst);
     case Opcode::V_SAD_U32:
         return V_SAD_U32(inst);
+    case Opcode::V_CVT_PK_U8_F32:
+        return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
         return V_LSHL_B64(inst);
     case Opcode::V_MUL_F64:
@@ -567,8 +575,7 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const IR::U32 scarry = IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
     const IR::U32 result = ir.IAdd(ir.IAdd(src0, src1), scarry);
 
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, result);
+    SetDst(inst.dst[0], result);
 
     const IR::U1 less_src0 = ir.ILessThan(result, src0, false);
     const IR::U1 less_src1 = ir.ILessThan(result, src1, false);
@@ -580,6 +587,15 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.FPLdexp(src0, src1));
+}
+
+void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::U32 dst0 = ir.ConvertFToU(32, ir.FPMul(src0, ir.Imm32(65535.f)));
+    const IR::U32 dst1 = ir.ConvertFToU(32, ir.FPMul(src1, ir.Imm32(65535.f)));
+    const IR::VectorReg dst_reg{inst.dst[0].code};
+    ir.SetVectorReg(dst_reg, ir.BitFieldInsert(dst0, dst1, ir.Imm32(16), ir.Imm32(16)));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
@@ -1031,10 +1047,25 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(result, src2));
 }
 
+void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+
+    const IR::U32 value_uint = ir.ConvertFToU(32, src0);
+    const IR::U32 offset = ir.ShiftLeftLogical(src1, ir.Imm32(3));
+    SetDst(inst.dst[0], ir.BitFieldInsert(src2, value_uint, offset, ir.Imm32(8)));
+}
+
 void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::VectorReg dst_reg{inst.dst[0].code};
+    if (src0.IsImmediate() && src0.U64() == -1) {
+        ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
+        ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
+        return;
+    }
     ASSERT_MSG(src0.IsImmediate() && src0.U64() == 0 && src1.IsImmediate() && src1.U64() == 0,
                "V_LSHL_B64 with non-zero src0 or src1 is not supported");
     ir.SetVectorReg(dst_reg, ir.Imm32(0));

@@ -78,7 +78,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    auto [descriptor_set_result, descriptor_set] =
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
+               "Failed to create compute descriptor set layout: {}",
+               vk::to_string(descriptor_set_result));
+    desc_layout = std::move(descriptor_set);
 
     const vk::DescriptorSetLayout set_layout = *desc_layout;
     const vk::PipelineLayoutCreateInfo layout_info = {
@@ -87,19 +92,20 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .pushConstantRangeCount = 1U,
         .pPushConstantRanges = &push_constants,
     };
-    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
+    pipeline_layout = std::move(layout);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
         .layout = *pipeline_layout,
     };
-    auto result =
+    auto [pipeline_result, pipe] =
         instance.GetDevice().createComputePipelineUnique(pipeline_cache, compute_pipeline_ci);
-    if (result.result == vk::Result::eSuccess) {
-        pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Graphics pipeline creation failed!");
-    }
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
+               vk::to_string(pipeline_result));
+    pipeline = std::move(pipe);
 }
 
 ComputePipeline::~ComputePipeline() = default;
@@ -112,10 +118,11 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
 
     image_infos.clear();
 
+    info->PushUd(binding, push_data);
     for (const auto& desc : info->buffers) {
         bool is_storage = true;
         if (desc.is_gds_buffer) {
@@ -147,21 +154,20 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 buffer_cache.ObtainBuffer(address, size, desc.is_written);
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
-            if (adjust != 0) {
-                ASSERT(adjust % 4 == 0);
-                push_data.AddOffset(binding, adjust);
-            }
+            ASSERT(adjust % 4 == 0);
+            push_data.AddOffset(binding.buffer, adjust);
             buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
                                          : vk::DescriptorType::eUniformBuffer,
             .pBufferInfo = &buffer_infos.back(),
         });
+        ++binding.buffer;
     }
 
     for (const auto& desc : info->texture_buffers) {
@@ -188,10 +194,8 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                        "Texel buffer stride must match format stride");
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
-            if (adjust != 0) {
-                ASSERT(adjust % fmt_stride == 0);
-                push_data.AddOffset(binding, adjust / fmt_stride);
-            }
+            ASSERT(adjust % fmt_stride == 0);
+            push_data.AddOffset(binding.buffer, adjust / fmt_stride);
             buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                           vsharp.GetDataFmt(), vsharp.GetNumberFmt());
             if (auto barrier =
@@ -201,18 +205,19 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written) {
-                texture_cache.MarkWritten(address, size);
+                texture_cache.InvalidateMemoryFromGPU(address, size);
             }
         }
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                               : vk::DescriptorType::eUniformTexelBuffer,
             .pTexelBufferView = &buffer_view,
         });
+        ++binding.buffer;
     }
 
     BindTextures(texture_cache, *info, binding, set_writes);
@@ -226,7 +231,7 @@ bool ComputePipeline::BindResources(VideoCore::BufferCache& buffer_cache,
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding++,
+            .dstBinding = binding.unified++,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eSampler,

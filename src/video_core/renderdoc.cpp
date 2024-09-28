@@ -110,11 +110,11 @@ void TriggerCapture() {
     }
 }
 
-void SetOutputDir(const std::string& path, const std::string& prefix) {
+void SetOutputDir(const std::filesystem::path& path, const std::string& prefix) {
     if (!rdoc_api) {
         return;
     }
-    rdoc_api->SetCaptureFilePathTemplate((path + '\\' + prefix).c_str());
+    rdoc_api->SetCaptureFilePathTemplate(fmt::UTF((path / prefix).u8string()).data.data());
 }
 
 } // namespace VideoCore

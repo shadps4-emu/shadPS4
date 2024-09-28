@@ -1079,6 +1079,10 @@ U32 IREmitter::IAbs(const U32& value) {
 }
 
 U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftLeftLogical32, base, shift);
@@ -1090,6 +1094,10 @@ U32U64 IREmitter::ShiftLeftLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightLogical32, base, shift);
@@ -1101,6 +1109,10 @@ U32U64 IREmitter::ShiftRightLogical(const U32U64& base, const U32& shift) {
 }
 
 U32U64 IREmitter::ShiftRightArithmetic(const U32U64& base, const U32& shift) {
+    if (shift.IsImmediate() && shift.U32() == 0) {
+        return base;
+    }
+
     switch (base.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::ShiftRightArithmetic32, base, shift);

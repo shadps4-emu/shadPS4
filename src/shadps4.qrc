@@ -2,6 +2,7 @@
 	<qresource prefix="/">
 		<file>images/shadps4.ico</file>
 		<file>images/about_icon.png</file>
+		<file>images/dump_icon.png</file>
 		<file>images/play_icon.png</file>
 		<file>images/pause_icon.png</file>
 		<file>images/stop_icon.png</file>
@@ -15,6 +16,7 @@
 		<file>images/settings_icon.png</file>
 		<file>images/controller_icon.png</file>
 		<file>images/refresh_icon.png</file>
+		<file>images/update_icon.png</file>
 		<file>images/list_mode_icon.png</file>
 		<file>images/flag_jp.png</file>
 		<file>images/flag_eu.png</file>

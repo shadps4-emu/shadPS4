@@ -47,24 +47,23 @@ void TextureCache::InvalidateMemory(VAddr address, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         // Ensure image is reuploaded when accessed again.
-        image.flags |= ImageFlagBits::CpuModified;
+        image.flags |= ImageFlagBits::CpuDirty;
         // Untrack image, so the range is unprotected and the guest can write freely.
         UntrackImage(image_id);
     });
 }
 
-void TextureCache::MarkWritten(VAddr address, size_t max_size) {
-    static constexpr FindFlags find_flags =
-        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
-    ImageInfo info{};
-    info.guest_address = address;
-    info.guest_size_bytes = max_size;
-    const ImageId image_id = FindImage(info, find_flags);
-    if (!image_id) {
-        return;
-    }
-    // Ensure image is copied when accessed again.
-    slot_images[image_id].flags |= ImageFlagBits::CpuModified;
+void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
+    std::scoped_lock lock{mutex};
+    ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
+        // Only consider images that match base address.
+        // TODO: Maybe also consider subresources
+        if (image.info.guest_address != address) {
+            return;
+        }
+        // Ensure image is reuploaded when accessed again.
+        image.flags |= ImageFlagBits::GpuDirty;
+    });
 }
 
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
@@ -189,7 +188,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     FreeImage(image_id);
 
     TrackImage(new_image_id);
-    new_image.flags &= ~ImageFlagBits::CpuModified;
+    new_image.flags &= ~ImageFlagBits::Dirty;
     return new_image_id;
 }
 
@@ -325,7 +324,7 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
     const ImageId image_id = FindImage(image_info);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    image.flags &= ~ImageFlagBits::CpuModified;
+    image.flags &= ~ImageFlagBits::Dirty;
     image.aspect_mask = vk::ImageAspectFlagBits::eDepth;
 
     const bool has_stencil = image_info.usage.stencil;
@@ -362,11 +361,9 @@ ImageView& TextureCache::FindDepthTarget(const ImageInfo& image_info,
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
-    if (False(image.flags & ImageFlagBits::CpuModified)) {
+    if (False(image.flags & ImageFlagBits::Dirty)) {
         return;
     }
-    // Mark image as validated.
-    image.flags &= ~ImageFlagBits::CpuModified;
 
     const auto& num_layers = image.info.resources.layers;
     const auto& num_mips = image.info.resources.levels;
@@ -380,9 +377,10 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
 
-        // Protect GPU modified resources from accidental reuploads.
-        if (True(image.flags & ImageFlagBits::GpuModified) &&
-            !buffer_cache.IsRegionGpuModified(image.info.guest_address + mip_ofs, mip_size)) {
+        // Protect GPU modified resources from accidental CPU reuploads.
+        const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
+        const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
+        if (is_gpu_modified && !is_gpu_dirty) {
             const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
             const u64 hash = XXH3_64bits(addr + mip_ofs, mip_size);
             if (image.mip_hashes[m] == hash) {
@@ -438,6 +436,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     }
 
     cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+    image.flags &= ~ImageFlagBits::Dirty;
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {

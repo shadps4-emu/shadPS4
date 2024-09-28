@@ -371,8 +371,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
                 if (table.type == PFS_CURRENT_DIR) {
                     current_dir = extractPaths[table.inode];
                 }
-                extractPaths[table.inode] =
-                    current_dir.string() / std::filesystem::path(table.name);
+                extractPaths[table.inode] = current_dir / std::filesystem::path(table.name);
 
                 if (table.type == PFS_FILE || table.type == PFS_DIR) {
                     if (table.type == PFS_DIR) { // Create dirs.
@@ -402,7 +401,7 @@ void PKG::ExtractFiles(const int index) {
         int bsize = iNodeBuf[inode_number].Size;
 
         Common::FS::IOFile inflated;
-        inflated.Open(extractPaths[inode_number].string(), Common::FS::FileAccessMode::Write);
+        inflated.Open(extractPaths[inode_number], Common::FS::FileAccessMode::Write);
 
         Common::FS::IOFile pkgFile; // Open the file for each iteration to avoid conflict.
         pkgFile.Open(pkgpath, Common::FS::FileAccessMode::Read);

@@ -6,6 +6,10 @@
 #include <filesystem>
 #include <vector>
 
+#ifdef ENABLE_QT_GUI
+class QString; // to avoid including <QString> in this header
+#endif
+
 namespace Common::FS {
 
 enum class PathType {
@@ -95,5 +99,24 @@ constexpr auto LOG_FILE = "shad_log.txt";
  * @param new_path New filesystem path
  */
 void SetUserPath(PathType user_path, const std::filesystem::path& new_path);
+
+#ifdef ENABLE_QT_GUI
+/**
+ * Converts an std::filesystem::path to a QString.
+ * The native underlying string of a path is wstring on Windows and string on POSIX.
+ *
+ * @param result The resulting QString
+ * @param path The path to convert
+ */
+void PathToQString(QString& result, const std::filesystem::path& path);
+
+/**
+ * Converts a QString to an std::filesystem::path.
+ * The native underlying string of a path is wstring on Windows and string on POSIX.
+ *
+ * @param path The path to convert
+ */
+[[nodiscard]] std::filesystem::path PathFromQString(const QString& path);
+#endif
 
 } // namespace Common::FS

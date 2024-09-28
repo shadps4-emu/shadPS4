@@ -41,7 +41,9 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
 
     // Input.
     m_gamesDirectory = new QLineEdit();
-    m_gamesDirectory->setText(QString::fromStdString(Config::getGameInstallDir()));
+    QString install_dir;
+    Common::FS::PathToQString(install_dir, Config::getGameInstallDir());
+    m_gamesDirectory->setText(install_dir);
     m_gamesDirectory->setMinimumWidth(400);
 
     layout->addWidget(m_gamesDirectory);
@@ -76,7 +78,7 @@ void GameInstallDialog::Save() {
         return;
     }
 
-    Config::setGameInstallDir(gamesDirectory.toStdString());
+    Config::setGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
     accept();

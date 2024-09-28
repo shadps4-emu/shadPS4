@@ -51,7 +51,7 @@ public:
     void InvalidateMemory(VAddr address, size_t size);
 
     /// Marks an image as dirty if it exists at the provided address.
-    void MarkWritten(VAddr address, size_t max_size);
+    void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);

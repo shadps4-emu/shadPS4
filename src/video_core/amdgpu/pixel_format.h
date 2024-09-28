@@ -43,6 +43,23 @@ enum class DataFormat : u32 {
     FormatBc5 = 39,
     FormatBc6 = 40,
     FormatBc7 = 41,
+    FormatFmask8_1 = 47,
+    FormatFmask8_2 = 48,
+    FormatFmask8_4 = 49,
+    FormatFmask16_1 = 50,
+    FormatFmask16_2 = 51,
+    FormatFmask32_2 = 52,
+    FormatFmask32_4 = 53,
+    FormatFmask32_8 = 54,
+    FormatFmask64_4 = 55,
+    FormatFmask64_8 = 56,
+    Format4_4 = 57,
+    Format6_5_5 = 58,
+    Format1 = 59,
+    Format1_Reversed = 60,
+    Format32_As_8 = 61,
+    Format32_As_8_8 = 62,
+    Format32_As_32_32_32_32 = 63,
 };
 
 enum class NumberFormat : u32 {

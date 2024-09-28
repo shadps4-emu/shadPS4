@@ -4,9 +4,12 @@
 #include <QDockWidget>
 #include <QProgressDialog>
 
+#include <common/scm_rev.h>
 #include "about_dialog.h"
 #include "cheats_patches.h"
+#include "check_update.h"
 #include "common/io_file.h"
+#include "common/path_util.h"
 #include "common/string_util.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
@@ -42,10 +45,18 @@ bool MainWindow::Init() {
     GetPhysicalDevices();
     // show ui
     setMinimumSize(350, minimumSizeHint().height());
-    setWindowTitle(QString::fromStdString("shadPS4 v" + std::string(Common::VERSION)));
+    std::string window_title = "";
+    if (Common::isRelease) {
+        window_title = fmt::format("shadPS4 v{}", Common::VERSION);
+    } else {
+        window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
+                                   Common::g_scm_desc);
+    }
+    setWindowTitle(QString::fromStdString(window_title));
     this->show();
     // load game list
     LoadGameLists();
+    CheckUpdateMain(true);
 
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -160,6 +171,16 @@ void MainWindow::LoadGameLists() {
     }
 }
 
+void MainWindow::CheckUpdateMain(bool checkSave) {
+    if (checkSave) {
+        if (!Config::autoUpdate()) {
+            return;
+        }
+    }
+    auto checkUpdate = new CheckUpdate(false);
+    checkUpdate->exec();
+}
+
 void MainWindow::GetPhysicalDevices() {
     Vulkan::Instance instance(false, false);
     auto physical_devices = instance.GetPhysicalDevices();
@@ -219,6 +240,11 @@ void MainWindow::CreateConnects() {
                 &MainWindow::OnLanguageChanged);
 
         settingsDialog->exec();
+    });
+
+    connect(ui->updaterAct, &QAction::triggered, this, [this]() {
+        auto checkUpdate = new CheckUpdate(true);
+        checkUpdate->exec();
     });
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
@@ -416,12 +442,14 @@ void MainWindow::CreateConnects() {
                    .arg(" APP VERSION", -11)
                    .arg("                Path");
         for (const GameInfo& game : m_game_info->m_games) {
+            QString game_path;
+            Common::FS::PathToQString(game_path, game.path);
             out << QString("%1 %2 %3     %4 %5\n")
                        .arg(QString::fromStdString(game.name), -50)
                        .arg(QString::fromStdString(game.serial), -10)
                        .arg(QString::fromStdString(game.fw), -4)
                        .arg(QString::fromStdString(game.version), -11)
-                       .arg(QString::fromStdString(game.path));
+                       .arg(game_path);
         }
     });
 
@@ -484,36 +512,58 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+
+    connect(m_game_grid_frame.get(), &QTableWidget::cellClicked, this,
+            &MainWindow::PlayBackgroundMusic);
+    connect(m_game_list_frame.get(), &QTableWidget::cellClicked, this,
+            &MainWindow::PlayBackgroundMusic);
+}
+
+void MainWindow::PlayBackgroundMusic() {
+    if (isGameRunning || !Config::getPlayBGM()) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    int itemID = isTableList ? m_game_list_frame->currentItem()->row()
+                             : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
+                                   m_game_grid_frame->crtColumn;
+
+    QString snd0path;
+    Common::FS::PathToQString(snd0path, m_game_info->m_games[itemID].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
 void MainWindow::StartGame() {
+    isGameRunning = true;
+    BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = Config::getTableMode();
     if (table_mode == 0) {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
-            gamePath = QString::fromStdString(m_game_info->m_games[itemID].path + "/eboot.bin");
+            Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
         }
     } else {
         if (m_elf_viewer->currentItem()) {
             int itemID = m_elf_viewer->currentItem()->row();
-            gamePath = QString::fromStdString(m_elf_viewer->m_elf_list[itemID].toStdString());
+            gamePath = m_elf_viewer->m_elf_list[itemID];
         }
     }
     if (gamePath != "") {
         AddRecentFiles(gamePath);
         Core::Emulator emulator;
-        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+        const auto path = Common::FS::PathFromQString(gamePath);
+        if (!std::filesystem::exists(path)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(gamePath.toUtf8().constData());
+        emulator.Run(path);
     }
 }
 
@@ -629,29 +679,53 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
         pkg = PKG();
         pkg.Open(file);
         std::string failreason;
-        auto extract_path = std::filesystem::path(Config::getGameInstallDir()) / pkg.GetTitleID();
+        auto extract_path = Config::getGameInstallDir() / pkg.GetTitleID();
         QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        QDir game_dir(QString::fromStdString(extract_path.string()));
+        QString gameDirPath;
+        Common::FS::PathToQString(gameDirPath, extract_path);
+        QDir game_dir(gameDirPath);
         if (game_dir.exists()) {
             QMessageBox msgBox;
             msgBox.setWindowTitle(tr("PKG Extraction"));
 
-            psf.Open(pkg.sfo);
+            if (!psf.Open(pkg.sfo)) {
+                QMessageBox::critical(this, tr("PKG ERROR"),
+                                      "Could not read SFO. Check log for details");
+                return;
+            }
 
-            std::string content_id{*psf.GetString("CONTENT_ID")};
+            std::string content_id;
+            if (auto value = psf.GetString("CONTENT_ID"); value.has_value()) {
+                content_id = std::string{*value};
+            } else {
+                QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no CONTENT_ID");
+                return;
+            }
             std::string entitlement_label = Common::SplitString(content_id, '-')[2];
 
             auto addon_extract_path = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir) /
                                       pkg.GetTitleID() / entitlement_label;
-            QDir addon_dir(QString::fromStdString(addon_extract_path.string()));
+            QString addonDirPath;
+            Common::FS::PathToQString(addonDirPath, addon_extract_path);
+            QDir addon_dir(addonDirPath);
             auto category = psf.GetString("CATEGORY");
 
             if (pkgType.contains("PATCH")) {
-                QString pkg_app_version =
-                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                QString pkg_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    pkg_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
                 psf.Open(extract_path / "sce_sys" / "param.sfo");
-                QString game_app_version =
-                    QString::fromStdString(std::string{*psf.GetString("APP_VER")});
+                QString game_app_version;
+                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
+                    game_app_version = QString::fromStdString(std::string{*app_ver});
+                } else {
+                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
+                    return;
+                }
                 double appD = game_app_version.toDouble();
                 double pkgD = pkg_app_version.toDouble();
                 if (pkgD == appD) {
@@ -698,8 +772,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                         return;
                     }
                 } else {
-                    msgBox.setText(QString(tr("DLC already installed:") + "\n" +
-                                           QString::fromStdString(addon_extract_path.string()) +
+                    msgBox.setText(QString(tr("DLC already installed:") + "\n" + addonDirPath +
                                            "\n\n" + tr("Would you like to overwrite?")));
                     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                     msgBox.setDefaultButton(QMessageBox::No);
@@ -711,8 +784,7 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                     }
                 }
             } else {
-                msgBox.setText(QString(tr("Game already installed") + "\n" +
-                                       QString::fromStdString(extract_path.string()) + "\n" +
+                msgBox.setText(QString(tr("Game already installed") + "\n" + addonDirPath + "\n" +
                                        tr("Would you like to overwrite?")));
                 msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
                 msgBox.setDefaultButton(QMessageBox::No);
@@ -755,7 +827,8 @@ void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int 
                 QFutureWatcher<void> futureWatcher;
                 connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
                     if (pkgNum == nPkg) {
-                        QString path = QString::fromStdString(Config::getGameInstallDir());
+                        QString path;
+                        Common::FS::PathToQString(path, Config::getGameInstallDir());
                         QMessageBox extractMsgBox(this);
                         extractMsgBox.setWindowTitle(tr("Extraction Finished"));
                         extractMsgBox.setText(
@@ -856,6 +929,10 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
+    ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));
+    ui->downloadCheatsPatchesAct->setIcon(
+        RecolorIcon(ui->downloadCheatsPatchesAct->icon(), isWhite));
+    ui->dumpGameListAct->setIcon(RecolorIcon(ui->dumpGameListAct->icon(), isWhite));
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
@@ -923,14 +1000,14 @@ void MainWindow::CreateRecentGameActions() {
     }
 
     connect(m_recent_files_group, &QActionGroup::triggered, this, [this](QAction* action) {
-        QString gamePath = action->text();
-        AddRecentFiles(gamePath); // Update the list.
+        auto gamePath = Common::FS::PathFromQString(action->text());
+        AddRecentFiles(action->text()); // Update the list.
         Core::Emulator emulator;
-        if (!std::filesystem::exists(gamePath.toUtf8().constData())) {
+        if (!std::filesystem::exists(gamePath)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
-        emulator.Run(gamePath.toUtf8().constData());
+        emulator.Run(gamePath);
     });
 }
 

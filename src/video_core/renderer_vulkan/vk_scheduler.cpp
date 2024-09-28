@@ -89,7 +89,9 @@ void Scheduler::AllocateWorkerCommandBuffers() {
     };
 
     current_cmdbuf = command_pool.Commit();
-    current_cmdbuf.begin(begin_info);
+    auto begin_result = current_cmdbuf.begin(begin_info);
+    ASSERT_MSG(begin_result == vk::Result::eSuccess, "Failed to begin command buffer: {}",
+               vk::to_string(begin_result));
 
     auto* profiler_ctx = instance.GetProfilerContext();
     if (profiler_ctx) {
@@ -110,7 +112,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     }
 
     EndRendering();
-    current_cmdbuf.end();
+    auto end_result = current_cmdbuf.end();
+    ASSERT_MSG(end_result == vk::Result::eSuccess, "Failed to end command buffer: {}",
+               vk::to_string(end_result));
 
     const vk::Semaphore timeline = master_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
@@ -138,12 +142,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         .pSignalSemaphores = info.signal_semas.data(),
     };
 
-    try {
-        ImGui::Core::TextureManager::Submit();
-        instance.GetGraphicsQueue().submit(submit_info, info.fence);
-    } catch (vk::DeviceLostError& err) {
-        UNREACHABLE_MSG("Device lost during submit: {}", err.what());
-    }
+    ImGui::Core::TextureManager::Submit();
+    auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
+    ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();

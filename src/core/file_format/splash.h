@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 #include "common/types.h"
@@ -22,7 +23,7 @@ public:
     Splash() = default;
     ~Splash() = default;
 
-    bool Open(const std::string& filepath);
+    bool Open(const std::filesystem::path& filepath);
     [[nodiscard]] bool IsLoaded() const {
         return img_data.size();
     }

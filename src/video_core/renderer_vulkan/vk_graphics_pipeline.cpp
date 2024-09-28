@@ -39,7 +39,10 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push_constants,
     };
-    pipeline_layout = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create graphics pipeline layout: {}", vk::to_string(layout_result));
+    pipeline_layout = std::move(layout);
 
     boost::container::static_vector<vk::VertexInputBindingDescription, 32> vertex_bindings;
     boost::container::static_vector<vk::VertexInputAttributeDescription, 32> vertex_attributes;
@@ -83,8 +86,9 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
         .primitiveRestartEnable = key.enable_primitive_restart != 0,
     };
-    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF,
-               "Primitive restart index other than 0xFFFF is not supported yet");
+    ASSERT_MSG(!key.enable_primitive_restart || key.primitive_restart_index == 0xFFFF ||
+                   key.primitive_restart_index == 0xFFFFFFFF,
+               "Primitive restart index other than -1 is not supported yet");
 
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
         .depthClampEnable = false,
@@ -280,12 +284,11 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
         .layout = *pipeline_layout,
     };
 
-    auto result = device.createGraphicsPipelineUnique(pipeline_cache, pipeline_info);
-    if (result.result == vk::Result::eSuccess) {
-        pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Graphics pipeline creation failed!");
-    }
+    auto [pipeline_result, pipe] =
+        device.createGraphicsPipelineUnique(pipeline_cache, pipeline_info);
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
+               vk::to_string(pipeline_result));
+    pipeline = std::move(pipe);
 }
 
 GraphicsPipeline::~GraphicsPipeline() = default;
@@ -344,7 +347,11 @@ void GraphicsPipeline::BuildDescSetLayout() {
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    desc_layout = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    auto [layout_result, layout] =
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess,
+               "Failed to create graphics descriptor set layout: {}", vk::to_string(layout_result));
+    desc_layout = std::move(layout);
 }
 
 void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
@@ -356,7 +363,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
     boost::container::small_vector<vk::WriteDescriptorSet, 16> set_writes;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 16> buffer_barriers;
     Shader::PushData push_data{};
-    u32 binding{};
+    Shader::Backend::Bindings binding{};
 
     image_infos.clear();
 
@@ -368,6 +375,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             push_data.step0 = regs.vgt_instance_step_rate_0;
             push_data.step1 = regs.vgt_instance_step_rate_1;
         }
+        stage->PushUd(binding, push_data);
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
@@ -383,10 +391,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     buffer_cache.ObtainBuffer(address, size, buffer.is_written);
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
                 const u32 adjust = offset - offset_aligned;
-                if (adjust != 0) {
-                    ASSERT(adjust % 4 == 0);
-                    push_data.AddOffset(binding, adjust);
-                }
+                ASSERT(adjust % 4 == 0);
+                push_data.AddOffset(binding.buffer, adjust);
                 buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
             } else if (instance.IsNullDescriptorSupported()) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
@@ -396,13 +402,14 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = is_storage ? vk::DescriptorType::eStorageBuffer
                                              : vk::DescriptorType::eUniformBuffer,
                 .pBufferInfo = &buffer_infos.back(),
             });
+            ++binding.buffer;
         }
 
         for (const auto& desc : stage->texture_buffers) {
@@ -419,10 +426,8 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                            "Texel buffer stride must match format stride");
                 const u32 offset_aligned = Common::AlignDown(offset, alignment);
                 const u32 adjust = offset - offset_aligned;
-                if (adjust != 0) {
-                    ASSERT(adjust % fmt_stride == 0);
-                    push_data.AddOffset(binding, adjust / fmt_stride);
-                }
+                ASSERT(adjust % fmt_stride == 0);
+                push_data.AddOffset(binding.buffer, adjust / fmt_stride);
                 buffer_view = vk_buffer->View(offset_aligned, size + adjust, desc.is_written,
                                               vsharp.GetDataFmt(), vsharp.GetNumberFmt());
                 const auto dst_access = desc.is_written ? vk::AccessFlagBits2::eShaderWrite
@@ -432,18 +437,19 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
                     buffer_barriers.emplace_back(*barrier);
                 }
                 if (desc.is_written) {
-                    texture_cache.MarkWritten(address, size);
+                    texture_cache.InvalidateMemoryFromGPU(address, size);
                 }
             }
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = desc.is_written ? vk::DescriptorType::eStorageTexelBuffer
                                                   : vk::DescriptorType::eUniformTexelBuffer,
                 .pTexelBufferView = &buffer_view,
             });
+            ++binding.buffer;
         }
 
         BindTextures(texture_cache, *stage, binding, set_writes);
@@ -463,7 +469,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
             image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             set_writes.push_back({
                 .dstSet = VK_NULL_HANDLE,
-                .dstBinding = binding++,
+                .dstBinding = binding.unified++,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = vk::DescriptorType::eSampler,

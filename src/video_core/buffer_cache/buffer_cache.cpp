@@ -17,7 +17,7 @@ namespace VideoCore {
 static constexpr size_t NumVertexBuffers = 32;
 static constexpr size_t GdsBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 1_GB;
-static constexpr size_t UboStreamBufferSize = 128_MB;
+static constexpr size_t UboStreamBufferSize = 64_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          const AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -581,13 +581,16 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return false;
+    }
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
     boost::container::small_vector<vk::BufferImageCopy, 8> copies;
     u32 offset = buffer.Offset(image.cpu_addr);
     const u32 num_layers = image.info.resources.layers;
-    u32 total_size = 0;
+    const u32 max_offset = offset + size;
     for (u32 m = 0; m < image.info.resources.levels; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
@@ -595,7 +598,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
         offset += mip_ofs * num_layers;
-        if (offset + (mip_size * num_layers) > buffer.SizeBytes()) {
+        if (offset + (mip_size * num_layers) > max_offset) {
             break;
         }
         copies.push_back({
@@ -611,7 +614,6 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             .imageOffset = {0, 0, 0},
             .imageExtent = {width, height, depth},
         });
-        total_size += mip_size * num_layers;
     }
     if (!copies.empty()) {
         scheduler.EndRendering();

@@ -5,6 +5,7 @@
 
 #include <span>
 #include <QDialog>
+#include <QGroupBox>
 #include <QPushButton>
 
 #include "common/config.h"
@@ -20,6 +21,9 @@ public:
     explicit SettingsDialog(std::span<const QString> physical_devices, QWidget* parent = nullptr);
     ~SettingsDialog();
 
+    bool eventFilter(QObject* obj, QEvent* event);
+    void updateNoteTextEdit(const QString& groupName);
+
     int exec() override;
 
 signals:
@@ -33,4 +37,6 @@ private:
     std::unique_ptr<Ui::SettingsDialog> ui;
 
     std::map<std::string, int> languages;
+
+    QString defaultTextEdit;
 };

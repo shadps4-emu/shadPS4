@@ -348,63 +348,6 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     return ORBIS_OK;
 }
 
-int MemoryManager::MTypeProtect(VAddr addr, size_t size, VMAType mtype, MemoryProt prot) {
-    std::scoped_lock lk{mutex};
-
-    // Find the virtual memory area that contains the specified address range.
-    auto it = FindVMA(addr);
-    if (it == vma_map.end() || !it->second.Contains(addr, size)) {
-        LOG_ERROR(Core, "Address range not mapped");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    VirtualMemoryArea& vma = it->second;
-
-    if (vma.type == VMAType::Free) {
-        LOG_ERROR(Core, "Cannot change protection on free memory region");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    // Validate protection flags
-    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
-                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
-                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
-
-    MemoryProt invalid_flags = prot & ~valid_flags;
-    if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
-        LOG_ERROR(Core, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
-                  u32(invalid_flags));
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    // Change type and protection
-    vma.type = mtype;
-    vma.prot = prot;
-
-    // Set permissions
-    Core::MemoryPermission perms{};
-
-    if (True(prot & MemoryProt::CpuRead)) {
-        perms |= Core::MemoryPermission::Read;
-    }
-    if (True(prot & MemoryProt::CpuReadWrite)) {
-        perms |= Core::MemoryPermission::ReadWrite;
-    }
-    if (True(prot & MemoryProt::GpuRead)) {
-        perms |= Core::MemoryPermission::Read;
-    }
-    if (True(prot & MemoryProt::GpuWrite)) {
-        perms |= Core::MemoryPermission::Write;
-    }
-    if (True(prot & MemoryProt::GpuReadWrite)) {
-        perms |= Core::MemoryPermission::ReadWrite;
-    }
-
-    impl.Protect(addr, size, perms);
-
-    return ORBIS_OK;
-}
-
 int MemoryManager::VirtualQuery(VAddr addr, int flags,
                                 ::Libraries::Kernel::OrbisVirtualQueryInfo* info) {
     std::scoped_lock lk{mutex};

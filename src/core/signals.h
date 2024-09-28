@@ -8,8 +8,8 @@
 
 namespace Core {
 
-using AccessViolationHandler = bool (*)(void* code_address, void* fault_address, bool is_write);
-using IllegalInstructionHandler = bool (*)(void* code_address);
+using AccessViolationHandler = bool (*)(void* context, void* fault_address);
+using IllegalInstructionHandler = bool (*)(void* context);
 
 /// Receives OS signals and dispatches to the appropriate handlers.
 class SignalDispatch {
@@ -28,10 +28,10 @@ public:
     }
 
     /// Dispatches an access violation signal, returning whether it was successfully handled.
-    bool DispatchAccessViolation(void* code_address, void* fault_address, bool is_write) const;
+    bool DispatchAccessViolation(void* context, void* fault_address) const;
 
     /// Dispatches an illegal instruction signal, returning whether it was successfully handled.
-    bool DispatchIllegalInstruction(void* code_address) const;
+    bool DispatchIllegalInstruction(void* context) const;
 
 private:
     template <typename T>

@@ -90,11 +90,8 @@ void Linker::Execute() {
 
     // Init primary thread.
     Common::SetCurrentThreadName("GAME_MainThread");
-#ifdef ARCH_X86_64
-    InitializeThreadPatchStack();
-#endif
     Libraries::Kernel::pthreadInitSelfMainThread();
-    InitTlsForThread(true);
+    EnsureThreadInitialized(true);
 
     // Start shared library modules
     for (auto& m : m_modules) {
@@ -333,6 +330,17 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         addr = dest;
     }
     return addr + offset;
+}
+
+thread_local std::once_flag init_tls_flag;
+
+void Linker::EnsureThreadInitialized(bool is_primary) {
+    std::call_once(init_tls_flag, [this, is_primary] {
+#ifdef ARCH_X86_64
+        InitializeThreadPatchStack();
+#endif
+        InitTlsForThread(is_primary);
+    });
 }
 
 void Linker::InitTlsForThread(bool is_primary) {
