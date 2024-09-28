@@ -78,7 +78,7 @@ private:
     Common::ObjectPool<ComputePipeline> compute_pipeline_pool;
     tsl::robin_map<size_t, ComputePipeline*> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, GraphicsPipeline*> graphics_pipelines;
-    std::array<const Shader::Info*, MaxShaderStages> infos{};
+    std::array<Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
     GraphicsPipelineKey graphics_key{};
     u64 compute_key{};

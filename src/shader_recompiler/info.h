@@ -16,6 +16,7 @@
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
+#include "xbyak/xbyak.h"
 
 namespace Shader {
 
@@ -180,7 +181,10 @@ struct Info {
     ImageResourceList images;
     SamplerResourceList samplers;
 
+    // TODO move out of Info, not needed
     SrtInfo srt_info;
+    // TODO maybe move
+    Xbyak::CodeGenerator srt_codegen;
     FlatSharpBuffer flat_sharp_buf;
 
     std::span<const u32> user_data;
@@ -254,6 +258,11 @@ struct Info {
             instance_offset = user_data[instance_offset_sgpr];
         }
         return {vertex_offset, instance_offset};
+    }
+
+    void RunSrtWalker(std::span<u32> flat_sharp_buf) {
+        std::fill(flat_sharp_buf.begin(), flat_sharp_buf.end(), 0);
+        srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), flat_sharp_buf.data());
     }
 };
 

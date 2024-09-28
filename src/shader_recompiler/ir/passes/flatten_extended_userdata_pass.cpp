@@ -4,15 +4,17 @@
 
 #include <bit>
 #include <vector>
+#include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
+#include "common/singleton.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/srt_info.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
-enum class ReadConstOperand : u32 {
-
-};
+using namespace Xbyak::util;
 
 namespace Shader::Optimization {
 
@@ -30,6 +32,7 @@ public:
         srt_info.flattened_cbuf_bufsize_dw = current_cbuf_off_dw;
     }
 
+private:
     void Visit(const IR::Inst* inst) {
         SrtNode* node = srt_info.getNode(inst);
 
@@ -53,7 +56,6 @@ public:
         }
     }
 
-private:
     SrtInfo& srt_info;
 
     u32 current_sharp_off_dw;
@@ -62,35 +64,55 @@ private:
 
 class CodegenVisitor {
 public:
-    CodegenVisitor(SrtInfo& srt_info_) : srt_info(srt_info_) {}
+    CodegenVisitor(SrtInfo& srt_info_, Xbyak::CodeGenerator& c_) : srt_info(srt_info_), c(c_) {}
 
     void VisitRoots() {
+        // %rdi is the src pointer to the base of the user_data registers
+        // %rsi is the dst pointer to the base of the flattened sharp buffer
+        c.inLocalLabel();
         for (const IR::Inst* root : srt_info.srt_roots) {
-            Visit(root);
+            IR::ScalarReg ud_reg = root->Arg(0).ScalarReg();
+            Visit(root, static_cast<u32>(ud_reg) - static_cast<u32>(IR::ScalarReg::S0));
         }
+        c.ret();
     }
 
-    void Visit(const IR::Inst* inst) {
+private:
+    void PushPtr(u32 off) {
+        c.push(rdi);
+        c.mov(rdi, ptr[rdi + off]);
+    }
+    void PopPtr() {
+        c.pop(rdi);
+    };
+
+    void Visit(const IR::Inst* inst, u32 off) {
         SrtNode* node = srt_info.getNode(inst);
 
         ASSERT_MSG(std::popcount(node->use_kind.raw) <= 1, "Unhandled multiple use kinds in SRT");
+        // TODO uses shouldn't be mutually exclusive
         if (node->use_kind.pointer_lo) {
             ASSERT(srt_info.pointer_uses.contains(inst));
             auto& use_list = srt_info.pointer_uses[inst];
+
+            PushPtr(off);
             for (const auto& [off, use] : use_list) {
-                Visit(use);
+                Visit(use, off);
             }
+            PopPtr();
         } else if (node->use_kind.pointer_hi) {
             // Ignore this
         } else if (node->use_kind.cbuffer) {
             // TODO
         } else {
             // Assume sharp for now
+            c.mov(r10, ptr[rdi + off]);
+            c.mov(ptr[rsi + (node->flattened_sharp_off_dw << 2)], r10);
         }
     }
 
-private:
     SrtInfo& srt_info;
+    Xbyak::CodeGenerator& c;
 };
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
@@ -146,8 +168,16 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     AssignOffsetsVisitor assign_off_vis(srt_info);
     assign_off_vis.VisitRoots();
 
-    CodegenVisitor codegen_vis(srt_info);
+    CodegenVisitor codegen_vis(srt_info, info.srt_codegen);
     codegen_vis.VisitRoots();
+
+    // Probably not necessary
+    info.flat_sharp_buf.resize(srt_info.flattened_sharp_bufsize_dw);
+    std::fill(info.flat_sharp_buf.begin(), info.flat_sharp_buf.end(), 0);
+
+    // TODO store program in Info
+    // TODO run program
+    info.srt_codegen.getCode<PFN_SrtWalker>()(info.user_data.data(), info.flat_sharp_buf.data());
 }
 
 } // namespace Shader::Optimization

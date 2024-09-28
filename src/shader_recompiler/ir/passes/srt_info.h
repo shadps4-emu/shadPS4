@@ -20,6 +20,7 @@ namespace Shader {
 // TODO: GVN for readconst instructions to dedup them before SRT pass?
 
 using FlatSharpBuffer = std::vector<u32>;
+typedef void (*PFN_SrtWalker)(const u32* /*user_data*/, u32* /*flat_dst*/);
 
 struct SrtNode {
     const IR::Inst* inst; // Readconst inst
