@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <span>
 #include <vector>
 #include <boost/container/small_vector.hpp>
@@ -258,10 +259,9 @@ struct Info {
     void RunSrtWalker(FlatSharpBuffer& flat_sharp_buf) {
         flat_sharp_buf.resize(srt_info.flattened_sharp_bufsize_dw);
         ASSERT(user_data.size() <= NumUserDataRegs);
-        // For now, keep write the user_data registers to the beginning of the flat sharp buffer.
-        // This means much simpler code for sharp tracking
         std::memcpy(flat_sharp_buf.data(), user_data.data(), user_data.size_bytes());
-        // Don't clear the program - TODO fix fetch shader w/ step rates
+        // not necessary
+        std::fill(flat_sharp_buf.begin() + user_data.size(), flat_sharp_buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
         srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), flat_sharp_buf.data());
     }

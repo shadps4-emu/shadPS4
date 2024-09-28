@@ -55,6 +55,14 @@ struct SrtInfo {
     // GetUserData instructions corresponding to sgpr_base of SRT roots
     boost::container::small_vector<const IR::Inst*, 4> srt_roots;
 
+    // Special case when fetch shader uses step rates.
+    // Need to reserve space for those V#s, and find them in SrtWalker function
+    struct FetchShaderReservation {
+        u32 sgpr_base;
+        u32 dword_offset;
+    };
+    boost::container::small_vector<FetchShaderReservation, 2> fetch_reservations;
+
     u32 flattened_sharp_bufsize_dw{0};
     u32 flattened_cbuf_bufsize_dw{0};
 
@@ -71,6 +79,16 @@ struct SrtInfo {
     SrtNode* getNode(const IR::Inst* inst) const {
         ASSERT(srt_nodes.contains(inst));
         return srt_nodes.find(inst)->second.get();
+    }
+
+    // Special case for fetch shaders because we don't generate IR to read from step rate buffers,
+    // so we won't see usage with GetUserData/ReadConst.
+    // Reserve space in the flattened sharp buffer for a V#, and return dword offset into
+    // flattened sharp buffer, to be filled during SRT walk
+    u32 reserve_fetch_sharp(u32 sgpr_base, u32 dword_offset) {
+        u32 rv = 16 /*NumUserDataRegs*/ + 4 * fetch_reservations.size();
+        fetch_reservations.emplace_back(sgpr_base, dword_offset);
+        return rv;
     }
 };
 

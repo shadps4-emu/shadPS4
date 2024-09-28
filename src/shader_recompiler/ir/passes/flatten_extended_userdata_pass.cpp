@@ -7,6 +7,7 @@
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #include "common/singleton.h"
+#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/srt_info.h"
@@ -20,8 +21,9 @@ namespace Shader::Optimization {
 
 class AssignOffsetsVisitor {
 public:
-    AssignOffsetsVisitor(SrtInfo& srt_info_)
-        : srt_info(srt_info_), current_sharp_off_dw(NumUserDataRegs), current_cbuf_off_dw(0) {}
+    AssignOffsetsVisitor(SrtInfo& srt_info_) : srt_info(srt_info_), current_cbuf_off_dw(0) {
+        current_sharp_off_dw = NumUserDataRegs + 4 * srt_info.fetch_reservations.size();
+    }
 
     void VisitRoots() {
         for (const IR::Inst* root : srt_info.srt_roots) {
@@ -69,10 +71,34 @@ public:
     void VisitRoots() {
         // %rdi is the src pointer to the base of the user_data registers
         // %rsi is the dst pointer to the base of the flattened sharp buffer
+
+        // dunno scratch registers on different platforms. So just using r10, r11 for now
         c.inLocalLabel();
+
+        // Special case for V# step rate buffers in fetch shader
+        for (auto i = 0; i < srt_info.fetch_reservations.size(); i++) {
+            SrtInfo::FetchShaderReservation res = srt_info.fetch_reservations[i];
+            // get pointer to V#
+            c.mov(r10, ptr[rdi + (res.sgpr_base << 2)]);
+
+            u32 src_off = res.dword_offset << 2;
+            u32 dst_off = NumUserDataRegs + (i << 2);
+            c.mov(r11, ptr[r10 + src_off]);
+            c.mov(ptr[rsi + dst_off], r11);
+
+            c.mov(r11, ptr[r10 + (src_off + 4)]);
+            c.mov(ptr[rsi + (dst_off + 4)], r11);
+
+            c.mov(r11, ptr[r10 + (src_off + 8)]);
+            c.mov(ptr[rsi + (dst_off + 8)], r11);
+
+            c.mov(r11, ptr[r10 + (src_off + 12)]);
+            c.mov(ptr[rsi + (dst_off + 12)], r11);
+        }
+
         for (const IR::Inst* root : srt_info.srt_roots) {
             IR::ScalarReg ud_reg = root->Arg(0).ScalarReg();
-            Visit(root, static_cast<u32>(ud_reg) - static_cast<u32>(IR::ScalarReg::S0));
+            Visit(root, static_cast<u32>(ud_reg));
         }
         c.ret();
     }
