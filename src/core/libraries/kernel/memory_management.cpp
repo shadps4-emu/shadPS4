@@ -23,12 +23,11 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, int memoryType, s64* physAddrOut) {
-
     LOG_INFO(Kernel_Vmm,
              "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, "
              "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
              searchStart, searchEnd, len, alignment, memoryType, phys_addr);
-    
+
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return SCE_KERNEL_ERROR_EINVAL;
@@ -50,7 +49,6 @@ int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
     *physAddrOut = static_cast<s64>(phys_addr);
-
     return SCE_OK;
 }
 
