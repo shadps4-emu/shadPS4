@@ -515,6 +515,11 @@
 			<translation>بررسی بروزرسانی هنگام شروع</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>کانال بروزرسانی</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>به روز رسانی را بررسی کنید</translation>
@@ -1125,16 +1130,6 @@
 			<translation>خطا</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>کانال به روز رسانی نامعتبر: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>در فایل config.tml، updateChannel باید فقط شامل 'stable' یا 'unstable' باشد</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>خطای شبکه:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>به روز رسانی موجود است</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>کانال بروزرسانی</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

@@ -515,6 +515,11 @@
 			<translation>起動時に更新確認</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>アップデートチャネル</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>更新を確認</translation>
@@ -1125,16 +1130,6 @@
 			<translation>エラー</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>無効なアップデートチャネル: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>config.tmlファイルのupdateChannelには「stable」または「unstable」を含める必要があります</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>ネットワークエラー:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>アップデートがあります</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>アップデートチャネル</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

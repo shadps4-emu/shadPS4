@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include <common/version.h>
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
@@ -37,7 +38,7 @@ static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto
 static std::string logFilter;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
-static std::string updateChannel = "stable";
+static std::string updateChannel;
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isDebugDump = false;
@@ -414,7 +415,11 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        updateChannel = toml::find_or<std::string>(general, "updateChannel", "stable");
+        if (Common::isRelease) {
+            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
+        } else {
+            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
+        }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
     }
@@ -565,7 +570,11 @@ void setDefaultValues() {
     logFilter = "";
     logType = "async";
     userName = "shadPS4";
-    updateChannel = "stable";
+    if (Common::isRelease) {
+        updateChannel = "Release";
+    } else {
+        updateChannel = "Nightly";
+    }
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;

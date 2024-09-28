@@ -515,6 +515,11 @@
 			<translation>Başlangıçta güncellemeleri kontrol et</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Güncelleme Kanalı</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Güncellemeleri kontrol et</translation>
@@ -1125,16 +1130,6 @@
 			<translation>Hata</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Geçersiz güncelleme kanalı: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>config.tml dosyasındaki updateChannel 'stable' veya 'unstable' içermelidir</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Ağ hatası:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Güncelleme Mevcut</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Güncelleme Kanalı</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

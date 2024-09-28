@@ -515,6 +515,11 @@
 			<translation>تحقق من التحديثات عند بدء التشغيل</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>قناة التحديث</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>التحقق من التحديثات</translation>
@@ -1125,16 +1130,6 @@
 			<translation>خطأ</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>قناة تحديث غير صالحة: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>يجب أن يحتوي updateChannel في ملف config.tml على 'stable' أو 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>خطأ في الشبكة:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>تحديث متاح</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>قناة التحديث</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

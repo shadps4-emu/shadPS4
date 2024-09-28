@@ -515,6 +515,11 @@
 			<translation>Kontrollo për përditësime në nisje</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Kanali i Përditësimit</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Kontrollo për përditësime</translation>
@@ -1125,16 +1130,6 @@
 			<translation>Gabim</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Kanal përditësimi i pavlefshëm: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Në skedarin config.tml, updateChannel duhet të përmbajë 'stable' ose 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Gabim rrjeti:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Ofrohet një përditësim</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Kanali i Përditësimit</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

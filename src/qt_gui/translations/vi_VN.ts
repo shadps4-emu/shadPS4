@@ -515,6 +515,11 @@
 			<translation>Kiểm tra cập nhật khi khởi động</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Kênh Cập Nhật</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Kiểm tra cập nhật</translation>
@@ -1125,16 +1130,6 @@
 			<translation>Lỗi</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Kênh cập nhật không hợp lệ: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>Trong updateChannel trong tệp config.tml phải chứa 'stable' hoặc 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Lỗi mạng:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Có bản cập nhật</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Kênh Cập Nhật</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

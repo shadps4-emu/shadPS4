@@ -515,6 +515,11 @@
 			<translation>Frissítések keresése indításkor</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Frissítési Csatorna</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Frissítések keresése</translation>
@@ -1125,16 +1130,6 @@
 			<translation>Hiba</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Érvénytelen frissítési csatorna: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>A config.tml fájlban az updateChannel-nek 'stable' vagy 'unstable' értéket kell tartalmaznia</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Hálózati hiba:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Frissítés elérhető</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Frissítési Csatorna</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

@@ -22,6 +22,7 @@
 #include <common/config.h>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
+#include <common/version.h>
 #include "check_update.h"
 
 using namespace Common::FS;
@@ -37,20 +38,27 @@ CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
 CheckUpdate::~CheckUpdate() {}
 
 void CheckUpdate::CheckForUpdates(const bool showMessage) {
-    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    QString updateChannel;
     QUrl url;
 
-    if (updateChannel == "unstable") {
-        url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases");
-    } else if (updateChannel == "stable") {
-        url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases/latest");
-    } else {
-        QMessageBox::warning(
-            this, tr("Error"),
-            QString(tr("Invalid update channel: ") + updateChannel + "\n" +
-                    tr("In updateChannel in config.tml file must contain 'stable' or 'unstable'")
-                        .arg(updateChannel)));
-        return;
+    bool checkName = true;
+    while (checkName) {
+        updateChannel = QString::fromStdString(Config::getUpdateChannel());
+        if (updateChannel == "Nightly") {
+            url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases");
+            checkName = false;
+        } else if (updateChannel == "Release") {
+            url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases/latest");
+            checkName = false;
+        } else {
+            if (Common::isRelease) {
+                Config::setUpdateChannel("Release");
+            } else {
+                Config::setUpdateChannel("Nightly");
+            }
+            const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+            Config::save(config_dir / "config.toml");
+        }
     }
 
     QNetworkRequest request(url);
@@ -88,7 +96,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 #endif
 
         QJsonObject jsonObj;
-        if (updateChannel == "unstable") {
+        if (updateChannel == "Nightly") {
             QJsonArray jsonArray = jsonDoc.array();
             for (const QJsonValue& value : jsonArray) {
                 jsonObj = value.toObject();
@@ -173,10 +181,13 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     titleLayout->addWidget(titleLabel);
     layout->addLayout(titleLayout);
 
-    QString updateText = QString("<p><b><br>" + tr("Current Version") + ":</b> %1 (%2)<br><b>" +
-                                 tr("Latest Version") + ":</b> %3 (%4)</p><p>" +
-                                 tr("Do you want to update?") + "</p>")
-                             .arg(currentRev, currentDate, latestRev, latestDate);
+    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+
+    QString updateText =
+        QString("<p><b><br>" + tr("Update Channel") + ": </b>" + updateChannel + "<br><b>" +
+                tr("Current Version") + ":</b> %1 (%2)<br><b>" + tr("Latest Version") +
+                ":</b> %3 (%4)</p><p>" + tr("Do you want to update?") + "</p>")
+            .arg(currentRev, currentDate, latestRev, latestDate);
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
 
@@ -195,8 +206,6 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     bottomLayout->addWidget(yesButton);
     bottomLayout->addWidget(noButton);
     layout->addLayout(bottomLayout);
-
-    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
 
     // Don't show changelog button if:
     // The current version is a pre-release and the version to be downloaded is a release.

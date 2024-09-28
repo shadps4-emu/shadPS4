@@ -515,6 +515,11 @@
 			<translation>Sprawdź aktualizacje przy starcie</translation>
 		</message>
 		<message>
+			<location filename="../settings_dialog.ui" line="313"/>
+			<source>Update Channel</source>
+			<translation>Kanał Aktualizacji</translation>
+		</message>
+		<message>
 			<location filename="../settings_dialog.ui" line="322"/>
 			<source>Check for Updates</source>
 			<translation>Sprawdź aktualizacje</translation>
@@ -1125,16 +1130,6 @@
 			<translation>Błąd</translation>
 		</message>
 		<message>
-			<location filename="../check_update.cpp" line="52"/>
-			<source>Invalid update channel: </source>
-			<translation>Nieprawidłowy kanał aktualizacji: </translation>
-		</message>
-		<message>
-			<location filename="../check_update.cpp" line="53"/>
-			<source>In updateChannel in config.tml file must contain 'stable' or 'unstable'</source>
-			<translation>W pliku config.tml, updateChannel musi zawierać 'stable' lub 'unstable'</translation>
-		</message>
-		<message>
 			<location filename="../check_update.cpp" line="64"/>
 			<source>Network error:</source>
 			<translation>Błąd sieci:</translation>
@@ -1168,6 +1163,11 @@
 			<location filename="../check_update.cpp" line="172"/>
 			<source>Update Available</source>
 			<translation>Dostępna aktualizacja</translation>
+		</message>
+		<message> 
+			<location filename="../check_update.cpp" line="187"/>
+			<source>Update Channel</source>
+			<translation>Kanał Aktualizacji</translation>
 		</message>
 		<message>
 			<location filename="../check_update.cpp" line="177"/>

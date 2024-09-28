@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QHoverEvent>
 
+#include <common/version.h>
 #include "check_update.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
@@ -243,7 +244,15 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->rdocCheckBox->setChecked(Config::isRdocEnabled());
 
     ui->updateCheckBox->setChecked(Config::autoUpdate());
-    ui->updateComboBox->setCurrentText(QString::fromStdString(Config::getUpdateChannel()));
+    std::string updateChannel = Config::getUpdateChannel();
+    if (updateChannel != "Release" && updateChannel != "Nightly") {
+        if (Common::isRelease) {
+            updateChannel = "Release";
+        } else {
+            updateChannel = "Nightly";
+        }
+    }
+    ui->updateComboBox->setCurrentText(QString::fromStdString(updateChannel));
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
