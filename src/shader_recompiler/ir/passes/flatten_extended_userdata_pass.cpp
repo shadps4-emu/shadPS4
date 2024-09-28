@@ -82,7 +82,9 @@ public:
             c.mov(r10, ptr[rdi + (res.sgpr_base << 2)]);
 
             u32 src_off = res.dword_offset << 2;
-            u32 dst_off = NumUserDataRegs + (i << 2);
+            // 4 dwords per V#
+            u32 dst_off = (NumUserDataRegs + 4 * i) << 2;
+
             c.mov(r11, ptr[r10 + src_off]);
             c.mov(ptr[rsi + dst_off], r11);
 
@@ -104,15 +106,15 @@ public:
     }
 
 private:
-    void PushPtr(u32 off) {
+    void PushPtr(u32 off_dw) {
         c.push(rdi);
-        c.mov(rdi, ptr[rdi + off]);
+        c.mov(rdi, ptr[rdi + (off_dw << 2)]);
     }
     void PopPtr() {
         c.pop(rdi);
     };
 
-    void Visit(const IR::Inst* inst, u32 off) {
+    void Visit(const IR::Inst* inst, u32 off_dw) {
         SrtNode* node = srt_info.getNode(inst);
 
         ASSERT_MSG(std::popcount(node->use_kind.raw) <= 1, "Unhandled multiple use kinds in SRT");
@@ -121,9 +123,9 @@ private:
             ASSERT(srt_info.pointer_uses.contains(inst));
             auto& use_list = srt_info.pointer_uses[inst];
 
-            PushPtr(off);
-            for (const auto& [off, use] : use_list) {
-                Visit(use, off);
+            PushPtr(off_dw);
+            for (const auto& [off_dw, use] : use_list) {
+                Visit(use, off_dw);
             }
             PopPtr();
         } else if (node->use_kind.pointer_hi) {
@@ -132,7 +134,7 @@ private:
             // TODO
         } else {
             // Assume sharp for now
-            c.mov(r10, ptr[rdi + off]);
+            c.mov(r10, ptr[rdi + (off_dw << 2)]);
             c.mov(ptr[rsi + (node->flattened_sharp_off_dw << 2)], r10);
         }
     }
