@@ -379,7 +379,7 @@ void GraphicsPipeline::BindResources(const Liverpool::Regs& regs,
         for (const auto& buffer : stage->buffers) {
             const auto vsharp = buffer.GetSharp(*stage);
             const bool is_storage = buffer.IsStorage(vsharp);
-            if (vsharp) {
+            if (vsharp && vsharp.GetSize() > 0) {
                 const VAddr address = vsharp.base_address;
                 if (texture_cache.IsMeta(address)) {
                     LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a PS shader (buffer)");
