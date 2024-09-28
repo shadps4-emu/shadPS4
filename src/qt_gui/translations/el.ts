@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Τοποθετήστε τον κέρσορα πάνω από μια επιλογή για να εμφανιστεί εδώ η περιγραφή</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Τοποθετήστε το ποντίκι σας πάνω σε μια επιλογή για να εμφανίσετε την περιγραφή της.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Ενημερώσεις:\nΣταθερές: Επίσημες εκδόσεις που κυκλοφορούν μηνιαίως, είναι παλαιότερες αλλά πιο σταθερές και δοκιμασμένες.\nΑσταθείς: Εκδόσεις προγραμματιστών με νέες δυνατότητες και διορθώσεις, αλλά μπορεί να περιέχουν σφάλματα και να είναι λιγότερο σταθερές.</translation>
+			<translation>Ενημερώσεις:\nRelease: Επίσημες εκδόσεις που κυκλοφορούν μηνιαίως, είναι παλαιότερες αλλά πιο σταθερές και δοκιμασμένες.\nNightly: Εκδόσεις προγραμματιστών με νέες δυνατότητες και διορθώσεις, αλλά μπορεί να περιέχουν σφάλματα και να είναι λιγότερο σταθερές.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Mutassa a kurzort a lehetőségeken, hogy itt leírást láthasson</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Helyezze az egérmutatót egy lehetőség fölé, hogy megjelenítse annak leírását.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Frissítés:\nStabil: Hivatalos verziók, amelyeket havonta adnak ki, és amelyek nagyon elavultak lehetnek, de megbízhatóbbak és teszteltek.\nInstabil: Fejlesztési verziók, amelyek az összes legújabb funkciót és javítást tartalmazzák, de hibákat tartalmazhatnak és kevésbé stabilak.</translation>
+			<translation>Frissítés:\nRelease: Hivatalos verziók, amelyeket havonta adnak ki, és amelyek nagyon elavultak lehetnek, de megbízhatóbbak és teszteltek.\nNightly: Fejlesztési verziók, amelyek az összes legújabb funkciót és javítást tartalmazzák, de hibákat tartalmazhatnak és kevésbé stabilak.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Debug dumpolás engedélyezése:\nElmenti a futó PS4 program import- és exportszimbólumait, valamint a fájl fejlécinformációit egy könyvtárba</translation>
+			<translation>Debug dumpolás engedélyezése:\nElmenti a futó PS4 program import- és exportszimbólumait, valamint a fájl fejlécinformációit egy könyvtárba.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>

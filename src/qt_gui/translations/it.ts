@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Posiziona il mouse su un'opzione per visualizzare una descrizione qui</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Sposta il mouse su un'opzione per visualizzarne la descrizione.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Aggiornamento:\nStabile: Versioni ufficiali rilasciate ogni mese che potrebbero essere molto datate, ma sono più affidabili e testate.\nInstabile: Versioni di sviluppo che hanno tutte le ultime funzionalità e correzioni, ma potrebbero contenere bug e sono meno stabili.</translation>
+			<translation>Aggiornamento:\nRelease: Versioni ufficiali rilasciate ogni mese che potrebbero essere molto datate, ma sono più affidabili e testate.\nNightly: Versioni di sviluppo che hanno tutte le ultime funzionalità e correzioni, ma potrebbero contenere bug e sono meno stabili.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Abilita Pompaggio di Debug:\nSalva i simboli di importazione ed esportazione e le informazioni sull'intestazione del file del programma PS4 attualmente in esecuzione in una directory</translation>
+			<translation>Abilita Pompaggio di Debug:\nSalva i simboli di importazione ed esportazione e le informazioni sull'intestazione del file del programma PS4 attualmente in esecuzione in una directory.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>

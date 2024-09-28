@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Pune mouse-ul pe o opțiune pentru a afișa o descriere aici</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Indicați mouse-ul asupra unei opțiuni pentru a afișa descrierea acesteia.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Actualizare:\nStabil: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nInstabil: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
+			<translation>Actualizare:\nRelease: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nNightly: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

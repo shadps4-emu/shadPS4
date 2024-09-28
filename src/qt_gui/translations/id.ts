@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Letakkan mouse Anda di atas opsi untuk menampilkan deskripsi di sini</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Arahkan mouse Anda pada opsi untuk menampilkan deskripsinya.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Pembaruan:\nStabil: Versi resmi yang dirilis setiap bulan yang mungkin sangat ketinggalan zaman, tetapi lebih dapat diandalkan dan teruji.\nTidak Stabil: Versi pengembangan yang memiliki semua fitur dan perbaikan terbaru, tetapi mungkin mengandung bug dan kurang stabil.</translation>
+			<translation>Pembaruan:\nRelease: Versi resmi yang dirilis setiap bulan yang mungkin sangat ketinggalan zaman, tetapi lebih dapat diandalkan dan teruji.\nNightly: Versi pengembangan yang memiliki semua fitur dan perbaikan terbaru, tetapi mungkin mengandung bug dan kurang stabil.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Aktifkan Pembuangan Debug:\nMenyimpan simbol impor dan ekspor serta informasi header file dari program PS4 yang sedang berjalan ke direktori</translation>
+			<translation>Aktifkan Pembuangan Debug:\nMenyimpan simbol impor dan ekspor serta informasi header file dari program PS4 yang sedang berjalan ke direktori.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>

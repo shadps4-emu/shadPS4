@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>وجه مؤشر الفأرة إلى خيار لعرض الوصف هنا</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>وجّه الماوس نحو خيار لعرض وصفه.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>التحديث:\nمستقر: إصدارات رسمية يتم إصدارها شهريًا، قد تكون قديمة جدًا ولكنها أكثر استقرارًا وتم اختبارها.\nغير مستقر: إصدارات التطوير التي تحتوي على أحدث الميزات والإصلاحات، لكنها قد تحتوي على أخطاء وأقل استقرارًا.</translation>
+			<translation>تحديث: Release: إصدارات رسمية تصدر شهريًا، قد تكون قديمة بعض الشيء، لكنها أكثر استقرارًا واختبارًا. Nightly: إصدارات تطوير تحتوي على أحدث الميزات والإصلاحات، لكنها قد تحتوي على أخطاء وأقل استقرارًا.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

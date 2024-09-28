@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Point your mouse at an options to display a description in here</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>ماوس خود را بر روی یک گزینه قرار دهید تا توضیحات آن نمایش داده شود.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Update:\nStable: Official versions released every month that may be very outdated, but are more reliable and tested.\nUnstable: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+			<translation>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory</translation>
+			<translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>

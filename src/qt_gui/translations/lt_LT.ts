@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Rodykite pelę ant pasirinkimo, kad čia būtų rodoma aprašymas</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Žymeklį nukreipkite ant pasirinkimo, kad pamatytumėte jo aprašymą.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Atnaujinti:\nStabilus: Oficialios versijos, išleidžiamos kiekvieną mėnesį, kurios gali būti labai pasenusios, tačiau yra patikimos ir išbandytos.\nNestabilus: Vystymo versijos, kuriose yra visos naujausios funkcijos ir taisymai, tačiau gali turėti klaidų ir būti mažiau stabilios.</translation>
+			<translation>Atnaujinti:\nRelease: Oficialios versijos, išleidžiamos kiekvieną mėnesį, kurios gali būti labai pasenusios, tačiau yra patikimos ir išbandytos.\nNightly: Vystymo versijos, kuriose yra visos naujausios funkcijos ir taisymai, tačiau gali turėti klaidų ir būti mažiau stabilios.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

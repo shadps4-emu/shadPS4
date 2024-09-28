@@ -70,7 +70,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
-    defaultTextEdit = tr("Point your mouse at an options to display a description in here");
+    defaultTextEdit = tr("Point your mouse at an option to display it's description.");
     ui->descriptionText->setText(defaultTextEdit);
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
