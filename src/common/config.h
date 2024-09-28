@@ -14,6 +14,8 @@ void save(const std::filesystem::path& path);
 bool isNeoMode();
 bool isFullscreenMode();
 bool getPlayBGM();
+int getBGMvolume();
+
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
@@ -49,6 +51,7 @@ void setScreenWidth(u32 width);
 void setScreenHeight(u32 height);
 void setFullscreenMode(bool enable);
 void setPlayBGM(bool enable);
+void setBGMvolume(int volume);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);

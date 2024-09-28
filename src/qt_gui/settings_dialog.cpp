@@ -142,6 +142,11 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices, QWidge
 
         connect(ui->playBGMCheckBox, &QCheckBox::stateChanged, this,
                 [](int val) { Config::setPlayBGM(val); });
+
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
+                [](float val) { Config::setBGMvolume(val); });
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
+                [](float val) { BackgroundMusicPlayer::getInstance().setVolume(val); });
     }
 
     // GPU TAB
@@ -231,6 +236,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->nullGpuCheckBox->setChecked(Config::nullGpu());
     ui->dumpPM4CheckBox->setChecked(Config::dumpPM4());
     ui->playBGMCheckBox->setChecked(Config::getPlayBGM());
+    ui->BGMVolumeSlider->setValue((Config::getBGMvolume()));
     ui->fullscreenCheckBox->setChecked(Config::isFullscreenMode());
     ui->showSplashCheckBox->setChecked(Config::showSplash());
     ui->ps4proCheckBox->setChecked(Config::isNeoMode());
