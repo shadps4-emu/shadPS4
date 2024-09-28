@@ -5,12 +5,12 @@
 #include <QKeyEvent>
 #include <QProgressDialog>
 
-#include <common/scm_rev.h>
 #include "about_dialog.h"
 #include "cheats_patches.h"
 #include "check_update.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/version.h"
 #include "core/file_format/pkg.h"
