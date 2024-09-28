@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Beweeg je muis over een optie om hier een beschrijving weer te geven</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Wijzig de muisaanwijzer naar een optie om de beschrijving weer te geven.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Updateren:\nStabiel: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nOnstabiel: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
+			<translation>Updateren:\nRelease: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nNightly: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

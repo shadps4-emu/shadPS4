@@ -975,13 +975,13 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Passe o mouse sobre uma opção para exibir a descrição aqui</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Passe o mouse sobre uma opção para exibir sua descrição.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
 			<source>consoleLanguageGroupBox</source>
-			<translation>Idioma do console:\nDefine o idioma usado pelo jogo PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
+			<translation>Idioma do console:\nDefine o idioma usado pelo jogo no PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="291"/>
@@ -1021,12 +1021,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Atualizações:\nStable: versões oficiais que são lançadas todo mês e podem ser bastante antigas, mas são mais confiáveis e testadas.\nUnstable: versões de desenvolvimento que têm todos os novos recursos e correções, mas podem ter bugs e ser instáveis.</translation>
+			<translation>Atualizações:\nRelease: Versões oficiais que são lançadas todo mês e podem ser bastante antigas, mas são mais confiáveis e testadas.\nNightly: Versões de desenvolvimento que têm todos os novos recursos e correções, mas podem ter bugs e ser instáveis.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
 			<source>GUIgroupBox</source>
-			<translation>Reproduzir música de título:\nSe o jogo suportar, ativa a reprodução de música especial ao selecionar o jogo na interface.</translation>
+			<translation>Reproduzir música de abertura:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface do menu.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="312"/>
@@ -1066,12 +1066,12 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Ativar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno. Isso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+			<translation>Ativar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e registra informações sobre seu estado interno.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Ativar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan. Isso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
+			<translation>Ativar Validação de Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsso diminui o desempenho e pode alterar o comportamento da emulação.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>

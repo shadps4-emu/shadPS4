@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>将鼠标指针放在选项上以在这里显示说明</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>将鼠标指针指向选项以显示其描述。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>更新:\n稳定版本: 官方版本，可能非常旧，并且每月发布，但更可靠且经过测试。\n不稳定版本: 开发版本，包含所有最新功能和修复，但可能包含错误且不够稳定。</translation>
+			<translation>更新:\nRelease: 官方版本，可能非常旧，并且每月发布，但更可靠且经过测试。\nNightly: 开发版本，包含所有最新功能和修复，但可能包含错误且不够稳定。</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Наведите курсор мыши на опцию, чтобы отобразить описание здесь</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Наведите указатель мыши на опцию, чтобы отобразить ее описание.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Обновление:\nСтабильная версия: Официальные версии, которые выпускаются каждый месяц и могут быть очень старыми, но они более надежные и проверенные.\nНестабильная версия: Версии разработки, которые содержат все последние функции и исправления, но могут содержать ошибки и менее стабильны.</translation>
+			<translation>Обновление:\nRelease: Официальные версии, которые выпускаются каждый месяц и могут быть очень старыми, но они более надежные и проверенные.\nNightly: Версии разработки, которые содержат все последние функции и исправления, но могут содержать ошибки и менее стабильны.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,7 +1061,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Включить отладочные дампы:\nСохраняет символы импорта, экспорта и информацию о заголовке файла текущей исполняемой программы PS4 в папку</translation>
+			<translation>Включить отладочные дампы:\nСохраняет символы импорта, экспорта и информацию о заголовке файла текущей исполняемой программы PS4 в папку.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>

@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Buraya açıklama göstermek için bir seçeneğin üzerine fareyi getirin</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Seçenek üzerinde farenizi tutarak açıklamasını görüntüleyin.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Güncelleme:\nStabil: Her ay yayınlanan resmi sürümler; çok eski olabilirler, ancak daha güvenilirdir ve test edilmiştir.\nKararsız: Tüm en son özellikler ve düzeltmeler ile birlikte geliştirme sürümleri; hatalar içerebilir ve daha az kararlıdırlar.</translation>
+			<translation>Güncelleme:\nRelease: Her ay yayınlanan resmi sürümler; çok eski olabilirler, ancak daha güvenilirdir ve test edilmiştir.\nNightly: Tüm en son özellikler ve düzeltmeler ile birlikte geliştirme sürümleri; hatalar içerebilir ve daha az kararlıdırlar.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>

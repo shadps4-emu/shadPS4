@@ -975,8 +975,8 @@
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="72"/>
-			<source>Point your mouse at an options to display a description in here</source>
-			<translation>Point your mouse at an options to display a description in here</translation>
+			<source>Point your mouse at an option to display it's description.</source>
+			<translation>Point your mouse at an option to display it's description.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="289"/>
@@ -1021,7 +1021,7 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="305"/>
 			<source>updaterGroupBox</source>
-			<translation>Update:\nStable: Official versions released every month that may be very outdated, but are more reliable and tested.\nUnstable: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+			<translation>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="306"/>
@@ -1061,17 +1061,17 @@
 		<message>
 			<location filename="../settings_dialog.cpp" line="329"/>
 			<source>debugDump</source>
-			<translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory</translation>
+			<translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="331"/>
 			<source>vkValidationCheckBox</source>
-			<translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about it's internal state. This will reduce performance and likely change the behavior of emulation.</translation>
+			<translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about it's internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="333"/>
 			<source>vkSyncValidationCheckBox</source>
-			<translation>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks. This will reduce performance and likely change the behavior of emulation.</translation>
+			<translation>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
 		</message>
 		<message>
 			<location filename="../settings_dialog.cpp" line="335"/>
