@@ -34,7 +34,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 # General information
 
-shadPS4 is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
+**shadPS4** is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
 
 If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).
 
@@ -44,7 +44,7 @@ To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Di
 
 To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).
 
-For those who'd like to donate to the project, we now have a [Kofi page!](https://ko-fi.com/shadps4)
+For those who'd like to donate to the project, we now have a [**Kofi page**](https://ko-fi.com/shadps4)!
 
 # Status
 
@@ -74,38 +74,9 @@ Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shad
 > [!IMPORTANT]
 > macOS users need at least macOS 15 on Apple Silicon-based Mac devices and at least macOS 11 on Intel-based Mac devices.
 
-## Building status
-
-<details>
-<summary><b>Windows</b></summary>
-
-| Windows | Build status |
-|--------|--------|
-|Windows SDL Build|[![Windows-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows.yml)
-|Windows Qt Build|[![Windows-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/windows-qt.yml)
-</details>
-
-<details>
-<summary><b>Linux</b></summary>
-
-| Linux | Build status |
-|--------|--------|
-|Linux SDL Build|[![Linux-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux.yml)
-|Linux Qt Build|[![Linux-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/linux-qt.yml)
-</details>
-
-<details>
-<summary><b>macOS</b></summary>
-
-| macOS | Build status |
-|--------|--------|
-|macOS SDL Build|[![macOS-sdl](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos.yml)
-|macOS Qt Build|[![macOS-qt](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml/badge.svg)](https://github.com/shadps4-emu/shadPS4/actions/workflows/macos-qt.yml)
-</details>
-
 # Debugging and reporting issues
 
-For more information on how to test, debug and report issues with the emulator or games, read the [Debugging documentation](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
+For more information on how to test, debug and report issues with the emulator or games, read the [**Debugging documentation**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Debugging/Debugging.md).
 
 # Keyboard mapping
 
