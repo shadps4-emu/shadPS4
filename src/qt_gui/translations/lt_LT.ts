@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Groti antraštės muziką</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Garsumas</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>

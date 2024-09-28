@@ -32,6 +32,7 @@ namespace Config {
 static bool isNeo = false;
 static bool isFullscreen = false;
 static bool playBGM = false;
+static int BGMvolume = 50;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
@@ -87,6 +88,10 @@ bool isFullscreenMode() {
 
 bool getPlayBGM() {
     return playBGM;
+}
+
+int getBGMvolume() {
+    return BGMvolume;
 }
 
 u32 getScreenWidth() {
@@ -247,6 +252,10 @@ void setFullscreenMode(bool enable) {
 
 void setPlayBGM(bool enable) {
     playBGM = enable;
+}
+
+void setBGMvolume(int volume) {
+    BGMvolume = volume;
 }
 
 void setLanguage(u32 language) {
@@ -412,6 +421,7 @@ void load(const std::filesystem::path& path) {
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
+        BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
@@ -513,6 +523,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["Fullscreen"] = isFullscreen;
     data["General"]["playBGM"] = playBGM;
+    data["General"]["BGMvolume"] = BGMvolume;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
@@ -565,6 +576,7 @@ void setDefaultValues() {
     isNeo = false;
     isFullscreen = false;
     playBGM = false;
+    BGMvolume = 50;
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";

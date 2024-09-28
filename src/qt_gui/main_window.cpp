@@ -527,7 +527,11 @@ void MainWindow::PlayBackgroundMusic() {
     int itemID = isTableList ? m_game_list_frame->currentItem()->row()
                              : m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt +
                                    m_game_grid_frame->crtColumn;
-
+    if (itemID > m_game_info->m_games.size() - 1) {
+        // Can happen in grid mode
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
     QString snd0path;
     Common::FS::PathToQString(snd0path, m_game_info->m_games[itemID].snd0_path);
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
@@ -619,6 +623,7 @@ void MainWindow::ConfigureGuiFromSettings() {
     } else {
         ui->setlistModeGridAct->setChecked(true);
     }
+    BackgroundMusicPlayer::getInstance().setVolume(Config::getBGMvolume());
 }
 
 void MainWindow::SaveWindowState() const {

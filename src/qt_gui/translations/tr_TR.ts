@@ -534,6 +534,11 @@
 			<source>Play title music</source>
 			<translation>Başlık müziğini çal</translation>
 		</message>
+		<message>
+			<location filename="../settings_dialog.ui" line="394"/>
+			<source>Volume</source>
+			<translation>Ses seviyesi</translation>
+		</message>
 	</context>
 	<context>
 		<name>MainWindow</name>
