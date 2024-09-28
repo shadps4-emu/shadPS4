@@ -38,9 +38,7 @@ constexpr u32 NUM_TEXTURE_TYPES = 7;
 struct Info;
 
 struct BufferResource {
-    u32 flat_idx;
-    u32 sgpr_base;
-    u32 dword_offset;
+    u32 sharp_idx;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
     bool is_gds_buffer{};
@@ -56,8 +54,7 @@ struct BufferResource {
 using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
 
 struct TextureBufferResource {
-    u32 flat_idx;
-    u32 sgpr_base;
+    u32 sharp_idx;
     AmdGpu::NumberFormat nfmt;
     bool is_written{};
 
@@ -66,8 +63,7 @@ struct TextureBufferResource {
 using TextureBufferResourceList = boost::container::small_vector<TextureBufferResource, 16>;
 
 struct ImageResource {
-    u32 flat_idx;
-    u32 sgpr_base;
+    u32 sharp_idx;
     AmdGpu::ImageType type;
     AmdGpu::NumberFormat nfmt;
     bool is_storage{};
@@ -80,8 +76,7 @@ struct ImageResource {
 using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
 
 struct SamplerResource {
-    u32 flat_idx;
-    u32 sgpr_base;
+    u32 sharp_idx;
     AmdGpu::Sampler inline_sampler{};
     u32 associated_image : 4;
     u32 disable_aniso : 1;
@@ -260,26 +255,32 @@ struct Info {
         return {vertex_offset, instance_offset};
     }
 
-    void RunSrtWalker(std::span<u32> flat_sharp_buf) {
-        std::fill(flat_sharp_buf.begin(), flat_sharp_buf.end(), 0);
+    void RunSrtWalker(FlatSharpBuffer& flat_sharp_buf) {
+        flat_sharp_buf.resize(srt_info.flattened_sharp_bufsize_dw);
+        ASSERT(user_data.size() <= NumUserDataRegs);
+        // For now, keep write the user_data registers to the beginning of the flat sharp buffer.
+        // This means much simpler code for sharp tracking
+        std::memcpy(flat_sharp_buf.data(), user_data.data(), user_data.size_bytes());
+        // Don't clear the program - TODO fix fetch shader w/ step rates
+        // Run the JIT program to walk the SRT and write the leaves to a flat buffer
         srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), flat_sharp_buf.data());
     }
 };
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(flat_idx);
+    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
 constexpr AmdGpu::Buffer TextureBufferResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Buffer>(flat_idx);
+    return info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Image>(flat_idx);
+    return info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
 }
 
 constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
-    return inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(flat_idx);
+    return inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
 }
 
 } // namespace Shader

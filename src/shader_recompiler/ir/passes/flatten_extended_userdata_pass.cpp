@@ -21,7 +21,7 @@ namespace Shader::Optimization {
 class AssignOffsetsVisitor {
 public:
     AssignOffsetsVisitor(SrtInfo& srt_info_)
-        : srt_info(srt_info_), current_sharp_off_dw(0), current_cbuf_off_dw(0) {}
+        : srt_info(srt_info_), current_sharp_off_dw(NumUserDataRegs), current_cbuf_off_dw(0) {}
 
     void VisitRoots() {
         for (const IR::Inst* root : srt_info.srt_roots) {

@@ -68,9 +68,9 @@ struct SrtInfo {
         return ref.first->second.get();
     }
 
-    SrtNode* getNode(const IR::Inst* inst) {
+    SrtNode* getNode(const IR::Inst* inst) const {
         ASSERT(srt_nodes.contains(inst));
-        return srt_nodes[inst].get();
+        return srt_nodes.find(inst)->second.get();
     }
 };
 

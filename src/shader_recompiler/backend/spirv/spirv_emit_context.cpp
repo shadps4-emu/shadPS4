@@ -472,7 +472,7 @@ void EmitContext::DefineBuffers() {
         if (is_storage && !desc.is_written) {
             Decorate(id, spv::Decoration::NonWritable);
         }
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sgpr_base));
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sharp_idx));
 
         buffers.push_back({
             .id = id,
@@ -496,7 +496,7 @@ void EmitContext::DefineTextureBuffers() {
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sgpr_base));
+        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sharp_idx));
         texture_buffers.push_back({
             .id = id,
             .binding = binding.buffer++,
@@ -583,7 +583,7 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 }
 
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
-    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.flat_idx);
+    const auto image = ctx.info.ReadUdSharp<AmdGpu::Image>(desc.sharp_idx);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const u32 sampled = desc.is_storage ? 2 : 1;
     switch (desc.type) {
@@ -619,7 +619,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sgpr_base));
+        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -643,7 +643,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sgpr_base));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sharp_idx));
         samplers.push_back(id);
         interfaces.push_back(id);
     }
