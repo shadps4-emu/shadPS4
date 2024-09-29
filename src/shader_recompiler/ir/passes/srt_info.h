@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <boost/container/small_vector.hpp>
 
 #include <memory>
@@ -37,7 +38,7 @@ typedef void (*PFN_SrtWalker)(const u32* /*user_data*/, u32* /*flat_dst*/);
 
 struct SrtNode {
     const IR::Inst* inst; // Readconst inst
-    u32 flattened_sharp_off_dw;
+    u32 flattened_sharp_off_dw{-1U};
     u32 flattened_cbuf_off_dw;
     // How the readconst is used
     union {
@@ -60,13 +61,13 @@ struct SrtNode {
 // -> children map (as a key)
 struct SrtInfo {
     // keys are the offset operand to the ReadConst
-    using UserList = boost::container::flat_map<u32, const IR::Inst*>;
+    using UserList = boost::container::small_flat_map<u32, const IR::Inst*, 4>;
 
     std::unordered_map<const IR::Inst*, std::unique_ptr<SrtNode>> srt_nodes;
     // keys are GetUserData or ReadConst instructions that are used as pointers
     std::unordered_map<const IR::Inst*, UserList> pointer_uses;
     // GetUserData instructions corresponding to sgpr_base of SRT roots
-    boost::container::small_vector<const IR::Inst*, 4> srt_roots;
+    boost::container::small_flat_map<IR::ScalarReg, const IR::Inst*, 4> srt_roots;
 
     // Special case when fetch shader uses step rates.
     // Need to reserve space for those V#s, and find them in SrtWalker function

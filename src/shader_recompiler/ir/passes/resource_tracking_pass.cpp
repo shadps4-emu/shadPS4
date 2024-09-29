@@ -285,7 +285,6 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
     const auto result = IR::BreadthFirstSearch(inst, pred);
     ASSERT_MSG(result, "Unable to track sharp source");
     inst = result.value();
-    // If its from user data not much else to do.
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<u32>(inst->Arg(0).ScalarReg());
     } else {

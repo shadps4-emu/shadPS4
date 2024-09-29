@@ -257,7 +257,9 @@ struct Info {
         // not necessary
         std::fill(sharp_buf.buf.begin() + user_data.size(), sharp_buf.buf.end(), 0);
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
-        srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), sharp_buf.buf.data());
+        // srt_codegen.getCode<PFN_SrtWalker>()(user_data.data(), sharp_buf.buf.data());
+        PFN_SrtWalker fn = srt_codegen.getCode<PFN_SrtWalker>();
+        fn(user_data.data(), sharp_buf.buf.data());
     }
 };
 

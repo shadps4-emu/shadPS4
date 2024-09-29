@@ -34,7 +34,7 @@ public:
     }
 
     void VisitRoots() {
-        for (const IR::Inst* root : srt_info.srt_roots) {
+        for (const auto& [_, root] : srt_info.srt_roots) {
             Visit(root);
         }
 
@@ -53,7 +53,7 @@ private:
         if (node->use_kind.pointer_lo) {
             ASSERT(srt_info.pointer_uses.contains(inst));
             auto& use_list = srt_info.pointer_uses[inst];
-            for (const auto& [off, use] : use_list) {
+            for (const auto& [_, use] : use_list) {
                 Visit(use);
             }
         } else if (node->use_kind.pointer_hi) {
@@ -106,9 +106,8 @@ public:
             c.mov(ptr[rsi + (dst_off + 12)], r11);
         }
 
-        for (const IR::Inst* root : srt_info.srt_roots) {
-            IR::ScalarReg ud_reg = root->Arg(0).ScalarReg();
-            Visit(root, static_cast<u32>(ud_reg));
+        for (const auto& [sgpr_base, root] : srt_info.srt_roots) {
+            Visit(root, static_cast<u32>(sgpr_base));
         }
         c.ret();
     }
@@ -187,7 +186,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 }
 
                 // TODO figure out C++ way to do this without UserList constructor
-                auto it = srt_info.pointer_uses.insert_or_assign(ptr, SrtInfo::UserList{});
+                auto it = srt_info.pointer_uses.try_emplace(ptr, SrtInfo::UserList{});
                 SrtInfo::UserList& user_list = it.first->second;
 
                 ASSERT(dword_off.IsImmediate());
@@ -195,7 +194,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 user_list[off_imm] = &inst;
 
                 if (ptr->GetOpcode() == IR::Opcode::GetUserData) {
-                    srt_info.srt_roots.push_back(&inst);
+                    IR::ScalarReg ud_reg = ptr->Arg(0).ScalarReg();
+                    srt_info.srt_roots[ud_reg] = ptr;
                 }
             }
         }
