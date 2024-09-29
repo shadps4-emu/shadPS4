@@ -27,6 +27,18 @@ FlatSharpBuffer::FlatSharpBuffer(const Info& info) {
 
 namespace Shader::Optimization {
 
+namespace {
+static u32 GetReadConstOff(const IR::Inst* inst) {
+    ASSERT(inst->GetOpcode() == IR::Opcode::ReadConst);
+    return inst->Arg(1).U32();
+}
+
+static IR::ScalarReg GetUserDataSgprBase(const IR::Inst* inst) {
+    ASSERT(inst->GetOpcode() == IR::Opcode::GetUserData);
+    return inst->Arg(0).ScalarReg();
+}
+}; // namespace
+
 class AssignOffsetsVisitor {
 public:
     AssignOffsetsVisitor(SrtInfo& srt_info_) : srt_info(srt_info_), current_cbuf_off_dw(0) {
@@ -53,7 +65,7 @@ private:
         if (node->use_kind.pointer_lo) {
             ASSERT(srt_info.pointer_uses.contains(inst));
             auto& use_list = srt_info.pointer_uses[inst];
-            for (const auto& [_, use] : use_list) {
+            for (const IR::Inst* use : use_list) {
                 Visit(use);
             }
         } else if (node->use_kind.pointer_hi) {
@@ -131,8 +143,8 @@ private:
             auto& use_list = srt_info.pointer_uses[inst];
 
             PushPtr(off_dw);
-            for (const auto& [off_dw, use] : use_list) {
-                Visit(use, off_dw);
+            for (const IR::Inst* use : use_list) {
+                Visit(use, GetReadConstOff(use));
             }
             PopPtr();
         } else if (node->use_kind.pointer_hi) {
@@ -159,7 +171,6 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         for (const IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() == IR::Opcode::ReadConst) {
                 const IR::Inst* spgpr_base = inst.Arg(0).InstRecursive();
-                const IR::Value dword_off = inst.Arg(1);
 
                 const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
                     if (inst->GetOpcode() == IR::Opcode::GetUserData ||
@@ -186,20 +197,43 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 }
 
                 // TODO figure out C++ way to do this without UserList constructor
-                auto it = srt_info.pointer_uses.try_emplace(ptr, SrtInfo::UserList{});
-                SrtInfo::UserList& user_list = it.first->second;
+                auto it = srt_info.pointer_uses.try_emplace(ptr, SrtInfo::PtrUserList{});
+                SrtInfo::PtrUserList& user_list = it.first->second;
 
-                ASSERT(dword_off.IsImmediate());
-                u32 off_imm = dword_off.U32();
-                user_list[off_imm] = &inst;
+                user_list.push_back(&inst);
 
                 if (ptr->GetOpcode() == IR::Opcode::GetUserData) {
-                    IR::ScalarReg ud_reg = ptr->Arg(0).ScalarReg();
+                    IR::ScalarReg ud_reg = GetUserDataSgprBase(ptr);
                     srt_info.srt_roots[ud_reg] = ptr;
                 }
             }
         }
     }
+
+    // Dont sort by offsets yet
+    // this causes duplicated loads for sharps to become interleaved
+    // example, for:
+    // s_load_dwordx4  s[16:19], s[12:13], 0x24
+    // ...
+    // s_load_dwordx4  s[32:35], s[12:13], 0x24
+
+    // the flat buffer will look like this:
+    // V#.x, V#.x, V#.y, V#.y, V#.z, V#.z, V#.w, V#.w
+
+    // TODO: do GVN on readconsts to solve this problem. GetUserData should already be unique
+
+    // For now, rely on the fact that we push_back sharp components in instruction order (loop
+    // over basic blocks, over insts), so they should be written contiguously to the flat buffer
+    // (there will be duplicates though) like: V#.x, V#.y, V#.z, V#.w, V#.x, V#.y, V#.z, V#.w
+
+    /*
+    for (auto& [_, user_list] : srt_info.pointer_uses) {
+        std::sort(user_list.begin(), user_list.end(),
+                  [](const IR::Inst*& a, const IR::Inst*& b) -> bool {
+                      return GetReadConstOff(a) < GetReadConstOff(b);
+                  });
+    }
+    */
 
     AssignOffsetsVisitor assign_off_vis(srt_info);
     assign_off_vis.VisitRoots();
