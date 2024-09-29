@@ -19,12 +19,12 @@ TrophyUI::~TrophyUI() {
     Finish();
 }
 
-void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(std::string trophyIconPath,
+void Libraries::NpTrophy::TrophyUI::AddTrophyToQueue(std::filesystem::path trophyIconPath,
                                                      std::string trophyName) {
     TrophyInfo newInfo;
-    newInfo.trophyIconPath = trophyIconPath;
-    newInfo.trophyName = trophyName;
-    trophyQueue.push_back(newInfo);
+    newInfo.trophy_icon_path = trophyIconPath;
+    newInfo.trophy_name = trophyName;
+    trophy_queue.push_back(newInfo);
 }
 
 void TrophyUI::Finish() {
@@ -44,7 +44,7 @@ void TrophyUI::Draw() {
         std::min(io.DisplaySize.y, 70.f),
     };
 
-    if (trophyQueue.size() != 0) {
+    if (trophy_queue.size() != 0) {
         if (!displayingTrophy) {
             displayingTrophy = true;
             trophyStartedTime = std::chrono::steady_clock::now();
@@ -55,26 +55,27 @@ void TrophyUI::Draw() {
             std::chrono::duration_cast<std::chrono::seconds>(timeNow - trophyStartedTime);
 
         if (duration.count() >= 5) {
-            trophyQueue.erase(trophyQueue.begin());
+            trophy_queue.erase(trophy_queue.begin());
             displayingTrophy = false;
             iconLoaded = false;
         }
 
-        if (trophyQueue.size() != 0) {
+        if (trophy_queue.size() != 0) {
             SetNextWindowSize(window_size);
             SetNextWindowCollapsed(false);
             SetNextWindowPos(ImVec2(io.DisplaySize.x - 250, 50));
             KeepNavHighlight();
 
-            TrophyInfo currentTrophyInfo = trophyQueue[0];
+            TrophyInfo currentTrophyInfo = trophy_queue[0];
 
             if (!iconLoaded) {
-                if (std::filesystem::exists(currentTrophyInfo.trophyIconPath)) {
-                    trophyIcon = RefCountedTexture::DecodePngFile(currentTrophyInfo.trophyIconPath);
+                if (std::filesystem::exists(currentTrophyInfo.trophy_icon_path)) {
+                    trophyIcon =
+                        RefCountedTexture::DecodePngFile(currentTrophyInfo.trophy_icon_path);
                     iconLoaded = true;
                 } else {
                     LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
-                              currentTrophyInfo.trophyIconPath);
+                              currentTrophyInfo.trophy_icon_path.string());
                 }
             }
 
@@ -85,7 +86,7 @@ void TrophyUI::Draw() {
                     Image(trophyIcon.GetTexture().im_id, ImVec2(50, 50));
                     ImGui::SameLine();
                 }
-                TextWrapped("Trophy earned!\n%s", currentTrophyInfo.trophyName.c_str());
+                TextWrapped("Trophy earned!\n%s", currentTrophyInfo.trophy_name.c_str());
             }
             End();
         }
