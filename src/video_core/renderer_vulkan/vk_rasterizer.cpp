@@ -342,14 +342,6 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
     }
 }
 
-static s16 CombinedScissorValueTL(s16 scr, s16 win, s16 gen, s16 win_offset) {
-    return std::max({scr, s16(win + win_offset), s16(gen + win_offset)});
-}
-
-static s16 CombinedScissorValueBR(s16 scr, s16 win, s16 gen, s16 win_offset) {
-    return std::min({scr, s16(win + win_offset), s16(gen + win_offset)});
-}
-
 void Rasterizer::UpdateViewportScissorState() {
     auto& regs = liverpool->regs;
 
@@ -378,38 +370,46 @@ void Rasterizer::UpdateViewportScissorState() {
     }
 
     const bool enable_offset = !regs.window_scissor.window_offset_disable.Value();
-    Liverpool::Scissor scsr;
-    scsr.top_left_x = CombinedScissorValueTL(
+    Liverpool::Scissor scsr{};
+    const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+        return std::max({scr, s16(win + win_offset), s16(gen + win_offset)});
+    };
+
+    scsr.top_left_x = combined_scissor_value_tl(
         regs.screen_scissor.top_left_x, s16(regs.window_scissor.top_left_x.Value()),
         s16(regs.generic_scissor.top_left_x.Value()),
         enable_offset ? regs.window_offset.window_x_offset : 0);
 
-    scsr.top_left_y = CombinedScissorValueTL(
+    scsr.top_left_y = combined_scissor_value_tl(
         regs.screen_scissor.top_left_y, s16(regs.window_scissor.top_left_y.Value()),
         s16(regs.generic_scissor.top_left_y.Value()),
         enable_offset ? regs.window_offset.window_y_offset : 0);
 
-    scsr.bottom_right_x = CombinedScissorValueBR(
+    const auto combined_scissor_value_br = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+        return std::min({scr, s16(win + win_offset), s16(gen + win_offset)});
+    };
+
+    scsr.bottom_right_x = combined_scissor_value_br(
         regs.screen_scissor.bottom_right_x, regs.window_scissor.bottom_right_x,
         regs.generic_scissor.bottom_right_x,
         enable_offset ? regs.window_offset.window_x_offset : 0);
 
-    scsr.bottom_right_y = CombinedScissorValueBR(
+    scsr.bottom_right_y = combined_scissor_value_br(
         regs.screen_scissor.bottom_right_y, regs.window_scissor.bottom_right_y,
         regs.generic_scissor.bottom_right_y,
         enable_offset ? regs.window_offset.window_y_offset : 0);
 
-    for (u32 i = 0; i < Liverpool::NumViewports; i++) {
+    for (u32 idx = 0; idx < Liverpool::NumViewports; idx++) {
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
             vp_scsr.top_left_x =
-                std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[i].top_left_x.Value()));
+                std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[idx].top_left_x.Value()));
             vp_scsr.top_left_y =
-                std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[i].top_left_y.Value()));
+                std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[idx].top_left_y.Value()));
             vp_scsr.bottom_right_x =
-                std::min(vp_scsr.bottom_right_x, regs.viewport_scissors[i].bottom_right_x);
+                std::min(vp_scsr.bottom_right_x, regs.viewport_scissors[idx].bottom_right_x);
             vp_scsr.bottom_right_y =
-                std::min(vp_scsr.bottom_right_y, regs.viewport_scissors[i].bottom_right_y);
+                std::min(vp_scsr.bottom_right_y, regs.viewport_scissors[idx].bottom_right_y);
         }
         scissors.push_back({
             .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
