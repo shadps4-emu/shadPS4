@@ -347,4 +347,102 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, cons
     memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
     return ORBIS_OK;
 }
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_t len,
+                                           size_t alignment, u64* physAddrOut) {
+    if (searchStart < 0 || searchEnd <= searchStart) {
+        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (len <= 0 || !Common::Is64KBAligned(len) || !is_in_range) {
+        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (alignment != 0 && !Common::Is64KBAligned(alignment)) {
+        LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (physAddrOut == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "Result physical address pointer is null!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* memory = Core::Memory::Instance();
+    PAddr phys_addr = memory->PoolExpand(searchStart, searchEnd, len, alignment);
+    *physAddrOut = static_cast<s64>(phys_addr);
+
+    LOG_INFO(Kernel_Vmm,
+             "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, alignment = {:#x}, physAddrOut "
+             "= {:#x}",
+             searchStart, searchEnd, len, alignment, phys_addr);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t alignment, int flags,
+                                            void** addrOut) {
+    LOG_INFO(Kernel_Vmm, "addrIn = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
+             fmt::ptr(addrIn), len, alignment, flags);
+
+    if (addrIn == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (len == 0 || !Common::Is2MBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (alignment != 0) {
+        if ((!std::has_single_bit(alignment) && !Common::Is2MBAligned(alignment))) {
+            LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+            return SCE_KERNEL_ERROR_EINVAL;
+        }
+    }
+
+    auto* memory = Core::Memory::Instance();
+    const VAddr in_addr = reinterpret_cast<VAddr>(addrIn);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    memory->PoolReserve(addrOut, in_addr, len, map_flags, alignment);
+
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
+    if (addr == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (len == 0 || !Common::Is64KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 64KB aligned!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
+             fmt::ptr(addr), len, type, prot, flags);
+
+    const VAddr in_addr = reinterpret_cast<VAddr>(addr);
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    auto* memory = Core::Memory::Instance();
+    return memory->PoolCommit(in_addr, len, mem_prot);
+}
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
+    if (addr == nullptr) {
+        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+    if (len == 0 || !Common::Is64KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 64KB aligned!");
+        return SCE_KERNEL_ERROR_EINVAL;
+    }
+
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}", fmt::ptr(addr), len, flags);
+
+    const VAddr pool_addr = reinterpret_cast<VAddr>(addr);
+    auto* memory = Core::Memory::Instance();
+    memory->PoolDecommit(pool_addr, len);
+
+    return ORBIS_OK;
+}
+
 } // namespace Libraries::Kernel
