@@ -5,6 +5,10 @@
 
 #include "core/libraries/kernel/event_queue.h"
 
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
 namespace Libraries::Kernel {
 
 using SceKernelUseconds = u32;
@@ -22,5 +26,7 @@ int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id);
 int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id);
 s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* ts, void* udata);
 s16 PS4_SYSV_ABI sceKernelGetEventFilter(const SceKernelEvent* ev);
+
+void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

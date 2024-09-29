@@ -12,7 +12,7 @@
 #include "common/slot_vector.h"
 #include "core/address_space.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/cpu_management.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/platform.h"
