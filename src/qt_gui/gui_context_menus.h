@@ -312,10 +312,7 @@ public:
 
         if (selected == &installPackage) {
             QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
-            std::filesystem::path path(pkg_app_[9].toStdString());
-#ifdef _WIN32
-            path = std::filesystem::path(pkg_app_[9].toStdWString());
-#endif
+            std::filesystem::path path = Common::FS::PathFromQString(pkg_app_[9]);
             InstallDragDropPkg(path, 1, 1);
         }
     }

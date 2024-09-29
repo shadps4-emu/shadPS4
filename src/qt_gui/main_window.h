@@ -110,10 +110,7 @@ protected:
             int nPkg = urlList.size();
             for (const QUrl& url : urlList) {
                 pkgNum++;
-                std::filesystem::path path(url.toLocalFile().toStdString());
-#ifdef _WIN64
-                path = std::filesystem::path(url.toLocalFile().toStdWString());
-#endif
+                std::filesystem::path path = Common::FS::PathFromQString(url.toLocalFile());
                 InstallDragDropPkg(path, pkgNum, nPkg);
             }
         }
