@@ -566,17 +566,22 @@ struct Liverpool {
             s16 top_left_x;
             s16 top_left_y;
         };
-        union {
-            BitField<0, 15, u32> bottom_right_x;
-            BitField<16, 15, u32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
+        // From AMD spec: 'Negative numbers clamped to 0'
+        static s16 Clamp(s16 value) {
+            return std::max(s16(0), value);
+        }
+
         u32 GetWidth() const {
-            return static_cast<u32>(bottom_right_x - top_left_x);
+            return static_cast<u32>(Clamp(bottom_right_x) - Clamp(top_left_x));
         }
 
         u32 GetHeight() const {
-            return static_cast<u32>(bottom_right_y - top_left_y);
+            return static_cast<u32>(Clamp(bottom_right_y) - Clamp(top_left_y));
         }
     };
 
@@ -588,12 +593,12 @@ struct Liverpool {
     struct ViewportScissor {
         union {
             BitField<0, 15, s32> top_left_x;
-            BitField<15, 15, s32> top_left_y;
-            BitField<30, 1, s32> window_offset_disable;
+            BitField<16, 15, s32> top_left_y;
+            BitField<31, 1, s32> window_offset_disable;
         };
-        union {
-            BitField<0, 15, s32> bottom_right_x;
-            BitField<15, 15, s32> bottom_right_y;
+        struct {
+            s16 bottom_right_x;
+            s16 bottom_right_y;
         };
 
         u32 GetWidth() const {
