@@ -23,7 +23,7 @@ namespace Frontend {
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controller{controller_} {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
