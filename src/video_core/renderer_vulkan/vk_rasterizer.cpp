@@ -368,11 +368,23 @@ void Rasterizer::UpdateViewportScissorState() {
             .maxDepth = vp.zscale + vp.zoffset,
         });
     }
-    const auto& sc = regs.screen_scissor;
-    scissors.push_back({
-        .offset = {sc.top_left_x, sc.top_left_y},
-        .extent = {sc.GetWidth(), sc.GetHeight()},
-    });
+
+    if (!regs.mode_control.vport_scissor_enable) {
+        const auto& sc = regs.screen_scissor;
+        scissors.push_back({
+            .offset = {sc.top_left_x, sc.top_left_y},
+            .extent = {sc.GetWidth(), sc.GetHeight()},
+        });
+    } else {
+        for (u32 i = 0; i < Liverpool::NumViewports; i++) {
+            const auto& scsrs = regs.viewport_scissors[i];
+            scissors.push_back({
+                .offset = {scsrs.top_left_x, scsrs.top_left_y},
+                .extent = {scsrs.GetWidth(), scsrs.GetHeight()},
+            });
+        }
+    }
+
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.setViewport(0, viewports);
     cmdbuf.setScissor(0, scissors);
