@@ -1570,7 +1570,7 @@ int PS4_SYSV_ABI scePthreadRename(ScePthread thread, const char* name) {
     return SCE_OK;
 }
 
-void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+void RegisterThreads(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_init);
     LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_cond_signal);

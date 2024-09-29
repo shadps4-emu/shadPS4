@@ -9,4 +9,6 @@ namespace Libraries::Kernel {
 
 int PS4_SYSV_ABI sceKernelIsNeoMode();
 
+int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+
 } // namespace Libraries::Kernel

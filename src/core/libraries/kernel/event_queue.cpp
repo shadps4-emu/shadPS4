@@ -97,9 +97,7 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
             if (event.event.flags & SceKernelEvent::Flags::Clear) {
                 event.Reset();
             }
-
             ev[count++] = event.event;
-
             if (count == num) {
                 break;
             }
@@ -129,9 +127,8 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
 
     do {
         curr_clock = std::chrono::steady_clock::now();
-
         {
-            std::unique_lock lock{m_mutex};
+            std::scoped_lock lock{m_mutex};
             if ((curr_clock - small_timer_event.time_added) >
                 std::chrono::microseconds{small_timer_event.event.data}) {
                 ev[count++] = small_timer_event.event;
@@ -139,9 +136,7 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
                 break;
             }
         }
-
         std::this_thread::yield();
-
     } while (curr_clock < wait_end_us);
 
     return count;

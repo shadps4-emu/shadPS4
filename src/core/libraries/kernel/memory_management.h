@@ -10,6 +10,10 @@ constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE = 5056_MB; // ~ 5GB
 // TODO: Confirm this value on hardware.
 constexpr u64 SCE_KERNEL_MAIN_DMEM_SIZE_PRO = 5568_MB; // ~ 5.5GB
 
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
 namespace Libraries::Kernel {
 
 enum MemoryTypes : u32 {
@@ -122,5 +126,9 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
                                             void** addrOut);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags);
+
+int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
+
+void RegisterMemory(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

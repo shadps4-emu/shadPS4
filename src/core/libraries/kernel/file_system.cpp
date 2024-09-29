@@ -618,7 +618,7 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return ORBIS_OK;
 }
 
-void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
+void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     std::srand(std::time(nullptr));
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
