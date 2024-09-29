@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
-#include <vector>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
-#include "common/singleton.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/opcodes.h"

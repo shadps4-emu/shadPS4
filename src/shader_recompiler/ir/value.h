@@ -82,6 +82,8 @@ private:
         f64 imm_f64;
         const char* string_literal;
     };
+
+    friend class std::hash<Value>;
 };
 static_assert(static_cast<u32>(IR::Type::Void) == 0, "memset relies on IR::Type being zero");
 static_assert(std::is_trivially_copyable_v<Value>);
