@@ -108,13 +108,11 @@ void Layers::VideoInfo::Draw() {
 
     if (show) {
         if (show_advanced) {
-            if (Begin("Video Debug Info", nullptr,
-                      ImGuiWindowFlags_NoDecoration)) {
+            if (Begin("Video Debug Info", nullptr, ImGuiWindowFlags_NoDecoration)) {
                 DrawAdvanced();
             }
         } else {
-            if (Begin("Video Info", nullptr,
-                      ImGuiWindowFlags_NoDecoration)) {
+            if (Begin("Video Info", nullptr, ImGuiWindowFlags_NoDecoration)) {
                 DrawSimple();
             }
         }
