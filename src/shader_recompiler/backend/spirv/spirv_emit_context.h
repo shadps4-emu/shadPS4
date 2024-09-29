@@ -236,6 +236,7 @@ public:
         Id pointer_type;
         Id component_type;
         u32 num_components;
+        bool is_integer{};
         bool is_default{};
         s32 buffer_handle{-1};
     };

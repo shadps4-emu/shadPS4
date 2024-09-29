@@ -187,17 +187,21 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp) {
                 // Attribute is disabled or varying component is not written
                 return ctx.ConstF32(comp == 3 ? 1.0f : 0.0f);
             }
-            if (param.is_default) {
-                return ctx.OpCompositeExtract(param.component_type, param.id, comp);
-            }
 
-            if (param.num_components > 1) {
+            Id result;
+            if (param.is_default) {
+                result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
+            } else if (param.num_components > 1) {
                 const Id pointer{
                     ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
-                return ctx.OpLoad(param.component_type, pointer);
+                result = ctx.OpLoad(param.component_type, pointer);
             } else {
-                return ctx.OpLoad(param.component_type, param.id);
+                result = ctx.OpLoad(param.component_type, param.id);
             }
+            if (param.is_integer) {
+                result = ctx.OpBitcast(ctx.F32[1], result);
+            }
+            return result;
         } else {
             const auto step_rate = EmitReadStepRate(ctx, param.id.value);
             const auto offset = ctx.OpIAdd(

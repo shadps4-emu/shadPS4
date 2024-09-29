@@ -162,11 +162,11 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     case AmdGpu::NumberFormat::Sscaled:
     case AmdGpu::NumberFormat::Uscaled:
     case AmdGpu::NumberFormat::Srgb:
-        return {id, output ? output_f32 : input_f32, F32[1], 4};
+        return {id, output ? output_f32 : input_f32, F32[1], 4, false};
     case AmdGpu::NumberFormat::Uint:
-        return {id, output ? output_u32 : input_u32, U32[1], 4};
+        return {id, output ? output_u32 : input_u32, U32[1], 4, true};
     case AmdGpu::NumberFormat::Sint:
-        return {id, output ? output_s32 : input_s32, S32[1], 4};
+        return {id, output ? output_s32 : input_s32, S32[1], 4, true};
     default:
         break;
     }
@@ -237,9 +237,13 @@ void EmitContext::DefineInputs() {
                                                                                              : 1;
                 // Note that we pass index rather than Id
                 input_params[input.binding] = {
-                    rate_idx, input_u32,
-                    U32[1],   input.num_components,
-                    false,    input.instance_data_buf,
+                    rate_idx,
+                    input_u32,
+                    U32[1],
+                    input.num_components,
+                    true,
+                    false,
+                    input.instance_data_buf,
                 };
             } else {
                 Id id{DefineInput(type, input.binding)};
