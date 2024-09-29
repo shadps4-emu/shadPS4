@@ -414,6 +414,7 @@ ScePthreadMutex* createMutex(ScePthreadMutex* addr) {
     if (addr == nullptr || *addr != nullptr) {
         return addr;
     }
+
     const VAddr vaddr = reinterpret_cast<VAddr>(addr);
     std::string name = fmt::format("mutex{:#x}", vaddr);
     scePthreadMutexInit(addr, nullptr, name.c_str());
@@ -515,8 +516,11 @@ int PS4_SYSV_ABI scePthreadMutexattrSettype(ScePthreadMutexattr* attr, int type)
         ptype = PTHREAD_MUTEX_RECURSIVE;
         break;
     case ORBIS_PTHREAD_MUTEX_NORMAL:
-    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
         ptype = PTHREAD_MUTEX_NORMAL;
+        break;
+    case ORBIS_PTHREAD_MUTEX_ADAPTIVE:
+        LOG_ERROR(Kernel_Pthread, "Unimplemented adaptive mutex");
+        ptype = PTHREAD_MUTEX_ERRORCHECK;
         break;
     default:
         return SCE_KERNEL_ERROR_EINVAL;
@@ -1619,6 +1623,10 @@ void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexUnlock);
     LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTrylock);
     LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexTimedlock);
+
+    // scePthreadMutexInitForInternalLibc, scePthreadMutexattrInitForInternalLibc
+    LIB_FUNCTION("qH1gXoq71RY", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexInit);
+    LIB_FUNCTION("n2MMpvU8igI", "libkernel", 1, "libkernel", 1, 1, scePthreadMutexattrInit);
 
     // cond calls
     LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", 1, 1, scePthreadCondInit);
