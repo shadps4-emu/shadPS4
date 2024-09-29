@@ -17,12 +17,6 @@ void ErrSceToPosix(int result);
 int ErrnoToSceKernelError(int e);
 void SetPosixErrno(int e);
 
-struct OrbisTimesec {
-    time_t t;
-    u32 west_sec;
-    u32 dst_sec;
-};
-
 typedef struct {
     uint32_t timeLow;
     uint16_t timeMid;
@@ -33,9 +27,6 @@ typedef struct {
 } OrbisKernelUuid;
 
 int* PS4_SYSV_ABI __Error();
-int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
-                                                struct OrbisTimesec* st, unsigned long* dst_sec);
-int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
 
 void LibKernel_Register(Core::Loader::SymbolsResolver* sym);
 

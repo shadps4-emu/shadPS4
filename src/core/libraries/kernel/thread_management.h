@@ -221,5 +221,6 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(ScePthreadMutex* mutex);
 int PS4_SYSV_ABI posix_pthread_cond_broadcast(ScePthreadCond* cond);
 
-void pthreadSymbolsRegister(Core::Loader::SymbolsResolver* sym);
+void RegisterThreads(Core::Loader::SymbolsResolver* sym);
+
 } // namespace Libraries::Kernel
