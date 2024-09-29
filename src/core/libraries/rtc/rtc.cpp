@@ -5,11 +5,11 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/kernel/libkernel.h"
+#include "core/libraries/kernel/cpu_management.h"
 #include "core/libraries/kernel/time_management.h"
 #include "core/libraries/libs.h"
-#include "rtc.h"
-#include "rtc_error.h"
+#include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rtc/rtc_error.h"
 
 namespace Libraries::Rtc {
 

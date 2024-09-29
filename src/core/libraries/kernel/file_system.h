@@ -70,6 +70,6 @@ int PS4_SYSV_ABI sceKernelOpen(const char* path, int flags, /* SceKernelMode*/ u
 int PS4_SYSV_ABI posix_open(const char* path, int flags, /* SceKernelMode*/ u16 mode);
 s64 PS4_SYSV_ABI lseek(int d, s64 offset, int whence);
 
-void fileSystemSymbolsRegister(Core::Loader::SymbolsResolver* sym);
+void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

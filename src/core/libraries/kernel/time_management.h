@@ -32,6 +32,12 @@ struct OrbisKernelTimespec {
     s64 tv_nsec;
 };
 
+struct OrbisTimesec {
+    time_t t;
+    u32 west_sec;
+    u32 dst_sec;
+};
+
 constexpr int ORBIS_CLOCK_REALTIME = 0;
 constexpr int ORBIS_CLOCK_VIRTUAL = 1;
 constexpr int ORBIS_CLOCK_PROF = 2;
@@ -66,6 +72,10 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp);
 s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz);
 int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
                                                 OrbisKernelTimezone* timezone, int* dst_seconds);
-void timeSymbolsRegister(Core::Loader::SymbolsResolver* sym);
+
+int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time, OrbisTimesec* st,
+                                                unsigned long* dst_sec);
+
+void RegisterTime(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
