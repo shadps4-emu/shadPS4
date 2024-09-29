@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/path_util.h"
+#include "common/string_util.h"
 #include "game_list_frame.h"
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -40,7 +41,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
     PopulateGameList();
 
-    connect(this, &QTableWidget::itemClicked, this, &GameListFrame::SetListBackgroundImage);
+    connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this,
             &GameListFrame::RefreshListBackgroundImage);
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
@@ -68,6 +69,26 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     });
 }
 
+void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                                         int previousColumn) {
+    QTableWidgetItem* item = this->item(currentRow, currentColumn);
+    if (!item) {
+        return;
+    }
+    SetListBackgroundImage(item);
+    PlayBackgroundMusic(item);
+}
+
+void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
+    if (!item) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    QString snd0path;
+    Common::FS::PathToQString(snd0path, m_game_info->m_games[item->row()].snd0_path);
+    BackgroundMusicPlayer::getInstance().playMusic(snd0path);
+}
+
 void GameListFrame::PopulateGameList() {
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
@@ -79,7 +100,9 @@ void GameListFrame::PopulateGameList() {
         SetTableItem(i, 4, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].version));
-        SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].path));
+        QString path;
+        Common::FS::PathToQString(path, m_game_info->m_games[i].path);
+        SetTableItem(i, 7, path);
     }
 }
 
@@ -89,14 +112,12 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path = QString::fromStdString(m_game_info->m_games[item->row()].pic_path);
+    QString pic1Path;
+    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
     const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                  m_game_info->m_games[item->row()].serial / "pic1.png";
-#ifdef _WIN32
-    const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
-#else
-    const auto blurredPic1PathQt = QString::fromStdString(blurredPic1Path.string());
-#endif
+    QString blurredPic1PathQt;
+    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
 
     backgroundImage = QImage(blurredPic1PathQt);
     if (backgroundImage.isNull()) {

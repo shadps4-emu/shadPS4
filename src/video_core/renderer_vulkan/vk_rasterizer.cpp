@@ -24,7 +24,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
-    wfi_event = instance.GetDevice().createEventUnique({});
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -62,7 +61,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, index_offset);
 
-    BeginRendering();
+    BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
 
     const auto [vertex_offset, instance_offset] = vs_info.GetDrawOffsets();
@@ -102,7 +101,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr address, u32 offset, u32 si
     buffer_cache.BindVertexBuffers(vs_info);
     const u32 num_indices = buffer_cache.BindIndexBuffer(is_indexed, 0);
 
-    BeginRendering();
+    BeginRendering(*pipeline);
     UpdateDynamicState(*pipeline);
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address, size, true);
@@ -179,7 +178,7 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::BeginRendering() {
+void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline) {
     const auto& regs = liverpool->regs;
     RenderState state;
 
@@ -196,6 +195,13 @@ void Rasterizer::BeginRendering() {
         // If the color buffer is still bound but rendering to it is disabled by the target mask,
         // we need to prevent the render area from being affected by unbound render target extents.
         if (!regs.color_target_mask.GetMask(col_buf_id)) {
+            continue;
+        }
+
+        // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
+        // an unnecessary transition and may result in state conflict if the resource is already
+        // bound for reading.
+        if ((pipeline.GetMrtMask() & (1 << col_buf_id)) == 0) {
             continue;
         }
 
@@ -240,7 +246,7 @@ void Rasterizer::BeginRendering() {
         state.depth_image = image.image;
         state.depth_attachment = {
             .imageView = *image_view.image_view,
-            .imageLayout = image.layout,
+            .imageLayout = image.last_state.layout,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = is_clear ? vk::AttachmentStoreOp::eNone : vk::AttachmentStoreOp::eStore,
             .clearValue = vk::ClearValue{.depthStencil = {.depth = regs.depth_clear,
@@ -343,7 +349,10 @@ void Rasterizer::UpdateViewportScissorState() {
     boost::container::static_vector<vk::Rect2D, Liverpool::NumViewports> scissors;
 
     const float reduce_z =
-        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
+        instance.IsDepthClipControlSupported() &&
+                regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW
+            ? 1.0f
+            : 0.0f;
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];

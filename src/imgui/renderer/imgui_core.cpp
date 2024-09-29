@@ -3,6 +3,7 @@
 
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
+
 #include "common/config.h"
 #include "common/path_util.h"
 #include "imgui/imgui_layer.h"
@@ -13,6 +14,8 @@
 #include "sdl_window.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
+
+#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -48,8 +51,32 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.DisplaySize = ImVec2((float)window.getWidth(), (float)window.getHeight());
-    io.IniFilename = SDL_strdup(config_path.string().c_str());
-    io.LogFilename = SDL_strdup(log_path.string().c_str());
+
+    auto path = config_path.u8string();
+    char* config_file_buf = new char[path.size() + 1]();
+    std::memcpy(config_file_buf, path.c_str(), path.size());
+    io.IniFilename = config_file_buf;
+
+    path = log_path.u8string();
+    char* log_file_buf = new char[path.size() + 1]();
+    std::memcpy(log_file_buf, path.c_str(), path.size());
+    io.LogFilename = log_file_buf;
+
+    ImFontGlyphRangesBuilder rb{};
+    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
+    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
+    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
+    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+    ImVector<ImWchar> ranges{};
+    rb.BuildRanges(&ranges);
+    ImFontConfig font_cfg{};
+    font_cfg.OversampleH = 2;
+    font_cfg.OversampleV = 1;
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
+                                             imgui_font_notosansjp_regular_compressed_size, 16.0f,
+                                             &font_cfg, ranges.Data);
+
     StyleColorsDark();
 
     Sdl::Init(window.GetSdlWindow());
@@ -79,7 +106,11 @@ void OnResize() {
 }
 
 void Shutdown(const vk::Device& device) {
-    device.waitIdle();
+    auto result = device.waitIdle();
+    if (result != vk::Result::eSuccess) {
+        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on shutdown: {}",
+                    vk::to_string(result));
+    }
 
     TextureManager::StopWorker();
 
@@ -91,8 +122,8 @@ void Shutdown(const vk::Device& device) {
     Sdl::Shutdown();
     DestroyContext();
 
-    SDL_free(ini_filename);
-    SDL_free(log_filename);
+    delete[] (char*)ini_filename;
+    delete[] (char*)log_filename;
 }
 
 bool ProcessEvent(SDL_Event* event) {

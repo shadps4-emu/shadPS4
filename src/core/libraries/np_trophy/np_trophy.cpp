@@ -506,10 +506,10 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
 
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result =
-        doc.load_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").c_str());
+    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
     ASSERT_MSG(result, "Couldnt parse trophy XML : {}", result.description());
 

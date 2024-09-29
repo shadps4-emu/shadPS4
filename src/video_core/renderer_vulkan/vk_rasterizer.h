@@ -52,7 +52,7 @@ public:
     void Finish();
 
 private:
-    void BeginRendering();
+    void BeginRendering(const GraphicsPipeline& pipeline);
 
     void UpdateDynamicState(const GraphicsPipeline& pipeline);
     void UpdateViewportScissorState();
@@ -67,7 +67,6 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     PipelineCache pipeline_cache;
-    vk::UniqueEvent wfi_event;
 };
 
 } // namespace Vulkan

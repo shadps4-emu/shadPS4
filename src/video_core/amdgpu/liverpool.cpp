@@ -44,7 +44,7 @@ Liverpool::~Liverpool() {
 }
 
 void Liverpool::Process(std::stop_token stoken) {
-    Common::SetCurrentThreadName("GPU_CommandProcessor");
+    Common::SetCurrentThreadName("shadPS4:GPU_CommandProcessor");
 
     while (!stoken.stop_requested()) {
         {

@@ -22,7 +22,7 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     this->setContextMenuPolicy(Qt::CustomContextMenu);
     PopulateGameGrid(m_game_info->m_games, false);
 
-    connect(this, &QTableWidget::cellClicked, this, &GameGridFrame::SetGridBackgroundImage);
+    connect(this, &QTableWidget::currentCellChanged, this, &GameGridFrame::onCurrentCellChanged);
 
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this,
             &GameGridFrame::RefreshGridBackgroundImage);
@@ -31,12 +31,33 @@ GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get, QWidg
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, this, false);
     });
-    connect(this, &QTableWidget::cellClicked, this, [&]() {
-        cellClicked = true;
-        crtRow = this->currentRow();
-        crtColumn = this->currentColumn();
-        columnCnt = this->columnCount();
-    });
+}
+
+void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
+                                         int previousColumn) {
+    cellClicked = true;
+    crtRow = currentRow;
+    crtColumn = currentColumn;
+    columnCnt = this->columnCount();
+
+    auto itemID = (crtRow * columnCnt) + currentColumn;
+    if (itemID > m_game_info->m_games.count() - 1) {
+        validCellSelected = false;
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    validCellSelected = true;
+    SetGridBackgroundImage(crtRow, crtColumn);
+    auto snd0Path = QString::fromStdString(m_game_info->m_games[itemID].snd0_path.string());
+    PlayBackgroundMusic(snd0Path);
+}
+
+void GameGridFrame::PlayBackgroundMusic(QString path) {
+    if (path.isEmpty()) {
+        BackgroundMusicPlayer::getInstance().stopMusic();
+        return;
+    }
+    BackgroundMusicPlayer::getInstance().playMusic(path);
 }
 
 void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool fromSearch) {
@@ -113,14 +134,12 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     int itemID = (row * this->columnCount()) + column;
     QWidget* item = this->cellWidget(row, column);
     if (item) {
-        QString pic1Path = QString::fromStdString((*m_games_shared)[itemID].pic_path);
+        QString pic1Path;
+        Common::FS::PathToQString(pic1Path, (*m_games_shared)[itemID].pic_path);
         const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                      (*m_games_shared)[itemID].serial / "pic1.png";
-#ifdef _WIN32
-        const auto blurredPic1PathQt = QString::fromStdWString(blurredPic1Path.wstring());
-#else
-        const auto blurredPic1PathQt = QString::fromStdString(blurredPic1Path.string());
-#endif
+        QString blurredPic1PathQt;
+        Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
 
         backgroundImage = QImage(blurredPic1PathQt);
         if (backgroundImage.isNull()) {
@@ -148,4 +167,8 @@ void GameGridFrame::RefreshGridBackgroundImage() {
         palette.setColor(QPalette::Highlight, transparentColor);
         this->setPalette(palette);
     }
+}
+
+bool GameGridFrame::IsValidCellSelected() {
+    return validCellSelected;
 }

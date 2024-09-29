@@ -37,8 +37,12 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
         instance.GetPresentQueueFamilyIndex(),
     };
 
-    const auto modes = instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
-    const auto find_mode = [&modes](vk::PresentModeKHR requested) {
+    const auto [modes_result, modes] =
+        instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
+    const auto find_mode = [&modes_result, &modes](vk::PresentModeKHR requested) {
+        if (modes_result != vk::Result::eSuccess) {
+            return false;
+        }
         const auto it =
             std::find_if(modes.begin(), modes.end(),
                          [&requested](vk::PresentModeKHR mode) { return mode == requested; });
@@ -70,15 +74,17 @@ void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
         .oldSwapchain = nullptr,
     };
 
-    try {
-        swapchain = instance.GetDevice().createSwapchainKHR(swapchain_info);
-    } catch (vk::SystemError& err) {
-        LOG_CRITICAL(Render_Vulkan, "{}", err.what());
-        UNREACHABLE();
-    }
+    auto [swapchain_result, chain] = instance.GetDevice().createSwapchainKHR(swapchain_info);
+    ASSERT_MSG(swapchain_result == vk::Result::eSuccess, "Failed to create swapchain: {}",
+               vk::to_string(swapchain_result));
+    swapchain = chain;
 
     SetupImages();
     RefreshSemaphores();
+}
+
+void Swapchain::Recreate(u32 width_, u32 height_) {
+    Create(width_, height_, surface);
 }
 
 bool Swapchain::AcquireNextImage() {
@@ -107,9 +113,6 @@ bool Swapchain::AcquireNextImage() {
 }
 
 void Swapchain::Present() {
-    if (needs_recreation) {
-        return;
-    }
 
     const vk::PresentInfoKHR present_info = {
         .waitSemaphoreCount = 1,
@@ -119,20 +122,22 @@ void Swapchain::Present() {
         .pImageIndices = &image_index,
     };
 
-    try {
-        [[maybe_unused]] vk::Result result = instance.GetPresentQueue().presentKHR(present_info);
-    } catch (vk::OutOfDateKHRError&) {
+    auto result = instance.GetPresentQueue().presentKHR(present_info);
+    if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
         needs_recreation = true;
-    } catch (const vk::SystemError& err) {
-        LOG_CRITICAL(Render_Vulkan, "Swapchain presentation failed {}", err.what());
-        UNREACHABLE();
+    } else {
+        ASSERT_MSG(result == vk::Result::eSuccess, "Swapchain presentation failed: {}",
+                   vk::to_string(result));
     }
 
     frame_index = (frame_index + 1) % image_count;
 }
 
 void Swapchain::FindPresentFormat() {
-    const auto formats = instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
+    const auto [formats_result, formats] =
+        instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
+    ASSERT_MSG(formats_result == vk::Result::eSuccess, "Failed to query surface formats: {}",
+               vk::to_string(formats_result));
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
@@ -158,8 +163,10 @@ void Swapchain::FindPresentFormat() {
 }
 
 void Swapchain::SetSurfaceProperties() {
-    const vk::SurfaceCapabilitiesKHR capabilities =
+    const auto [capabilities_result, capabilities] =
         instance.GetPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
+    ASSERT_MSG(capabilities_result == vk::Result::eSuccess,
+               "Failed to query surface capabilities: {}", vk::to_string(capabilities_result));
 
     extent = capabilities.currentExtent;
     if (capabilities.currentExtent.width == std::numeric_limits<u32>::max()) {
@@ -207,10 +214,17 @@ void Swapchain::RefreshSemaphores() {
     present_ready.resize(image_count);
 
     for (vk::Semaphore& semaphore : image_acquired) {
-        semaphore = device.createSemaphore({});
+        auto [semaphore_result, sem] = device.createSemaphore({});
+        ASSERT_MSG(semaphore_result == vk::Result::eSuccess,
+                   "Failed to create image acquired semaphore: {}",
+                   vk::to_string(semaphore_result));
+        semaphore = sem;
     }
     for (vk::Semaphore& semaphore : present_ready) {
-        semaphore = device.createSemaphore({});
+        auto [semaphore_result, sem] = device.createSemaphore({});
+        ASSERT_MSG(semaphore_result == vk::Result::eSuccess,
+                   "Failed to create present ready semaphore: {}", vk::to_string(semaphore_result));
+        semaphore = sem;
     }
 
     if (instance.HasDebuggingToolAttached()) {
@@ -223,7 +237,10 @@ void Swapchain::RefreshSemaphores() {
 
 void Swapchain::SetupImages() {
     vk::Device device = instance.GetDevice();
-    images = device.getSwapchainImagesKHR(swapchain);
+    auto [images_result, imgs] = device.getSwapchainImagesKHR(swapchain);
+    ASSERT_MSG(images_result == vk::Result::eSuccess, "Failed to create swapchain images: {}",
+               vk::to_string(images_result));
+    images = std::move(imgs);
     image_count = static_cast<u32>(images.size());
 
     if (instance.HasDebuggingToolAttached()) {

@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "app_content.h"
+#include "common/assert.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -246,7 +247,11 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
     const auto addons_dir = Common::FS::GetUserPath(Common::FS::PathType::AddonsDir);
-    title_id = *param_sfo->GetString("TITLE_ID");
+    if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
+        title_id = *value;
+    } else {
+        UNREACHABLE_MSG("Failed to get TITLE_ID");
+    }
     auto addon_path = addons_dir / title_id;
     if (std::filesystem::exists(addon_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {

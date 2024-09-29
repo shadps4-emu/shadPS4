@@ -3,13 +3,15 @@
 
 #include <QProgressDialog>
 
+#include "common/path_util.h"
 #include "game_info.h"
 
 GameInfoClass::GameInfoClass() = default;
 GameInfoClass::~GameInfoClass() = default;
 
 void GameInfoClass::GetGameInfo(QWidget* parent) {
-    QString installDir = QString::fromStdString(Config::getGameInstallDir());
+    QString installDir;
+    Common::FS::PathToQString(installDir, Config::getGameInstallDir());
     QStringList filePaths;
     QDir parentFolder(installDir);
     QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
@@ -19,7 +21,7 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
         }
     }
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {
-                  return readGameInfo(path.toStdString());
+                  return readGameInfo(Common::FS::PathFromQString(path));
               }).results();
 
     // Progress bar, please be patient :)

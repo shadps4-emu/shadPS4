@@ -66,7 +66,7 @@ static void SaveFileSafe(void* buf, size_t count, const std::filesystem::path& p
 }
 
 [[noreturn]] void SaveThreadLoop() {
-    Common::SetCurrentThreadName("SaveData_SaveDataMemoryThread");
+    Common::SetCurrentThreadName("shadPS4:SaveData_SaveDataMemoryThread");
     std::mutex mtx;
     while (true) {
         {
@@ -77,7 +77,7 @@ static void SaveFileSafe(void* buf, size_t count, const std::filesystem::path& p
         g_saving_memory = true;
         std::scoped_lock lk{g_saving_memory_mutex};
         try {
-            LOG_DEBUG(Lib_SaveData, "Saving save data memory {}", g_save_path.string());
+            LOG_DEBUG(Lib_SaveData, "Saving save data memory {}", fmt::UTF(g_save_path.u8string()));
 
             if (g_memory_dirty) {
                 g_memory_dirty = false;
@@ -163,7 +163,8 @@ size_t CreateSaveMemory(size_t memory_size) {
 
         bool ok = g_param_sfo.Open(g_param_sfo_path);
         if (!ok) {
-            LOG_ERROR(Lib_SaveData, "Failed to open SFO at {}", g_param_sfo_path.string());
+            LOG_ERROR(Lib_SaveData, "Failed to open SFO at {}",
+                      fmt::UTF(g_param_sfo_path.u8string()));
             throw std::filesystem::filesystem_error(
                 "failed to open SFO", g_param_sfo_path,
                 std::make_error_code(std::errc::illegal_byte_sequence));
@@ -190,14 +191,19 @@ void SetIcon(void* buf, size_t buf_size) {
     if (buf == nullptr) {
         const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
         if (fs::exists(src_icon)) {
+            if (fs::exists(g_icon_path)) {
+                fs::remove(g_icon_path);
+            }
             fs::copy_file(src_icon, g_icon_path);
         }
-        IOFile file(g_icon_path, Common::FS::FileAccessMode::Read);
-        size_t size = file.GetSize();
-        file.Seek(0);
-        g_icon_memory.resize(size);
-        file.ReadRaw<u8>(g_icon_memory.data(), size);
-        file.Close();
+        if (fs::exists(g_icon_path)) {
+            IOFile file(g_icon_path, Common::FS::FileAccessMode::Read);
+            size_t size = file.GetSize();
+            file.Seek(0);
+            g_icon_memory.resize(size);
+            file.ReadRaw<u8>(g_icon_memory.data(), size);
+            file.Close();
+        }
     } else {
         g_icon_memory.resize(buf_size);
         std::memcpy(g_icon_memory.data(), buf, buf_size);
@@ -263,9 +269,6 @@ bool TriggerSave() {
 
 void ReadMemory(void* buf, size_t buf_size, int64_t offset) {
     std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset > g_save_memory.size()) {
-        UNREACHABLE_MSG("ReadMemory out of bounds");
-    }
     if (offset + buf_size > g_save_memory.size()) {
         UNREACHABLE_MSG("ReadMemory out of bounds");
     }
@@ -274,11 +277,8 @@ void ReadMemory(void* buf, size_t buf_size, int64_t offset) {
 
 void WriteMemory(void* buf, size_t buf_size, int64_t offset) {
     std::scoped_lock lk{g_saving_memory_mutex};
-    if (offset > g_save_memory.size()) {
-        UNREACHABLE_MSG("WriteMemory out of bounds");
-    }
     if (offset + buf_size > g_save_memory.size()) {
-        UNREACHABLE_MSG("WriteMemory out of bounds");
+        g_save_memory.resize(offset + buf_size);
     }
     std::memcpy(g_save_memory.data() + offset, buf, buf_size);
     g_memory_dirty = true;
